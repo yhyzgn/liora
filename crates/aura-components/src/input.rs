@@ -4,7 +4,7 @@ use aura_icons_lucide::IconName;
 use gpui::{
     prelude::*, px, App, Bounds, Context, Element, ElementId, ElementInputHandler, Entity,
     EntityInputHandler, FocusHandle, Focusable, GlobalElementId, Hsla, InspectorElementId,
-    IntoElement, LayoutId, MouseButton, MouseDownEvent, MouseUpEvent, KeyDownEvent,
+    IntoElement, LayoutId,     MouseButton, MouseDownEvent, MouseUpEvent,
     Pixels, Point, Render, Rgba, SharedString, ShapedLine, Size, Style, TextRun,
     UTF16Selection, UnderlineStyle, Window, actions, KeyBinding, fill, point, size,
 };
@@ -113,19 +113,14 @@ impl Input {
         self.selected_range = 0..self.value.len(); cx.notify();
     }
 
-    fn on_key_down(&mut self, event: &KeyDownEvent, _: &mut Window, cx: &mut Context<Self>) {
-        if let Some(text) = &event.keystroke.key_char {
-            self.internal_replace(text, cx);
-        }
-    }
-
     fn on_mouse_down(&mut self, event: &MouseDownEvent, _: &mut Window, cx: &mut Context<Self>) {
-        if let (Some(bounds), Some(line)) = (self.last_bounds.as_ref(), self.last_layout.as_ref()) {
+        let idx = if let (Some(bounds), Some(line)) = (self.last_bounds.as_ref(), self.last_layout.as_ref()) {
             let x = event.position.x - bounds.left();
-            if let Some(idx) = line.index_for_x(x) {
-                self.move_to(idx, cx);
-            }
-        }
+            line.index_for_x(x).unwrap_or(self.value.len())
+        } else {
+            self.value.len()
+        };
+        self.move_to(idx, cx);
     }
 
     fn internal_replace(&mut self, new_text: &str, cx: &mut Context<Self>) {
@@ -342,7 +337,6 @@ impl Render for Input {
             row = row
                 .on_mouse_down(MouseButton::Left, move |_, window, cx| { window.focus(&fh2, cx); })
                 .on_mouse_down(MouseButton::Left, cx.listener(Self::on_mouse_down))
-                .on_key_down(cx.listener(Self::on_key_down))
                 .on_action(cx.listener(Self::backspace))
                 .on_action(cx.listener(Self::delete))
                 .on_action(cx.listener(Self::left))
