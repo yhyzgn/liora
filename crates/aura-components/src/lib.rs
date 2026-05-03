@@ -8,6 +8,8 @@ pub mod divider;
 pub mod row;
 pub mod col;
 pub mod container;
+pub mod scrollbar;
+pub mod splitter;
 
 pub use button::*;
 pub use link::*;
@@ -19,3 +21,5 @@ pub use divider::*;
 pub use row::*;
 pub use col::*;
 pub use container::*;
+pub use scrollbar::*;
+pub use splitter::*;
