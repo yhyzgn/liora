@@ -36,6 +36,7 @@ impl Input {
             cursor_visible: true,
         }
     }
+
     pub fn placeholder(mut self, p: impl Into<SharedString>) -> Self { self.placeholder = p.into(); self }
     pub fn disabled(mut self, d: bool) -> Self { self.disabled = d; self }
     pub fn clearable(mut self, c: bool) -> Self { self.clearable = c; self }
@@ -131,10 +132,6 @@ impl Input {
             self.replace_text(text, cx);
         }
     }
-
-    fn request_focus(&self, window: &mut Window, cx: &mut App) {
-        window.focus(&self.focus_handle, cx);
-    }
 }
 
 impl Focusable for Input {
@@ -187,21 +184,34 @@ impl Render for Input {
             row = row.child(Icon::new(icon).size(px(icon_sz)).color(theme.neutral.icon));
         }
 
-        // Text display with cursor indicator
+        // Text + cursor
+        let show_cursor = focused && self.cursor_visible && self.selected_range.is_empty();
+        let cursor_w = 1.5;
+        let cursor_color = theme.primary.base;
+
         if is_empty {
             row = row.child(
-                gpui::div().flex_1().flex().items_center()
-                    .text_color(ph_color).child(display)
+                gpui::div().flex_1().flex().items_center().relative().h_full().text_color(ph_color)
+                    .child(display)
             );
         } else {
-            let before = &self.value[..self.cursor_offset()];
-            let after = &self.value[self.cursor_offset()..];
-            let cursor_char = if focused && self.cursor_visible { "|" } else { "" };
+            let offset = self.cursor_offset();
+            // Split text at cursor position for layout
+            let before = &self.value[..offset];
+            let after = &self.value[offset..];
 
-            row = row.child(
-                gpui::div().flex_1().flex().items_center().text_color(text_c)
-                    .child(format!("{}{}{}", before, cursor_char, after))
-            );
+            let mut text_div = gpui::div().flex_1().flex().flex_row().items_center().relative().h_full().text_color(text_c);
+
+            text_div = text_div.child(gpui::div().child(before.to_string()));
+
+            if show_cursor {
+                text_div = text_div.child(
+                    gpui::div().flex_none().w(px(cursor_w)).h(px(h * 0.6)).bg(cursor_color)
+                );
+            }
+
+            text_div = text_div.child(gpui::div().child(after.to_string()));
+            row = row.child(text_div);
         }
 
         if self.clearable && !self.value.is_empty() && !self.disabled {
