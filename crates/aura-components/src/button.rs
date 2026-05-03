@@ -34,6 +34,7 @@ pub struct Button {
     icon_top: Option<IconName>,
     icon_bottom: Option<IconName>,
     icon_only: Option<IconName>,
+    on_click: Option<Box<dyn Fn(&gpui::ClickEvent, &mut Window, &mut App) + 'static>>,
     creation_site: &'static Location<'static>,
 }
 
@@ -56,6 +57,7 @@ impl Button {
             icon_top: None,
             icon_bottom: None,
             icon_only: None,
+            on_click: None,
             creation_site: Location::caller(),
         }
     }
@@ -146,6 +148,9 @@ impl Button {
     pub fn icon_only(mut self, icon: IconName) -> Self {
         self.icon_only = Some(icon);
         self
+    }
+    pub fn on_click(mut self, cb: impl Fn(&gpui::ClickEvent, &mut Window, &mut App) + 'static) -> Self {
+        self.on_click = Some(Box::new(cb)); self
     }
 
     fn colors(&self, theme: &Theme) -> ButtonVariantColors {
@@ -304,16 +309,19 @@ impl Button {
             }
         }
 
+        let click_handler = self.on_click;
+
         div.id(id)
             .group(hover_group)
             .hover(move |style| {
                 let mut s = style.bg(c.hover_bg).text_color(c.text_hover);
-                if !c.border_hover.is_transparent() {
-                    s = s.border_color(c.border_hover);
-                }
+                if !c.border_hover.is_transparent() { s = s.border_color(c.border_hover); }
                 s
             })
             .active(move |style| style.bg(c.active_bg))
+            .on_click(move |event, window, cx| {
+                if let Some(ref handler) = click_handler { handler(event, window, cx); }
+            })
             .children(children.into_iter().map(|f| f()))
             .into_any_element()
     }
