@@ -51,21 +51,21 @@ impl Render for Checkbox {
             (rgba(0,0,0,0.0), theme.neutral.border, rgba(0,0,0,0.0))
         };
 
-        let mut row = gpui::div().flex().flex_row().items_center().gap_2();
+        let mut row = gpui::div().flex().flex_row().items_center().gap_2().cursor_pointer();
+
+        if !self.disabled {
+            row = row.on_mouse_up(MouseButton::Left, cx.listener(move |this: &mut Self, _: &MouseUpEvent, window: &mut Window, cx: &mut Context<Self>| {
+                this.toggle(window, cx);
+            }));
+        }
 
         let mut box_el = gpui::div()
             .flex_none().w(px(sz)).h(px(sz)).rounded(px(2.0))
             .bg(bg).border_1().border_color(border)
-            .flex().items_center().justify_center()
-            .cursor_pointer();
+            .flex().items_center().justify_center();
 
         if self.checked {
             box_el = box_el.child(Icon::new(IconName::Check).size(px(12.0)).color(check_color));
-        }
-        if !self.disabled {
-            box_el = box_el.on_mouse_up(MouseButton::Left, cx.listener(move |this: &mut Self, _: &MouseUpEvent, window: &mut Window, cx: &mut Context<Self>| {
-                this.toggle(window, cx);
-            }));
         }
 
         row = row.child(box_el);
