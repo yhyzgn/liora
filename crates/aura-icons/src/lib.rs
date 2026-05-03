@@ -15,16 +15,15 @@ impl IntoIconPath for String {
 pub struct AuraIcon {
     size: Option<f32>,
     color: Option<Hsla>,
-    file_path: String,
+    asset_path: String,
 }
 
 impl AuraIcon {
     pub fn new(path: impl IntoIconPath) -> Self {
-        Self { size: None, color: None, file_path: path.icon_path().into_owned() }
+        Self { size: None, color: None, asset_path: path.icon_path().into_owned() }
     }
 
     pub fn size(mut self, px_size: f32) -> Self { self.size = Some(px_size); self }
-
     pub fn color(mut self, color: Hsla) -> Self { self.color = Some(color); self }
 
     pub fn build(self, theme: &aura_theme::AuraTheme) -> impl IntoElement {
@@ -34,6 +33,6 @@ impl AuraIcon {
         gpui::div()
             .size(px(sz))
             .text_color(color)
-            .child(gpui::svg().external_path(self.file_path))
+            .child(gpui::svg().path(self.asset_path))
     }
 }

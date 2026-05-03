@@ -470,7 +470,9 @@ dependencies = [
 name = "aura-icons-lucide"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "aura-icons",
+ "gpui",
 ]
 
 [[package]]
