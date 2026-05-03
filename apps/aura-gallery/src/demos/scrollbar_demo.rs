@@ -8,7 +8,7 @@ struct ScrollbarDemo;
 impl RenderOnce for ScrollbarDemo {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = &cx.global::<Config>().theme;
-        let items: Vec<String> = (1..=30).map(|i| format!("Line {}", i)).collect();
+        let items: Vec<String> = (1..=5).map(|i| format!("Line {}", i)).collect();
 
         div().flex().flex_col().gap_2()
             .child(Title::new("Scrollbar 滚动条").h2())
