@@ -1,0 +1,713 @@
+# Aura UI 架构设计文档
+
+> 基于 Element-Plus 设计规范的 Rust GPUI Native 组件库
+
+---
+
+## 一、项目概述
+
+### 1.1 项目定位
+
+Aura 是一套基于 [GPUI](https://github.com/zed-industries/zed)（Zed 编辑器底层 GPU 加速 UI 框架）的企业级 Native 组件库。参考 [Element-Plus](https://element-plus.org/) 的 API 设计规范和组件分类体系，将 Web 端成熟的设计语言映射到 Rust 原生 GUI 领域。
+
+### 1.2 核心设计原则
+
+参照 Element-Plus 的四项设计原则：
+
+| 原则 | 含义 | Aura 实践 |
+|------|------|----------|
+| **一致 Consistency** | 与现实生活一致，界面元素统一 | 统一 Design Token、统一 API 风格、统一 Builder 模式 |
+| **反馈 Feedback** | 清晰的交互动效和状态反馈 | Hover/Active/Disabled/Loading 四态，动画过渡 |
+| **效率 Efficiency** | 简洁直观，减少认知负担 | 链式调用 API，开箱即用，语义化命名 |
+| **可控 Controllability** | 用户决策，结果可逆 | 组件可控回调，不强制行为，提供取消机制 |
+
+### 1.3 与 Element-Plus 的核心概念映射
+
+| Element-Plus (Vue/Web) | Aura (Rust/GPUI) | 说明 |
+|------------------------|------------------|------|
+| `<el-button type="primary">` | `AuraButton::new().primary()` | Builder Pattern |
+| Props 属性传递 | 链式方法 `.size()` `.disabled()` | 类型安全的编译期检查 |
+| Slots 插槽 | 闭包 `\|cx\| -> impl IntoElement` | 灵活的子元素渲染 |
+| `ref` / `reactive` 响应式 | `Model<T>` + `cx.notify()` | GPUI 单向数据流 |
+| `emit` 事件派发 | 闭包回调 `.on_click(\|event, window, cx\| {})` | 闭包捕获 |
+| `<el-config-provider>` | `cx.set_global(AuraConfig{})` | GPUI Global 机制 |
+| CSS 变量 / Theme | `AuraTheme` + `cx.global::<AuraConfig>()` | Rust 类型系统 |
+| Popper.js 弹出定位 | 自研 Anchor + Portal 定位系统 | 第四阶段攻克 |
+| Async Validator | 自研 Form 校验模型 | 第三阶段 |
+
+---
+
+## 二、工程架构
+
+### 2.1 Workspace 结构
+
+```
+aura/
+├── Cargo.toml                    # [workspace] 根配置
+├── crates/
+│   ├── aura-core/                # 核心 Trait、全局配置、宏、工具函数
+│   │   └── src/lib.rs
+│   ├── aura-theme/               # 设计系统、Token、亮/暗色模式、色彩计算
+│   │   └── src/lib.rs
+│   ├── aura-components/          # 全部组件实现
+│   │   └── src/
+│   │       ├── lib.rs
+│   │       ├── button.rs
+│   │       ├── input.rs          # Phase 2
+│   │       ├── dialog.rs         # Phase 4
+│   │       └── ...
+│   └── aura-icons/               # 图标库
+│       └── src/lib.rs
+├── apps/
+│   ├── aura-gallery/             # Native 画廊应用（GPUI 展示 Demo）
+│   │   └── src/main.rs
+│   └── docs/                     # Web 端文档站（Vitepress）
+└── architecture-design.md
+```
+
+### 2.2 Crate 职责矩阵
+
+| Crate | 依赖 | 职责 |
+|-------|------|------|
+| `aura-theme` | `gpui` | AuraTheme(亮/暗)、Design Tokens、间距/圆角/字号规范、ButtonVariant/ButtonSize/Colors |
+| `aura-icons` | `gpui` | AuraIcon trait、IconSize、基础图标函数 |
+| `aura-core` | `gpui`, `aura-theme` | AuraConfig(Global)、init_aura()、AuraContextExt trait、AuraElement trait、Z-Index 管理器、工具函数 |
+| `aura-components` | `gpui`, `aura-core`, `aura-theme`, `aura-icons` | 全部业务组件（Button/Input/Dialog/Table 等） |
+| `aura-gallery` | `gpui`(default), `gpui_platform`, 全部 aura crates | Native 组件展示应用 |
+
+### 2.3 GPUI 依赖策略
+
+```toml
+# 根 workspace — 不启用平台特定 feature
+[workspace.dependencies]
+gpui = { git = "https://github.com/zed-industries/zed", default-features = false }
+
+# 库 crate — 继承 workspace（仅需类型定义，无需平台后端）
+aura-theme/Cargo.toml: gpui.workspace = true
+
+# App crate — 显式启用所需平台 feature
+aura-gallery/Cargo.toml:
+  gpui = { workspace = true, features = ["wayland", "x11", "font-kit"] }
+  gpui_platform = { workspace = true, features = ["wayland", "x11"] }
+```
+
+### 2.4 Gallery 组件看板规约
+
+**定位**：aura-gallery 是 Aura 的原生组件看板，功能对标 [Element-Plus 官网](https://element-plus.org/zh-CN/) 的组件总览页。在 GPUI 窗口中按分类层次展示所有已实现组件的交互效果。
+
+**架构**：
+
+```
+apps/aura-gallery/src/
+├── main.rs                  # App 入口，Gallery struct，分类渲染循环
+├── category.rs              # Category 枚举（Basic/Form/Data/Navigation/Feedback/Others）
+└── demos/
+    ├── mod.rs               # Demo 注册表 registry() -> Vec<DemoEntry>
+    ├── button_demo.rs       # 各组件的 Demo 页面渲染函数
+    ├── input_demo.rs        # （增量添加）
+    └── ...
+```
+
+**增量添加规约**：
+
+```
+新增一个组件 Demo 只需两步：
+
+1. 创建 apps/aura-gallery/src/demos/<name>_demo.rs
+   ── 实现 pub fn render(theme: &AuraTheme) -> AnyElement
+   ── 内部按小节（Variants/Sizes/States 等）展示组件多种形态
+
+2. 在 apps/aura-gallery/src/demos/mod.rs 注册表添加一行
+   ── DemoEntry { name, category, description, render }
+```
+
+**DemoEntry 注册表结构**：
+
+```rust
+pub struct DemoEntry {
+    pub name: &'static str,              // 组件名称，如 "Button 按钮"
+    pub category: Category,              // 所属分类
+    pub description: &'static str,        // 一行描述
+    pub render: fn(&AuraTheme) -> AnyElement,  // Demo 渲染函数
+}
+```
+
+**Gallery 渲染逻辑**：
+
+1. `Gallery` struct 在 `render()` 中读取注册表
+2. 按 `Category::ALL` 顺序遍历，过滤出每个分类的组件列表
+3. 每个分类渲染为一个 `category_section()`：
+   - 分类标题（图标 + 名称 + 组件数量）
+   - 下方依次排列 `component_card()`
+4. 每个卡片 `component_card()` 包含：
+   - 组件名称 + 描述
+   - 调用 `entry.render(theme)` 渲染 Demo 内容
+
+**Demo 页面编写规范**：
+
+```rust
+// 每个 Demo 页面内部按「使用场景」分小节
+pub fn render(theme: &AuraTheme) -> AnyElement {
+    div()
+        .flex().flex_col().gap_3()
+        .child(section_header(theme, "Variants 变体"))
+        .child(demo_row(theme, vec![
+            AuraButton::new("Primary").primary().build(theme),
+            AuraButton::new("Success").success().build(theme),
+            // ...
+        ]))
+        .child(section_header(theme, "Sizes 尺寸"))
+        .child(demo_row(theme, vec![
+            AuraButton::new("Small").small().build(theme),
+            // ...
+        ]))
+        .child(section_header(theme, "States 状态"))
+        // ...
+        .into_any_element()
+}
+```
+
+**布局效果**：
+
+```
+┌──────────────────────────────────────────────────────┐
+│  Aura UI                                             │
+│  Native Component Library — 1 components             │
+│──────────────────────────────────────────────────────│
+│  ⊞ Basic 基础  · 1 components                       │
+│  ┌──────────────────────────────────────────────────┐│
+│  │ Button 按钮                                       ││
+│  │ 常用的操作按钮                                     ││
+│  │                                                    ││
+│  │ Variants 按钮变体                                  ││
+│  │ [Primary] [Success] [Warning] [Danger] [Info]     ││
+│  │                                                    ││
+│  │ Sizes 尺寸                                         ││
+│  │ [Small] [Default] [Large]                         ││
+│  │                                                    ││
+│  │ States 状态                                        ││
+│  │ [Disabled] [Loading]                              ││
+│  └──────────────────────────────────────────────────┘│
+│                                                      │
+│  ☰ Form 表单  · 0 components (coming soon)          │
+│  ...                                                 │
+└──────────────────────────────────────────────────────┘
+```
+
+**设计原则**：
+
+- **增量友好**：新增组件只需 2 个文件位置改动
+- **自动编目**：Gallery 自动按分类组织，无需手动维护目录结构
+- **层次分明**：分类 → 卡片 → 小节 → 组件实例，四级层次对应 Element-Plus 的信息架构
+- **自文档化**：每个 Demo 本身即是组件的使用示例代码
+- **即见即得**：`cargo run -p aura-gallery` 直接在原生窗口查看效果
+
+---
+
+## 三、组件总览
+
+参照 Element-Plus 官网组件分类，共 81 个组件，分为 7 大类。标注 `GPUI原生` 表示 GPUI 已内置无需单独实现，`v2` 表示第二阶段迭代。
+
+### 3.1 Basic 基础组件 (12)
+
+| Element-Plus | Aura 组件 | 阶段 | 说明 |
+|-------------|----------|------|------|
+| Button | `AuraButton` | P1 ✅ | 已完成基础实现 |
+| Icon | `AuraIcon` trait | P1 | 图标系统，集成 SVG |
+| Link | `AuraLink` | P1 | 链接按钮样式 |
+| Text | `AuraText` | P1 | 文本组件（单行/多行截断） |
+| Typography | `AuraTitle` / `AuraParagraph` | P1 | 排版组件 |
+| Space | `AuraSpace` | P1 | 间距组件 |
+| Divider | `AuraDivider` | P1 | 分割线 |
+| Scrollbar | `AuraScrollbar` | P2 | 自定义滚动条 |
+| Layout | `AuraRow` / `AuraCol` | P2 | 24 栅格布局（GPUI flexbox 已有基础，此为语义封装） |
+| Container | `AuraContainer` | P2 | 布局容器（header/aside/main/footer） |
+| Border | — GPUI 原生 | — | `.border_1()` `.border_color()` |
+| Color | — Theme Token | — | 设计 Token 中已定义 |
+
+### 3.2 Config 配置组件 (1)
+
+| Element-Plus | Aura 组件 | 阶段 | 说明 |
+|-------------|----------|------|------|
+| Config Provider | `AuraConfig` + `init_aura()` | P0 ✅ | Global 注入，已完成 |
+
+### 3.3 Form 表单组件 (24)
+
+| Element-Plus | Aura 组件 | 阶段 | 说明 |
+|-------------|----------|------|------|
+| Input | `AuraInput` | P2 | 文本输入（含 prefix/suffix icon、clearable、password toggle） |
+| InputNumber | `AuraInputNumber` | P2 | 数字输入（步进按钮、min/max 限制） |
+| Textarea | `AuraTextarea` | P2 | 多行文本（自动撑高、maxlength 计数） |
+| Checkbox | `AuraCheckbox` / `AuraCheckboxGroup` | P2 | 多选 |
+| Radio | `AuraRadio` / `AuraRadioGroup` | P2 | 单选 |
+| Switch | `AuraSwitch` | P2 | 开关 |
+| Select | `AuraSelect` | P3 | 下拉选择 ⚠️ Popper 定位 |
+| Slider | `AuraSlider` | P3 | 滑块 |
+| Form | `AuraForm` / `AuraFormItem` | P3 | 表单容器 + 校验 |
+| Rate | `AuraRate` | P3 | 评分 |
+| DatePicker | `AuraDatePicker` | P5 | 日期选择（自定义日历面板） |
+| TimePicker | `AuraTimePicker` | P5 | 时间选择 |
+| DateTimePicker | `AuraDateTimePicker` | P5 | 日期时间选择 |
+| ColorPicker | `AuraColorPicker` | P5 | 颜色选择 |
+| Cascader | `AuraCascader` | P5 | 级联选择 |
+| Transfer | `AuraTransfer` | P5 | 穿梭框 |
+| Upload | `AuraUpload` | P5 | 文件上传 |
+| Autocomplete | `AuraAutocomplete` | P5 | 自动补全 |
+| TreeSelect | `AuraTreeSelect` | P5 | 树形选择 |
+| VirtualizedSelect | — v2 | P6 | 虚拟化选择器（GPUI 已有 UniformList） |
+| InputTag | `AuraInputTag` | P5 | 标签输入 |
+| Mention | `AuraMention` | P5 | @提及 |
+| DatePickerPanel | — 子组件 | P5 | 日期面板（内部组件） |
+| ColorPickerPanel | — 子组件 | P5 | 颜色面板（内部组件） |
+
+### 3.4 Data 数据展示 (23)
+
+| Element-Plus | Aura 组件 | 阶段 | 说明 |
+|-------------|----------|------|------|
+| Avatar | `AuraAvatar` | P2 | 头像 |
+| Badge | `AuraBadge` | P2 | 徽章 |
+| Tag | `AuraTag` | P2 | 标签 |
+| Card | `AuraCard` | P3 | 卡片 |
+| Collapse | `AuraCollapse` / `AuraCollapseItem` | P3 | 折叠面板 |
+| Progress | `AuraProgress` | P3 | 进度条 |
+| Skeleton | `AuraSkeleton` | P3 | 骨架屏 |
+| Empty | `AuraEmpty` | P3 | 空状态 |
+| Result | `AuraResult` | P4 | 结果页 |
+| Descriptions | `AuraDescriptions` | P4 | 描述列表 |
+| Timeline | `AuraTimeline` | P4 | 时间线 |
+| Tree | `AuraTree` | P4 | 树形控件 |
+| Pagination | `AuraPagination` | P4 | 分页 |
+| Statistic | `AuraStatistic` | P4 | 统计数值 |
+| Segmented | `AuraSegmented` | P4 | 分段控制器 |
+| Table | `AuraTable` | P5 ⚠️ | 表格 ⚠️ 重难点 |
+| Calendar | `AuraCalendar` | P5 | 日历 |
+| Carousel | `AuraCarousel` | P5 | 走马灯 |
+| Image | `AuraImage` | P5 | 图片（懒加载、预览） |
+| Tour | `AuraTour` | P5 | 漫游引导 |
+| VirtualizedTable | — v2 | P6 | 虚拟化表格 |
+| VirtualizedTree | — v2 | P6 | 虚拟化树 |
+| InfiniteScroll | — GPUI UniformList | — | GPUI 已有列表虚拟滚动 |
+
+### 3.5 Navigation 导航 (9)
+
+| Element-Plus | Aura 组件 | 阶段 | 说明 |
+|-------------|----------|------|------|
+| Dropdown | `AuraDropdown` | P3 | 下拉菜单 ⚠️ Popper 定位 |
+| Menu | `AuraMenu` | P4 | 导航菜单 |
+| Tabs | `AuraTabs` / `AuraTabPane` | P4 | 标签页（下划线动画） |
+| Breadcrumb | `AuraBreadcrumb` | P4 | 面包屑 |
+| Steps | `AuraSteps` | P4 | 步骤条 |
+| PageHeader | `AuraPageHeader` | P4 | 页头 |
+| Affix | `AuraAffix` | P4 | 固钉（滚动吸顶） |
+| Backtop | `AuraBacktop` | P4 | 回到顶部 |
+| Anchor | `AuraAnchor` | P4 | 锚点链接 |
+
+### 3.6 Feedback 反馈组件 (10)
+
+| Element-Plus | Aura 组件 | 阶段 | 说明 |
+|-------------|----------|------|------|
+| Tooltip | `AuraTooltip` | P3 | 文字提示 ⚠️ Popper 定位 |
+| Popover | `AuraPopover` | P3 | 气泡卡片 ⚠️ Popper 定位 |
+| Popconfirm | `AuraPopconfirm` | P3 | 气泡确认 ⚠️ Popper 定位 |
+| Dialog | `AuraDialog` | P3 | 模态对话框（遮罩、焦点锁定） |
+| Drawer | `AuraDrawer` | P3 | 抽屉面板 |
+| Message | `AuraMessage` | P3 | 全局消息提示 |
+| Notification | `AuraNotification` | P3 | 通知 |
+| Alert | `AuraAlert` | P3 | 警示提示 |
+| Loading | `AuraLoading` | P3 | 加载状态（全屏/局部） |
+| MessageBox | `AuraMessageBox` | P4 | 消息弹窗（confirm/prompt） |
+
+### 3.7 Others 其他 (2)
+
+| Element-Plus | Aura 组件 | 阶段 | 说明 |
+|-------------|----------|------|------|
+| Divider | `AuraDivider` | P1 | 分割线（横向/纵向/带文字） |
+| Watermark | `AuraWatermark` | P5 | 水印 |
+
+---
+
+## 四、开发阶段规划
+
+### 阶段总览
+
+```
+P0 · Foundation       ██░░░░░░░░  已完成 — 工程骨架 + 主题 + Button 最小闭环
+P1 · Basic Elements   ░░░░░░░░░░  基础组件 12 个 + Divider/Space
+P2 · Form Controls    ░░░░░░░░░░  表单控件 24 个（前 10 个核心）
+P3 · Popper + Feedback ░░░░░░░░░░  弹出层基建 + 反馈组件 + Data 初步
+P4 · Navigation + Data ░░░░░░░░░░  导航组件 + 数据展示扩容
+P5 · Advanced          ░░░░░░░░░░  重型组件（Table/DatePicker/Upload 等）
+P6 · Engineering       ░░░░░░░░░░  文档站 + 测试 + 发布
+```
+
+### P0 · Foundation（已完成）
+
+**目标**：跑通 "配置 → 渲染" 最小闭环
+
+| 任务 | 状态 |
+|------|------|
+| Cargo Workspace 工程结构 + 4 crate + 2 app | ✅ |
+| GPUI 依赖策略（workspace default-features=false，app 显式 features） | ✅ |
+| `AuraTheme` Design Tokens（色板/间距/圆角/字号） | ✅ |
+| `AuraConfig` Global 注入 + `init_aura()` | ✅ |
+| `AuraContextExt` trait（从任意 `Context<'_, V>` 读取主题） | ✅ |
+| `AuraButton` 首个组件（6 种 Variant、3 种 Size、Disabled/Loading） | ✅ |
+| `aura-gallery` GPUI 窗口展示 Button 变体 | ✅ |
+| `AuraIcon` trait + `IconSize` + 占位图标函数 | ✅ |
+| `AuraElement` 通用 trait 骨架 | ✅ |
+| Z-Index 管理工具函数 | ✅ |
+
+### P1 · Basic Elements（目标：完成基础物料层）
+
+**组件清单（13 个）**：
+
+```
+Button(完善)  Icon(SVG集成)  Link  Text  Title  Paragraph
+Space  Divider  Row  Col  Container  Scrollbar  Splitter
+```
+
+**关键任务**：
+
+| 任务 | 说明 |
+|------|------|
+| **Button 完善** | 添加 icon 支持、圆角按钮、幽灵按钮、按钮组 ButtonGroup |
+| **Icon 系统** | 集成 SVG 图标集（如 Lucide），支持动态变色和尺寸 |
+| **Link** | 链接样式按钮（underline/hover/disabled） |
+| **Text / Title / Paragraph** | 排版组件（截断、行数限制、渐变） |
+| **Space** | 间距包裹组件（横向/纵向，自动 gap） |
+| **Divider** | 分割线（横向/纵向/带文字/虚线） |
+| **Row / Col** | 24 栅格系统（gutter、offset、响应式断点） |
+| **Container** | 布局容器（header/aside/main/footer 经典布局） |
+| **Scrollbar** | 自定义滚动条样式 |
+| **Splitter** | 分隔面板（可拖拽调整大小） |
+
+### P2 · Form Controls（目标：表单数据录入体系）
+
+**组件清单（10 个核心）**：
+
+```
+Input  InputNumber  Textarea  Checkbox(Group)  Radio(Group)
+Switch  Select  Slider  Form/FormItem  Rate
+```
+
+**关键任务**：
+
+| 任务 | 说明 |
+|------|------|
+| **Input** | 文本输入（prefix/suffix icon、clearable、password toggle、maxlength 计数） |
+| **InputNumber** | 数字输入（步进按钮、min/max/precision） |
+| **Textarea** | 多行文本（auto-resize、maxlength） |
+| **Checkbox / CheckboxGroup** | 多选（indeterminate 半选、min/max 限制） |
+| **Radio / RadioGroup** | 单选（button 样式、border） |
+| **Switch** | 开关（active/inactive 文字、loading） |
+| **Select** | 下拉选择（⚠️ Popper 定位、可搜索、多选、分组） |
+| **Slider** | 滑块（范围选择、刻度标记、input 联动） |
+| **Form / FormItem** | 表单容器（label-width、必填标记、校验状态、error message、inline 模式） |
+| **Rate** | 评分（半星、文字辅助、只读） |
+
+### P3 · Popper + Feedback（目标：攻克悬浮弹出层基建）
+
+**核心难点**：原生 GUI 中没有 HTML 的 `position: fixed` 和自动 Z-Index 层级。需要自研 Anchor → Portal 定位系统。
+
+**弹出层基建**：
+
+| 任务 | 说明 |
+|------|------|
+| **AnchorPosition** | 锚点定位计算引擎（top/bottom/left/right + 12 种对齐偏移） |
+| **Portal** | 将元素渲染到根窗口最顶层（脱离正常布局流） |
+| **ViewportBoundary** | 屏幕边缘溢出检测与自动翻转方向 |
+| **ZIndexStack** | 全局 Z-Index 栈管理（弹窗/下拉/通知的分层） |
+| **ClickOutside** | 点击外部区域关闭检测 |
+| **FocusTrap** | 焦点锁定（Tab 循环在弹窗/下拉内） |
+
+**组件清单（10 个反馈 + 2 个 Data + 1 个 Nav）**：
+
+```
+Tooltip  Popover  Popconfirm  Dialog  Drawer
+Message  Notification  Alert  Loading  MessageBox
+Dropdown  Card  Collapse
+```
+
+### P4 · Navigation + Data Expansion（目标：导航与数据展示全貌）
+
+**组件清单（20 个）**：
+
+```
+Menu  Tabs  Breadcrumb  Steps  PageHeader  Affix  Backtop  Anchor
+Progress  Skeleton  Empty  Result  Descriptions  Timeline
+Tree  Pagination  Statistic  Segmented  Tag  Avatar  Badge
+```
+
+### P5 · Advanced Components（目标：重型组件攻克）
+
+**组件清单（20 个）**：
+
+```
+Table  Calendar  Carousel  Image  DatePicker  TimePicker  DateTimePicker
+ColorPicker  Cascader  Transfer  Upload  Autocomplete
+TreeSelect  InputTag  Mention  Watermark  Tour  Scrollbar  Splitter
+```
+
+⚠️ **Table 组件特别说明**：
+
+Table 是企业级组件库中最复杂、工作量最大的组件。Aura Table 需规划以下能力矩阵：
+
+| 能力 | 优先级 | 说明 |
+|------|--------|------|
+| 基础渲染（列定义 + 行数据） | P0 | 核心 |
+| 固定表头 | P0 | Sticky header |
+| 固定列（左/右） | P1 | 横向滚动 + 固定列 |
+| 排序（单列/多列） | P1 | 表头点击排序 |
+| 筛选（列过滤） | P1 | 表头下拉筛选 |
+| 选择（单选/多选） | P1 | Checkbox 列 |
+| 展开行 | P2 | 可展开的嵌套内容 |
+| 合并行/列 | P2 | rowspan / colspan |
+| 树形数据 | P2 | 树形表格 |
+| 虚拟滚动 | P2 | 万级数据性能 |
+| 拖拽排序 | P3 | 行拖拽 / 列拖拽 |
+| 编辑单元格 | P3 | 行内编辑 |
+| 导出 CSV | P3 | 数据导出 |
+| 汇总行 / 合计 | P3 | 表尾合计 |
+| Loading 状态 | P0 | 数据加载中 |
+| Empty 状态 | P0 | 空数据占位 |
+
+### P6 · Engineering & Documentation（工程化交付）
+
+| 任务 | 说明 |
+|------|------|
+| **aura-gallery 完善** | 全部组件交互式 Demo，分类展示、支持切换主题和尺寸 |
+| **docs 文档站** | Vitepress 构建，结构：快速上手 / 全局配置 / 主题定制 / 组件 API / 迁移指南 |
+| **组件 API 文档** | 每个组件：Props(Builder方法) / Events(回调) / Slots(子元素) / 示例代码 |
+| **主题定制指南** | 如何自定义 Theme、扩展 Design Token |
+| **测试体系** | 单元测试（crate 级）、视觉回归测试（截图对比）、集成测试 |
+| **CI/CD** | GitHub Actions：cargo check / clippy / test / doc build |
+| **发布流程** | crates.io 发布策略、CHANGELOG 自动化 |
+
+---
+
+## 五、组件 API 设计规范
+
+### 5.1 Builder Pattern（统一 API 风格）
+
+所有组件遵循 Builder 模式，链式调用：
+
+```rust
+// 基本用法
+AuraButton::new("Save")
+    .primary()
+    .large()
+    .icon(icon_save)
+    .loading(is_saving)
+    .build(&theme)
+
+// 表单组合
+AuraForm::new()
+    .label_width(px(100.0))
+    .child(
+        AuraFormItem::new("用户名")
+            .required(true)
+            .error("用户名不能为空")
+            .child(
+                AuraInput::new(placeholder("请输入用户名"))
+                    .clearable(true)
+                    .build(&theme)
+            )
+    )
+    .build(&theme)
+```
+
+### 5.2 组件构建方法规范
+
+每个组件提供 `.build(&theme)` 或 `.into_element()` 方法将 Builder 转化为 `impl IntoElement`。Builder 本身不持有 GPUI Context，主题通过参数显式传入：
+
+```rust
+pub struct AuraComponent {
+    // 配置字段
+}
+
+impl AuraComponent {
+    pub fn build(self, theme: &AuraTheme) -> impl IntoElement {
+        // 构建 div 树
+    }
+}
+
+// 使用
+fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+    let theme = _cx.aura();
+    div().child(AuraComponent::new(...).build(theme))
+}
+```
+
+### 5.3 事件回调规范
+
+组件通过 Builder 方法接受回调闭包：
+
+```rust
+AuraButton::new("Click Me")
+    .on_click(|event, window, cx| {
+        println!("clicked!");
+    })
+    .build(&theme)
+```
+
+类型签名：`impl Fn(&ClickEvent, &mut Window, &mut App) + 'static`
+
+### 5.4 子元素（Slots）规范
+
+接受 `impl IntoElement` 作为子内容：
+
+```rust
+AuraCard::new()
+    .header(div().child("Card Title"))
+    .body(div().child("Card Content"))
+    .build(&theme)
+```
+
+### 5.5 组件命名规范
+
+- 组件名：`Aura` + PascalCase → `AuraButton`, `AuraInput`, `AuraDialog`
+- Builder 方法：`pub fn new(...) -> Self` 构造函数，`.variant()` / `.size()` 配置方法
+- 快捷方法：`.primary()` = `.variant(ButtonVariant::Primary)`，`.small()` = `.size(ButtonSize::Small)`
+- 构建方法：`.build(&theme) -> impl IntoElement`
+
+---
+
+## 六、设计 Token 体系
+
+### 6.1 色板
+
+```
+Primary:   #409EFF (Blue)   | Hover: #79BBFF  | Active: #337ECC
+Success:   #67C23A (Green)  | Hover: #85CE61  | Active: #529B2E
+Warning:   #E6A23C (Orange) | Hover: #EBB563  | Active: #CF9236
+Danger:    #F56C6C (Red)    | Hover: #F78989  | Active: #DC5959
+Info:      #909399 (Gray)   | Hover: #A6A9AD  | Active: #73767A
+
+Text Primary:    #303133     Background: #FFFFFF
+Text Secondary:  #909399     Border:     #DCDFE6
+Text Disabled:   #C0C4CC
+```
+
+### 6.2 间距
+
+```
+xs:  4px    sm:  8px    md: 12px
+lg: 20px    xl: 32px
+```
+
+### 6.3 圆角
+
+```
+sm:   2px    md:   4px
+lg:   8px    full: 9999px (胶囊)
+```
+
+### 6.4 字号
+
+```
+xs: 10px    sm: 12px    md: 14px
+lg: 16px    xl: 20px
+```
+
+### 6.5 组件尺寸
+
+| Size | Height | Padding X | Font |
+|------|--------|-----------|------|
+| Small | 24px | 8px | xs(10px) |
+| Default | 32px | 15px | md(14px) |
+| Large | 40px | 19px | lg(16px) |
+
+---
+
+## 七、技术难点与解决方案
+
+### 7.1 Popper/Popup 弹出定位
+
+| 难点 | 方案 |
+|------|------|
+| 绝对定位（脱离布局流） | **Portal 机制**：将弹出内容渲染到窗口根节点而非父元素内 |
+| 锚点坐标计算 | **Anchor Trait**：通过 `window.bounds_for_element(anchor_id)` 获取锚点相对窗口坐标 |
+| 边缘溢出检测 | **ViewportBoundary**：计算弹出框与窗口四边的距离，自动翻转方向 |
+| Z-Index 层级 | **ZIndexStack**：全局 `u32` 递增栈，popup=+100, modal=+200, notification=+300, tooltip=+400 |
+| 点击外部关闭 | **ClickOutside**：全局 click 事件监听，判断目标是否在弹出元素内 |
+| 焦点锁定 | **FocusTrap**：弹出层内 Tab 键循环（first/last focusable element） |
+
+### 7.2 表单校验
+
+参照 Element-Plus 的 `async-validator`：
+
+```rust
+pub struct FormRule {
+    pub required: bool,
+    pub min: Option<f64>,
+    pub max: Option<f64>,
+    pub pattern: Option<Regex>,
+    pub validator: Option<Box<dyn Fn(&str) -> Result<(), String>>>,
+    pub message: String,
+    pub trigger: ValidationTrigger, // Change | Blur | Submit
+}
+```
+
+### 7.3 Table 虚拟滚动
+
+- GPUI 已有 `UniformList` 支持等高的虚拟列表
+- Table 需要在此基础上支持**不等高行**和**固定列**
+- 方案：按列拆分为多个 `UniformList`，横向滚动时同步位移
+
+### 7.4 国际化 (i18n)
+
+- `AuraConfig` 中扩展 `locale: AuraLocale`
+- 组件内部文案从 `cx.global::<AuraConfig>().locale` 读取
+- 预设 `zh-CN` / `en-US` 语言包
+
+---
+
+## 八、测试策略
+
+| 层级 | 工具 | 覆盖目标 |
+|------|------|---------|
+| 单元测试 | `cargo test` | Theme 计算、工具函数、组件逻辑 |
+| 组件测试 | GPUI TestApp | 组件渲染正确性、交互行为 |
+| 视觉回归 | 截图对比 | 组件在不同主题/尺寸下的视觉一致性 |
+| 集成测试 | `aura-gallery` | 手动验证全部组件交互 |
+
+---
+
+## 九、里程碑与交付计划
+
+| 阶段 | 组件数 | 预计周期 | 交付物 |
+|------|--------|---------|--------|
+| P0 Foundation | — | ✅ 已完成 | Workspace + Theme + Config + Button |
+| P1 Basic | 13 | 2-3 周 | Icon/Link/Text/Layout/Space/Divider/Row/Col/Container/Scrollbar |
+| P2 Form | 10 | 3-4 周 | Input/InputNumber/Switch/Checkbox/Radio/Select/Slider/Form/Rate |
+| P3 Popper+Feedback | 13 | 4-5 周 ⚠️ | Popper 基建 + Tooltip/Dialog/Drawer/Message/Dropdown/Popover/Popconfirm |
+| P4 Navigation+Data | 20 | 3-4 周 | Menu/Tabs/Steps/Progress/Skeleton/Tree/Pagination+ |
+| P5 Advanced | 20 | 6-8 周 ⚠️ | Table/DatePicker/Upload/Carousel/Cascader+ |
+| P6 Engineering | — | 3-4 周 | Docs/Gallery/Test/CI/Release |
+| **合计** | **76+** | **约 6 个月** | 完整企业级组件库 |
+
+---
+
+## 十、附录
+
+### A. 参考资源
+
+- [Element-Plus 官网](https://element-plus.org/zh-CN/)
+- [Element-Plus GitHub](https://github.com/element-plus/element-plus)
+- [GPUI 官网](https://gpui.rs)
+- [Zed Editor GitHub](https://github.com/zed-industries/zed)
+- [GPUI Hello World 示例](https://github.com/zed-industries/zed/blob/main/crates/gpui/examples/hello_world.rs)
+
+### B. 文件清单
+
+| 文件 | 说明 |
+|------|------|
+| `Cargo.toml` | Workspace 根配置 |
+| `crates/aura-core/src/lib.rs` | AuraConfig, Global, AuraContextExt, init_aura, Z-Index |
+| `crates/aura-theme/src/lib.rs` | AuraTheme, Design Tokens, ButtonVariant/Size |
+| `crates/aura-components/src/button.rs` | AuraButton 组件 |
+| `crates/aura-icons/src/lib.rs` | AuraIcon trait, IconSize |
+| `apps/aura-gallery/src/main.rs` | Gallery 展示应用 |
+| `architecture-design.md` | 本文档 |
+| `structure.txt` | 目录结构速览 |
+| `chat.txt` | 初始调研对话记录 |

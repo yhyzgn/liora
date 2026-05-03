@@ -1,0 +1,13 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/aura-core",
+    "crates/aura-theme",
+    "crates/aura-components",
+    "crates/aura-icons",
+    "apps/aura-gallery",
+]
+
+[workspace.dependencies]
+gpui = { git = "https://github.com/zed-industries/zed", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", default-features = false }

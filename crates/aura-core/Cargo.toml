@@ -1,0 +1,8 @@
+[package]
+name = "aura-core"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+gpui.workspace = true
+aura-theme = { path = "../aura-theme" }
