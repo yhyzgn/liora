@@ -18,6 +18,10 @@ impl Row {
     pub fn child(mut self, child: impl IntoElement) -> Self {
         self.children.push(child.into_any_element()); self
     }
+    /// Add multiple columns at once.
+    pub fn columns(mut self, cols: Vec<impl IntoElement>) -> Self {
+        self.children.extend(cols.into_iter().map(|c| c.into_any_element())); self
+    }
 }
 
 impl RenderOnce for Row {
