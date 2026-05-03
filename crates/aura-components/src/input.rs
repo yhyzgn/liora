@@ -286,7 +286,9 @@ impl Element for InputElement {
         let font_size = style.font_size.to_pixels(window.rem_size());
         let line = window.text_system().shape_line(display, font_size, &runs, None);
         let cursor_pos = line.x_for_index(cursor);
-        let (selection, cursor_quad) = if selected.is_empty() {
+        let (selection, cursor_quad) = if input.value.is_empty() {
+            (None, None)
+        } else if selected.is_empty() {
             (None, Some(fill(Bounds::new(point(bounds.left() + cursor_pos, bounds.top()), size(px(2.), bounds.bottom() - bounds.top())), gpui::blue())))
         } else {
             (Some(fill(Bounds::from_corners(point(bounds.left() + line.x_for_index(selected.start), bounds.top()), point(bounds.left() + line.x_for_index(selected.end), bounds.bottom())), gpui::rgba(0x3311ff30))), None)
