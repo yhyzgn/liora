@@ -58,10 +58,14 @@ impl AuraLink {
         let fs = theme.font_size.md;
         let icon_sz = 14.0;
 
+        let id = SharedString::from(format!(
+            "aura-link:{}:{}", self.creation_site, self.label
+        ));
+
         let mut div = gpui::div()
             .flex().flex_row().items_center().gap_1()
             .text_size(px(fs)).text_color(color)
-            .id("aura-link");
+            .id(id);
 
         if !self.disabled { div = div.cursor_pointer(); }
         else { div = div.cursor_not_allowed(); }
