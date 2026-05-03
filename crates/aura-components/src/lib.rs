@@ -5,6 +5,8 @@ pub mod title;
 pub mod paragraph;
 pub mod space;
 pub mod divider;
+pub mod row;
+pub mod col;
 
 pub use button::*;
 pub use link::*;
@@ -13,3 +15,5 @@ pub use title::*;
 pub use paragraph::*;
 pub use space::*;
 pub use divider::*;
+pub use row::*;
+pub use col::*;
