@@ -48,21 +48,21 @@ impl RenderOnce for Container {
         }
 
         // Body: aside + main
-        let mut body = gpui::div().flex().flex_1().flex_row().overflow_hidden();
+        let mut body = gpui::div().flex().flex_1().flex_row();
         if let Some(a) = self.aside {
             let aside_el = gpui::div()
                 .flex_none().w(px(aside_w)).h_full()
                 .border_r_1().border_color(theme.neutral.border)
                 .child(a);
             if self.aside_right {
-                body = body.child(gpui::div().flex_1().flex().flex_col().overflow_hidden().children(self.main));
+                body = body.child(gpui::div().flex_1().flex().flex_col().children(self.main));
                 body = body.child(aside_el);
             } else {
                 body = body.child(aside_el);
-                body = body.child(gpui::div().flex_1().flex().flex_col().overflow_hidden().children(self.main));
+                body = body.child(gpui::div().flex_1().flex().flex_col().children(self.main));
             }
         } else {
-            body = body.child(gpui::div().flex_1().flex().flex_col().overflow_hidden().children(self.main));
+            body = body.child(gpui::div().flex_1().flex().flex_col().children(self.main));
         }
         page = page.child(body);
 
