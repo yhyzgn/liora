@@ -1,4 +1,4 @@
-use gpui::{prelude::*, px, IntoElement, App, Component, ScrollHandle, RenderOnce, Window};
+use gpui::{prelude::*, px, IntoElement, App, Component, RenderOnce, Window};
 
 pub struct Scrollbar {
     height: Option<f32>,
