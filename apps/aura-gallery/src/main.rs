@@ -14,10 +14,8 @@ fn run_gallery() {
         init_aura(cx, AuraTheme::light());
         cx.open_window(
             WindowOptions {
-                window_bounds: Some(WindowBounds::Windowed(Bounds::centered(
-                    None,
-                    size(px(1920.0), px(1080.0)),
-                    cx,
+                window_bounds: Some(WindowBounds::Maximized(Bounds::centered(
+                    None, size(px(1200.0), px(800.0)), cx,
                 ))),
                 ..Default::default()
             },
@@ -65,6 +63,8 @@ impl Render for Gallery {
             .bg(theme.neutral.body)
             .gap_4()
             .p_8()
+            .id("gallery-body")
+            .overflow_y_scroll()
             .child(header);
         for entry in &registry {
             body = body.child(
