@@ -1,5 +1,4 @@
 use aura_core::AuraConfig;
-use aura_icons::AuraIcon;
 use aura_icons_lucide::IconName;
 use aura_theme::{AuraTheme, ButtonSize, ButtonVariant, ButtonVariantColors};
 use gpui::{
@@ -10,6 +9,12 @@ use std::panic::Location;
 
 fn rgba(r: u8, g: u8, b: u8, a: f32) -> Hsla {
     Rgba { r: r as f32 / 255.0, g: g as f32 / 255.0, b: b as f32 / 255.0, a }.into()
+}
+
+fn icon_svg(icon: IconName, size: f32) -> gpui::Svg {
+    gpui::svg()
+        .external_path(icon.svg_path())
+        .size(px(size))
 }
 
 pub struct AuraButton {
@@ -114,17 +119,17 @@ impl AuraButton {
 
         if self.loading {
             let sz = icon_sz;
-            children.push(Box::new(move || AuraIcon::new(IconName::LoaderCircle).size(sz).color(c.text).into_any_element()));
+            children.push(Box::new(move || icon_svg(IconName::LoaderCircle, sz).into_any_element()));
             children.push(Box::new(move || gpui::div().child(self.label.clone()).into_any_element()));
         } else {
             if let Some(icon) = self.icon_start {
                 let sz = icon_sz;
-                children.push(Box::new(move || AuraIcon::new(icon).size(sz).color(c.text).into_any_element()));
+                children.push(Box::new(move || icon_svg(icon, sz).into_any_element()));
             }
             children.push(Box::new(move || gpui::div().child(self.label.clone()).into_any_element()));
             if let Some(icon) = self.icon_end {
                 let sz = icon_sz;
-                children.push(Box::new(move || AuraIcon::new(icon).size(sz).color(c.text).into_any_element()));
+                children.push(Box::new(move || icon_svg(icon, sz).into_any_element()));
             }
         }
 
