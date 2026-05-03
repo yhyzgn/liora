@@ -29,11 +29,12 @@ impl AuraButton {
         self
     }
 
-    pub fn primary(mut self) -> Self { self.variant = ButtonVariant::Primary; self }
-    pub fn success(mut self) -> Self { self.variant = ButtonVariant::Success; self }
-    pub fn warning(mut self) -> Self { self.variant = ButtonVariant::Warning; self }
-    pub fn danger(mut self) -> Self  { self.variant = ButtonVariant::Danger; self }
-    pub fn info(mut self) -> Self    { self.variant = ButtonVariant::Info; self }
+    pub fn primary(mut self) -> Self   { self.variant = ButtonVariant::Primary; self }
+    pub fn tertiary(mut self) -> Self  { self.variant = ButtonVariant::Tertiary; self }
+    pub fn info(mut self) -> Self      { self.variant = ButtonVariant::Info; self }
+    pub fn success(mut self) -> Self   { self.variant = ButtonVariant::Success; self }
+    pub fn warning(mut self) -> Self   { self.variant = ButtonVariant::Warning; self }
+    pub fn danger(mut self) -> Self    { self.variant = ButtonVariant::Danger; self }
 
     pub fn size(mut self, size: ButtonSize) -> Self { self.size = size; self }
 

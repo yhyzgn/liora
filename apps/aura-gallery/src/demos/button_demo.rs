@@ -7,15 +7,17 @@ pub fn render(theme: &AuraTheme) -> AnyElement {
         .flex()
         .flex_col()
         .gap_3()
-        .child(section_header(theme, "Variants 按钮变体"))
+        .child(section_header(theme, "Types 按钮类型"))
         .child(demo_row(
             theme,
             vec![
+                AuraButton::new("Default").build(theme),
+                AuraButton::new("Tertiary").tertiary().build(theme),
                 AuraButton::new("Primary").primary().build(theme),
+                AuraButton::new("Info").info().build(theme),
                 AuraButton::new("Success").success().build(theme),
                 AuraButton::new("Warning").warning().build(theme),
-                AuraButton::new("Danger").danger().build(theme),
-                AuraButton::new("Info").info().build(theme),
+                AuraButton::new("Error").danger().build(theme),
             ],
         ))
         .child(section_header(theme, "Sizes 尺寸"))
@@ -31,16 +33,9 @@ pub fn render(theme: &AuraTheme) -> AnyElement {
         .child(demo_row(
             theme,
             vec![
-                AuraButton::new("Disabled").primary().disabled(true).build(theme),
-                AuraButton::new("Loading").primary().loading(true).build(theme),
-            ],
-        ))
-        .child(section_header(theme, "Plain 朴素按钮"))
-        .child(demo_row(
-            theme,
-            vec![
-                AuraButton::new("Default").build(theme),
-                AuraButton::new("Plain Primary").primary().build(theme),
+                AuraButton::new("Primary Disabled").primary().disabled(true).build(theme),
+                AuraButton::new("Primary Loading").primary().loading(true).build(theme),
+                AuraButton::new("Default Disabled").disabled(true).build(theme),
             ],
         ))
         .into_any_element()

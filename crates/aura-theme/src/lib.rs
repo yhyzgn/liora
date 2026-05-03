@@ -356,11 +356,20 @@ impl AuraTheme {
                 text_hover: self.primary.base,
                 border_hover: self.primary.base,
             },
+            ButtonVariant::Tertiary => ButtonVariantColors {
+                bg: self.secondary.bg,
+                hover_bg: self.secondary.hover,
+                active_bg: self.secondary.pressed,
+                text: self.neutral.text_2,
+                border: rgba(0, 0, 0, 0.0),
+                text_hover: self.neutral.text_1,
+                border_hover: rgba(0, 0, 0, 0.0),
+            },
             ButtonVariant::Primary => self.filled_colors(&self.primary),
+            ButtonVariant::Info => self.filled_colors(&self.info),
             ButtonVariant::Success => self.filled_colors(&self.success),
             ButtonVariant::Warning => self.filled_colors(&self.warning),
             ButtonVariant::Danger => self.filled_colors(&self.danger),
-            ButtonVariant::Info => self.filled_colors(&self.info),
         }
     }
 
@@ -384,11 +393,12 @@ impl AuraTheme {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ButtonVariant {
     Default,
+    Tertiary,
     Primary,
+    Info,
     Success,
     Warning,
     Danger,
-    Info,
 }
 
 pub struct ButtonVariantColors {
