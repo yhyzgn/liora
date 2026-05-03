@@ -30,9 +30,9 @@ impl AuraIcon {
         let sz = self.size.unwrap_or(18.0);
         let color = self.color.unwrap_or(theme.neutral.icon);
 
-        gpui::div()
+        gpui::svg()
+            .external_path(self.asset_path)
             .size(px(sz))
             .text_color(color)
-            .child(gpui::svg().external_path(self.asset_path))
     }
 }
