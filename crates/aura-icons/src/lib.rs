@@ -42,8 +42,5 @@ impl RenderOnce for AuraIcon {
 
 impl IntoElement for AuraIcon {
     type Element = Component<Self>;
-
-    fn into_element(self) -> Self::Element {
-        Component::new(self)
-    }
+    fn into_element(self) -> Self::Element { Component::new(self) }
 }
