@@ -290,7 +290,7 @@ impl Element for InputElement {
         let font_size = style.font_size.to_pixels(window.rem_size());
         let line = window.text_system().shape_line(display, font_size, &runs, None);
         let cursor_pos = line.x_for_index(cursor);
-        let cursor_h = (bounds.bottom() - bounds.top()) * 0.5;
+        let cursor_h = (bounds.bottom() - bounds.top()) * 0.65;
         let cursor_top = bounds.top() + (bounds.bottom() - bounds.top() - cursor_h) / 2.0;
         let (selection, cursor_quad) = if selected.is_empty() {
             (None, Some(fill(Bounds::new(point(bounds.left() + cursor_pos, cursor_top), size(px(2.), cursor_h)), theme.primary.base)))
