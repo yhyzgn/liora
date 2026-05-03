@@ -1,4 +1,5 @@
 use gpui::{prelude::*, px, IntoElement, App, Component, RenderOnce, Window};
+use crate::Row;
 
 pub struct Col {
     span: u8,
@@ -9,6 +10,14 @@ impl Col {
     pub fn new(span: u8) -> Self { Self { span: span.min(24), children: vec![] } }
     pub fn child(mut self, child: impl IntoElement) -> Self {
         self.children.push(child.into_any_element()); self
+    }
+    /// Add a nested row.
+    pub fn row(mut self, row: Row) -> Self {
+        self.children.push(row.into_any_element()); self
+    }
+    /// Add multiple nested rows.
+    pub fn rows(mut self, rows: Vec<Row>) -> Self {
+        self.children.extend(rows.into_iter().map(|r| r.into_any_element())); self
     }
 }
 
