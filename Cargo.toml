@@ -1,5 +1,6 @@
 [workspace]
 resolver = "2"
+default-members = ["apps/aura-gallery"]
 members = [
     "crates/aura-core",
     "crates/aura-theme",
