@@ -23,6 +23,7 @@ pub struct Gallery {
     input_icon: Entity<Input>,
     input_clearable: Entity<Input>,
     input_disabled: Entity<Input>,
+    textarea: Entity<Input>,
 }
 
 fn run_gallery() {
@@ -48,11 +49,12 @@ fn run_gallery() {
                 let input_icon = cx.new(|cx| Input::new("", cx).placeholder("Search").icon_prefix(IconName::Search).clearable(true));
                 let input_clearable = cx.new(|cx| Input::new("Clear me", cx).clearable(true));
                 let input_disabled = cx.new(|cx| Input::new("Disabled", cx).disabled(true));
+                let textarea = cx.new(|cx| Input::new("", cx).placeholder("Multi-line textarea..."));
                 cx.new(|_| Gallery {
                     switch_demo_on: switch_on, switch_demo_off: switch_off, switch_demo_disabled: switch_disabled,
                     cb_checked, cb_unchecked, cb_labeled, cb_disabled,
                     radio_group,
-                    input_plain, input_placeholder, input_icon, input_clearable, input_disabled,
+                    input_plain, input_placeholder, input_icon, input_clearable, input_disabled, textarea,
                 })
             },
         ).unwrap();
@@ -127,7 +129,8 @@ impl Render for Gallery {
                     .child(self.input_placeholder.clone())
                     .child(self.input_icon.clone())
                     .child(self.input_clearable.clone())
-                    .child(self.input_disabled.clone()))
+                    .child(self.input_disabled.clone())
+                    .child(self.textarea.clone()))
         );
 
         body

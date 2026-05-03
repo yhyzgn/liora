@@ -14,7 +14,7 @@ fn rgba(r: u8, g: u8, b: u8, a: f32) -> Hsla {
     Rgba { r: r as f32 / 255.0, g: g as f32 / 255.0, b: b as f32 / 255.0, a }.into()
 }
 
-actions!(input, [Backspace, Delete, Left, Right, Home, End, SelectAll]);
+actions!(input, [Backspace, Delete, Left, Right, Home, End, SelectAll, Enter]);
 
 pub struct Input {
     value: SharedString,
@@ -52,6 +52,7 @@ impl Input {
             KeyBinding::new("left", Left, None),            KeyBinding::new("right", Right, None),
             KeyBinding::new("home", Home, None),            KeyBinding::new("end", End, None),
             KeyBinding::new("cmd-a", SelectAll, None),
+            KeyBinding::new("enter", Enter, None),
         ]);
     }
 
@@ -126,6 +127,10 @@ impl Input {
             self.value.len()
         };
         self.move_to(idx, cx);
+    }
+
+    fn enter(&mut self, _: &Enter, _: &mut Window, cx: &mut Context<Self>) {
+        self.internal_replace("\n", cx);
     }
 
     fn internal_replace(&mut self, new_text: &str, cx: &mut Context<Self>) {
@@ -350,7 +355,8 @@ impl Render for Input {
                 .on_action(cx.listener(Self::right))
                 .on_action(cx.listener(Self::home))
                 .on_action(cx.listener(Self::end))
-                .on_action(cx.listener(Self::select_all));
+                .on_action(cx.listener(Self::select_all))
+                .on_action(cx.listener(Self::enter));
         }
 
         if let Some(icon) = self.icon_prefix {
