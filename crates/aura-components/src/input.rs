@@ -339,7 +339,7 @@ impl Element for InputElement {
             let shaped = window.text_system().shape_line(display, font_size, &runs, None);
 
             // Cursor on this line?
-            if i == cursor_line && input.selected_range.is_empty() && !input.value.is_empty() {
+            if i == cursor_line && input.selected_range.is_empty() {
                 let col = cursor_offset - byte_offset;
                 let x = shaped.x_for_index(col);
                 let ch = font_size; // fixed cursor height = font size
