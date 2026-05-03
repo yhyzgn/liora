@@ -114,20 +114,17 @@ fn sizes() -> Vec<impl IntoElement> {
 
 fn icons() -> Vec<impl IntoElement> {
     vec![
-        AuraButton::new("Search")
-            .primary()
-            .icon_start(IconName::Search),
-        AuraButton::new("Settings")
-            .primary()
-            .icon_start(IconName::Settings),
+        AuraButton::new("Search").primary().icon_start(IconName::Search),
+        AuraButton::new("Settings").primary().icon_start(IconName::Settings),
         AuraButton::new("Done").success().icon_end(IconName::Check),
         AuraButton::new("Delete").danger().icon_end(IconName::X),
-        AuraButton::new("Home")
-            .tertiary()
-            .icon_start(IconName::House),
-        AuraButton::new("External")
-            .tertiary()
-            .icon_end(IconName::ArrowRight),
+        AuraButton::new("Home").tertiary().icon_start(IconName::House),
+        AuraButton::new("External").tertiary().icon_end(IconName::ArrowRight),
+        AuraButton::new("Upload").info().icon_top(IconName::ArrowUp),
+        AuraButton::new("Download").info().icon_bottom(IconName::ArrowDown),
+        AuraButton::new("").primary().icon_only(IconName::Search),
+        AuraButton::new("").danger().icon_only(IconName::X),
+        AuraButton::new("").success().icon_only(IconName::Check),
     ]
 }
 

@@ -31,6 +31,9 @@ pub struct AuraButton {
     id: Option<ElementId>,
     icon_start: Option<IconName>,
     icon_end: Option<IconName>,
+    icon_top: Option<IconName>,
+    icon_bottom: Option<IconName>,
+    icon_only: Option<IconName>,
     creation_site: &'static Location<'static>,
 }
 
@@ -50,6 +53,9 @@ impl AuraButton {
             id: None,
             icon_start: None,
             icon_end: None,
+            icon_top: None,
+            icon_bottom: None,
+            icon_only: None,
             creation_site: Location::caller(),
         }
     }
@@ -129,6 +135,18 @@ impl AuraButton {
         self.icon_end = Some(icon);
         self
     }
+    pub fn icon_top(mut self, icon: IconName) -> Self {
+        self.icon_top = Some(icon);
+        self
+    }
+    pub fn icon_bottom(mut self, icon: IconName) -> Self {
+        self.icon_bottom = Some(icon);
+        self
+    }
+    pub fn icon_only(mut self, icon: IconName) -> Self {
+        self.icon_only = Some(icon);
+        self
+    }
 
     fn colors(&self, theme: &AuraTheme) -> ButtonVariantColors {
         if self.disabled {
@@ -182,20 +200,33 @@ impl AuraButton {
         let id = self.id.clone().unwrap_or_else(|| self.auto_id());
         let icon_sz = self.icon_size();
 
+        let icon_only = self.icon_only.is_some();
+        let vertical = self.icon_top.is_some() || self.icon_bottom.is_some() || icon_only;
+
+        let label = self.label.clone();
         let hover_group = SharedString::from(format!("{}:hover", id));
 
         let mut div = gpui::div()
             .flex()
-            .flex_row()
             .justify_center()
             .items_center()
             .gap_1()
             .h(px(h))
-            .px(px(px_h))
             .rounded(px(r))
             .bg(c.bg)
             .text_color(c.text)
             .text_size(px(fs));
+
+        if vertical {
+            div = div.flex_col();
+            if !icon_only { div = div.px(px(px_h)); }
+        } else {
+            div = div.flex_row().px(px(px_h));
+        }
+
+        if icon_only {
+            div = div.size(px(h)).w(px(h)); // square button
+        }
 
         if !self.disabled {
             div = div.cursor_pointer();
@@ -206,49 +237,70 @@ impl AuraButton {
             div = div.border_1().border_color(c.border);
         }
         if self.disabled {
-            return div.child(self.label.clone()).into_any_element();
+            if let Some(icon) = self.icon_only {
+                let sz = icon_sz * 2.0;
+                let group = hover_group.clone();
+                return div.child(
+                    AuraIcon::new(icon).size(sz).color(c.text)
+                        .group_hover_color(group, c.text_hover)
+                ).into_any_element();
+            }
+            return div.child(label.clone()).into_any_element();
         }
 
-        // Build children: [icon_start] label|loader [icon_end]
+        // Build children: icons + label
         let mut children: Vec<Box<dyn FnOnce() -> gpui::AnyElement>> = Vec::new();
 
-        if self.loading {
+        if icon_only {
+            let icon = self.icon_only.unwrap();
+            let sz = icon_sz * 2.0;
+            let group = hover_group.clone();
+            children.push(Box::new(move || {
+                AuraIcon::new(icon).size(sz).color(c.text)
+                    .group_hover_color(group, c.text_hover).into_any_element()
+            }));
+        } else if self.loading {
             let sz = icon_sz;
             let group = hover_group.clone();
             children.push(Box::new(move || {
-                AuraIcon::new(IconName::LoaderCircle)
-                    .size(sz)
-                    .color(c.text)
-                    .group_hover_color(group, c.text_hover)
-                    .into_any_element()
+                AuraIcon::new(IconName::LoaderCircle).size(sz).color(c.text)
+                    .group_hover_color(group, c.text_hover).into_any_element()
             }));
-            children.push(Box::new(move || {
-                gpui::div().child(self.label.clone()).into_any_element()
-            }));
+            children.push(Box::new(move || gpui::div().child(label.clone()).into_any_element()));
         } else {
-            if let Some(icon) = self.icon_start {
-                let sz = icon_sz;
-                let group = hover_group.clone();
+            let lbl = label.clone();
+            // icon_top
+            if let Some(icon) = self.icon_top {
+                let sz = icon_sz; let group = hover_group.clone();
                 children.push(Box::new(move || {
-                    AuraIcon::new(icon)
-                        .size(sz)
-                        .color(c.text)
-                        .group_hover_color(group, c.text_hover)
-                        .into_any_element()
+                    AuraIcon::new(icon).size(sz).color(c.text)
+                        .group_hover_color(group, c.text_hover).into_any_element()
                 }));
             }
-            children.push(Box::new(move || {
-                gpui::div().child(self.label.clone()).into_any_element()
-            }));
-            if let Some(icon) = self.icon_end {
-                let sz = icon_sz;
-                let group = hover_group.clone();
+            // icon_start
+            if let Some(icon) = self.icon_start {
+                let sz = icon_sz; let group = hover_group.clone();
                 children.push(Box::new(move || {
-                    AuraIcon::new(icon)
-                        .size(sz)
-                        .color(c.text)
-                        .group_hover_color(group, c.text_hover)
-                        .into_any_element()
+                    AuraIcon::new(icon).size(sz).color(c.text)
+                        .group_hover_color(group, c.text_hover).into_any_element()
+                }));
+            }
+            // label
+            children.push(Box::new(move || gpui::div().child(lbl).into_any_element()));
+            // icon_end
+            if let Some(icon) = self.icon_end {
+                let sz = icon_sz; let group = hover_group.clone();
+                children.push(Box::new(move || {
+                    AuraIcon::new(icon).size(sz).color(c.text)
+                        .group_hover_color(group, c.text_hover).into_any_element()
+                }));
+            }
+            // icon_bottom
+            if let Some(icon) = self.icon_bottom {
+                let sz = icon_sz; let group = hover_group.clone();
+                children.push(Box::new(move || {
+                    AuraIcon::new(icon).size(sz).color(c.text)
+                        .group_hover_color(group, c.text_hover).into_any_element()
                 }));
             }
         }
