@@ -13,6 +13,7 @@ pub mod splitter;
 pub mod switch;
 pub mod checkbox;
 pub mod radio;
+pub mod radio_group;
 
 pub use button::*;
 pub use link::*;
@@ -29,3 +30,4 @@ pub use splitter::*;
 pub use switch::*;
 pub use checkbox::*;
 pub use radio::*;
+pub use radio_group::*;
