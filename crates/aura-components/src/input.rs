@@ -119,6 +119,15 @@ impl Input {
         }
     }
 
+    fn on_mouse_down(&mut self, event: &MouseDownEvent, _: &mut Window, cx: &mut Context<Self>) {
+        if let (Some(bounds), Some(line)) = (self.last_bounds.as_ref(), self.last_layout.as_ref()) {
+            let x = event.position.x - bounds.left();
+            if let Some(idx) = line.index_for_x(x) {
+                self.move_to(idx, cx);
+            }
+        }
+    }
+
     fn internal_replace(&mut self, new_text: &str, cx: &mut Context<Self>) {
         let range = self.selected_range.clone();
         let mut v = self.value.to_string();
@@ -332,6 +341,7 @@ impl Render for Input {
             let fh2 = fh.clone();
             row = row
                 .on_mouse_down(MouseButton::Left, move |_, window, cx| { window.focus(&fh2, cx); })
+                .on_mouse_down(MouseButton::Left, cx.listener(Self::on_mouse_down))
                 .on_key_down(cx.listener(Self::on_key_down))
                 .on_action(cx.listener(Self::backspace))
                 .on_action(cx.listener(Self::delete))
