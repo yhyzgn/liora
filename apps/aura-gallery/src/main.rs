@@ -6,13 +6,12 @@ use aura_theme::AuraTheme;
 use gpui::{
     App, Bounds, Context, Render, Window, WindowBounds, WindowOptions, div, prelude::*, px, size,
 };
+use gpui_platform::application;
 
 pub struct Gallery;
 
 fn run_gallery() {
-    gpui_platform::application()
-        .with_assets(aura_icons_lucide::create_asset_source())
-        .run(|cx: &mut App| {
+    gpui_platform::application().run(|cx: &mut App| {
             init_aura(cx, AuraTheme::light());
             cx.open_window(
             WindowOptions {

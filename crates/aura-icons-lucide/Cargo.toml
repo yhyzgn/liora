@@ -5,5 +5,3 @@ edition = "2024"
 
 [dependencies]
 aura-icons = { path = "../aura-icons" }
-gpui.workspace = true
-anyhow = "1"

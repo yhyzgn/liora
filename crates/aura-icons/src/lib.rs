@@ -33,6 +33,6 @@ impl AuraIcon {
         gpui::div()
             .size(px(sz))
             .text_color(color)
-            .child(gpui::svg().path(self.asset_path))
+            .child(gpui::svg().external_path(self.asset_path))
     }
 }
