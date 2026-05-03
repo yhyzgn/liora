@@ -25,3 +25,23 @@
 - 组件与主题解耦: `.build(&theme)` 显式传入
 - Demo 返回 `AnyElement` 用于注册表类型统一
 - 库 crate 不启用 GPUI 平台 features
+
+## Session 2 — 2026-05-03
+
+### Actions
+- 调查 AuraButton hover/pressed 交互不生效问题。
+- 移除 `AuraButton` 的双路径实现中过度复杂的 `Render` + 手写 `is_pressed` 状态路径，保留 `.build(&theme)` 的 theme-explicit builder 模式。
+- 为 Button 添加可选 `.id(...)` builder；默认使用调用位置 + label 生成稳定 GPUI element id，供 `.hover()` / `.active()` 状态追踪使用。
+- 修正按钮主题色：filled variant 的 hover 比 base 稍暗，active 比 hover 更深；Default 透明按钮现在有可见 hover/active overlay。
+- 添加 aura-theme 单元测试锁定 hover/active 背景层级。
+
+### Key Discoveries
+- Gallery Demo 实际调用 `AuraButton::build(theme)`，之前 `impl Render for AuraButton` 的手写 pressed 状态是死路径。
+- GPUI 0.2.2 的 `.active()` 是 `StatefulInteractiveElement` 样式能力，需要 `.id(...)` 后使用；不需要组件自己维护 `is_pressed`。
+- 之前每次 build/render 使用全局递增 id 会让交互状态难以稳定追踪；稳定 id 更符合 GPUI 的 element state 模型。
+- Primary hover 原本使用 theme `family.hover`，在当前 NaiveUI token 下比 base 更亮，不满足“hover 暗一点”的需求；Default 原本 hover/active 背景全透明。
+
+### Verification
+- `cargo test -p aura-theme` passed: 2 tests.
+- `cargo check` passed; existing aura-gallery dead_code warnings remain.
+- `timeout 5s cargo run -p aura-gallery` compiled successfully, then failed to open a window in tmux due to GPUI Linux `NoCompositor` (environment/display issue, not compile issue).

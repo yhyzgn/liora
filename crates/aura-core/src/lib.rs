@@ -1,4 +1,4 @@
-use gpui::{prelude::*, App, Context, Global, Hsla};
+use gpui::{App, Context, Global, Hsla, prelude::*};
 
 pub use aura_theme::AuraTheme;
 

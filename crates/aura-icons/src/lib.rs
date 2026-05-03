@@ -1,4 +1,4 @@
-use gpui::{prelude::*, Hsla, px, Styled};
+use gpui::{Hsla, Styled, prelude::*, px};
 
 pub trait AuraIcon: IntoElement + Styled + Sized {
     fn icon_size(self, size: IconSize) -> Self {

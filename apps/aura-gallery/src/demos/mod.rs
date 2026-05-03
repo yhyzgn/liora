@@ -1,7 +1,7 @@
 pub mod button_demo;
 
-use gpui::AnyElement;
 use aura_theme::AuraTheme;
+use gpui::AnyElement;
 
 pub struct DemoEntry {
     pub name: &'static str,
@@ -10,7 +10,9 @@ pub struct DemoEntry {
 }
 
 pub fn registry() -> Vec<DemoEntry> {
-    vec![
-        DemoEntry { name: "Button 按钮", description: "常用的操作按钮", render: button_demo::render },
-    ]
+    vec![DemoEntry {
+        name: "Button 按钮",
+        description: "常用的操作按钮",
+        render: button_demo::render,
+    }]
 }
