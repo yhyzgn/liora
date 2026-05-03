@@ -240,7 +240,7 @@ impl AuraTheme {
                 text_3: rgb(118, 124, 130),
                 text_disabled: rgba(194, 194, 194, 1.0),
                 placeholder: rgba(194, 194, 194, 1.0),
-                icon: rgba(194, 194, 194, 1.0),
+                icon: rgba(24, 160, 88, 1.0),
 
                 border: rgb(224, 224, 230),
                 divider: rgb(239, 239, 245),

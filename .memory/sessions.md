@@ -1,5 +1,34 @@
 # Session History
 
+## Session 3 — 2026-05-03
+
+### Actions
+- 实现完整图标系统（见 icon-design.md）
+- aura-icons: AuraIcon 容器，RenderOnce + IntoElement (Component)
+- aura-icons-lucide: build.rs 代码生成，1,703 Lucide 图标
+- scripts/sync-lucide.sh: 自动克隆 Lucide 仓库同步 SVG
+- AuraIcon 主题色自动从 cx.global::<AuraConfig>() 读取
+- 修复 SVG 渲染：text_color 必须挂 svg() 元素上（不能靠父 div 继承）
+- 修复 GPUI SVG 加载：external_path 走 SvgAsset::load (fs::read 直接读文件系统)
+- 确立 codex 范式：组件 RenderOnce + IntoElement，禁止 .build(theme)
+- 更新 architecture-design.md/prompt.md/.memory/.prompt 文档
+
+### Key Discoveries
+- GPUI SvgAsset::load() 直接 fs::read()，不走 AssetSource 抽象层
+- external_path 渲染需要 style.text.color 在 SVG 元素自身上
+- Lucide 将 home.svg 重命名为 house.svg
+
+## Session 2 — 2026-05-03
+
+### Actions
+- codex 重构 button 为 RenderOnce + IntoElement
+- codex 消除 .build(theme) 传参模式
+- codex 实现按钮内置唯一 ID
+
+### Key Discoveries
+- GPUI RenderOnce 适合无状态一次性组件
+- Component::new() 包装后可直接用于 .child()
+
 ## Session 1 — 2026-05-03
 
 ### Actions

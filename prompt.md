@@ -130,17 +130,26 @@ aura/
 
 ## 5. 关键架构约束
 
-### 5.1 组件 API 风格
+### 5.1 组件 API 风格（codex 范式）
 
 ```rust
-// ✅ 正确 — Builder Pattern + GPUI RenderOnce/IntoElement，主题从 App Global 读取
-AuraButton::new("Save")
-    .primary()
-    .large()
-    .disabled(false)
+// ✅ 正确 — RenderOnce + IntoElement，主题从 cx.global 自动读取
+AuraButton::new("Save").primary().large()
+AuraIcon::new(IconName::House).size(24.0)
 
-// ❌ 错误 — 不要在业务调用处层层传递 theme
-// AuraButton::new("Save").primary().build(&theme)
+// 实现范式
+impl RenderOnce for MyComponent {
+    fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let theme = &cx.global::<AuraConfig>().theme;
+        // ...
+    }
+}
+impl IntoElement for MyComponent {
+    type Element = Component<Self>;
+    fn into_element(self) -> Self::Element { Component::new(self) }
+}
+
+// ❌ 禁止 — .build(theme) 传参模式
 ```
 
 ### 5.2 类型和 Context

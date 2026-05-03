@@ -70,7 +70,8 @@ aura/
 | Crate | 依赖 | 职责 |
 |-------|------|------|
 | `aura-theme` | `gpui` | AuraTheme(亮/暗)、Design Tokens、间距/圆角/字号规范、ButtonVariant/ButtonSize/Colors |
-| `aura-icons` | `gpui` | AuraIcon trait、IconSize、基础图标函数 |
+| `aura-icons` | `gpui`, `aura-core`, `aura-theme` | AuraIcon 容器（RenderOnce + IntoElement）、IntoIconPath trait |
+| `aura-icons-lucide` | `aura-icons` | build.rs 代码生成 → IconName 枚举（1,703 Lucide 图标），实现 IntoIconPath |
 | `aura-core` | `gpui`, `aura-theme` | AuraConfig(Global)、init_aura()、AuraContextExt trait、AuraElement trait、Z-Index 管理器、工具函数 |
 | `aura-components` | `gpui`, `aura-core`, `aura-theme`, `aura-icons` | 全部业务组件（Button/Input/Dialog/Table 等） |
 | `aura-gallery` | `gpui`(default), `gpui_platform`, 全部 aura crates | Native 组件展示应用 |
@@ -487,72 +488,64 @@ Table 是企业级组件库中最复杂、工作量最大的组件。Aura Table 
 
 ## 五、组件 API 设计规范
 
-### 5.1 Builder Pattern（统一 API 风格）
+### 5.1 组件 API 风格（codex 范式）
 
-所有组件遵循 Builder 模式，链式调用：
-
-```rust
-// 基本用法
-AuraButton::new("Save")
-    .primary()
-    .large()
-    .icon(icon_save)
-    .loading(is_saving)
-    .build(&theme)
-
-// 表单组合
-AuraForm::new()
-    .label_width(px(100.0))
-    .child(
-        AuraFormItem::new("用户名")
-            .required(true)
-            .error("用户名不能为空")
-            .child(
-                AuraInput::new(placeholder("请输入用户名"))
-                    .clearable(true)
-                    .build(&theme)
-            )
-    )
-    .build(&theme)
-```
-
-### 5.2 组件构建方法规范
-
-每个组件提供 `.build(&theme)` 或 `.into_element()` 方法将 Builder 转化为 `impl IntoElement`。Builder 本身不持有 GPUI Context，主题通过参数显式传入：
+**强制规则**：所有组件必须实现 `RenderOnce` + `IntoElement`（通过 `Component`），
+**禁止** `.build(theme)` 等显式传参模式。主题通过 `cx.global::<AuraConfig>().theme` 自动读取。
 
 ```rust
-pub struct AuraComponent {
-    // 配置字段
-}
+// ✅ 正确 — codex 范式：RenderOnce + IntoElement
+pub struct MyComponent { /* config */ }
 
-impl AuraComponent {
-    pub fn build(self, theme: &AuraTheme) -> impl IntoElement {
-        // 构建 div 树
+impl RenderOnce for MyComponent {
+    fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let theme = &cx.global::<AuraConfig>().theme;
+        // ... render using theme
     }
 }
 
-// 使用
-fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-    let theme = _cx.aura();
-    div().child(AuraComponent::new(...).build(theme))
+impl IntoElement for MyComponent {
+    type Element = Component<Self>;
+    fn into_element(self) -> Self::Element { Component::new(self) }
 }
+
+// 使用：直接放入 vec![] 或 .child()
+MyComponent::new().size(24.0).primary()
+
+// ❌ 禁止 — 野路子
+MyComponent::new().build(theme)
 ```
+
+### 5.2 图标系统 API
+
+```rust
+// Lucide 内置图标 — 颜色自动从全局主题读取
+AuraIcon::new(IconName::House).size(24.0)                          // 默认图标色
+AuraIcon::new(IconName::Star).color(theme.warning.base)            // 自定义色
+
+// 自定义路径
+AuraIcon::new("/path/to/custom.svg").size(32.0)
+```
+
+**架构**：
+- `aura-icons`：`AuraIcon` 容器（`RenderOnce` + `IntoElement`），`IntoIconPath` trait
+- `aura-icons-lucide`：`build.rs` 扫描 `assets/svgs/*.svg` → 生成 `IconName` 枚举
+- 1,703 个 Lucide 图标自动生成，首次编译通过 `scripts/sync-lucide.sh` 拉取
 
 ### 5.3 事件回调规范
 
-组件通过 Builder 方法接受回调闭包：
+组件通过 Builder 方法接受回调闭包，直接传入（不经过 `cx.listener`）：
 
 ```rust
 AuraButton::new("Click Me")
     .on_click(|event, window, cx| {
         println!("clicked!");
     })
-    .build(&theme)
 ```
 
 类型签名：`impl Fn(&ClickEvent, &mut Window, &mut App) + 'static`
 
-### 5.4 子元素（Slots）规范
+### 5.4 组件命名规范
 
 接受 `impl IntoElement` 作为子内容：
 

@@ -1,6 +1,16 @@
 # Architecture Decisions
 
-## ADR-001: Builder Pattern for Component API
+## ADR-008: Component API — RenderOnce + IntoElement (codex Paradigm)
+
+**Decision**: All components implement `RenderOnce` + `IntoElement` (via `Component::new(self)`). Theme is read from `cx.global::<AuraConfig>().theme` inside `render()`, never passed as a parameter.
+
+**Rationale**:
+- Eliminates `.build(theme)` anti-pattern
+- Theme is global state — no reason to thread it through every component
+- Component::new() wrapper allows direct use in .child() and vec![]
+- Matches GPUI's native rendering lifecycle
+
+## ADR-001: Builder Pattern for Component API (superseded by ADR-008)
 
 **Decision**: All components follow `Builder::new().method1().method2().build(&theme)` pattern.
 
