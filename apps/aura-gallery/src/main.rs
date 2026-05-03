@@ -6,7 +6,7 @@ use aura_theme::Theme;
 use aura_components::{Switch, Checkbox, RadioGroup, Input};
 use aura_icons_lucide::IconName;
 use gpui::{
-    App, Bounds, Context, Entity, Render, Window, WindowBounds, WindowOptions, div, prelude::*, px, size,
+    App, Bounds, Context, Entity, Render, Window, WindowBounds, WindowOptions, KeyBinding, div, prelude::*, px, size,
 };
 
 pub struct Gallery {
@@ -28,6 +28,15 @@ pub struct Gallery {
 fn run_gallery() {
     gpui_platform::application().run(|cx: &mut App| {
         init_aura(cx, Theme::light());
+        cx.bind_keys([
+            KeyBinding::new("backspace", aura_components::input::Backspace, None),
+            KeyBinding::new("delete", aura_components::input::Delete, None),
+            KeyBinding::new("left", aura_components::input::Left, None),
+            KeyBinding::new("right", aura_components::input::Right, None),
+            KeyBinding::new("home", aura_components::input::Home, None),
+            KeyBinding::new("end", aura_components::input::End, None),
+            KeyBinding::new("cmd-a", aura_components::input::SelectAll, None),
+        ]);
         cx.open_window(
             WindowOptions {
                 window_bounds: Some(WindowBounds::Maximized(Bounds::centered(None, size(px(1200.0), px(800.0)), cx))),
