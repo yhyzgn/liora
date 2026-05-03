@@ -113,7 +113,8 @@ impl Input {
         self.selected_range = 0..self.value.len(); cx.notify();
     }
 
-    fn on_mouse_down(&mut self, event: &MouseDownEvent, _: &mut Window, cx: &mut Context<Self>) {
+    fn on_mouse_down(&mut self, event: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
+        window.focus(&self.focus_handle, cx);
         let idx = if let (Some(bounds), Some(line)) = (self.last_bounds.as_ref(), self.last_layout.as_ref()) {
             let x = event.position.x - bounds.left();
             line.index_for_x(x).unwrap_or(self.value.len())
@@ -333,9 +334,7 @@ impl Render for Input {
         else { row = row.cursor_not_allowed(); }
 
         if !self.disabled {
-            let fh2 = fh.clone();
             row = row
-                .on_mouse_down(MouseButton::Left, move |_, window, cx| { window.focus(&fh2, cx); })
                 .on_mouse_down(MouseButton::Left, cx.listener(Self::on_mouse_down))
                 .on_action(cx.listener(Self::backspace))
                 .on_action(cx.listener(Self::delete))
