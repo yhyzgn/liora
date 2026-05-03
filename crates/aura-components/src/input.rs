@@ -24,9 +24,6 @@ pub struct Input {
     focus_handle: FocusHandle,
     selected_range: Range<usize>,
     selection_reversed: bool,
-    last_layout: Option<ShapedLine>,
-    last_bounds: Option<Bounds<Pixels>>,
-    on_change: Option<Box<dyn Fn(&str, &mut Window, &mut App) + 'static>>,
 }
 
 impl Input {
@@ -35,7 +32,6 @@ impl Input {
             value: value.into(), placeholder: SharedString::default(), disabled: false,
             clearable: false, icon_prefix: None, icon_suffix: None,
             focus_handle: cx.focus_handle(), selected_range: 0..0, selection_reversed: false,
-            last_layout: None, last_bounds: None, on_change: None,
         }
     }
     pub fn placeholder(mut self, p: impl Into<SharedString>) -> Self { self.placeholder = p.into(); self }
@@ -43,9 +39,6 @@ impl Input {
     pub fn clearable(mut self, c: bool) -> Self { self.clearable = c; self }
     pub fn icon_prefix(mut self, icon: IconName) -> Self { self.icon_prefix = Some(icon); self }
     pub fn icon_suffix(mut self, icon: IconName) -> Self { self.icon_suffix = Some(icon); self }
-    pub fn on_change(mut self, cb: impl Fn(&str, &mut Window, &mut App) + 'static) -> Self {
-        self.on_change = Some(Box::new(cb)); self
-    }
 
     fn clear(&mut self, cx: &mut Context<Self>) { self.value = SharedString::default(); cx.notify(); }
     fn cursor_offset(&self) -> usize {
