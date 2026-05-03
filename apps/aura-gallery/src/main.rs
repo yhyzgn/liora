@@ -3,7 +3,7 @@ mod demos;
 
 use aura_core::{ContextExt, init_aura};
 use aura_theme::Theme;
-use aura_components::{Switch, Checkbox};
+use aura_components::{Switch, Checkbox, Radio};
 use gpui::{
     App, Bounds, Context, Entity, Render, Window, WindowBounds, WindowOptions, div, prelude::*, px, size,
 };
@@ -16,6 +16,9 @@ pub struct Gallery {
     cb_unchecked: Entity<Checkbox>,
     cb_labeled: Entity<Checkbox>,
     cb_disabled: Entity<Checkbox>,
+    radio_on: Entity<Radio>,
+    radio_off: Entity<Radio>,
+    radio_disabled: Entity<Radio>,
 }
 
 fn run_gallery() {
@@ -34,9 +37,13 @@ fn run_gallery() {
                 let cb_unchecked = cx.new(|cx| Checkbox::new(false, cx));
                 let cb_labeled = cx.new(|cx| Checkbox::new(false, cx).label("Label"));
                 let cb_disabled = cx.new(|cx| Checkbox::new(true, cx).disabled(true));
+                let radio_on = cx.new(|cx| Radio::new(true, cx));
+                let radio_off = cx.new(|cx| Radio::new(false, cx));
+                let radio_disabled = cx.new(|cx| Radio::new(false, cx).disabled(true));
                 cx.new(|_| Gallery {
                     switch_demo_on: switch_on, switch_demo_off: switch_off, switch_demo_disabled: switch_disabled,
                     cb_checked, cb_unchecked, cb_labeled, cb_disabled,
+                    radio_on, radio_off, radio_disabled,
                 })
             },
         ).unwrap();
@@ -89,6 +96,18 @@ impl Render for Gallery {
                     .child(self.cb_unchecked.clone())
                     .child(self.cb_labeled.clone())
                     .child(self.cb_disabled.clone()))
+        );
+
+        // Radio demo
+        body = body.child(
+            div().flex().flex_col().gap_4().p_4().border_1().border_color(theme.neutral.divider).rounded(px(theme.radius.lg)).bg(theme.neutral.card)
+                .child(div().flex().flex_col().gap_1()
+                    .child(div().text_size(px(theme.font_size.lg)).text_color(theme.neutral.text_1).font_weight(gpui::FontWeight::BOLD).child("Radio 单选"))
+                    .child(div().text_size(px(theme.font_size.sm)).text_color(theme.neutral.text_3).child("单选按钮")))
+                .child(div().flex().flex_row().gap_4().items_center()
+                    .child(self.radio_on.clone())
+                    .child(self.radio_off.clone())
+                    .child(self.radio_disabled.clone()))
         );
 
         body
