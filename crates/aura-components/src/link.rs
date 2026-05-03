@@ -3,10 +3,13 @@ use aura_icons::AuraIcon;
 use aura_icons_lucide::IconName;
 use aura_theme::{AuraTheme, ButtonVariant};
 use gpui::{
-    App, Component, Hsla, IntoElement, MouseButton, RenderOnce, SharedString, Window,
+    App, Component, Hsla, IntoElement, RenderOnce, SharedString, Window,
     prelude::*, px,
 };
 use std::panic::Location;
+use std::sync::atomic::{AtomicU64, Ordering};
+
+static LINK_ID: AtomicU64 = AtomicU64::new(0);
 
 pub struct AuraLink {
     label: SharedString,
@@ -57,9 +60,8 @@ impl AuraLink {
         let (color, hover_color) = self.color_for(theme);
         let fs = theme.font_size.md;
         let icon_sz = 14.0;
-
         let id = SharedString::from(format!(
-            "aura-link:{}:{}", self.creation_site, self.label
+            "l-{}", LINK_ID.fetch_add(1, Ordering::Relaxed)
         ));
 
         let mut div = gpui::div()
