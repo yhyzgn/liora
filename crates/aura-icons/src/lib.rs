@@ -1,5 +1,5 @@
 use aura_core::Config;
-use gpui::{App, Component, Hsla, IntoElement, RenderOnce, SharedString, Window, prelude::*, px};
+use gpui::{App, Component, Hsla, IntoElement, RenderOnce, SharedString, Window, prelude::*, px, DefiniteLength};
 use std::borrow::Cow;
 
 pub trait IntoIconPath {
@@ -18,7 +18,7 @@ impl IntoIconPath for String {
 }
 
 pub struct Icon {
-    size: Option<f32>,
+    size: Option<DefiniteLength>,
     color: Option<Hsla>,
     group_hover_color: Option<(SharedString, Hsla)>,
     asset_path: String,
@@ -26,18 +26,10 @@ pub struct Icon {
 
 impl Icon {
     pub fn new(path: impl IntoIconPath) -> Self {
-        Self {
-            size: None,
-            color: None,
-            group_hover_color: None,
-            asset_path: path.icon_path().into_owned(),
-        }
+        Self { size: None, color: None, group_hover_color: None, asset_path: path.icon_path().into_owned() }
     }
 
-    pub fn size(mut self, px_size: f32) -> Self {
-        self.size = Some(px_size);
-        self
-    }
+    pub fn size(mut self, sz: impl Into<DefiniteLength>) -> Self { self.size = Some(sz.into()); self }
 
     /// Set explicit color. If not called, inherits parent's text_color.
     pub fn color(mut self, color: Hsla) -> Self {
@@ -56,8 +48,8 @@ impl RenderOnce for Icon {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = &cx.global::<Config>().theme;
 
-        let sz = self.size.unwrap_or(18.0);
-        let mut el = gpui::svg().external_path(self.asset_path).size(px(sz));
+        let sz = self.size.unwrap_or_else(|| px(18.0).into());
+        let mut el = gpui::svg().external_path(self.asset_path).size(sz);
         if let Some(color) = self.color {
             el = el.text_color(color);
         } else {

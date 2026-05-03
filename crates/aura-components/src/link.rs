@@ -75,12 +75,12 @@ impl Link {
 
         let mut children: Vec<Box<dyn FnOnce() -> gpui::AnyElement>> = Vec::new();
         if let Some(icon) = self.icon_start {
-            children.push(Box::new(move || Icon::new(icon).size(icon_sz).color(color).into_any_element()));
+            children.push(Box::new(move || Icon::new(icon).size(px(icon_sz)).color(color).into_any_element()));
         }
         let label = self.label.clone();
         children.push(Box::new(move || gpui::div().child(label).into_any_element()));
         if let Some(icon) = self.icon_end {
-            children.push(Box::new(move || Icon::new(icon).size(icon_sz).color(color).into_any_element()));
+            children.push(Box::new(move || Icon::new(icon).size(px(icon_sz)).color(color).into_any_element()));
         }
 
         if !self.disabled {

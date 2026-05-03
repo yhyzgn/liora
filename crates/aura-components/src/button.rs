@@ -241,7 +241,7 @@ impl Button {
                 let sz = icon_sz * 2.0;
                 let group = hover_group.clone();
                 return div.child(
-                    Icon::new(icon).size(sz).color(c.text)
+                    Icon::new(icon).size(px(sz)).color(c.text)
                         .group_hover_color(group, c.text_hover)
                 ).into_any_element();
             }
@@ -255,14 +255,14 @@ impl Button {
             let icon = self.icon_only.unwrap();
             let group = hover_group.clone();
             children.push(Box::new(move || {
-                Icon::new(icon).size(icon_sz).color(c.text)
+                Icon::new(icon).size(px(icon_sz)).color(c.text)
                     .group_hover_color(group, c.text_hover).into_any_element()
             }));
         } else if self.loading {
             let sz = icon_sz;
             let group = hover_group.clone();
             children.push(Box::new(move || {
-                Icon::new(IconName::LoaderCircle).size(sz).color(c.text)
+                Icon::new(IconName::LoaderCircle).size(px(sz)).color(c.text)
                     .group_hover_color(group, c.text_hover).into_any_element()
             }));
             children.push(Box::new(move || gpui::div().child(label.clone()).into_any_element()));
@@ -272,7 +272,7 @@ impl Button {
             if let Some(icon) = self.icon_top {
                 let sz = icon_sz; let group = hover_group.clone();
                 children.push(Box::new(move || {
-                    Icon::new(icon).size(sz).color(c.text)
+                    Icon::new(icon).size(px(sz)).color(c.text)
                         .group_hover_color(group, c.text_hover).into_any_element()
                 }));
             }
@@ -280,7 +280,7 @@ impl Button {
             if let Some(icon) = self.icon_start {
                 let sz = icon_sz; let group = hover_group.clone();
                 children.push(Box::new(move || {
-                    Icon::new(icon).size(sz).color(c.text)
+                    Icon::new(icon).size(px(sz)).color(c.text)
                         .group_hover_color(group, c.text_hover).into_any_element()
                 }));
             }
@@ -290,7 +290,7 @@ impl Button {
             if let Some(icon) = self.icon_end {
                 let sz = icon_sz; let group = hover_group.clone();
                 children.push(Box::new(move || {
-                    Icon::new(icon).size(sz).color(c.text)
+                    Icon::new(icon).size(px(sz)).color(c.text)
                         .group_hover_color(group, c.text_hover).into_any_element()
                 }));
             }
@@ -298,7 +298,7 @@ impl Button {
             if let Some(icon) = self.icon_bottom {
                 let sz = icon_sz; let group = hover_group.clone();
                 children.push(Box::new(move || {
-                    Icon::new(icon).size(sz).color(c.text)
+                    Icon::new(icon).size(px(sz)).color(c.text)
                         .group_hover_color(group, c.text_hover).into_any_element()
                 }));
             }

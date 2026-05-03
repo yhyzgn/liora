@@ -137,11 +137,11 @@ fn hdr(theme: &Theme, s: &str) -> impl IntoElement {
 }
 
 fn build_icon(_theme: &Theme, icon: IconName, sz: f32, color: Hsla) -> impl IntoElement {
-    Icon::new(icon).size(sz).color(color)
+    Icon::new(icon).size(px(sz)).color(color)
 }
 
 fn build_icon_default_color(_theme: &Theme, icon: IconName, sz: f32) -> impl IntoElement {
-    Icon::new(icon).size(sz)
+    Icon::new(icon).size(px(sz))
 }
 
 fn icon_labeled(theme: &Theme, icon: IconName, sz: f32, label: &str) -> impl IntoElement {
