@@ -14,7 +14,7 @@ fn rgba(r: u8, g: u8, b: u8, a: f32) -> Hsla {
     Rgba { r: r as f32 / 255.0, g: g as f32 / 255.0, b: b as f32 / 255.0, a }.into()
 }
 
-actions!(input, [Backspace, Delete, Left, Right, Home, End, SelectAll, Enter]);
+actions!(input, [Backspace, Delete, Left, Right, Home, End, SelectAll, Enter, Up, Down]);
 
 pub struct Input {
     value: SharedString,
@@ -53,6 +53,8 @@ impl Input {
             KeyBinding::new("home", Home, None),            KeyBinding::new("end", End, None),
             KeyBinding::new("cmd-a", SelectAll, None),
             KeyBinding::new("enter", Enter, None),
+            KeyBinding::new("up", Up, None),
+            KeyBinding::new("down", Down, None),
         ]);
     }
 
@@ -116,6 +118,31 @@ impl Input {
 
     fn enter(&mut self, _: &Enter, _: &mut Window, cx: &mut Context<Self>) {
         self.internal_replace("\n", cx);
+    }
+
+    fn up(&mut self, _: &Up, _: &mut Window, cx: &mut Context<Self>) { self.move_vertical(-1, cx); }
+    fn down(&mut self, _: &Down, _: &mut Window, cx: &mut Context<Self>) { self.move_vertical(1, cx); }
+
+    fn move_vertical(&mut self, delta: isize, cx: &mut Context<Self>) {
+        let text = &self.value;
+        let offset = self.cursor_offset();
+        let current_line = text[..offset].chars().filter(|&c| c == '\n').count() as isize;
+        let line_start = if current_line == 0 { 0 } else {
+            text.char_indices().filter(|(_, c)| *c == '\n').nth(current_line as usize - 1).map(|(i, _)| i + 1).unwrap_or(0)
+        };
+        let col = offset - line_start;
+        let target_line = (current_line + delta).max(0);
+        let lines: Vec<&str> = text.split('\n').collect();
+        if target_line as usize >= lines.len() { return; }
+        // Find byte offset of target line start
+        let mut target_start = 0;
+        for (i, line) in lines.iter().enumerate() {
+            if i == target_line as usize { break; }
+            target_start += line.len() + 1;
+        }
+        let target_len = lines[target_line as usize].len();
+        let new_col = col.min(target_len);
+        self.move_to(target_start + new_col, cx);
     }
 
     fn on_mouse_down(&mut self, event: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
@@ -363,7 +390,7 @@ impl Render for Input {
 
         let mut row = gpui::div()
             .flex().flex_row().items_center().gap_2()
-            .px(px(12.0)).rounded(px(theme.radius.md))
+            .h(px(h)).px(px(12.0)).rounded(px(theme.radius.md))
             .bg(bg).border_1().border_color(border_c).text_size(px(theme.font_size.md));
 
         if !self.disabled {
@@ -383,7 +410,9 @@ impl Render for Input {
                 .on_action(cx.listener(Self::home))
                 .on_action(cx.listener(Self::end))
                 .on_action(cx.listener(Self::select_all))
-                .on_action(cx.listener(Self::enter));
+                .on_action(cx.listener(Self::enter))
+                .on_action(cx.listener(Self::up))
+                .on_action(cx.listener(Self::down));
         }
 
         if let Some(icon) = self.icon_prefix {
