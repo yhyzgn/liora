@@ -390,7 +390,7 @@ impl Render for Input {
 
         let mut row = gpui::div()
             .flex().flex_row().items_center().gap_2()
-            .h(px(h)).px(px(12.0)).rounded(px(theme.radius.md))
+            .px(px(12.0)).py(px(8.0)).rounded(px(theme.radius.md))
             .bg(bg).border_1().border_color(border_c).text_size(px(theme.font_size.md));
 
         if !self.disabled {
