@@ -3,7 +3,7 @@ use aura_icons::AuraIcon;
 use aura_icons_lucide::IconName;
 use aura_theme::{AuraTheme, ButtonVariant};
 use gpui::{
-    App, Component, Hsla, IntoElement, RenderOnce, SharedString, Window,
+    App, Component, Hsla, IntoElement, MouseButton, RenderOnce, SharedString, Window,
     prelude::*, px,
 };
 use std::panic::Location;
@@ -41,12 +41,7 @@ impl AuraLink {
     fn color_for(&self, theme: &AuraTheme) -> (Hsla, Hsla) {
         if self.disabled { return (theme.neutral.text_disabled, theme.neutral.text_disabled); }
         match self.variant {
-            ButtonVariant::Default | ButtonVariant::Tertiary => (theme.primary.base, theme.primary.hover),
-            ButtonVariant::Primary => (theme.primary.base, theme.primary.hover),
-            ButtonVariant::Success => (theme.success.base, theme.success.hover),
-            ButtonVariant::Warning => (theme.warning.base, theme.warning.hover),
-            ButtonVariant::Danger => (theme.danger.base, theme.danger.hover),
-            ButtonVariant::Info => (theme.info.base, theme.info.hover),
+            _ => (theme.primary.base, theme.primary.hover),
         }
     }
 
@@ -64,7 +59,6 @@ impl AuraLink {
         if self.underline { div = div.underline(); }
 
         let mut children: Vec<Box<dyn FnOnce() -> gpui::AnyElement>> = Vec::new();
-
         if let Some(icon) = self.icon_start {
             children.push(Box::new(move || AuraIcon::new(icon).size(icon_sz).color(color).into_any_element()));
         }
