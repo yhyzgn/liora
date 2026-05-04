@@ -1,12 +1,14 @@
 use aura_components::{Divider, Space, Text, Title, Row, Col, Button};
 use aura_core::Config;
-use gpui::{AnyElement, App, Component, IntoElement, RenderOnce, Window, div, prelude::*, px};
+use gpui::{App, Context, Entity, IntoElement, Render, Window, div, prelude::*, px};
 
-pub fn render() -> AnyElement { Component::new(LayoutDemo).into_any_element() }
+pub fn render(cx: &mut App) -> Entity<LayoutDemo> {
+    cx.new(|_| LayoutDemo)
+}
 
-struct LayoutDemo;
-impl RenderOnce for LayoutDemo {
-    fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
+pub struct LayoutDemo;
+impl Render for LayoutDemo {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = &cx.global::<Config>().theme;
         div().flex().flex_col().gap_6()
             .child(div().flex().flex_col().gap_2()

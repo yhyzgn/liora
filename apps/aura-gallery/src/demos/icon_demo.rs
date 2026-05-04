@@ -3,17 +3,17 @@ use aura_icons::Icon;
 use aura_icons_lucide::IconName;
 use aura_theme::Theme;
 use gpui::{
-    AnyElement, App, Component, Hsla, IntoElement, RenderOnce, Window, div, prelude::*, px,
+    App, Context, Entity, Hsla, IntoElement, Render, Window, div, prelude::*, px,
 };
 
-pub fn render() -> AnyElement {
-    Component::new(IconDemo).into_any_element()
+pub fn render(cx: &mut App) -> Entity<IconDemo> {
+    cx.new(|_| IconDemo)
 }
 
-struct IconDemo;
+pub struct IconDemo;
 
-impl RenderOnce for IconDemo {
-    fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Render for IconDemo {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = &cx.global::<Config>().theme;
         let icons: &[(IconName, &str)] = &[
             (IconName::House, "Home"),

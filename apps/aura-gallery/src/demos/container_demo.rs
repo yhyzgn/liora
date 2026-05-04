@@ -1,16 +1,16 @@
 use aura_components::{Button, Divider, Space, Container, Title, Text};
 use aura_core::Config;
 use aura_theme::Theme;
-use gpui::{AnyElement, App, Component, IntoElement, RenderOnce, Window, div, prelude::*, px};
+use gpui::{App, Context, Entity, IntoElement, Render, Window, div, prelude::*, px};
 
-pub fn render() -> AnyElement {
-    Component::new(ContainerDemo).into_any_element()
+pub fn render(cx: &mut App) -> Entity<ContainerDemo> {
+    cx.new(|_| ContainerDemo)
 }
 
-struct ContainerDemo;
+pub struct ContainerDemo;
 
-impl RenderOnce for ContainerDemo {
-    fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Render for ContainerDemo {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = &cx.global::<Config>().theme;
         div()
             .flex()

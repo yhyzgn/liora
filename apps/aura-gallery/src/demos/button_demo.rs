@@ -3,16 +3,16 @@ use aura_core::Config;
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
 use aura_theme::Theme;
-use gpui::{AnyElement, App, Component, IntoElement, RenderOnce, Window, div, prelude::*, px};
+use gpui::{App, Context, Entity, IntoElement, Render, Window, div, prelude::*, px};
 
-pub fn render() -> AnyElement {
-    Component::new(ButtonDemo).into_any_element()
+pub fn render(cx: &mut App) -> Entity<ButtonDemo> {
+    cx.new(|_| ButtonDemo)
 }
 
-struct ButtonDemo;
+pub struct ButtonDemo;
 
-impl RenderOnce for ButtonDemo {
-    fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Render for ButtonDemo {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = &cx.global::<Config>().theme;
         div()
             .flex()

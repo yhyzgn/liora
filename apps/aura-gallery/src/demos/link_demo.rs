@@ -2,14 +2,18 @@ use aura_components::Link;
 use aura_core::Config;
 use aura_icons_lucide::IconName;
 use aura_theme::Theme;
-use gpui::{AnyElement, App, Component, IntoElement, RenderOnce, Window, div, prelude::*, px};
+use gpui::{App, Context, Entity, IntoElement, Render, Window, div, prelude::*, px};
 
-pub fn render() -> AnyElement { Component::new(LinkDemo).into_any_element() }
+pub fn render(cx: &mut App) -> Entity<LinkDemo> {
+    cx.new(|_| LinkDemo)
+}
 
-struct LinkDemo;
-impl RenderOnce for LinkDemo {
-    fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
+pub struct LinkDemo;
+
+impl Render for LinkDemo {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = &cx.global::<Config>().theme;
+
         div().flex().flex_col().gap_3()
             .child(hdr(theme, "Variants 类型"))
             .child(row(vec![

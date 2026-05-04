@@ -1,12 +1,14 @@
 use aura_components::{Splitter, Text, Title};
 use aura_core::Config;
-use gpui::{AnyElement, App, Component, IntoElement, RenderOnce, Window, div, prelude::*, px};
+use gpui::{App, Context, Entity, IntoElement, Render, Window, div, prelude::*, px};
 
-pub fn render() -> AnyElement { Component::new(SplitterDemo).into_any_element() }
+pub fn render(cx: &mut App) -> Entity<SplitterDemo> {
+    cx.new(|_| SplitterDemo)
+}
 
-struct SplitterDemo;
-impl RenderOnce for SplitterDemo {
-    fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
+pub struct SplitterDemo;
+impl Render for SplitterDemo {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = &cx.global::<Config>().theme;
 
         div().flex().flex_col().gap_2()

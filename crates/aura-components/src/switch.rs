@@ -62,13 +62,19 @@ impl Render for Switch {
         } else if self.checked {
             theme.primary.base
         } else {
-            if focused { theme.primary.base } else { theme.neutral.border }
+            theme.neutral.border
         };
 
         let mut el = gpui::div()
             .flex_none().w(px(w)).h(px(h)).rounded(px(h / 2.0))
             .bg(track_color)
             .on_action(cx.listener(Self::toggle));
+
+        if focused && !self.disabled {
+            el = el.border_2().border_color(theme.primary.base.opacity(0.5));
+        } else {
+            el = el.border_0();
+        }
 
         if !self.disabled { 
             el = el.cursor_pointer().track_focus(&self.focus_handle);
