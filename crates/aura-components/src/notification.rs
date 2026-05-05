@@ -1,7 +1,7 @@
 use aura_core::{Config, push_portal};
 use gpui::{
     prelude::*, px, App, IntoElement, Window,
-    div, SharedString, Global, Entity, Context, Render, AsyncWindowContext,
+    div, SharedString, Global, Entity, Context, Render,
 };
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;

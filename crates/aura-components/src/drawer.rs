@@ -3,13 +3,15 @@ use gpui::{
     prelude::*, px, App, Context, IntoElement, Render, Window,
     div, AnyElement, MouseButton, SharedString, Pixels,
 };
+use aura_icons::Icon;
+use aura_icons_lucide::IconName;
 use std::sync::Arc;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum DrawerPlacement {
-    Left,
     #[default]
     Right,
+    Left,
     Top,
     Bottom,
 }
@@ -104,7 +106,7 @@ impl Render for DrawerView {
                     div().p_4().border_b_1().border_color(theme.neutral.border).flex().justify_between().items_center()
                         .child(div().font_weight(gpui::FontWeight::BOLD).child(title))
                         .child(
-                            div().cursor_pointer().child("✕")
+                            div().id("close-btn").cursor_pointer().child(Icon::new(IconName::X).size(px(16.0)).color(theme.neutral.icon))
                                 .on_mouse_down(MouseButton::Left, move |_, window, cx| {
                                     on_close(window, cx);
                                 })

@@ -1,6 +1,6 @@
-use aura_core::{Config, push_portal};
+use aura_core::{Config};
 use gpui::{
-    prelude::*, px, App, Context, IntoElement, Render, Window,
+    prelude::*, px, App, IntoElement, Window,
     div, SharedString, Component, RenderOnce,
 };
 use aura_icons::Icon;

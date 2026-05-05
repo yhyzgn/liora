@@ -89,14 +89,14 @@ impl RenderOnce for Popconfirm {
                                 Button::new(cancel_text.clone()).small()
                                     .on_click(move |_event, _window, _cx| {
                                         if let Some(ref f) = on_cancel { f(_window, _cx); }
-                                        aura_core::popper::clear_portals(_cx);
+                                        aura_core::clear_active_popover(_cx);
                                     })
                             )
                             .child(
                                 Button::new(confirm_text.clone()).primary().small()
                                     .on_click(move |_event, _window, _cx| {
                                         if let Some(ref f) = on_confirm { f(_window, _cx); }
-                                        aura_core::popper::clear_portals(_cx);
+                                        aura_core::clear_active_popover(_cx);
                                     })
                             )
                     )

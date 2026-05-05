@@ -1,7 +1,7 @@
 use aura_core::Config;
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
-use gpui::{prelude::*, px, App, Render, Window, Context, Focusable, FocusHandle, MouseButton, Bounds, Pixels, Entity};
+use gpui::{prelude::*, px, App, Render, Window, Context, Focusable, FocusHandle, MouseButton};
 
 pub struct Rate {
     value: f32,
@@ -9,7 +9,6 @@ pub struct Rate {
     hover_value: Option<f32>,
     disabled: bool,
     focus_handle: FocusHandle,
-    last_bounds: Option<Bounds<Pixels>>,
     on_change: Option<Box<dyn Fn(f32, &mut Window, &mut App) + 'static>>,
 }
 
@@ -21,7 +20,6 @@ impl Rate {
             hover_value: None,
             disabled: false,
             focus_handle: cx.focus_handle(),
-            last_bounds: None,
             on_change: None,
         }
     }

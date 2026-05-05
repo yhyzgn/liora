@@ -1,6 +1,6 @@
 use crate::{Dialog, Button};
 use gpui::{
-    prelude::*, px, App, Window, div, SharedString,
+    prelude::*, App, Window, div, SharedString,
 };
 use std::sync::Arc;
 

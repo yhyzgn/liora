@@ -64,7 +64,7 @@ impl RenderOnce for Dropdown {
                             .hover(|s| s.bg(theme.neutral.hover).text_color(theme.primary.base))
                             .on_mouse_down(MouseButton::Left, move |_, window, cx| {
                                 on_click(window, cx);
-                                aura_core::popper::clear_portals(cx);
+                                aura_core::clear_active_popover(cx);
                             })
                             .child(label)
                     }))

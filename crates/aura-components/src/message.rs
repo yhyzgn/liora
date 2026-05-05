@@ -57,7 +57,7 @@ impl MessageManager {
             });
             this.next_id += 1;
 
-            let mut async_cx = cx.to_async();
+            let async_cx = cx.to_async();
             let executor = cx.background_executor().clone();
             cx.foreground_executor().spawn(async move {
                 executor.timer(Duration::from_secs(3)).await;

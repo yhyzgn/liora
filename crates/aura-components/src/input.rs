@@ -3,17 +3,13 @@ use aura_icons::Icon;
 use aura_icons_lucide::IconName;
 use gpui::{
     prelude::*, px, App, Bounds, Context, Element, ElementId, ElementInputHandler, Entity,
-    EntityInputHandler, FocusHandle, Focusable, GlobalElementId, Hsla, InspectorElementId,
+    EntityInputHandler, FocusHandle, Focusable, GlobalElementId, InspectorElementId,
     IntoElement, LayoutId,     MouseButton, MouseDownEvent, MouseUpEvent,
-    Pixels, Point, Render, Rgba, SharedString, ShapedLine, Style, TextRun,
+    Pixels, Point, Render, SharedString, ShapedLine, Style, TextRun,
     UTF16Selection, Window, actions, KeyBinding, fill, point, size,
     MouseMoveEvent, AnyElement,
 };
 use std::ops::{Add, Range};
-
-fn rgba(r: u8, g: u8, b: u8, a: f32) -> Hsla {
-    Rgba { r: r as f32 / 255.0, g: g as f32 / 255.0, b: b as f32 / 255.0, a }.into()
-}
 
 actions!(input, [
     Backspace, Delete, Left, Right, Home, End, SelectAll, Enter, InputUp, InputDown, Copy, Paste, Cut,
@@ -265,7 +261,7 @@ impl Input {
             let mut best_line = 0;
             let mut final_original_byte_offset = 0;
             let mut current_original_byte_offset = 0;
-            for (i, (layout, y_offset)) in layouts.iter().enumerate() {
+            for (i, (_layout, y_offset)) in layouts.iter().enumerate() {
                 if pt.y >= *y_offset && pt.y < *y_offset + line_height {
                     best_line = i;
                     final_original_byte_offset = current_original_byte_offset;

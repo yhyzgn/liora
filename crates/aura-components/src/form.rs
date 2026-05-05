@@ -1,5 +1,5 @@
 use aura_core::Config;
-use gpui::{prelude::*, px, App, Window, SharedString, AnyElement, div, Component, Entity, Pixels};
+use gpui::{prelude::*, px, App, Window, SharedString, AnyElement, div, Component, Pixels};
 
 pub struct Form {
     _label_width: Option<Pixels>,

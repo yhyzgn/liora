@@ -2,7 +2,7 @@ use aura_core::{Config, push_portal};
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
 use gpui::{
-    prelude::*, px, App, Render, Window, Context, Focusable, FocusHandle,
+    prelude::*, App, Render, Window, Context, Focusable, FocusHandle,
     SharedString, MouseButton, ElementId, Bounds, Pixels, Entity, Hsla
 };
 
