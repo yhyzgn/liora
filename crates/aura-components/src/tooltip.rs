@@ -1,8 +1,11 @@
-use aura_core::{Config, Placement, Popper, push_portal};
+use aura_core::{Placement, TooltipData, set_active_tooltip};
 use gpui::{
-    prelude::*, px, App, Component, IntoElement, RenderOnce, SharedString, Window,
-    Bounds, Pixels, div, AnyElement,
+    prelude::*, px, App, IntoElement, RenderOnce, SharedString, Window,
+    AnyElement, Pixels, div, ElementId, LayoutId, GlobalElementId, InspectorElementId,
+    Bounds, Component,
 };
+use std::rc::Rc;
+use std::cell::Cell;
 
 pub struct Tooltip {
     trigger: AnyElement,
@@ -38,60 +41,31 @@ impl Tooltip {
 }
 
 impl RenderOnce for Tooltip {
-    fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let theme = cx.global::<Config>().theme.clone();
+    fn render(self, _window: &mut Window, _cx: &mut App) -> impl IntoElement {
         let content = self.content.clone();
         let placement = self.placement;
         let offset = self.offset;
+        
+        let bounds_cell = Rc::new(Cell::new(Bounds::default()));
+        let bounds_cell_clone = bounds_cell.clone();
 
         div()
-            .child(self.trigger)
-            .on_mouse_move(move |event, _window, cx| {
-                // Heuristic: create bounds around mouse position for now
-                let anchor_bounds = Bounds {
-                    origin: event.position,
-                    size: gpui::Size { width: px(1.0), height: px(1.0) },
-                };
-                let content = content.clone();
-                let theme = theme.clone();
-                
-                push_portal(move |window, cx| {
-                    let viewport = Bounds {
-                        origin: gpui::Point::default(),
-                        size: window.viewport_size(),
-                    };
-
-                    let popper = Popper {
+            .child(
+                TooltipBoundsTracker {
+                    trigger: self.trigger,
+                    bounds: bounds_cell,
+                }
+            )
+            .on_mouse_move(move |_event, _window, cx| {
+                let anchor_bounds = bounds_cell_clone.get();
+                if anchor_bounds.size.width > px(0.0) {
+                    set_active_tooltip(TooltipData {
+                        content: content.clone(),
                         anchor_bounds,
                         placement,
                         offset,
-                    };
-
-                    let font_size = theme.font_size.sm as f32;
-                    let padding = 16.0;
-                    let width = (content.len() as f32 * font_size * 0.6 + padding).min(300.0);
-                    let height = 32.0;
-                    
-                    let content_size = gpui::Size {
-                        width: px(width),
-                        height: px(height),
-                    };
-
-                    let (pos, _final_placement) = popper.calculate_position_with_flip(content_size, viewport);
-
-                    div()
-                        .absolute()
-                        .top(pos.y)
-                        .left(pos.x)
-                        .bg(theme.neutral.text_1)
-                        .text_color(theme.neutral.body)
-                        .px_3().py_1()
-                        .rounded(px(theme.radius.sm))
-                        .shadow_md()
-                        .text_size(px(theme.font_size.sm))
-                        .child(content.clone())
-                        .into_any_element()
-                }, cx);
+                    }, cx);
+                }
             })
     }
 }
@@ -100,5 +74,36 @@ impl IntoElement for Tooltip {
     type Element = Component<Self>;
     fn into_element(self) -> Self::Element {
         Component::new(self)
+    }
+}
+
+struct TooltipBoundsTracker {
+    trigger: AnyElement,
+    bounds: Rc<Cell<Bounds<Pixels>>>,
+}
+
+impl IntoElement for TooltipBoundsTracker {
+    type Element = Self;
+    fn into_element(self) -> Self::Element { self }
+}
+
+impl gpui::Element for TooltipBoundsTracker {
+    type RequestLayoutState = ();
+    type PrepaintState = ();
+
+    fn id(&self) -> Option<ElementId> { None }
+    fn source_location(&self) -> Option<&'static std::panic::Location<'static>> { None }
+
+    fn request_layout(&mut self, _id: Option<&GlobalElementId>, _id2: Option<&InspectorElementId>, window: &mut Window, cx: &mut App) -> (LayoutId, ()) {
+        (self.trigger.request_layout(window, cx), ())
+    }
+
+    fn prepaint(&mut self, _id: Option<&GlobalElementId>, _id2: Option<&InspectorElementId>, _bounds: Bounds<Pixels>, _rl: &mut (), window: &mut Window, cx: &mut App) -> () {
+        self.trigger.prepaint(window, cx);
+    }
+
+    fn paint(&mut self, _id: Option<&GlobalElementId>, _id2: Option<&InspectorElementId>, bounds: Bounds<Pixels>, _rl: &mut (), _ps: &mut (), window: &mut Window, cx: &mut App) {
+        self.bounds.set(bounds);
+        self.trigger.paint(window, cx);
     }
 }
