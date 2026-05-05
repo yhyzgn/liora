@@ -35,6 +35,7 @@ pub struct Input {
     last_bounds: Option<Bounds<Pixels>>,
     cursor_visible: bool,
     blink_task: Option<gpui::Task<()>>,
+    filter: Option<Box<dyn Fn(&str) -> bool + 'static>>,
 }
 
 impl Input {
@@ -45,6 +46,7 @@ impl Input {
             focus_handle: cx.focus_handle(), selected_range: 0..0, selection_reversed: false,
             marked_range: None, last_line_layouts: Vec::new(), last_bounds: None,
             cursor_visible: true, blink_task: None,
+            filter: None,
         }
     }
     pub fn placeholder(mut self, p: impl Into<SharedString>) -> Self { self.placeholder = p.into(); self }
@@ -52,6 +54,7 @@ impl Input {
     pub fn clearable(mut self, c: bool) -> Self { self.clearable = c; self }
     pub fn icon_prefix(mut self, icon: IconName) -> Self { self.icon_prefix = Some(icon); self }
     pub fn icon_suffix(mut self, icon: IconName) -> Self { self.icon_suffix = Some(icon); self }
+    pub fn filter(mut self, f: impl Fn(&str) -> bool + 'static) -> Self { self.filter = Some(Box::new(f)); self }
 
     pub fn set_placeholder(&mut self, p: impl Into<SharedString>, cx: &mut Context<Self>) {
         self.placeholder = p.into();
@@ -324,6 +327,9 @@ impl Input {
     }
 
     fn internal_replace(&mut self, new_text: &str, cx: &mut Context<Self>) {
+        if let Some(ref filter) = self.filter {
+            if !filter(new_text) { return; }
+        }
         let range = self.selected_range.clone();
         let mut v = self.value.to_string();
         v.replace_range(range, new_text);
@@ -361,6 +367,9 @@ impl EntityInputHandler for Input {
     fn unmark_text(&mut self, _: &mut Window, _: &mut Context<Self>) { self.marked_range = None; }
 
     fn replace_text_in_range(&mut self, range_utf16: Option<Range<usize>>, new_text: &str, _: &mut Window, cx: &mut Context<Self>) {
+        if let Some(ref filter) = self.filter {
+            if !filter(new_text) { return; }
+        }
         let range = range_utf16
             .map(|r| self.offset_from_utf16(r.start)..self.offset_from_utf16(r.end))
             .or_else(|| self.marked_range.clone())
@@ -374,6 +383,9 @@ impl EntityInputHandler for Input {
     }
 
     fn replace_and_mark_text_in_range(&mut self, range_utf16: Option<Range<usize>>, new_text: &str, new_selected: Option<Range<usize>>, _: &mut Window, cx: &mut Context<Self>) {
+        if let Some(ref filter) = self.filter {
+            if !filter(new_text) { return; }
+        }
         let range = range_utf16
             .map(|r| self.offset_from_utf16(r.start)..self.offset_from_utf16(r.end))
             .or(self.marked_range.clone())

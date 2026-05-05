@@ -72,9 +72,10 @@ impl FormDemo {
             }),
             input_clearable: cx.new(|cx| Input::new("Clear me", cx).clearable(true)),
             input_disabled: cx.new(|cx| Input::new("Disabled", cx).disabled(true)),
-            input_number: cx.new(|cx| InputNumber::new(10.0, cx).min(0.0).max(100.0)),
+            input_number: cx.new(|cx| InputNumber::new(10.0, cx).min(0.0).max(10.0)),
             input_number_vertical: cx.new(|cx| {
                 InputNumber::new(5.0, cx)
+                    .min(0.0).max(10.0)
                     .controls_position(aura_components::InputNumberControlsPosition::Right)
             }),
             input_number_precision: cx.new(|cx| InputNumber::new(1.23, cx).precision(2).step(0.01)),

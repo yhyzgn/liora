@@ -26,7 +26,11 @@ pub struct InputNumber {
 impl InputNumber {
     pub fn new(value: f64, cx: &mut Context<Self>) -> Self {
         let input = cx.new(|cx| {
-            Input::new(format!("{:.0}", value), cx)
+            Input::new(format!("{:.*}", 0, value), cx)
+                .filter(|text| {
+                    // Only allow digits, one decimal point, and leading minus sign
+                    text.chars().all(|c| c.is_ascii_digit() || c == '.' || c == '-')
+                })
         });
 
         let focus_handle = cx.focus_handle();
@@ -83,13 +87,13 @@ impl InputNumber {
     }
 
     fn increment(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        if !self.disabled {
+        if !self.disabled && self.value < self.max {
             self.set_value(self.value + self.step, window, cx);
         }
     }
 
     fn decrement(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        if !self.disabled {
+        if !self.disabled && self.value > self.min {
             self.set_value(self.value - self.step, window, cx);
         }
     }
@@ -113,11 +117,16 @@ impl Render for InputNumber {
 impl InputNumber {
     fn render_horizontal(&self, theme: &aura_theme::Theme, cx: &mut Context<Self>) -> impl IntoElement {
         let icon_sz = 12.0;
+        let can_inc = !self.disabled && self.value < self.max;
+        let can_dec = !self.disabled && self.value > self.min;
+
         let mut row = gpui::div()
             .flex().flex_row().items_center()
             .h(px(34.0))
             .rounded(px(theme.radius.md))
-            .border_1().border_color(theme.neutral.border);
+            .border_1().border_color(theme.neutral.border)
+            .bg(theme.neutral.card)
+            .overflow_hidden();
 
         // Decrement button
         let mut dec_btn = gpui::div()
@@ -126,7 +135,7 @@ impl InputNumber {
             .bg(theme.neutral.hover)
             .border_color(theme.neutral.border).border_r_1();
 
-        if !self.disabled {
+        if can_dec {
             dec_btn = dec_btn.cursor_pointer().hover(|s| s.bg(theme.neutral.border))
                 .on_mouse_down(MouseButton::Left, cx.listener(|this, _, window, cx| {
                     this.decrement(window, cx);
@@ -135,7 +144,7 @@ impl InputNumber {
             dec_btn = dec_btn.cursor_not_allowed().opacity(0.5);
         }
         
-        row = row.child(dec_btn.child(Icon::new(IconName::Minus).size(px(icon_sz)).color(theme.neutral.text_1)));
+        row = row.child(dec_btn.child(Icon::new(IconName::Minus).size(px(icon_sz)).color(if can_dec { theme.neutral.text_1 } else { theme.neutral.text_disabled })));
         row = row.child(gpui::div().flex_1().child(self.input.clone()));
 
         // Increment button
@@ -145,7 +154,7 @@ impl InputNumber {
             .bg(theme.neutral.hover)
             .border_color(theme.neutral.border).border_l_1();
 
-        if !self.disabled {
+        if can_inc {
             inc_btn = inc_btn.cursor_pointer().hover(|s| s.bg(theme.neutral.border))
                 .on_mouse_down(MouseButton::Left, cx.listener(|this, _, window, cx| {
                     this.increment(window, cx);
@@ -154,18 +163,22 @@ impl InputNumber {
             inc_btn = inc_btn.cursor_not_allowed().opacity(0.5);
         }
 
-        row = row.child(inc_btn.child(Icon::new(IconName::Plus).size(px(icon_sz)).color(theme.neutral.text_1)));
+        row = row.child(inc_btn.child(Icon::new(IconName::Plus).size(px(icon_sz)).color(if can_inc { theme.neutral.text_1 } else { theme.neutral.text_disabled })));
         
         row
     }
 
     fn render_right(&self, theme: &aura_theme::Theme, cx: &mut Context<Self>) -> impl IntoElement {
         let icon_sz = 10.0;
+        let can_inc = !self.disabled && self.value < self.max;
+        let can_dec = !self.disabled && self.value > self.min;
+
         let mut row = gpui::div()
             .flex().flex_row().items_center()
             .h(px(34.0))
             .rounded(px(theme.radius.md))
             .border_1().border_color(theme.neutral.border)
+            .bg(theme.neutral.card)
             .overflow_hidden();
 
         row = row.child(gpui::div().flex_1().child(self.input.clone()));
@@ -181,7 +194,7 @@ impl InputNumber {
             .bg(theme.neutral.hover)
             .border_color(theme.neutral.border).border_b_1();
 
-        if !self.disabled {
+        if can_inc {
             inc_btn = inc_btn.cursor_pointer().hover(|s| s.bg(theme.neutral.border))
                 .on_mouse_down(MouseButton::Left, cx.listener(|this, _, window, cx| {
                     this.increment(window, cx);
@@ -195,7 +208,7 @@ impl InputNumber {
             .flex_1().flex().items_center().justify_center()
             .bg(theme.neutral.hover);
 
-        if !self.disabled {
+        if can_dec {
             dec_btn = dec_btn.cursor_pointer().hover(|s| s.bg(theme.neutral.border))
                 .on_mouse_down(MouseButton::Left, cx.listener(|this, _, window, cx| {
                     this.decrement(window, cx);
@@ -204,8 +217,8 @@ impl InputNumber {
             dec_btn = dec_btn.cursor_not_allowed().opacity(0.5);
         }
 
-        controls = controls.child(inc_btn.child(Icon::new(IconName::ChevronUp).size(px(icon_sz)).color(theme.neutral.text_1)));
-        controls = controls.child(dec_btn.child(Icon::new(IconName::ChevronDown).size(px(icon_sz)).color(theme.neutral.text_1)));
+        controls = controls.child(inc_btn.child(Icon::new(IconName::ChevronUp).size(px(icon_sz)).color(if can_inc { theme.neutral.text_1 } else { theme.neutral.text_disabled })));
+        controls = controls.child(dec_btn.child(Icon::new(IconName::ChevronDown).size(px(icon_sz)).color(if can_dec { theme.neutral.text_1 } else { theme.neutral.text_disabled })));
 
         row = row.child(controls);
         
