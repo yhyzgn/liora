@@ -74,8 +74,16 @@ impl FormDemo {
             radio_group_disabled: cx.new(|cx| RadioGroup::new(vec!["Disabled A", "Disabled B"], 0, cx).disabled(true)),
             input_plain: cx.new(|cx| Input::new("", cx)),
             input_placeholder: cx.new(|cx| Input::new("", cx).placeholder("Type something...")),
-            input_password: cx.new(|cx| Input::new("", cx).password().placeholder("Password")),
-            input_password_custom: cx.new(|cx| Input::new("secret", cx).password().mask_char('*')),
+            input_password: cx.new(|cx| {
+                Input::new("", cx)
+                    .password()
+                    .placeholder("Password")
+            }),
+            input_password_custom: cx.new(|cx| {
+                Input::new("secret", cx)
+                    .password()
+                    .mask_char('*')
+            }),
             input_maxlength: cx.new(|cx| Input::new("", cx).placeholder("Max 5 chars").max_length(5)),
             input_prepend: cx.new(|cx| Input::new("", cx).prepend(|_, _| div().px_3().child("http://").into_any_element())),
             input_append: cx.new(|cx| Input::new("", cx).append(|_, _| div().px_3().child(".com").into_any_element())),
@@ -102,11 +110,20 @@ impl FormDemo {
                     })
                     .placeholder("domain.com")
             }),
-            input_icon: cx.new(|cx| Input::new("", cx).placeholder("Search").icon_prefix(aura_icons_lucide::IconName::Search).clearable(true)),
+            input_icon: cx.new(|cx| {
+                Input::new("", cx)
+                    .placeholder("Search")
+                    .icon_prefix(aura_icons_lucide::IconName::Search)
+                    .clearable(true)
+            }),
             input_clearable: cx.new(|cx| Input::new("Clear me", cx).clearable(true)),
             input_disabled: cx.new(|cx| Input::new("Disabled", cx).disabled(true)),
             input_number: cx.new(|cx| InputNumber::new(10.0, cx).min(0.0).max(10.0)),
-            input_number_vertical: cx.new(|cx| InputNumber::new(5.0, cx).min(0.0).max(10.0).controls_position(aura_components::InputNumberControlsPosition::Right)),
+            input_number_vertical: cx.new(|cx| {
+                InputNumber::new(5.0, cx)
+                    .min(0.0).max(10.0)
+                    .controls_position(aura_components::InputNumberControlsPosition::Right)
+            }),
             input_number_precision: cx.new(|cx| InputNumber::new(1.23, cx).precision(2).step(0.01)),
             textarea: cx.new(|cx| Textarea::new("Line 1\nLine 2", cx).rows(3, cx)),
             textarea_limit: cx.new(|cx| Textarea::new("Limited content", cx).max_length(50).rows(2, cx)),

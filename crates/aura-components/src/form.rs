@@ -1,8 +1,8 @@
 use aura_core::Config;
-use gpui::{prelude::*, px, App, Render, Window, Context, SharedString, AnyElement, div, Component, Entity, Pixels};
+use gpui::{prelude::*, px, App, Render, Window, Context, SharedString, AnyElement, div, Component, Pixels};
 
 pub struct Form {
-    label_width: Option<Pixels>,
+    _label_width: Option<Pixels>,
     inline: bool,
     children: Vec<AnyElement>,
 }
@@ -10,13 +10,13 @@ pub struct Form {
 impl Form {
     pub fn new() -> Self {
         Self {
-            label_width: None,
+            _label_width: None,
             inline: false,
             children: Vec::new(),
         }
     }
 
-    pub fn label_width(mut self, width: impl Into<Pixels>) -> Self { self.label_width = Some(width.into()); self }
+    pub fn label_width(mut self, width: impl Into<Pixels>) -> Self { self._label_width = Some(width.into()); self }
     pub fn inline(mut self, inline: bool) -> Self { self.inline = inline; self }
     pub fn child(mut self, child: impl IntoElement) -> Self {
         self.children.push(child.into_any_element());
@@ -26,13 +26,11 @@ impl Form {
 
 impl IntoElement for Form {
     type Element = Component<Self>;
-    fn into_element(self) -> Self::Element {
-        Component::new(self)
-    }
+    fn into_element(self) -> Self::Element { Component::new(self) }
 }
 
 impl RenderOnce for Form {
-    fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(self, _window: &mut Window, _cx: &mut App) -> impl IntoElement {
         div()
             .flex()
             .when(self.inline, |s| s.flex_row().gap_4().flex_wrap())
@@ -73,9 +71,7 @@ impl FormItem {
 
 impl IntoElement for FormItem {
     type Element = Component<Self>;
-    fn into_element(self) -> Self::Element {
-        Component::new(self)
-    }
+    fn into_element(self) -> Self::Element { Component::new(self) }
 }
 
 impl RenderOnce for FormItem {
