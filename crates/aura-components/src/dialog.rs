@@ -35,37 +35,38 @@ impl DialogView {
 }
 
 impl Render for DialogView {
-    #[track_caller]
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
         let title = self.title.clone();
         let content_fn = self.content.clone();
         let on_close = self.on_close.clone();
 
-        let caller = std::panic::Location::caller();
-        let id = format!("dialog-overlay-{}", caller);
-
         div()
-            .id(id)
             .absolute()
             .size_full()
             .bg(gpui::rgba(0x00000066))
             .flex().items_center().justify_center()
+            // Using on_mouse_down on the overlay to close
             .on_mouse_down(MouseButton::Left, {
                 let on_close = on_close.clone();
                 move |_, window, cx| {
                     on_close(window, cx);
                 }
             })
+            .on_action(cx.listener({
+                let on_close = on_close.clone();
+                move |_, _action: &Close, window, cx| {
+                    on_close(window, cx);
+                }
+            }))
             .child(
                 div()
                     .w(px(400.0))
                     .bg(theme.neutral.card)
                     .rounded(px(theme.radius.md))
                     .shadow_xl()
-                    .on_mouse_down(MouseButton::Left, |_, _, _| {
-                        // Consume mouse down to prevent bubbling
-                    })
+                    // CONSUME mouse down inside the dialog content so it doesn't trigger the overlay close
+                    .on_mouse_down(MouseButton::Left, |_, _, _| {})
                     .child(
                         div().p_4().border_b_1().border_color(theme.neutral.border).flex().justify_between().items_center()
                             .child(div().font_weight(gpui::FontWeight::BOLD).child(title))

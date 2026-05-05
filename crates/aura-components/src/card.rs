@@ -70,12 +70,11 @@ impl RenderOnce for Card {
         }
 
         if self.hoverable {
-            el = el.hover(|s| s.shadow_lg().border_color(theme.primary.base));
+            el = el.hover(|s| s.shadow_xl().border_color(theme.primary.base));
         }
 
-        el = el.on_click(|_, _, _| {
-            // Consume to ensure ID-based interactions work
-        });
+        // We use on_click to ensure the ID-based hover and other interactions are registered correctly
+        el = el.on_click(|_, _, _| {});
 
         // Header
         if let Some(title) = self.title {

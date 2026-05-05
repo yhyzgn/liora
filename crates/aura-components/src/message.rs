@@ -3,6 +3,8 @@ use gpui::{
     prelude::*, px, App, IntoElement, Window,
     div, SharedString, Global, Entity, Context, Render,
 };
+use aura_icons::Icon;
+use aura_icons_lucide::IconName;
 use std::time::Duration;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -92,18 +94,13 @@ impl Render for MessageManager {
             .flex().flex_col().items_center().gap_2()
             .children(messages.into_iter().map(|msg| {
                 let (color, icon_name) = match msg.msg_type {
-                    MessageType::Info => (theme.primary.base, aura_icons_lucide::IconName::Info),
-                    MessageType::Success => (theme.success.base, aura_icons_lucide::IconName::Check),
-                    MessageType::Warning => (theme.warning.base, aura_icons_lucide::IconName::TriangleAlert),
-                    MessageType::Error => (theme.danger.base, aura_icons_lucide::IconName::CircleX),
+                    MessageType::Info => (theme.primary.base, IconName::Info),
+                    MessageType::Success => (theme.success.base, IconName::Check),
+                    MessageType::Warning => (theme.warning.base, IconName::TriangleAlert),
+                    MessageType::Error => (theme.danger.base, IconName::CircleX),
                 };
 
-                let bg_color = gpui::Hsla {
-                    h: color.h,
-                    s: color.s,
-                    l: color.l,
-                    a: 0.1,
-                };
+                let bg_color = color.opacity(0.1);
 
                 div()
                     .bg(bg_color)
@@ -112,7 +109,7 @@ impl Render for MessageManager {
                     .rounded(px(theme.radius.md))
                     .shadow_lg()
                     .flex().flex_row().items_center().gap_2()
-                    .child(aura_icons::Icon::new(icon_name).size(px(16.0)).color(color))
+                    .child(Icon::new(icon_name).size(px(16.0)).color(color))
                     .child(
                         div()
                             .text_color(color)

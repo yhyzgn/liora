@@ -73,12 +73,7 @@ impl RenderOnce for Alert {
             AlertType::Error => (theme.danger.base, IconName::CircleX),
         };
 
-        let bg = gpui::Hsla {
-            h: color.h,
-            s: color.s,
-            l: color.l,
-            a: 0.1,
-        };
+        let bg = color.opacity(0.1);
 
         div()
             .flex().flex_row().gap_3().p_3()

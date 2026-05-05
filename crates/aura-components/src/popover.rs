@@ -70,11 +70,20 @@ impl Render for PopoverView {
 
         match final_placement {
             Placement::Top | Placement::Bottom | Placement::TopStart | Placement::BottomStart | Placement::TopEnd | Placement::BottomEnd => {
-                pivot_container = pivot_container.w(px(0.0)).h(px(0.0));
-
+                let container_width = px(2000.0);
                 let ideal_center_x = anchor_bounds.left() + anchor_bounds.size.width / 2.0;
-                let half_content_width = reference_size.width / 2.0;
                 
+                // Clamping for horizontal centering
+                let half_content_width = reference_size.width / 2.0;
+                let clamped_center_x = ideal_center_x
+                    .max(half_content_width)
+                    .min(viewport_size.width - half_content_width);
+
+                pivot_container = pivot_container
+                    .w(container_width)
+                    .h(px(0.0))
+                    .left(clamped_center_x - container_width / 2.0);
+
                 if final_placement == Placement::Top || final_placement == Placement::TopStart || final_placement == Placement::TopEnd {
                     let bottom_offset = viewport_size.height - anchor_bounds.top() + offset;
                     pivot_container = pivot_container.bottom(bottom_offset).flex_col_reverse();
@@ -84,31 +93,31 @@ impl Render for PopoverView {
 
                 match final_placement {
                     Placement::Top | Placement::Bottom => {
-                        let clamped_center_x = ideal_center_x
-                            .max(half_content_width)
-                            .min(viewport_size.width - half_content_width);
-                        pivot_container = pivot_container.left(clamped_center_x);
+                        pivot_container = pivot_container.items_center();
                     }
                     Placement::TopStart | Placement::BottomStart => {
-                        let clamped_left = anchor_bounds.left()
-                            .max(px(0.0))
-                            .min(viewport_size.width - reference_size.width);
-                        pivot_container = pivot_container.left(clamped_left);
+                        pivot_container = pivot_container.items_start().pl(container_width / 2.0 - (clamped_center_x - anchor_bounds.left()));
                     }
                     Placement::TopEnd | Placement::BottomEnd => {
-                        let clamped_right = anchor_bounds.right()
-                            .min(viewport_size.width)
-                            .max(reference_size.width);
-                        pivot_container = pivot_container.left(clamped_right);
+                        pivot_container = pivot_container.items_end().pr(container_width / 2.0 - (anchor_bounds.right() - clamped_center_x));
                     }
                     _ => unreachable!()
                 }
             }
             Placement::Left | Placement::Right | Placement::LeftStart | Placement::RightStart | Placement::LeftEnd | Placement::RightEnd => {
-                pivot_container = pivot_container.w(px(0.0)).h(px(0.0));
-
+                let container_height = px(2000.0);
                 let ideal_center_y = anchor_bounds.top() + anchor_bounds.size.height / 2.0;
+
+                // Clamping for vertical centering
                 let half_content_height = reference_size.height / 2.0;
+                let clamped_center_y = ideal_center_y
+                    .max(half_content_height)
+                    .min(viewport_size.height - half_content_height);
+
+                pivot_container = pivot_container
+                    .h(container_height)
+                    .w(px(0.0))
+                    .top(clamped_center_y - container_height / 2.0);
 
                 if final_placement == Placement::Left || final_placement == Placement::LeftStart || final_placement == Placement::LeftEnd {
                     let dist_from_right = viewport_size.width - anchor_bounds.left() + offset;
@@ -119,36 +128,17 @@ impl Render for PopoverView {
 
                 match final_placement {
                     Placement::Left | Placement::Right => {
-                        let clamped_center_y = ideal_center_y
-                            .max(half_content_height)
-                            .min(viewport_size.height - half_content_height);
-                        pivot_container = pivot_container.top(clamped_center_y);
+                        pivot_container = pivot_container.items_center();
                     }
                     Placement::LeftStart | Placement::RightStart => {
-                        let clamped_top = anchor_bounds.top()
-                            .max(px(0.0))
-                            .min(viewport_size.height - reference_size.height);
-                        pivot_container = pivot_container.top(clamped_top);
+                        pivot_container = pivot_container.items_start().pt(container_height / 2.0 - (clamped_center_y - anchor_bounds.top()));
                     }
                     Placement::LeftEnd | Placement::RightEnd => {
-                        let clamped_bottom = anchor_bounds.bottom()
-                            .min(viewport_size.height)
-                            .max(reference_size.height);
-                        pivot_container = pivot_container.top(clamped_bottom);
+                        pivot_container = pivot_container.items_end().pb(container_height / 2.0 - (anchor_bounds.bottom() - clamped_center_y));
                     }
                     _ => unreachable!()
                 }
             }
-        }
-
-        let mut content_wrapper = div().flex();
-        match final_placement {
-            Placement::Top | Placement::Bottom => content_wrapper = content_wrapper.items_center().justify_center(),
-            Placement::TopStart | Placement::BottomStart => content_wrapper = content_wrapper.items_start(),
-            Placement::TopEnd | Placement::BottomEnd => content_wrapper = content_wrapper.items_end(),
-            Placement::Left | Placement::Right => content_wrapper = content_wrapper.items_center().justify_center(),
-            Placement::LeftStart | Placement::RightStart => content_wrapper = content_wrapper.items_start(),
-            Placement::LeftEnd | Placement::RightEnd => content_wrapper = content_wrapper.items_end(),
         }
 
         div()
@@ -160,7 +150,7 @@ impl Render for PopoverView {
             .child(
                 pivot_container
                     .child(
-                        content_wrapper
+                        div()
                             .on_mouse_down(MouseButton::Left, |_, _, _| {}) // Consume click
                             .bg(theme.neutral.card)
                             .border_1().border_color(theme.neutral.border)

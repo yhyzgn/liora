@@ -54,7 +54,6 @@ impl DrawerView {
 }
 
 impl Render for DrawerView {
-    #[track_caller]
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
         let title = self.title.clone();
@@ -64,14 +63,11 @@ impl Render for DrawerView {
         let width = self.width;
         let height = self.height;
 
-        let caller = std::panic::Location::caller();
-        let id = format!("drawer-overlay-{}", caller);
-
         let mut container = div()
-            .id(id)
             .absolute()
             .size_full()
             .bg(gpui::rgba(0x00000066))
+            // Using on_mouse_down on the overlay to close
             .on_mouse_down(MouseButton::Left, {
                 let on_close = on_close.clone();
                 move |_, window, cx| {
@@ -82,9 +78,8 @@ impl Render for DrawerView {
         let mut panel = div()
             .bg(theme.neutral.card)
             .shadow_xl()
-            .on_mouse_down(MouseButton::Left, |_, _, _| {
-                // Consume
-            });
+            // CONSUME mouse down inside the panel so it doesn't trigger the overlay close
+            .on_mouse_down(MouseButton::Left, |_, _, _| {});
 
         match placement {
             DrawerPlacement::Left => {
