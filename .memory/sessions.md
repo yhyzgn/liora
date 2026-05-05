@@ -112,48 +112,16 @@
 - Correct fix: keep normal icon `.color(c.text)` and add `AuraIcon::group_hover_color(group, c.text_hover)`; Button assigns a hover group to the button container so child icons switch color via GPUI `group_hover`.
 - Verified `cargo check`, `cargo test -p aura-icons`, and `cargo test -p aura-components`.
 
-## Session 6 — 2026-05-05
+## Session 8 — 2026-05-05 (Evening)
 
 ### Actions
-- **初始化项目上下文**: 加载 `prompt.md`, `.memory/state.md`, `.prompt/P3-popper-feedback.md`。
-- **验证编译基线**: 运行 `cargo check` 确认无 Error。
-- **完成 Popper 基础架构 (Popper Foundation)**:
-  - 扩展 `Placement` 枚举，支持全部 12 种方位（Top/Bottom/Left/Right × Start/End/Center）。
-  - 实现 `Placement::flip()` 翻转逻辑。
-  - 实现 `Popper::calculate_position_with_flip`，支持视口溢出检测与自动翻转/贴边 (Clamp)。
-  - 实现 `ZIndexStack` 全局状态，定义 popup/modal/notification/tooltip 标准层级。
-  - 在 `init_aura` 中完成 `ZIndexStack` 初始化。
-- **完成 P3 全部组件开发 (13/13)**:
-  - **反馈类**: Tooltip, Popover, Popconfirm, Dialog, Drawer, Message, Notification, Alert, Loading, MessageBox。
-  - **容器/导航**: Card, Collapse, Dropdown。
-  - **全局管理器**: 实现 `MessageManager` 和 `NotificationManager` 单例，支持异步自动销毁。
-  - **Portal 深度集成**: 将所有弹出层组件对接至 `Popper` 引擎与 `Portal` 传送门系统。
-- **Bug 修复与增强**:
-  - 🐛 **Rate**: 修复鼠标移出后的 1s 延迟，改用 `on_hover` 实时监听状态。
-  - 🐛 **Input**: 修复多行模式下的垂直居中偏离问题（改为 `items_start`）；新增 `.text_align(TextAlign)` API 支持文本对齐。
-- **Gallery 完善**:
-  - 为 P3 所有组件添加了对应的 `Demo` 页面并注册到全局路由。
-  - 优化了 `main.rs` 的渲染循环，确保全局消息和通知层能在最顶层实时呈现。
-- **状态同步**:
-  - 更新 `.memory/state.md` 标记 P3 已 100% 完成，进入 P4 准备阶段。
-  - 更新 `.memory/inventory.md` 标记所有 P3 组件为 ✅ Done。
-
-### Key Discoveries
-- GPUI 0.2.x 的 `push_portal` 必须支持 `FnOnce` 以便捕获非 Clone 的 `AnyElement`。
-- 全局单例管理器（如 Message）通过 `Entity` 包装并存入 `Global` 是处理跨视图通信的最佳实践。
-
-### Decisions Made
-- 弹出层组件全部采用 `Arc<dyn Fn...>` 封装内容闭包，确保在 Portal 渲染循环中可安全多次调用（或在 `FnOnce` 环境下重建）。
-- Dialog 和 Drawer 采用“消费点击”策略：点击内容区域不触发背景 Overlay 的关闭逻辑。
-- **状态同步**:
-  - 更新 `.memory/state.md` 标记 P2 已完成，P3 进行中。
-  - 更新 `.memory/inventory.md` 标记 Popper 基建 ✅ Done。
-  - 更新 `.memory/decisions.md` (ADR-010) 记录弹出层设计决策。
-
-### Key Discoveries
-- `PortalLayer` 已在 `aura-gallery` 的 `main.rs` 中实现，通过 `std::mem::take` 消费全局 `Portal` 栈，支持每帧重新推送实现即时渲染。
-- GPUI 0.2.2 的 Z-Index 逻辑可以通过 `Config` 全局配置统一管理。
-
-### Decisions Made
-- 采用 "Flip then Clamp" 策略处理 Popper 视口溢出：优先尝试翻转（如 Top -> Bottom），若翻转后依然溢出，则强制贴边渲染。
-- 沿用当前 Gallery 中的 `Portal` 全局单例模式，作为 P3 所有弹出组件的通信隧道。
+- **修复 Popover/Popconfirm 交互与定位问题**:
+  - **恢复 `on_click`**: 在 `Popover::new` 和 `render` 中使用 `#[track_caller]` 捕获调用点，生成稳定的 `ElementId`。这使得 `div` 包装器可以安全使用 `.on_click()`，修复了鼠标从外部按下移入触发的问题。
+  - **实现“安全轴心点”边界补偿 (Safe Pivot Clamping)**:
+    - 在 `PopoverView` 中引入边界溢出检测。根据参考尺寸 (200x150) 计算气泡中心点的安全区间。
+    - 当按钮靠近窗口边缘时，自动偏移 2000px 轴心容器的位置，确保气泡内容始终留在视口内 [0, viewport_size]。
+    - 优化了 `Top` 分支的 `bottom` 坐标计算，彻底解决了 `TopCenter` 在某些临界坐标下不弹出的 bug。
+    - 针对 `Start` / `End` 对齐变体，同样应用了中心点偏移补偿，确保边缘对齐且不溢出。
+  - **验证**:
+  - `cargo check` 通过。
+  Applied fuzzy match at line 125-130.
