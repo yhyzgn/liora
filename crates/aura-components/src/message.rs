@@ -1,4 +1,5 @@
 use aura_core::{Config, push_portal};
+use aura_theme::Theme;
 use gpui::{
     prelude::*, px, App, IntoElement, Window,
     div, SharedString, Global, Entity, Context, Render,
@@ -93,26 +94,19 @@ impl Render for MessageManager {
             .w_full()
             .flex().flex_col().items_center().gap_2()
             .children(messages.into_iter().map(|msg| {
-                let (color, icon_name) = match msg.msg_type {
-                    MessageType::Info => (theme.primary.base, IconName::Info),
-                    MessageType::Success => (theme.success.base, IconName::Check),
-                    MessageType::Warning => (theme.warning.base, IconName::TriangleAlert),
-                    MessageType::Error => (theme.danger.base, IconName::CircleX),
-                };
-
-                let bg_color = color.opacity(0.1);
+                let style = message_style(&theme, msg.msg_type);
 
                 div()
-                    .bg(bg_color)
-                    .border_1().border_color(color)
+                    .bg(style.bg)
+                    .border_1().border_color(style.border)
                     .px_4().py_2()
                     .rounded(px(theme.radius.md))
                     .shadow_lg()
                     .flex().flex_row().items_center().gap_2()
-                    .child(Icon::new(icon_name).size(px(16.0)).color(color))
+                    .child(Icon::new(style.icon).size(px(16.0)).color(style.fg))
                     .child(
                         div()
-                            .text_color(color)
+                            .text_color(style.fg)
                             .text_size(px(theme.font_size.sm))
                             .child(msg.content)
                     )
@@ -130,5 +124,52 @@ pub fn render_messages(cx: &mut App) {
         push_portal(move |_window, _cx| {
             manager.clone().into_any_element()
         }, cx);
+    }
+}
+
+struct MessageStyle {
+    bg: gpui::Hsla,
+    fg: gpui::Hsla,
+    border: gpui::Hsla,
+    icon: IconName,
+}
+
+fn message_style(theme: &Theme, msg_type: MessageType) -> MessageStyle {
+    let (family, icon) = match msg_type {
+        MessageType::Info => (&theme.info, IconName::Info),
+        MessageType::Success => (&theme.success, IconName::Check),
+        MessageType::Warning => (&theme.warning, IconName::TriangleAlert),
+        MessageType::Error => (&theme.danger, IconName::CircleX),
+    };
+
+    MessageStyle {
+        bg: family.base,
+        fg: theme.neutral.card,
+        border: family.base,
+        icon,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn message_styles_use_solid_type_background_and_inverted_foreground() {
+        let theme = Theme::light();
+        let cases = [
+            (MessageType::Info, theme.info.base),
+            (MessageType::Success, theme.success.base),
+            (MessageType::Warning, theme.warning.base),
+            (MessageType::Error, theme.danger.base),
+        ];
+
+        for (message_type, expected_bg) in cases {
+            let message = message_style(&theme, message_type);
+
+            assert_eq!(message.bg, expected_bg);
+            assert_eq!(message.border, expected_bg);
+            assert_eq!(message.fg, theme.neutral.card);
+        }
     }
 }

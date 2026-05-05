@@ -65,6 +65,9 @@ impl Render for PopoverView {
         div()
             .absolute()
             .size_full()
+            .on_mouse_move(|_, _, cx| {
+                cx.stop_propagation();
+            })
             .when(close_on_click_outside, |s| s.on_mouse_down(MouseButton::Left, cx.listener(move |_, _, window, cx| {
                 on_close(window, cx);
             })))
@@ -77,6 +80,9 @@ impl Render for PopoverView {
                         div()
                             .flex_shrink_0() // Ensure content is not squeezed by flex layout
                             .max_w(max_w)
+                            .on_mouse_move(|_, _, cx| {
+                                cx.stop_propagation();
+                            })
                             .on_mouse_down(MouseButton::Left, |_, _, cx| {
                                 cx.stop_propagation();
                             }) // Consume click so it doesn't trigger the background

@@ -200,3 +200,93 @@
 - `cargo test -p aura-core` passed: 2 tests.
 - `cargo test -p aura-components` passed.
 - `cargo run -p aura-gallery` compiled, then failed at runtime with Linux `NoCompositor` in this tmux environment.
+
+## Session 12 — 2026-05-06
+
+### Actions
+- **检查 Dialog 手动修复并补齐关闭能力**:
+  - 确认 Dialog 内容面板已使用 `cx.stop_propagation()` 阻止内部点击冒泡到遮罩层。
+  - 新增 `Dialog::close(cx)` 可编程关闭 API，供内容按钮或业务逻辑手动关闭。
+  - 新增 `.close_on_escape(bool)`，允许将 Dialog 配置为 ESC 不可关闭。
+  - 新增 `Dialog::register_key_bindings(cx)` 注册 `escape -> DialogClose`。
+- **修复 Drawer 同类问题**:
+  - Drawer panel 原先只有空 mouse-down handler，不能阻止事件冒泡；改为 `cx.stop_propagation()`。
+  - 新增 `Drawer::close(cx)` 可编程关闭 API。
+  - 新增 `.close_on_escape(bool)` 与 `Drawer::register_key_bindings(cx)`。
+- **修复 MessageBox 关闭语义**:
+  - MessageBox 按钮原先调用 `clear_portals(cx)`，只清 Portal 临时渲染队列，不能可靠清除 ActiveModal 状态。
+  - 改为调用 `Dialog::close(cx)` / `MessageBox::close(cx)`。
+  - 新增 `.close_on_click_outside(bool)` / `.close_on_escape(bool)` 转发到底层 Dialog，支持必须手动关闭的场景。
+- **Gallery 接入**:
+  - 在 `aura-gallery` 启动时注册 Dialog / Drawer 的 ESC key binding。
+
+### Verification
+- `cargo check` passed.
+- `cargo test -p aura-core` passed: 2 tests.
+- `cargo test -p aura-components` passed.
+- `cargo run -p aura-gallery` compiled, then failed at runtime with Linux `NoCompositor` in this tmux environment.
+
+## Session 13 — 2026-05-06
+
+### Actions
+- **修复弹层 hover / mouse-move 穿透**:
+  - Popover 全屏浮层和气泡内容均增加 `on_mouse_move(... cx.stop_propagation())`，避免 hover 事件继续传递到底层组件。
+  - Dialog 遮罩层和内容面板均增加 mouse-move propagation stop。
+  - Drawer 遮罩层和 panel 均增加 mouse-move propagation stop。
+  - 该修复覆盖基于 Popover 的 Popover / Popconfirm / Dropdown，以及基于 Dialog 的 MessageBox。
+- **扩充弹层组件 Demo 覆盖**:
+  - Popover: 基础用法、十二方向 placement、禁用空白关闭、手动关闭、自定义 offset。
+  - Popconfirm: 基础 Delete/Archive、自定义文案、多个 placement。
+  - Dropdown: 基础 actions、BottomEnd/TopStart、Top/Bottom/Left/Right placement。
+  - Dialog: 基础、手动关闭-only、复杂内容与内部按钮关闭。
+  - Drawer: 四方向、宽/高尺寸、手动关闭-only。
+  - MessageBox: alert/confirm、禁用空白与 ESC 的手动关闭场景。
+
+### Verification
+- `cargo check` passed.
+- `cargo test -p aura-core` passed: 2 tests.
+- `cargo test -p aura-components` passed.
+- `timeout 10s cargo run -p aura-gallery` compiled and launched; command ended by timeout after run start.
+
+### Follow-up — Demo popover/popconfirm id collisions
+- 修复扩展 Demo 后 Popover / Popconfirm 仅第一个用例能弹出的问题。
+- 根因: Demo helper (`simple_popover`, `card_popover`, `confirm_at`) 在同一函数调用点批量创建多个 Popover/Popconfirm；组件默认 track_caller ID 会相同，导致触发状态冲突。
+- 为 Popover / Popconfirm Demo 中每个示例显式设置唯一 `.id(...)`。
+
+### Verification
+- `cargo check` passed.
+- `cargo test -p aura-core` passed: 2 tests.
+- `cargo test -p aura-components` passed.
+- `timeout 10s cargo run -p aura-gallery` compiled and launched; command ended by timeout after run start.
+
+## Session 14 — 2026-05-06
+
+### Actions
+- **修复 Message 全局提示样式**:
+  - Message 不再手写 `base.opacity(0.1)` 作为背景色。
+  - 新增 `message_style(theme, msg_type)`，直接复用 `Theme::color_by_variant(variant, secondary=true, background=true, border=true)`。
+  - Info / Success / Warning / Error 分别映射到 ButtonVariant::Info / Success / Warning / Danger。
+  - 图标颜色、文字颜色、边框颜色统一使用 secondary button variant 的 `text` / `border`。
+  - 背景使用 secondary button variant 的 `bg`，即类型颜色计算出的浅色背景，并跟随当前主题。
+- **补充回归测试**:
+  - `message_styles_reuse_secondary_button_variant_colors` 锁定 Message 样式与 secondary Button variant 颜色一致。
+
+### Verification
+- `cargo test -p aura-components message_styles_reuse_secondary_button_variant_colors -- --nocapture` passed.
+- `cargo check` passed.
+- `cargo test -p aura-core` passed: 2 tests.
+- `cargo test -p aura-components` passed: 1 test.
+- `timeout 10s cargo run -p aura-gallery` compiled and launched; command ended by timeout after run start.
+
+### Follow-up — Message solid type color style
+- 根据反馈调整 Message 样式: 不再复用 secondary Button 的浅色背景。
+- Message 现在按 type 使用实色背景: Info/Success/Warning/Error 分别使用 theme.info/success/warning/danger.base。
+- 图标和文字使用 `theme.neutral.card` 作为反色/白色前景，边框与背景同色。
+- 更新测试为 `message_styles_use_solid_type_background_and_inverted_foreground`。
+
+### Verification
+- `cargo test -p aura-components message_styles_use_solid_type_background_and_inverted_foreground -- --nocapture` passed.
+- `cargo check` passed.
+- `cargo test -p aura-core` passed: 2 tests.
+- `cargo test -p aura-components` passed: 1 test.
+- `timeout 10s cargo run -p aura-gallery` compiled and launched; command ended by timeout after run start.

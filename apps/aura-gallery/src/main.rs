@@ -3,7 +3,7 @@ mod demos;
 
 use aura_core::{ContextExt, init_aura, Portal};
 use aura_theme::Theme;
-use aura_components::{Input, Checkbox, Radio, RadioGroup, Switch};
+use aura_components::{Input, Checkbox, Radio, RadioGroup, Switch, Dialog, Drawer};
 use gpui::{
     AnyView, App, Bounds, Context, Render, Window, WindowBounds, WindowOptions, div, prelude::*, px, size, Component
 };
@@ -22,6 +22,8 @@ fn run_gallery() {
         Radio::register_key_bindings(cx);
         RadioGroup::register_key_bindings(cx);
         Switch::register_key_bindings(cx);
+        Dialog::register_key_bindings(cx);
+        Drawer::register_key_bindings(cx);
 
         let _ = cx.open_window(
             WindowOptions {

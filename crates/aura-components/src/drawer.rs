@@ -1,11 +1,13 @@
 use aura_core::{Config};
 use gpui::{
     prelude::*, px, App, Context, IntoElement, Render, Window,
-    div, AnyElement, MouseButton, SharedString, Pixels,
+    div, AnyElement, MouseButton, SharedString, Pixels, actions, KeyBinding,
 };
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
 use std::sync::Arc;
+
+actions!(drawer, [DrawerClose]);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum DrawerPlacement {
@@ -23,6 +25,7 @@ pub struct Drawer {
     width: Pixels,
     height: Pixels,
     close_on_click_outside: bool,
+    close_on_escape: bool,
 }
 
 pub struct DrawerView {
@@ -32,6 +35,7 @@ pub struct DrawerView {
     width: Pixels,
     height: Pixels,
     close_on_click_outside: bool,
+    close_on_escape: bool,
     on_close: Arc<dyn Fn(&mut Window, &mut App) + 'static>,
 }
 
@@ -43,6 +47,7 @@ impl DrawerView {
         width: Pixels,
         height: Pixels,
         close_on_click_outside: bool,
+        close_on_escape: bool,
         on_close: impl Fn(&mut Window, &mut App) + 'static,
     ) -> Self {
         Self {
@@ -52,6 +57,7 @@ impl DrawerView {
             width,
             height,
             close_on_click_outside,
+            close_on_escape,
             on_close: Arc::new(on_close),
         }
     }
@@ -67,11 +73,15 @@ impl Render for DrawerView {
         let width = self.width;
         let height = self.height;
         let close_on_click_outside = self.close_on_click_outside;
+        let close_on_escape = self.close_on_escape;
 
         let mut container = div()
             .absolute()
             .size_full()
             .bg(gpui::rgba(0x00000066))
+            .on_mouse_move(|_, _, cx| {
+                cx.stop_propagation();
+            })
             .when(close_on_click_outside, |s| {
                 s.on_mouse_down(MouseButton::Left, {
                     let on_close = on_close.clone();
@@ -79,13 +89,26 @@ impl Render for DrawerView {
                         on_close(window, cx);
                     }
                 })
+            })
+            .when(close_on_escape, |s| {
+                s.on_action(cx.listener({
+                    let on_close = on_close.clone();
+                    move |_, _action: &DrawerClose, window, cx| {
+                        on_close(window, cx);
+                    }
+                }))
             });
 
         let mut panel = div()
             .bg(theme.neutral.card)
             .shadow_xl()
             // CONSUME mouse down inside the panel so it doesn't trigger the overlay close
-            .on_mouse_down(MouseButton::Left, |_, _, _| {});
+            .on_mouse_move(|_, _, cx| {
+                cx.stop_propagation();
+            })
+            .on_mouse_down(MouseButton::Left, |_, _, cx| {
+                cx.stop_propagation();
+            });
 
         match placement {
             DrawerPlacement::Left => {
@@ -124,6 +147,10 @@ impl Render for DrawerView {
 }
 
 impl Drawer {
+    pub fn register_key_bindings(cx: &mut App) {
+        cx.bind_keys([KeyBinding::new("escape", DrawerClose, None)]);
+    }
+
     pub fn new() -> Self {
         Self {
             title: SharedString::default(),
@@ -132,6 +159,7 @@ impl Drawer {
             width: px(300.0),
             height: px(300.0),
             close_on_click_outside: true,
+            close_on_escape: true,
         }
     }
 
@@ -160,6 +188,11 @@ impl Drawer {
         self
     }
 
+    pub fn close_on_escape(mut self, c: bool) -> Self {
+        self.close_on_escape = c;
+        self
+    }
+
     pub fn content<F, E>(mut self, f: F) -> Self 
     where 
         F: Fn(&mut Window, &mut Context<DrawerView>) -> E + 'static,
@@ -176,6 +209,7 @@ impl Drawer {
         let width = self.width;
         let height = self.height;
         let close_on_click_outside = self.close_on_click_outside;
+        let close_on_escape = self.close_on_escape;
         
         let view = cx.new(|_cx| DrawerView::new(
             title,
@@ -184,11 +218,16 @@ impl Drawer {
             width,
             height,
             close_on_click_outside,
+            close_on_escape,
             |_window, _cx| {
                 aura_core::clear_active_drawer(_cx);
             }
         ));
         
         aura_core::set_active_drawer(view.into(), cx);
+    }
+
+    pub fn close(cx: &mut App) {
+        aura_core::clear_active_drawer(cx);
     }
 }

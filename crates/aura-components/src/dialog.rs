@@ -1,24 +1,26 @@
 use aura_core::{Config};
 use gpui::{
     prelude::*, px, App, Context, IntoElement, Render, Window,
-    div, AnyElement, MouseButton, actions, SharedString,
+    div, AnyElement, MouseButton, actions, SharedString, KeyBinding,
 };
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
 use std::sync::Arc;
 
-actions!(dialog, [Close]);
+actions!(dialog, [DialogClose]);
 
 pub struct Dialog {
     title: SharedString,
     content: Arc<dyn Fn(&mut Window, &mut Context<DialogView>) -> AnyElement + 'static>,
     close_on_click_outside: bool,
+    close_on_escape: bool,
 }
 
 pub struct DialogView {
     title: SharedString,
     content: Arc<dyn Fn(&mut Window, &mut Context<Self>) -> AnyElement + 'static>,
     close_on_click_outside: bool,
+    close_on_escape: bool,
     on_close: Arc<dyn Fn(&mut Window, &mut App) + 'static>,
 }
 
@@ -27,12 +29,14 @@ impl DialogView {
         title: SharedString,
         content: Arc<dyn Fn(&mut Window, &mut Context<Self>) -> AnyElement + 'static>,
         close_on_click_outside: bool,
+        close_on_escape: bool,
         on_close: impl Fn(&mut Window, &mut App) + 'static,
     ) -> Self {
         Self {
             title,
             content,
             close_on_click_outside,
+            close_on_escape,
             on_close: Arc::new(on_close),
         }
     }
@@ -45,12 +49,16 @@ impl Render for DialogView {
         let content_fn = self.content.clone();
         let on_close = self.on_close.clone();
         let close_on_click_outside = self.close_on_click_outside;
+        let close_on_escape = self.close_on_escape;
 
         div()
             .absolute()
             .size_full()
             .bg(gpui::rgba(0x00000066))
             .flex().items_center().justify_center()
+            .on_mouse_move(|_, _, cx| {
+                cx.stop_propagation();
+            })
             .when(close_on_click_outside, |s| {
                 s.on_mouse_down(MouseButton::Left, {
                     let on_close = on_close.clone();
@@ -59,18 +67,21 @@ impl Render for DialogView {
                     }
                 })
             })
-            .on_action(cx.listener({
+            .when(close_on_escape, |s| s.on_action(cx.listener({
                 let on_close = on_close.clone();
-                move |_, _action: &Close, window, cx| {
+                move |_, _action: &DialogClose, window, cx| {
                     on_close(window, cx);
                 }
-            }))
+            })))
             .child(
                 div()
                     .w(px(400.0))
                     .bg(theme.neutral.card)
                     .rounded(px(theme.radius.md))
                     .shadow_xl()
+                    .on_mouse_move(|_, _, cx| {
+                        cx.stop_propagation();
+                    })
                     .on_mouse_down(MouseButton::Left, |_, _, cx| {
                         cx.stop_propagation();
                     }) // Consume click so it doesn't trigger the background
@@ -90,11 +101,16 @@ impl Render for DialogView {
 }
 
 impl Dialog {
+    pub fn register_key_bindings(cx: &mut App) {
+        cx.bind_keys([KeyBinding::new("escape", DialogClose, None)]);
+    }
+
     pub fn new() -> Self {
         Self {
             title: SharedString::default(),
             content: Arc::new(|_, _| div().child("Dialog Content").into_any_element()),
             close_on_click_outside: true,
+            close_on_escape: true,
         }
     }
 
@@ -105,6 +121,11 @@ impl Dialog {
 
     pub fn close_on_click_outside(mut self, c: bool) -> Self {
         self.close_on_click_outside = c;
+        self
+    }
+
+    pub fn close_on_escape(mut self, c: bool) -> Self {
+        self.close_on_escape = c;
         self
     }
 
@@ -121,16 +142,22 @@ impl Dialog {
         let title = self.title;
         let content = self.content;
         let close_on_click_outside = self.close_on_click_outside;
+        let close_on_escape = self.close_on_escape;
         
         let view = cx.new(|_cx| DialogView::new(
             title,
             content,
             close_on_click_outside,
+            close_on_escape,
             |_window, _cx| {
                 aura_core::clear_active_modal(_cx);
             }
         ));
         
         aura_core::set_active_modal(view.into(), cx);
+    }
+
+    pub fn close(cx: &mut App) {
+        aura_core::clear_active_modal(cx);
     }
 }
