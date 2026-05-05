@@ -100,16 +100,16 @@ impl FormDemo {
                         sel.update(cx, |s, cx| { 
                             s.set_borderless(true, cx);
                             s.set_radius_none(true, cx);
-                            s.set_width(px(80.0), cx);
+                            s.set_radius_left_none(false, cx); // Ensure left is rounded if root
+                            s.set_width(px(90.0), cx);
                             s.set_text_size(px(theme.font_size.sm), cx);
                             s.set_text_color(theme.neutral.text_3, cx);
                             s.set_padding_x(px(8.0), cx);
                         });
-                        div().w(px(80.0)).child(sel.clone()).into_any_element()
+                        div().w(px(90.0)).child(sel.clone()).into_any_element()
                     })
                     .placeholder("domain.com")
             }),
-
             input_icon: cx.new(|cx| {
                 Input::new("", cx)
                     .placeholder("Search")

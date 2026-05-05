@@ -15,6 +15,8 @@ pub struct Select {
     on_change: Option<Box<dyn Fn(usize, &mut Window, &mut App) + 'static>>,
     border_none: bool,
     radius_none: bool,
+    radius_left_none: bool,
+    radius_right_none: bool,
     width: Option<Pixels>,
     text_size: Option<Pixels>,
     text_color: Option<Hsla>,
@@ -32,6 +34,8 @@ impl Select {
             on_change: None,
             border_none: false,
             radius_none: false,
+            radius_left_none: false,
+            radius_right_none: false,
             width: None,
             text_size: None,
             text_color: None,
@@ -41,6 +45,8 @@ impl Select {
 
     pub fn borderless(mut self) -> Self { self.border_none = true; self }
     pub fn radius_none(mut self) -> Self { self.radius_none = true; self }
+    pub fn radius_left_none(mut self) -> Self { self.radius_left_none = true; self }
+    pub fn radius_right_none(mut self) -> Self { self.radius_right_none = true; self }
     pub fn width(mut self, w: impl Into<Pixels>) -> Self { self.width = Some(w.into()); self }
     pub fn text_size(mut self, s: impl Into<Pixels>) -> Self { self.text_size = Some(s.into()); self }
     pub fn text_color(mut self, c: Hsla) -> Self { self.text_color = Some(c); self }
@@ -53,6 +59,16 @@ impl Select {
 
     pub fn set_radius_none(&mut self, r: bool, cx: &mut Context<Self>) {
         self.radius_none = r;
+        cx.notify();
+    }
+    
+    pub fn set_radius_left_none(&mut self, r: bool, cx: &mut Context<Self>) {
+        self.radius_left_none = r;
+        cx.notify();
+    }
+    
+    pub fn set_radius_right_none(&mut self, r: bool, cx: &mut Context<Self>) {
+        self.radius_right_none = r;
         cx.notify();
     }
 
@@ -209,14 +225,23 @@ impl Render for Select {
             }, cx);
         }
 
-        let el = gpui::div()
+        let mut el = gpui::div()
             .relative()
             .when_some(self.width, |s, w| s.w(w))
             .when(self.width.is_none(), |s| s.w_full())
-            .when(!self.radius_none, |s| s.rounded(gpui::px(theme.radius.md)))
             .bg(theme.neutral.card)
             .when(!self.border_none, |s| s.border_1().border_color(border_color))
             .cursor_pointer();
+
+        if !self.radius_none {
+            if self.radius_left_none {
+                el = el.rounded_r(gpui::px(theme.radius.md));
+            } else if self.radius_right_none {
+                el = el.rounded_l(gpui::px(theme.radius.md));
+            } else {
+                el = el.rounded(gpui::px(theme.radius.md));
+            }
+        }
 
         el.child(trigger_content)
             .child(

@@ -6,14 +6,10 @@ use gpui::{
     EntityInputHandler, FocusHandle, Focusable, GlobalElementId, Hsla, InspectorElementId,
     IntoElement, LayoutId,     MouseButton, MouseDownEvent, MouseUpEvent,
     Pixels, Point, Render, Rgba, SharedString, ShapedLine, Style, TextRun,
-    UTF16Selection, UnderlineStyle, Window, actions, KeyBinding, fill, point, size,
+    UTF16Selection, Window, actions, KeyBinding, fill, point, size,
     MouseMoveEvent, AnyElement,
 };
 use std::ops::{Add, Range};
-
-fn rgba(r: u8, g: u8, b: u8, a: f32) -> Hsla {
-    Rgba { r: r as f32 / 255.0, g: g as f32 / 255.0, b: b as f32 / 255.0, a }.into()
-}
 
 actions!(input, [
     Backspace, Delete, Left, Right, Home, End, SelectAll, Enter, InputUp, InputDown, Copy, Paste, Cut,
@@ -39,6 +35,7 @@ pub struct Input {
     marked_range: Option<Range<usize>>,
     last_line_layouts: Vec<(ShapedLine, Pixels)>,
     last_bounds: Option<Bounds<Pixels>>,
+    last_layout_is_masked: bool,
     cursor_visible: bool,
     blink_task: Option<gpui::Task<()>>,
     filter: Option<Box<dyn Fn(&str) -> bool + 'static>>,
@@ -48,6 +45,8 @@ pub struct Input {
     mask_char: char,
     prepend: Option<Box<dyn Fn(&mut Window, &mut App) -> AnyElement + 'static>>,
     append: Option<Box<dyn Fn(&mut Window, &mut App) -> AnyElement + 'static>>,
+    height: Option<Pixels>,
+    min_rows: usize,
 }
 
 impl Input {
@@ -57,6 +56,7 @@ impl Input {
             clearable: false, icon_prefix: None, icon_suffix: None,
             focus_handle: cx.focus_handle(), selected_range: 0..0, selection_reversed: false,
             marked_range: None, last_line_layouts: Vec::new(), last_bounds: None,
+            last_layout_is_masked: false,
             cursor_visible: true, blink_task: None,
             filter: None,
             max_length: None,
@@ -65,6 +65,8 @@ impl Input {
             mask_char: '•',
             prepend: None,
             append: None,
+            height: None,
+            min_rows: 1,
         }
     }
     pub fn placeholder(mut self, p: impl Into<SharedString>) -> Self { self.placeholder = p.into(); self }
@@ -76,6 +78,8 @@ impl Input {
     pub fn max_length(mut self, max: usize) -> Self { self.max_length = Some(max); self }
     pub fn password(mut self) -> Self { self.input_type = InputType::Password; self }
     pub fn mask_char(mut self, c: char) -> Self { self.mask_char = c; self }
+    pub fn min_rows(mut self, rows: usize) -> Self { self.min_rows = rows; self }
+    pub fn height(mut self, h: impl Into<Pixels>) -> Self { self.height = Some(h.into()); self }
     
     pub fn prepend(mut self, render: impl Fn(&mut Window, &mut App) -> AnyElement + 'static) -> Self {
         self.prepend = Some(Box::new(render));
@@ -226,8 +230,6 @@ impl Input {
     fn move_vertical(&mut self, delta: isize, select: bool, cx: &mut Context<Self>) {
         let text = self.value.clone();
         let offset = self.cursor_offset();
-        let current_line = text.chars().take_while(|_| false).count(); // Just to get line count logic safe
-        // Simplified line logic for safety
         let lines: Vec<&str> = text.split('\n').collect();
         let mut current_line = 0;
         let mut line_start = 0;
@@ -275,7 +277,7 @@ impl Input {
             let x = pt.x - bounds.left();
             let display_index = layouts[best_line].0.index_for_x(x).unwrap_or(layouts[best_line].0.len);
             
-            if self.is_password() {
+            if self.last_layout_is_masked {
                 let char_count = display_index / self.mask_char.len_utf8();
                 let original_line = self.value.split('\n').nth(best_line).unwrap_or("");
                 let mut byte_idx = 0;
@@ -482,8 +484,8 @@ impl EntityInputHandler for Input {
             let line_text = self.value.split('\n').nth(idx).unwrap_or("");
             let line_len = line_text.len();
             if start >= original_byte_offset && start <= original_byte_offset + line_len {
-                let x_start = layout.x_for_index(self.original_to_display_offset_in_line(start - original_byte_offset, line_text));
-                let x_end = layout.x_for_index(self.original_to_display_offset_in_line(end.min(original_byte_offset + line_len) - original_byte_offset, line_text));
+                let x_start = layout.x_for_index(self.safe_display_offset_in_line(start - original_byte_offset, line_text));
+                let x_end = layout.x_for_index(self.safe_display_offset_in_line(end.min(original_byte_offset + line_len) - original_byte_offset, line_text));
                 return Some(Bounds::from_corners(
                     point(bounds.left() + x_start, *y_offset),
                     point(bounds.left() + x_end, *y_offset + line_height),
@@ -520,10 +522,8 @@ impl Input {
             SharedString::from(masked)
         } else { self.value.clone() }
     }
-    fn original_to_display_offset_in_line(&self, line_offset: usize, line_text: &str) -> usize {
-        if !self.is_password() { return line_offset; }
-        let char_count = line_text.chars().take_while(|_| false).count(); // Placeholder logic
-        // Safer char count
+    fn safe_display_offset_in_line(&self, line_offset: usize, line_text: &str) -> usize {
+        if !self.last_layout_is_masked { return line_offset; }
         let mut count = 0;
         let mut bytes = 0;
         for c in line_text.chars() {
@@ -542,6 +542,7 @@ struct InputElement {
 
 struct InputPrepaint {
     lines: Vec<(ShapedLine, Pixels)>, cursor: Option<gpui::PaintQuad>, selection: Vec<gpui::PaintQuad>,
+    is_masked: bool,
 }
 
 impl IntoElement for InputElement {
@@ -571,6 +572,7 @@ impl Element for InputElement {
         let line_height = window.line_height();
         let cursor_offset = input.cursor_offset();
         let text = input.text_for_display();
+        let is_masked = input.is_password();
         let text_lines: Vec<&str> = text.split('\n').collect();
         
         let original_cursor_line = if input.value.is_empty() { 0 } else {
@@ -605,8 +607,8 @@ impl Element for InputElement {
                 let start = range.start.max(line_start);
                 let end = range.end.min(line_end);
                 if start < end {
-                    let d_start = input.original_to_display_offset_in_line(start - line_start, original_line);
-                    let d_end = input.original_to_display_offset_in_line(end - line_start, original_line);
+                    let d_start = input.safe_display_offset_in_line(start - line_start, original_line);
+                    let d_end = input.safe_display_offset_in_line(end - line_start, original_line);
                     let x_start = shaped.x_for_index(d_start);
                     let x_end = shaped.x_for_index(d_end);
                     selection_quads.push(fill(Bounds::new(point(bounds.left() + x_start, y), size(x_end - x_start, line_height)), theme.primary.base.opacity(0.3)));
@@ -616,7 +618,16 @@ impl Element for InputElement {
                 let original_line = input.value.split('\n').nth(i).unwrap_or("");
                 let line_start = original_byte_offset;
                 let col = cursor_offset - line_start;
-                let d_col = input.original_to_display_offset_in_line(col, original_line);
+                // Use is_masked directly since this frame's shaped matches it
+                let d_col = if is_masked {
+                    let mut count = 0; let mut bytes = 0;
+                    for c in original_line.chars() {
+                        if bytes >= col { break; }
+                        bytes += c.len_utf8(); count += 1;
+                    }
+                    count * input.mask_char.len_utf8()
+                } else { col };
+
                 let x = shaped.x_for_index(d_col);
                 let ch = font_size.add(px(6.0));
                 let ct = y + (line_height - ch) / 2.0;
@@ -632,7 +643,7 @@ impl Element for InputElement {
             y = y + line_height;
             original_byte_offset += input.value.split('\n').nth(i).map(|l| l.len() + 1).unwrap_or(0);
         }
-        InputPrepaint { lines, cursor: cursor_quad, selection: selection_quads }
+        InputPrepaint { lines, cursor: cursor_quad, selection: selection_quads, is_masked }
     }
 
     fn paint(&mut self, _: Option<&GlobalElementId>, _: Option<&InspectorElementId>, bounds: Bounds<Pixels>, _: &mut (), prepaint: &mut InputPrepaint, window: &mut Window, cx: &mut App) {
@@ -644,7 +655,12 @@ impl Element for InputElement {
         }
         if focus_handle.is_focused(window) { if let Some(c) = prepaint.cursor.take() { window.paint_quad(c); } }
         let line_layouts = prepaint.lines.clone();
-        self.input.update(cx, |input, _| { input.last_line_layouts = line_layouts; input.last_bounds = Some(bounds); });
+        let is_masked = prepaint.is_masked;
+        self.input.update(cx, |input, _| {
+            input.last_line_layouts = line_layouts;
+            input.last_bounds = Some(bounds);
+            input.last_layout_is_masked = is_masked;
+        });
     }
 }
 
@@ -662,7 +678,9 @@ impl Render for Input {
         let fh = self.focus_handle(cx);
 
         let mut row = gpui::div().flex().flex_row().items_center()
-            .h(px(34.0)).rounded(px(theme.radius.md))
+            .when_some(self.height, |s, h| s.h(h))
+            .when(self.height.is_none(), |s| s.min_h(px(34.0)))
+            .rounded(px(theme.radius.md))
             .bg(bg).border_1().border_color(border_c).text_size(px(theme.font_size.md)).overflow_hidden();
 
         if !self.disabled { row = row.track_focus(&fh).cursor_text(); } 
@@ -688,6 +706,7 @@ impl Render for Input {
         }
 
         let mut inner = gpui::div().flex_1().flex().flex_row().items_center().gap_2().px(px(12.0));
+        if self.min_rows > 1 { inner = inner.items_start().py_2(); }
 
         if let Some(icon) = self.icon_prefix {
             inner = inner.child(Icon::new(icon).size(px(icon_sz)).color(theme.neutral.icon));
