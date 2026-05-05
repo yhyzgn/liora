@@ -1,7 +1,10 @@
-use aura_core::{push_portal, clear_portals, Config};
+use aura_core::{Config, push_portal, clear_portals};
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
-use gpui::{prelude::*, px, App, Render, Window, Context, Focusable, FocusHandle, SharedString, MouseButton};
+use gpui::{
+    prelude::*, px, App, Render, Window, Context, Focusable, FocusHandle,
+    SharedString, MouseButton, ElementId, Entity
+};
 
 pub struct Select {
     options: Vec<SharedString>,
@@ -64,7 +67,6 @@ impl Render for Select {
         let border_color = if focused || self.is_open { theme.primary.base } else { theme.neutral.border };
 
         let trigger = gpui::div()
-            .id("select-trigger")
             .flex().flex_row().items_center().justify_between()
             .w_full().h(px(34.0)).px(px(12.0)).rounded(px(theme.radius.md))
             .bg(theme.neutral.card).border_1().border_color(border_color)
@@ -75,9 +77,6 @@ impl Render for Select {
                 this.toggle_open(window, cx);
             }));
 
-        // In GPUI 0.2, getting bounds during render is tricky.
-        // We'll use a simplified positioning for now or implement a custom element.
-        // For the sake of getting it to compile and work reasonably:
         if self.is_open {
             let options = self.options.clone();
             let selected_idx = self.selected_idx;
@@ -87,8 +86,8 @@ impl Render for Select {
             push_portal(
                 gpui::div()
                     .absolute()
-                    .top(px(40.0)) // Placeholder
-                    .left(px(0.0)) // Placeholder
+                    .top(px(40.0)) 
+                    .left(px(0.0)) 
                     .w_full()
                     .max_h(px(200.0))
                     .bg(theme.neutral.card).rounded(px(theme.radius.md)).border_1().border_color(theme.neutral.border)
