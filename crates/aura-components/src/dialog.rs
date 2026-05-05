@@ -35,13 +35,18 @@ impl DialogView {
 }
 
 impl Render for DialogView {
+    #[track_caller]
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
         let title = self.title.clone();
         let content_fn = self.content.clone();
         let on_close = self.on_close.clone();
 
+        let caller = std::panic::Location::caller();
+        let id = format!("dialog-overlay-{}", caller);
+
         div()
+            .id(id)
             .absolute()
             .size_full()
             .bg(gpui::rgba(0x00000066))
@@ -59,7 +64,7 @@ impl Render for DialogView {
                     .rounded(px(theme.radius.md))
                     .shadow_xl()
                     .on_mouse_down(MouseButton::Left, |_, _, _| {
-                        // Consume event
+                        // Consume mouse down to prevent bubbling
                     })
                     .child(
                         div().p_4().border_b_1().border_color(theme.neutral.border).flex().justify_between().items_center()

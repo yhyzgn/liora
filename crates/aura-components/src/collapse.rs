@@ -1,7 +1,7 @@
 use aura_core::{Config};
 use gpui::{
     prelude::*, px, Context, IntoElement, Render, Window,
-    div, SharedString, AnyElement, MouseButton,
+    div, SharedString, AnyElement,
 };
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
@@ -61,8 +61,10 @@ impl Collapse {
 }
 
 impl Render for Collapse {
+    #[track_caller]
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
+        let caller = std::panic::Location::caller();
         
         div()
             .flex().flex_col().border_1().border_color(theme.neutral.border).rounded(px(theme.radius.md))
@@ -70,17 +72,19 @@ impl Render for Collapse {
                 let name = item.name.clone();
                 let is_active = self.active_names.contains(&name);
                 let is_last = i == self.items.len() - 1;
+                let header_id = format!("collapse-header-{}-{}-{}", caller.line(), caller.column(), i);
 
                 div().flex().flex_col()
                     .child(
                         div()
-                            .id(("collapse-header", i))
+                            .id(header_id)
                             .cursor_pointer()
                             .px_4().py_3()
                             .flex().flex_row().items_center().justify_between()
                             .bg(if is_active { theme.neutral.hover } else { theme.neutral.card })
+                            .hover(|s| s.bg(theme.neutral.hover))
                             .when(!is_last, |s| s.border_b_1().border_color(theme.neutral.border))
-                            .on_mouse_down(MouseButton::Left, cx.listener(move |this, _, _, cx| {
+                            .on_click(cx.listener(move |this, _, _, cx| {
                                 this.toggle(name.clone(), cx);
                             }))
                             .child(div().font_weight(gpui::FontWeight::BOLD).child(item.title.clone()))

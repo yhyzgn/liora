@@ -66,27 +66,34 @@ impl RenderOnce for Alert {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
         
-        let (bg, border, text, icon_color, icon) = match self.alert_type {
-            AlertType::Info => (theme.info.hover, theme.info.base, theme.info.base, theme.info.base, IconName::Info),
-            AlertType::Success => (theme.success.hover, theme.success.base, theme.success.base, theme.success.base, IconName::Check),
-            AlertType::Warning => (theme.warning.hover, theme.warning.base, theme.warning.base, theme.warning.base, IconName::TriangleAlert),
-            AlertType::Error => (theme.danger.hover, theme.danger.base, theme.danger.base, theme.danger.base, IconName::CircleX),
+        let (color, icon_name) = match self.alert_type {
+            AlertType::Info => (theme.primary.base, IconName::Info),
+            AlertType::Success => (theme.success.base, IconName::Check),
+            AlertType::Warning => (theme.warning.base, IconName::TriangleAlert),
+            AlertType::Error => (theme.danger.base, IconName::CircleX),
+        };
+
+        let bg = gpui::Hsla {
+            h: color.h,
+            s: color.s,
+            l: color.l,
+            a: 0.1,
         };
 
         div()
             .flex().flex_row().gap_3().p_3()
-            .bg(bg).border_1().border_color(border).rounded(px(theme.radius.md))
+            .bg(bg).border_1().border_color(color).rounded(px(theme.radius.md))
             .child(
-                div().when(self.show_icon, |s| s.child(Icon::new(icon).size(px(20.0)).color(icon_color)))
+                div().when(self.show_icon, |s| s.child(Icon::new(icon_name).size(px(20.0)).color(color)))
             )
             .child(
                 div().flex_1().flex().flex_col().gap_1()
-                    .child(div().font_weight(gpui::FontWeight::BOLD).text_color(text).child(self.title))
-                    .when_some(self.description, |s, d| s.child(div().text_sm().text_color(text).child(d)))
+                    .child(div().font_weight(gpui::FontWeight::BOLD).text_color(color).child(self.title))
+                    .when_some(self.description, |s, d| s.child(div().text_sm().text_color(color).child(d)))
             )
             .child(
                 div().when(self.closable, |s| s.child(
-                    div().id("close-btn").cursor_pointer().child(Icon::new(IconName::X).size(px(14.0)).color(text))
+                    div().id("close-btn").cursor_pointer().child(Icon::new(IconName::X).size(px(14.0)).color(color))
                         .on_click(|_, _window, _cx| {
                             // Notify parent
                         })

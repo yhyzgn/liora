@@ -54,6 +54,7 @@ impl DrawerView {
 }
 
 impl Render for DrawerView {
+    #[track_caller]
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
         let title = self.title.clone();
@@ -63,7 +64,11 @@ impl Render for DrawerView {
         let width = self.width;
         let height = self.height;
 
+        let caller = std::panic::Location::caller();
+        let id = format!("drawer-overlay-{}", caller);
+
         let mut container = div()
+            .id(id)
             .absolute()
             .size_full()
             .bg(gpui::rgba(0x00000066))

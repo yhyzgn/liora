@@ -52,10 +52,14 @@ impl Card {
 }
 
 impl RenderOnce for Card {
+    #[track_caller]
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
+        let caller = std::panic::Location::caller();
+        let id = format!("card-{}-{}", caller.line(), caller.column());
         
         let mut el = div()
+            .id(id)
             .bg(theme.neutral.card)
             .border_1().border_color(theme.neutral.border)
             .rounded(px(theme.radius.md))
@@ -68,6 +72,10 @@ impl RenderOnce for Card {
         if self.hoverable {
             el = el.hover(|s| s.shadow_lg().border_color(theme.primary.base));
         }
+
+        el = el.on_click(|_, _, _| {
+            // Consume to ensure ID-based interactions work
+        });
 
         // Header
         if let Some(title) = self.title {

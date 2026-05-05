@@ -2,7 +2,7 @@ use crate::{Popover};
 use aura_core::{Config, Placement};
 use gpui::{
     prelude::*, px, App, IntoElement, RenderOnce, Window,
-    div, SharedString, AnyElement, MouseButton, Component,
+    div, SharedString, AnyElement, Component,
 };
 use std::sync::Arc;
 
@@ -41,28 +41,32 @@ impl Dropdown {
 }
 
 impl RenderOnce for Dropdown {
+    #[track_caller]
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
         let items = self.items;
+        let caller = std::panic::Location::caller();
 
         Popover::new(self.trigger)
             .placement(self.placement)
             .offset(px(4.0))
             .content(move |_window, _cx| {
                 let theme = theme.clone();
-                div().flex().flex_col().py_1()
+                div().flex().flex_col().py_1().min_w(px(120.0))
                     .children(items.iter().enumerate().map(|(i, item)| {
                         let on_click = item.on_click.clone();
                         let label = item.label.clone();
+                        let item_id = format!("dropdown-item-{}-{}-{}", caller.line(), caller.column(), i);
                         
                         div()
-                            .id(("dropdown-item", i))
+                            .id(item_id)
                             .cursor_pointer()
-                            .px_4().py_2()
-                            .text_size(px(theme.font_size.md))
+                            .px_3().py_1_5()
+                            .text_size(px(theme.font_size.sm))
                             .text_color(theme.neutral.text_2)
-                            .hover(|s| s.bg(theme.neutral.hover).text_color(theme.primary.base))
-                            .on_mouse_down(MouseButton::Left, move |_, window, cx| {
+                            .flex().items_center()
+                            .hover(|s| s.bg(theme.primary.base).text_color(gpui::white()))
+                            .on_click(move |_, window, cx| {
                                 on_click(window, cx);
                                 aura_core::clear_active_popover(cx);
                             })
