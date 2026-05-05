@@ -13,6 +13,8 @@ pub struct Select {
     focus_handle: FocusHandle,
     last_bounds: Option<Bounds<Pixels>>,
     on_change: Option<Box<dyn Fn(usize, &mut Window, &mut App) + 'static>>,
+    border_none: bool,
+    radius_none: bool,
 }
 
 impl Select {
@@ -24,7 +26,22 @@ impl Select {
             focus_handle: cx.focus_handle(),
             last_bounds: None,
             on_change: None,
+            border_none: false,
+            radius_none: false,
         }
+    }
+
+    pub fn borderless(mut self) -> Self { self.border_none = true; self }
+    pub fn radius_none(mut self) -> Self { self.radius_none = true; self }
+
+    pub fn set_borderless(&mut self, b: bool, cx: &mut Context<Self>) {
+        self.border_none = b;
+        cx.notify();
+    }
+
+    pub fn set_radius_none(&mut self, r: bool, cx: &mut Context<Self>) {
+        self.radius_none = r;
+        cx.notify();
     }
 
     pub fn on_change(mut self, cb: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
@@ -160,10 +177,9 @@ impl Render for Select {
         gpui::div()
             .relative()
             .w_full()
-            .rounded(px(theme.radius.md))
+            .when(!self.radius_none, |s| s.rounded(px(theme.radius.md)))
             .bg(theme.neutral.card)
-            .border_1()
-            .border_color(border_color)
+            .when(!self.border_none, |s| s.border_1().border_color(border_color))
             .cursor_pointer()
             .child(trigger_content)
             .child(

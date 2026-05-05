@@ -85,21 +85,26 @@ impl FormDemo {
                     .mask_char('*')
             }),
             input_maxlength: cx.new(|cx| Input::new("", cx).placeholder("Max 5 chars").max_length(5)),
-            input_prepend: cx.new(|cx| Input::new("", cx).prepend(|_, _| div().child("http://").into_any_element())),
-            input_append: cx.new(|cx| Input::new("", cx).append(|_, _| div().child(".com").into_any_element())),
+            input_prepend: cx.new(|cx| Input::new("", cx).prepend(|_, _| div().px_3().child("http://").into_any_element())),
+            input_append: cx.new(|cx| Input::new("", cx).append(|_, _| div().px_3().child(".com").into_any_element())),
             input_composite: cx.new(|cx| {
                 Input::new("", cx)
-                    .prepend(|_, _| Icon::new(aura_icons_lucide::IconName::User).size(px(14.0)).into_any_element())
-                    .append(|_, _| div().text_size(px(12.0)).child("Admin").into_any_element())
+                    .prepend(|_, _| gpui::div().px_3().flex().items_center().child(Icon::new(aura_icons_lucide::IconName::User).size(px(14.0))).into_any_element())
+                    .append(|_, _| div().px_3().text_size(px(12.0)).child("Admin").into_any_element())
             }),
             input_select_prepend: cx.new(|cx| {
                 let sel = protocol_select.clone();
                 Input::new("", cx)
-                    .prepend(move |_, _| {
+                    .prepend(move |_, cx| {
+                        sel.update(cx, |s, cx| { 
+                            s.set_borderless(true, cx);
+                            s.set_radius_none(true, cx);
+                        });
                         div().w(px(80.0)).child(sel.clone()).into_any_element()
                     })
                     .placeholder("domain.com")
             }),
+
             input_icon: cx.new(|cx| {
                 Input::new("", cx)
                     .placeholder("Search")

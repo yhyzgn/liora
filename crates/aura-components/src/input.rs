@@ -684,10 +684,12 @@ impl Render for Input {
         }
 
         if let Some(ref p_render) = self.prepend {
-            row = row.child(gpui::div().flex_none().h_full().px_3().bg(theme.neutral.hover).border_r_1().border_color(theme.neutral.border).flex().items_center().text_color(theme.neutral.text_3).child(p_render(_window, cx)));
+            row = row.child(gpui::div().flex_none().h_full().bg(theme.neutral.hover).border_r_1().border_color(theme.neutral.border).flex().items_center().text_color(theme.neutral.text_3).child(p_render(_window, cx)));
         }
 
-        let mut inner = gpui::div().flex_1().flex().flex_row().items_center().gap_2().px(px(12.0));
+        let mut inner = gpui::div().flex_1().flex().flex_row().items_center().gap_2()
+            .when(self.prepend.is_none(), |s| s.pl(px(12.0)))
+            .when(self.append.is_none(), |s| s.pr(px(12.0)));
 
         if let Some(icon) = self.icon_prefix {
             inner = inner.child(Icon::new(icon).size(px(icon_sz)).color(theme.neutral.icon));
@@ -716,7 +718,7 @@ impl Render for Input {
         row = row.child(inner);
 
         if let Some(ref a_render) = self.append {
-            row = row.child(gpui::div().flex_none().h_full().px_3().bg(theme.neutral.hover).border_l_1().border_color(theme.neutral.border).flex().items_center().text_color(theme.neutral.text_3).child(a_render(_window, cx)));
+            row = row.child(gpui::div().flex_none().h_full().bg(theme.neutral.hover).border_l_1().border_color(theme.neutral.border).flex().items_center().text_color(theme.neutral.text_3).child(a_render(_window, cx)));
         }
 
         row
