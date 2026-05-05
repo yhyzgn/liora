@@ -76,18 +76,18 @@ impl RenderOnce for Alert {
         let bg = color.opacity(0.1);
 
         div()
-            .flex().flex_row().gap_3().p_3()
+            .flex().flex_row().items_center().gap_3().p_3()
             .bg(bg).border_1().border_color(color).rounded(px(theme.radius.md))
             .child(
-                div().when(self.show_icon, |s| s.child(Icon::new(icon_name).size(px(20.0)).color(color)))
+                div().flex().items_center().when(self.show_icon, |s| s.child(Icon::new(icon_name).size(px(20.0)).color(color)))
             )
             .child(
                 div().flex_1().flex().flex_col().gap_1()
-                    .child(div().font_weight(gpui::FontWeight::BOLD).text_color(color).child(self.title))
+                    .child(div().flex().items_center().min_h(px(20.0)).font_weight(gpui::FontWeight::BOLD).text_color(color).child(self.title))
                     .when_some(self.description, |s, d| s.child(div().text_sm().text_color(color).child(d)))
             )
             .child(
-                div().when(self.closable, |s| s.child(
+                div().flex().items_center().when(self.closable, |s| s.child(
                     div().id("close-btn").cursor_pointer().child(Icon::new(IconName::X).size(px(14.0)).color(color))
                         .on_click(|_, _window, _cx| {
                             // Notify parent
