@@ -1,8 +1,14 @@
 use aura_core::Config;
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
-use gpui::{prelude::*, px, App, Render, Window, Context, Focusable, FocusHandle, Entity, MouseButton};
+use gpui::{prelude::*, px, App, Render, Window, Context, Focusable, FocusHandle, Entity, MouseButton, AnyElement};
 use crate::Input;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InputNumberControlsPosition {
+    Horizontal,
+    Right,
+}
 
 pub struct InputNumber {
     value: f64,
@@ -11,6 +17,7 @@ pub struct InputNumber {
     step: f64,
     precision: usize,
     disabled: bool,
+    controls_position: InputNumberControlsPosition,
     input: Entity<Input>,
     focus_handle: FocusHandle,
     on_change: Option<Box<dyn Fn(f64, &mut Window, &mut App) + 'static>>,
@@ -31,6 +38,7 @@ impl InputNumber {
             step: 1.0,
             precision: 0,
             disabled: false,
+            controls_position: InputNumberControlsPosition::Horizontal,
             input,
             focus_handle,
             on_change: None,
@@ -47,6 +55,10 @@ impl InputNumber {
     pub fn disabled(mut self, d: bool, cx: &mut Context<Self>) -> Self {
         self.disabled = d;
         self.input.update(cx, |input, cx| { input.set_disabled(d, cx); });
+        self
+    }
+    pub fn controls_position(mut self, pos: InputNumberControlsPosition) -> Self {
+        self.controls_position = pos;
         self
     }
 
@@ -90,11 +102,22 @@ impl Focusable for InputNumber {
 impl Render for InputNumber {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
-        let icon_sz = 12.0;
+        
+        match self.controls_position {
+            InputNumberControlsPosition::Horizontal => self.render_horizontal(&theme, cx).into_any_element(),
+            InputNumberControlsPosition::Right => self.render_right(&theme, cx).into_any_element(),
+        }
+    }
+}
 
+impl InputNumber {
+    fn render_horizontal(&self, theme: &aura_theme::Theme, cx: &mut Context<Self>) -> impl IntoElement {
+        let icon_sz = 12.0;
         let mut row = gpui::div()
             .flex().flex_row().items_center()
-            .h(px(34.0)); // Match Input height
+            .h(px(34.0))
+            .rounded(px(theme.radius.md))
+            .border_1().border_color(theme.neutral.border);
 
         // Decrement button
         let mut dec_btn = gpui::div()
@@ -132,6 +155,59 @@ impl Render for InputNumber {
         }
 
         row = row.child(inc_btn.child(Icon::new(IconName::Plus).size(px(icon_sz)).color(theme.neutral.text_1)));
+        
+        row
+    }
+
+    fn render_right(&self, theme: &aura_theme::Theme, cx: &mut Context<Self>) -> impl IntoElement {
+        let icon_sz = 10.0;
+        let mut row = gpui::div()
+            .flex().flex_row().items_center()
+            .h(px(34.0))
+            .rounded(px(theme.radius.md))
+            .border_1().border_color(theme.neutral.border)
+            .overflow_hidden();
+
+        row = row.child(gpui::div().flex_1().child(self.input.clone()));
+
+        let mut controls = gpui::div()
+            .flex().flex_col()
+            .w(px(32.0)).h_full()
+            .border_color(theme.neutral.border).border_l_1();
+
+        // Increment small button
+        let mut inc_btn = gpui::div()
+            .flex_1().flex().items_center().justify_center()
+            .bg(theme.neutral.hover)
+            .border_color(theme.neutral.border).border_b_1();
+
+        if !self.disabled {
+            inc_btn = inc_btn.cursor_pointer().hover(|s| s.bg(theme.neutral.border))
+                .on_mouse_down(MouseButton::Left, cx.listener(|this, _, window, cx| {
+                    this.increment(window, cx);
+                }));
+        } else {
+            inc_btn = inc_btn.cursor_not_allowed().opacity(0.5);
+        }
+
+        // Decrement small button
+        let mut dec_btn = gpui::div()
+            .flex_1().flex().items_center().justify_center()
+            .bg(theme.neutral.hover);
+
+        if !self.disabled {
+            dec_btn = dec_btn.cursor_pointer().hover(|s| s.bg(theme.neutral.border))
+                .on_mouse_down(MouseButton::Left, cx.listener(|this, _, window, cx| {
+                    this.decrement(window, cx);
+                }));
+        } else {
+            dec_btn = dec_btn.cursor_not_allowed().opacity(0.5);
+        }
+
+        controls = controls.child(inc_btn.child(Icon::new(IconName::ChevronUp).size(px(icon_sz)).color(theme.neutral.text_1)));
+        controls = controls.child(dec_btn.child(Icon::new(IconName::ChevronDown).size(px(icon_sz)).color(theme.neutral.text_1)));
+
+        row = row.child(controls);
         
         row
     }

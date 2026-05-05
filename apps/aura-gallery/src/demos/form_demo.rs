@@ -31,6 +31,7 @@ pub struct FormDemo {
     input_clearable: Entity<Input>,
     input_disabled: Entity<Input>,
     input_number: Entity<InputNumber>,
+    input_number_vertical: Entity<InputNumber>,
     input_number_precision: Entity<InputNumber>,
     textarea: Entity<Textarea>,
     textarea_limit: Entity<Textarea>,
@@ -72,6 +73,10 @@ impl FormDemo {
             input_clearable: cx.new(|cx| Input::new("Clear me", cx).clearable(true)),
             input_disabled: cx.new(|cx| Input::new("Disabled", cx).disabled(true)),
             input_number: cx.new(|cx| InputNumber::new(10.0, cx).min(0.0).max(100.0)),
+            input_number_vertical: cx.new(|cx| {
+                InputNumber::new(5.0, cx)
+                    .controls_position(aura_components::InputNumberControlsPosition::Right)
+            }),
             input_number_precision: cx.new(|cx| InputNumber::new(1.23, cx).precision(2).step(0.01)),
             textarea: cx.new(|cx| Textarea::new("Line 1\nLine 2", cx).rows(3)),
             textarea_limit: cx.new(|cx| Textarea::new("Limited content", cx).max_length(50).rows(2)),
@@ -130,6 +135,7 @@ impl Render for FormDemo {
             .child(FormItem::new().label("InputNumber 数字输入").child(
                 div().flex().flex_col().gap_2()
                     .child(self.input_number.clone())
+                    .child(self.input_number_vertical.clone())
                     .child(self.input_number_precision.clone())
             ))
             .child(FormItem::new().label("Textarea 文本域").error("This is an error message").child(
