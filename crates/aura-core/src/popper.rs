@@ -1,4 +1,4 @@
-use gpui::{prelude::*, AnyElement, Global, Bounds, Pixels, Point, App};
+use gpui::{prelude::*, AnyElement, Global, Bounds, Pixels, Point, App, Window};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Placement {
@@ -8,14 +8,16 @@ pub enum Placement {
     Right, RightStart, RightEnd,
 }
 
-pub struct Portal(pub Vec<AnyElement>);
+pub type PortalRender = Box<dyn Fn(&mut Window, &mut App) -> AnyElement>;
+
+pub struct Portal(pub Vec<PortalRender>);
 impl Global for Portal {}
 
-pub fn push_portal(el: impl IntoElement, cx: &mut App) {
+pub fn push_portal(render: impl Fn(&mut Window, &mut App) -> AnyElement + 'static, cx: &mut App) {
     if !cx.has_global::<Portal>() {
         cx.set_global(Portal(vec![]));
     }
-    cx.global_mut::<Portal>().0.push(el.into_any_element());
+    cx.global_mut::<Portal>().0.push(Box::new(render));
 }
 
 pub fn clear_portals(cx: &mut App) {

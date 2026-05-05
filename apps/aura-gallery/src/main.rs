@@ -3,10 +3,11 @@ mod demos;
 
 use aura_core::{ContextExt, init_aura, Portal};
 use aura_theme::Theme;
-use aura_components::{Input, Checkbox, Radio, RadioGroup, Switch, CheckboxGroup};
+use aura_components::{Input, Checkbox, Radio, RadioGroup, Switch};
 use gpui::{
-    AnyView, App, Bounds, Context, Render, Window, WindowBounds, WindowOptions, div, prelude::*, px, size,
+    AnyView, App, Bounds, Context, Render, Window, WindowBounds, WindowOptions, div, prelude::*, px, size, Component
 };
+
 pub struct Gallery {
     demos: Vec<AnyView>,
 }
@@ -18,32 +19,35 @@ fn run_gallery() {
         // Register all key bindings
         Input::register_key_bindings(cx);
         Checkbox::register_key_bindings(cx);
-        CheckboxGroup::register_key_bindings(cx);
         Radio::register_key_bindings(cx);
         RadioGroup::register_key_bindings(cx);
         Switch::register_key_bindings(cx);
 
         cx.open_window(
             WindowOptions {
-                window_bounds: Some(WindowBounds::Maximized(Bounds::centered(None, size(px(1200.0), px(800.0)), cx))),
+                window_bounds: Some(WindowBounds::Windowed(Bounds {
+                    origin: gpui::Point::default(),
+                    size: size(px(1024.0), px(768.0)),
+                })),
+                titlebar: Some(gpui::TitlebarOptions {
+                    title: Some("Aura UI Gallery".into()),
+                    ..Default::default()
+                }),
                 ..Default::default()
             },
             |_, cx| {
-                let registry = demos::registry();
-                let mut demo_views = Vec::new();
-                for entry in registry {
-                    demo_views.push((entry.render)(cx));
-                }
-                cx.new(|_| Gallery { demos: demo_views })
+                let demos = demos::registry()
+                    .into_iter()
+                    .map(|entry| (entry.render)(cx))
+                    .collect();
+                cx.new(|_| Gallery { demos })
             },
-        ).unwrap();
-        cx.activate(true);
+        );
     });
 }
 
 impl Render for Gallery {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        aura_core::clear_portals(cx);
         let registry = demos::registry();
 
         let header = {
@@ -66,16 +70,31 @@ impl Render for Gallery {
             );
         }
 
-        let mut root = div().size_full().relative().child(body);
+        div().size_full().relative()
+            .child(body)
+            .child(PortalLayer)
+    }
+}
 
+struct PortalLayer;
+
+impl IntoElement for PortalLayer {
+    type Element = Component<Self>;
+    fn into_element(self) -> Self::Element { Component::new(self) }
+}
+
+impl gpui::RenderOnce for PortalLayer {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let mut container = div().absolute().top_0().left_0().size_full();
+        
         if cx.has_global::<Portal>() {
             let portals = std::mem::take(&mut cx.global_mut::<Portal>().0);
-            for p in portals {
-                root = root.child(div().absolute().top_0().left_0().size_full().child(p));
+            for render in portals {
+                container = container.child(render(window, cx));
             }
         }
-
-        root
+        
+        container
     }
 }
 

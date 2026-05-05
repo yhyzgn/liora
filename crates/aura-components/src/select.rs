@@ -1,9 +1,9 @@
-use aura_core::{Config, push_portal, clear_portals};
+use aura_core::{Config, push_portal};
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
 use gpui::{
     prelude::*, px, App, Render, Window, Context, Focusable, FocusHandle,
-    SharedString, MouseButton, ElementId, Entity
+    SharedString, MouseButton, ElementId, Bounds, Pixels, Entity
 };
 
 pub struct Select {
@@ -11,6 +11,7 @@ pub struct Select {
     selected_idx: Option<usize>,
     is_open: bool,
     focus_handle: FocusHandle,
+    last_bounds: Option<Bounds<Pixels>>,
     on_change: Option<Box<dyn Fn(usize, &mut Window, &mut App) + 'static>>,
 }
 
@@ -21,6 +22,7 @@ impl Select {
             selected_idx,
             is_open: false,
             focus_handle: cx.focus_handle(),
+            last_bounds: None,
             on_change: None,
         }
     }
@@ -34,8 +36,6 @@ impl Select {
         self.is_open = !self.is_open;
         if self.is_open {
             window.focus(&self.focus_handle, cx);
-        } else {
-            clear_portals(cx);
         }
         cx.notify();
     }
@@ -43,7 +43,6 @@ impl Select {
     fn select_option(&mut self, idx: usize, window: &mut Window, cx: &mut Context<Self>) {
         self.selected_idx = Some(idx);
         self.is_open = false;
-        clear_portals(cx);
         if let Some(ref cb) = self.on_change {
             cb(idx, window, cx);
         }
@@ -53,6 +52,38 @@ impl Select {
 
 impl Focusable for Select {
     fn focus_handle(&self, _cx: &App) -> FocusHandle { self.focus_handle.clone() }
+}
+
+struct BoundsCapturer {
+    select: Entity<Select>,
+}
+
+impl IntoElement for BoundsCapturer {
+    type Element = Self;
+    fn into_element(self) -> Self::Element { self }
+}
+
+impl Element for BoundsCapturer {
+    type RequestLayoutState = ();
+    type PrepaintState = ();
+
+    fn id(&self) -> Option<ElementId> { None }
+    fn source_location(&self) -> Option<&'static std::panic::Location<'static>> { None }
+
+    fn request_layout(&mut self, _: Option<&gpui::GlobalElementId>, _: Option<&gpui::InspectorElementId>, window: &mut Window, cx: &mut App) -> (gpui::LayoutId, ()) {
+        let mut style = gpui::Style::default();
+        style.size.width = gpui::relative(1.0).into();
+        style.size.height = gpui::relative(1.0).into();
+        (window.request_layout(style, [], cx), ())
+    }
+
+    fn prepaint(&mut self, _: Option<&gpui::GlobalElementId>, _: Option<&gpui::InspectorElementId>, bounds: Bounds<Pixels>, _: &mut (), _window: &mut Window, cx: &mut App) -> () {
+        self.select.update(cx, |this, _| {
+            this.last_bounds = Some(bounds);
+        });
+    }
+
+    fn paint(&mut self, _: Option<&gpui::GlobalElementId>, _: Option<&gpui::InspectorElementId>, _: Bounds<Pixels>, _: &mut (), _: &mut (), _window: &mut Window, _: &mut App) {}
 }
 
 impl Render for Select {
@@ -67,28 +98,36 @@ impl Render for Select {
         let border_color = if focused || self.is_open { theme.primary.base } else { theme.neutral.border };
 
         let trigger = gpui::div()
+            .relative()
             .flex().flex_row().items_center().justify_between()
             .w_full().h(px(34.0)).px(px(12.0)).rounded(px(theme.radius.md))
             .bg(theme.neutral.card).border_1().border_color(border_color)
             .child(gpui::div().text_size(px(theme.font_size.md)).text_color(theme.neutral.text_1).child(display_text))
             .child(Icon::new(if self.is_open { IconName::ChevronUp } else { IconName::ChevronDown }).size(px(16.0)).color(theme.neutral.icon))
-            .cursor_pointer()
-            .on_mouse_down(MouseButton::Left, cx.listener(|this, _, window, cx| {
-                this.toggle_open(window, cx);
-            }));
+            .cursor_pointer();
 
         if self.is_open {
             let options = self.options.clone();
             let selected_idx = self.selected_idx;
             let entity = cx.entity().clone();
             let theme = theme.clone();
+            let trigger_bounds = self.last_bounds;
 
-            push_portal(
+            push_portal(move |_window, cx| {
+                let (top, left, width) = if let Some(b) = trigger_bounds {
+                    (b.bottom() + px(4.0), b.left(), b.size.width)
+                } else {
+                    (px(100.0), px(100.0), px(200.0))
+                };
+
+                let entity = entity.clone();
+                let theme = theme.clone();
+
                 gpui::div()
                     .absolute()
-                    .top(px(40.0)) 
-                    .left(px(0.0)) 
-                    .w_full()
+                    .top(top)
+                    .left(left)
+                    .w(width)
                     .max_h(px(200.0))
                     .bg(theme.neutral.card).rounded(px(theme.radius.md)).border_1().border_color(theme.neutral.border)
                     .shadow(vec![gpui::BoxShadow {
@@ -97,10 +136,11 @@ impl Render for Select {
                         blur_radius: px(12.0),
                         spread_radius: px(0.0),
                     }])
-                    .children(options.into_iter().enumerate().map(|(idx, label)| {
+                    .children(options.iter().enumerate().map(|(idx, label)| {
                         let is_selected = Some(idx) == selected_idx;
                         let entity = entity.clone();
                         let theme = theme.clone();
+                        let label = label.clone();
                         
                         gpui::div()
                             .px(px(12.0)).py(px(8.0)).cursor_pointer()
@@ -115,11 +155,18 @@ impl Render for Select {
                                     this.select_option(idx, window, cx);
                                 });
                             })
-                    })),
-                cx
-            );
+                    })).into_any_element()
+            }, cx);
         }
 
-        trigger
+        trigger.child(
+            gpui::div()
+                .absolute()
+                .size_full()
+                .child(BoundsCapturer { select: cx.entity().clone() })
+        )
+        .on_mouse_down(MouseButton::Left, cx.listener(|this, _, window, cx| {
+            this.toggle_open(window, cx);
+        }))
     }
 }
