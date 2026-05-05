@@ -21,8 +21,12 @@
   - **灵活配置**: 支持自定义字符串分隔符及图标分隔符。
   - **样式增强**: 最后一级自动加粗且不可点击，前置节点支持 Hover 高亮及点击回调。
   - **图标支持**: 节点支持配合 Icon 展示。
+- **实现 Steps 步骤条组件**:
+  - **多维布局**: 支持 `Horizontal` 和 `Vertical` 两种展现形式。
+  - **状态自动机**: 自动根据 `active` 索引推导步骤状态 (`Wait`, `Process`, `Finish`)，支持显式覆盖 (`Error`)。
+  - **视觉定制**: 支持自定义图标、主标题及辅助描述文字。
 - **Gallery Demo 增强**:
-  - 新增 `menu_demo.rs`, `tabs_demo.rs`, `breadcrumb_demo.rs`，展示全量配置与交互用例。
+  - 新增 `menu_demo.rs`, `tabs_demo.rs`, `breadcrumb_demo.rs`, `steps_demo.rs`。
 - **Git 提交与推送**:
   - 提交代码并推送到 `main` 分支。
 
@@ -35,6 +39,7 @@
 - 复杂的 View 组件在 Demo 中需通过 `cx.new(|_| Component::new())` 实例化以满足 `IntoElement` 约束。
 - 由于 GPUI `Div` 等元素未实现 `Clone`，在需要多次引用同一子树 (如 Header) 时，应使用闭包或局部渲染函数。
 - `RenderOnce` 组件中处理循环渲染时，需注意 `items` 的所有权转移，适时使用 `into_iter()`。
+- 连接线在 `flex` 布局中可以通过 `flex_1` 配合 `h(px(1.0))` 或 `w(px(1.0))` 轻松实现自适应伸缩。
 
 ## Session 2 — 2026-05-03
 

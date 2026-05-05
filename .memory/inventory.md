@@ -72,7 +72,8 @@
 | 1 | Menu | `crates/aura-components/src/menu.rs` | ✅ | ✅ Horizontal/Vertical/Collapse |
 | 2 | Tabs | `crates/aura-components/src/tabs.rs` | ✅ | ✅ Positions/Styles/Editable |
 | 3 | Breadcrumb | `crates/aura-components/src/breadcrumb.rs` | ✅ | ✅ String/Icon Separators |
-| — | Steps | — | — | ⬜ Pending |
+| 4 | Steps | `crates/aura-components/src/steps.rs` | ✅ | ✅ Horizontal/Vertical/Status |
+| — | PageHeader | — | — | ⬜ Pending |
 
 ## P5 Advanced ⬜ (20)
 

@@ -16,6 +16,7 @@ pub mod message_demo;
 pub mod notification_demo;
 pub mod alert_demo;
 pub mod breadcrumb_demo;
+pub mod steps_demo;
 pub mod menu_demo;
 pub mod tabs_demo;
 pub mod loading_demo;
@@ -45,6 +46,7 @@ pub fn registry() -> Vec<DemoEntry> {
         DemoEntry { name: "Notification 通知", description: "悬浮在页面角落的通知", render: |cx| notification_demo::render(cx).into() },
         DemoEntry { name: "Alert 警告", description: "页面展示的重要提示信息", render: |cx| alert_demo::render(cx).into() },
         DemoEntry { name: "Breadcrumb 面包屑", description: "显示当前页面的路径", render: |cx| breadcrumb_demo::render(cx).into() },
+        DemoEntry { name: "Steps 步骤条", description: "引导用户完成任务", render: |cx| steps_demo::render(cx).into() },
         DemoEntry { name: "Menu 导航菜单", description: "为网站提供导航轮廓", render: |cx| menu_demo::render(cx).into() },
         DemoEntry { name: "Tabs 标签页", description: "在同一区域展示多个面板", render: |cx| tabs_demo::render(cx).into() },
         DemoEntry { name: "Loading 加载", description: "加载数据时显示", render: |cx| loading_demo::render(cx).into() },
