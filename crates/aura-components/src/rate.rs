@@ -58,7 +58,7 @@ impl Render for Rate {
         if !self.disabled {
             row = row.track_focus(&self.focus_handle);
             // reset hover when mouse leaves the row
-            row = row.on_mouse_move(cx.listener(|_this, _, _, _cx| {
+            row = row.on_mouse_move(cx.listener(|_this, _event, _window, _cx| {
                 // ...
             }));
         }

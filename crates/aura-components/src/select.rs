@@ -88,7 +88,8 @@ impl Element for BoundsCapturer {
 
 impl Render for Select {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let theme = &cx.global::<Config>().theme;
+        let config = cx.global::<Config>();
+        let theme = config.theme.clone();
         let focused = self.focus_handle.is_focused(_window);
         
         let display_text = self.selected_idx
@@ -97,23 +98,20 @@ impl Render for Select {
 
         let border_color = if focused || self.is_open { theme.primary.base } else { theme.neutral.border };
 
-        let trigger = gpui::div()
-            .relative()
+        let trigger_content = gpui::div()
             .flex().flex_row().items_center().justify_between()
-            .w_full().h(px(34.0)).px(px(12.0)).rounded(px(theme.radius.md))
-            .bg(theme.neutral.card).border_1().border_color(border_color)
+            .w_full().h(px(34.0)).px(px(12.0))
             .child(gpui::div().text_size(px(theme.font_size.md)).text_color(theme.neutral.text_1).child(display_text))
-            .child(Icon::new(if self.is_open { IconName::ChevronUp } else { IconName::ChevronDown }).size(px(16.0)).color(theme.neutral.icon))
-            .cursor_pointer();
+            .child(Icon::new(if self.is_open { IconName::ChevronUp } else { IconName::ChevronDown }).size(px(16.0)).color(theme.neutral.icon));
 
         if self.is_open {
             let options = self.options.clone();
             let selected_idx = self.selected_idx;
             let entity = cx.entity().clone();
-            let theme = theme.clone();
+            let theme_portal = theme.clone();
             let trigger_bounds = self.last_bounds;
 
-            push_portal(move |_window, cx| {
+            push_portal(move |_window, _cx| {
                 let (top, left, width) = if let Some(b) = trigger_bounds {
                     (b.bottom() + px(4.0), b.left(), b.size.width)
                 } else {
@@ -121,7 +119,7 @@ impl Render for Select {
                 };
 
                 let entity = entity.clone();
-                let theme = theme.clone();
+                let theme = theme_portal.clone();
 
                 gpui::div()
                     .absolute()
@@ -159,14 +157,23 @@ impl Render for Select {
             }, cx);
         }
 
-        trigger.child(
-            gpui::div()
-                .absolute()
-                .size_full()
-                .child(BoundsCapturer { select: cx.entity().clone() })
-        )
-        .on_mouse_down(MouseButton::Left, cx.listener(|this, _, window, cx| {
-            this.toggle_open(window, cx);
-        }))
+        gpui::div()
+            .relative()
+            .w_full()
+            .rounded(px(theme.radius.md))
+            .bg(theme.neutral.card)
+            .border_1()
+            .border_color(border_color)
+            .cursor_pointer()
+            .child(trigger_content)
+            .child(
+                gpui::div()
+                    .absolute()
+                    .top_0().left_0().size_full()
+                    .child(BoundsCapturer { select: cx.entity().clone() })
+            )
+            .on_mouse_down(MouseButton::Left, cx.listener(|this, _, window, cx| {
+                this.toggle_open(window, cx);
+            }))
     }
 }

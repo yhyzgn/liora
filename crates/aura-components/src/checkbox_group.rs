@@ -4,7 +4,6 @@ use crate::{Checkbox, CheckboxChanged};
 pub struct CheckboxGroup {
     selected: Vec<usize>,
     disabled: bool,
-    _options: Vec<SharedString>,
     focus_handle: FocusHandle,
     checkboxes: Vec<Entity<Checkbox>>,
     on_change: Option<Box<dyn Fn(Vec<usize>, &mut Window, &mut App) + 'static>>,
@@ -33,7 +32,6 @@ impl CheckboxGroup {
         Self {
             selected,
             disabled: false,
-            _options: options,
             focus_handle: cx.focus_handle(),
             checkboxes,
             on_change: None,
