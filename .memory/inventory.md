@@ -70,7 +70,8 @@
 | # | Component | File | Demo | Status |
 |---|-----------|------|------|--------|
 | 1 | Menu | `crates/aura-components/src/menu.rs` | ✅ | ✅ Horizontal/Vertical/Collapse |
-| — | Tabs | — | — | ⬜ Pending |
+| 2 | Tabs | `crates/aura-components/src/tabs.rs` | ✅ | ✅ Positions/Styles/Editable |
+| — | Breadcrumb | — | — | ⬜ Pending |
 
 ## P5 Advanced ⬜ (20)
 

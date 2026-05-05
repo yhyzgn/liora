@@ -12,8 +12,13 @@
   - **折叠状态**: 垂直模式支持 `collapse`，折叠后子菜单通过 `Popover` 弹出。
   - **弹层集成**: 水平模式及折叠垂直模式下，子菜单使用 `Popover` (基于 P3 引擎) 展示。
   - **交互与状态**: 内部管理 `active_index` 和 `opened_submenus`，支持 `on_select` 回调。
+- **实现 Tabs 标签页组件**:
+  - **多种风格**: 支持 `Standard`, `Card`, `BorderCard` 三种视觉样式。
+  - **灵活位置**: 支持 `Top`, `Bottom`, `Left`, `Right` 四种布局位置。
+  - **可编辑模式**: 实现动态新增标签 (`on_tab_add`) 和关闭标签 (`on_tab_remove`) 功能。
+  - **延迟渲染**: 采用按需渲染策略，仅渲染当前激活的面板内容。
 - **Gallery Demo 增强**:
-  - 新增 `menu_demo.rs`，展示水平、垂直、折叠、分组、嵌套等全量用例。
+  - 新增 `menu_demo.rs` 和 `tabs_demo.rs`，展示全量配置与交互用例。
 - **Git 提交与推送**:
   - 提交代码并推送到 `main` 分支。
 
@@ -24,6 +29,7 @@
 ### Key Discoveries
 - GPUI 中 `cx.entity()` 是在 `Render` 过程中获取自身 View 句柄的正确方式，用于在异步或独立 Context (如 Popover) 中回调更新原始 View。
 - 复杂的 View 组件在 Demo 中需通过 `cx.new(|_| Component::new())` 实例化以满足 `IntoElement` 约束。
+- 由于 GPUI `Div` 等元素未实现 `Clone`，在需要多次引用同一子树 (如 Header) 时，应使用闭包或局部渲染函数。
 
 ## Session 2 — 2026-05-03
 
