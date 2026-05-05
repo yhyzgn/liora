@@ -6,10 +6,14 @@ use gpui::{
     EntityInputHandler, FocusHandle, Focusable, GlobalElementId, Hsla, InspectorElementId,
     IntoElement, LayoutId,     MouseButton, MouseDownEvent, MouseUpEvent,
     Pixels, Point, Render, Rgba, SharedString, ShapedLine, Style, TextRun,
-    UTF16Selection, Window, actions, KeyBinding, fill, point, size,
+    UTF16Selection, UnderlineStyle, Window, actions, KeyBinding, fill, point, size,
     MouseMoveEvent, AnyElement,
 };
 use std::ops::{Add, Range};
+
+fn rgba(r: u8, g: u8, b: u8, a: f32) -> Hsla {
+    Rgba { r: r as f32 / 255.0, g: g as f32 / 255.0, b: b as f32 / 255.0, a }.into()
+}
 
 actions!(input, [
     Backspace, Delete, Left, Right, Home, End, SelectAll, Enter, InputUp, InputDown, Copy, Paste, Cut,
@@ -81,20 +85,6 @@ impl Input {
     pub fn min_rows(mut self, rows: usize) -> Self { self.min_rows = rows; self }
     pub fn height(mut self, h: impl Into<Pixels>) -> Self { self.height = Some(h.into()); self }
 
-    pub fn set_min_rows(&mut self, rows: usize, cx: &mut Context<Self>) {
-        self.min_rows = rows;
-        cx.notify();
-    }
-    
-    pub fn prepend(mut self, render: impl Fn(&mut Window, &mut App) -> AnyElement + 'static) -> Self {
-        self.prepend = Some(Box::new(render));
-        self
-    }
-    pub fn append(mut self, render: impl Fn(&mut Window, &mut App) -> AnyElement + 'static) -> Self {
-        self.append = Some(Box::new(render));
-        self
-    }
-
     pub fn set_placeholder(&mut self, p: impl Into<SharedString>, cx: &mut Context<Self>) {
         self.placeholder = p.into();
         cx.notify();
@@ -108,6 +98,11 @@ impl Input {
     pub fn set_value(&mut self, value: impl Into<SharedString>, cx: &mut Context<Self>) {
         self.value = value.into();
         self.selected_range = self.value.len()..self.value.len();
+        cx.notify();
+    }
+
+    pub fn set_min_rows(&mut self, rows: usize, cx: &mut Context<Self>) {
+        self.min_rows = rows;
         cx.notify();
     }
 
@@ -395,6 +390,15 @@ impl Input {
 
     fn is_password(&self) -> bool {
         self.input_type == InputType::Password && !self.password_visible
+    }
+    
+    pub fn prepend(mut self, render: impl Fn(&mut Window, &mut App) -> AnyElement + 'static) -> Self {
+        self.prepend = Some(Box::new(render));
+        self
+    }
+    pub fn append(mut self, render: impl Fn(&mut Window, &mut App) -> AnyElement + 'static) -> Self {
+        self.append = Some(Box::new(render));
+        self
     }
 }
 

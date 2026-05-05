@@ -14,6 +14,7 @@ impl Textarea {
         let value = value.into();
         let input = cx.new(|cx| {
             Input::new(value, cx)
+                .min_rows(2)
         });
 
         Self {
