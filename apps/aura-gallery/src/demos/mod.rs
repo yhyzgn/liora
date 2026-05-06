@@ -19,6 +19,7 @@ pub mod progress_demo;
 pub mod skeleton_demo;
 pub mod result_demo;
 pub mod timeline_demo;
+pub mod tree_demo;
 pub mod descriptions_demo;
 pub mod empty_demo;
 pub mod alert_demo;
@@ -60,6 +61,7 @@ pub fn registry() -> Vec<DemoEntry> {
         DemoEntry { name: "Result 结果页", description: "反馈操作结果", render: |cx| result_demo::render(cx).into() },
         DemoEntry { name: "Descriptions 描述列表", description: "展示多个字段", render: |cx| descriptions_demo::render(cx).into() },
         DemoEntry { name: "Timeline 时间线", description: "垂直展示一系列信息", render: |cx| timeline_demo::render(cx).into() },
+        DemoEntry { name: "Tree 树形控件", description: "分层展示数据", render: |cx| tree_demo::render(cx).into() },
         DemoEntry { name: "Empty 空状态", description: "页面无数据时的占位提示", render: |cx| empty_demo::render(cx).into() },
         DemoEntry { name: "Alert 警告", description: "页面展示的重要提示信息", render: |cx| alert_demo::render(cx).into() },
         DemoEntry { name: "Affix 固钉", description: "将内容固定在特定可视区域", render: |cx| affix_demo::render(cx).into() },

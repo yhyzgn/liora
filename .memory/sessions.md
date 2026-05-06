@@ -6,62 +6,44 @@
 - **修复 Alert 控件图标与标题文本垂直对齐问题**:
   - 在 `Alert` 组件的主容器 `div` 上添加 `.items_center()`，确保单行模式下图标与文字完美居中。
   - 为标题文本容器添加 `.flex().items_center().min_h(px(20.0))`，使其与 20px 的图标高度对齐。
-- **实现 Menu 导航菜单组件**:
-  - **核心能力**: 支持 `Vertical` (垂直) 和 `Horizontal` (水平) 模式。
-  - **递归渲染**: 实现 `MenuItem`, `SubMenu`, `MenuItemGroup` 的递归渲染引擎。
-  - **折叠状态**: 垂直模式支持 `collapse`，折叠后子菜单通过 `Popover` 弹出。
-  - **弹层集成**: 水平模式及折叠垂直模式下，子菜单使用 `Popover` (基于 P3 引擎) 展示。
-  - **交互与状态**: 内部管理 `active_index` 和 `opened_submenus`，支持 `on_select` 回调。
-- **实现 Tabs 标签页组件**:
-  - **多种风格**: 支持 `Standard`, `Card`, `BorderCard` 三种视觉样式。
-  - **灵活位置**: 支持 `Top`, `Bottom`, `Left`, `Right` 四种布局位置。
-  - **可编辑模式**: 实现动态新增标签 (`on_tab_add`) 和关闭标签 (`on_tab_remove`) 功能。
-  - **延迟渲染**: 采用按需渲染策略，仅渲染当前激活的面板内容。
-- **实现 Breadcrumb 面包屑组件**:
-  - **灵活配置**: 支持自定义字符串分隔符及图标分隔符。
-  - **样式增强**: 最后一级自动加粗且不可点击，前置节点支持 Hover 高亮及点击回调。
-  - **图标支持**: 节点支持配合 Icon 展示。
-- **实现 Steps 步骤条组件**:
-  - **实现 Steps 步骤条组件**:
-    - **多维布局**: 支持 `Horizontal` 和 `Vertical` 两种展现形式。
-    - **状态自动机**: 自动根据 `active` 索引推导步骤状态 (`Wait`, `Process`, `Finish`)，支持显式覆盖 (`Error`)。
-    - **视觉定制**: 支持自定义图标、主标题及辅助描述文字。
-  - **实现 PageHeader 页头组件**:
-    - **标准布局**: 包含返回按钮、主标题、副标题及其分隔逻辑。
-    - **扩展插槽**: 支持通过闭包注入 `extra` (操作区), `content` (主体内容) 及 `footer` (页脚)。
-    - **交互回调**: 提供 `on_back` 点击事件支持。
-  - **实现 Affix 固钉组件**:
-    - **核心原理**: 通过自定义 `BoundsTracker` 在 `paint` 阶段监听元素的窗口坐标，动态切换固定状态。
-    - **布局兼容**: 提供 Placeholder 占位机制，确保固定切换时文档流布局平滑不跳变。
-  - **实现 Backtop 回到顶部组件**:
-    - **滚动监听**: 绑定 `ScrollHandle` 实时监测滚动偏移，超过 `visibility_height` 时自动显示。
-    - **平滑回顶**: 实现点击后容器自动回滚至顶部位置。
-  - **实现 Anchor 锚点组件**:
-    - **位置追踪**: 利用 `AnchorTarget` 包装容器并在 `paint` 阶段上报位置信息，实现滚动自动高亮链接。
-    - **多级嵌套**: 链接支持树形结构展示。
-    - **快速跳转**: 点击链接通过 `ScrollHandle` 自动定位到目标区域。
-  - **实现 Progress 进度条组件**:
-    - **多种展示**: 实现 `Line` 线形进度条，支持自定义 `stroke_width`。
-    - **状态反馈**: 集成 `Success`, `Warning`, `Exception` 三种业务状态，对应不同的颜色和图标。
-    - **灵活定制**: 支持自定义进度条颜色及文本显示控制。
-  - **Gallery Demo 增强**:
-    - 新增 `menu_demo.rs`, `tabs_demo.rs`, `breadcrumb_demo.rs`, `steps_demo.rs`, `page_header_demo.rs`, `affix_demo.rs`, `backtop_demo.rs`, `anchor_demo.rs`, `progress_demo.rs`。
-  - **Git 提交与推送**:
-    - 提交代码并推送到 `main` 分支。
+- **完成 P4 Navigation & Data 组件开发**:
+  - **Menu**: 支持 `Vertical` / `Horizontal`，折叠状态，多级嵌套，Popover 弹出子菜单。
+  - **Tabs**: 支持 `Standard` / `Card` / `BorderCard` 风格，灵活位置，动态新增与关闭。
+  - **Breadcrumb**: 支持自定义字符串与图标分隔符，末级自动加粗，支持点击跳转。
+  - **Steps**: 支持 `Horizontal` / `Vertical`，自动推导 `Wait`/`Process`/`Finish`/`Error` 状态。
+  - **PageHeader**: 包含返回按钮、主副标题、扩展插槽 (`extra`, `content`, `footer`)。
+  - **Affix**: 基于 `BoundsTracker` 监听 `paint` 阶段坐标，支持滚动吸顶/吸底。
+  - **Backtop**: 绑定 `ScrollHandle` 监听滚动偏移，支持自定义显示阈值与平滑回顶。
+  - **Anchor**: 基于 `AnchorTarget` 收集位置信息，支持滚动自动高亮和多级嵌套跳转。
+  - **Progress**: 实现 `Line` 线形进度条，根据不同状态展示对应颜色和内置图标。
+  - **Skeleton**: 提供 `Circle`, `Square`, `Paragraph`, `Image` 占位，支持多行随机宽度。
+  - **Empty**: 内置缺省图标，支持自定义图片、描述文案以及 `extra` 底部操作插槽。
+  - **Result**: 内置四种标准结果状态 (`Success`, `Warning`, `Error`, `Info`)，支持灵活的图文排版。
+  - **Descriptions**: 基于 `span` 与 `column` 算法模拟 Grid 布局，支持 `Horizontal`/`Vertical` 及带边框的表格样式。
+  - **Timeline**: 自动计算并绘制垂直轴线，支持 `reverse` 倒序、自定义图标、以及不同时间戳位置。
+  - **Tree**: 递归渲染树形结构，通过深度计算左侧缩进，支持节点的展开与折叠交互。
+- **Gallery Demo 增强**:
+  - 新增以上所有 14 个组件的展示用例。
+- **Git 提交与推送**:
+  - 逐步提交组件实现并推送到 `main` 分支。
 
-  ### Verification
-  - `cargo check` passed.
-  ...
-  ### Key Discoveries
-  - GPUI 中 `cx.entity()` 是在 `Render` 过程中获取自身 View 句柄的正确方式，用于在异步或独立 Context (如 Popover) 中回调更新原始 View。
-  - 复杂的 View 组件在 Demo 中需通过 `cx.new(|_| Component::new())` 实例化以满足 `IntoElement` 约束。
-  - 由于 GPUI `Div` 等元素未实现 `Clone`，在需要多次引用同一子树 (如 Header) 时，应使用闭包或局部渲染函数。
-  - `RenderOnce` 组件中处理循环渲染时，需注意 `items` 的所有权转移，适时使用 `into_iter()`。
-  - 连接线在 `flex` 布局中可以通过 `flex_1` 配合 `h(px(1.0))` 或 `w(px(1.0))` 轻松实现自适应伸缩。
-  - 在 `'static` 闭包中访问全局状态 (如 Theme) 时，应在闭包执行时从传入的 `App` (cx) 中获取，而非从外部作用域捕获非静态引用。
-  - 实现 `Affix` / `Anchor` 等依赖布局结果的组件，可以通过在 `paint` 阶段检测 `Bounds` 并反向 `notify` View 的方式实现。
-  - `ScrollHandle` 的 `offset()` 结合 `View` 的 re-render 机制可以非常方便地实现基于滚动进度的 UI 交互。
-  - 进度条的百分比宽度可以通过 `gpui::relative(percentage / 100.0)` 轻松实现响应式布局。
+### Verification
+- `cargo check` passed.
+
+### Key Discoveries
+- GPUI 中 `cx.entity()` 是在 `Render` 过程中获取自身 View 句柄的正确方式，用于在异步或独立 Context 中回调更新原始 View。
+- 复杂的 View 组件在 Demo 中需通过 `cx.new(|_| Component::new())` 实例化以满足 `IntoElement` 约束。
+- 由于 GPUI `Div` 等元素未实现 `Clone`，在需要多次引用同一子树时，应使用闭包或局部渲染函数。
+- `RenderOnce` 组件处理循环渲染时需注意 `items` 所有权，适时使用 `into_iter()`。
+- 连接线在 `flex` 布局中可以通过 `flex_1` 配合 `h(px(1.0))` 轻松实现自适应伸缩。
+- 在 `'static` 闭包中访问全局状态 (如 Theme) 时，应在闭包执行时从传入的 `App` (cx) 中获取。
+- 实现 `Affix` / `Anchor` 等依赖布局结果的组件，可以在 `paint` 阶段检测 `Bounds` 并反向 `notify` View。
+- `ScrollHandle` 的 `offset()` 结合 `View` 的 re-render 机制可方便实现基于滚动进度的交互。
+- 进度条宽度可通过 `gpui::relative(percentage / 100.0)` 实现响应式。
+- 骨架屏的 `div` 占位配合 `theme.neutral.hover` 背景色在 GPUI 中表现优异。
+- `div().overflow_y_scroll()` 必须在设置 `.id()` 之后调用。
+- 在 `when` 闭包中使用 `.id()` 会将元素转换为 `Stateful` 类型，可能导致与原始非 `Stateful` 元素类型不匹配。
+
 ## Session 2 — 2026-05-03
 
 ### Actions
@@ -98,225 +80,3 @@
 - 组件与主题解耦: `.build(&theme)` 显式传入
 - Demo 返回 `AnyElement` 用于注册表类型统一
 - 库 crate 不启用 GPUI 平台 features
-
-## Session 2 — 2026-05-03
-
-### Actions
-- 调查 AuraButton hover/pressed 交互不生效问题。
-- 移除 `AuraButton` 的双路径实现中过度复杂的 `Render` + 手写 `is_pressed` 状态路径，保留 `.build(&theme)` 的 theme-explicit builder 模式。
-- 为 Button 添加可选 `.id(...)` builder；默认使用调用位置 + label 生成稳定 GPUI element id，供 `.hover()` / `.active()` 状态追踪使用。
-- 修正按钮主题色：filled variant 的 hover 比 base 稍暗，active 比 hover 更深；Default 透明按钮现在有可见 hover/active overlay。
-- 添加 aura-theme 单元测试锁定 hover/active 背景层级。
-
-### Key Discoveries
-- Gallery Demo 实际调用 `AuraButton::build(theme)`，之前 `impl Render for AuraButton` 的手写 pressed 状态是死路径。
-- GPUI 0.2.2 的 `.active()` 是 `StatefulInteractiveElement` 样式能力，需要 `.id(...)` 后使用；不需要组件自己维护 `is_pressed`。
-- 之前每次 build/render 使用全局递增 id 会让交互状态难以稳定追踪；稳定 id 更符合 GPUI 的 element state 模型。
-- Primary hover 原本使用 theme `family.hover`，在当前 NaiveUI token 下比 base 更亮，不满足“hover 暗一点”的需求；Default 原本 hover/active 背景全透明。
-
-### Verification
-- `cargo test -p aura-theme` passed: 2 tests.
-- `cargo check` passed; existing aura-gallery dead_code warnings remain.
-- `timeout 5s cargo run -p aura-gallery` compiled successfully, then failed to open a window in tmux due to GPUI Linux `NoCompositor` (environment/display issue, not compile issue).
-
-### Follow-up — Button id policy
-- 明确 Button 不能依赖业务开发者手写 `.id(...)` 才获得基础 hover/active 交互。
-- `AuraButton::new(...)` 现在通过 `#[track_caller]` 捕获组件创建位置，默认 id 由创建位置 + label + variant/size/状态参数生成。
-- `.id(...)` 保留为高级覆盖项，用于同一调用点批量渲染同 label/variant 按钮等潜在冲突场景。
-- Added aura-components tests for automatic id generation and explicit id override.
-
-### Follow-up — Global theme API
-- Replaced public `AuraButton::build(&theme)` usage with GPUI `IntoElement + RenderOnce`; Button now reads `Config.theme` from `App` during render.
-- Gallery demo registry no longer passes theme through function pointers; button demo wraps content in a `RenderOnce` demo component and reads global theme internally.
-- Updated prompt.md, P1 prompt, and decisions to supersede explicit `.build(&theme)` policy.
-
-### Follow-up — Button icon hover color
-- Re-read the icon library after adding `aura-icons-lucide` and Button icon support.
-- Root cause: `AuraIcon` intentionally inherits parent `text_color` when no explicit color is set, but `AuraButton` passed `.color(c.text)` to every internal icon, fixing the SVG text color at the normal state.
-- Fix: Button-created icons no longer set explicit icon color; they inherit the button container text color, including hover `text_color(c.text_hover)` and disabled text color.
-- Verified `cargo check`, `cargo test -p aura-theme`, and `cargo test -p aura-components`.
-
-### Correction — SVG color inheritance in GPUI
-- Previous assumption was wrong: GPUI `Svg::paint` requires the SVG element's own final `style.text.color`; it does not render from an ancestor div's text color automatically.
-- Removing explicit icon color caused Button icons to disappear because `style.text.color` on `svg()` was `None`.
-- Correct fix: keep normal icon `.color(c.text)` and add `AuraIcon::group_hover_color(group, c.text_hover)`; Button assigns a hover group to the button container so child icons switch color via GPUI `group_hover`.
-- Verified `cargo check`, `cargo test -p aura-icons`, and `cargo test -p aura-components`.
-
-## Session 8 — 2026-05-05 (Evening)
-
-### Actions
-- **修复 Popover/Popconfirm 交互与定位问题**:
-  - **恢复 `on_click`**: 在 `Popover::new` 和 `render` 中使用 `#[track_caller]` 捕获调用点，生成稳定的 `ElementId`。这使得 `div` 包装器可以安全使用 `.on_click()`，修复了鼠标从外部按下移入触发的问题。
-  - **实现“安全轴心点”边界补偿 (Safe Pivot Clamping)**:
-    - 在 `PopoverView` 中引入边界溢出检测。根据参考尺寸 (200x150) 计算气泡中心点的安全区间。
-    - 当按钮靠近窗口边缘时，自动偏移 2000px 轴心容器的位置，确保气泡内容始终留在视口内 [0, viewport_size]。
-    - 优化了 `Top` 分支的 `bottom` 坐标计算，彻底解决了 `TopCenter` 在某些临界坐标下不弹出的 bug。
-    - 针对 `Start` / `End` 对齐变体，同样应用了中心点偏移补偿，确保边缘对齐且不溢出。
-  - **验证**:
-  - `cargo check` 通过。
-  Applied fuzzy match at line 125-130.
-
-## Session 9 — 2026-05-05 (Night)
-
-### Actions
-- **验证与提交修复**:
-  - 确认 `Popover` 的边界补偿逻辑 (Safe Pivot Clamping) 已正确实现。
-  - 确认 `#[track_caller]` 已用于生成稳定 `ElementId` 以支持 `on_click`。
-  - 运行 `cargo check` 验证全量编译。
-  - 分块提交 27 个变更文件，包括 `aura-core` 重构、`popover.rs` 修复、`tooltip.rs` 同步更新以及组件适配。
-- **清理与验证**:
-  - 运行 `aura-gallery` 确认无运行时崩溃。
-  - 确认 `state.md` 与项目实际进度一致 (P3 完美收工)。
-
-### Key Discoveries
-- 将 `ActivePopover` 和 `ActiveTooltip` 提升至 `aura-core` 全局状态极大简化了 Portal 渲染逻辑，并解决了多层叠加时的层级冲突。
-- 使用 `pivot_container` (2000px) 配合 `justify_center` / `items_center` 是在 GPUI 中实现完美居中定位且支持边界补偿的最灵活方案。
-
-## Session 10 — 2026-05-06
-
-### Actions
-- **修复 Popover / Popconfirm 气泡水平中心对齐问题**:
-  - 根因: `PopoverView` 使用 2000px `pivot_container` + flex 居中近似定位，并用固定 `400x300` reference size 估算边界；实际内容宽度变化时，气泡中心会偏离触发元素中心。
-  - 改为使用 GPUI 原生 `anchored()` 元素，以触发元素的真实中心/边缘锚点定位气泡。
-  - 对 `Top` / `Bottom` 使用 `TopCenter` / `BottomCenter` 锚点保证水平中心对齐；对 `Start` / `End` 和左右方位映射到相应角/中心锚点。
-  - 使用 `snap_to_window_with_margin(px(4.0))` 保证气泡不超出窗体边界。
-  - 给气泡内容设置 `max_w` 为视口减边距，避免超宽内容横向溢出；纵向位置交由 `anchored` 贴边处理。
-- **补充 Popper 几何回归测试**:
-  - 验证垂直居中放置时内容中心与 anchor 中心一致。
-  - 验证靠近左右边界时水平位置被 clamp 到视口内。
-
-### Verification
-- `cargo check` passed.
-- `cargo test -p aura-core` passed: 2 tests.
-- `cargo test -p aura-components` passed.
-- `timeout 10s cargo run -p aura-gallery` compiled and launched; command ended by timeout after run start.
-
-### Key Discoveries
-- GPUI 已提供 `anchored()` + `snap_to_window_with_margin()`，比手写大尺寸 pivot 容器更适合弹层定位；它会按子元素实际布局尺寸做窗口边界吸附。
-
-### Follow-up — Popover trigger identity collision
-- 修复 `Popover::new()` 的 `#[track_caller]` 调用点未被持久化的问题: 之前实际在 `RenderOnce::render()` 中读取 caller，多个 Popover/Popconfirm 会共享同一个渲染调用点生成的 `ElementId`，导致 TopCenter / Popconfirm 等相邻用例触发状态混淆，表现为点击后未如期弹出。
-- `Popover` 现在在 `new()` 时生成并保存稳定 `trigger_id`，`render()` 直接使用该实例 ID。
-- 新增 `Popover::id(...)` 作为高级覆盖入口。
-- `Popconfirm` 通过 `.id(format!("popconfirm-trigger-{}", caller))` 显式转发自身调用点，避免嵌套 `Popover::new(self.trigger)` 统一落到 `popconfirm.rs` 内部同一行。
-
-### Verification
-- `cargo check` passed.
-- `cargo test -p aura-core` passed: 2 tests.
-- `cargo test -p aura-components` passed.
-- `timeout 10s cargo run -p aura-gallery` compiled and launched; command ended by timeout after run start.
-
-### Follow-up — Popconfirm instance identity persisted at construction
-- 修复 Archive Popconfirm 仍不弹的问题: 上一次只让 `Popover` 在 `new()` 持久化 ID，但 `Popconfirm` 仍在 `render()` 中读取 caller；多个 Popconfirm 实例仍可能共享同一个 render 调用点。
-- `Popconfirm` 现在在 `new()` 时保存自身 `trigger_id`，并在 render 时传给内部 `Popover::id(...)`。
-- 新增 `Popconfirm::id(...)` 高级覆盖入口，用于同一调用点批量渲染时手动去重。
-
-### Verification
-- `cargo check` passed.
-- `cargo test -p aura-core` passed: 2 tests.
-- `cargo test -p aura-components` passed.
-- `cargo run -p aura-gallery` compiled, then failed at runtime with Linux `NoCompositor` in this tmux environment.
-
-## Session 11 — 2026-05-06
-
-### Actions
-- **修复点击气泡弹层自身会关闭的问题**:
-  - 根因: Popover 弹层内容节点使用 `.on_mouse_down(MouseButton::Left, |_, _, _| {})` 空闭包，未调用 `cx.stop_propagation()`，事件仍冒泡到全屏遮罩层的 close handler。
-  - 改为在弹层内容的 mouse down handler 中调用 `cx.stop_propagation()`，阻止内部点击触发外层 click-outside 关闭逻辑。
-  - 该修复覆盖所有基于 Popover 的气泡弹层，包括 Popover、Popconfirm、Dropdown。
-
-### Verification
-- `cargo check` passed.
-- `cargo test -p aura-core` passed: 2 tests.
-- `cargo test -p aura-components` passed.
-- `cargo run -p aura-gallery` compiled, then failed at runtime with Linux `NoCompositor` in this tmux environment.
-
-## Session 12 — 2026-05-06
-
-### Actions
-- **检查 Dialog 手动修复并补齐关闭能力**:
-  - 确认 Dialog 内容面板已使用 `cx.stop_propagation()` 阻止内部点击冒泡到遮罩层。
-  - 新增 `Dialog::close(cx)` 可编程关闭 API，供内容按钮或业务逻辑手动关闭。
-  - 新增 `.close_on_escape(bool)`，允许将 Dialog 配置为 ESC 不可关闭。
-  - 新增 `Dialog::register_key_bindings(cx)` 注册 `escape -> DialogClose`。
-- **修复 Drawer 同类问题**:
-  - Drawer panel 原先只有空 mouse-down handler，不能阻止事件冒泡；改为 `cx.stop_propagation()`。
-  - 新增 `Drawer::close(cx)` 可编程关闭 API。
-  - 新增 `.close_on_escape(bool)` 与 `Drawer::register_key_bindings(cx)`。
-- **修复 MessageBox 关闭语义**:
-  - MessageBox 按钮原先调用 `clear_portals(cx)`，只清 Portal 临时渲染队列，不能可靠清除 ActiveModal 状态。
-  - 改为调用 `Dialog::close(cx)` / `MessageBox::close(cx)`。
-  - 新增 `.close_on_click_outside(bool)` / `.close_on_escape(bool)` 转发到底层 Dialog，支持必须手动关闭的场景。
-- **Gallery 接入**:
-  - 在 `aura-gallery` 启动时注册 Dialog / Drawer 的 ESC key binding。
-
-### Verification
-- `cargo check` passed.
-- `cargo test -p aura-core` passed: 2 tests.
-- `cargo test -p aura-components` passed.
-- `cargo run -p aura-gallery` compiled, then failed at runtime with Linux `NoCompositor` in this tmux environment.
-
-## Session 13 — 2026-05-06
-
-### Actions
-- **修复弹层 hover / mouse-move 穿透**:
-  - Popover 全屏浮层和气泡内容均增加 `on_mouse_move(... cx.stop_propagation())`，避免 hover 事件继续传递到底层组件。
-  - Dialog 遮罩层和内容面板均增加 mouse-move propagation stop。
-  - Drawer 遮罩层和 panel 均增加 mouse-move propagation stop。
-  - 该修复覆盖基于 Popover 的 Popover / Popconfirm / Dropdown，以及基于 Dialog 的 MessageBox。
-- **扩充弹层组件 Demo 覆盖**:
-  - Popover: 基础用法、十二方向 placement、禁用空白关闭、手动关闭、自定义 offset。
-  - Popconfirm: 基础 Delete/Archive、自定义文案、多个 placement。
-  - Dropdown: 基础 actions、BottomEnd/TopStart、Top/Bottom/Left/Right placement。
-  - Dialog: 基础、手动关闭-only、复杂内容与内部按钮关闭。
-  - Drawer: 四方向、宽/高尺寸、手动关闭-only。
-  - MessageBox: alert/confirm、禁用空白与 ESC 的手动关闭场景。
-
-### Verification
-- `cargo check` passed.
-- `cargo test -p aura-core` passed: 2 tests.
-- `cargo test -p aura-components` passed.
-- `timeout 10s cargo run -p aura-gallery` compiled and launched; command ended by timeout after run start.
-
-### Follow-up — Demo popover/popconfirm id collisions
-- 修复扩展 Demo 后 Popover / Popconfirm 仅第一个用例能弹出的问题。
-- 根因: Demo helper (`simple_popover`, `card_popover`, `confirm_at`) 在同一函数调用点批量创建多个 Popover/Popconfirm；组件默认 track_caller ID 会相同，导致触发状态冲突。
-- 为 Popover / Popconfirm Demo 中每个示例显式设置唯一 `.id(...)`。
-
-### Verification
-- `cargo check` passed.
-- `cargo test -p aura-core` passed: 2 tests.
-- `cargo test -p aura-components` passed.
-- `timeout 10s cargo run -p aura-gallery` compiled and launched; command ended by timeout after run start.
-
-## Session 14 — 2026-05-06
-
-### Actions
-- **修复 Message 全局提示样式**:
-  - Message 不再手写 `base.opacity(0.1)` 作为背景色。
-  - 新增 `message_style(theme, msg_type)`，直接复用 `Theme::color_by_variant(variant, secondary=true, background=true, border=true)`。
-  - Info / Success / Warning / Error 分别映射到 ButtonVariant::Info / Success / Warning / Danger。
-  - 图标颜色、文字颜色、边框颜色统一使用 secondary button variant 的 `text` / `border`。
-  - 背景使用 secondary button variant 的 `bg`，即类型颜色计算出的浅色背景，并跟随当前主题。
-- **补充回归测试**:
-  - `message_styles_reuse_secondary_button_variant_colors` 锁定 Message 样式与 secondary Button variant 颜色一致。
-
-### Verification
-- `cargo test -p aura-components message_styles_reuse_secondary_button_variant_colors -- --nocapture` passed.
-- `cargo check` passed.
-- `cargo test -p aura-core` passed: 2 tests.
-- `cargo test -p aura-components` passed: 1 test.
-- `timeout 10s cargo run -p aura-gallery` compiled and launched; command ended by timeout after run start.
-
-### Follow-up — Message solid type color style
-- 根据反馈调整 Message 样式: 不再复用 secondary Button 的浅色背景。
-- Message 现在按 type 使用实色背景: Info/Success/Warning/Error 分别使用 theme.info/success/warning/danger.base。
-- 图标和文字使用 `theme.neutral.card` 作为反色/白色前景，边框与背景同色。
-- 更新测试为 `message_styles_use_solid_type_background_and_inverted_foreground`。
-
-### Verification
-- `cargo test -p aura-components message_styles_use_solid_type_background_and_inverted_foreground -- --nocapture` passed.
-- `cargo check` passed.
-- `cargo test -p aura-core` passed: 2 tests.
-- `cargo test -p aura-components` passed: 1 test.
-- `timeout 10s cargo run -p aura-gallery` compiled and launched; command ended by timeout after run start.
