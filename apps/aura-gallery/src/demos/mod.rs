@@ -18,6 +18,7 @@ pub mod page_header_demo;
 pub mod progress_demo;
 pub mod skeleton_demo;
 pub mod result_demo;
+pub mod descriptions_demo;
 pub mod empty_demo;
 pub mod alert_demo;
 pub mod affix_demo;
@@ -56,6 +57,7 @@ pub fn registry() -> Vec<DemoEntry> {
         DemoEntry { name: "Progress 进度条", description: "展示操作进度", render: |cx| progress_demo::render(cx).into() },
         DemoEntry { name: "Skeleton 骨架屏", description: "数据加载时的占位展示", render: |cx| skeleton_demo::render(cx).into() },
         DemoEntry { name: "Result 结果页", description: "反馈操作结果", render: |cx| result_demo::render(cx).into() },
+        DemoEntry { name: "Descriptions 描述列表", description: "展示多个字段", render: |cx| descriptions_demo::render(cx).into() },
         DemoEntry { name: "Empty 空状态", description: "页面无数据时的占位提示", render: |cx| empty_demo::render(cx).into() },
         DemoEntry { name: "Alert 警告", description: "页面展示的重要提示信息", render: |cx| alert_demo::render(cx).into() },
         DemoEntry { name: "Affix 固钉", description: "将内容固定在特定可视区域", render: |cx| affix_demo::render(cx).into() },

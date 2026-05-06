@@ -81,7 +81,8 @@
 | 10 | Skeleton | `crates/aura-components/src/skeleton.rs` | ✅ | ✅ Variants / Rows |
 | 11 | Empty | `crates/aura-components/src/empty.rs` | ✅ | ✅ Default / Custom / Action |
 | 12 | Result | `crates/aura-components/src/result.rs` | ✅ | ✅ Success/Warning/Error/Info |
-| — | Descriptions | — | — | ⬜ Pending |
+| 13 | Descriptions | `crates/aura-components/src/descriptions.rs` | ✅ | ✅ Border / Direction / Grid |
+| — | Timeline | — | — | ⬜ Pending |
 
 ## P5 Advanced ⬜ (20)
 
