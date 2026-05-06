@@ -87,6 +87,9 @@
 | 16 | Pagination | `crates/aura-components/src/pagination.rs` | ✅ | ✅ Layout / Pager |
 | 17 | Statistic | `crates/aura-components/src/statistic.rs` | ✅ | ✅ Prefix / Suffix |
 | 18 | Segmented | `crates/aura-components/src/segmented.rs` | ✅ | ✅ Block / Disabled |
+| 19 | Tag | `crates/aura-components/src/tag.rs` | ✅ | ✅ Light / Dark / Plain |
+| 20 | Avatar | `crates/aura-components/src/avatar.rs` | ✅ | ✅ Image / Icon / Shapes |
+| 21 | Badge | `crates/aura-components/src/badge.rs` | ✅ | ✅ Value / Dot / Max |
 
 ## P5 Advanced ⬜ (20)
 

@@ -1,8 +1,7 @@
-use crate::{Popover};
+use crate::Popover;
 use aura_core::{Config, Placement};
 use gpui::{
-    prelude::*, px, App, IntoElement, RenderOnce, Window,
-    div, SharedString, AnyElement, Component,
+    AnyElement, App, Component, IntoElement, RenderOnce, SharedString, Window, div, prelude::*, px,
 };
 use std::sync::Arc;
 
@@ -26,7 +25,11 @@ impl Dropdown {
         }
     }
 
-    pub fn item(mut self, label: impl Into<SharedString>, on_click: impl Fn(&mut Window, &mut App) + 'static) -> Self {
+    pub fn item(
+        mut self,
+        label: impl Into<SharedString>,
+        on_click: impl Fn(&mut Window, &mut App) + 'static,
+    ) -> Self {
         self.items.push(DropdownItem {
             label: label.into(),
             on_click: Arc::new(on_click),
@@ -52,26 +55,30 @@ impl RenderOnce for Dropdown {
             .offset(px(4.0))
             .content(move |_window, _cx| {
                 let theme = theme.clone();
-                div().flex().flex_col().py_1().min_w(px(120.0))
-                    .children(items.iter().enumerate().map(|(i, item)| {
+                div().flex().flex_col().py_1().min_w(px(120.0)).children(
+                    items.iter().enumerate().map(|(i, item)| {
                         let on_click = item.on_click.clone();
                         let label = item.label.clone();
-                        let item_id = format!("dropdown-item-{}-{}-{}", caller.line(), caller.column(), i);
-                        
+                        let item_id =
+                            format!("dropdown-item-{}-{}-{}", caller.line(), caller.column(), i);
+
                         div()
                             .id(item_id)
                             .cursor_pointer()
-                            .px_3().py_1_5()
+                            .px_3()
+                            .py_1_5()
                             .text_size(px(theme.font_size.sm))
                             .text_color(theme.neutral.text_2)
-                            .flex().items_center()
+                            .flex()
+                            .items_center()
                             .hover(|s| s.bg(theme.primary.base).text_color(gpui::white()))
                             .on_click(move |_, window, cx| {
                                 on_click(window, cx);
                                 aura_core::clear_active_popover(cx);
                             })
                             .child(label)
-                    }))
+                    }),
+                )
             })
     }
 }

@@ -1,12 +1,12 @@
-use aura_core::{Config, Placement, set_active_popover, clear_active_popover};
+use aura_core::{Config, Placement, clear_active_popover, set_active_popover};
 use gpui::{
-    prelude::*, px, App, Component, Context, IntoElement, Render, Window,
-    Bounds, Pixels, div, AnyElement, MouseButton, RenderOnce, ElementId, LayoutId, GlobalElementId, InspectorElementId,
-    SharedString, point,
+    AnyElement, App, Bounds, Component, Context, ElementId, GlobalElementId, InspectorElementId,
+    IntoElement, LayoutId, MouseButton, Pixels, Render, RenderOnce, SharedString, Window, div,
+    point, prelude::*, px,
 };
-use std::sync::Arc;
-use std::rc::Rc;
 use std::cell::Cell;
+use std::rc::Rc;
+use std::sync::Arc;
 
 pub struct Popover {
     trigger: AnyElement,
@@ -54,7 +54,7 @@ impl Render for PopoverView {
         let offset = self.offset;
         let on_close = self.on_close.clone();
         let close_on_click_outside = self.close_on_click_outside;
-        
+
         let content = (self.content)(_window, cx);
         let viewport_size = _window.viewport_size();
         let popover_anchor = popover_anchor_point(anchor_bounds, placement, offset);
@@ -68,9 +68,14 @@ impl Render for PopoverView {
             .on_mouse_move(|_, _, cx| {
                 cx.stop_propagation();
             })
-            .when(close_on_click_outside, |s| s.on_mouse_down(MouseButton::Left, cx.listener(move |_, _, window, cx| {
-                on_close(window, cx);
-            })))
+            .when(close_on_click_outside, |s| {
+                s.on_mouse_down(
+                    MouseButton::Left,
+                    cx.listener(move |_, _, window, cx| {
+                        on_close(window, cx);
+                    }),
+                )
+            })
             .child(
                 gpui::anchored()
                     .position(popover_anchor)
@@ -87,11 +92,12 @@ impl Render for PopoverView {
                                 cx.stop_propagation();
                             }) // Consume click so it doesn't trigger the background
                             .bg(theme.neutral.card)
-                            .border_1().border_color(theme.neutral.border)
+                            .border_1()
+                            .border_color(theme.neutral.border)
                             .rounded(px(theme.radius.md))
                             .shadow_lg()
-                            .child(content)
-                    )
+                            .child(content),
+                    ),
             )
     }
 }
@@ -160,8 +166,8 @@ impl Popover {
         }
     }
 
-    pub fn content<F, E>(mut self, f: F) -> Self 
-    where 
+    pub fn content<F, E>(mut self, f: F) -> Self
+    where
         F: Fn(&mut Window, &mut Context<PopoverView>) -> E + 'static,
         E: IntoElement,
     {
@@ -197,18 +203,16 @@ impl RenderOnce for Popover {
         let close_on_click_outside = self.close_on_click_outside;
         let content = self.content.clone();
         let trigger_id = self.trigger_id;
-        
+
         let bounds_cell = Rc::new(Cell::new(None));
         let bounds_cell_clone = bounds_cell.clone();
 
         div()
             .id(trigger_id)
-            .child(
-                BoundsTracker {
-                    trigger: self.trigger,
-                    bounds: bounds_cell,
-                }
-            )
+            .child(BoundsTracker {
+                trigger: self.trigger,
+                bounds: bounds_cell,
+            })
             .on_click(move |_event, _window, cx| {
                 if let Some(anchor_bounds) = bounds_cell_clone.get() {
                     let content = content.clone();
@@ -221,7 +225,7 @@ impl RenderOnce for Popover {
                             close_on_click_outside,
                             |_window, _cx| {
                                 clear_active_popover(_cx);
-                            }
+                            },
                         )
                     });
                     set_active_popover(view.into(), cx);
@@ -244,25 +248,54 @@ struct BoundsTracker {
 
 impl IntoElement for BoundsTracker {
     type Element = Self;
-    fn into_element(self) -> Self::Element { self }
+    fn into_element(self) -> Self::Element {
+        self
+    }
 }
 
 impl gpui::Element for BoundsTracker {
     type RequestLayoutState = ();
     type PrepaintState = ();
 
-    fn id(&self) -> Option<ElementId> { None }
-    fn source_location(&self) -> Option<&'static std::panic::Location<'static>> { None }
+    fn id(&self) -> Option<ElementId> {
+        None
+    }
+    fn source_location(&self) -> Option<&'static std::panic::Location<'static>> {
+        None
+    }
 
-    fn request_layout(&mut self, _id: Option<&GlobalElementId>, _id2: Option<&InspectorElementId>, window: &mut Window, cx: &mut App) -> (LayoutId, ()) {
+    fn request_layout(
+        &mut self,
+        _id: Option<&GlobalElementId>,
+        _id2: Option<&InspectorElementId>,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> (LayoutId, ()) {
         (self.trigger.request_layout(window, cx), ())
     }
 
-    fn prepaint(&mut self, _id: Option<&GlobalElementId>, _id2: Option<&InspectorElementId>, _bounds: Bounds<Pixels>, _rl: &mut (), window: &mut Window, cx: &mut App) -> () {
+    fn prepaint(
+        &mut self,
+        _id: Option<&GlobalElementId>,
+        _id2: Option<&InspectorElementId>,
+        _bounds: Bounds<Pixels>,
+        _rl: &mut (),
+        window: &mut Window,
+        cx: &mut App,
+    ) -> () {
         self.trigger.prepaint(window, cx);
     }
 
-    fn paint(&mut self, _id: Option<&GlobalElementId>, _id2: Option<&InspectorElementId>, bounds: Bounds<Pixels>, _rl: &mut (), _ps: &mut (), window: &mut Window, cx: &mut App) {
+    fn paint(
+        &mut self,
+        _id: Option<&GlobalElementId>,
+        _id2: Option<&InspectorElementId>,
+        bounds: Bounds<Pixels>,
+        _rl: &mut (),
+        _ps: &mut (),
+        window: &mut Window,
+        cx: &mut App,
+    ) {
         self.bounds.set(Some(bounds));
         self.trigger.paint(window, cx);
     }

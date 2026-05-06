@@ -1,10 +1,7 @@
 use aura_core::Config;
-use gpui::{
-    prelude::*, px, App, IntoElement, RenderOnce, Window,
-    div, SharedString,
-};
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
+use gpui::{App, IntoElement, RenderOnce, SharedString, Window, div, prelude::*, px};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BreadcrumbSeparator {
@@ -72,41 +69,63 @@ impl RenderOnce for Breadcrumb {
         let theme = cx.global::<Config>().theme.clone();
         let items_count = self.items.len();
         let separator = self.separator;
-        
-        div()
-            .flex().flex_row().items_center().gap_1()
-            .children(self.items.into_iter().enumerate().map(|(i, item)| {
+
+        div().flex().flex_row().items_center().gap_1().children(
+            self.items.into_iter().enumerate().map(|(i, item)| {
                 let is_last = i == items_count - 1;
                 let has_click = item.on_click.is_some();
                 let on_click = item.on_click;
-                
-                div().flex().flex_row().items_center()
+
+                div()
+                    .flex()
+                    .flex_row()
+                    .items_center()
                     .child(
                         div()
                             .id(format!("breadcrumb-item-{}", i))
-                            .flex().flex_row().items_center().gap_1()
-                            .text_color(if is_last { theme.neutral.text_1 } else { theme.neutral.text_2 })
-                            .when(is_last, |s| s.font_weight(gpui::FontWeight::BOLD))
-                            .when(!is_last && has_click, |s| s
-                                .cursor_pointer()
-                                .hover(|s| s.text_color(theme.primary.base))
-                                .on_click(move |_, window, cx| {
-                                    if let Some(ref f) = on_click {
-                                        (f)(window, cx);
-                                    }
-                                })
-                            )
-                            .when_some(item.icon, |s, icon| s.child(Icon::new(icon).size(px(14.0)).color(theme.neutral.icon)))
-                            .child(div().text_sm().child(item.label))
-                    )
-                    .when(!is_last, |s| s.child(
-                        div().px_2().flex().items_center().justify_center()
-                            .child(match separator.clone() {
-                                BreadcrumbSeparator::String(sep) => div().text_sm().text_color(theme.neutral.text_3).child(sep).into_any_element(),
-                                BreadcrumbSeparator::Icon(icon) => Icon::new(icon).size(px(12.0)).color(theme.neutral.icon).into_any_element(),
+                            .flex()
+                            .flex_row()
+                            .items_center()
+                            .gap_1()
+                            .text_color(if is_last {
+                                theme.neutral.text_1
+                            } else {
+                                theme.neutral.text_2
                             })
-                    ))
-            }))
+                            .when(is_last, |s| s.font_weight(gpui::FontWeight::BOLD))
+                            .when(!is_last && has_click, |s| {
+                                s.cursor_pointer()
+                                    .hover(|s| s.text_color(theme.primary.base))
+                                    .on_click(move |_, window, cx| {
+                                        if let Some(ref f) = on_click {
+                                            (f)(window, cx);
+                                        }
+                                    })
+                            })
+                            .when_some(item.icon, |s, icon| {
+                                s.child(Icon::new(icon).size(px(14.0)).color(theme.neutral.icon))
+                            })
+                            .child(div().text_sm().child(item.label)),
+                    )
+                    .when(!is_last, |s| {
+                        s.child(
+                            div().px_2().flex().items_center().justify_center().child(
+                                match separator.clone() {
+                                    BreadcrumbSeparator::String(sep) => div()
+                                        .text_sm()
+                                        .text_color(theme.neutral.text_3)
+                                        .child(sep)
+                                        .into_any_element(),
+                                    BreadcrumbSeparator::Icon(icon) => Icon::new(icon)
+                                        .size(px(12.0))
+                                        .color(theme.neutral.icon)
+                                        .into_any_element(),
+                                },
+                            ),
+                        )
+                    })
+            }),
+        )
     }
 }
 

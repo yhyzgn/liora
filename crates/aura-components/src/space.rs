@@ -1,4 +1,6 @@
-use gpui::{prelude::*, AnyElement, IntoElement, App, Component, DefiniteLength, RenderOnce, Window};
+use gpui::{
+    AnyElement, App, Component, DefiniteLength, IntoElement, RenderOnce, Window, prelude::*,
+};
 
 pub struct Space {
     children: Vec<AnyElement>,
@@ -31,7 +33,8 @@ impl Space {
     }
 
     pub fn children(mut self, children: impl IntoIterator<Item = impl IntoElement>) -> Self {
-        self.children.extend(children.into_iter().map(|c| c.into_any_element()));
+        self.children
+            .extend(children.into_iter().map(|c| c.into_any_element()));
         self
     }
 }
@@ -57,5 +60,7 @@ impl RenderOnce for Space {
 
 impl IntoElement for Space {
     type Element = Component<Self>;
-    fn into_element(self) -> Self::Element { Component::new(self) }
+    fn into_element(self) -> Self::Element {
+        Component::new(self)
+    }
 }

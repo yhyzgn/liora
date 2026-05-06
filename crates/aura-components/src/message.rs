@@ -1,11 +1,10 @@
 use aura_core::{Config, push_portal};
-use aura_theme::Theme;
-use gpui::{
-    prelude::*, px, App, IntoElement, Window,
-    div, SharedString, Global, Entity, Context, Render,
-};
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
+use aura_theme::Theme;
+use gpui::{
+    App, Context, Entity, Global, IntoElement, Render, SharedString, Window, div, prelude::*, px,
+};
 use std::time::Duration;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -50,7 +49,7 @@ impl MessageManager {
         Self::init(cx);
         let manager = cx.global::<MessageManagerGlobal>().0.clone();
         let content = content.into();
-        
+
         manager.update(cx, |this, cx| {
             let id = this.next_id;
             this.messages.push(MessageItem {
@@ -62,19 +61,21 @@ impl MessageManager {
 
             let async_cx = cx.to_async();
             let executor = cx.background_executor().clone();
-            cx.foreground_executor().spawn(async move {
-                executor.timer(Duration::from_secs(3)).await;
-                async_cx.update(|cx| {
-                    if cx.has_global::<MessageManagerGlobal>() {
-                        let manager = cx.global::<MessageManagerGlobal>().0.clone();
-                        manager.update(cx, |this, cx| {
-                            this.messages.retain(|m| m.id != id);
-                            cx.notify();
-                        });
-                    }
-                });
-            }).detach();
-            
+            cx.foreground_executor()
+                .spawn(async move {
+                    executor.timer(Duration::from_secs(3)).await;
+                    async_cx.update(|cx| {
+                        if cx.has_global::<MessageManagerGlobal>() {
+                            let manager = cx.global::<MessageManagerGlobal>().0.clone();
+                            manager.update(cx, |this, cx| {
+                                this.messages.retain(|m| m.id != id);
+                                cx.notify();
+                            });
+                        }
+                    });
+                })
+                .detach();
+
             cx.notify();
         });
     }
@@ -83,7 +84,9 @@ impl MessageManager {
 impl Render for MessageManager {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let messages = self.messages.clone();
-        if messages.is_empty() { return div(); }
+        if messages.is_empty() {
+            return div();
+        }
 
         let theme = cx.global::<Config>().theme.clone();
 
@@ -92,23 +95,31 @@ impl Render for MessageManager {
             .top_8()
             .left_0()
             .w_full()
-            .flex().flex_col().items_center().gap_2()
+            .flex()
+            .flex_col()
+            .items_center()
+            .gap_2()
             .children(messages.into_iter().map(|msg| {
                 let style = message_style(&theme, msg.msg_type);
 
                 div()
                     .bg(style.bg)
-                    .border_1().border_color(style.border)
-                    .px_4().py_2()
+                    .border_1()
+                    .border_color(style.border)
+                    .px_4()
+                    .py_2()
                     .rounded(px(theme.radius.md))
                     .shadow_lg()
-                    .flex().flex_row().items_center().gap_2()
+                    .flex()
+                    .flex_row()
+                    .items_center()
+                    .gap_2()
                     .child(Icon::new(style.icon).size(px(16.0)).color(style.fg))
                     .child(
                         div()
                             .text_color(style.fg)
                             .text_size(px(theme.font_size.sm))
-                            .child(msg.content)
+                            .child(msg.content),
                     )
             }))
     }
@@ -121,9 +132,7 @@ pub fn show_message(content: impl Into<SharedString>, msg_type: MessageType, cx:
 pub fn render_messages(cx: &mut App) {
     if cx.has_global::<MessageManagerGlobal>() {
         let manager = cx.global::<MessageManagerGlobal>().0.clone();
-        push_portal(move |_window, _cx| {
-            manager.clone().into_any_element()
-        }, cx);
+        push_portal(move |_window, _cx| manager.clone().into_any_element(), cx);
     }
 }
 

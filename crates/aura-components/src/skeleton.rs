@@ -1,8 +1,5 @@
 use aura_core::Config;
-use gpui::{
-    prelude::*, px, App, IntoElement, RenderOnce, Window,
-    div, SharedString, AnyElement,
-};
+use gpui::{AnyElement, App, IntoElement, RenderOnce, Window, div, prelude::*, px};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum SkeletonVariant {
@@ -57,8 +54,10 @@ impl Skeleton {
         self
     }
 
-    pub fn template<F>(mut self, f: F) -> Self 
-    where F: Fn(&mut Window, &mut App) -> AnyElement + 'static {
+    pub fn template<F>(mut self, f: F) -> Self
+    where
+        F: Fn(&mut Window, &mut App) -> AnyElement + 'static,
+    {
         self.template = Some(Box::new(f));
         self
     }
@@ -73,12 +72,22 @@ impl RenderOnce for SkeletonItem {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
         let skeleton_bg = theme.neutral.hover;
-        
+
         match self.variant {
             SkeletonVariant::Circle => div().w(px(40.0)).h(px(40.0)).bg(skeleton_bg).rounded_full(),
-            SkeletonVariant::Square => div().w_full().h(px(40.0)).bg(skeleton_bg).rounded(px(theme.radius.sm)),
-            SkeletonVariant::Paragraph => div().w_full().h(px(16.0)).bg(skeleton_bg).rounded(px(4.0)),
-            SkeletonVariant::Image => div().w(px(200.0)).h(px(150.0)).bg(skeleton_bg).rounded(px(theme.radius.sm)),
+            SkeletonVariant::Square => div()
+                .w_full()
+                .h(px(40.0))
+                .bg(skeleton_bg)
+                .rounded(px(theme.radius.sm)),
+            SkeletonVariant::Paragraph => {
+                div().w_full().h(px(16.0)).bg(skeleton_bg).rounded(px(4.0))
+            }
+            SkeletonVariant::Image => div()
+                .w(px(200.0))
+                .h(px(150.0))
+                .bg(skeleton_bg)
+                .rounded(px(theme.radius.sm)),
         }
     }
 }
@@ -93,7 +102,9 @@ impl IntoElement for SkeletonItem {
 impl RenderOnce for Skeleton {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         if !self.loading {
-            return div().child(self.child.unwrap_or_else(|| div().into_any_element())).into_any_element();
+            return div()
+                .child(self.child.unwrap_or_else(|| div().into_any_element()))
+                .into_any_element();
         }
 
         if let Some(template) = self.template {
@@ -101,14 +112,20 @@ impl RenderOnce for Skeleton {
         }
 
         // Default: multiple rows of paragraph
-        div().flex().flex_col().gap_3().w_full()
+        div()
+            .flex()
+            .flex_col()
+            .gap_3()
+            .w_full()
             .children((0..self.rows).map(|i| {
                 let width = if i == self.rows - 1 && self.rows > 1 {
                     gpui::relative(0.6)
                 } else {
                     gpui::relative(1.0)
                 };
-                div().w(width).child(SkeletonItem::new(SkeletonVariant::Paragraph))
+                div()
+                    .w(width)
+                    .child(SkeletonItem::new(SkeletonVariant::Paragraph))
             }))
             .into_any_element()
     }

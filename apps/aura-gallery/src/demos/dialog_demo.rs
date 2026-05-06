@@ -1,6 +1,6 @@
 use aura_components::{Button, Dialog, Space};
 use aura_core::Config;
-use gpui::{prelude::*, px, AnyView, App, Context, Render, Window, div};
+use gpui::{AnyView, App, Context, Render, Window, div, prelude::*, px};
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|_| DialogDemo).into()
@@ -58,15 +58,25 @@ impl Render for DialogDemo {
 }
 
 fn section(theme: &aura_theme::Theme, title: &'static str, desc: &'static str) -> impl IntoElement {
-    div().flex().flex_col().gap_1()
-        .child(div().text_lg().font_weight(gpui::FontWeight::BOLD).child(title))
+    div()
+        .flex()
+        .flex_col()
+        .gap_1()
+        .child(
+            div()
+                .text_lg()
+                .font_weight(gpui::FontWeight::BOLD)
+                .child(title),
+        )
         .child(div().text_sm().text_color(theme.neutral.text_3).child(desc))
 }
 
 fn dialog_body(message: &'static str) -> impl IntoElement {
-    div().flex().flex_col().gap_4()
-        .child(message)
-        .child(div().flex().justify_end().child(
-            Button::new("Close").primary().on_click(|_, _, cx| Dialog::close(cx))
-        ))
+    div().flex().flex_col().gap_4().child(message).child(
+        div().flex().justify_end().child(
+            Button::new("Close")
+                .primary()
+                .on_click(|_, _, cx| Dialog::close(cx)),
+        ),
+    )
 }

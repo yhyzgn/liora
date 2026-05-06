@@ -1,5 +1,5 @@
-use gpui::{div, prelude::*, App, Component, IntoElement, RenderOnce, Window};
 use crate::Button;
+use gpui::{App, Component, IntoElement, RenderOnce, Window, div, prelude::*};
 
 pub struct ButtonGroup {
     buttons: Vec<Button>,
@@ -7,7 +7,9 @@ pub struct ButtonGroup {
 
 impl ButtonGroup {
     pub fn new() -> Self {
-        Self { buttons: Vec::new() }
+        Self {
+            buttons: Vec::new(),
+        }
     }
 
     pub fn button(mut self, button: Button) -> Self {
@@ -25,21 +27,19 @@ impl RenderOnce for ButtonGroup {
             .flex()
             .flex_row()
             .items_center()
-            .children(
-                self.buttons.into_iter().enumerate().map(|(i, btn)| {
-                    // Note: In GPUI 0.2.2, we don't have an easy way to override 
-                    // internal parts of Button from outside without adding more fields to Button.
-                    // For now, we'll just render them side-by-side. 
-                    // Real ButtonGroup implementation would need Button to support custom corners.
-                    
-                    // To keep it simple for now, we'll just use the flex row.
-                    // In a future update, we can add .rounded_none(), .rounded_left(), etc. to Button.
-                    if i > 0 && i < count {
-                        // btn = btn.margin_left(px(-1.0)); // overlap borders
-                    }
-                    btn
-                })
-            )
+            .children(self.buttons.into_iter().enumerate().map(|(i, btn)| {
+                // Note: In GPUI 0.2.2, we don't have an easy way to override
+                // internal parts of Button from outside without adding more fields to Button.
+                // For now, we'll just render them side-by-side.
+                // Real ButtonGroup implementation would need Button to support custom corners.
+
+                // To keep it simple for now, we'll just use the flex row.
+                // In a future update, we can add .rounded_none(), .rounded_left(), etc. to Button.
+                if i > 0 && i < count {
+                    // btn = btn.margin_left(px(-1.0)); // overlap borders
+                }
+                btn
+            }))
     }
 }
 

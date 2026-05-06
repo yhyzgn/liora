@@ -1,9 +1,8 @@
 use aura_core::Config;
 use gpui::{
-    prelude::*, px, App, Bounds, Context, Element, ElementId, Entity,
-    FocusHandle, Focusable, GlobalElementId, InspectorElementId, LayoutId,
-    MouseButton, MouseMoveEvent, Pixels, Point, Render,
-    Style, Window, relative, fill, point, size
+    App, Bounds, Context, Element, ElementId, Entity, FocusHandle, Focusable, GlobalElementId,
+    InspectorElementId, LayoutId, MouseButton, MouseMoveEvent, Pixels, Point, Render, Style,
+    Window, fill, point, prelude::*, px, relative, size,
 };
 
 pub struct Slider {
@@ -33,10 +32,22 @@ impl Slider {
         }
     }
 
-    pub fn min(mut self, min: f64) -> Self { self.min = min; self }
-    pub fn max(mut self, max: f64) -> Self { self.max = max; self }
-    pub fn step(mut self, step: f64) -> Self { self.step = step; self }
-    pub fn disabled(mut self, d: bool) -> Self { self.disabled = d; self }
+    pub fn min(mut self, min: f64) -> Self {
+        self.min = min;
+        self
+    }
+    pub fn max(mut self, max: f64) -> Self {
+        self.max = max;
+        self
+    }
+    pub fn step(mut self, step: f64) -> Self {
+        self.step = step;
+        self
+    }
+    pub fn disabled(mut self, d: bool) -> Self {
+        self.disabled = d;
+        self
+    }
 
     pub fn on_change(mut self, cb: impl Fn(f64, &mut Window, &mut App) + 'static) -> Self {
         self.on_change = Some(Box::new(cb));
@@ -55,8 +66,15 @@ impl Slider {
         }
     }
 
-    fn handle_mouse_down(&mut self, event: &gpui::MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
-        if self.disabled { return; }
+    fn handle_mouse_down(
+        &mut self,
+        event: &gpui::MouseDownEvent,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.disabled {
+            return;
+        }
         window.focus(&self.focus_handle, cx);
         self.is_dragging = true;
         self.update_value_from_mouse(event.position, window, cx);
@@ -67,13 +85,23 @@ impl Slider {
         cx.notify();
     }
 
-    fn handle_mouse_move(&mut self, event: &MouseMoveEvent, window: &mut Window, cx: &mut Context<Self>) {
+    fn handle_mouse_move(
+        &mut self,
+        event: &MouseMoveEvent,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
         if self.is_dragging && !self.disabled {
             self.update_value_from_mouse(event.position, window, cx);
         }
     }
 
-    fn update_value_from_mouse(&mut self, pos: Point<Pixels>, window: &mut Window, cx: &mut Context<Self>) {
+    fn update_value_from_mouse(
+        &mut self,
+        pos: Point<Pixels>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
         if let Some(bounds) = self.last_bounds {
             let relative_x = pos.x - bounds.left();
             let width = bounds.size.width;
@@ -85,7 +113,9 @@ impl Slider {
 }
 
 impl Focusable for Slider {
-    fn focus_handle(&self, _cx: &App) -> FocusHandle { self.focus_handle.clone() }
+    fn focus_handle(&self, _cx: &App) -> FocusHandle {
+        self.focus_handle.clone()
+    }
 }
 
 struct SliderElement {
@@ -94,59 +124,99 @@ struct SliderElement {
 
 impl IntoElement for SliderElement {
     type Element = Self;
-    fn into_element(self) -> Self::Element { self }
+    fn into_element(self) -> Self::Element {
+        self
+    }
 }
 
 impl Element for SliderElement {
     type RequestLayoutState = ();
     type PrepaintState = ();
 
-    fn id(&self) -> Option<ElementId> { None }
-    fn source_location(&self) -> Option<&'static std::panic::Location<'static>> { None }
+    fn id(&self) -> Option<ElementId> {
+        None
+    }
+    fn source_location(&self) -> Option<&'static std::panic::Location<'static>> {
+        None
+    }
 
-    fn request_layout(&mut self, _: Option<&GlobalElementId>, _: Option<&InspectorElementId>, window: &mut Window, cx: &mut App) -> (LayoutId, ()) {
+    fn request_layout(
+        &mut self,
+        _: Option<&GlobalElementId>,
+        _: Option<&InspectorElementId>,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> (LayoutId, ()) {
         let mut style = Style::default();
         style.size.width = relative(1.).into();
         style.size.height = px(16.0).into();
         (window.request_layout(style, [], cx), ())
     }
 
-    fn prepaint(&mut self, _: Option<&GlobalElementId>, _: Option<&InspectorElementId>, bounds: Bounds<Pixels>, _: &mut (), _window: &mut Window, cx: &mut App) -> () {
+    fn prepaint(
+        &mut self,
+        _: Option<&GlobalElementId>,
+        _: Option<&InspectorElementId>,
+        bounds: Bounds<Pixels>,
+        _: &mut (),
+        _window: &mut Window,
+        cx: &mut App,
+    ) -> () {
         self.slider.update(cx, |this, _| {
             this.last_bounds = Some(bounds);
         });
     }
 
-    fn paint(&mut self, _: Option<&GlobalElementId>, _: Option<&InspectorElementId>, bounds: Bounds<Pixels>, _: &mut (), _: &mut (), window: &mut Window, cx: &mut App) {
+    fn paint(
+        &mut self,
+        _: Option<&GlobalElementId>,
+        _: Option<&InspectorElementId>,
+        bounds: Bounds<Pixels>,
+        _: &mut (),
+        _: &mut (),
+        window: &mut Window,
+        cx: &mut App,
+    ) {
         let slider = self.slider.read(cx);
         let theme = &cx.global::<Config>().theme;
         let percentage = (slider.value - slider.min) / (slider.max - slider.min);
-        
+
         let h = 6.0;
         let thumb_sz = 16.0;
-        
+
         let track_bg = theme.neutral.hover;
-        let active_bg = if slider.disabled { theme.neutral.border } else { theme.primary.base };
-        let thumb_bg = if slider.disabled { theme.neutral.text_disabled } else { theme.primary.base };
+        let active_bg = if slider.disabled {
+            theme.neutral.border
+        } else {
+            theme.primary.base
+        };
+        let thumb_bg = if slider.disabled {
+            theme.neutral.text_disabled
+        } else {
+            theme.primary.base
+        };
 
         // Paint track
         let track_bounds = Bounds::new(
-            point(bounds.left(), bounds.top() + (bounds.size.height - px(h)) / 2.0),
-            size(bounds.size.width, px(h))
+            point(
+                bounds.left(),
+                bounds.top() + (bounds.size.height - px(h)) / 2.0,
+            ),
+            size(bounds.size.width, px(h)),
         );
         window.paint_quad(fill(track_bounds, track_bg));
 
         // Paint active track
         let active_bounds = Bounds::new(
             track_bounds.origin,
-            size(bounds.size.width * percentage as f32, px(h))
+            size(bounds.size.width * percentage as f32, px(h)),
         );
         window.paint_quad(fill(active_bounds, active_bg));
 
         // Paint thumb
         let thumb_origin = point(
             bounds.left() + bounds.size.width * percentage as f32 - px(thumb_sz / 2.0),
-            bounds.top() + (bounds.size.height - px(thumb_sz)) / 2.0
+            bounds.top() + (bounds.size.height - px(thumb_sz)) / 2.0,
         );
         let thumb_bounds = Bounds::new(thumb_origin, size(px(thumb_sz), px(thumb_sz)));
         window.paint_quad(fill(thumb_bounds, thumb_bg));
@@ -156,10 +226,11 @@ impl Element for SliderElement {
 impl Render for Slider {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let fh = self.focus_handle.clone();
-        
+
         gpui::div()
             .relative()
-            .w_full().h(px(16.0))
+            .w_full()
+            .h(px(16.0))
             .track_focus(&fh)
             .when(!self.disabled, |s| s.cursor_pointer())
             .when(self.disabled, |s| s.cursor_not_allowed())
@@ -167,6 +238,8 @@ impl Render for Slider {
             .on_mouse_move(cx.listener(Self::handle_mouse_move))
             .on_mouse_up(MouseButton::Left, cx.listener(Self::handle_mouse_up))
             .on_mouse_up_out(MouseButton::Left, cx.listener(Self::handle_mouse_up))
-            .child(SliderElement { slider: cx.entity().clone() })
+            .child(SliderElement {
+                slider: cx.entity().clone(),
+            })
     }
 }

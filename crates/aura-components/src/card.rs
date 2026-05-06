@@ -1,7 +1,6 @@
-use aura_core::{Config};
+use aura_core::Config;
 use gpui::{
-    prelude::*, px, App, IntoElement, Window,
-    div, SharedString, Component, RenderOnce, AnyElement,
+    AnyElement, App, Component, IntoElement, RenderOnce, SharedString, Window, div, prelude::*, px,
 };
 
 pub struct Card {
@@ -57,11 +56,12 @@ impl RenderOnce for Card {
         let theme = cx.global::<Config>().theme.clone();
         let caller = std::panic::Location::caller();
         let id = format!("card-{}-{}", caller.line(), caller.column());
-        
+
         let mut el = div()
             .id(id)
             .bg(theme.neutral.card)
-            .border_1().border_color(theme.neutral.border)
+            .border_1()
+            .border_color(theme.neutral.border)
             .rounded(px(theme.radius.md))
             .overflow_hidden();
 
@@ -79,13 +79,19 @@ impl RenderOnce for Card {
         // Header
         if let Some(title) = self.title {
             el = el.child(
-                div().p_4().border_b_1().border_color(theme.neutral.border)
-                    .child(div().font_weight(gpui::FontWeight::BOLD).child(title))
+                div()
+                    .p_4()
+                    .border_b_1()
+                    .border_color(theme.neutral.border)
+                    .child(div().font_weight(gpui::FontWeight::BOLD).child(title)),
             );
         } else if let Some(header) = self.header {
             el = el.child(
-                div().p_4().border_b_1().border_color(theme.neutral.border)
-                    .child(header)
+                div()
+                    .p_4()
+                    .border_b_1()
+                    .border_color(theme.neutral.border)
+                    .child(header),
             );
         }
 
@@ -95,8 +101,12 @@ impl RenderOnce for Card {
         // Footer
         if let Some(footer) = self.footer {
             el = el.child(
-                div().p_4().border_t_1().border_color(theme.neutral.border).bg(theme.neutral.hover)
-                    .child(footer)
+                div()
+                    .p_4()
+                    .border_t_1()
+                    .border_color(theme.neutral.border)
+                    .bg(theme.neutral.hover)
+                    .child(footer),
             );
         }
 

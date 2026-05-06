@@ -1,6 +1,6 @@
 use aura_core::Config;
 use gpui::{
-    div, prelude::*, AnyElement, App, Context, IntoElement, Pixels, Render, ScrollHandle, Window,
+    AnyElement, App, Context, IntoElement, Pixels, Render, ScrollHandle, Window, div, prelude::*,
 };
 
 pub struct Scrollbar {
@@ -17,7 +17,9 @@ impl Scrollbar {
     {
         Self {
             scroll_handle: ScrollHandle::new(),
-            render_content: Box::new(move |window, cx| render_content(window, cx).into_any_element()),
+            render_content: Box::new(move |window, cx| {
+                render_content(window, cx).into_any_element()
+            }),
             height: None,
         }
     }
@@ -51,13 +53,11 @@ impl Render for Scrollbar {
                     .on_scroll_wheel(cx.listener(|_, _, _, cx| {
                         cx.notify();
                     }))
-                    .child(content)
+                    .child(content),
             )
-            .child(
-                ScrollbarThumb {
-                    scroll_handle: self.scroll_handle.clone(),
-                }
-            )
+            .child(ScrollbarThumb {
+                scroll_handle: self.scroll_handle.clone(),
+            })
     }
 }
 
@@ -134,7 +134,7 @@ impl gpui::Element for ScrollbarThumb {
 
         let ratio = viewport_h / content_h;
         let thumb_h = viewport_h * ratio;
-        
+
         let scroll_ratio = if max_offset.y > gpui::px(0.0) {
             -offset.y / max_offset.y
         } else {

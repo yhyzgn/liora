@@ -1,4 +1,4 @@
-use aura_components::{Link, Paragraph, Text, Title, Divider};
+use aura_components::{Divider, Link, Paragraph, Text, Title};
 use aura_core::Config;
 use aura_theme::Theme;
 use gpui::{App, Context, Entity, IntoElement, Render, Window, div, prelude::*, px};
@@ -29,10 +29,10 @@ impl Render for TypographyDemo {
             .child(hdr(theme, "Text 文本"))
             .child(div().flex().flex_col().gap_2().children(vec![
                 Text::new("Default text color and size"),
-                Text::new("Primary color text").color(theme.primary.base),
-                Text::new("Success color text").color(theme.success.base),
-                Text::new("Warning color text").color(theme.warning.base),
-                Text::new("Danger color text").color(theme.danger.base),
+                Text::new("Primary color text").text_color(theme.primary.base),
+                Text::new("Success color text").text_color(theme.success.base),
+                Text::new("Warning color text").text_color(theme.warning.base),
+                Text::new("Danger color text").text_color(theme.danger.base),
                 Text::new("Small text").size(px(theme.font_size.sm)),
                 Text::new("Large text").size(px(theme.font_size.lg)),
             ]))
@@ -50,8 +50,18 @@ impl Render for TypographyDemo {
             .child(Divider::new())
             .child(hdr(theme, "Paragraph 段落"))
             .child(div().w_80().child(
-                Paragraph::new("Aura UI is a professional desktop UI library for Rust, built on top of GPUI. It provides a comprehensive set of components inspired by Element Plus, designed to help developers build beautiful and performant native applications.")
+                Paragraph::new()
+                    .child(Text::new("Aura UI is a professional "))
+                    .child(Text::new("desktop UI library").bold().text_color(theme.primary.base))
+                    .child(Text::new(" for Rust, built on top of ").text_color(theme.info.base))
+                    .child(Text::new("GPUI").italic().bg(theme.neutral.hover))
+                    .child(Text::new(". It provides a comprehensive set of components inspired by "))
+                    .child(Text::new("Element Plus").underline())
+                    .child(Text::new(", designed to help developers build beautiful and performant native applications. The long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long Text test wrapping."))
             ))
+            .child(
+                Paragraph::with_text("Or use the shorthand with_text for simple cases.")
+            )
     }
 }
 

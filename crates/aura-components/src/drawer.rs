@@ -1,10 +1,10 @@
-use aura_core::{Config};
-use gpui::{
-    prelude::*, px, App, Context, IntoElement, Render, Window,
-    div, AnyElement, MouseButton, SharedString, Pixels, actions, KeyBinding,
-};
+use aura_core::Config;
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
+use gpui::{
+    AnyElement, App, Context, IntoElement, KeyBinding, MouseButton, Pixels, Render, SharedString,
+    Window, actions, div, prelude::*, px,
+};
 use std::sync::Arc;
 
 actions!(drawer, [DrawerClose]);
@@ -113,35 +113,64 @@ impl Render for DrawerView {
         match placement {
             DrawerPlacement::Left => {
                 container = container.flex().flex_row().justify_start();
-                panel = panel.h_full().w(width).border_r_1().border_color(theme.neutral.border);
+                panel = panel
+                    .h_full()
+                    .w(width)
+                    .border_r_1()
+                    .border_color(theme.neutral.border);
             }
             DrawerPlacement::Right => {
                 container = container.flex().flex_row().justify_end();
-                panel = panel.h_full().w(width).border_l_1().border_color(theme.neutral.border);
+                panel = panel
+                    .h_full()
+                    .w(width)
+                    .border_l_1()
+                    .border_color(theme.neutral.border);
             }
             DrawerPlacement::Top => {
                 container = container.flex().flex_col().justify_start();
-                panel = panel.w_full().h(height).border_b_1().border_color(theme.neutral.border);
+                panel = panel
+                    .w_full()
+                    .h(height)
+                    .border_b_1()
+                    .border_color(theme.neutral.border);
             }
             DrawerPlacement::Bottom => {
                 container = container.flex().flex_col().justify_end();
-                panel = panel.w_full().h(height).border_t_1().border_color(theme.neutral.border);
+                panel = panel
+                    .w_full()
+                    .h(height)
+                    .border_t_1()
+                    .border_color(theme.neutral.border);
             }
         }
 
         container.child(
             panel
                 .child(
-                    div().p_4().border_b_1().border_color(theme.neutral.border).flex().justify_between().items_center()
+                    div()
+                        .p_4()
+                        .border_b_1()
+                        .border_color(theme.neutral.border)
+                        .flex()
+                        .justify_between()
+                        .items_center()
                         .child(div().font_weight(gpui::FontWeight::BOLD).child(title))
                         .child(
-                            div().id("close-btn").cursor_pointer().child(Icon::new(IconName::X).size(px(16.0)).color(theme.neutral.icon))
+                            div()
+                                .id("close-btn")
+                                .cursor_pointer()
+                                .child(
+                                    Icon::new(IconName::X)
+                                        .size(px(16.0))
+                                        .color(theme.neutral.icon),
+                                )
                                 .on_mouse_down(MouseButton::Left, move |_, window, cx| {
                                     on_close(window, cx);
-                                })
-                        )
+                                }),
+                        ),
                 )
-                .child(div().flex_1().p_4().child(content_fn(_window, cx)))
+                .child(div().flex_1().p_4().child(content_fn(_window, cx))),
         )
     }
 }
@@ -193,8 +222,8 @@ impl Drawer {
         self
     }
 
-    pub fn content<F, E>(mut self, f: F) -> Self 
-    where 
+    pub fn content<F, E>(mut self, f: F) -> Self
+    where
         F: Fn(&mut Window, &mut Context<DrawerView>) -> E + 'static,
         E: IntoElement,
     {
@@ -210,20 +239,22 @@ impl Drawer {
         let height = self.height;
         let close_on_click_outside = self.close_on_click_outside;
         let close_on_escape = self.close_on_escape;
-        
-        let view = cx.new(|_cx| DrawerView::new(
-            title,
-            content,
-            placement,
-            width,
-            height,
-            close_on_click_outside,
-            close_on_escape,
-            |_window, _cx| {
-                aura_core::clear_active_drawer(_cx);
-            }
-        ));
-        
+
+        let view = cx.new(|_cx| {
+            DrawerView::new(
+                title,
+                content,
+                placement,
+                width,
+                height,
+                close_on_click_outside,
+                close_on_escape,
+                |_window, _cx| {
+                    aura_core::clear_active_drawer(_cx);
+                },
+            )
+        });
+
         aura_core::set_active_drawer(view.into(), cx);
     }
 

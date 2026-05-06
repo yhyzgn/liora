@@ -1,10 +1,7 @@
-use aura_core::{Config};
-use gpui::{
-    prelude::*, px, App, IntoElement, Window,
-    div, SharedString, Component, RenderOnce,
-};
+use aura_core::Config;
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
+use gpui::{App, Component, IntoElement, RenderOnce, SharedString, Window, div, prelude::*, px};
 
 pub struct Loading {
     text: Option<SharedString>,
@@ -33,17 +30,29 @@ impl Loading {
 impl RenderOnce for Loading {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
-        
-        let spinner = div().flex().flex_col().items_center().gap_2()
-            .child(Icon::new(IconName::LoaderCircle).size(px(32.0)).color(theme.primary.base))
-            .when_some(self.text, |s, t| s.child(div().text_sm().text_color(theme.primary.base).child(t)));
+
+        let spinner = div()
+            .flex()
+            .flex_col()
+            .items_center()
+            .gap_2()
+            .child(
+                Icon::new(IconName::LoaderCircle)
+                    .size(px(32.0))
+                    .color(theme.primary.base),
+            )
+            .when_some(self.text, |s, t| {
+                s.child(div().text_sm().text_color(theme.primary.base).child(t))
+            });
 
         if self.full_screen {
             div()
                 .absolute()
                 .size_full()
                 .bg(gpui::rgba(0xFFFFFF99))
-                .flex().items_center().justify_center()
+                .flex()
+                .items_center()
+                .justify_center()
                 .child(spinner)
         } else {
             spinner

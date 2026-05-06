@@ -1,8 +1,5 @@
 use aura_core::Config;
-use gpui::{
-    App, Component, IntoElement, RenderOnce, SharedString, Window,
-    prelude::*, px,
-};
+use gpui::{App, Component, IntoElement, RenderOnce, SharedString, Window, prelude::*, px};
 
 pub struct Title {
     content: SharedString,
@@ -11,15 +8,36 @@ pub struct Title {
 
 impl Title {
     pub fn new(content: impl Into<SharedString>) -> Self {
-        Self { content: content.into(), level: 1 }
+        Self {
+            content: content.into(),
+            level: 1,
+        }
     }
 
-    pub fn h1(mut self) -> Self { self.level = 1; self }
-    pub fn h2(mut self) -> Self { self.level = 2; self }
-    pub fn h3(mut self) -> Self { self.level = 3; self }
-    pub fn h4(mut self) -> Self { self.level = 4; self }
-    pub fn h5(mut self) -> Self { self.level = 5; self }
-    pub fn h6(mut self) -> Self { self.level = 6; self }
+    pub fn h1(mut self) -> Self {
+        self.level = 1;
+        self
+    }
+    pub fn h2(mut self) -> Self {
+        self.level = 2;
+        self
+    }
+    pub fn h3(mut self) -> Self {
+        self.level = 3;
+        self
+    }
+    pub fn h4(mut self) -> Self {
+        self.level = 4;
+        self
+    }
+    pub fn h5(mut self) -> Self {
+        self.level = 5;
+        self
+    }
+    pub fn h6(mut self) -> Self {
+        self.level = 6;
+        self
+    }
 
     fn render_with_theme(self, theme: &aura_theme::Theme) -> impl IntoElement {
         let (size, weight) = match self.level {
@@ -48,5 +66,7 @@ impl RenderOnce for Title {
 
 impl IntoElement for Title {
     type Element = Component<Self>;
-    fn into_element(self) -> Self::Element { Component::new(self) }
+    fn into_element(self) -> Self::Element {
+        Component::new(self)
+    }
 }

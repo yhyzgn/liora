@@ -1,11 +1,19 @@
-use gpui::{AnyElement, Global, Bounds, Pixels, Point, App, Window, SharedString};
+use gpui::{AnyElement, App, Bounds, Global, Pixels, Point, SharedString, Window};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Placement {
-    Top, TopStart, TopEnd,
-    Bottom, BottomStart, BottomEnd,
-    Left, LeftStart, LeftEnd,
-    Right, RightStart, RightEnd,
+    Top,
+    TopStart,
+    TopEnd,
+    Bottom,
+    BottomStart,
+    BottomEnd,
+    Left,
+    LeftStart,
+    LeftEnd,
+    Right,
+    RightStart,
+    RightEnd,
 }
 
 impl Placement {
@@ -41,9 +49,15 @@ pub struct Portal {
 
 impl Global for Portal {}
 
-pub fn push_portal(render: impl FnOnce(&mut Window, &mut App) -> AnyElement + 'static, cx: &mut App) -> u64 {
+pub fn push_portal(
+    render: impl FnOnce(&mut Window, &mut App) -> AnyElement + 'static,
+    cx: &mut App,
+) -> u64 {
     if !cx.has_global::<Portal>() {
-        cx.set_global(Portal { entries: vec![], next_id: 1 });
+        cx.set_global(Portal {
+            entries: vec![],
+            next_id: 1,
+        });
     }
     let portal = cx.global_mut::<Portal>();
     let id = portal.next_id;
@@ -152,7 +166,11 @@ impl Popper {
         self.calculate_position_with_placement(self.placement, content_size)
     }
 
-    fn calculate_position_with_placement(&self, placement: Placement, content_size: gpui::Size<Pixels>) -> Point<Pixels> {
+    fn calculate_position_with_placement(
+        &self,
+        placement: Placement,
+        content_size: gpui::Size<Pixels>,
+    ) -> Point<Pixels> {
         let anchor = self.anchor_bounds;
         let (x, y) = match placement {
             Placement::Top => (
@@ -171,10 +189,7 @@ impl Popper {
                 anchor.left() + (anchor.size.width - content_size.width) / 2.0,
                 anchor.bottom() + self.offset,
             ),
-            Placement::BottomStart => (
-                anchor.left(),
-                anchor.bottom() + self.offset,
-            ),
+            Placement::BottomStart => (anchor.left(), anchor.bottom() + self.offset),
             Placement::BottomEnd => (
                 anchor.right() - content_size.width,
                 anchor.bottom() + self.offset,
@@ -195,10 +210,7 @@ impl Popper {
                 anchor.right() + self.offset,
                 anchor.top() + (anchor.size.height - content_size.height) / 2.0,
             ),
-            Placement::RightStart => (
-                anchor.right() + self.offset,
-                anchor.top(),
-            ),
+            Placement::RightStart => (anchor.right() + self.offset, anchor.top()),
             Placement::RightEnd => (
                 anchor.right() + self.offset,
                 anchor.bottom() - content_size.height,
@@ -224,7 +236,8 @@ impl Popper {
 
         if out_of_bounds {
             let flipped_placement = self.placement.flip();
-            let flipped_pos = self.calculate_position_with_placement(flipped_placement, content_size);
+            let flipped_pos =
+                self.calculate_position_with_placement(flipped_placement, content_size);
 
             let flipped_out_of_bounds = flipped_pos.x < viewport.left()
                 || flipped_pos.x + content_size.width > viewport.right()
@@ -237,8 +250,12 @@ impl Popper {
             }
         }
 
-        final_pos.x = final_pos.x.clamp(viewport.left(), viewport.right() - content_size.width);
-        final_pos.y = final_pos.y.clamp(viewport.top(), viewport.bottom() - content_size.height);
+        final_pos.x = final_pos
+            .x
+            .clamp(viewport.left(), viewport.right() - content_size.width);
+        final_pos.y = final_pos
+            .y
+            .clamp(viewport.top(), viewport.bottom() - content_size.height);
 
         (final_pos, final_placement)
     }
@@ -276,7 +293,10 @@ mod tests {
         let (pos, placement) = popper.calculate_position_with_flip(content_size, viewport());
 
         assert_eq!(placement, Placement::Bottom);
-        assert_eq!(pos.x + content_size.width / 2.0, anchor_bounds.left() + anchor_bounds.size.width / 2.0);
+        assert_eq!(
+            pos.x + content_size.width / 2.0,
+            anchor_bounds.left() + anchor_bounds.size.width / 2.0
+        );
         assert_eq!(pos.y, anchor_bounds.bottom() + px(8.0));
     }
 

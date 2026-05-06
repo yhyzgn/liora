@@ -1,11 +1,10 @@
 use aura_core::{Placement, TooltipData, set_active_tooltip};
 use gpui::{
-    prelude::*, px, App, IntoElement, RenderOnce, SharedString, Window,
-    AnyElement, Pixels, div, ElementId, LayoutId, GlobalElementId, InspectorElementId,
-    Bounds, Component,
+    AnyElement, App, Bounds, Component, ElementId, GlobalElementId, InspectorElementId,
+    IntoElement, LayoutId, Pixels, RenderOnce, SharedString, Window, div, prelude::*, px,
 };
-use std::rc::Rc;
 use std::cell::Cell;
+use std::rc::Rc;
 
 pub struct Tooltip {
     trigger: AnyElement,
@@ -45,26 +44,27 @@ impl RenderOnce for Tooltip {
         let content = self.content.clone();
         let placement = self.placement;
         let offset = self.offset;
-        
+
         let bounds_cell = Rc::new(Cell::new(Bounds::default()));
         let bounds_cell_clone = bounds_cell.clone();
 
         div()
-            .child(
-                TooltipBoundsTracker {
-                    trigger: self.trigger,
-                    bounds: bounds_cell,
-                }
-            )
+            .child(TooltipBoundsTracker {
+                trigger: self.trigger,
+                bounds: bounds_cell,
+            })
             .on_mouse_move(move |_event, _window, cx| {
                 let anchor_bounds = bounds_cell_clone.get();
                 if anchor_bounds.size.width > px(0.0) {
-                    set_active_tooltip(TooltipData {
-                        content: content.clone(),
-                        anchor_bounds,
-                        placement,
-                        offset,
-                    }, cx);
+                    set_active_tooltip(
+                        TooltipData {
+                            content: content.clone(),
+                            anchor_bounds,
+                            placement,
+                            offset,
+                        },
+                        cx,
+                    );
                 }
             })
     }
@@ -84,25 +84,54 @@ struct TooltipBoundsTracker {
 
 impl IntoElement for TooltipBoundsTracker {
     type Element = Self;
-    fn into_element(self) -> Self::Element { self }
+    fn into_element(self) -> Self::Element {
+        self
+    }
 }
 
 impl gpui::Element for TooltipBoundsTracker {
     type RequestLayoutState = ();
     type PrepaintState = ();
 
-    fn id(&self) -> Option<ElementId> { None }
-    fn source_location(&self) -> Option<&'static std::panic::Location<'static>> { None }
+    fn id(&self) -> Option<ElementId> {
+        None
+    }
+    fn source_location(&self) -> Option<&'static std::panic::Location<'static>> {
+        None
+    }
 
-    fn request_layout(&mut self, _id: Option<&GlobalElementId>, _id2: Option<&InspectorElementId>, window: &mut Window, cx: &mut App) -> (LayoutId, ()) {
+    fn request_layout(
+        &mut self,
+        _id: Option<&GlobalElementId>,
+        _id2: Option<&InspectorElementId>,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> (LayoutId, ()) {
         (self.trigger.request_layout(window, cx), ())
     }
 
-    fn prepaint(&mut self, _id: Option<&GlobalElementId>, _id2: Option<&InspectorElementId>, _bounds: Bounds<Pixels>, _rl: &mut (), window: &mut Window, cx: &mut App) -> () {
+    fn prepaint(
+        &mut self,
+        _id: Option<&GlobalElementId>,
+        _id2: Option<&InspectorElementId>,
+        _bounds: Bounds<Pixels>,
+        _rl: &mut (),
+        window: &mut Window,
+        cx: &mut App,
+    ) -> () {
         self.trigger.prepaint(window, cx);
     }
 
-    fn paint(&mut self, _id: Option<&GlobalElementId>, _id2: Option<&InspectorElementId>, bounds: Bounds<Pixels>, _rl: &mut (), _ps: &mut (), window: &mut Window, cx: &mut App) {
+    fn paint(
+        &mut self,
+        _id: Option<&GlobalElementId>,
+        _id2: Option<&InspectorElementId>,
+        bounds: Bounds<Pixels>,
+        _rl: &mut (),
+        _ps: &mut (),
+        window: &mut Window,
+        cx: &mut App,
+    ) {
         self.bounds.set(bounds);
         self.trigger.paint(window, cx);
     }

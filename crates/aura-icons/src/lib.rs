@@ -1,5 +1,8 @@
 use aura_core::Config;
-use gpui::{App, Component, Hsla, IntoElement, RenderOnce, SharedString, Window, prelude::*, px, DefiniteLength};
+use gpui::{
+    App, Component, DefiniteLength, Hsla, IntoElement, RenderOnce, SharedString, Window,
+    prelude::*, px,
+};
 use std::borrow::Cow;
 
 pub trait IntoIconPath {
@@ -26,10 +29,18 @@ pub struct Icon {
 
 impl Icon {
     pub fn new(path: impl IntoIconPath) -> Self {
-        Self { size: None, color: None, group_hover_color: None, asset_path: path.icon_path().into_owned() }
+        Self {
+            size: None,
+            color: None,
+            group_hover_color: None,
+            asset_path: path.icon_path().into_owned(),
+        }
     }
 
-    pub fn size(mut self, sz: impl Into<DefiniteLength>) -> Self { self.size = Some(sz.into()); self }
+    pub fn size(mut self, sz: impl Into<DefiniteLength>) -> Self {
+        self.size = Some(sz.into());
+        self
+    }
 
     /// Set explicit color. If not called, inherits parent's text_color.
     pub fn color(mut self, color: Hsla) -> Self {

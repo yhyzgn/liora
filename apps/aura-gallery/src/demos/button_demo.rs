@@ -99,23 +99,11 @@ fn secondary() -> Vec<impl IntoElement> {
 fn secondary_nb() -> Vec<impl IntoElement> {
     vec![
         Button::new("Default").secondary().border(false),
-        Button::new("Tertiary")
-            .tertiary()
-            .secondary()
-            .border(false),
-        Button::new("Primary")
-            .primary()
-            .secondary()
-            .border(false),
+        Button::new("Tertiary").tertiary().secondary().border(false),
+        Button::new("Primary").primary().secondary().border(false),
         Button::new("Info").info().secondary().border(false),
-        Button::new("Success")
-            .success()
-            .secondary()
-            .border(false),
-        Button::new("Warning")
-            .warning()
-            .secondary()
-            .border(false),
+        Button::new("Success").success().secondary().border(false),
+        Button::new("Warning").warning().secondary().border(false),
         Button::new("Error").danger().secondary().border(false),
     ]
 }
@@ -130,22 +118,20 @@ fn sizes() -> Vec<impl IntoElement> {
 
 fn icons() -> Vec<impl IntoElement> {
     vec![
-        Button::new("Search")
-            .primary()
-            .icon_start(IconName::Search),
+        Button::new("Search").primary().icon_start(IconName::Search),
         Button::new("Settings")
             .primary()
             .icon_start(IconName::Settings),
         Button::new("Done").success().icon_end(IconName::Check),
         Button::new("Delete").danger().icon_end(IconName::X),
-        Button::new("Home")
-            .tertiary()
-            .icon_start(IconName::House),
+        Button::new("Home").tertiary().icon_start(IconName::House),
         Button::new("External")
             .tertiary()
             .icon_end(Icon::new(IconName::ArrowRight)),
         Button::new("Upload").info().icon_top(IconName::ArrowUp),
-        Button::new("Download").info().icon_bottom(IconName::ArrowDown),
+        Button::new("Download")
+            .info()
+            .icon_bottom(IconName::ArrowDown),
         Button::new("").primary().icon_only(IconName::Search),
         Button::new("").danger().icon_only(IconName::X),
         Button::new("").success().icon_only(IconName::Check),
@@ -159,7 +145,7 @@ fn custom_icons() -> Vec<impl IntoElement> {
                 .size(px(12.0))
                 .bg(gpui::red())
                 .rounded_full()
-                .into_any_element()
+                .into_any_element(),
         ),
         Button::new("Multiple Icons")
             .success()
@@ -169,16 +155,21 @@ fn custom_icons() -> Vec<impl IntoElement> {
 }
 
 fn button_groups() -> impl IntoElement {
-    div().flex().flex_col().gap_2().child(
-        ButtonGroup::new()
-            .button(Button::new("Previous").icon_start(Icon::new(IconName::ArrowLeft)))
-            .button(Button::new("Next").icon_end(Icon::new(IconName::ArrowRight)))
-    ).child(
-        ButtonGroup::new()
-            .button(Button::new("Edit").icon_start(Icon::new(IconName::Pencil)))
-            .button(Button::new("Share").icon_start(Icon::new(IconName::Share2)))
-            .button(Button::new("Delete").icon_start(Icon::new(IconName::Trash2)))
-    )
+    div()
+        .flex()
+        .flex_col()
+        .gap_2()
+        .child(
+            ButtonGroup::new()
+                .button(Button::new("Previous").icon_start(Icon::new(IconName::ArrowLeft)))
+                .button(Button::new("Next").icon_end(Icon::new(IconName::ArrowRight))),
+        )
+        .child(
+            ButtonGroup::new()
+                .button(Button::new("Edit").icon_start(Icon::new(IconName::Pencil)))
+                .button(Button::new("Share").icon_start(Icon::new(IconName::Share2)))
+                .button(Button::new("Delete").icon_start(Icon::new(IconName::Trash2))),
+        )
 }
 
 #[allow(dead_code)]

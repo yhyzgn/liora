@@ -1,7 +1,5 @@
-use crate::{Dialog, Button};
-use gpui::{
-    prelude::*, App, Window, div, SharedString,
-};
+use crate::{Button, Dialog};
+use gpui::{App, SharedString, Window, div, prelude::*};
 use std::sync::Arc;
 
 pub struct MessageBox {
@@ -38,13 +36,18 @@ impl MessageBox {
             .close_on_click_outside(self.close_on_click_outside)
             .close_on_escape(self.close_on_escape)
             .content(move |_, _| {
-                div().flex().flex_col().gap_4()
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap_4()
                     .child(content.clone())
                     .child(
-                        div().flex().justify_end()
+                        div()
+                            .flex()
+                            .justify_end()
                             .child(Button::new("OK").primary().on_click(|_, _, cx| {
                                 Dialog::close(cx);
-                            }))
+                            })),
                     )
             })
             .show(cx);
@@ -53,24 +56,32 @@ impl MessageBox {
     pub fn confirm(self, on_confirm: impl Fn(&mut Window, &mut App) + 'static, cx: &mut App) {
         let content = self.content.clone();
         let on_confirm = Arc::new(on_confirm);
-        
+
         Dialog::new()
             .title(self.title)
             .close_on_click_outside(self.close_on_click_outside)
             .close_on_escape(self.close_on_escape)
             .content(move |_window, _cx| {
                 let on_confirm = on_confirm.clone();
-                div().flex().flex_col().gap_4()
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap_4()
                     .child(content.clone())
                     .child(
-                        div().flex().justify_end().gap_2()
+                        div()
+                            .flex()
+                            .justify_end()
+                            .gap_2()
                             .child(Button::new("Cancel").on_click(|_, _, cx| {
                                 Dialog::close(cx);
                             }))
-                            .child(Button::new("Confirm").primary().on_click(move |_, window, cx| {
-                                on_confirm(window, cx);
-                                Dialog::close(cx);
-                            }))
+                            .child(Button::new("Confirm").primary().on_click(
+                                move |_, window, cx| {
+                                    on_confirm(window, cx);
+                                    Dialog::close(cx);
+                                },
+                            )),
                     )
             })
             .show(cx);
@@ -89,6 +100,11 @@ pub fn alert(title: impl Into<SharedString>, content: impl Into<SharedString>, c
     MessageBox::new(title, content).alert(cx);
 }
 
-pub fn confirm(title: impl Into<SharedString>, content: impl Into<SharedString>, on_confirm: impl Fn(&mut Window, &mut App) + 'static, cx: &mut App) {
+pub fn confirm(
+    title: impl Into<SharedString>,
+    content: impl Into<SharedString>,
+    on_confirm: impl Fn(&mut Window, &mut App) + 'static,
+    cx: &mut App,
+) {
     MessageBox::new(title, content).confirm(on_confirm, cx);
 }

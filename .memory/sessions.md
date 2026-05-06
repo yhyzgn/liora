@@ -83,3 +83,121 @@
 - 组件与主题解耦: `.build(&theme)` 显式传入
 - Demo 返回 `AnyElement` 用于注册表类型统一
 - 库 crate 不启用 GPUI 平台 features
+
+## Session 16 — 2026-05-06 (Late Night)
+
+### Actions
+- **清理工程警告**:
+  - 移除 `pagination.rs`, `statistic.rs`, `segmented.rs`, `progress.rs`, `skeleton.rs`, `affix.rs`, `backtop.rs`, `anchor.rs` 等文件中的未使用导入和变量。
+  - 修复 `aura-gallery` 中多个 Demo 文件的未使用导入。
+- **补全 P4 缺失组件**:
+  - **Tag**: 实现标签组件，支持 `Success`/`Warning`/`Danger`/`Info` 类型，`Light`/`Dark`/`Plain` 主题效果，以及 `closable` 和 `round` 属性。
+  - **Avatar**: 实现头像组件，支持图片 (`src`)、图标 (`icon`) 和默认占位，支持 `Circle`/`Square` 形状和三种标准尺寸。
+  - **Badge**: 实现徽章包装器，支持在任意子元素右上角显示数值 (`value`)、最大值限制 (`max`) 或小红点 (`is_dot`)。
+- **完善 Gallery Demo**:
+  - 新增 `Tag`, `Avatar`, `Badge` 的独立 Demo 页面。
+  - 修复 `mod.rs` 中因操作失误导致的 `steps_demo`/`tabs_demo` 重复以及 `tree_demo`/`typography_demo` 丢失的问题。
+- **更新记忆库**:
+  - 更新 `.memory/inventory.md`，标记 P4 组件数为 21 个。
+  - 更新 `.memory/state.md`，正式宣布 P4 完成并进入 P5 阶段。
+
+### Verification
+- `cargo check` passed with 0 errors and 0 warnings (except gallery unused imports in new demos).
+- All new components registered in gallery.
+
+### Key Discoveries
+- GPUI `Img` 元素在当前版本中不支持 `.alt()` 方法，需移除。
+- `RenderOnce` 组件内部使用 `.on_click` 必须先调用 `.id()` 以满足交互 Trait 约束。
+- 绝对定位叠加可以通过 `relative()` 容器配合 `absolute()` 子元素轻松实现，适用于 `Badge` 等组件。
+
+## Session 17 — 2026-05-06 (Refining Text)
+
+### Actions
+- **打磨 Text 控件**:
+  - 增强 `Text` 结构，支持 `color`, `bg`, `size`, `weight`, `style` (italic), `underline`, `strikethrough`, `font_family` 等多种属性。
+  - 提供 `code_style()` 快捷方法。
+  - 修复 GPUI 0.2.2 中 `Div` 不支持 `.font_style()` 的问题，改用 `.italic()` 映射。
+- **重构 Paragraph 控件**:
+  - `Paragraph` 现在是一个容器，接收多个 `Text` 段落。
+  - 底层使用 `flex_row()` + `flex_wrap()` 模拟流式布局，确保不同样式的文本块能自动换行且拼接紧凑。
+  - 保留 `with_text` 快捷构造方法。
+- **更新 Typography Demo**:
+  - 在画廊中展示了富文本段落的拼接效果：包含加粗、斜体、背景色、下划线等混合样式。
+
+### Verification
+- `cargo check` passed.
+- Gallery demo verified.
+
+### Key Discoveries
+- GPUI 的文本修饰方法在不同版本间有差异，`.italic()` 是比 `.font_style(FontStyle::Italic)` 更直接的选项。
+- `flex_wrap()` 在处理变宽文本块时能很好地替代传统的段落渲染，前提是块之间没有强制的间距干扰。
+
+## Session 18 — 2026-05-06 (Dynamic Tags)
+
+### Actions
+- **激活 Tag 移除功能**:
+  - 修复 `Tag` 组件的 `on_close` 回调逻辑，确保点击关闭按钮时能够正确触发外部传入的闭包。
+  - 为 `Tag` 的关闭按钮生成基于标签文本的唯一 ID，解决 GPUI 多个交互元素 ID 冲突的问题。
+- **增强 Tag Demo**:
+  - 在画廊中新增了“动态添加和移除”演示小节。
+  - 使用 `View` 状态管理实现了一个可实时增删的标签列表，演示了 `Tag` 的交互能力。
+
+### Verification
+- `cargo check` passed.
+- 画廊中标签点击“x”后可正确消失。
+
+### Key Discoveries
+- 在 GPUI 的 `RenderOnce` 组件闭包中，若要引用 `View` 的句柄并进行异步或事件回调更新，需在渲染时通过 `cx.entity().clone()` 捕获句柄，并在闭包内部调用 `view.update(cx, ...)`。
+
+## Session 19 — 2026-05-06 (Interactive Dynamic Tags)
+
+### Actions
+- **增强 Input 组件**:
+  - 为 `Input` 组件添加 `on_enter` 回调支持。
+  - 新增 `set_on_enter` 方法，支持在 `update_entity` 中动态更新回车回调。
+- **完善 Tag Demo 交互**:
+  - 重构“动态添加和移除”模块，将固定的 "New Tag" 按钮改为“点击切换输入框”模式。
+  - 用户点击 "+ New Tag" 后，按钮变为输入框并自动获取焦点。
+  - 用户输入内容并回车后，生成对应名称的新标签，并恢复为按钮状态。
+  - 若输入为空回车，则直接恢复为按钮状态。
+
+### Verification
+- `cargo check` passed.
+- 交互流程符合预期：按钮 -> 点击 -> 输入 -> 回车 -> 生成标签并恢复按钮。
+
+### Key Discoveries
+- 在 GPUI 中实现“点击按钮变输入框”的模式，需要将 `Input` 作为一个持久的 `Entity` 存储在 `View` 中，并在切换显示时通过 `cx.focus_view(&view.input, window)` 手动转移焦点。
+- `Entity<T>` 本身实现了 `IntoElement`，因此可以直接作为 `.child()` 传入。
+
+## Session 20 — 2026-05-06 (Fixing Tag Demo Panic)
+
+### Actions
+- **修复 Input 组件 double-lease 崩溃**:
+  - 重构 `Input` 的 `on_enter` 回调，将其签名改为 `Fn(&str, &mut Window, &mut App)`。
+  - 通过在 `enter` 内部克隆当前值并将其传递给闭包，避免了回调内部尝试通过 `Entity<Input>` 重新获取写锁导致的 panic。
+  - 调整了 `set_on_enter` 和相关方法以适配新的签名。
+- **更新 Tag Demo**:
+  - 适配新的 `on_enter` 模式，直接从回调参数中获取输入值。
+  - 确保标签生成后，输入框正确清空并隐藏。
+
+### Verification
+- `cargo check` passed.
+- 解决了输入回车导致的 "cannot read Input while it is already being updated" 崩溃。
+
+### Key Discoveries
+- 在 GPUI 的事件监听器（Listener）中，实体已经处于 `update` 状态。如果在回调中再次尝试通过 handle `read` 或 `update` 该实体，会导致重入性 Panic。
+- 最佳实践是将所需数据从组件内部“推”给回调，而不是让回调回过头来“拉”组件的数据。
+
+## Session 21 — 2026-05-06 (Re-fixing Tag Demo Panic)
+
+### Actions
+- **彻底解决 Input 回调重入崩溃**:
+  - 重构 `Input` 的 `on_enter` 回调，使其接收 `&mut Self` (Input 实例) 作为第一个参数。
+  - 在 `Input::enter` 内部直接将 `self` 传递给闭包，从而允许回调直接调用 `input.set_value("", cx)` 而无需通过 `Entity` 句柄触发二次 `update`。
+  - 这种模式完全避开了 GPUI 的 double-lease 保护机制。
+- **同步更新 Tag Demo**:
+  - 适配新的回调签名，在回调内部直接操作 `input` 实例清空文本。
+
+### Verification
+- `cargo check` passed.
+- 解决了在更新过程中由于 handle 重入导致的 Panic。

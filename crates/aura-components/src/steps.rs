@@ -1,10 +1,7 @@
 use aura_core::Config;
-use gpui::{
-    prelude::*, px, App, IntoElement, RenderOnce, Window,
-    div, SharedString,
-};
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
+use gpui::{App, IntoElement, RenderOnce, SharedString, Window, div, prelude::*, px};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum StepsDirection {
@@ -92,7 +89,7 @@ impl RenderOnce for Steps {
         let active = self.active;
         let direction = self.direction;
         let is_vertical = direction == StepsDirection::Vertical;
-        
+
         div()
             .flex()
             .when(!is_vertical, |s| s.flex_row().w_full())
@@ -100,9 +97,13 @@ impl RenderOnce for Steps {
             .children(self.items.into_iter().enumerate().map(|(i, item)| {
                 let is_last = i == items_count - 1;
                 let status = item.status.unwrap_or_else(|| {
-                    if i < active { StepStatus::Finish }
-                    else if i == active { StepStatus::Process }
-                    else { StepStatus::Wait }
+                    if i < active {
+                        StepStatus::Finish
+                    } else if i == active {
+                        StepStatus::Process
+                    } else {
+                        StepStatus::Wait
+                    }
                 });
 
                 let color = match status {
@@ -138,39 +139,87 @@ impl RenderOnce for Steps {
                     .when(!is_vertical, |s| s.flex_1().flex_row().items_center())
                     .when(is_vertical, |s| s.flex_col())
                     .child(
-                        div().flex()
+                        div()
+                            .flex()
                             .when(!is_vertical, |s| s.flex_row().items_center().gap_2())
                             .when(is_vertical, |s| s.flex_col().items_start().gap_2())
                             .child(
                                 // Icon/Number container
                                 div()
-                                    .flex().items_center().justify_center()
-                                    .w(px(24.0)).h(px(24.0)).rounded_full()
-                                    .border_1().border_color(icon_border)
+                                    .flex()
+                                    .items_center()
+                                    .justify_center()
+                                    .w(px(24.0))
+                                    .h(px(24.0))
+                                    .rounded_full()
+                                    .border_1()
+                                    .border_color(icon_border)
                                     .bg(icon_bg)
                                     .child(match item.icon {
-                                        Some(icon) => Icon::new(icon).size(px(14.0)).color(icon_color).into_any_element(),
+                                        Some(icon) => Icon::new(icon)
+                                            .size(px(14.0))
+                                            .color(icon_color)
+                                            .into_any_element(),
                                         None => {
                                             if status == StepStatus::Finish {
-                                                Icon::new(IconName::Check).size(px(14.0)).color(icon_color).into_any_element()
+                                                Icon::new(IconName::Check)
+                                                    .size(px(14.0))
+                                                    .color(icon_color)
+                                                    .into_any_element()
                                             } else {
-                                                div().text_xs().text_color(icon_color).child((i + 1).to_string()).into_any_element()
+                                                div()
+                                                    .text_xs()
+                                                    .text_color(icon_color)
+                                                    .child((i + 1).to_string())
+                                                    .into_any_element()
                                             }
                                         }
-                                    })
+                                    }),
                             )
                             .child(
-                                div().flex().flex_col()
-                                    .child(div().text_sm().font_weight(gpui::FontWeight::BOLD).text_color(color).child(item.title))
-                                    .when_some(item.description, |s, d| s.child(div().text_xs().text_color(theme.neutral.text_3).child(d)))
-                            )
+                                div()
+                                    .flex()
+                                    .flex_col()
+                                    .child(
+                                        div()
+                                            .text_sm()
+                                            .font_weight(gpui::FontWeight::BOLD)
+                                            .text_color(color)
+                                            .child(item.title),
+                                    )
+                                    .when_some(item.description, |s, d| {
+                                        s.child(
+                                            div()
+                                                .text_xs()
+                                                .text_color(theme.neutral.text_3)
+                                                .child(d),
+                                        )
+                                    }),
+                            ),
                     )
-                    .when(!is_last, |s| s.child(
-                        // Line
-                        div().flex_1()
-                            .when(!is_vertical, |s| s.mx_4().h(px(1.0)).bg(if i < active { theme.primary.base } else { theme.neutral.border }))
-                            .when(is_vertical, |s| s.ml(px(12.0)).my_2().w(px(1.0)).min_h(px(40.0)).bg(if i < active { theme.primary.base } else { theme.neutral.border }))
-                    ))
+                    .when(!is_last, |s| {
+                        s.child(
+                            // Line
+                            div()
+                                .flex_1()
+                                .when(!is_vertical, |s| {
+                                    s.mx_4().h(px(1.0)).bg(if i < active {
+                                        theme.primary.base
+                                    } else {
+                                        theme.neutral.border
+                                    })
+                                })
+                                .when(is_vertical, |s| {
+                                    s.ml(px(12.0)).my_2().w(px(1.0)).min_h(px(40.0)).bg(
+                                        if i < active {
+                                            theme.primary.base
+                                        } else {
+                                            theme.neutral.border
+                                        },
+                                    )
+                                }),
+                        )
+                    })
             }))
     }
 }

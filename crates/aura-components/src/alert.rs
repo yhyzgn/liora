@@ -1,10 +1,7 @@
-use aura_core::{Config};
-use gpui::{
-    prelude::*, px, App, IntoElement, Window,
-    div, SharedString, Component, RenderOnce,
-};
+use aura_core::Config;
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
+use gpui::{App, Component, IntoElement, RenderOnce, SharedString, Window, div, prelude::*, px};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum AlertType {
@@ -65,7 +62,7 @@ impl Alert {
 impl RenderOnce for Alert {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
-        
+
         let (color, icon_name) = match self.alert_type {
             AlertType::Info => (theme.primary.base, IconName::Info),
             AlertType::Success => (theme.success.base, IconName::Check),
@@ -76,24 +73,48 @@ impl RenderOnce for Alert {
         let bg = color.opacity(0.1);
 
         div()
-            .flex().flex_row().items_center().gap_3().p_3()
-            .bg(bg).border_1().border_color(color).rounded(px(theme.radius.md))
+            .flex()
+            .flex_row()
+            .items_center()
+            .gap_3()
+            .p_3()
+            .bg(bg)
+            .border_1()
+            .border_color(color)
+            .rounded(px(theme.radius.md))
+            .child(div().flex().items_center().when(self.show_icon, |s| {
+                s.child(Icon::new(icon_name).size(px(20.0)).color(color))
+            }))
             .child(
-                div().flex().items_center().when(self.show_icon, |s| s.child(Icon::new(icon_name).size(px(20.0)).color(color)))
+                div()
+                    .flex_1()
+                    .flex()
+                    .flex_col()
+                    .gap_1()
+                    .child(
+                        div()
+                            .flex()
+                            .items_center()
+                            .min_h(px(20.0))
+                            .font_weight(gpui::FontWeight::BOLD)
+                            .text_color(color)
+                            .child(self.title),
+                    )
+                    .when_some(self.description, |s, d| {
+                        s.child(div().text_sm().text_color(color).child(d))
+                    }),
             )
-            .child(
-                div().flex_1().flex().flex_col().gap_1()
-                    .child(div().flex().items_center().min_h(px(20.0)).font_weight(gpui::FontWeight::BOLD).text_color(color).child(self.title))
-                    .when_some(self.description, |s, d| s.child(div().text_sm().text_color(color).child(d)))
-            )
-            .child(
-                div().flex().items_center().when(self.closable, |s| s.child(
-                    div().id("close-btn").cursor_pointer().child(Icon::new(IconName::X).size(px(14.0)).color(color))
+            .child(div().flex().items_center().when(self.closable, |s| {
+                s.child(
+                    div()
+                        .id("close-btn")
+                        .cursor_pointer()
+                        .child(Icon::new(IconName::X).size(px(14.0)).color(color))
                         .on_click(|_, _window, _cx| {
                             // Notify parent
-                        })
-                ))
-            )
+                        }),
+                )
+            }))
     }
 }
 

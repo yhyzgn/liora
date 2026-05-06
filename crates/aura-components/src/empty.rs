@@ -1,10 +1,7 @@
 use aura_core::Config;
-use gpui::{
-    prelude::*, px, App, IntoElement, RenderOnce, Window,
-    div, SharedString, AnyElement,
-};
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
+use gpui::{AnyElement, App, IntoElement, RenderOnce, SharedString, Window, div, prelude::*, px};
 
 pub struct Empty {
     image: Option<AnyElement>,
@@ -31,8 +28,10 @@ impl Empty {
         self
     }
 
-    pub fn extra<F>(mut self, f: F) -> Self 
-    where F: Fn(&mut Window, &mut App) -> AnyElement + 'static {
+    pub fn extra<F>(mut self, f: F) -> Self
+    where
+        F: Fn(&mut Window, &mut App) -> AnyElement + 'static,
+    {
         self.extra = Some(Box::new(f));
         self
     }
@@ -41,22 +40,39 @@ impl Empty {
 impl RenderOnce for Empty {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
-        
+
         div()
-            .flex().flex_col().items_center().justify_center().w_full().p_10().gap_4()
+            .flex()
+            .flex_col()
+            .items_center()
+            .justify_center()
+            .w_full()
+            .p_10()
+            .gap_4()
             .child(
-                div().flex().items_center().justify_center().w(px(160.0)).h(px(160.0))
+                div()
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .w(px(160.0))
+                    .h(px(160.0))
                     .child(match self.image {
                         Some(img) => img,
-                        None => Icon::new(IconName::PackageOpen).size(px(100.0)).color(theme.neutral.text_3).into_any_element(),
-                    })
+                        None => Icon::new(IconName::PackageOpen)
+                            .size(px(100.0))
+                            .color(theme.neutral.text_3)
+                            .into_any_element(),
+                    }),
             )
             .child(
-                div().text_sm().text_color(theme.neutral.text_3).child(self.description)
+                div()
+                    .text_sm()
+                    .text_color(theme.neutral.text_3)
+                    .child(self.description),
             )
-            .when_some(self.extra, |s, extra| s.child(
-                div().mt_2().child((extra)(window, cx))
-            ))
+            .when_some(self.extra, |s, extra| {
+                s.child(div().mt_2().child((extra)(window, cx)))
+            })
     }
 }
 

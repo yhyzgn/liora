@@ -1,11 +1,7 @@
-use aura_core::Config;
 use gpui::{
-    prelude::*, px, App, Context, IntoElement, Render, Window,
-    div, SharedString, AnyElement, Pixels, Bounds, LayoutId,
-    GlobalElementId, InspectorElementId, ElementId, Entity,
+    AnyElement, App, Bounds, Context, ElementId, GlobalElementId, InspectorElementId, IntoElement,
+    LayoutId, Pixels, Render, Window, div, prelude::*, px,
 };
-use std::rc::Rc;
-use std::cell::Cell;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum AffixPosition {
@@ -50,8 +46,10 @@ impl Affix {
         self
     }
 
-    pub fn content<F>(mut self, f: F) -> Self 
-    where F: Fn(&mut Window, &mut Context<Affix>) -> AnyElement + 'static {
+    pub fn content<F>(mut self, f: F) -> Self
+    where
+        F: Fn(&mut Window, &mut Context<Affix>) -> AnyElement + 'static,
+    {
         self.content = Arc::new(f);
         self
     }
@@ -66,47 +64,41 @@ impl Render for Affix {
 
         div()
             .relative()
-            .child(
-                div()
-                    .id("affix-placeholder")
-                    .child(
-                        BoundsTracker {
-                            on_bounds_change: Box::new(move |bounds, window, cx| {
-                                let (offset, position, current_fixed) = affix_handle.update(cx, |this, _| {
-                                    (this.offset, this.position, this.is_fixed)
-                                });
+            .child(div().id("affix-placeholder").child(BoundsTracker {
+                on_bounds_change: Box::new(move |bounds, window, cx| {
+                    let (offset, position, current_fixed) = affix_handle
+                        .update(cx, |this, _| (this.offset, this.position, this.is_fixed));
 
-                                let should_be_fixed = match position {
-                                    AffixPosition::Top => bounds.top() <= offset,
-                                    AffixPosition::Bottom => {
-                                        let viewport_h = window.viewport_size().height;
-                                        bounds.bottom() >= viewport_h - offset
-                                    }
-                                };
-
-                                if should_be_fixed != current_fixed {
-                                    affix_handle.update(cx, |this, cx| {
-                                        this.is_fixed = should_be_fixed;
-                                        if let Some(ref on_change) = this.on_change {
-                                            (on_change)(should_be_fixed, window, cx);
-                                        }
-                                        cx.notify();
-                                    });
-                                }
-                            })
+                    let should_be_fixed = match position {
+                        AffixPosition::Top => bounds.top() <= offset,
+                        AffixPosition::Bottom => {
+                            let viewport_h = window.viewport_size().height;
+                            bounds.bottom() >= viewport_h - offset
                         }
-                    )
-            )
-            .when(is_fixed, |s| s.child(
-                div()
-                    .absolute()
-                    .top(offset)
-                    .left_0().w_full()
-                    .child(content_fn(_window, cx))
-            ))
-            .when(!is_fixed, |s| s.child(
-                content_fn(_window, cx)
-            ))
+                    };
+
+                    if should_be_fixed != current_fixed {
+                        affix_handle.update(cx, |this, cx| {
+                            this.is_fixed = should_be_fixed;
+                            if let Some(ref on_change) = this.on_change {
+                                (on_change)(should_be_fixed, window, cx);
+                            }
+                            cx.notify();
+                        });
+                    }
+                }),
+            }))
+            .when(is_fixed, |s| {
+                s.child(
+                    div()
+                        .absolute()
+                        .top(offset)
+                        .left_0()
+                        .w_full()
+                        .child(content_fn(_window, cx)),
+                )
+            })
+            .when(!is_fixed, |s| s.child(content_fn(_window, cx)))
     }
 }
 
@@ -116,24 +108,53 @@ struct BoundsTracker {
 
 impl IntoElement for BoundsTracker {
     type Element = Self;
-    fn into_element(self) -> Self::Element { self }
+    fn into_element(self) -> Self::Element {
+        self
+    }
 }
 
 impl gpui::Element for BoundsTracker {
     type RequestLayoutState = ();
     type PrepaintState = ();
 
-    fn id(&self) -> Option<ElementId> { None }
-    fn source_location(&self) -> Option<&'static std::panic::Location<'static>> { None }
+    fn id(&self) -> Option<ElementId> {
+        None
+    }
+    fn source_location(&self) -> Option<&'static std::panic::Location<'static>> {
+        None
+    }
 
-    fn request_layout(&mut self, _id: Option<&GlobalElementId>, _id2: Option<&InspectorElementId>, window: &mut Window, cx: &mut App) -> (LayoutId, ()) {
+    fn request_layout(
+        &mut self,
+        _id: Option<&GlobalElementId>,
+        _id2: Option<&InspectorElementId>,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> (LayoutId, ()) {
         (window.request_layout(gpui::Style::default(), [], cx), ())
     }
 
-    fn prepaint(&mut self, _id: Option<&GlobalElementId>, _id2: Option<&InspectorElementId>, _bounds: Bounds<Pixels>, _rl: &mut (), _window: &mut Window, _cx: &mut App) -> () {
+    fn prepaint(
+        &mut self,
+        _id: Option<&GlobalElementId>,
+        _id2: Option<&InspectorElementId>,
+        _bounds: Bounds<Pixels>,
+        _rl: &mut (),
+        _window: &mut Window,
+        _cx: &mut App,
+    ) -> () {
     }
 
-    fn paint(&mut self, _id: Option<&GlobalElementId>, _id2: Option<&InspectorElementId>, bounds: Bounds<Pixels>, _rl: &mut (), _ps: &mut (), window: &mut Window, cx: &mut App) {
+    fn paint(
+        &mut self,
+        _id: Option<&GlobalElementId>,
+        _id2: Option<&InspectorElementId>,
+        bounds: Bounds<Pixels>,
+        _rl: &mut (),
+        _ps: &mut (),
+        window: &mut Window,
+        cx: &mut App,
+    ) {
         (self.on_bounds_change)(bounds, window, cx);
     }
 }

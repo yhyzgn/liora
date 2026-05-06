@@ -1,10 +1,9 @@
 use aura_core::Config;
-use gpui::{
-    prelude::*, px, App, IntoElement, RenderOnce, Window,
-    div, SharedString, AnyElement, Hsla,
-};
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
+use gpui::{
+    AnyElement, App, Hsla, IntoElement, RenderOnce, SharedString, Window, div, prelude::*, px,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum TimelineMode {
@@ -121,7 +120,9 @@ impl RenderOnce for Timeline {
         let items_count = items.len();
 
         div()
-            .flex().flex_col().w_full()
+            .flex()
+            .flex_col()
+            .w_full()
             .children(items.into_iter().enumerate().map(|(i, item)| {
                 let is_last = i == items_count - 1;
                 let dot_color = item.color.unwrap_or(theme.neutral.border);
@@ -129,38 +130,86 @@ impl RenderOnce for Timeline {
                 let timestamp_color = theme.neutral.text_3;
 
                 div()
-                    .flex().flex_row().gap_3().relative()
+                    .flex()
+                    .flex_row()
+                    .gap_3()
+                    .relative()
                     .child(
                         // Left: Axis & Node
-                        div().flex().flex_col().items_center().w(px(20.0))
+                        div()
+                            .flex()
+                            .flex_col()
+                            .items_center()
+                            .w(px(20.0))
                             .child(
                                 // Node
                                 div()
-                                    .flex().items_center().justify_center()
-                                    .w(px(12.0)).h(px(12.0)).mt(px(4.0)).rounded_full()
-                                    .bg(if item.hollow { theme.neutral.card } else { dot_color })
-                                    .border_2().border_color(dot_color)
+                                    .flex()
+                                    .items_center()
+                                    .justify_center()
+                                    .w(px(12.0))
+                                    .h(px(12.0))
+                                    .mt(px(4.0))
+                                    .rounded_full()
+                                    .bg(if item.hollow {
+                                        theme.neutral.card
+                                    } else {
+                                        dot_color
+                                    })
+                                    .border_2()
+                                    .border_color(dot_color)
                                     .when_some(item.icon, |s, icon| {
                                         // If icon, use icon instead of dot
-                                        s.size(px(20.0)).mt(px(0.0)).bg(gpui::transparent_black()).border_0()
+                                        s.size(px(20.0))
+                                            .mt(px(0.0))
+                                            .bg(gpui::transparent_black())
+                                            .border_0()
                                             .child(Icon::new(icon).size(px(14.0)).color(dot_color))
-                                    })
+                                    }),
                             )
-                            .when(!is_last, |s| s.child(
-                                // Vertical Line
-                                div().flex_1().w(px(2.0)).bg(theme.neutral.border)
-                            ))
+                            .when(!is_last, |s| {
+                                s.child(
+                                    // Vertical Line
+                                    div().flex_1().w(px(2.0)).bg(theme.neutral.border),
+                                )
+                            }),
                     )
                     .child(
                         // Right: Content & Timestamp
-                        div().flex().flex_col().pb_6().flex_1()
-                            .when(item.placement == TimelinePlacement::Top && !item.hide_timestamp, |s| {
-                                s.when_some(item.timestamp.clone(), |s, t| s.child(div().text_xs().text_color(timestamp_color).mb_1().child(t)))
-                            })
+                        div()
+                            .flex()
+                            .flex_col()
+                            .pb_6()
+                            .flex_1()
+                            .when(
+                                item.placement == TimelinePlacement::Top && !item.hide_timestamp,
+                                |s| {
+                                    s.when_some(item.timestamp.clone(), |s, t| {
+                                        s.child(
+                                            div()
+                                                .text_xs()
+                                                .text_color(timestamp_color)
+                                                .mb_1()
+                                                .child(t),
+                                        )
+                                    })
+                                },
+                            )
                             .child(div().text_sm().text_color(text_color).child(item.content))
-                            .when(item.placement == TimelinePlacement::Bottom && !item.hide_timestamp, |s| {
-                                s.when_some(item.timestamp, |s, t| s.child(div().text_xs().text_color(timestamp_color).mt_2().child(t)))
-                            })
+                            .when(
+                                item.placement == TimelinePlacement::Bottom && !item.hide_timestamp,
+                                |s| {
+                                    s.when_some(item.timestamp, |s, t| {
+                                        s.child(
+                                            div()
+                                                .text_xs()
+                                                .text_color(timestamp_color)
+                                                .mt_2()
+                                                .child(t),
+                                        )
+                                    })
+                                },
+                            ),
                     )
             }))
     }

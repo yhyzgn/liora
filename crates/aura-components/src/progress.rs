@@ -1,10 +1,7 @@
 use aura_core::Config;
-use gpui::{
-    prelude::*, px, App, IntoElement, RenderOnce, Window,
-    div, SharedString, Pixels, Hsla,
-};
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
+use gpui::{App, Hsla, IntoElement, Pixels, RenderOnce, Window, div, prelude::*, px};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ProgressType {
@@ -70,7 +67,7 @@ impl Progress {
 impl RenderOnce for Progress {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
-        
+
         let status_color = match self.status {
             Some(ProgressStatus::Success) => theme.success.base,
             Some(ProgressStatus::Warning) => theme.warning.base,
@@ -80,27 +77,52 @@ impl RenderOnce for Progress {
 
         if self.type_ == ProgressType::Line {
             div()
-                .flex().flex_row().items_center().gap_2().w_full()
+                .flex()
+                .flex_row()
+                .items_center()
+                .gap_2()
+                .w_full()
                 .child(
                     // Track
-                    div().flex_1().h(self.stroke_width).bg(theme.neutral.hover).rounded_full().overflow_hidden()
+                    div()
+                        .flex_1()
+                        .h(self.stroke_width)
+                        .bg(theme.neutral.hover)
+                        .rounded_full()
+                        .overflow_hidden()
                         .child(
                             // Bar
                             div()
                                 .h_full()
                                 .w(gpui::relative(self.percentage / 100.0))
                                 .bg(status_color)
-                                .rounded_full()
-                        )
+                                .rounded_full(),
+                        ),
                 )
-                .when(self.show_text, |s| s.child(
-                    div().flex().items_center().justify_start().w(px(40.0))
-                        .child(match self.status {
-                            Some(ProgressStatus::Success) => Icon::new(IconName::CircleCheck).size(px(16.0)).color(theme.success.base).into_any_element(),
-                            Some(ProgressStatus::Exception) => Icon::new(IconName::CircleX).size(px(16.0)).color(theme.danger.base).into_any_element(),
-                            _ => div().text_xs().text_color(theme.neutral.text_2).child(format!("{}%", self.percentage as i32)).into_any_element(),
-                        })
-                ))
+                .when(self.show_text, |s| {
+                    s.child(
+                        div()
+                            .flex()
+                            .items_center()
+                            .justify_start()
+                            .w(px(40.0))
+                            .child(match self.status {
+                                Some(ProgressStatus::Success) => Icon::new(IconName::CircleCheck)
+                                    .size(px(16.0))
+                                    .color(theme.success.base)
+                                    .into_any_element(),
+                                Some(ProgressStatus::Exception) => Icon::new(IconName::CircleX)
+                                    .size(px(16.0))
+                                    .color(theme.danger.base)
+                                    .into_any_element(),
+                                _ => div()
+                                    .text_xs()
+                                    .text_color(theme.neutral.text_2)
+                                    .child(format!("{}%", self.percentage as i32))
+                                    .into_any_element(),
+                            }),
+                    )
+                })
         } else {
             // Circle placeholder
             div().child("Circle Progress Placeholder")

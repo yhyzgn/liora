@@ -1,10 +1,10 @@
 use aura_core::Config;
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
-use aura_theme::{Theme, ButtonSize, ButtonVariant, ButtonVariantColors};
+use aura_theme::{ButtonSize, ButtonVariant, ButtonVariantColors, Theme};
 use gpui::{
-    AnyElement, App, Component, ElementId, Hsla, IntoElement, AbsoluteLength, RenderOnce, Rgba, SharedString, Window,
-    prelude::*, px,
+    AbsoluteLength, AnyElement, App, Component, ElementId, Hsla, IntoElement, RenderOnce, Rgba,
+    SharedString, Window, prelude::*, px,
 };
 use std::panic::Location;
 
@@ -177,8 +177,12 @@ impl Button {
         self.icon_only = Some(icon);
         self
     }
-    pub fn on_click(mut self, cb: impl Fn(&gpui::ClickEvent, &mut Window, &mut App) + 'static) -> Self {
-        self.on_click = Some(Box::new(cb)); self
+    pub fn on_click(
+        mut self,
+        cb: impl Fn(&gpui::ClickEvent, &mut Window, &mut App) + 'static,
+    ) -> Self {
+        self.on_click = Some(Box::new(cb));
+        self
     }
 
     fn colors(&self, theme: &Theme) -> ButtonVariantColors {
@@ -252,7 +256,9 @@ impl Button {
 
         if vertical {
             div = div.flex_col();
-            if !icon_only { div = div.px(px(px_h)); }
+            if !icon_only {
+                div = div.px(px(px_h));
+            }
         } else {
             div = div.flex_row().px(px(px_h));
         }
@@ -273,10 +279,14 @@ impl Button {
             if let Some(icon) = self.icon_only {
                 let sz = icon_sz * 2.0;
                 let group = hover_group.clone();
-                return div.child(
-                    Icon::new(icon).size(px(sz)).color(c.text)
-                        .group_hover_color(group, c.text_hover)
-                ).into_any_element();
+                return div
+                    .child(
+                        Icon::new(icon)
+                            .size(px(sz))
+                            .color(c.text)
+                            .group_hover_color(group, c.text_hover),
+                    )
+                    .into_any_element();
             }
             return div.child(label.clone()).into_any_element();
         }
@@ -288,25 +298,35 @@ impl Button {
             let icon = self.icon_only.unwrap();
             let group = hover_group.clone();
             children.push(
-                Icon::new(icon).size(px(icon_sz)).color(c.text)
-                    .group_hover_color(group, c.text_hover).into_any_element()
+                Icon::new(icon)
+                    .size(px(icon_sz))
+                    .color(c.text)
+                    .group_hover_color(group, c.text_hover)
+                    .into_any_element(),
             );
         } else if self.loading {
             let sz = icon_sz;
             let group = hover_group.clone();
             children.push(
-                Icon::new(IconName::LoaderCircle).size(px(sz)).color(c.text)
-                    .group_hover_color(group, c.text_hover).into_any_element()
+                Icon::new(IconName::LoaderCircle)
+                    .size(px(sz))
+                    .color(c.text)
+                    .group_hover_color(group, c.text_hover)
+                    .into_any_element(),
             );
             children.push(gpui::div().child(label.clone()).into_any_element());
         } else {
             let lbl = label.clone();
             // icon_top
             if let Some(icon) = self.icon_top {
-                let sz = icon_sz; let group = hover_group.clone();
+                let sz = icon_sz;
+                let group = hover_group.clone();
                 children.push(
-                    Icon::new(icon).size(px(sz)).color(c.text)
-                        .group_hover_color(group, c.text_hover).into_any_element()
+                    Icon::new(icon)
+                        .size(px(sz))
+                        .color(c.text)
+                        .group_hover_color(group, c.text_hover)
+                        .into_any_element(),
                 );
             }
             // icon_start
@@ -315,15 +335,20 @@ impl Button {
                     ButtonIcon::IconName(name) => {
                         let group = hover_group.clone();
                         children.push(
-                            Icon::new(name).size(px(icon_sz)).color(c.text)
-                                .group_hover_color(group, c.text_hover).into_any_element()
+                            Icon::new(name)
+                                .size(px(icon_sz))
+                                .color(c.text)
+                                .group_hover_color(group, c.text_hover)
+                                .into_any_element(),
                         );
                     }
                     ButtonIcon::Icon(icon) => {
                         let group = hover_group.clone();
                         children.push(
-                            icon.size(px(icon_sz)).color(c.text)
-                                .group_hover_color(group, c.text_hover).into_any_element()
+                            icon.size(px(icon_sz))
+                                .color(c.text)
+                                .group_hover_color(group, c.text_hover)
+                                .into_any_element(),
                         );
                     }
                     ButtonIcon::Element(el) => children.push(el),
@@ -337,15 +362,20 @@ impl Button {
                     ButtonIcon::IconName(name) => {
                         let group = hover_group.clone();
                         children.push(
-                            Icon::new(name).size(px(icon_sz)).color(c.text)
-                                .group_hover_color(group, c.text_hover).into_any_element()
+                            Icon::new(name)
+                                .size(px(icon_sz))
+                                .color(c.text)
+                                .group_hover_color(group, c.text_hover)
+                                .into_any_element(),
                         );
                     }
                     ButtonIcon::Icon(icon) => {
                         let group = hover_group.clone();
                         children.push(
-                            icon.size(px(icon_sz)).color(c.text)
-                                .group_hover_color(group, c.text_hover).into_any_element()
+                            icon.size(px(icon_sz))
+                                .color(c.text)
+                                .group_hover_color(group, c.text_hover)
+                                .into_any_element(),
                         );
                     }
                     ButtonIcon::Element(el) => children.push(el),
@@ -353,10 +383,14 @@ impl Button {
             }
             // icon_bottom
             if let Some(icon) = self.icon_bottom {
-                let sz = icon_sz; let group = hover_group.clone();
+                let sz = icon_sz;
+                let group = hover_group.clone();
                 children.push(
-                    Icon::new(icon).size(px(sz)).color(c.text)
-                        .group_hover_color(group, c.text_hover).into_any_element()
+                    Icon::new(icon)
+                        .size(px(sz))
+                        .color(c.text)
+                        .group_hover_color(group, c.text_hover)
+                        .into_any_element(),
                 );
             }
         }
@@ -367,12 +401,16 @@ impl Button {
             .group(hover_group)
             .hover(move |style| {
                 let mut s = style.bg(c.hover_bg).text_color(c.text_hover);
-                if !c.border_hover.is_transparent() { s = s.border_color(c.border_hover); }
+                if !c.border_hover.is_transparent() {
+                    s = s.border_color(c.border_hover);
+                }
                 s
             })
             .active(move |style| style.bg(c.active_bg))
             .on_click(move |event, window, cx| {
-                if let Some(ref handler) = click_handler { handler(event, window, cx); }
+                if let Some(ref handler) = click_handler {
+                    handler(event, window, cx);
+                }
             })
             .children(children)
             .into_any_element()

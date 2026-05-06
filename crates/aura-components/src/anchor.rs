@@ -1,8 +1,8 @@
 use aura_core::Config;
 use gpui::{
-    prelude::*, px, App, Context, IntoElement, Render, Window,
-    div, SharedString, AnyElement, Pixels, ScrollHandle, point, Bounds, Entity,
-    GlobalElementId, InspectorElementId, LayoutId, ElementId,
+    AnyElement, App, Bounds, Context, ElementId, Entity, GlobalElementId, InspectorElementId,
+    IntoElement, LayoutId, Pixels, Render, ScrollHandle, SharedString, Window, div, point,
+    prelude::*, px,
 };
 use std::collections::HashMap;
 
@@ -56,7 +56,12 @@ impl Anchor {
         self
     }
 
-    fn update_target_bounds(&mut self, id: SharedString, bounds: Bounds<Pixels>, cx: &mut Context<Self>) {
+    fn update_target_bounds(
+        &mut self,
+        id: SharedString,
+        bounds: Bounds<Pixels>,
+        cx: &mut Context<Self>,
+    ) {
         self.targets_bounds.insert(id, bounds);
         // Detect active link in next frame or here
         self.detect_active_link(cx);
@@ -80,20 +85,34 @@ impl Anchor {
         }
     }
 
-    fn render_link(&self, link: &AnchorLink, depth: u32, theme: &aura_theme::Theme, cx: &Context<Self>) -> AnyElement {
+    fn render_link(
+        &self,
+        link: &AnchorLink,
+        depth: u32,
+        theme: &aura_theme::Theme,
+        cx: &Context<Self>,
+    ) -> AnyElement {
         let is_active = self.active_link.as_ref() == Some(&link.href);
         let href = link.href.clone();
         let scroll_handle = self.scroll_handle.clone();
         let targets_bounds = self.targets_bounds.clone();
 
-        div().flex().flex_col()
+        div()
+            .flex()
+            .flex_col()
             .child(
                 div()
                     .id(href.clone())
                     .cursor_pointer()
-                    .flex().items_center()
-                    .h(px(32.0)).pl(px(16.0 + depth as f32 * 16.0))
-                    .text_color(if is_active { theme.primary.base } else { theme.neutral.text_2 })
+                    .flex()
+                    .items_center()
+                    .h(px(32.0))
+                    .pl(px(16.0 + depth as f32 * 16.0))
+                    .text_color(if is_active {
+                        theme.primary.base
+                    } else {
+                        theme.neutral.text_2
+                    })
                     .hover(|s| s.text_color(theme.primary.base))
                     .on_click(move |_, _, _| {
                         if let Some(bounds) = targets_bounds.get(&href) {
@@ -104,9 +123,13 @@ impl Anchor {
                             scroll_handle.set_offset(point(px(0.0), jump));
                         }
                     })
-                    .child(div().text_sm().child(link.title.clone()))
+                    .child(div().text_sm().child(link.title.clone())),
             )
-            .children(link.children.iter().map(|child| self.render_link(child, depth + 1, theme, cx)))
+            .children(
+                link.children
+                    .iter()
+                    .map(|child| self.render_link(child, depth + 1, theme, cx)),
+            )
             .into_any_element()
     }
 }
@@ -114,20 +137,32 @@ impl Anchor {
 impl Render for Anchor {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
-        
+
         div()
-            .flex().flex_col().w_full()
+            .flex()
+            .flex_col()
+            .w_full()
             .relative()
             .child(
                 // Vertical line
-                div().absolute().left_0().top_0().bottom_0().w(px(2.0)).bg(theme.neutral.border)
+                div()
+                    .absolute()
+                    .left_0()
+                    .top_0()
+                    .bottom_0()
+                    .w(px(2.0))
+                    .bg(theme.neutral.border),
             )
-            .when_some(self.active_link.clone(), |s, active| {
+            .when_some(self.active_link.clone(), |s, _active| {
                 // We'd need to know the position of the active link to render the indicator
                 // For simplicity, we'll just style the link itself
                 s
             })
-            .children(self.links.iter().map(|link| self.render_link(link, 0, &theme, cx)))
+            .children(
+                self.links
+                    .iter()
+                    .map(|link| self.render_link(link, 0, &theme, cx)),
+            )
     }
 }
 
@@ -138,7 +173,11 @@ pub struct AnchorTarget {
 }
 
 impl AnchorTarget {
-    pub fn new(id: impl Into<SharedString>, anchor: Entity<Anchor>, child: impl IntoElement) -> Self {
+    pub fn new(
+        id: impl Into<SharedString>,
+        anchor: Entity<Anchor>,
+        child: impl IntoElement,
+    ) -> Self {
         Self {
             id: id.into(),
             anchor,
@@ -149,25 +188,54 @@ impl AnchorTarget {
 
 impl IntoElement for AnchorTarget {
     type Element = Self;
-    fn into_element(self) -> Self::Element { self }
+    fn into_element(self) -> Self::Element {
+        self
+    }
 }
 
 impl gpui::Element for AnchorTarget {
     type RequestLayoutState = ();
     type PrepaintState = ();
 
-    fn id(&self) -> Option<ElementId> { None }
-    fn source_location(&self) -> Option<&'static std::panic::Location<'static>> { None }
+    fn id(&self) -> Option<ElementId> {
+        None
+    }
+    fn source_location(&self) -> Option<&'static std::panic::Location<'static>> {
+        None
+    }
 
-    fn request_layout(&mut self, _id: Option<&GlobalElementId>, _id2: Option<&InspectorElementId>, window: &mut Window, cx: &mut App) -> (LayoutId, ()) {
+    fn request_layout(
+        &mut self,
+        _id: Option<&GlobalElementId>,
+        _id2: Option<&InspectorElementId>,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> (LayoutId, ()) {
         (self.child.request_layout(window, cx), ())
     }
 
-    fn prepaint(&mut self, _id: Option<&GlobalElementId>, _id2: Option<&InspectorElementId>, _bounds: Bounds<Pixels>, _rl: &mut (), window: &mut Window, cx: &mut App) -> () {
+    fn prepaint(
+        &mut self,
+        _id: Option<&GlobalElementId>,
+        _id2: Option<&InspectorElementId>,
+        _bounds: Bounds<Pixels>,
+        _rl: &mut (),
+        window: &mut Window,
+        cx: &mut App,
+    ) -> () {
         self.child.prepaint(window, cx);
     }
 
-    fn paint(&mut self, _id: Option<&GlobalElementId>, _id2: Option<&InspectorElementId>, bounds: Bounds<Pixels>, _rl: &mut (), _ps: &mut (), window: &mut Window, cx: &mut App) {
+    fn paint(
+        &mut self,
+        _id: Option<&GlobalElementId>,
+        _id2: Option<&InspectorElementId>,
+        bounds: Bounds<Pixels>,
+        _rl: &mut (),
+        _ps: &mut (),
+        window: &mut Window,
+        cx: &mut App,
+    ) {
         let id = self.id.clone();
         let _ = self.anchor.update(cx, |this, cx| {
             this.update_target_bounds(id, bounds, cx);

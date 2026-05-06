@@ -1,8 +1,5 @@
 use aura_core::Config;
-use gpui::{
-    prelude::*, px, App, IntoElement, RenderOnce, Window,
-    div, SharedString, AnyElement,
-};
+use gpui::{AnyElement, App, IntoElement, RenderOnce, SharedString, Window, div, prelude::*, px};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum DescriptionsDirection {
@@ -63,7 +60,12 @@ impl Descriptions {
         self
     }
 
-    pub fn item(mut self, label: impl Into<SharedString>, value: impl IntoElement, span: u32) -> Self {
+    pub fn item(
+        mut self,
+        label: impl Into<SharedString>,
+        value: impl IntoElement,
+        span: u32,
+    ) -> Self {
         self.items.push(DescriptionItem {
             label: label.into(),
             value: value.into_any_element(),
@@ -105,54 +107,153 @@ impl RenderOnce for Descriptions {
             rows.push(current_row);
         }
 
-        div().flex().flex_col().w_full().gap_4()
-            .when(self.title.is_some() || self.extra.is_some(), |s| s.child(
-                div().flex().flex_row().items_center().justify_between()
-                    .when_some(self.title, |s, t| s.child(div().text_lg().font_weight(gpui::FontWeight::BOLD).text_color(theme.neutral.text_1).child(t)))
-                    .when_some(self.extra, |s, e| s.child(e))
-            ))
+        div()
+            .flex()
+            .flex_col()
+            .w_full()
+            .gap_4()
+            .when(self.title.is_some() || self.extra.is_some(), |s| {
+                s.child(
+                    div()
+                        .flex()
+                        .flex_row()
+                        .items_center()
+                        .justify_between()
+                        .when_some(self.title, |s, t| {
+                            s.child(
+                                div()
+                                    .text_lg()
+                                    .font_weight(gpui::FontWeight::BOLD)
+                                    .text_color(theme.neutral.text_1)
+                                    .child(t),
+                            )
+                        })
+                        .when_some(self.extra, |s, e| s.child(e)),
+                )
+            })
             .child(
                 div()
-                    .flex().flex_col()
-                    .when(border, |s| s.border_1().border_color(theme.neutral.border).rounded(px(theme.radius.sm)).overflow_hidden())
+                    .flex()
+                    .flex_col()
+                    .when(border, |s| {
+                        s.border_1()
+                            .border_color(theme.neutral.border)
+                            .rounded(px(theme.radius.sm))
+                            .overflow_hidden()
+                    })
                     .children(rows.into_iter().enumerate().map(|(row_idx, row)| {
-                        div().flex().flex_row().w_full()
-                            .when(border && row_idx > 0, |s| s.border_t_1().border_color(theme.neutral.border))
+                        div()
+                            .flex()
+                            .flex_row()
+                            .w_full()
+                            .when(border && row_idx > 0, |s| {
+                                s.border_t_1().border_color(theme.neutral.border)
+                            })
                             .children(row.into_iter().enumerate().map(|(col_idx, item)| {
                                 let width = gpui::relative(item.span as f32 / column as f32);
-                                let cell = div().w(width).flex()
-                                    .when(border && col_idx > 0, |s| s.border_l_1().border_color(theme.neutral.border));
-                                
+                                let cell = div().w(width).flex().when(border && col_idx > 0, |s| {
+                                    s.border_l_1().border_color(theme.neutral.border)
+                                });
+
                                 match direction {
                                     DescriptionsDirection::Horizontal => {
                                         if border {
-                                            cell.flex_row().items_stretch()
-                                                .child(div().p_3().bg(theme.neutral.hover).border_r_1().border_color(theme.neutral.border).flex().items_center()
-                                                    .child(div().text_sm().font_weight(gpui::FontWeight::BOLD).text_color(theme.neutral.text_2).child(item.label)))
-                                                .child(div().flex_1().p_3().flex().items_center()
-                                                    .child(div().text_sm().text_color(theme.neutral.text_1).child(item.value)))
+                                            cell.flex_row()
+                                                .items_stretch()
+                                                .child(
+                                                    div()
+                                                        .p_3()
+                                                        .bg(theme.neutral.hover)
+                                                        .border_r_1()
+                                                        .border_color(theme.neutral.border)
+                                                        .flex()
+                                                        .items_center()
+                                                        .child(
+                                                            div()
+                                                                .text_sm()
+                                                                .font_weight(gpui::FontWeight::BOLD)
+                                                                .text_color(theme.neutral.text_2)
+                                                                .child(item.label),
+                                                        ),
+                                                )
+                                                .child(
+                                                    div()
+                                                        .flex_1()
+                                                        .p_3()
+                                                        .flex()
+                                                        .items_center()
+                                                        .child(
+                                                            div()
+                                                                .text_sm()
+                                                                .text_color(theme.neutral.text_1)
+                                                                .child(item.value),
+                                                        ),
+                                                )
                                         } else {
-                                            cell.flex_row().items_center().gap_2().p_1()
-                                                .child(div().text_sm().text_color(theme.neutral.text_3).child(format!("{}:", item.label)))
-                                                .child(div().text_sm().text_color(theme.neutral.text_1).child(item.value))
+                                            cell.flex_row()
+                                                .items_center()
+                                                .gap_2()
+                                                .p_1()
+                                                .child(
+                                                    div()
+                                                        .text_sm()
+                                                        .text_color(theme.neutral.text_3)
+                                                        .child(format!("{}:", item.label)),
+                                                )
+                                                .child(
+                                                    div()
+                                                        .text_sm()
+                                                        .text_color(theme.neutral.text_1)
+                                                        .child(item.value),
+                                                )
                                         }
                                     }
                                     DescriptionsDirection::Vertical => {
                                         if border {
                                             cell.flex_col()
-                                                .child(div().p_3().bg(theme.neutral.hover).border_b_1().border_color(theme.neutral.border)
-                                                    .child(div().text_sm().font_weight(gpui::FontWeight::BOLD).text_color(theme.neutral.text_2).child(item.label)))
-                                                .child(div().p_3()
-                                                    .child(div().text_sm().text_color(theme.neutral.text_1).child(item.value)))
+                                                .child(
+                                                    div()
+                                                        .p_3()
+                                                        .bg(theme.neutral.hover)
+                                                        .border_b_1()
+                                                        .border_color(theme.neutral.border)
+                                                        .child(
+                                                            div()
+                                                                .text_sm()
+                                                                .font_weight(gpui::FontWeight::BOLD)
+                                                                .text_color(theme.neutral.text_2)
+                                                                .child(item.label),
+                                                        ),
+                                                )
+                                                .child(
+                                                    div().p_3().child(
+                                                        div()
+                                                            .text_sm()
+                                                            .text_color(theme.neutral.text_1)
+                                                            .child(item.value),
+                                                    ),
+                                                )
                                         } else {
-                                            cell.flex_col().gap_1().p_1()
-                                                .child(div().text_xs().text_color(theme.neutral.text_3).child(item.label))
-                                                .child(div().text_sm().text_color(theme.neutral.text_1).child(item.value))
+                                            cell.flex_col()
+                                                .gap_1()
+                                                .p_1()
+                                                .child(
+                                                    div()
+                                                        .text_xs()
+                                                        .text_color(theme.neutral.text_3)
+                                                        .child(item.label),
+                                                )
+                                                .child(
+                                                    div()
+                                                        .text_sm()
+                                                        .text_color(theme.neutral.text_1)
+                                                        .child(item.value),
+                                                )
                                         }
                                     }
                                 }
                             }))
-                    }))
+                    })),
             )
     }
 }

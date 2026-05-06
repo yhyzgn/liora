@@ -1,10 +1,9 @@
 use aura_core::Config;
-use gpui::{
-    prelude::*, px, App, Context, IntoElement, Render, Window,
-    div, SharedString, AnyElement,
-};
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
+use gpui::{
+    AnyElement, App, Context, IntoElement, Render, SharedString, Window, div, prelude::*, px,
+};
 use std::sync::Arc;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -73,12 +72,18 @@ impl Tabs {
         self
     }
 
-    pub fn on_tab_click(mut self, f: impl Fn(SharedString, &mut Window, &mut App) + 'static) -> Self {
+    pub fn on_tab_click(
+        mut self,
+        f: impl Fn(SharedString, &mut Window, &mut App) + 'static,
+    ) -> Self {
         self.on_tab_click = Some(Box::new(f));
         self
     }
 
-    pub fn on_tab_remove(mut self, f: impl Fn(SharedString, &mut Window, &mut App) + 'static) -> Self {
+    pub fn on_tab_remove(
+        mut self,
+        f: impl Fn(SharedString, &mut Window, &mut App) + 'static,
+    ) -> Self {
         self.on_tab_remove = Some(Box::new(f));
         self
     }
@@ -88,8 +93,13 @@ impl Tabs {
         self
     }
 
-    pub fn pane<F, E>(mut self, name: impl Into<SharedString>, label: impl Into<SharedString>, f: F) -> Self 
-    where 
+    pub fn pane<F, E>(
+        mut self,
+        name: impl Into<SharedString>,
+        label: impl Into<SharedString>,
+        f: F,
+    ) -> Self
+    where
         F: Fn(&mut Window, &mut Context<Self>) -> E + 'static,
         E: IntoElement,
     {
@@ -115,7 +125,9 @@ impl Tabs {
         if let Some(pos) = self.panes.iter().position(|p| p.name == name) {
             self.panes.remove(pos);
             if self.active_name == name {
-                if let Some(new_active) = self.panes.get(pos.min(self.panes.len().saturating_sub(1))) {
+                if let Some(new_active) =
+                    self.panes.get(pos.min(self.panes.len().saturating_sub(1)))
+                {
                     self.active_name = new_active.name.clone();
                 }
             }
@@ -140,7 +152,7 @@ impl Render for Tabs {
         let tab_type = self.tab_type;
         let position = self.position;
         let is_vertical = position == TabPosition::Left || position == TabPosition::Right;
-        
+
         let render_header = |this: &Self, cx: &mut Context<Self>| {
             let theme = cx.global::<Config>().theme.clone();
             div()
@@ -149,40 +161,97 @@ impl Render for Tabs {
                 .when(is_vertical, |s| s.flex_col().w(px(120.0)))
                 .when(tab_type == TabType::Standard, |s| match position {
                     TabPosition::Top => s.gap_8().border_b_1().border_color(theme.neutral.border),
-                    TabPosition::Bottom => s.gap_8().border_t_1().border_color(theme.neutral.border),
+                    TabPosition::Bottom => {
+                        s.gap_8().border_t_1().border_color(theme.neutral.border)
+                    }
                     TabPosition::Left => s.gap_2().border_r_1().border_color(theme.neutral.border),
                     TabPosition::Right => s.gap_2().border_l_1().border_color(theme.neutral.border),
                 })
-                .when(tab_type == TabType::Card || tab_type == TabType::BorderCard, |s| s.bg(theme.neutral.hover).border_b_1().border_color(theme.neutral.border))
+                .when(
+                    tab_type == TabType::Card || tab_type == TabType::BorderCard,
+                    |s| {
+                        s.bg(theme.neutral.hover)
+                            .border_b_1()
+                            .border_color(theme.neutral.border)
+                    },
+                )
                 .children(this.panes.iter().map(|pane| {
                     let name = pane.name.clone();
                     let is_active = this.active_name == name;
                     let closable = pane.closable;
-                    
+
                     div()
                         .id(name.clone())
                         .cursor_pointer()
-                        .flex().items_center().justify_center()
+                        .flex()
+                        .items_center()
+                        .justify_center()
                         .when(!is_vertical, |s| s.h(px(40.0)))
                         .when(is_vertical, |s| s.w_full().py_3())
-                        .when(tab_type == TabType::Standard, |s| s
-                            .px_2()
-                            .text_color(if is_active { theme.primary.base } else { theme.neutral.text_1 })
-                            .hover(|s| s.text_color(theme.primary.base))
-                            .when(is_active, |s| match position {
-                                TabPosition::Top => s.child(div().absolute().bottom_0().w_full().h(px(2.0)).bg(theme.primary.base)),
-                                TabPosition::Bottom => s.child(div().absolute().top_0().w_full().h(px(2.0)).bg(theme.primary.base)),
-                                TabPosition::Left => s.child(div().absolute().right_0().h_full().w(px(2.0)).bg(theme.primary.base)),
-                                TabPosition::Right => s.child(div().absolute().left_0().h_full().w(px(2.0)).bg(theme.primary.base)),
-                            })
-                        )
-                        .when(tab_type == TabType::Card || tab_type == TabType::BorderCard, |s| s
-                            .px_5()
-                            .border_r_1().border_color(theme.neutral.border)
-                            .bg(if is_active { theme.neutral.card } else { gpui::transparent_black() })
-                            .text_color(if is_active { theme.primary.base } else { theme.neutral.text_1 })
-                            .hover(|s| s.text_color(theme.primary.base))
-                            .when(is_active, |s| s.border_b_1().border_color(theme.neutral.card).mb(px(-1.0)))
+                        .when(tab_type == TabType::Standard, |s| {
+                            s.px_2()
+                                .text_color(if is_active {
+                                    theme.primary.base
+                                } else {
+                                    theme.neutral.text_1
+                                })
+                                .hover(|s| s.text_color(theme.primary.base))
+                                .when(is_active, |s| match position {
+                                    TabPosition::Top => s.child(
+                                        div()
+                                            .absolute()
+                                            .bottom_0()
+                                            .w_full()
+                                            .h(px(2.0))
+                                            .bg(theme.primary.base),
+                                    ),
+                                    TabPosition::Bottom => s.child(
+                                        div()
+                                            .absolute()
+                                            .top_0()
+                                            .w_full()
+                                            .h(px(2.0))
+                                            .bg(theme.primary.base),
+                                    ),
+                                    TabPosition::Left => s.child(
+                                        div()
+                                            .absolute()
+                                            .right_0()
+                                            .h_full()
+                                            .w(px(2.0))
+                                            .bg(theme.primary.base),
+                                    ),
+                                    TabPosition::Right => s.child(
+                                        div()
+                                            .absolute()
+                                            .left_0()
+                                            .h_full()
+                                            .w(px(2.0))
+                                            .bg(theme.primary.base),
+                                    ),
+                                })
+                        })
+                        .when(
+                            tab_type == TabType::Card || tab_type == TabType::BorderCard,
+                            |s| {
+                                s.px_5()
+                                    .border_r_1()
+                                    .border_color(theme.neutral.border)
+                                    .bg(if is_active {
+                                        theme.neutral.card
+                                    } else {
+                                        gpui::transparent_black()
+                                    })
+                                    .text_color(if is_active {
+                                        theme.primary.base
+                                    } else {
+                                        theme.neutral.text_1
+                                    })
+                                    .hover(|s| s.text_color(theme.primary.base))
+                                    .when(is_active, |s| {
+                                        s.border_b_1().border_color(theme.neutral.card).mb(px(-1.0))
+                                    })
+                            },
                         )
                         .on_click(cx.listener({
                             let name = name.clone();
@@ -190,47 +259,81 @@ impl Render for Tabs {
                                 this.select_tab(name.clone(), window, cx);
                             }
                         }))
-                        .child(div().flex().flex_row().items_center().gap_2()
-                            .child(div().text_sm().child(pane.label.clone()))
-                            .when(closable && this.editable, |s| s.child(
-                                div()
-                                    .id(format!("close-{}", name))
-                                    .flex().items_center().justify_center()
-                                    .w_4().h_4().rounded_full()
-                                    .hover(|s| s.bg(theme.neutral.hover))
-                                    .on_click(cx.listener({
-                                        let name = name.clone();
-                                        move |this, _, window, cx| {
-                                            this.remove_tab(name.clone(), window, cx);
-                                        }
-                                    }))
-                                    .child(Icon::new(IconName::X).size(px(12.0)).color(theme.neutral.icon))
-                            ))
+                        .child(
+                            div()
+                                .flex()
+                                .flex_row()
+                                .items_center()
+                                .gap_2()
+                                .child(div().text_sm().child(pane.label.clone()))
+                                .when(closable && this.editable, |s| {
+                                    s.child(
+                                        div()
+                                            .id(format!("close-{}", name))
+                                            .flex()
+                                            .items_center()
+                                            .justify_center()
+                                            .w_4()
+                                            .h_4()
+                                            .rounded_full()
+                                            .hover(|s| s.bg(theme.neutral.hover))
+                                            .on_click(cx.listener({
+                                                let name = name.clone();
+                                                move |this, _, window, cx| {
+                                                    this.remove_tab(name.clone(), window, cx);
+                                                }
+                                            }))
+                                            .child(
+                                                Icon::new(IconName::X)
+                                                    .size(px(12.0))
+                                                    .color(theme.neutral.icon),
+                                            ),
+                                    )
+                                }),
                         )
                 }))
-                .when(this.editable, |s| s.child(
-                    div()
-                        .id("add-tab")
-                        .cursor_pointer()
-                        .flex().items_center().justify_center()
-                        .w_10().h_10()
-                        .hover(|s| s.text_color(theme.primary.base))
-                        .on_click(cx.listener(move |this, _, window, cx| {
-                            this.add_tab(window, cx);
-                        }))
-                        .child(Icon::new(IconName::Plus).size(px(16.0)).color(theme.neutral.icon))
-                ))
+                .when(this.editable, |s| {
+                    s.child(
+                        div()
+                            .id("add-tab")
+                            .cursor_pointer()
+                            .flex()
+                            .items_center()
+                            .justify_center()
+                            .w_10()
+                            .h_10()
+                            .hover(|s| s.text_color(theme.primary.base))
+                            .on_click(cx.listener(move |this, _, window, cx| {
+                                this.add_tab(window, cx);
+                            }))
+                            .child(
+                                Icon::new(IconName::Plus)
+                                    .size(px(16.0))
+                                    .color(theme.neutral.icon),
+                            ),
+                    )
+                })
         };
 
-        let content = self.panes.iter()
+        let content = self
+            .panes
+            .iter()
             .find(|p| p.name == self.active_name)
             .map(|p| (p.content)(_window, cx))
             .unwrap_or_else(|| div().into_any_element());
 
-        div().flex().w_full().h_full()
+        div()
+            .flex()
+            .w_full()
+            .h_full()
             .when(!is_vertical, |s| s.flex_col())
             .when(is_vertical, |s| s.flex_row())
-            .when(tab_type == TabType::BorderCard, |s| s.border_1().border_color(theme.neutral.border).rounded(px(theme.radius.md)).overflow_hidden())
+            .when(tab_type == TabType::BorderCard, |s| {
+                s.border_1()
+                    .border_color(theme.neutral.border)
+                    .rounded(px(theme.radius.md))
+                    .overflow_hidden()
+            })
             .bg(theme.neutral.card)
             .child(match position {
                 TabPosition::Top | TabPosition::Left => render_header(self, cx).into_any_element(),
@@ -238,7 +341,9 @@ impl Render for Tabs {
             })
             .child(div().flex_1().p_4().child(content))
             .child(match position {
-                TabPosition::Bottom | TabPosition::Right => render_header(self, cx).into_any_element(),
+                TabPosition::Bottom | TabPosition::Right => {
+                    render_header(self, cx).into_any_element()
+                }
                 _ => div().into_any_element(),
             })
     }

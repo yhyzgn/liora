@@ -1,8 +1,10 @@
+use crate::Input;
 use aura_core::Config;
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
-use gpui::{prelude::*, px, App, Render, Window, Context, Focusable, FocusHandle, Entity, MouseButton};
-use crate::Input;
+use gpui::{
+    App, Context, Entity, FocusHandle, Focusable, MouseButton, Render, Window, prelude::*, px,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InputNumberControlsPosition {
@@ -26,23 +28,28 @@ pub struct InputNumber {
 impl InputNumber {
     pub fn new(value: f64, cx: &mut Context<Self>) -> Self {
         let input = cx.new(|cx| {
-            Input::new(format!("{:.*}", 0, value), cx)
-                .filter(|text| {
-                    if text.is_empty() { return true; }
-                    let mut chars = text.chars();
-                    let first = chars.next().unwrap();
-                    if first == '+' || first == '-' {
-                        let rest: String = chars.collect();
-                        if rest.is_empty() { return true; }
-                        rest.chars().all(|c| c.is_ascii_digit() || c == '.') && rest.matches('.').count() <= 1
-                    } else {
-                        text.chars().all(|c| c.is_ascii_digit() || c == '.') && text.matches('.').count() <= 1
+            Input::new(format!("{:.*}", 0, value), cx).filter(|text| {
+                if text.is_empty() {
+                    return true;
+                }
+                let mut chars = text.chars();
+                let first = chars.next().unwrap();
+                if first == '+' || first == '-' {
+                    let rest: String = chars.collect();
+                    if rest.is_empty() {
+                        return true;
                     }
-                })
+                    rest.chars().all(|c| c.is_ascii_digit() || c == '.')
+                        && rest.matches('.').count() <= 1
+                } else {
+                    text.chars().all(|c| c.is_ascii_digit() || c == '.')
+                        && text.matches('.').count() <= 1
+                }
+            })
         });
 
         let focus_handle = cx.focus_handle();
-        
+
         Self {
             value,
             min: f64::MIN,
@@ -57,16 +64,27 @@ impl InputNumber {
         }
     }
 
-    pub fn min(mut self, min: f64) -> Self { self.min = min; self }
-    pub fn max(mut self, max: f64) -> Self { self.max = max; self }
-    pub fn step(mut self, step: f64) -> Self { self.step = step; self }
-    pub fn precision(mut self, p: usize) -> Self { 
-        self.precision = p; 
+    pub fn min(mut self, min: f64) -> Self {
+        self.min = min;
+        self
+    }
+    pub fn max(mut self, max: f64) -> Self {
+        self.max = max;
+        self
+    }
+    pub fn step(mut self, step: f64) -> Self {
+        self.step = step;
+        self
+    }
+    pub fn precision(mut self, p: usize) -> Self {
+        self.precision = p;
         self
     }
     pub fn disabled(mut self, d: bool, cx: &mut Context<Self>) -> Self {
         self.disabled = d;
-        self.input.update(cx, |input, cx| { input.set_disabled(d, cx); });
+        self.input.update(cx, |input, cx| {
+            input.set_disabled(d, cx);
+        });
         self
     }
     pub fn controls_position(mut self, pos: InputNumberControlsPosition) -> Self {
@@ -108,69 +126,118 @@ impl InputNumber {
 }
 
 impl Focusable for InputNumber {
-    fn focus_handle(&self, _cx: &App) -> FocusHandle { self.focus_handle.clone() }
+    fn focus_handle(&self, _cx: &App) -> FocusHandle {
+        self.focus_handle.clone()
+    }
 }
 
 impl Render for InputNumber {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
-        
+
         match self.controls_position {
-            InputNumberControlsPosition::Horizontal => self.render_horizontal(&theme, cx).into_any_element(),
+            InputNumberControlsPosition::Horizontal => {
+                self.render_horizontal(&theme, cx).into_any_element()
+            }
             InputNumberControlsPosition::Right => self.render_right(&theme, cx).into_any_element(),
         }
     }
 }
 
 impl InputNumber {
-    fn render_horizontal(&self, theme: &aura_theme::Theme, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render_horizontal(
+        &self,
+        theme: &aura_theme::Theme,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement {
         let icon_sz = 12.0;
         let can_inc = !self.disabled && self.value < self.max;
         let can_dec = !self.disabled && self.value > self.min;
 
         let mut row = gpui::div()
-            .flex().flex_row().items_center()
+            .flex()
+            .flex_row()
+            .items_center()
             .h(px(34.0))
             .rounded(px(theme.radius.md))
-            .border_1().border_color(theme.neutral.border)
+            .border_1()
+            .border_color(theme.neutral.border)
             .bg(theme.neutral.card)
             .overflow_hidden();
 
         let mut dec_btn = gpui::div()
-            .flex().items_center().justify_center()
-            .w(px(32.0)).h_full()
+            .flex()
+            .items_center()
+            .justify_center()
+            .w(px(32.0))
+            .h_full()
             .bg(theme.neutral.hover)
-            .border_color(theme.neutral.border).border_r_1();
+            .border_color(theme.neutral.border)
+            .border_r_1();
 
         if can_dec {
-            dec_btn = dec_btn.cursor_pointer().hover(|s| s.bg(theme.neutral.border))
-                .on_mouse_down(MouseButton::Left, cx.listener(|this, _, window, cx| {
-                    this.decrement(window, cx);
-                }));
+            dec_btn = dec_btn
+                .cursor_pointer()
+                .hover(|s| s.bg(theme.neutral.border))
+                .on_mouse_down(
+                    MouseButton::Left,
+                    cx.listener(|this, _, window, cx| {
+                        this.decrement(window, cx);
+                    }),
+                );
         } else {
             dec_btn = dec_btn.cursor_not_allowed().opacity(0.5);
         }
-        
-        row = row.child(dec_btn.child(Icon::new(IconName::Minus).size(px(icon_sz)).color(if can_dec { theme.neutral.text_1 } else { theme.neutral.text_disabled })));
+
+        row = row.child(
+            dec_btn.child(
+                Icon::new(IconName::Minus)
+                    .size(px(icon_sz))
+                    .color(if can_dec {
+                        theme.neutral.text_1
+                    } else {
+                        theme.neutral.text_disabled
+                    }),
+            ),
+        );
         row = row.child(gpui::div().flex_1().child(self.input.clone()));
 
         let mut inc_btn = gpui::div()
-            .flex().items_center().justify_center()
-            .w(px(32.0)).h_full()
+            .flex()
+            .items_center()
+            .justify_center()
+            .w(px(32.0))
+            .h_full()
             .bg(theme.neutral.hover)
-            .border_color(theme.neutral.border).border_l_1();
+            .border_color(theme.neutral.border)
+            .border_l_1();
 
         if can_inc {
-            inc_btn = inc_btn.cursor_pointer().hover(|s| s.bg(theme.neutral.border))
-                .on_mouse_down(MouseButton::Left, cx.listener(|this, _, window, cx| {
-                    this.increment(window, cx);
-                }));
+            inc_btn = inc_btn
+                .cursor_pointer()
+                .hover(|s| s.bg(theme.neutral.border))
+                .on_mouse_down(
+                    MouseButton::Left,
+                    cx.listener(|this, _, window, cx| {
+                        this.increment(window, cx);
+                    }),
+                );
         } else {
             inc_btn = inc_btn.cursor_not_allowed().opacity(0.5);
         }
 
-        row = row.child(inc_btn.child(Icon::new(IconName::Plus).size(px(icon_sz)).color(if can_inc { theme.neutral.text_1 } else { theme.neutral.text_disabled })));
-        
+        row = row.child(
+            inc_btn.child(
+                Icon::new(IconName::Plus)
+                    .size(px(icon_sz))
+                    .color(if can_inc {
+                        theme.neutral.text_1
+                    } else {
+                        theme.neutral.text_disabled
+                    }),
+            ),
+        );
+
         row
     }
 
@@ -180,52 +247,94 @@ impl InputNumber {
         let can_dec = !self.disabled && self.value > self.min;
 
         let mut row = gpui::div()
-            .flex().flex_row().items_center()
+            .flex()
+            .flex_row()
+            .items_center()
             .h(px(34.0))
             .rounded(px(theme.radius.md))
-            .border_1().border_color(theme.neutral.border)
+            .border_1()
+            .border_color(theme.neutral.border)
             .bg(theme.neutral.card)
             .overflow_hidden();
 
         row = row.child(gpui::div().flex_1().child(self.input.clone()));
 
         let mut controls = gpui::div()
-            .flex().flex_col()
-            .w(px(32.0)).h_full()
-            .border_color(theme.neutral.border).border_l_1();
+            .flex()
+            .flex_col()
+            .w(px(32.0))
+            .h_full()
+            .border_color(theme.neutral.border)
+            .border_l_1();
 
         let mut inc_btn = gpui::div()
-            .flex_1().flex().items_center().justify_center()
+            .flex_1()
+            .flex()
+            .items_center()
+            .justify_center()
             .bg(theme.neutral.hover)
-            .border_color(theme.neutral.border).border_b_1();
+            .border_color(theme.neutral.border)
+            .border_b_1();
 
         if can_inc {
-            inc_btn = inc_btn.cursor_pointer().hover(|s| s.bg(theme.neutral.border))
-                .on_mouse_down(MouseButton::Left, cx.listener(|this, _, window, cx| {
-                    this.increment(window, cx);
-                }));
+            inc_btn = inc_btn
+                .cursor_pointer()
+                .hover(|s| s.bg(theme.neutral.border))
+                .on_mouse_down(
+                    MouseButton::Left,
+                    cx.listener(|this, _, window, cx| {
+                        this.increment(window, cx);
+                    }),
+                );
         } else {
             inc_btn = inc_btn.cursor_not_allowed().opacity(0.5);
         }
 
         let mut dec_btn = gpui::div()
-            .flex_1().flex().items_center().justify_center()
+            .flex_1()
+            .flex()
+            .items_center()
+            .justify_center()
             .bg(theme.neutral.hover);
 
         if can_dec {
-            dec_btn = dec_btn.cursor_pointer().hover(|s| s.bg(theme.neutral.border))
-                .on_mouse_down(MouseButton::Left, cx.listener(|this, _, window, cx| {
-                    this.decrement(window, cx);
-                }));
+            dec_btn = dec_btn
+                .cursor_pointer()
+                .hover(|s| s.bg(theme.neutral.border))
+                .on_mouse_down(
+                    MouseButton::Left,
+                    cx.listener(|this, _, window, cx| {
+                        this.decrement(window, cx);
+                    }),
+                );
         } else {
             dec_btn = dec_btn.cursor_not_allowed().opacity(0.5);
         }
 
-        controls = controls.child(inc_btn.child(Icon::new(IconName::ChevronUp).size(px(icon_sz)).color(if can_inc { theme.neutral.text_1 } else { theme.neutral.text_disabled })));
-        controls = controls.child(dec_btn.child(Icon::new(IconName::ChevronDown).size(px(icon_sz)).color(if can_dec { theme.neutral.text_1 } else { theme.neutral.text_disabled })));
+        controls = controls.child(
+            inc_btn.child(
+                Icon::new(IconName::ChevronUp)
+                    .size(px(icon_sz))
+                    .color(if can_inc {
+                        theme.neutral.text_1
+                    } else {
+                        theme.neutral.text_disabled
+                    }),
+            ),
+        );
+        controls =
+            controls.child(
+                dec_btn.child(Icon::new(IconName::ChevronDown).size(px(icon_sz)).color(
+                    if can_dec {
+                        theme.neutral.text_1
+                    } else {
+                        theme.neutral.text_disabled
+                    },
+                )),
+            );
 
         row = row.child(controls);
-        
+
         row
     }
 }

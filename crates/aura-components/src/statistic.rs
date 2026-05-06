@@ -1,8 +1,5 @@
 use aura_core::Config;
-use gpui::{
-    prelude::*, px, App, IntoElement, RenderOnce, Window,
-    div, SharedString, AnyElement, Hsla,
-};
+use gpui::{AnyElement, App, Hsla, IntoElement, RenderOnce, SharedString, Window, div, prelude::*};
 
 pub struct Statistic {
     title: SharedString,
@@ -42,22 +39,32 @@ impl Statistic {
 impl RenderOnce for Statistic {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
-        
+
         div()
-            .flex().flex_col().gap_1()
+            .flex()
+            .flex_col()
+            .gap_1()
             .child(
-                div().text_sm().text_color(theme.neutral.text_3).child(self.title)
+                div()
+                    .text_sm()
+                    .text_color(theme.neutral.text_3)
+                    .child(self.title),
             )
             .child(
-                div().flex().flex_row().items_baseline().gap_1()
+                div()
+                    .flex()
+                    .flex_row()
+                    .items_baseline()
+                    .gap_1()
                     .when_some(self.prefix, |s, p| s.child(p))
                     .child(
                         div()
-                            .text_2xl().font_weight(gpui::FontWeight::BOLD)
+                            .text_2xl()
+                            .font_weight(gpui::FontWeight::BOLD)
                             .text_color(self.value_color.unwrap_or(theme.neutral.text_1))
-                            .child(self.value)
+                            .child(self.value),
                     )
-                    .when_some(self.suffix, |s, p| s.child(p))
+                    .when_some(self.suffix, |s, p| s.child(p)),
             )
     }
 }

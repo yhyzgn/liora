@@ -1,6 +1,6 @@
-use aura_components::{Collapse};
-use aura_core::{Config};
-use gpui::{prelude::*, App, Context, Render, Window, div, AnyView};
+use aura_components::Collapse;
+use aura_core::Config;
+use gpui::{AnyView, App, Context, Render, Window, div, prelude::*};
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|_| CollapseDemo).into()
@@ -11,7 +11,7 @@ struct CollapseDemo;
 impl Render for CollapseDemo {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = &cx.global::<Config>().theme;
-        
+
         div().flex().flex_col().gap_8()
             .child(
                 div().flex().flex_col().gap_2()

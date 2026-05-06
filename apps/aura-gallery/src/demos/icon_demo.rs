@@ -2,9 +2,7 @@ use aura_core::Config;
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
 use aura_theme::Theme;
-use gpui::{
-    App, Context, Entity, Hsla, IntoElement, Render, Window, div, prelude::*, px,
-};
+use gpui::{App, Context, Entity, Hsla, IntoElement, Render, Window, div, prelude::*, px};
 
 pub fn render(cx: &mut App) -> Entity<IconDemo> {
     cx.new(|_| IconDemo)
@@ -159,12 +157,7 @@ fn icon_labeled(theme: &Theme, icon: IconName, sz: f32, label: &str) -> impl Int
         )
 }
 
-fn icon_labeled_color(
-    theme: &Theme,
-    icon: IconName,
-    color: Hsla,
-    label: &str,
-) -> impl IntoElement {
+fn icon_labeled_color(theme: &Theme, icon: IconName, color: Hsla, label: &str) -> impl IntoElement {
     div()
         .flex()
         .flex_col()

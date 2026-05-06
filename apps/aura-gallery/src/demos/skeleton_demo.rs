@@ -1,6 +1,6 @@
-use aura_components::{Skeleton, SkeletonItem, SkeletonVariant, Button};
-use aura_core::{Config};
-use gpui::{prelude::*, App, Context, Render, Window, div, AnyView, px};
+use aura_components::{Button, Skeleton, SkeletonItem, SkeletonVariant};
+use aura_core::Config;
+use gpui::{AnyView, App, Context, Render, Window, div, prelude::*, px};
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|_| SkeletonDemo { loading: true }).into()
@@ -14,7 +14,7 @@ impl Render for SkeletonDemo {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = &cx.global::<Config>().theme;
         let loading = self.loading;
-        
+
         div().flex().flex_col().gap_8().p_4()
             .child(
                 div().flex().flex_col().gap_2()

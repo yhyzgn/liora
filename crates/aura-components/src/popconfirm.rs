@@ -1,8 +1,7 @@
-use crate::{Popover, Button};
+use crate::{Button, Popover};
 use aura_core::{Config, Placement};
 use gpui::{
-    prelude::*, App, Component, IntoElement, RenderOnce, SharedString, Window,
-    div, AnyElement,
+    AnyElement, App, Component, IntoElement, RenderOnce, SharedString, Window, div, prelude::*,
 };
 use std::sync::Arc;
 
@@ -87,29 +86,50 @@ impl RenderOnce for Popconfirm {
                 let on_cancel = on_cancel.clone();
                 let confirm_text = confirm_text.clone();
                 let cancel_text = cancel_text.clone();
-                
-                div().p_4().flex().flex_col().gap_3()
+
+                div()
+                    .p_4()
+                    .flex()
+                    .flex_col()
+                    .gap_3()
                     .child(
-                        div().flex().flex_row().items_center().gap_2()
+                        div()
+                            .flex()
+                            .flex_row()
+                            .items_center()
+                            .gap_2()
                             .child(div().text_color(theme.warning.base).child("⚠️"))
-                            .child(div().font_weight(gpui::FontWeight::BOLD).child(title.clone()))
+                            .child(
+                                div()
+                                    .font_weight(gpui::FontWeight::BOLD)
+                                    .child(title.clone()),
+                            ),
                     )
                     .child(
-                        div().flex().flex_row().justify_end().gap_2()
+                        div()
+                            .flex()
+                            .flex_row()
+                            .justify_end()
+                            .gap_2()
+                            .child(Button::new(cancel_text.clone()).small().on_click(
+                                move |_event, _window, _cx| {
+                                    if let Some(ref f) = on_cancel {
+                                        f(_window, _cx);
+                                    }
+                                    aura_core::clear_active_popover(_cx);
+                                },
+                            ))
                             .child(
-                                Button::new(cancel_text.clone()).small()
+                                Button::new(confirm_text.clone())
+                                    .primary()
+                                    .small()
                                     .on_click(move |_event, _window, _cx| {
-                                        if let Some(ref f) = on_cancel { f(_window, _cx); }
+                                        if let Some(ref f) = on_confirm {
+                                            f(_window, _cx);
+                                        }
                                         aura_core::clear_active_popover(_cx);
-                                    })
-                            )
-                            .child(
-                                Button::new(confirm_text.clone()).primary().small()
-                                    .on_click(move |_event, _window, _cx| {
-                                        if let Some(ref f) = on_confirm { f(_window, _cx); }
-                                        aura_core::clear_active_popover(_cx);
-                                    })
-                            )
+                                    }),
+                            ),
                     )
             })
     }

@@ -1,10 +1,10 @@
-use aura_core::{Config};
-use gpui::{
-    prelude::*, px, App, Context, IntoElement, Render, Window,
-    div, AnyElement, MouseButton, actions, SharedString, KeyBinding,
-};
+use aura_core::Config;
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
+use gpui::{
+    AnyElement, App, Context, IntoElement, KeyBinding, MouseButton, Render, SharedString, Window,
+    actions, div, prelude::*, px,
+};
 use std::sync::Arc;
 
 actions!(dialog, [DialogClose]);
@@ -55,7 +55,9 @@ impl Render for DialogView {
             .absolute()
             .size_full()
             .bg(gpui::rgba(0x00000066))
-            .flex().items_center().justify_center()
+            .flex()
+            .items_center()
+            .justify_center()
             .on_mouse_move(|_, _, cx| {
                 cx.stop_propagation();
             })
@@ -67,12 +69,14 @@ impl Render for DialogView {
                     }
                 })
             })
-            .when(close_on_escape, |s| s.on_action(cx.listener({
-                let on_close = on_close.clone();
-                move |_, _action: &DialogClose, window, cx| {
-                    on_close(window, cx);
-                }
-            })))
+            .when(close_on_escape, |s| {
+                s.on_action(cx.listener({
+                    let on_close = on_close.clone();
+                    move |_, _action: &DialogClose, window, cx| {
+                        on_close(window, cx);
+                    }
+                }))
+            })
             .child(
                 div()
                     .w(px(400.0))
@@ -86,16 +90,29 @@ impl Render for DialogView {
                         cx.stop_propagation();
                     }) // Consume click so it doesn't trigger the background
                     .child(
-                        div().p_4().border_b_1().border_color(theme.neutral.border).flex().justify_between().items_center()
+                        div()
+                            .p_4()
+                            .border_b_1()
+                            .border_color(theme.neutral.border)
+                            .flex()
+                            .justify_between()
+                            .items_center()
                             .child(div().font_weight(gpui::FontWeight::BOLD).child(title))
                             .child(
-                                div().id("close-btn").cursor_pointer().child(Icon::new(IconName::X).size(px(16.0)).color(theme.neutral.icon))
+                                div()
+                                    .id("close-btn")
+                                    .cursor_pointer()
+                                    .child(
+                                        Icon::new(IconName::X)
+                                            .size(px(16.0))
+                                            .color(theme.neutral.icon),
+                                    )
                                     .on_mouse_down(MouseButton::Left, move |_, window, cx| {
                                         on_close(window, cx);
-                                    })
-                            )
+                                    }),
+                            ),
                     )
-                    .child(div().p_4().child(content_fn(_window, cx)))
+                    .child(div().p_4().child(content_fn(_window, cx))),
             )
     }
 }
@@ -129,8 +146,8 @@ impl Dialog {
         self
     }
 
-    pub fn content<F, E>(mut self, f: F) -> Self 
-    where 
+    pub fn content<F, E>(mut self, f: F) -> Self
+    where
         F: Fn(&mut Window, &mut Context<DialogView>) -> E + 'static,
         E: IntoElement,
     {
@@ -143,17 +160,19 @@ impl Dialog {
         let content = self.content;
         let close_on_click_outside = self.close_on_click_outside;
         let close_on_escape = self.close_on_escape;
-        
-        let view = cx.new(|_cx| DialogView::new(
-            title,
-            content,
-            close_on_click_outside,
-            close_on_escape,
-            |_window, _cx| {
-                aura_core::clear_active_modal(_cx);
-            }
-        ));
-        
+
+        let view = cx.new(|_cx| {
+            DialogView::new(
+                title,
+                content,
+                close_on_click_outside,
+                close_on_escape,
+                |_window, _cx| {
+                    aura_core::clear_active_modal(_cx);
+                },
+            )
+        });
+
         aura_core::set_active_modal(view.into(), cx);
     }
 
