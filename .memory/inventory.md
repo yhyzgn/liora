@@ -82,7 +82,8 @@
 | 11 | Empty | `crates/aura-components/src/empty.rs` | ✅ | ✅ Default / Custom / Action |
 | 12 | Result | `crates/aura-components/src/result.rs` | ✅ | ✅ Success/Warning/Error/Info |
 | 13 | Descriptions | `crates/aura-components/src/descriptions.rs` | ✅ | ✅ Border / Direction / Grid |
-| — | Timeline | — | — | ⬜ Pending |
+| 14 | Timeline | `crates/aura-components/src/timeline.rs` | ✅ | ✅ Node variants / Reverse |
+| — | Tree | — | — | ⬜ Pending |
 
 ## P5 Advanced ⬜ (20)
 
