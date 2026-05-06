@@ -17,6 +17,7 @@ pub mod notification_demo;
 pub mod page_header_demo;
 pub mod alert_demo;
 pub mod affix_demo;
+pub mod backtop_demo;
 pub mod breadcrumb_demo;
 pub mod steps_demo;
 pub mod menu_demo;
@@ -49,6 +50,7 @@ pub fn registry() -> Vec<DemoEntry> {
         DemoEntry { name: "PageHeader 页头", description: "标识页面内容并提供操作", render: |cx| page_header_demo::render(cx).into() },
         DemoEntry { name: "Alert 警告", description: "页面展示的重要提示信息", render: |cx| alert_demo::render(cx).into() },
         DemoEntry { name: "Affix 固钉", description: "将内容固定在特定可视区域", render: |cx| affix_demo::render(cx).into() },
+        DemoEntry { name: "Backtop 回到顶部", description: "返回页面顶部的快捷按钮", render: |cx| backtop_demo::render(cx).into() },
         DemoEntry { name: "Breadcrumb 面包屑", description: "显示当前页面的路径", render: |cx| breadcrumb_demo::render(cx).into() },
         DemoEntry { name: "Steps 步骤条", description: "引导用户完成任务", render: |cx| steps_demo::render(cx).into() },
         DemoEntry { name: "Menu 导航菜单", description: "为网站提供导航轮廓", render: |cx| menu_demo::render(cx).into() },

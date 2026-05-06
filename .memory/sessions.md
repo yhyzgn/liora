@@ -33,9 +33,12 @@
   - **实现 Affix 固钉组件**:
     - **核心原理**: 通过自定义 `BoundsTracker` 在 `paint` 阶段监听元素的窗口坐标，动态切换固定状态。
     - **布局兼容**: 提供 Placeholder 占位机制，确保固定切换时文档流布局平滑不跳变。
-    - **灵活配置**: 支持 `Top` 和 `Bottom` 两种固定模式，以及自定义偏移量 `offset`。
+  - **实现 Backtop 回到顶部组件**:
+    - **滚动监听**: 绑定 `ScrollHandle` 实时监测滚动偏移，超过 `visibility_height` 时自动显示。
+    - **平滑回顶**: 实现点击后容器自动回滚至顶部位置。
+    - **样式定制**: 支持自定义位置 (`right`/`bottom`) 及自定义渲染内容。
   - **Gallery Demo 增强**:
-    - 新增 `menu_demo.rs`, `tabs_demo.rs`, `breadcrumb_demo.rs`, `steps_demo.rs`, `page_header_demo.rs`, `affix_demo.rs`。
+    - 新增 `menu_demo.rs`, `tabs_demo.rs`, `breadcrumb_demo.rs`, `steps_demo.rs`, `page_header_demo.rs`, `affix_demo.rs`, `backtop_demo.rs`。
   - **Git 提交与推送**:
     - 提交代码并推送到 `main` 分支。
 
@@ -50,7 +53,7 @@
   - 连接线在 `flex` 布局中可以通过 `flex_1` 配合 `h(px(1.0))` 或 `w(px(1.0))` 轻松实现自适应伸缩。
   - 在 `'static` 闭包中访问全局状态 (如 Theme) 时，应在闭包执行时从传入的 `App` (cx) 中获取，而非从外部作用域捕获非静态引用。
   - 实现 `Affix` 等依赖布局结果的组件，可以通过在 `paint` 阶段检测 `Bounds` 并反向 `notify` View 的方式实现。
-
+  - `ScrollHandle` 的 `offset()` 结合 `View` 的 re-render 机制可以非常方便地实现基于滚动进度的 UI 交互。
 ## Session 2 — 2026-05-03
 
 ### Actions
