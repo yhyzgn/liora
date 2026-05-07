@@ -440,3 +440,20 @@
 
 ### Key Discoveries
 - Menu 气泡的问题不是单纯 cursor 样式，而是 hover 命中层没有完整接管；需要可命中的 stateful element + hover 阻断。
+
+## Session 36 — 2026-05-07 (Menu Popover Shield and Color Consistency)
+
+### Actions
+- **修复 Menu 气泡 hover 穿透残留**:
+  - 将 Gallery 的 PortalLayer 改为带稳定 ID 的全屏透明命中层，并在 portal 根层阻断 hover / mouse move 传播，避免菜单气泡移动时触发下方导航项 hover。
+- **统一 Menu 字体和图标颜色**:
+  - 垂直、水平、折叠 popover、水平 popover 的菜单项均使用同一个颜色变量驱动文字和图标。
+  - 普通态文字/图标同色，选中态文字/图标同为主色；hover 仅调整背景，避免文字与图标状态脱节。
+
+### Verification
+- `cargo check` passed.
+- `cargo test` passed.
+- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+
+### Key Discoveries
+- 仅在 Popover 内部阻断事件仍可能不足；portal 根层本身也需要成为可命中的透明 hover shield，才能阻止底层菜单项接收 hover 状态。

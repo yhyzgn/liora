@@ -230,21 +230,42 @@ impl IntoElement for PortalLayer {
 
 impl gpui::RenderOnce for PortalLayer {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let portals = if cx.has_global::<Portal>() {
+            std::mem::take(&mut cx.global_mut::<Portal>().entries)
+        } else {
+            Vec::new()
+        };
+
+        if portals.is_empty() {
+            return div()
+                .absolute()
+                .top_0()
+                .left_0()
+                .size_full()
+                .cursor_default()
+                .into_any_element();
+        }
+
         let mut container = div()
+            .id("portal-layer")
             .absolute()
             .top_0()
             .left_0()
             .size_full()
-            .cursor_default();
+            .cursor_default()
+            .bg(gpui::transparent_black())
+            .on_hover(|_, _, cx| {
+                cx.stop_propagation();
+            })
+            .on_mouse_move(|_, _, cx| {
+                cx.stop_propagation();
+            });
 
-        if cx.has_global::<Portal>() {
-            let portals = std::mem::take(&mut cx.global_mut::<Portal>().entries);
-            for entry in portals {
-                container = container.child((entry.render)(window, cx));
-            }
+        for entry in portals {
+            container = container.child((entry.render)(window, cx));
         }
 
-        container
+        container.into_any_element()
     }
 }
 

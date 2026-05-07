@@ -192,6 +192,11 @@ impl Menu {
     ) -> AnyElement {
         let id = item.id.clone();
         let is_active = self.active_index.as_ref() == Some(&id);
+        let item_color = if is_active {
+            theme.primary.base
+        } else {
+            theme.neutral.text_1
+        };
         let padding_left = if self.is_collapsed {
             px(0.0)
         } else {
@@ -209,11 +214,7 @@ impl Menu {
             .h(px(50.0))
             .pl(padding_left)
             .pr(if self.is_collapsed { px(0.0) } else { px(16.0) })
-            .text_color(if is_active {
-                theme.primary.base
-            } else {
-                theme.neutral.text_1
-            })
+            .text_color(item_color)
             .bg(if is_active {
                 theme.primary.base.opacity(0.1)
             } else {
@@ -225,11 +226,7 @@ impl Menu {
                 cx.notify();
             }))
             .when_some(item.icon, |s, icon| {
-                s.child(Icon::new(icon).size(px(18.0)).color(if is_active {
-                    theme.primary.base
-                } else {
-                    theme.neutral.icon
-                }))
+                s.child(Icon::new(icon).size(px(18.0)).color(item_color))
             })
             .when(!self.is_collapsed, |s| {
                 s.child(div().ml_2().text_sm().child(item.label.clone()))
@@ -246,6 +243,7 @@ impl Menu {
     ) -> AnyElement {
         let id = submenu.id.clone();
         let is_open = self.opened_submenus.contains(&id);
+        let submenu_color = theme.neutral.text_1;
         let padding_left = if self.is_collapsed {
             px(0.0)
         } else {
@@ -263,10 +261,10 @@ impl Menu {
                     .justify_center()
                     .h(px(50.0))
                     .w_full()
-                    .text_color(theme.neutral.text_1)
+                    .text_color(submenu_color)
                     .hover(|s| s.bg(theme.neutral.hover))
                     .when_some(submenu.icon, |s, icon| {
-                        s.child(Icon::new(icon).size(px(18.0)).color(theme.neutral.icon))
+                        s.child(Icon::new(icon).size(px(18.0)).color(submenu_color))
                     })
                     .when(submenu.icon.is_none(), |s| {
                         s.child(
@@ -328,6 +326,11 @@ impl Menu {
                             let menu_handle = menu_handle.clone();
                             let is_active =
                                 menu_handle.read(_cx).active_index.as_ref() == Some(&id);
+                            let item_color = if is_active {
+                                theme.primary.base
+                            } else {
+                                theme.neutral.text_1
+                            };
                             div()
                                 .id(format!("menu-sub-item-{}-{}", menu_handle.entity_id(), id))
                                 .cursor_pointer()
@@ -338,11 +341,7 @@ impl Menu {
                                 .px_3()
                                 .py_2()
                                 .rounded(px(theme.radius.sm))
-                                .text_color(if is_active {
-                                    theme.primary.base
-                                } else {
-                                    theme.neutral.text_1
-                                })
+                                .text_color(item_color)
                                 .bg(if is_active {
                                     theme.primary.base.opacity(0.1)
                                 } else {
@@ -356,11 +355,7 @@ impl Menu {
                                     });
                                 })
                                 .when_some(icon, |s, i| {
-                                    s.child(Icon::new(i).size(px(16.0)).color(if is_active {
-                                        theme.primary.base
-                                    } else {
-                                        theme.neutral.icon
-                                    }))
+                                    s.child(Icon::new(i).size(px(16.0)).color(item_color))
                                 })
                                 .child(div().text_sm().child(label))
                         }))
@@ -383,7 +378,7 @@ impl Menu {
                         .h(px(50.0))
                         .pl(padding_left)
                         .pr_4()
-                        .text_color(theme.neutral.text_1)
+                        .text_color(submenu_color)
                         .hover(|s| s.bg(theme.neutral.hover))
                         .on_click(cx.listener(move |this, _, _, cx| {
                             this.toggle_submenu(id.clone(), cx);
@@ -395,9 +390,7 @@ impl Menu {
                                 .items_center()
                                 .gap_2()
                                 .when_some(submenu.icon, |s, icon| {
-                                    s.child(
-                                        Icon::new(icon).size(px(18.0)).color(theme.neutral.icon),
-                                    )
+                                    s.child(Icon::new(icon).size(px(18.0)).color(submenu_color))
                                 })
                                 .child(div().text_sm().child(submenu.label.clone())),
                         )
@@ -408,7 +401,7 @@ impl Menu {
                                 IconName::ChevronRight
                             })
                             .size(px(14.0))
-                            .color(theme.neutral.icon),
+                            .color(submenu_color),
                         ),
                 )
                 .when(is_open, |s| {
@@ -468,6 +461,11 @@ impl Menu {
     ) -> AnyElement {
         let id = item.id.clone();
         let is_active = self.active_index.as_ref() == Some(&id);
+        let item_color = if is_active {
+            theme.primary.base
+        } else {
+            theme.neutral.text_1
+        };
 
         div()
             .id(format!("{}-horizontal-item-{}", self.id, id))
@@ -478,28 +476,20 @@ impl Menu {
             .gap_2()
             .h(px(60.0))
             .px_5()
-            .text_color(if is_active {
-                theme.primary.base
-            } else {
-                theme.neutral.text_1
-            })
+            .text_color(item_color)
             .border_b_2()
             .border_color(if is_active {
                 theme.primary.base
             } else {
                 gpui::transparent_black()
             })
-            .hover(|s| s.text_color(theme.primary.base))
+            .hover(|s| s.bg(theme.neutral.hover))
             .on_click(cx.listener(move |this, _, window, cx| {
                 this.select_item(id.clone(), window, cx);
                 cx.notify();
             }))
             .when_some(item.icon, |s, icon| {
-                s.child(Icon::new(icon).size(px(18.0)).color(if is_active {
-                    theme.primary.base
-                } else {
-                    theme.neutral.icon
-                }))
+                s.child(Icon::new(icon).size(px(18.0)).color(item_color))
             })
             .child(div().text_sm().child(item.label.clone()))
             .into_any_element()
@@ -513,6 +503,7 @@ impl Menu {
     ) -> AnyElement {
         let id = submenu.id.clone();
         let menu_handle = cx.entity().clone();
+        let submenu_color = theme.neutral.text_1;
 
         Popover::new(
             div()
@@ -524,8 +515,8 @@ impl Menu {
                 .gap_1()
                 .h(px(60.0))
                 .px_5()
-                .text_color(theme.neutral.text_1)
-                .hover(|s| s.text_color(theme.primary.base))
+                .text_color(submenu_color)
+                .hover(|s| s.bg(theme.neutral.hover))
                 .child(
                     div()
                         .flex()
@@ -533,13 +524,13 @@ impl Menu {
                         .items_center()
                         .gap_2()
                         .when_some(submenu.icon, |s, icon| {
-                            s.child(Icon::new(icon).size(px(18.0)).color(theme.neutral.icon))
+                            s.child(Icon::new(icon).size(px(18.0)).color(submenu_color))
                         })
                         .child(div().text_sm().child(submenu.label.clone()))
                         .child(
                             Icon::new(IconName::ChevronDown)
                                 .size(px(12.0))
-                                .color(theme.neutral.icon),
+                                .color(submenu_color),
                         ),
                 ),
         )
@@ -587,6 +578,11 @@ impl Menu {
                         let theme = theme.clone();
                         let menu_handle = menu_handle.clone();
                         let is_active = menu_handle.read(_cx).active_index.as_ref() == Some(&id);
+                        let item_color = if is_active {
+                            theme.primary.base
+                        } else {
+                            theme.neutral.text_1
+                        };
                         div()
                             .id(format!(
                                 "menu-horiz-sub-item-{}-{}",
@@ -601,11 +597,7 @@ impl Menu {
                             .px_3()
                             .py_2()
                             .rounded(px(theme.radius.sm))
-                            .text_color(if is_active {
-                                theme.primary.base
-                            } else {
-                                theme.neutral.text_1
-                            })
+                            .text_color(item_color)
                             .bg(if is_active {
                                 theme.primary.base.opacity(0.1)
                             } else {
@@ -619,11 +611,7 @@ impl Menu {
                                 });
                             })
                             .when_some(icon, |s, i| {
-                                s.child(Icon::new(i).size(px(16.0)).color(if is_active {
-                                    theme.primary.base
-                                } else {
-                                    theme.neutral.icon
-                                }))
+                                s.child(Icon::new(i).size(px(16.0)).color(item_color))
                             })
                             .child(div().text_sm().child(label))
                     }))
