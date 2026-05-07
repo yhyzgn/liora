@@ -15,6 +15,8 @@ pub struct Text {
     pub(crate) underline: bool,
     pub(crate) strikethrough: bool,
     pub(crate) font_family: Option<SharedString>,
+    pub(crate) wrap: bool,
+    pub(crate) fill_width_on_wrap: bool,
 }
 
 impl Text {
@@ -29,6 +31,8 @@ impl Text {
             underline: false,
             strikethrough: false,
             font_family: None,
+            wrap: true,
+            fill_width_on_wrap: false,
         }
     }
 
@@ -82,6 +86,25 @@ impl Text {
         self
     }
 
+    /// Enable normal whitespace wrapping and let the text take the parent width.
+    pub fn wrap(mut self) -> Self {
+        self.wrap = true;
+        self.fill_width_on_wrap = true;
+        self
+    }
+
+    /// Alias for [`Text::wrap`].
+    pub fn auto_wrap(self) -> Self {
+        self.wrap()
+    }
+
+    /// Keep the text on a single line.
+    pub fn nowrap(mut self) -> Self {
+        self.wrap = false;
+        self.fill_width_on_wrap = false;
+        self
+    }
+
     /// Convenience for "code" style
     pub fn code_style(mut self, theme: &aura_theme::Theme) -> Self {
         self.font_family = Some("Monospace".into());
@@ -94,10 +117,21 @@ impl RenderOnce for Text {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = &cx.global::<Config>().theme;
 
+        let font_size = self.size.unwrap_or_else(|| px(theme.font_size.md));
         let mut el = div()
             .child(self.content.clone())
-            .text_size(self.size.unwrap_or_else(|| px(theme.font_size.md)))
+            .text_size(font_size)
+            .line_height(font_size * 1.6)
             .text_color(self.color.unwrap_or(theme.neutral.text_2));
+
+        if self.wrap {
+            el = el.whitespace_normal();
+            if self.fill_width_on_wrap {
+                el = el.w_full().flex_shrink();
+            }
+        } else {
+            el = el.whitespace_nowrap();
+        }
 
         if let Some(bg) = self.bg {
             el = el.bg(bg).px_1().rounded(px(2.0));

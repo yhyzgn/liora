@@ -201,3 +201,54 @@
 ### Verification
 - `cargo check` passed.
 - 解决了在更新过程中由于 handle 重入导致的 Panic。
+
+## Session 22 — 2026-05-07 (Text Auto Wrap)
+
+### Actions
+- **增强 Text 控件自动换行能力**:
+  - 为 `Text` 增加 `wrap()` / `auto_wrap()` builder，启用 `whitespace_normal()` 并让文本填满父容器宽度，从而在受限宽度内自动折行。
+  - 增加 `nowrap()` builder，用于显式保持单行文本。
+  - 为 `Text` 统一设置基于字号的 `line_height`，提升多行文本可读性。
+- **更新 Typography Demo**:
+  - 新增受限宽度容器中的长文本自动换行示例。
+
+### Verification
+- `cargo check` passed.
+- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+
+### Key Discoveries
+- GPUI 文本折行依赖 `WhiteSpace::Normal` 且通常需要确定的可用宽度；`Text::wrap()` 通过 `w_full()` 让文本在父容器宽度内参与折行。
+
+## Session 23 — 2026-05-07 (Gallery Performance)
+
+### Actions
+- **优化 Gallery Demo 窗口渲染性能**:
+  - 将原先单个超长滚动页中一次性渲染全部 demo 的模式改为左侧导航 + 右侧当前 demo 详情。
+  - `Gallery` 现在缓存 `DemoEntry` 注册表，避免每次 render 都重新构造 registry。
+  - 每帧只挂载当前选中的 `AnyView`，显著减少主窗口重绘和布局压力。
+- **交互调整**:
+  - 左侧 demo 列表支持点击切换当前示例。
+  - 保持现有 demo render 函数和组件 API 不变。
+
+### Verification
+- `cargo check` passed.
+- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+
+### Key Discoveries
+- Gallery 卡顿的主要来源是 `Gallery::render()` 每次遍历并渲染全部 demo，同时每次重新调用 `demos::registry()` 分配注册表。
+- 部分 demo（Form、Icon、Backtop、Anchor）本身较重；当前改动先避免它们在同一帧全部参与布局。
+
+## Session 24 — 2026-05-07 (Rate Hover Reset)
+
+### Actions
+- **修复 Rate hover 状态未恢复问题**:
+  - 为每个 Rate 实例和星星元素生成基于 `EntityId` 的稳定唯一 ID，避免多个 Rate 实例共享同名交互元素。
+  - 将星星的 hover 预览从 `on_mouse_move` 改为每颗星独立的 `on_hover` 进入/离开处理。
+  - 当鼠标离开当前 hover 星星且未点击时，清空 `hover_value`，渲染回真实 `value` 评分状态。
+
+### Verification
+- `cargo check` passed.
+- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+
+### Key Discoveries
+- 仅依赖 Rate 容器的 `on_hover(false)` 不足以覆盖从最后一颗星右侧移出的路径；每颗星独立处理 hover leave 更可靠。

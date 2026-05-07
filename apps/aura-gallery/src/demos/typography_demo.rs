@@ -36,6 +36,14 @@ impl Render for TypographyDemo {
                 Text::new("Small text").size(px(theme.font_size.sm)),
                 Text::new("Large text").size(px(theme.font_size.lg)),
             ]))
+            .child(
+                div()
+                    .w_80()
+                    .p_3()
+                    .rounded(px(theme.radius.md))
+                    .bg(theme.neutral.hover)
+                    .child(Text::new("Auto wrap: this is a deliberately long Text component sample. It should wrap automatically within the constrained container instead of overflowing horizontally.").wrap()),
+            )
             .child(Divider::new())
             .child(hdr(theme, "Link 链接"))
             .child(div().flex().flex_row().gap_4().children(vec![

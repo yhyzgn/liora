@@ -60,8 +60,10 @@ impl Render for Rate {
         let theme = &cx.global::<Config>().theme;
         let icon_sz = 20.0;
 
+        let view_id = cx.entity().entity_id().as_u64();
+
         let mut row = gpui::div()
-            .id("rate-container")
+            .id(format!("rate-container-{view_id}"))
             .relative()
             .flex()
             .flex_row()
@@ -90,6 +92,7 @@ impl Render for Rate {
             };
 
             let mut star = gpui::div()
+                .id(format!("rate-star-{view_id}-{i}"))
                 .flex()
                 .items_center()
                 .justify_center()
@@ -98,10 +101,18 @@ impl Render for Rate {
             if !self.disabled {
                 star = star
                     .cursor_pointer()
-                    .on_mouse_move(cx.listener(move |this, _, _, cx| {
-                        if this.hover_value != Some(i as f32) {
-                            this.hover_value = Some(i as f32);
-                            cx.notify();
+                    .on_hover(cx.listener(move |this, hovered, _, cx| {
+                        let hover_value = Some(i as f32);
+                        match (*hovered, this.hover_value == hover_value) {
+                            (true, false) => {
+                                this.hover_value = hover_value;
+                                cx.notify();
+                            }
+                            (false, true) => {
+                                this.hover_value = None;
+                                cx.notify();
+                            }
+                            _ => {}
                         }
                     }))
                     .on_mouse_down(

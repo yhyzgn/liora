@@ -5,12 +5,14 @@ use aura_components::{Checkbox, Dialog, Drawer, Input, Radio, RadioGroup, Switch
 use aura_core::{ContextExt, Portal, init_aura};
 use aura_theme::Theme;
 use gpui::{
-    AnyView, App, Bounds, Component, Context, Render, Window, WindowBounds, WindowOptions, div,
-    prelude::*, px, size,
+    AnyView, App, Bounds, Component, Context, MouseButton, Render, Window, WindowBounds,
+    WindowOptions, div, prelude::*, px, size,
 };
 
 pub struct Gallery {
+    entries: Vec<demos::DemoEntry>,
     demos: Vec<AnyView>,
+    selected: usize,
 }
 
 fn run_gallery() {
@@ -39,11 +41,13 @@ fn run_gallery() {
                 ..Default::default()
             },
             |_, cx| {
-                let demos = demos::registry()
-                    .into_iter()
-                    .map(|entry| (entry.render)(cx))
-                    .collect();
-                cx.new(|_| Gallery { demos })
+                let entries = demos::registry();
+                let demos = entries.iter().map(|entry| (entry.render)(cx)).collect();
+                cx.new(|_| Gallery {
+                    entries,
+                    demos,
+                    selected: 0,
+                })
             },
         );
     });
@@ -51,58 +55,120 @@ fn run_gallery() {
 
 impl Render for Gallery {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let registry = demos::registry();
+        let theme = cx.aura();
+        let selected = self.selected.min(self.entries.len().saturating_sub(1));
+        self.selected = selected;
 
-        let header = {
-            let theme = cx.aura();
-            div()
-                .flex()
-                .flex_col()
-                .gap_1()
-                .mb_4()
-                .pb_4()
-                .border_b_1()
-                .border_color(theme.neutral.border)
-                .child(
-                    div()
-                        .text_2xl()
-                        .text_color(theme.neutral.text_1)
-                        .font_weight(gpui::FontWeight::BOLD)
-                        .child("Aura UI"),
-                )
-                .child(
-                    div()
-                        .text_size(px(theme.font_size.md))
-                        .text_color(theme.neutral.text_3)
-                        .child(format!(
-                            "Native Component Library · {} chapters",
-                            registry.len()
-                        )),
-                )
-        };
-
-        let mut body = div()
+        let header = div()
             .flex()
             .flex_col()
-            .size_full()
-            .bg(cx.aura().neutral.body)
-            .gap_8()
-            .p_8()
-            .id("gallery-body")
-            .overflow_y_scroll()
-            .child(header);
+            .gap_1()
+            .px_6()
+            .py_5()
+            .border_b_1()
+            .border_color(theme.neutral.border)
+            .child(
+                div()
+                    .text_2xl()
+                    .text_color(theme.neutral.text_1)
+                    .font_weight(gpui::FontWeight::BOLD)
+                    .child("Aura UI"),
+            )
+            .child(
+                div()
+                    .text_size(px(theme.font_size.md))
+                    .text_color(theme.neutral.text_3)
+                    .child(format!(
+                        "Native Component Library · {} demos · rendering one demo at a time",
+                        self.entries.len()
+                    )),
+            );
 
-        for (i, entry) in registry.into_iter().enumerate() {
-            body = body.child(
+        let nav = div()
+            .flex()
+            .flex_col()
+            .w(px(280.0))
+            .h_full()
+            .flex_shrink_0()
+            .id("gallery-nav")
+            .overflow_y_scroll()
+            .border_r_1()
+            .border_color(theme.neutral.border)
+            .bg(theme.neutral.card)
+            .children(self.entries.iter().enumerate().map(|(i, entry)| {
+                let active = i == selected;
+                let bg = if active {
+                    theme.primary.light_9
+                } else {
+                    theme.neutral.card
+                };
+                let title_color = if active {
+                    theme.primary.base
+                } else {
+                    theme.neutral.text_1
+                };
+                let desc_color = if active {
+                    theme.primary.base.opacity(0.75)
+                } else {
+                    theme.neutral.text_3
+                };
+
+                div()
+                    .id(format!("gallery-demo-nav-{}", i))
+                    .flex()
+                    .flex_col()
+                    .gap_1()
+                    .px_4()
+                    .py_3()
+                    .border_b_1()
+                    .border_color(theme.neutral.divider)
+                    .bg(bg)
+                    .cursor_pointer()
+                    .hover(|style| style.bg(theme.neutral.hover))
+                    .on_mouse_up(
+                        MouseButton::Left,
+                        cx.listener(move |this, _, _, cx| {
+                            this.selected = i;
+                            cx.notify();
+                        }),
+                    )
+                    .child(
+                        div()
+                            .text_size(px(theme.font_size.md))
+                            .text_color(title_color)
+                            .font_weight(gpui::FontWeight::BOLD)
+                            .child(entry.name),
+                    )
+                    .child(
+                        div()
+                            .text_size(px(theme.font_size.sm))
+                            .text_color(desc_color)
+                            .child(entry.description),
+                    )
+            }));
+
+        let selected_entry = &self.entries[selected];
+        let selected_demo = self.demos[selected].clone();
+
+        let content = div()
+            .flex()
+            .flex_col()
+            .flex_1()
+            .h_full()
+            .id("gallery-content")
+            .overflow_y_scroll()
+            .p_8()
+            .bg(theme.neutral.body)
+            .child(
                 div()
                     .flex()
                     .flex_col()
                     .gap_4()
                     .p_4()
                     .border_1()
-                    .border_color(cx.aura().neutral.divider)
-                    .rounded(px(cx.aura().radius.lg))
-                    .bg(cx.aura().neutral.card)
+                    .border_color(theme.neutral.divider)
+                    .rounded(px(theme.radius.lg))
+                    .bg(theme.neutral.card)
                     .child(
                         div()
                             .flex()
@@ -110,23 +176,37 @@ impl Render for Gallery {
                             .gap_1()
                             .child(
                                 div()
-                                    .text_size(px(cx.aura().font_size.lg))
-                                    .text_color(cx.aura().neutral.text_1)
+                                    .text_size(px(theme.font_size.lg))
+                                    .text_color(theme.neutral.text_1)
                                     .font_weight(gpui::FontWeight::BOLD)
-                                    .child(entry.name),
+                                    .child(selected_entry.name),
                             )
                             .child(
                                 div()
-                                    .text_size(px(cx.aura().font_size.sm))
-                                    .text_color(cx.aura().neutral.text_3)
-                                    .child(entry.description),
+                                    .text_size(px(theme.font_size.sm))
+                                    .text_color(theme.neutral.text_3)
+                                    .child(selected_entry.description),
                             ),
                     )
-                    .child(self.demos[i].clone()),
+                    .child(selected_demo),
             );
-        }
 
-        let container = div().size_full().relative().child(body);
+        let body = div()
+            .flex()
+            .flex_row()
+            .flex_1()
+            .min_h_0()
+            .child(nav)
+            .child(content);
+
+        let container = div()
+            .size_full()
+            .relative()
+            .flex()
+            .flex_col()
+            .bg(theme.neutral.body)
+            .child(header)
+            .child(body);
 
         aura_components::message::render_messages(cx);
         aura_components::notification::render_notifications(cx);

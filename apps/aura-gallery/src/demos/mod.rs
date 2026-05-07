@@ -44,6 +44,7 @@ pub mod typography_demo;
 
 use gpui::{AnyView, App};
 
+#[derive(Clone, Copy)]
 pub struct DemoEntry {
     pub name: &'static str,
     pub description: &'static str,
