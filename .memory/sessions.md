@@ -487,3 +487,21 @@
 
 ### Key Discoveries
 - Tabs 与 Menu/Tree/Collapse 一样，demo 中 render-time entity creation 会重置组件状态；多个 Tabs 示例复用同名 pane 还会造成 GPUI element ID 冲突。
+
+## Session 39 — 2026-05-07 (Tabs Stretch and Editable Add)
+
+### Actions
+- **完善 Tabs 水平均分布局配置**:
+  - 为 `Tabs` 增加 `stretch(bool)` 配置。
+  - 水平布局开启 stretch 时 header 占满父级宽度，每个 tab 使用 `flex_1()` 自动均分；普通标准 Tabs 保持原 gap 布局。
+  - Gallery 增加“自动均分并占满宽度”示例。
+- **修复 Editable Tabs 点击 + 无视觉反馈**:
+  - `add_tab` 现在会内置新增一个默认 Tab、切换为 active，并继续触发 `on_tab_add` 回调。
+
+### Verification
+- `cargo check` passed.
+- `cargo test` passed.
+- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+
+### Key Discoveries
+- 原 editable add 只调用外部回调并 notify，没有修改内部 panes，所以 demo 中点击 + 不会出现任何 UI 变化。

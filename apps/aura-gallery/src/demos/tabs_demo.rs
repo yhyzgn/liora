@@ -12,6 +12,15 @@ pub fn render(cx: &mut App) -> AnyView {
                 .pane("third", "角色管理", |_, _| div().child("角色管理内容"))
                 .pane("fourth", "定时任务", |_, _| div().child("定时任务内容"))
         }),
+        stretch: cx.new(|_| {
+            Tabs::new("first")
+                .id("tabs-demo-stretch")
+                .stretch(true)
+                .pane("first", "用户管理", |_, _| div().child("用户管理内容"))
+                .pane("second", "配置管理", |_, _| div().child("配置管理内容"))
+                .pane("third", "角色管理", |_, _| div().child("角色管理内容"))
+                .pane("fourth", "定时任务", |_, _| div().child("定时任务内容"))
+        }),
         card: cx.new(|_| {
             Tabs::new("first")
                 .id("tabs-demo-card")
@@ -59,6 +68,7 @@ pub fn render(cx: &mut App) -> AnyView {
 
 struct TabsDemo {
     basic: Entity<Tabs>,
+    stretch: Entity<Tabs>,
     card: Entity<Tabs>,
     border_card: Entity<Tabs>,
     left: Entity<Tabs>,
@@ -100,6 +110,18 @@ impl Render for TabsDemo {
                     .gap_4()
                     .child(div().font_weight(gpui::FontWeight::BOLD).child("基础用法"))
                     .child(self.basic.clone()),
+            )
+            .child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap_4()
+                    .child(
+                        div()
+                            .font_weight(gpui::FontWeight::BOLD)
+                            .child("自动均分并占满宽度"),
+                    )
+                    .child(self.stretch.clone()),
             )
             .child(
                 div()

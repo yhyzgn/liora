@@ -38,6 +38,7 @@ pub struct Tabs {
     tab_type: TabType,
     panes: Vec<TabPane>,
     editable: bool,
+    stretch: bool,
     on_tab_click: Option<Box<dyn Fn(SharedString, &mut Window, &mut App) + 'static>>,
     on_tab_remove: Option<Box<dyn Fn(SharedString, &mut Window, &mut App) + 'static>>,
     on_tab_add: Option<Box<dyn Fn(&mut Window, &mut App) + 'static>>,
@@ -55,6 +56,7 @@ impl Tabs {
             tab_type: TabType::Standard,
             panes: vec![],
             editable: false,
+            stretch: false,
             on_tab_click: None,
             on_tab_remove: None,
             on_tab_add: None,
@@ -78,6 +80,11 @@ impl Tabs {
 
     pub fn editable(mut self, e: bool) -> Self {
         self.editable = e;
+        self
+    }
+
+    pub fn stretch(mut self, stretch: bool) -> Self {
+        self.stretch = stretch;
         self
     }
 
@@ -148,6 +155,26 @@ impl Tabs {
     }
 
     fn add_tab(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let mut next = self.panes.len() + 1;
+        let name = loop {
+            let candidate = SharedString::from(format!("tab-{}", next));
+            if self.panes.iter().all(|pane| pane.name != candidate) {
+                break candidate;
+            }
+            next += 1;
+        };
+        let label = SharedString::from(format!("Tab {}", next));
+        let content_text = SharedString::from(format!("Content of Tab {}", next));
+
+        self.panes.push(TabPane {
+            name: name.clone(),
+            label,
+            content: Arc::new(move |_, _| div().child(content_text.clone()).into_any_element()),
+            closable: true,
+            icon: None,
+        });
+        self.active_name = name;
+
         if let Some(on_add) = &self.on_tab_add {
             (on_add)(window, cx);
         }
@@ -166,13 +193,17 @@ impl Render for Tabs {
             let theme = cx.global::<Config>().theme.clone();
             div()
                 .flex()
-                .when(!is_vertical, |s| s.flex_row().items_center())
+                .when(!is_vertical, |s| s.flex_row().items_center().w_full())
                 .when(is_vertical, |s| s.flex_col().w(px(120.0)))
                 .when(tab_type == TabType::Standard, |s| match position {
-                    TabPosition::Top => s.gap_8().border_b_1().border_color(theme.neutral.border),
-                    TabPosition::Bottom => {
-                        s.gap_8().border_t_1().border_color(theme.neutral.border)
-                    }
+                    TabPosition::Top => s
+                        .when(!this.stretch, |s| s.gap_8())
+                        .border_b_1()
+                        .border_color(theme.neutral.border),
+                    TabPosition::Bottom => s
+                        .when(!this.stretch, |s| s.gap_8())
+                        .border_t_1()
+                        .border_color(theme.neutral.border),
                     TabPosition::Left => s.gap_2().border_r_1().border_color(theme.neutral.border),
                     TabPosition::Right => s.gap_2().border_l_1().border_color(theme.neutral.border),
                 })
@@ -195,6 +226,7 @@ impl Render for Tabs {
                         .flex()
                         .items_center()
                         .justify_center()
+                        .when(this.stretch && !is_vertical, |s| s.flex_1())
                         .when(!is_vertical, |s| s.h(px(40.0)))
                         .when(is_vertical, |s| s.w_full().py_3())
                         .when(tab_type == TabType::Standard, |s| {
