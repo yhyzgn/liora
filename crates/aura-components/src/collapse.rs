@@ -66,7 +66,6 @@ impl Render for Collapse {
     #[track_caller]
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
-        let caller = std::panic::Location::caller();
 
         div()
             .flex()
@@ -78,12 +77,7 @@ impl Render for Collapse {
                 let name = item.name.clone();
                 let is_active = self.active_names.contains(&name);
                 let is_last = i == self.items.len() - 1;
-                let header_id = format!(
-                    "collapse-header-{}-{}-{}",
-                    caller.line(),
-                    caller.column(),
-                    i
-                );
+                let header_id = format!("collapse-header-{}", name);
 
                 div()
                     .flex()

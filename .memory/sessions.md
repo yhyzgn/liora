@@ -344,3 +344,18 @@
 
 ### Key Discoveries
 - 原实现使用 `HashSet` 直接 toggle 选中状态，导致普通 Tree 在没有复选框/多选配置时也表现为多选；默认交互应为单选。
+
+## Session 30 — 2026-05-07 (Collapse Demo Interaction)
+
+### Actions
+- **修复 Collapse Demo 点击无反应**:
+  - 将 demo 中的基础 Collapse 和 Accordion Collapse 从 render 阶段临时创建改为 `CollapseDemo` 初始化时创建并持有，确保 active 状态在父视图重渲染后保留。
+  - 将 Collapse header ID 从调用位置 + index 改为基于 item name，避免同一组件内 item 重排时交互 ID 不稳定。
+
+### Verification
+- `cargo check` passed.
+- `cargo test` passed.
+- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+
+### Key Discoveries
+- Collapse 组件自身 toggle 逻辑有效；Gallery demo 中在 render 内 `cx.new` 导致有状态组件生命周期不稳定，是点击后看起来无反应的主要原因。
