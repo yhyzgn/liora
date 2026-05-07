@@ -103,7 +103,10 @@ impl Render for PopoverDemo {
                                     )
                                     .child(Button::new("Close Popover").primary().small().on_click(
                                         |_, _, cx| {
-                                            aura_core::clear_active_popover(cx);
+                                            aura_core::clear_popover(
+                                                &"popover-demo-manual-close".into(),
+                                                cx,
+                                            );
                                         },
                                     ))
                             }),

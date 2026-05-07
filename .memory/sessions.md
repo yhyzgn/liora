@@ -252,3 +252,27 @@
 
 ### Key Discoveries
 - 仅依赖 Rate 容器的 `on_hover(false)` 不足以覆盖从最后一颗星右侧移出的路径；每颗星独立处理 hover leave 更可靠。
+
+## Session 25 — 2026-05-07 (Independent Overlays)
+
+### Actions
+- **重构浮层全局状态为 keyed multi-instance manager**:
+  - 将 `ActiveTooltip`, `ActivePopover`, `ActiveModal`, `ActiveDrawer` 从单例 `Option` 改为按 `SharedString` ID 管理的多实例集合。
+  - 新增 `clear_tooltip`, `clear_popover`, `clear_modal`, `clear_drawer` 等按 ID 精确关闭接口，同时保留 `clear_active_*` 作为关闭全部的兼容入口。
+  - `render_active_*_in_window` 现在逐个渲染所有 active overlay entry。
+- **组件实例独立化**:
+  - `Tooltip` 增加稳定 ID，并在 hover leave 时只清理自身 tooltip。
+  - `Popover` 点击时按自身 ID toggle，只替换/关闭自身实例，不再覆盖全局唯一 popover。
+  - `Popconfirm` 和 `Dropdown` 基于自身 popover ID 精确关闭。
+  - `Dialog` / `Drawer` 增加 `.id(...)` 与 `close_id(...)`，close 按实例 ID 清理对应 overlay。
+- **Demo 同步**:
+  - Popover 手动关闭示例改为按 `popover-demo-manual-close` 精确关闭自身。
+
+### Verification
+- `cargo check` passed.
+- `cargo test` passed.
+- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+
+### Key Discoveries
+- 之前的 `ActivePopover(Option<AnyView>)` / `ActiveTooltip(Option<TooltipData>)` 架构天然只能存在一个浮层，任何 clear 都是全局清空。
+- 当前默认 ID 仍基于调用位置；同一调用位置循环创建多个浮层时，应显式调用 `.id(...)` 传入业务唯一 ID。

@@ -1,4 +1,4 @@
-use aura_core::{Config, Placement, clear_active_popover, set_active_popover};
+use aura_core::{Config, Placement, clear_popover, is_popover_active, set_active_popover};
 use gpui::{
     AnyElement, App, Bounds, Component, Context, ElementId, GlobalElementId, InspectorElementId,
     IntoElement, LayoutId, MouseButton, Pixels, Render, RenderOnce, SharedString, Window, div,
@@ -23,6 +23,7 @@ pub struct PopoverView {
     placement: Placement,
     offset: Pixels,
     close_on_click_outside: bool,
+    id: SharedString,
     on_close: Arc<dyn Fn(&mut Window, &mut App) + 'static>,
 }
 
@@ -33,6 +34,7 @@ impl PopoverView {
         placement: Placement,
         offset: Pixels,
         close_on_click_outside: bool,
+        id: SharedString,
         on_close: impl Fn(&mut Window, &mut App) + 'static,
     ) -> Self {
         Self {
@@ -41,6 +43,7 @@ impl PopoverView {
             placement,
             offset,
             close_on_click_outside,
+            id,
             on_close: Arc::new(on_close),
         }
     }
@@ -54,6 +57,7 @@ impl Render for PopoverView {
         let offset = self.offset;
         let on_close = self.on_close.clone();
         let close_on_click_outside = self.close_on_click_outside;
+        let id = self.id.clone();
 
         let content = (self.content)(_window, cx);
         let viewport_size = _window.viewport_size();
@@ -63,6 +67,7 @@ impl Render for PopoverView {
         let max_w = (viewport_size.width - viewport_margin * 2.0).max(px(0.0));
 
         div()
+            .id(id)
             .absolute()
             .size_full()
             .on_mouse_move(|_, _, cx| {
@@ -203,6 +208,10 @@ impl RenderOnce for Popover {
         let close_on_click_outside = self.close_on_click_outside;
         let content = self.content.clone();
         let trigger_id = self.trigger_id;
+        let popover_id = match &trigger_id {
+            ElementId::Name(name) => name.clone(),
+            _ => SharedString::from(format!("popover-{:?}", trigger_id)),
+        };
 
         let bounds_cell = Rc::new(Cell::new(None));
         let bounds_cell_clone = bounds_cell.clone();
@@ -214,8 +223,15 @@ impl RenderOnce for Popover {
                 bounds: bounds_cell,
             })
             .on_click(move |_event, _window, cx| {
+                if is_popover_active(&popover_id, cx) {
+                    clear_popover(&popover_id, cx);
+                    return;
+                }
+
                 if let Some(anchor_bounds) = bounds_cell_clone.get() {
                     let content = content.clone();
+                    let popover_id_for_close = popover_id.clone();
+                    let popover_id_for_view = popover_id.clone();
                     let view = cx.new(|_cx| {
                         PopoverView::new(
                             content,
@@ -223,12 +239,13 @@ impl RenderOnce for Popover {
                             placement,
                             offset,
                             close_on_click_outside,
-                            |_window, _cx| {
-                                clear_active_popover(_cx);
+                            popover_id_for_view,
+                            move |_window, _cx| {
+                                clear_popover(&popover_id_for_close, _cx);
                             },
                         )
                     });
-                    set_active_popover(view.into(), cx);
+                    set_active_popover(popover_id.clone(), view.into(), cx);
                 }
             })
     }

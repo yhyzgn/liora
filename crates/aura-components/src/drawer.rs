@@ -19,6 +19,7 @@ pub enum DrawerPlacement {
 }
 
 pub struct Drawer {
+    id: SharedString,
     title: SharedString,
     content: Arc<dyn Fn(&mut Window, &mut Context<DrawerView>) -> AnyElement + 'static>,
     placement: DrawerPlacement,
@@ -29,6 +30,7 @@ pub struct Drawer {
 }
 
 pub struct DrawerView {
+    id: SharedString,
     title: SharedString,
     content: Arc<dyn Fn(&mut Window, &mut Context<Self>) -> AnyElement + 'static>,
     placement: DrawerPlacement,
@@ -41,6 +43,7 @@ pub struct DrawerView {
 
 impl DrawerView {
     fn new(
+        id: SharedString,
         title: SharedString,
         content: Arc<dyn Fn(&mut Window, &mut Context<Self>) -> AnyElement + 'static>,
         placement: DrawerPlacement,
@@ -51,6 +54,7 @@ impl DrawerView {
         on_close: impl Fn(&mut Window, &mut App) + 'static,
     ) -> Self {
         Self {
+            id,
             title,
             content,
             placement,
@@ -66,6 +70,7 @@ impl DrawerView {
 impl Render for DrawerView {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
+        let id = self.id.clone();
         let title = self.title.clone();
         let content_fn = self.content.clone();
         let on_close = self.on_close.clone();
@@ -76,6 +81,7 @@ impl Render for DrawerView {
         let close_on_escape = self.close_on_escape;
 
         let mut container = div()
+            .id(id.clone())
             .absolute()
             .size_full()
             .bg(gpui::rgba(0x00000066))
@@ -158,7 +164,7 @@ impl Render for DrawerView {
                         .child(div().font_weight(gpui::FontWeight::BOLD).child(title))
                         .child(
                             div()
-                                .id("close-btn")
+                                .id(format!("{id}-close-btn"))
                                 .cursor_pointer()
                                 .child(
                                     Icon::new(IconName::X)
@@ -180,8 +186,11 @@ impl Drawer {
         cx.bind_keys([KeyBinding::new("escape", DrawerClose, None)]);
     }
 
+    #[track_caller]
     pub fn new() -> Self {
+        let caller = std::panic::Location::caller();
         Self {
+            id: format!("drawer-{}", caller).into(),
             title: SharedString::default(),
             content: Arc::new(|_, _| div().child("Drawer Content").into_any_element()),
             placement: DrawerPlacement::Right,
@@ -190,6 +199,11 @@ impl Drawer {
             close_on_click_outside: true,
             close_on_escape: true,
         }
+    }
+
+    pub fn id(mut self, id: impl Into<SharedString>) -> Self {
+        self.id = id.into();
+        self
     }
 
     pub fn title(mut self, title: impl Into<SharedString>) -> Self {
@@ -232,6 +246,7 @@ impl Drawer {
     }
 
     pub fn show(self, cx: &mut App) {
+        let id = self.id;
         let title = self.title;
         let content = self.content;
         let placement = self.placement;
@@ -240,8 +255,10 @@ impl Drawer {
         let close_on_click_outside = self.close_on_click_outside;
         let close_on_escape = self.close_on_escape;
 
+        let id_for_close = id.clone();
         let view = cx.new(|_cx| {
             DrawerView::new(
+                id.clone(),
                 title,
                 content,
                 placement,
@@ -249,16 +266,21 @@ impl Drawer {
                 height,
                 close_on_click_outside,
                 close_on_escape,
-                |_window, _cx| {
-                    aura_core::clear_active_drawer(_cx);
+                move |_window, _cx| {
+                    aura_core::clear_drawer(&id_for_close, _cx);
                 },
             )
         });
 
-        aura_core::set_active_drawer(view.into(), cx);
+        aura_core::set_active_drawer(id, view.into(), cx);
     }
 
     pub fn close(cx: &mut App) {
         aura_core::clear_active_drawer(cx);
+    }
+
+    pub fn close_id(id: impl Into<SharedString>, cx: &mut App) {
+        let id = id.into();
+        aura_core::clear_drawer(&id, cx);
     }
 }

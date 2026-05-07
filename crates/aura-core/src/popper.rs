@@ -105,54 +105,112 @@ impl Global for ZIndexStack {}
 
 #[derive(Clone)]
 pub struct TooltipData {
+    pub id: SharedString,
     pub content: SharedString,
     pub anchor_bounds: Bounds<Pixels>,
     pub placement: Placement,
     pub offset: Pixels,
 }
 
-pub struct ActiveTooltip(pub Option<TooltipData>);
+pub struct ActiveTooltip(pub Vec<TooltipData>);
 impl Global for ActiveTooltip {}
 
 pub fn set_active_tooltip(data: TooltipData, cx: &mut App) {
-    cx.set_global(ActiveTooltip(Some(data)));
+    let tooltips = &mut cx.global_mut::<ActiveTooltip>().0;
+    if let Some(existing) = tooltips.iter_mut().find(|tooltip| tooltip.id == data.id) {
+        *existing = data;
+    } else {
+        tooltips.push(data);
+    }
+}
+
+pub fn clear_tooltip(id: &SharedString, cx: &mut App) {
+    cx.global_mut::<ActiveTooltip>()
+        .0
+        .retain(|tooltip| &tooltip.id != id);
 }
 
 pub fn clear_active_tooltip(cx: &mut App) {
-    cx.set_global(ActiveTooltip(None));
+    cx.global_mut::<ActiveTooltip>().0.clear();
 }
 
-pub struct ActivePopover(pub Option<gpui::AnyView>);
+#[derive(Clone)]
+pub struct ActiveOverlayEntry {
+    pub id: SharedString,
+    pub view: gpui::AnyView,
+}
+
+pub struct ActivePopover(pub Vec<ActiveOverlayEntry>);
 impl Global for ActivePopover {}
 
-pub fn set_active_popover(view: gpui::AnyView, cx: &mut App) {
-    cx.set_global(ActivePopover(Some(view)));
+pub fn is_popover_active(id: &SharedString, cx: &App) -> bool {
+    cx.global::<ActivePopover>()
+        .0
+        .iter()
+        .any(|entry| &entry.id == id)
+}
+
+pub fn set_active_popover(id: SharedString, view: gpui::AnyView, cx: &mut App) {
+    let popovers = &mut cx.global_mut::<ActivePopover>().0;
+    if let Some(existing) = popovers.iter_mut().find(|entry| entry.id == id) {
+        existing.view = view;
+    } else {
+        popovers.push(ActiveOverlayEntry { id, view });
+    }
+}
+
+pub fn clear_popover(id: &SharedString, cx: &mut App) {
+    cx.global_mut::<ActivePopover>()
+        .0
+        .retain(|entry| &entry.id != id);
 }
 
 pub fn clear_active_popover(cx: &mut App) {
-    cx.set_global(ActivePopover(None));
+    cx.global_mut::<ActivePopover>().0.clear();
 }
 
-pub struct ActiveModal(pub Option<gpui::AnyView>);
+pub struct ActiveModal(pub Vec<ActiveOverlayEntry>);
 impl Global for ActiveModal {}
 
-pub fn set_active_modal(view: gpui::AnyView, cx: &mut App) {
-    cx.set_global(ActiveModal(Some(view)));
+pub fn set_active_modal(id: SharedString, view: gpui::AnyView, cx: &mut App) {
+    let modals = &mut cx.global_mut::<ActiveModal>().0;
+    if let Some(existing) = modals.iter_mut().find(|entry| entry.id == id) {
+        existing.view = view;
+    } else {
+        modals.push(ActiveOverlayEntry { id, view });
+    }
+}
+
+pub fn clear_modal(id: &SharedString, cx: &mut App) {
+    cx.global_mut::<ActiveModal>()
+        .0
+        .retain(|entry| &entry.id != id);
 }
 
 pub fn clear_active_modal(cx: &mut App) {
-    cx.set_global(ActiveModal(None));
+    cx.global_mut::<ActiveModal>().0.clear();
 }
 
-pub struct ActiveDrawer(pub Option<gpui::AnyView>);
+pub struct ActiveDrawer(pub Vec<ActiveOverlayEntry>);
 impl Global for ActiveDrawer {}
 
-pub fn set_active_drawer(view: gpui::AnyView, cx: &mut App) {
-    cx.set_global(ActiveDrawer(Some(view)));
+pub fn set_active_drawer(id: SharedString, view: gpui::AnyView, cx: &mut App) {
+    let drawers = &mut cx.global_mut::<ActiveDrawer>().0;
+    if let Some(existing) = drawers.iter_mut().find(|entry| entry.id == id) {
+        existing.view = view;
+    } else {
+        drawers.push(ActiveOverlayEntry { id, view });
+    }
+}
+
+pub fn clear_drawer(id: &SharedString, cx: &mut App) {
+    cx.global_mut::<ActiveDrawer>()
+        .0
+        .retain(|entry| &entry.id != id);
 }
 
 pub fn clear_active_drawer(cx: &mut App) {
-    cx.set_global(ActiveDrawer(None));
+    cx.global_mut::<ActiveDrawer>().0.clear();
 }
 
 pub struct Popper {

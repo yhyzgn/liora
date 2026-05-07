@@ -10,6 +10,7 @@ use std::sync::Arc;
 actions!(dialog, [DialogClose]);
 
 pub struct Dialog {
+    id: SharedString,
     title: SharedString,
     content: Arc<dyn Fn(&mut Window, &mut Context<DialogView>) -> AnyElement + 'static>,
     close_on_click_outside: bool,
@@ -17,6 +18,7 @@ pub struct Dialog {
 }
 
 pub struct DialogView {
+    id: SharedString,
     title: SharedString,
     content: Arc<dyn Fn(&mut Window, &mut Context<Self>) -> AnyElement + 'static>,
     close_on_click_outside: bool,
@@ -26,6 +28,7 @@ pub struct DialogView {
 
 impl DialogView {
     fn new(
+        id: SharedString,
         title: SharedString,
         content: Arc<dyn Fn(&mut Window, &mut Context<Self>) -> AnyElement + 'static>,
         close_on_click_outside: bool,
@@ -33,6 +36,7 @@ impl DialogView {
         on_close: impl Fn(&mut Window, &mut App) + 'static,
     ) -> Self {
         Self {
+            id,
             title,
             content,
             close_on_click_outside,
@@ -45,6 +49,7 @@ impl DialogView {
 impl Render for DialogView {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
+        let id = self.id.clone();
         let title = self.title.clone();
         let content_fn = self.content.clone();
         let on_close = self.on_close.clone();
@@ -52,6 +57,7 @@ impl Render for DialogView {
         let close_on_escape = self.close_on_escape;
 
         div()
+            .id(id.clone())
             .absolute()
             .size_full()
             .bg(gpui::rgba(0x00000066))
@@ -100,7 +106,7 @@ impl Render for DialogView {
                             .child(div().font_weight(gpui::FontWeight::BOLD).child(title))
                             .child(
                                 div()
-                                    .id("close-btn")
+                                    .id(format!("{id}-close-btn"))
                                     .cursor_pointer()
                                     .child(
                                         Icon::new(IconName::X)
@@ -122,13 +128,21 @@ impl Dialog {
         cx.bind_keys([KeyBinding::new("escape", DialogClose, None)]);
     }
 
+    #[track_caller]
     pub fn new() -> Self {
+        let caller = std::panic::Location::caller();
         Self {
+            id: format!("dialog-{}", caller).into(),
             title: SharedString::default(),
             content: Arc::new(|_, _| div().child("Dialog Content").into_any_element()),
             close_on_click_outside: true,
             close_on_escape: true,
         }
+    }
+
+    pub fn id(mut self, id: impl Into<SharedString>) -> Self {
+        self.id = id.into();
+        self
     }
 
     pub fn title(mut self, title: impl Into<SharedString>) -> Self {
@@ -156,27 +170,35 @@ impl Dialog {
     }
 
     pub fn show(self, cx: &mut App) {
+        let id = self.id;
         let title = self.title;
         let content = self.content;
         let close_on_click_outside = self.close_on_click_outside;
         let close_on_escape = self.close_on_escape;
 
+        let id_for_close = id.clone();
         let view = cx.new(|_cx| {
             DialogView::new(
+                id.clone(),
                 title,
                 content,
                 close_on_click_outside,
                 close_on_escape,
-                |_window, _cx| {
-                    aura_core::clear_active_modal(_cx);
+                move |_window, _cx| {
+                    aura_core::clear_modal(&id_for_close, _cx);
                 },
             )
         });
 
-        aura_core::set_active_modal(view.into(), cx);
+        aura_core::set_active_modal(id, view.into(), cx);
     }
 
     pub fn close(cx: &mut App) {
         aura_core::clear_active_modal(cx);
+    }
+
+    pub fn close_id(id: impl Into<SharedString>, cx: &mut App) {
+        let id = id.into();
+        aura_core::clear_modal(&id, cx);
     }
 }

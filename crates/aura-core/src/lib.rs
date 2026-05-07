@@ -19,48 +19,47 @@ pub fn init_aura(cx: &mut App, theme: Theme) {
         z_index_base: 1000,
     });
     cx.set_global(crate::popper::ZIndexStack::default());
-    cx.set_global(crate::popper::ActiveTooltip(None));
-    cx.set_global(crate::popper::ActivePopover(None));
-    cx.set_global(crate::popper::ActiveModal(None));
-    cx.set_global(crate::popper::ActiveDrawer(None));
+    cx.set_global(crate::popper::ActiveTooltip(Vec::new()));
+    cx.set_global(crate::popper::ActivePopover(Vec::new()));
+    cx.set_global(crate::popper::ActiveModal(Vec::new()));
+    cx.set_global(crate::popper::ActiveDrawer(Vec::new()));
 }
 
 pub fn render_active_popover_in_window(_window: &mut gpui::Window, cx: &mut App) {
-    if let Some(popover_view) = cx.global::<crate::popper::ActivePopover>().0.clone() {
+    for entry in cx.global::<crate::popper::ActivePopover>().0.clone() {
         push_portal(
-            move |_window, _cx| popover_view.clone().into_any_element(),
+            move |_window, _cx| entry.view.clone().into_any_element(),
             cx,
         );
     }
 }
 
 pub fn render_active_modal_in_window(_window: &mut gpui::Window, cx: &mut App) {
-    if let Some(modal_view) = cx.global::<crate::popper::ActiveModal>().0.clone() {
+    for entry in cx.global::<crate::popper::ActiveModal>().0.clone() {
         push_portal(
-            move |_window, _cx| modal_view.clone().into_any_element(),
+            move |_window, _cx| entry.view.clone().into_any_element(),
             cx,
         );
     }
 }
 
 pub fn render_active_drawer_in_window(_window: &mut gpui::Window, cx: &mut App) {
-    if let Some(drawer_view) = cx.global::<crate::popper::ActiveDrawer>().0.clone() {
+    for entry in cx.global::<crate::popper::ActiveDrawer>().0.clone() {
         push_portal(
-            move |_window, _cx| drawer_view.clone().into_any_element(),
+            move |_window, _cx| entry.view.clone().into_any_element(),
             cx,
         );
     }
 }
 
 pub fn render_active_tooltip_in_window(window: &mut gpui::Window, cx: &mut App) {
-    let active = cx.global::<crate::popper::ActiveTooltip>().0.clone();
-    if let Some(data) = active {
-        let mouse_pos = window.mouse_position();
-        if !data.anchor_bounds.contains(&mouse_pos) {
-            cx.set_global(crate::popper::ActiveTooltip(None));
-            return;
-        }
+    let mouse_pos = window.mouse_position();
+    cx.global_mut::<crate::popper::ActiveTooltip>()
+        .0
+        .retain(|data| data.anchor_bounds.contains(&mouse_pos));
 
+    let active = cx.global::<crate::popper::ActiveTooltip>().0.clone();
+    for data in active {
         let theme = cx.global::<Config>().theme.clone();
 
         // Measure text accurately

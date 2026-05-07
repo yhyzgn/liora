@@ -1,5 +1,5 @@
 use crate::Popover;
-use aura_core::{Config, Placement};
+use aura_core::{Config, Placement, clear_popover};
 use gpui::{
     AnyElement, App, Component, IntoElement, RenderOnce, SharedString, Window, div, prelude::*, px,
 };
@@ -14,14 +14,18 @@ pub struct Dropdown {
     trigger: AnyElement,
     items: Vec<DropdownItem>,
     placement: Placement,
+    id: SharedString,
 }
 
 impl Dropdown {
+    #[track_caller]
     pub fn new(trigger: impl IntoElement) -> Self {
+        let caller = std::panic::Location::caller();
         Self {
             trigger: trigger.into_any_element(),
             items: vec![],
             placement: Placement::BottomStart,
+            id: format!("dropdown-{}", caller).into(),
         }
     }
 
@@ -41,6 +45,11 @@ impl Dropdown {
         self.placement = p;
         self
     }
+
+    pub fn id(mut self, id: impl Into<SharedString>) -> Self {
+        self.id = id.into();
+        self
+    }
 }
 
 impl RenderOnce for Dropdown {
@@ -48,9 +57,11 @@ impl RenderOnce for Dropdown {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
         let items = self.items;
+        let dropdown_id = self.id.clone();
         let caller = std::panic::Location::caller();
 
         Popover::new(self.trigger)
+            .id(dropdown_id.clone())
             .placement(self.placement)
             .offset(px(4.0))
             .content(move |_window, _cx| {
@@ -59,6 +70,7 @@ impl RenderOnce for Dropdown {
                     items.iter().enumerate().map(|(i, item)| {
                         let on_click = item.on_click.clone();
                         let label = item.label.clone();
+                        let dropdown_id = dropdown_id.clone();
                         let item_id =
                             format!("dropdown-item-{}-{}-{}", caller.line(), caller.column(), i);
 
@@ -74,7 +86,7 @@ impl RenderOnce for Dropdown {
                             .hover(|s| s.bg(theme.primary.base).text_color(gpui::white()))
                             .on_click(move |_, window, cx| {
                                 on_click(window, cx);
-                                aura_core::clear_active_popover(cx);
+                                clear_popover(&dropdown_id, cx);
                             })
                             .child(label)
                     }),

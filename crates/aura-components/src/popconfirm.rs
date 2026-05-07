@@ -1,5 +1,5 @@
 use crate::{Button, Popover};
-use aura_core::{Config, Placement};
+use aura_core::{Config, Placement, clear_popover};
 use gpui::{
     AnyElement, App, Component, IntoElement, RenderOnce, SharedString, Window, div, prelude::*,
 };
@@ -77,6 +77,7 @@ impl RenderOnce for Popconfirm {
         let on_cancel = self.on_cancel.clone();
         let theme = cx.global::<Config>().theme.clone();
         let trigger_id = self.trigger_id.clone();
+        let popover_id = trigger_id.clone();
 
         Popover::new(self.trigger)
             .id(trigger_id)
@@ -86,6 +87,8 @@ impl RenderOnce for Popconfirm {
                 let on_cancel = on_cancel.clone();
                 let confirm_text = confirm_text.clone();
                 let cancel_text = cancel_text.clone();
+                let cancel_popover_id = popover_id.clone();
+                let confirm_popover_id = popover_id.clone();
 
                 div()
                     .p_4()
@@ -116,7 +119,7 @@ impl RenderOnce for Popconfirm {
                                     if let Some(ref f) = on_cancel {
                                         f(_window, _cx);
                                     }
-                                    aura_core::clear_active_popover(_cx);
+                                    clear_popover(&cancel_popover_id, _cx);
                                 },
                             ))
                             .child(
@@ -127,7 +130,7 @@ impl RenderOnce for Popconfirm {
                                         if let Some(ref f) = on_confirm {
                                             f(_window, _cx);
                                         }
-                                        aura_core::clear_active_popover(_cx);
+                                        clear_popover(&confirm_popover_id, _cx);
                                     }),
                             ),
                     )

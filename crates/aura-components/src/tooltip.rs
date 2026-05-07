@@ -1,4 +1,4 @@
-use aura_core::{Placement, TooltipData, set_active_tooltip};
+use aura_core::{Placement, TooltipData, clear_tooltip, set_active_tooltip};
 use gpui::{
     AnyElement, App, Bounds, Component, ElementId, GlobalElementId, InspectorElementId,
     IntoElement, LayoutId, Pixels, RenderOnce, SharedString, Window, div, prelude::*, px,
@@ -11,15 +11,19 @@ pub struct Tooltip {
     content: SharedString,
     placement: Placement,
     offset: Pixels,
+    id: SharedString,
 }
 
 impl Tooltip {
+    #[track_caller]
     pub fn new(trigger: impl IntoElement) -> Self {
+        let caller = std::panic::Location::caller();
         Self {
             trigger: trigger.into_any_element(),
             content: SharedString::default(),
             placement: Placement::Top,
             offset: px(8.0),
+            id: format!("tooltip-{}", caller).into(),
         }
     }
 
@@ -37,6 +41,11 @@ impl Tooltip {
         self.offset = offset.into();
         self
     }
+
+    pub fn id(mut self, id: impl Into<SharedString>) -> Self {
+        self.id = id.into();
+        self
+    }
 }
 
 impl RenderOnce for Tooltip {
@@ -44,20 +53,30 @@ impl RenderOnce for Tooltip {
         let content = self.content.clone();
         let placement = self.placement;
         let offset = self.offset;
+        let id = self.id.clone();
 
         let bounds_cell = Rc::new(Cell::new(Bounds::default()));
         let bounds_cell_clone = bounds_cell.clone();
+        let hover_id = id.clone();
+        let move_id = id.clone();
 
         div()
+            .id(id.clone())
             .child(TooltipBoundsTracker {
                 trigger: self.trigger,
                 bounds: bounds_cell,
+            })
+            .on_hover(move |hovered, _window, cx| {
+                if !hovered {
+                    clear_tooltip(&hover_id, cx);
+                }
             })
             .on_mouse_move(move |_event, _window, cx| {
                 let anchor_bounds = bounds_cell_clone.get();
                 if anchor_bounds.size.width > px(0.0) {
                     set_active_tooltip(
                         TooltipData {
+                            id: move_id.clone(),
                             content: content.clone(),
                             anchor_bounds,
                             placement,
