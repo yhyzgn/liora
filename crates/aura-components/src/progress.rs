@@ -25,6 +25,7 @@ pub struct Progress {
     color: Option<Hsla>,
     show_text: bool,
     text_inside: bool,
+    text_inside_center: bool,
 }
 
 impl Progress {
@@ -37,6 +38,7 @@ impl Progress {
             color: None,
             show_text: true,
             text_inside: false,
+            text_inside_center: false,
         }
     }
 
@@ -69,6 +71,17 @@ impl Progress {
         self.text_inside = inside;
         self
     }
+
+    pub fn text_inside_center(mut self, center: bool) -> Self {
+        self.text_inside_center = center;
+        self
+    }
+
+    pub fn text_inside_centered(mut self) -> Self {
+        self.text_inside = true;
+        self.text_inside_center = true;
+        self
+    }
 }
 
 impl RenderOnce for Progress {
@@ -84,13 +97,22 @@ impl RenderOnce for Progress {
 
         if self.type_ == ProgressType::Line {
             let percent_text = format!("{}%", self.percentage.round() as i32);
+            let inside_center = self.show_text && self.text_inside && self.text_inside_center;
+            let center_text_color = if self.percentage >= 50.0 {
+                gpui::white()
+            } else {
+                theme.neutral.text_2
+            };
             let bar = div()
                 .h_full()
                 .w(gpui::relative(self.percentage / 100.0))
                 .bg(status_color)
                 .rounded_full()
                 .when(
-                    self.show_text && self.text_inside && self.percentage > 0.0,
+                    self.show_text
+                        && self.text_inside
+                        && !self.text_inside_center
+                        && self.percentage > 0.0,
                     |s| {
                         s.min_w(px(36.0))
                             .flex()
@@ -107,21 +129,38 @@ impl RenderOnce for Progress {
                     },
                 );
 
+            let track = div()
+                .relative()
+                .flex_1()
+                .h(self.stroke_width)
+                .bg(theme.neutral.hover)
+                .rounded_full()
+                .overflow_hidden()
+                .child(bar)
+                .when(inside_center, |s| {
+                    s.child(
+                        div()
+                            .absolute()
+                            .top_0()
+                            .left_0()
+                            .size_full()
+                            .flex()
+                            .items_center()
+                            .justify_center()
+                            .text_xs()
+                            .text_color(center_text_color)
+                            .whitespace_nowrap()
+                            .child(percent_text.clone()),
+                    )
+                });
+
             div()
                 .flex()
                 .flex_row()
                 .items_center()
                 .gap_2()
                 .w_full()
-                .child(
-                    div()
-                        .flex_1()
-                        .h(self.stroke_width)
-                        .bg(theme.neutral.hover)
-                        .rounded_full()
-                        .overflow_hidden()
-                        .child(bar),
-                )
+                .child(track)
                 .when(self.show_text && !self.text_inside, |s| {
                     s.child(
                         div()

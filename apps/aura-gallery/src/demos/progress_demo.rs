@@ -59,6 +59,11 @@ impl Render for ProgressDemo {
                     .child(Progress::new(15.0).stroke_width(px(20.0)).text_inside(true))
                     .child(Progress::new(70.0).stroke_width(px(20.0)).text_inside(true))
                     .child(
+                        Progress::new(70.0)
+                            .stroke_width(px(20.0))
+                            .text_inside_centered(),
+                    )
+                    .child(
                         Progress::new(100.0)
                             .stroke_width(px(20.0))
                             .text_inside(true)

@@ -294,3 +294,21 @@
 
 ### Key Discoveries
 - 百分比内显需要与外显状态图标逻辑分离；内显模式应始终显示百分比文本，而不是在 success/exception 状态切换为外部图标。
+
+## Session 27 — 2026-05-07 (Progress Inside Text Center)
+
+### Actions
+- **增强 Progress 内显文本对齐配置**:
+  - 新增 `Progress::text_inside_center(bool)`，允许配置内显百分比固定在整条进度条中心或随已完成进度右对齐。
+  - 新增 `Progress::text_inside_centered()` 便捷方法，同时启用内显和整条进度条居中。
+  - 居中模式将文本渲染为 track 级覆盖层，并根据进度是否越过 50% 切换文本颜色，避免在未填充背景上使用白字。
+- **更新 Gallery Demo**:
+  - 在百分比内显示例中加入居中显示文本的进度条。
+
+### Verification
+- `cargo check` passed.
+- `cargo test` passed.
+- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+
+### Key Discoveries
+- 文本内显的“是否显示”和“如何对齐”应保持为独立配置；整条进度条居中需要根据文字所在背景动态选择颜色。
