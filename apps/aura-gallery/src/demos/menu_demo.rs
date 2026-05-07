@@ -1,13 +1,60 @@
 use aura_components::{Menu, MenuMode};
 use aura_core::Config;
 use aura_icons_lucide::IconName;
-use gpui::{AnyView, App, Context, Render, Window, div, prelude::*, px};
+use gpui::{AnyView, App, Context, Entity, Render, Window, div, prelude::*, px};
 
 pub fn render(cx: &mut App) -> AnyView {
-    cx.new(|_| MenuDemo).into()
+    cx.new(|cx| MenuDemo {
+        horizontal: cx.new(|_| {
+            Menu::new()
+                .id("menu-demo-horizontal")
+                .mode(MenuMode::Horizontal)
+                .default_active("1")
+                .item("1", "处理中心", Some(IconName::List))
+                .submenu("2", "我的工作台", Some(IconName::Briefcase), |s| {
+                    s.item("2-1", "选项1", None)
+                        .item("2-2", "选项2", None)
+                        .item("2-3", "选项3", None)
+                })
+                .item("3", "消息中心", Some(IconName::Bell))
+                .item("4", "订单管理", Some(IconName::FileText))
+        }),
+        vertical: cx.new(|_| {
+            Menu::new()
+                .id("menu-demo-vertical")
+                .mode(MenuMode::Vertical)
+                .default_active("1")
+                .item("1", "导航一", Some(IconName::House))
+                .submenu("2", "导航二", Some(IconName::Settings), |s| {
+                    s.item("2-1", "选项1", None)
+                        .item("2-2", "选项2", None)
+                        .group("分组一", |g| {
+                            g.item("2-3", "选项3", None).item("2-4", "选项4", None)
+                        })
+                })
+                .item("3", "导航三", Some(IconName::MessageSquare))
+        }),
+        collapsed: cx.new(|_| {
+            Menu::new()
+                .id("menu-demo-collapsed")
+                .mode(MenuMode::Vertical)
+                .collapse(true)
+                .default_active("1")
+                .item("1", "导航一", Some(IconName::House))
+                .submenu("2", "导航二", Some(IconName::Settings), |s| {
+                    s.item("2-1", "选项1", None).item("2-2", "选项2", None)
+                })
+                .item("3", "导航三", Some(IconName::MessageSquare))
+        }),
+    })
+    .into()
 }
 
-struct MenuDemo;
+struct MenuDemo {
+    horizontal: Entity<Menu>,
+    vertical: Entity<Menu>,
+    collapsed: Entity<Menu>,
+}
 
 impl Render for MenuDemo {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
@@ -42,19 +89,7 @@ impl Render for MenuDemo {
                     .flex_col()
                     .gap_4()
                     .child(div().font_weight(gpui::FontWeight::BOLD).child("水平模式"))
-                    .child(cx.new(|_| {
-                        Menu::new()
-                            .mode(MenuMode::Horizontal)
-                            .default_active("1")
-                            .item("1", "处理中心", Some(IconName::List))
-                            .submenu("2", "我的工作台", Some(IconName::Briefcase), |s| {
-                                s.item("2-1", "选项1", None)
-                                    .item("2-2", "选项2", None)
-                                    .item("2-3", "选项3", None)
-                            })
-                            .item("3", "消息中心", Some(IconName::Bell))
-                            .item("4", "订单管理", Some(IconName::FileText))
-                    })),
+                    .child(self.horizontal.clone()),
             )
             .child(
                 div()
@@ -68,21 +103,7 @@ impl Render for MenuDemo {
                             .gap_4()
                             .w(px(240.0))
                             .child(div().font_weight(gpui::FontWeight::BOLD).child("垂直模式"))
-                            .child(cx.new(|_| {
-                                Menu::new()
-                                    .mode(MenuMode::Vertical)
-                                    .default_active("1")
-                                    .item("1", "导航一", Some(IconName::House))
-                                    .submenu("2", "导航二", Some(IconName::Settings), |s| {
-                                        s.item("2-1", "选项1", None)
-                                            .item("2-2", "选项2", None)
-                                            .group("分组一", |g| {
-                                                g.item("2-3", "选项3", None)
-                                                    .item("2-4", "选项4", None)
-                                            })
-                                    })
-                                    .item("3", "导航三", Some(IconName::MessageSquare))
-                            })),
+                            .child(self.vertical.clone()),
                     )
                     .child(
                         div()
@@ -91,17 +112,7 @@ impl Render for MenuDemo {
                             .gap_4()
                             .w(px(64.0))
                             .child(div().font_weight(gpui::FontWeight::BOLD).child("折叠"))
-                            .child(cx.new(|_| {
-                                Menu::new()
-                                    .mode(MenuMode::Vertical)
-                                    .collapse(true)
-                                    .default_active("1")
-                                    .item("1", "导航一", Some(IconName::House))
-                                    .submenu("2", "导航二", Some(IconName::Settings), |s| {
-                                        s.item("2-1", "选项1", None).item("2-2", "选项2", None)
-                                    })
-                                    .item("3", "导航三", Some(IconName::MessageSquare))
-                            })),
+                            .child(self.collapsed.clone()),
                     ),
             )
     }

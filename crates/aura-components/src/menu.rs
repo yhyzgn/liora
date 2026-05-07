@@ -39,6 +39,7 @@ pub struct MenuItemGroup {
 }
 
 pub struct Menu {
+    id: SharedString,
     mode: MenuMode,
     is_collapsed: bool,
     active_index: Option<SharedString>,
@@ -48,8 +49,11 @@ pub struct Menu {
 }
 
 impl Menu {
+    #[track_caller]
     pub fn new() -> Self {
+        let caller = std::panic::Location::caller();
         Self {
+            id: format!("menu-{}", caller).into(),
             mode: MenuMode::Vertical,
             is_collapsed: false,
             active_index: None,
@@ -57,6 +61,11 @@ impl Menu {
             items: vec![],
             on_select: None,
         }
+    }
+
+    pub fn id(mut self, id: impl Into<SharedString>) -> Self {
+        self.id = id.into();
+        self
     }
 
     pub fn mode(mut self, mode: MenuMode) -> Self {
@@ -190,7 +199,7 @@ impl Menu {
         };
 
         div()
-            .id(id.clone())
+            .id(format!("{}-item-{}", self.id, id))
             .cursor_pointer()
             .flex()
             .flex_row()
@@ -247,7 +256,7 @@ impl Menu {
             let menu_handle = cx.entity().clone();
             Popover::new(
                 div()
-                    .id(id.clone())
+                    .id(format!("{}-collapsed-submenu-{}", self.id, id))
                     .cursor_pointer()
                     .flex()
                     .items_center()
@@ -274,6 +283,7 @@ impl Menu {
                         )
                     }),
             )
+            .id(format!("{}-collapsed-popover-{}", self.id, id))
             .placement(Placement::RightStart)
             .content({
                 let children: Vec<MenuItem> = submenu
@@ -306,7 +316,7 @@ impl Menu {
                             let theme = theme.clone();
                             let menu_handle = menu_handle.clone();
                             div()
-                                .id(format!("menu-sub-item-{}", id))
+                                .id(format!("menu-sub-item-{}-{}", menu_handle.entity_id(), id))
                                 .cursor_pointer()
                                 .flex()
                                 .flex_row()
@@ -336,7 +346,7 @@ impl Menu {
                 .flex_col()
                 .child(
                     div()
-                        .id(id.clone())
+                        .id(format!("{}-submenu-{}", self.id, id))
                         .cursor_pointer()
                         .flex()
                         .flex_row()
@@ -433,7 +443,7 @@ impl Menu {
         let is_active = self.active_index.as_ref() == Some(&id);
 
         div()
-            .id(id.clone())
+            .id(format!("{}-horizontal-item-{}", self.id, id))
             .cursor_pointer()
             .flex()
             .flex_row()
@@ -479,7 +489,7 @@ impl Menu {
 
         Popover::new(
             div()
-                .id(id.clone())
+                .id(format!("{}-horizontal-submenu-{}", self.id, id))
                 .cursor_pointer()
                 .flex()
                 .flex_row()
@@ -506,6 +516,7 @@ impl Menu {
                         ),
                 ),
         )
+        .id(format!("{}-horizontal-popover-{}", self.id, id))
         .placement(Placement::BottomStart)
         .content({
             let children: Vec<MenuItem> = submenu
@@ -538,7 +549,11 @@ impl Menu {
                         let theme = theme.clone();
                         let menu_handle = menu_handle.clone();
                         div()
-                            .id(format!("menu-horiz-sub-item-{}", id))
+                            .id(format!(
+                                "menu-horiz-sub-item-{}-{}",
+                                menu_handle.entity_id(),
+                                id
+                            ))
                             .cursor_pointer()
                             .flex()
                             .flex_row()

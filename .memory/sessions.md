@@ -359,3 +359,20 @@
 
 ### Key Discoveries
 - Collapse 组件自身 toggle 逻辑有效；Gallery demo 中在 render 内 `cx.new` 导致有状态组件生命周期不稳定，是点击后看起来无反应的主要原因。
+
+## Session 31 — 2026-05-07 (Menu Demo Interaction)
+
+### Actions
+- **修复 Menu Demo 点击无反应**:
+  - 将水平、垂直、折叠菜单从 render 阶段临时创建改为 `MenuDemo` 初始化时创建并持有，确保 active/opened 状态在父视图重渲染后保留。
+  - 为 `Menu` 增加稳定实例 ID，并在 demo 中显式设置 `menu-demo-horizontal` / `menu-demo-vertical` / `menu-demo-collapsed`。
+  - 所有菜单 item/submenu/popover 交互 ID 增加 Menu 实例前缀，避免多个菜单共用 `"1"`, `"2"` 等业务 ID 时发生 GPUI 交互 ID 冲突。
+
+### Verification
+- `cargo check` passed.
+- `cargo test` passed.
+- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+
+### Key Discoveries
+- Menu 的状态逻辑有效，但 demo 中 render 内 `cx.new` 会让 active/opened 状态生命周期不稳定。
+- 同一 Gallery 页面存在多个 Menu 实例且 item id 重复，组件内部必须用实例 ID 前缀隔离 GPUI Element ID。
