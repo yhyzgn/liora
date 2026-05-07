@@ -505,3 +505,19 @@
 
 ### Key Discoveries
 - 原 editable add 只调用外部回调并 notify，没有修改内部 panes，所以 demo 中点击 + 不会出现任何 UI 变化。
+
+## Session 40 — 2026-05-07 (Menu Demo Content Switching)
+
+### Actions
+- **完善 Menu Demo 导航内容区效果**:
+  - 为水平、垂直、折叠菜单分别增加独立内容展示区域。
+  - 菜单 `on_select` 会更新对应内容卡片，展示当前 active id、标题和说明，形成类似 Tabs 的“切换导航后内容区变化”效果。
+  - 内容区使用独立 `Entity<MenuContent>`，避免与 Menu 内部状态耦合，同时保持多 Menu 示例互相独立。
+
+### Verification
+- `cargo check` passed.
+- `cargo test` passed.
+- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+
+### Key Discoveries
+- Menu 组件已经提供 `on_select` 回调；Demo 只需要持有可更新的内容实体，就能展示真实导航页面切换效果。
