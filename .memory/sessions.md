@@ -540,3 +540,23 @@
 
 ### Key Discoveries
 - Pagination 也存在与 Tabs/Menu 相同的两类问题：render-time entity creation 会重置状态，且多实例共享简单按钮 ID 会导致交互冲突。
+
+## Session 42 — 2026-05-07 (Pagination Select Style and Hover)
+
+### Actions
+- **将分页条数候选区改为 Select 下拉样式**:
+  - Pagination 的 `sizes` 段改为复用现有 `Select` 控件，而不是一组静态候选按钮。
+  - `Select` 作为 Pagination 内部稳定实体持有，并通过新增的 `set_options` / `set_selected_idx` 同步当前条数与可选项。
+- **补充分页页码按钮 hover 效果**:
+  - 页码、上一页/下一页、前后省略按钮在可点击状态下加入 hover 背景效果，提升交互可见性。
+- **避免下拉同步重绘回路**:
+  - `Select` 的 setter 仅在值变化时才触发 notify，防止 Pagination render 中同步下拉状态造成无意义重绘。
+
+### Verification
+- `cargo check` passed.
+- `cargo test` passed.
+- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+
+### Key Discoveries
+- 复用 Select 比手写候选按钮更符合现有控件体系，也能自然获得弹出层与选择状态。
+- 在 render 里同步子实体状态时，setter 必须幂等，否则容易引发隐式重绘回路。

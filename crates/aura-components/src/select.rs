@@ -81,42 +81,90 @@ impl Select {
     }
 
     pub fn set_borderless(&mut self, b: bool, cx: &mut Context<Self>) {
+        if self.border_none == b {
+            return;
+        }
         self.border_none = b;
         cx.notify();
     }
 
     pub fn set_radius_none(&mut self, r: bool, cx: &mut Context<Self>) {
+        if self.radius_none == r {
+            return;
+        }
         self.radius_none = r;
         cx.notify();
     }
 
     pub fn set_radius_left_none(&mut self, r: bool, cx: &mut Context<Self>) {
+        if self.radius_left_none == r {
+            return;
+        }
         self.radius_left_none = r;
         cx.notify();
     }
 
     pub fn set_radius_right_none(&mut self, r: bool, cx: &mut Context<Self>) {
+        if self.radius_right_none == r {
+            return;
+        }
         self.radius_right_none = r;
         cx.notify();
     }
 
     pub fn set_width(&mut self, w: impl Into<Pixels>, cx: &mut Context<Self>) {
-        self.width = Some(w.into());
+        let w = w.into();
+        if self.width == Some(w) {
+            return;
+        }
+        self.width = Some(w);
         cx.notify();
     }
 
     pub fn set_text_size(&mut self, s: impl Into<Pixels>, cx: &mut Context<Self>) {
-        self.text_size = Some(s.into());
+        let s = s.into();
+        if self.text_size == Some(s) {
+            return;
+        }
+        self.text_size = Some(s);
         cx.notify();
     }
 
     pub fn set_text_color(&mut self, c: Hsla, cx: &mut Context<Self>) {
+        if self.text_color == Some(c) {
+            return;
+        }
         self.text_color = Some(c);
         cx.notify();
     }
 
     pub fn set_padding_x(&mut self, p: impl Into<Pixels>, cx: &mut Context<Self>) {
-        self.padding_x = Some(p.into());
+        let p = p.into();
+        if self.padding_x == Some(p) {
+            return;
+        }
+        self.padding_x = Some(p);
+        cx.notify();
+    }
+
+    pub fn set_options(&mut self, options: Vec<SharedString>, cx: &mut Context<Self>) {
+        if self.options == options {
+            return;
+        }
+        self.options = options;
+        if let Some(idx) = self.selected_idx
+            && idx >= self.options.len()
+        {
+            self.selected_idx = None;
+        }
+        cx.notify();
+    }
+
+    pub fn set_selected_idx(&mut self, idx: Option<usize>, cx: &mut Context<Self>) {
+        if self.selected_idx == idx {
+            return;
+        }
+        self.selected_idx = idx;
         cx.notify();
     }
 

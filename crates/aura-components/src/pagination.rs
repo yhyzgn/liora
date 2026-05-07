@@ -1,3 +1,4 @@
+use crate::Select;
 use aura_core::Config;
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
@@ -11,6 +12,7 @@ pub struct Pagination {
     background: bool,
     layout: SharedString,
     page_sizes: Vec<usize>,
+    page_size_picker: Option<gpui::Entity<Select>>,
     on_change: Option<Box<dyn Fn(usize, &mut Window, &mut App) + 'static>>,
     on_page_size_change: Option<Box<dyn Fn(usize, &mut Window, &mut App) + 'static>>,
 }
@@ -27,6 +29,7 @@ impl Pagination {
             background: false,
             layout: "prev, pager, next".into(),
             page_sizes: vec![],
+            page_size_picker: None,
             on_change: None,
             on_page_size_change: None,
         }
@@ -130,6 +133,49 @@ impl Render for Pagination {
         let current_page = self.current_page;
         let background = self.background;
         let page_sizes = self.page_sizes.clone();
+        let picker_entity = if page_sizes.is_empty() {
+            None
+        } else {
+            let options: Vec<SharedString> = page_sizes
+                .iter()
+                .map(|size| size.to_string().into())
+                .collect();
+            let selected_idx = options
+                .iter()
+                .position(|opt| opt.as_ref() == self.page_size.to_string())
+                .or(Some(0));
+
+            let picker = self.page_size_picker.get_or_insert_with(|| {
+                let pagination = cx.entity().clone();
+                let sizes = page_sizes.clone();
+                let options_for_build = options.clone();
+                cx.new(move |cx| {
+                    Select::new(options_for_build, selected_idx, cx).on_change(
+                        move |idx, window, cx| {
+                            if let Some(size) = sizes.get(idx).copied() {
+                                let _ = pagination.update(cx, |this, cx| {
+                                    this.change_page_size(size, window, cx);
+                                });
+                            }
+                        },
+                    )
+                })
+            });
+
+            let options_clone = options.clone();
+            picker.update(cx, |select, cx| {
+                select.set_options(options_clone, cx);
+                select.set_selected_idx(selected_idx, cx);
+                select.set_borderless(false, cx);
+                select.set_radius_none(false, cx);
+                select.set_width(px(88.0), cx);
+                select.set_padding_x(px(10.0), cx);
+                select.set_text_size(px(theme.font_size.sm), cx);
+                select.set_text_color(theme.neutral.text_1, cx);
+            });
+
+            Some(picker.clone())
+        };
 
         let render_btn = |text: Option<SharedString>,
                           icon: Option<IconName>,
@@ -172,7 +218,7 @@ impl Render for Pagination {
                 .text_color(text_color)
                 .when(!disabled && !active, |s| {
                     s.cursor_pointer()
-                        .hover(|s| s.text_color(theme.primary.base))
+                        .hover(|s| s.bg(theme.neutral.hover).text_color(theme.primary.base))
                 })
                 .when_some(text, |s, t| {
                     s.child(
@@ -189,38 +235,6 @@ impl Render for Pagination {
                 .when_some(icon, |s, i| {
                     s.child(Icon::new(i).size(px(14.0)).color(text_color))
                 })
-                .into_any_element()
-        };
-
-        let render_size_btn = |size: usize, active: bool, cx: &mut Context<Self>| {
-            let bg_color = if active {
-                theme.primary.base
-            } else {
-                gpui::transparent_black()
-            };
-            let text_color = if active {
-                gpui::white()
-            } else {
-                theme.neutral.text_2
-            };
-
-            div()
-                .id(format!("{}-size-{}", self.id, size))
-                .cursor_pointer()
-                .flex()
-                .items_center()
-                .justify_center()
-                .min_w(px(36.0))
-                .h(px(28.0))
-                .px_2()
-                .bg(bg_color)
-                .rounded(px(theme.radius.sm))
-                .text_color(text_color)
-                .when(!active, |s| s.hover(|s| s.text_color(theme.primary.base)))
-                .on_click(cx.listener(move |this, _, window, cx| {
-                    this.change_page_size(size, window, cx);
-                }))
-                .child(div().text_sm().child(size.to_string()))
                 .into_any_element()
         };
 
@@ -373,7 +387,7 @@ impl Render for Pagination {
                     );
                 }
                 "sizes" => {
-                    if !page_sizes.is_empty() {
+                    if let Some(ref picker) = picker_entity {
                         container = container.child(
                             div()
                                 .flex()
@@ -385,11 +399,7 @@ impl Render for Pagination {
                                         .text_color(theme.neutral.text_3)
                                         .child("每页"),
                                 )
-                                .children(
-                                    page_sizes.iter().copied().map(|size| {
-                                        render_size_btn(size, size == self.page_size, cx)
-                                    }),
-                                )
+                                .child(picker.clone())
                                 .child(
                                     div().text_sm().text_color(theme.neutral.text_3).child("条"),
                                 ),
