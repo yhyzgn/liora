@@ -276,3 +276,21 @@
 ### Key Discoveries
 - 之前的 `ActivePopover(Option<AnyView>)` / `ActiveTooltip(Option<TooltipData>)` 架构天然只能存在一个浮层，任何 clear 都是全局清空。
 - 当前默认 ID 仍基于调用位置；同一调用位置循环创建多个浮层时，应显式调用 `.id(...)` 传入业务唯一 ID。
+
+## Session 26 — 2026-05-07 (Progress Text Inside)
+
+### Actions
+- **完善 Progress 百分比内显**:
+  - 新增 `Progress::text_inside(bool)` builder，支持线性进度条将百分比渲染在进度条内部。
+  - 内显文本使用白色、右对齐、nowrap，并在低百分比时给 bar 最小宽度，避免百分比文本被挤压不可读。
+  - 外显文本逻辑保持原样；`show_text(false)` 仍会隐藏文本。
+- **更新 Gallery Demo**:
+  - 将“百分比内显 (TODO)”改为正式示例，覆盖 15%、70%、100% success 状态。
+
+### Verification
+- `cargo check` passed.
+- `cargo test` passed.
+- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+
+### Key Discoveries
+- 百分比内显需要与外显状态图标逻辑分离；内显模式应始终显示百分比文本，而不是在 success/exception 状态切换为外部图标。

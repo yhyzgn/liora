@@ -24,6 +24,7 @@ pub struct Progress {
     status: Option<ProgressStatus>,
     color: Option<Hsla>,
     show_text: bool,
+    text_inside: bool,
 }
 
 impl Progress {
@@ -35,6 +36,7 @@ impl Progress {
             status: None,
             color: None,
             show_text: true,
+            text_inside: false,
         }
     }
 
@@ -62,6 +64,11 @@ impl Progress {
         self.show_text = show;
         self
     }
+
+    pub fn text_inside(mut self, inside: bool) -> Self {
+        self.text_inside = inside;
+        self
+    }
 }
 
 impl RenderOnce for Progress {
@@ -76,6 +83,30 @@ impl RenderOnce for Progress {
         };
 
         if self.type_ == ProgressType::Line {
+            let percent_text = format!("{}%", self.percentage.round() as i32);
+            let bar = div()
+                .h_full()
+                .w(gpui::relative(self.percentage / 100.0))
+                .bg(status_color)
+                .rounded_full()
+                .when(
+                    self.show_text && self.text_inside && self.percentage > 0.0,
+                    |s| {
+                        s.min_w(px(36.0))
+                            .flex()
+                            .items_center()
+                            .justify_end()
+                            .px_2()
+                            .child(
+                                div()
+                                    .text_xs()
+                                    .text_color(gpui::white())
+                                    .whitespace_nowrap()
+                                    .child(percent_text.clone()),
+                            )
+                    },
+                );
+
             div()
                 .flex()
                 .flex_row()
@@ -83,23 +114,15 @@ impl RenderOnce for Progress {
                 .gap_2()
                 .w_full()
                 .child(
-                    // Track
                     div()
                         .flex_1()
                         .h(self.stroke_width)
                         .bg(theme.neutral.hover)
                         .rounded_full()
                         .overflow_hidden()
-                        .child(
-                            // Bar
-                            div()
-                                .h_full()
-                                .w(gpui::relative(self.percentage / 100.0))
-                                .bg(status_color)
-                                .rounded_full(),
-                        ),
+                        .child(bar),
                 )
-                .when(self.show_text, |s| {
+                .when(self.show_text && !self.text_inside, |s| {
                     s.child(
                         div()
                             .flex()
@@ -118,7 +141,7 @@ impl RenderOnce for Progress {
                                 _ => div()
                                     .text_xs()
                                     .text_color(theme.neutral.text_2)
-                                    .child(format!("{}%", self.percentage as i32))
+                                    .child(percent_text)
                                     .into_any_element(),
                             }),
                     )

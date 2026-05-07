@@ -54,9 +54,16 @@ impl Render for ProgressDemo {
                     .child(
                         div()
                             .font_weight(gpui::FontWeight::BOLD)
-                            .child("百分比内显 (TODO)"),
+                            .child("百分比内显"),
                     )
-                    .child(Progress::new(70.0).stroke_width(px(20.0))),
+                    .child(Progress::new(15.0).stroke_width(px(20.0)).text_inside(true))
+                    .child(Progress::new(70.0).stroke_width(px(20.0)).text_inside(true))
+                    .child(
+                        Progress::new(100.0)
+                            .stroke_width(px(20.0))
+                            .text_inside(true)
+                            .status(ProgressStatus::Success),
+                    ),
             )
             .child(
                 div()
