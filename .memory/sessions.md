@@ -560,3 +560,20 @@
 ### Key Discoveries
 - 复用 Select 比手写候选按钮更符合现有控件体系，也能自然获得弹出层与选择状态。
 - 在 render 里同步子实体状态时，setter 必须幂等，否则容易引发隐式重绘回路。
+
+## Session 43 — 2026-05-08 (Pagination Hitbox Hover Cursor)
+
+### Actions
+- **修复 Pagination hover/cursor 未生效**:
+  - 将分页按钮重构为外层带稳定 ID 的命中元素直接负责 `cursor_pointer()`、hover 背景/文字颜色和点击逻辑。
+  - 去掉外层 wrapper + 内层按钮样式分离，避免 hover 写在非命中元素上导致 GPUI 交互样式不稳定。
+- **补齐 Select 触发器 hover**:
+  - Select 根触发器增加 hover 边框主色效果，分页 page-size 下拉也能获得明确 hover 反馈。
+
+### Verification
+- `cargo check` passed.
+- `cargo test` passed.
+- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+
+### Key Discoveries
+- GPUI 中 hover/cursor 应放在带 ID 与点击监听的实际 hitbox 元素上；子元素单独设置 hover 不一定会体现到用户鼠标所在的命中节点。

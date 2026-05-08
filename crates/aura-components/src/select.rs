@@ -383,7 +383,14 @@ impl Render for Select {
             .when(!self.border_none, |s| {
                 s.border_1().border_color(border_color)
             })
-            .cursor_pointer();
+            .cursor_pointer()
+            .hover(|s| {
+                if self.border_none {
+                    s
+                } else {
+                    s.border_color(theme.primary.base)
+                }
+            });
 
         if !self.radius_none {
             if self.radius_left_none {

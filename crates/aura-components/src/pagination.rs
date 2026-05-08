@@ -126,6 +126,15 @@ enum PagerItem {
     NextMore,
 }
 
+#[derive(Clone, Copy)]
+enum PagerAction {
+    Page(usize),
+    Prev,
+    Next,
+    PrevMore,
+    NextMore,
+}
+
 impl Render for Pagination {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
@@ -177,11 +186,13 @@ impl Render for Pagination {
             Some(picker.clone())
         };
 
-        let render_btn = |text: Option<SharedString>,
+        let render_btn = |id: SharedString,
+                          text: Option<SharedString>,
                           icon: Option<IconName>,
                           active: bool,
                           disabled: bool,
-                          _cx: &mut Context<Self>| {
+                          action: Option<PagerAction>,
+                          cx: &mut Context<Self>| {
             let bg_color = if background {
                 if active {
                     theme.primary.base
@@ -207,6 +218,7 @@ impl Render for Pagination {
             };
 
             div()
+                .id(id)
                 .flex()
                 .items_center()
                 .justify_center()
@@ -216,9 +228,30 @@ impl Render for Pagination {
                 .bg(bg_color)
                 .rounded(px(theme.radius.sm))
                 .text_color(text_color)
-                .when(!disabled && !active, |s| {
+                .when(action.is_some() && !disabled && !active, |s| {
                     s.cursor_pointer()
                         .hover(|s| s.bg(theme.neutral.hover).text_color(theme.primary.base))
+                })
+                .when_some(action.filter(|_| !disabled && !active), |s, action| {
+                    s.on_click(cx.listener(move |this, _, window, cx| match action {
+                        PagerAction::Page(page) => this.change_page(page, window, cx),
+                        PagerAction::Prev => {
+                            let current = this.current_page;
+                            this.change_page(current.saturating_sub(1), window, cx);
+                        }
+                        PagerAction::Next => {
+                            let current = this.current_page;
+                            this.change_page(current + 1, window, cx);
+                        }
+                        PagerAction::PrevMore => {
+                            let current = this.current_page;
+                            this.change_page(current.saturating_sub(5), window, cx);
+                        }
+                        PagerAction::NextMore => {
+                            let current = this.current_page;
+                            this.change_page(current + 5, window, cx);
+                        }
+                    }))
                 })
                 .when_some(text, |s, t| {
                     s.child(
@@ -284,25 +317,15 @@ impl Render for Pagination {
                 }
                 "prev" => {
                     let disabled = current_page <= 1;
-                    container = container.child(
-                        div()
-                            .id(format!("{}-prev-btn", self.id))
-                            .child(render_btn(
-                                None,
-                                Some(IconName::ChevronLeft),
-                                false,
-                                disabled,
-                                cx,
-                            ))
-                            .when(!disabled, |s| {
-                                s.on_click(cx.listener({
-                                    move |this, _, window, cx| {
-                                        let current = this.current_page;
-                                        this.change_page(current.saturating_sub(1), window, cx);
-                                    }
-                                }))
-                            }),
-                    );
+                    container = container.child(render_btn(
+                        format!("{}-prev-btn", self.id).into(),
+                        None,
+                        Some(IconName::ChevronLeft),
+                        false,
+                        disabled,
+                        Some(PagerAction::Prev),
+                        cx,
+                    ));
                 }
                 "pager" => {
                     for item in &pagers {
@@ -310,81 +333,52 @@ impl Render for Pagination {
                             PagerItem::Page(p) => {
                                 let p = *p;
                                 let active = p == current_page;
-                                container = container.child(
-                                    div()
-                                        .id(format!("{}-pager-{}", self.id, p))
-                                        .child(render_btn(
-                                            Some(p.to_string().into()),
-                                            None,
-                                            active,
-                                            false,
-                                            cx,
-                                        ))
-                                        .when(!active, |s| {
-                                            s.on_click(cx.listener(move |this, _, window, cx| {
-                                                this.change_page(p, window, cx);
-                                            }))
-                                        }),
-                                );
+                                container = container.child(render_btn(
+                                    format!("{}-pager-{}", self.id, p).into(),
+                                    Some(p.to_string().into()),
+                                    None,
+                                    active,
+                                    false,
+                                    Some(PagerAction::Page(p)),
+                                    cx,
+                                ));
                             }
                             PagerItem::PrevMore => {
-                                container = container.child(
-                                    div()
-                                        .id(format!("{}-prev-more", self.id))
-                                        .child(render_btn(
-                                            None,
-                                            Some(IconName::Ellipsis),
-                                            false,
-                                            false,
-                                            cx,
-                                        ))
-                                        .on_click(cx.listener(move |this, _, window, cx| {
-                                            let current = this.current_page;
-                                            this.change_page(current.saturating_sub(5), window, cx);
-                                        })),
-                                );
+                                container = container.child(render_btn(
+                                    format!("{}-prev-more", self.id).into(),
+                                    None,
+                                    Some(IconName::Ellipsis),
+                                    false,
+                                    false,
+                                    Some(PagerAction::PrevMore),
+                                    cx,
+                                ));
                             }
                             PagerItem::NextMore => {
-                                container = container.child(
-                                    div()
-                                        .id(format!("{}-next-more", self.id))
-                                        .child(render_btn(
-                                            None,
-                                            Some(IconName::Ellipsis),
-                                            false,
-                                            false,
-                                            cx,
-                                        ))
-                                        .on_click(cx.listener(move |this, _, window, cx| {
-                                            let current = this.current_page;
-                                            this.change_page(current + 5, window, cx);
-                                        })),
-                                );
+                                container = container.child(render_btn(
+                                    format!("{}-next-more", self.id).into(),
+                                    None,
+                                    Some(IconName::Ellipsis),
+                                    false,
+                                    false,
+                                    Some(PagerAction::NextMore),
+                                    cx,
+                                ));
                             }
                         }
                     }
                 }
                 "next" => {
                     let disabled = current_page >= page_count;
-                    container = container.child(
-                        div()
-                            .id(format!("{}-next-btn", self.id))
-                            .child(render_btn(
-                                None,
-                                Some(IconName::ChevronRight),
-                                false,
-                                disabled,
-                                cx,
-                            ))
-                            .when(!disabled, |s| {
-                                s.on_click(cx.listener({
-                                    move |this, _, window, cx| {
-                                        let current = this.current_page;
-                                        this.change_page(current + 1, window, cx);
-                                    }
-                                }))
-                            }),
-                    );
+                    container = container.child(render_btn(
+                        format!("{}-next-btn", self.id).into(),
+                        None,
+                        Some(IconName::ChevronRight),
+                        false,
+                        disabled,
+                        Some(PagerAction::Next),
+                        cx,
+                    ));
                 }
                 "sizes" => {
                     if let Some(ref picker) = picker_entity {
