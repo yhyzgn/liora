@@ -672,3 +672,18 @@
 
 ### Key Discoveries
 - Dropdown 复用 Popover 作为外壳，内部菜单项不应再额外做紧凑 pill 列表；与 Select 一致的整行选项布局更自然。
+
+## Session 50 — 2026-05-08 (Dropdown Demo ID Isolation)
+
+### Actions
+- **修复 Dropdown Demo 只有第一个能弹出**:
+  - 为 demo 中每个 Dropdown 显式设置唯一 ID，避免 helper 函数同一调用点生成相同 `track_caller` 默认 ID。
+  - Dropdown 菜单项 ID 增加 dropdown 实例 ID 前缀，避免不同下拉菜单中的 item ID 冲突。
+
+### Verification
+- `cargo check` passed.
+- `cargo test` passed.
+- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+
+### Key Discoveries
+- 多个 Dropdown 都通过同一个 `menu(...)` helper 构造时，`Dropdown::new` 的默认 caller-based ID 相同；Popover trigger ID 冲突后表现为只有一个实例能正常弹出。

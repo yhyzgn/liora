@@ -24,9 +24,21 @@ impl Render for DropdownDemo {
             .child(
                 Space::new()
                     .gap(px(16.0))
-                    .child(menu("Actions", Placement::BottomStart))
-                    .child(menu("Bottom End", Placement::BottomEnd))
-                    .child(menu("Top Start", Placement::TopStart)),
+                    .child(menu(
+                        "dropdown-demo-actions",
+                        "Actions",
+                        Placement::BottomStart,
+                    ))
+                    .child(menu(
+                        "dropdown-demo-bottom-end",
+                        "Bottom End",
+                        Placement::BottomEnd,
+                    ))
+                    .child(menu(
+                        "dropdown-demo-top-start",
+                        "Top Start",
+                        Placement::TopStart,
+                    )),
             )
             .child(section(
                 theme,
@@ -36,10 +48,10 @@ impl Render for DropdownDemo {
             .child(
                 Space::new()
                     .gap(px(10.0))
-                    .child(menu("Top", Placement::Top))
-                    .child(menu("Bottom", Placement::Bottom))
-                    .child(menu("Left", Placement::Left))
-                    .child(menu("Right", Placement::Right)),
+                    .child(menu("dropdown-demo-top", "Top", Placement::Top))
+                    .child(menu("dropdown-demo-bottom", "Bottom", Placement::Bottom))
+                    .child(menu("dropdown-demo-left", "Left", Placement::Left))
+                    .child(menu("dropdown-demo-right", "Right", Placement::Right)),
             )
     }
 }
@@ -58,8 +70,9 @@ fn section(theme: &aura_theme::Theme, title: &'static str, desc: &'static str) -
         .child(div().text_sm().text_color(theme.neutral.text_3).child(desc))
 }
 
-fn menu(label: &'static str, placement: Placement) -> Dropdown {
+fn menu(id: &'static str, label: &'static str, placement: Placement) -> Dropdown {
     Dropdown::new(Button::new(label))
+        .id(id)
         .placement(placement)
         .item("Action 1", |_, _| println!("Action 1"))
         .item("Action 2", |_, _| println!("Action 2"))

@@ -79,8 +79,13 @@ impl RenderOnce for Dropdown {
                         let on_click = item.on_click.clone();
                         let label = item.label.clone();
                         let dropdown_id = dropdown_id.clone();
-                        let item_id =
-                            format!("dropdown-item-{}-{}-{}", caller.line(), caller.column(), i);
+                        let item_id = format!(
+                            "{}-item-{}-{}-{}",
+                            dropdown_id,
+                            caller.line(),
+                            caller.column(),
+                            i
+                        );
 
                         div()
                             .id(item_id)
