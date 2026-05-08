@@ -66,8 +66,16 @@ impl RenderOnce for Dropdown {
             .offset(px(4.0))
             .content(move |_window, _cx| {
                 let theme = theme.clone();
-                div().flex().flex_col().py_1().min_w(px(120.0)).children(
-                    items.iter().enumerate().map(|(i, item)| {
+                div()
+                    .id(format!("{}-menu", dropdown_id))
+                    .cursor_default()
+                    .occlude()
+                    .flex()
+                    .flex_col()
+                    .py_1()
+                    .min_w(px(168.0))
+                    .max_h(px(200.0))
+                    .children(items.iter().enumerate().map(|(i, item)| {
                         let on_click = item.on_click.clone();
                         let label = item.label.clone();
                         let dropdown_id = dropdown_id.clone();
@@ -77,20 +85,24 @@ impl RenderOnce for Dropdown {
                         div()
                             .id(item_id)
                             .cursor_pointer()
-                            .px_3()
-                            .py_1_5()
-                            .text_size(px(theme.font_size.sm))
-                            .text_color(theme.neutral.text_2)
                             .flex()
                             .items_center()
-                            .hover(|s| s.bg(theme.primary.base).text_color(gpui::white()))
+                            .min_h(px(34.0))
+                            .px_3()
+                            .py_2()
+                            .text_size(px(theme.font_size.md))
+                            .text_color(theme.neutral.text_1)
+                            .hover(|s| {
+                                s.cursor_pointer()
+                                    .bg(theme.neutral.hover)
+                                    .text_color(theme.primary.base)
+                            })
                             .on_click(move |_, window, cx| {
                                 on_click(window, cx);
                                 clear_popover(&dropdown_id, cx);
                             })
-                            .child(label)
-                    }),
-                )
+                            .child(div().text_sm().child(label))
+                    }))
             })
     }
 }

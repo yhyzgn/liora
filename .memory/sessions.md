@@ -655,3 +655,20 @@
 
 ### Key Discoveries
 - Segmented 与 Tabs/Menu/Pagination 同类：demo render-time entity creation 会丢失内部选中状态，多实例复用简单数字 ID 也会造成 GPUI 交互冲突。
+
+## Session 49 — 2026-05-08 (Dropdown Menu Styling)
+
+### Actions
+- **优化 Dropdown 下拉气泡样式**:
+  - 参考 Select 下拉菜单，将 Dropdown 内容区改为更宽的菜单面板，增加 `min_w(168px)` 与 `max_h(200px)`。
+  - 菜单项改为 Select 风格的整行选项：统一 `px_3` / `py_2` / `min_h(34px)`，移除挤压感明显的小圆角 pill 间距。
+  - hover 改为中性色背景 + 主色文字，并保留小手 cursor。
+  - Dropdown 自定义内容根节点增加稳定 ID、默认 cursor 与 occlusion，避免菜单空白区域事件穿透。
+
+### Verification
+- `cargo check` passed.
+- `cargo test` passed.
+- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+
+### Key Discoveries
+- Dropdown 复用 Popover 作为外壳，内部菜单项不应再额外做紧凑 pill 列表；与 Select 一致的整行选项布局更自然。
