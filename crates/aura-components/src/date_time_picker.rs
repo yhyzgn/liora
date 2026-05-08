@@ -468,7 +468,7 @@ impl Render for DateTimePicker {
                                 .absolute()
                                 .top(top)
                                 .left(left)
-                                .w(width.max(px(560.0)))
+                                .w(width.max(px(620.0)))
                                 .child(render_date_time_panel(picker_id, entity, _cx)),
                         )
                         .into_any_element()
@@ -629,7 +629,7 @@ fn render_date_time_panel(
         .child(
             div()
                 .flex()
-                .gap_4()
+                .gap_3()
                 .child(render_calendar_panel(id.clone(), picker.clone(), cx))
                 .child(render_time_panel(id.clone(), picker.clone(), cx)),
         )
@@ -762,7 +762,7 @@ fn render_calendar_panel(
     let weekdays = ["一", "二", "三", "四", "五", "六", "日"];
 
     div()
-        .w(px(300.0))
+        .w(px(292.0))
         .flex()
         .flex_col()
         .gap_3()
@@ -891,45 +891,34 @@ fn render_time_panel(
     };
 
     div()
-        .flex_1()
-        .min_w(px(248.0))
+        .w(px(if show_seconds { 276.0 } else { 208.0 }))
         .flex()
         .flex_col()
-        .gap_3()
-        .p_3()
+        .gap_2()
+        .p_2()
         .rounded(px(theme.radius.lg))
         .border_1()
         .border_color(theme.neutral.border)
         .bg(theme.neutral.body)
         .child(
             div()
+                .h(px(34.0))
                 .flex()
                 .items_center()
                 .justify_between()
+                .px_1()
                 .child(
                     div()
-                        .flex()
-                        .flex_col()
-                        .gap_1()
-                        .child(
-                            div()
-                                .text_sm()
-                                .font_weight(gpui::FontWeight::BOLD)
-                                .text_color(theme.neutral.text_1)
-                                .child("选择时间"),
-                        )
-                        .child(
-                            div()
-                                .text_xs()
-                                .text_color(theme.neutral.text_3)
-                                .child("与左侧日期一起确认"),
-                        ),
+                        .text_sm()
+                        .font_weight(gpui::FontWeight::BOLD)
+                        .text_color(theme.neutral.text_1)
+                        .child("时间"),
                 )
                 .child(
                     div()
-                        .px_3()
+                        .px_2()
                         .py_1()
-                        .rounded(px(999.0))
+                        .rounded(px(theme.radius.sm))
                         .bg(theme.primary.light_9)
                         .text_sm()
                         .font_weight(gpui::FontWeight::BOLD)
@@ -940,7 +929,12 @@ fn render_time_panel(
         .child(
             div()
                 .flex()
-                .gap_3()
+                .gap_1()
+                .p_1()
+                .rounded(px(theme.radius.md))
+                .border_1()
+                .border_color(theme.neutral.border)
+                .bg(theme.neutral.card)
                 .child(time_column(
                     format!("{}-hour", id),
                     "时",
@@ -1097,36 +1091,28 @@ fn time_column(
     let id = id.into();
     div()
         .flex_1()
-        .min_w(px(68.0))
+        .min_w(px(58.0))
         .flex()
         .flex_col()
-        .gap_2()
         .child(
             div()
                 .h(px(24.0))
                 .flex()
                 .items_center()
                 .justify_center()
-                .rounded(px(theme.radius.sm))
-                .bg(theme.neutral.hover)
                 .text_xs()
                 .font_weight(gpui::FontWeight::BOLD)
-                .text_color(theme.neutral.text_2)
+                .text_color(theme.neutral.text_3)
                 .child(title),
         )
         .child(
             div()
                 .id(format!("{}-scroll", id))
-                .max_h(px(232.0))
+                .max_h(px(210.0))
                 .overflow_y_scroll()
                 .flex()
                 .flex_col()
                 .gap_1()
-                .p_1()
-                .rounded(px(theme.radius.md))
-                .border_1()
-                .border_color(theme.neutral.border)
-                .bg(theme.neutral.card)
                 .children(values.into_iter().map(move |value| {
                     let is_selected = selected == value;
                     let picker = picker.clone();
@@ -1153,7 +1139,7 @@ fn time_option(
 ) -> impl IntoElement {
     div()
         .id(id.into())
-        .h(px(32.0))
+        .h(px(30.0))
         .flex()
         .items_center()
         .justify_center()
@@ -1162,7 +1148,7 @@ fn time_option(
         .bg(if is_selected {
             theme.primary.base
         } else {
-            theme.neutral.card
+            gpui::transparent_black()
         })
         .text_color(if is_selected {
             theme.neutral.card

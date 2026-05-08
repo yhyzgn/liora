@@ -1036,3 +1036,22 @@
 
 ### Key Discoveries
 - Dense time candidate lists read better when each column has an explicit label, a quiet surface, and a high-contrast selected pill instead of flat text rows.
+
+## Session 69 — 2026-05-08 (Time Panel Overflow Fix and Redesign)
+
+### Actions
+- **Reworked TimePicker time panel again after visual feedback**:
+  - Fixed popup width calculation so three time columns no longer overflow the trigger-sized panel.
+  - Replaced the nested card-heavy layout with one compact candidate surface and simpler rows.
+  - Shortened the header and removed visually noisy helper copy.
+- **Reworked DateTimePicker embedded time panel**:
+  - Increased combined popup width and reduced calendar/time-panel column widths so the content fits inside bounds.
+  - Changed the time panel to a compact fixed-width surface aligned with the DateTimePicker calendar area.
+  - Simplified candidate rows and selected states to avoid the previous bulky/ugly appearance.
+
+### Verification
+- `cargo check` passed.
+- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery; process ended by timeout with no startup crash.
+
+### Key Discoveries
+- The previous TimePicker popup still used a 260px minimum width while the redesigned three-column panel needed more horizontal space, causing visible overflow.
