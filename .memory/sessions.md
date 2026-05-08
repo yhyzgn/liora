@@ -623,3 +623,19 @@
 
 ### Key Discoveries
 - 空 PortalLayer 虽然没有弹层内容，但全屏 `cursor_default()` 仍会向 GPUI 注册 cursor 样式请求，覆盖底层分页按钮的 `cursor_pointer()`。
+
+## Session 47 — 2026-05-08 (Statistic Icon Alignment)
+
+### Actions
+- **修复 Statistic 自定义前后缀图标与数值文字未居中对齐**:
+  - 将数值行从 baseline 对齐改为 center 对齐。
+  - 为前缀/后缀自定义元素增加 flex 居中 wrapper。
+  - 统一数值文本 `line_height` 与前后缀 wrapper 高度，避免字体行盒和 SVG 方盒差异导致视觉中心偏移。
+
+### Verification
+- `cargo check` passed.
+- `cargo test` passed.
+- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+
+### Key Discoveries
+- 仅使用 flex center 仍可能受大号文字 line box 与小尺寸 SVG box 的差异影响；显式统一 line-height/wrapper height 更稳定。

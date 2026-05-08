@@ -1,5 +1,7 @@
 use aura_core::Config;
-use gpui::{AnyElement, App, Hsla, IntoElement, RenderOnce, SharedString, Window, div, prelude::*};
+use gpui::{
+    AnyElement, App, Hsla, IntoElement, RenderOnce, SharedString, Window, div, prelude::*, px,
+};
 
 pub struct Statistic {
     title: SharedString,
@@ -39,6 +41,7 @@ impl Statistic {
 impl RenderOnce for Statistic {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
+        let value_line_height = px(32.0);
 
         div()
             .flex()
@@ -54,17 +57,36 @@ impl RenderOnce for Statistic {
                 div()
                     .flex()
                     .flex_row()
-                    .items_baseline()
-                    .gap_1()
-                    .when_some(self.prefix, |s, p| s.child(p))
+                    .items_center()
+                    .gap_2()
+                    .when_some(self.prefix, |s, p| {
+                        s.child(
+                            div()
+                                .flex()
+                                .items_center()
+                                .justify_center()
+                                .h(value_line_height)
+                                .child(p),
+                        )
+                    })
                     .child(
                         div()
                             .text_2xl()
+                            .line_height(value_line_height)
                             .font_weight(gpui::FontWeight::BOLD)
                             .text_color(self.value_color.unwrap_or(theme.neutral.text_1))
                             .child(self.value),
                     )
-                    .when_some(self.suffix, |s, p| s.child(p)),
+                    .when_some(self.suffix, |s, p| {
+                        s.child(
+                            div()
+                                .flex()
+                                .items_center()
+                                .justify_center()
+                                .h(value_line_height)
+                                .child(p),
+                        )
+                    }),
             )
     }
 }
