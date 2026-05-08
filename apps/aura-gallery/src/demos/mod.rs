@@ -9,6 +9,7 @@ pub mod button_demo;
 pub mod card_demo;
 pub mod collapse_demo;
 pub mod container_demo;
+pub mod date_picker_demo;
 pub mod descriptions_demo;
 pub mod dialog_demo;
 pub mod drawer_demo;
@@ -143,6 +144,11 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "Table 表格",
             description: "展示多条结构化数据",
             render: |cx| table_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "DatePicker 日期选择器",
+            description: "选择单个日期",
+            render: |cx| date_picker_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Timeline 时间线",

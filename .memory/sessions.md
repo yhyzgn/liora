@@ -800,3 +800,27 @@
 
 ### Key Discoveries
 - Because table cells hold `AnyElement`, automatic internal sorting cannot safely infer comparable values. A controlled sort callback keeps Table generic while letting developers sort their source data explicitly.
+
+
+## Session 56 — 2026-05-08 (P5 DatePicker)
+
+### Actions
+- **Added DatePicker component**:
+  - Implemented `DatePicker` and `DateValue` in `crates/aura-components/src/date_picker.rs`.
+  - Supports single-date selection, formatted display (`YYYY-MM-DD`), month navigation, disabled state, width/placeholder/id builder options, and `on_change` / `set_on_change` callbacks.
+  - Calendar panel renders through the existing portal layer and captures trigger bounds for placement.
+  - Added public exports in `crates/aura-components/src/lib.rs`.
+- **Added Gallery demo**:
+  - Created `apps/aura-gallery/src/demos/date_picker_demo.rs`.
+  - Registered `DatePicker 日期选择器` in the Gallery demo registry.
+  - Demo covers basic selection with callback text, preset value, and disabled state.
+- **Updated memory**:
+  - Marked P5 progress as 2/20 in `.memory/state.md`.
+  - Added DatePicker status to `.memory/inventory.md`.
+
+### Verification
+- `cargo check` passed.
+- `timeout 8s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+
+### Key Discoveries
+- DatePicker avoids adding a date/time dependency for the initial P5 slice by using small local calendar helpers for leap years, month length, and weekday alignment.
