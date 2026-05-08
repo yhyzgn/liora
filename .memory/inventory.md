@@ -91,9 +91,30 @@
 | 20 | Avatar | `crates/aura-components/src/avatar.rs` | ✅ | ✅ Image / Icon / Shapes |
 | 21 | Badge | `crates/aura-components/src/badge.rs` | ✅ | ✅ Value / Dot / Max |
 
-## P5 Advanced ⬜ (20)
+## P5 Advanced 🏃 (1/20)
 
-— See architecture-design.md for full list
+| # | Component | File | Demo | Status |
+|---|-----------|------|------|--------|
+| 1 | Table | `crates/aura-components/src/table.rs` | ✅ | ✅ P0 basic / fixed header / empty / loading / border / stripe |
+| 2 | DatePicker | — | — | ⬜ |
+| 3 | TimePicker | — | — | ⬜ |
+| 4 | DateTimePicker | — | — | ⬜ |
+| 5 | Upload | — | — | ⬜ |
+| 6 | Cascader | — | — | ⬜ |
+| 7 | Transfer | — | — | ⬜ |
+| 8 | ColorPicker | — | — | ⬜ |
+| 9 | Carousel | — | — | ⬜ |
+| 10 | Image | — | — | ⬜ |
+| 11 | Calendar | — | — | ⬜ |
+| 12 | TreeSelect | — | — | ⬜ |
+| 13 | Autocomplete | — | — | ⬜ |
+| 14 | InputTag | — | — | ⬜ |
+| 15 | Mention | — | — | ⬜ |
+| 16 | Watermark | — | — | ⬜ |
+| 17 | Tour | — | — | ⬜ |
+| 18 | Scrollbar | `crates/aura-components/src/scrollbar.rs` | ✅ | ✅ Already completed in P1 |
+| 19 | Splitter | `crates/aura-components/src/splitter.rs` | ✅ | ✅ Already completed in P1 |
+| 20 | VirtualizedTable/VirtualizedTree | — | — | ⬜ Deferred |
 
 ## P6 Built-in Unique ID ⬜
 

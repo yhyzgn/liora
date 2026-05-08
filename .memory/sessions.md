@@ -756,3 +756,24 @@
 - Affix 不适合复用原有 `Portal`，因为原 active portal layer 会 `.occlude()` 并停止事件传播，固定内容应走非阻塞 passive portal。
 - 依赖 `ScrollHandle` 的可见性状态不能只在 render 中读取；需要 paint/scroll 触发状态同步，否则滚动后组件可能不会重绘。
 - 自定义 `gpui::Element` 包裹 `AnyElement` 时，prepaint 阶段应使用 `prepaint_at(bounds.origin, ...)`，否则子元素可能无法按目标 bounds 展示。
+
+## Session 54 — 2026-05-08 (P5 Table P0)
+
+### Actions
+- **Started P5 Advanced implementation with Table P0**:
+  - Added `Table`, `TableColumn`, `TableRow`, and `TableAlign` in `crates/aura-components/src/table.rs`.
+  - Implemented P0 table capabilities: column-driven row rendering, empty state, loading overlay, border mode, stripe mode, and fixed-header scroll body via `.height(...)` / `.fixed_header(true)`.
+  - Added public exports in `crates/aura-components/src/lib.rs`.
+- **Added Gallery demo**:
+  - Created `apps/aura-gallery/src/demos/table_demo.rs` with Basic, Stripe + Border, Fixed Header, Loading, and Empty examples.
+  - Registered `Table 表格` in the Gallery demo registry.
+- **Updated memory**:
+  - Marked P5 progress as 1/20 in `.memory/state.md`.
+  - Added Table status to `.memory/inventory.md`.
+
+### Verification
+- `cargo check` passed.
+- `timeout 8s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+
+### Key Discoveries
+- `overflow_y_scroll()` requires a stateful element in this GPUI version, so Table body uses a generated `.id(...)` before enabling fixed-header scrolling.

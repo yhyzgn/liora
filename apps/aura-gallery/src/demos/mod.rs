@@ -35,6 +35,7 @@ pub mod skeleton_demo;
 pub mod splitter_demo;
 pub mod statistic_demo;
 pub mod steps_demo;
+pub mod table_demo;
 pub mod tabs_demo;
 pub mod tag_demo;
 pub mod timeline_demo;
@@ -137,6 +138,11 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "Descriptions 描述列表",
             description: "展示多个字段",
             render: |cx| descriptions_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "Table 表格",
+            description: "展示多条结构化数据",
+            render: |cx| table_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Timeline 时间线",
