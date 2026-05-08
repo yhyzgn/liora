@@ -96,7 +96,7 @@
 | # | Component | File | Demo | Status |
 |---|-----------|------|------|--------|
 | 1 | Table | `crates/aura-components/src/table.rs` | ✅ | ✅ P0 basic / custom header / opt-in sort / fixed header / empty / loading / border / stripe |
-| 2 | DatePicker | `crates/aura-components/src/date_picker.rs` | ✅ | ✅ Single date / month navigation / disabled / callback |
+| 2 | DatePicker | `crates/aura-components/src/date_picker.rs` | ✅ | ✅ Formats / date range / month + month range / year + year range / disabled / callback |
 | 3 | TimePicker | — | — | ⬜ |
 | 4 | DateTimePicker | — | — | ⬜ |
 | 5 | Upload | — | — | ⬜ |

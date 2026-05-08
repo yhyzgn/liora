@@ -856,3 +856,28 @@
 
 ### Key Discoveries
 - Portal-rendered content is outside the trigger subtree, so `on_mouse_down_out` on the trigger will close the DatePicker before panel controls can be used. Popup components need backdrop-level outside-click handling instead.
+
+
+## Session 59 — 2026-05-08 (DatePicker Formats and Range Modes)
+
+### Actions
+- **Expanded DatePicker value modes**:
+  - Added `DatePickerType` with `Date`, `DateRange`, `Month`, `MonthRange`, `Year`, and `YearRange`.
+  - Added `DatePickerSelection` plus controlled callbacks for single, range, and generic selection changes.
+  - Added range state and selection behavior: first click starts a range, second click completes and orders it.
+- **Added display format support**:
+  - Added `.format(...)` using tokens `YYYY`, `YY`, `MM`, `M`, `DD`, and `D`.
+  - Added `.range_separator(...)` for range display text.
+  - Defaults are date `YYYY-MM-DD`, month `YYYY-MM`, and year `YYYY`.
+- **Added month/year panels**:
+  - Month and month-range use a 12-month panel with year navigation.
+  - Year and year-range use a 12-year panel with page navigation.
+- **Updated DatePicker demo**:
+  - Added custom display format, date range, month, month range, year, and year range examples.
+
+### Verification
+- `cargo check` passed.
+- `timeout 8s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+
+### Key Discoveries
+- Since date/month/year values share the same `DateValue` storage, modes normalize granularity: month values use day `1`, and year values use month/day `1/1`.
