@@ -20,6 +20,7 @@ pub mod dropdown_demo;
 pub mod empty_demo;
 pub mod form_demo;
 pub mod icon_demo;
+pub mod image_demo;
 pub mod layout_demo;
 pub mod link_demo;
 pub mod loading_demo;
@@ -185,6 +186,11 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "ColorPicker 颜色选择器",
             description: "从预设色板中选择颜色",
             render: |cx| color_picker_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "Image 图片",
+            description: "图片容器与加载状态",
+            render: |cx| image_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Timeline 时间线",

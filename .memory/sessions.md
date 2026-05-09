@@ -1435,3 +1435,21 @@
 
 ### Key Discoveries
 - The trigger already had a full-size bounds-capture overlay; the icon can use a separate absolute full-size flex overlay to center without affecting click handling.
+
+
+## Session 88 — 2026-05-10 (P5 Carousel Deferred and Image Component)
+
+### Actions
+- Marked Carousel as deferred/identified for later by user request instead of implementing it now.
+- Added the P5 Image component with fit modes, configurable size, radius, border, shadow, grayscale, preview badge, loading placeholder, fallback, and empty state.
+- Added Image exports, gallery demo, and unit tests for fit/dimension builder behavior.
+- Updated P5 progress to 9/20 completed components.
+
+### Verification
+- `cargo check` passed.
+- `cargo test -p aura-components --test image` passed with 3 tests.
+- `git diff --check` passed.
+- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+
+### Key Discoveries
+- GPUI `img` already provides object-fit, loading, and fallback hooks, so Aura Image can wrap that API with Element-style defaults and gallery-friendly states.
