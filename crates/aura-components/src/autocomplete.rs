@@ -163,13 +163,6 @@ impl Autocomplete {
         )
     }
 
-    fn close(&mut self, cx: &mut Context<Self>) {
-        if self.is_open {
-            self.is_open = false;
-            cx.notify();
-        }
-    }
-
     fn select_item(&mut self, item: AutocompleteItem, window: &mut Window, cx: &mut Context<Self>) {
         self.input.update(cx, |input, cx| {
             input.set_value(item.value.clone(), cx);
@@ -366,8 +359,7 @@ impl Render for Autocomplete {
                         autocomplete: cx.entity().clone(),
                     }),
             )
-            .child(self.input.clone())
-            .on_mouse_down_out(cx.listener(|this, _, _, cx| this.close(cx)));
+            .child(self.input.clone());
 
         frame
     }

@@ -1742,3 +1742,20 @@
 
 ### Key Discoveries
 - Input's clear icon already works by itself. In Autocomplete, the remaining blocker was the Autocomplete wrapper registering its own full-width mouse handler over the same interaction area, competing with the composed Input's inner controls.
+
+
+## Session 106 — 2026-05-10 (Autocomplete No Wrapper Mouse Capture)
+
+### Actions
+- Removed Autocomplete's remaining wrapper mouse-down-out listener so no Autocomplete wrapper mouse listener participates in the input hit area.
+- Left the shared Input clear icon as the only clear control and kept bounds capture behind Input.
+
+### Verification
+- `cargo check` passed.
+- `cargo test -p aura-components --test autocomplete` passed: 4 tests.
+- `cargo test -p aura-components` passed.
+- `git diff --check` passed.
+- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; timeout stopped the running GUI smoke test.
+
+### Key Discoveries
+- Even outside-click listeners add a wrapper hitbox/listener to the same composed region. For Autocomplete, the input wrapper must not register mouse handlers over the Input if Input child controls (clear) need hover/click priority.
