@@ -516,21 +516,70 @@ impl Element for RasterImageElement {
         if self.image.frame_count() == 0 {
             return;
         }
-        let image_bounds = self.fit.get_bounds(bounds, self.image.size(0));
-        let radius = if self.round {
-            bounds.size.width.min(bounds.size.height) / 2.0
+        let (image, image_bounds, corner_radii) = if self.round {
+            let side = bounds.size.width.min(bounds.size.height);
+            let square_bounds = Bounds {
+                origin: gpui::point(
+                    bounds.origin.x + (bounds.size.width - side) / 2.0,
+                    bounds.origin.y + (bounds.size.height - side) / 2.0,
+                ),
+                size: gpui::size(side, side),
+            };
+            (
+                square_cropped_render_image(&self.image),
+                square_bounds,
+                Corners::all(side / 2.0),
+            )
         } else {
-            self.radius
+            let image_bounds = self.fit.get_bounds(bounds, self.image.size(0));
+            (
+                self.image.clone(),
+                image_bounds,
+                Corners::all(self.radius).clamp_radii_for_quad_size(image_bounds.size),
+            )
         };
-        let corner_radii = Corners::all(radius).clamp_radii_for_quad_size(bounds.size);
-        let _ = window.paint_image(
-            image_bounds,
-            corner_radii,
-            self.image.clone(),
-            0,
-            self.grayscale,
-        );
+        let _ = window.paint_image(image_bounds, corner_radii, image, 0, self.grayscale);
     }
+}
+
+fn square_cropped_image_cache() -> &'static Mutex<HashMap<usize, Arc<RenderImage>>> {
+    static CACHE: OnceLock<Mutex<HashMap<usize, Arc<RenderImage>>>> = OnceLock::new();
+    CACHE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn square_cropped_render_image(image: &Arc<RenderImage>) -> Arc<RenderImage> {
+    if let Some(cached) = square_cropped_image_cache()
+        .lock()
+        .ok()
+        .and_then(|cache| cache.get(&image.id.0).cloned())
+    {
+        return cached;
+    }
+
+    let Some(bytes) = image.as_bytes(0) else {
+        return image.clone();
+    };
+    let image_size = image.size(0);
+    let width = u32::from(image_size.width);
+    let height = u32::from(image_size.height);
+    let side = width.min(height);
+    if side == 0 {
+        return image.clone();
+    }
+
+    let Some(source) = image::RgbaImage::from_raw(width, height, bytes.to_vec()) else {
+        return image.clone();
+    };
+    let x = (width - side) / 2;
+    let y = (height - side) / 2;
+    let cropped = image::imageops::crop_imm(&source, x, y, side, side).to_image();
+    let cropped = Arc::new(RenderImage::new([image::Frame::new(cropped)]));
+
+    if let Ok(mut cache) = square_cropped_image_cache().lock() {
+        cache.insert(image.id.0, cropped.clone());
+    }
+
+    cropped
 }
 
 #[derive(Clone)]

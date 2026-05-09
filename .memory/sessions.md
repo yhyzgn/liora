@@ -1604,3 +1604,19 @@
 
 ### Key Discoveries
 - The circle image path uses the custom raster painter, not GPUI's `img` element. GPUI's `img` clamps corner radii before painting; the custom painter was passing the sentinel round radius directly. After clamping, cover-cropped images could still look rounded because the painted image bounds can be wider than the visible square, so round radius must be based on the visible container bounds.
+
+
+## Session 98 — 2026-05-10 (Image Round Crop)
+
+### Actions
+- Changed `ImageRadius::Round` raster painting to center-crop the decoded image to a square and paint it into the visible square bounds with a half-side radius.
+- Cached square-cropped render images by source render image id to avoid recropping every frame.
+
+### Verification
+- `cargo check` passed.
+- `cargo test -p aura-components --test image` passed: 7 tests.
+- `git diff --check` passed.
+- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; timeout stopped the running GUI smoke test.
+
+### Key Discoveries
+- Painting a rectangular cover-fitted raster with large radii still produces a rounded rectangle because the rounded rectangle is computed against the expanded cover bounds. A true circle requires a square paint target and square source crop.
