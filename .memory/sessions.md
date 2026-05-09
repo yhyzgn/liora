@@ -1357,3 +1357,19 @@
 
 ### Key Discoveries
 - Alpha previously only affected the text/alpha bar, not the rendered picker swatch or SV panel; applying opacity at render points makes the demo visibly respond to alpha changes.
+
+## Session 83 — 2026-05-10 (ColorPicker Pixel Grid and Stable Panel Alpha)
+
+### Actions
+- Changed the ColorPicker saturation/value area to a 280×180 grid with 1px cells.
+- Kept the saturation/value panel and preset swatches opaque when alpha changes, so alpha edits do not wash out the original color-selection panel.
+- Preserved alpha on the selected trigger/rgba output and alpha bar where alpha is the selected value/preview.
+
+### Verification
+- `cargo check` passed.
+- `cargo test -p aura-components --test color_picker` passed with 7 tests.
+- `git diff --check` passed.
+- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+
+### Key Discoveries
+- Applying alpha to the SV grid made alpha changes visually alter the color-selection surface itself; the selection surface should remain an opaque source of color values while alpha is edited independently.

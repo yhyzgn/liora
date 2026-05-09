@@ -349,7 +349,6 @@ fn render_color_panel(
                 .child(sv_panel(
                     format!("{}-sv", id),
                     hue,
-                    alpha,
                     theme.clone(),
                     picker.clone(),
                 ))
@@ -376,9 +375,7 @@ fn render_color_panel(
                     let picker = picker.clone();
                     let theme = theme.clone();
                     move |(index, color)| {
-                        let hsla = hex_to_hsla(&color)
-                            .unwrap_or(theme.primary.base)
-                            .opacity(alpha);
+                        let hsla = hex_to_hsla(&color).unwrap_or(theme.primary.base);
                         div()
                             .id(format!("{}-preset-{}", id, index))
                             .w(px(20.0))
@@ -418,7 +415,6 @@ fn render_color_panel(
 fn sv_panel(
     id: String,
     hue: f32,
-    alpha: f32,
     theme: aura_theme::Theme,
     picker: gpui::Entity<ColorPicker>,
 ) -> impl IntoElement {
@@ -427,22 +423,20 @@ fn sv_panel(
         .h(px(180.0))
         .flex()
         .flex_col()
-        .children((0..45).map(move |row| {
+        .children((0..180).map(move |row| {
             let picker = picker.clone();
             let theme = theme.clone();
             let row_id = id.clone();
-            div().flex().children((0..70).map(move |col| {
-                let saturation = col as f32 / 69.0;
-                let value = 1.0 - row as f32 / 44.0;
+            div().flex().children((0..280).map(move |col| {
+                let saturation = col as f32 / 279.0;
+                let value = 1.0 - row as f32 / 179.0;
                 let color = ColorPicker::hex_from_hsv(hue, saturation, value);
-                let hsla = hex_to_hsla(&color)
-                    .unwrap_or(theme.primary.base)
-                    .opacity(alpha);
+                let hsla = hex_to_hsla(&color).unwrap_or(theme.primary.base);
                 let picker = picker.clone();
                 div()
                     .id(format!("{}-{}-{}", row_id, row, col))
-                    .w(px(4.0))
-                    .h(px(4.0))
+                    .w(px(1.0))
+                    .h(px(1.0))
                     .bg(hsla)
                     .cursor_pointer()
                     .on_mouse_down(MouseButton::Left, move |_, window, cx| {
