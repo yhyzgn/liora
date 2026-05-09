@@ -1690,3 +1690,19 @@
 
 ### Key Discoveries
 - Input already has a centered clear icon that is hidden while empty, so Autocomplete should configure/reuse it instead of painting a second absolute clear icon.
+
+
+## Session 103 — 2026-05-10 (Input Clear Icon Interaction)
+
+### Actions
+- Changed the shared Input clear icon to clear on mouse-down and stop propagation so composed components like Autocomplete do not swallow the click.
+- Added explicit hover pointer styling for the clear icon.
+
+### Verification
+- `cargo check` passed.
+- `cargo test -p aura-components` passed.
+- `git diff --check` passed.
+- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; timeout stopped the running GUI smoke test.
+
+### Key Discoveries
+- Clear was using mouse-up without propagation control; in composed input wrappers that also listen to mouse-down, the interaction could focus/open instead of clearing reliably.

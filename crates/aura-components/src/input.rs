@@ -4,8 +4,8 @@ use aura_icons_lucide::IconName;
 use gpui::{
     AnyElement, App, Bounds, Context, Element, ElementId, ElementInputHandler, Entity,
     EntityInputHandler, FocusHandle, Focusable, GlobalElementId, InspectorElementId, IntoElement,
-    KeyBinding, LayoutId, MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels, Point,
-    Render, ShapedLine, SharedString, Style, TextRun, UTF16Selection, Window, actions, fill, point,
+    KeyBinding, LayoutId, MouseButton, MouseDownEvent, MouseMoveEvent, Pixels, Point, Render,
+    ShapedLine, SharedString, Style, TextRun, UTF16Selection, Window, actions, fill, point,
     prelude::*, px, size,
 };
 use std::ops::{Add, Range};
@@ -1232,21 +1232,23 @@ impl Render for Input {
         if self.clearable && !self.value.is_empty() && !self.disabled {
             inner = inner.child(
                 gpui::div()
-                    .cursor_pointer()
                     .flex_none()
+                    .cursor_pointer()
+                    .hover(|s| s.cursor_pointer())
                     .child(
                         Icon::new(IconName::X)
                             .size(px(14.0))
                             .color(theme.neutral.icon),
                     )
-                    .on_mouse_up(
+                    .on_mouse_down(
                         MouseButton::Left,
                         cx.listener(
                             move |this: &mut Self,
-                                  _: &MouseUpEvent,
+                                  _: &MouseDownEvent,
                                   _: &mut Window,
                                   cx: &mut Context<Self>| {
                                 this.clear(cx);
+                                cx.stop_propagation();
                             },
                         ),
                     ),
