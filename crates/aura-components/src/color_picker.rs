@@ -385,14 +385,22 @@ impl Render for ColorPicker {
                     .child(
                         div()
                             .absolute()
-                            .right(px(2.0))
-                            .bottom(px(2.0))
-                            .rounded(px(3.0))
-                            .bg(theme.neutral.card.opacity(0.88))
+                            .top_0()
+                            .left_0()
+                            .size_full()
+                            .flex()
+                            .items_center()
+                            .justify_center()
                             .child(
-                                Icon::new(IconName::ChevronDown)
-                                    .size(px(12.0))
-                                    .color(theme.neutral.icon),
+                                div()
+                                    .rounded(px(3.0))
+                                    .bg(theme.neutral.card.opacity(0.88))
+                                    .p(px(2.0))
+                                    .child(
+                                        Icon::new(IconName::ChevronDown)
+                                            .size(px(12.0))
+                                            .color(theme.neutral.icon),
+                                    ),
                             ),
                     )
                     .on_mouse_down(

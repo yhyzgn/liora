@@ -1420,3 +1420,18 @@
 
 ### Key Discoveries
 - `RenderImage` data is expected in BGRA order; generating RGBA bytes made the rasterized panel display a different color than the HSV value selected by clicking it.
+
+## Session 87 — 2026-05-10 (ColorPicker Centered Dropdown Icon)
+
+### Actions
+- Centered the ColorPicker down-arrow icon within the trigger cube.
+- Kept the small translucent icon backing, now centered instead of bottom-right.
+
+### Verification
+- `cargo check` passed.
+- `cargo test -p aura-components --test color_picker` passed with 7 tests.
+- `git diff --check` passed.
+- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+
+### Key Discoveries
+- The trigger already had a full-size bounds-capture overlay; the icon can use a separate absolute full-size flex overlay to center without affecting click handling.
