@@ -436,6 +436,7 @@ dependencies = [
  "aura-icons-lucide",
  "aura-theme",
  "gpui",
+ "image",
 ]
 
 [[package]]

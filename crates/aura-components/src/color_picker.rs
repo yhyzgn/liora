@@ -2,10 +2,11 @@ use aura_core::{Config, push_portal};
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
 use gpui::{
-    App, Bounds, Context, Element, ElementId, GlobalElementId, Hsla, InspectorElementId,
-    IntoElement, LayoutId, MouseButton, Pixels, Point, Render, Rgba, SharedString, Style, Window,
-    div, fill, point, prelude::*, px, size,
+    App, Bounds, Context, Corners, Element, ElementId, GlobalElementId, Hsla, InspectorElementId,
+    IntoElement, LayoutId, MouseButton, Pixels, Point, Render, RenderImage, Rgba, SharedString,
+    Style, Window, div, fill, point, prelude::*, px, size,
 };
+use image::{ImageBuffer, Rgba as ImageRgba};
 use std::sync::Arc;
 
 pub struct ColorPicker {
@@ -22,6 +23,9 @@ pub struct ColorPicker {
     sv_bounds: Option<Bounds<Pixels>>,
     hue_bounds: Option<Bounds<Pixels>>,
     alpha_bounds: Option<Bounds<Pixels>>,
+    sv_image: Option<(u16, Arc<RenderImage>)>,
+    hue_image: Option<Arc<RenderImage>>,
+    alpha_image: Option<(SharedString, Arc<RenderImage>)>,
     on_change: Option<Arc<dyn Fn(SharedString, &mut Window, &mut App) + 'static>>,
 }
 
@@ -44,6 +48,9 @@ impl ColorPicker {
             sv_bounds: None,
             hue_bounds: None,
             alpha_bounds: None,
+            sv_image: None,
+            hue_image: None,
+            alpha_image: None,
             on_change: None,
         }
     }
@@ -173,6 +180,68 @@ impl ColorPicker {
             let ratio = ((position.x - bounds.left()) / bounds.size.width).clamp(0.0, 1.0);
             self.select_alpha(ratio, cx);
         }
+    }
+
+    fn sv_render_image(&mut self) -> Arc<RenderImage> {
+        let hue_key = normalize_hue(self.hue).round() as u16;
+        if let Some((cached_hue, image)) = &self.sv_image {
+            if *cached_hue == hue_key {
+                return image.clone();
+            }
+        }
+
+        let image = render_image_from_pixels(SV_WIDTH, SV_HEIGHT, |x, y| {
+            let saturation = if SV_WIDTH <= 1 {
+                0.0
+            } else {
+                x as f32 / (SV_WIDTH - 1) as f32
+            };
+            let value = if SV_HEIGHT <= 1 {
+                1.0
+            } else {
+                1.0 - y as f32 / (SV_HEIGHT - 1) as f32
+            };
+            rgba_pixel(hsla_from_hsv(hue_key as f32, saturation, value, 1.0))
+        });
+        self.sv_image = Some((hue_key, image.clone()));
+        image
+    }
+
+    fn hue_render_image(&mut self) -> Arc<RenderImage> {
+        if let Some(image) = &self.hue_image {
+            return image.clone();
+        }
+
+        let image = render_image_from_pixels(HUE_WIDTH, HUE_HEIGHT, |_, y| {
+            let hue = if HUE_HEIGHT <= 1 {
+                0.0
+            } else {
+                y as f32 / (HUE_HEIGHT - 1) as f32 * 360.0
+            };
+            rgba_pixel(hsla_from_hsv(hue, 1.0, 1.0, 1.0))
+        });
+        self.hue_image = Some(image.clone());
+        image
+    }
+
+    fn alpha_render_image(&mut self) -> Arc<RenderImage> {
+        if let Some((cached_value, image)) = &self.alpha_image {
+            if cached_value == &self.value {
+                return image.clone();
+            }
+        }
+
+        let base = hex_to_hsla(&self.value).unwrap_or_else(|| hsla_from_hsv(210.0, 0.75, 1.0, 1.0));
+        let image = render_image_from_pixels(ALPHA_WIDTH, ALPHA_HEIGHT, |x, _| {
+            let alpha = if ALPHA_WIDTH <= 1 {
+                1.0
+            } else {
+                x as f32 / (ALPHA_WIDTH - 1) as f32
+            };
+            rgba_pixel(base.opacity(alpha))
+        });
+        self.alpha_image = Some((self.value.clone(), image.clone()));
+        image
     }
 
     fn select_color(&mut self, color: SharedString, window: &mut Window, cx: &mut Context<Self>) {
@@ -631,105 +700,65 @@ impl Element for ColorSurfaceElement {
         window: &mut Window,
         cx: &mut App,
     ) {
-        let picker = self.picker.read(cx);
-        match self.kind {
-            ColorSurfaceKind::SaturationValue => paint_sv_surface(bounds, picker.hue, window),
-            ColorSurfaceKind::Hue => paint_hue_surface(bounds, picker.hue, window),
-            ColorSurfaceKind::Alpha => {
-                paint_alpha_surface(bounds, picker.value.clone(), picker.alpha, window)
-            }
+        let (image, marker) = self.picker.update(cx, |picker, _| match self.kind {
+            ColorSurfaceKind::SaturationValue => (picker.sv_render_image(), None),
+            ColorSurfaceKind::Hue => (
+                picker.hue_render_image(),
+                Some((normalize_hue(picker.hue) / 360.0, false)),
+            ),
+            ColorSurfaceKind::Alpha => (
+                picker.alpha_render_image(),
+                Some((picker.alpha.clamp(0.0, 1.0), true)),
+            ),
+        });
+
+        let _ = window.paint_image(bounds, Corners::all(px(0.0)), image, 0, false);
+        if let Some((ratio, horizontal)) = marker {
+            paint_surface_marker(bounds, ratio, horizontal, window);
         }
     }
 }
 
-fn paint_sv_surface(bounds: Bounds<Pixels>, hue: f32, window: &mut Window) {
-    let width = bounds.size.width.as_f32().max(1.0).round() as u32;
-    let height = bounds.size.height.as_f32().max(1.0).round() as u32;
-    for row in 0..height {
-        let value = if height <= 1 {
-            1.0
-        } else {
-            1.0 - row as f32 / (height - 1) as f32
-        };
-        for col in 0..width {
-            let saturation = if width <= 1 {
-                0.0
-            } else {
-                col as f32 / (width - 1) as f32
-            };
-            let color = hsla_from_hsv(hue, saturation, value, 1.0);
-            window.paint_quad(fill(
-                Bounds::new(
-                    point(
-                        bounds.left() + px(col as f32),
-                        bounds.top() + px(row as f32),
-                    ),
-                    size(px(1.0), px(1.0)),
-                ),
-                color,
-            ));
-        }
-    }
+const SV_WIDTH: u32 = 280;
+const SV_HEIGHT: u32 = 180;
+const HUE_WIDTH: u32 = 14;
+const HUE_HEIGHT: u32 = 180;
+const ALPHA_WIDTH: u32 = 280;
+const ALPHA_HEIGHT: u32 = 14;
+
+fn render_image_from_pixels(
+    width: u32,
+    height: u32,
+    mut pixel: impl FnMut(u32, u32) -> ImageRgba<u8>,
+) -> Arc<RenderImage> {
+    let buffer = ImageBuffer::from_fn(width, height, |x, y| pixel(x, y));
+    Arc::new(RenderImage::new([image::Frame::new(buffer)]))
 }
 
-fn paint_hue_surface(bounds: Bounds<Pixels>, selected_hue: f32, window: &mut Window) {
-    let height = bounds.size.height.as_f32().max(1.0).round() as u32;
-    for row in 0..height {
-        let hue = if height <= 1 {
-            0.0
-        } else {
-            row as f32 / (height - 1) as f32 * 360.0
-        };
-        window.paint_quad(fill(
-            Bounds::new(
-                point(bounds.left(), bounds.top() + px(row as f32)),
-                size(bounds.size.width, px(1.0)),
-            ),
-            hsla_from_hsv(hue, 1.0, 1.0, 1.0),
-        ));
-    }
-
-    let marker_y = bounds.top() + bounds.size.height * (normalize_hue(selected_hue) / 360.0);
-    window.paint_quad(fill(
-        Bounds::new(
-            point(bounds.left(), marker_y),
-            size(bounds.size.width, px(1.0)),
-        ),
-        gpui::white(),
-    ));
+fn rgba_pixel(color: Hsla) -> ImageRgba<u8> {
+    let rgba = Rgba::from(color);
+    ImageRgba([
+        (rgba.r.clamp(0.0, 1.0) * 255.0).round() as u8,
+        (rgba.g.clamp(0.0, 1.0) * 255.0).round() as u8,
+        (rgba.b.clamp(0.0, 1.0) * 255.0).round() as u8,
+        (rgba.a.clamp(0.0, 1.0) * 255.0).round() as u8,
+    ])
 }
 
-fn paint_alpha_surface(
-    bounds: Bounds<Pixels>,
-    selected: SharedString,
-    selected_alpha: f32,
-    window: &mut Window,
-) {
-    let base = hex_to_hsla(&selected).unwrap_or_else(|| hsla_from_hsv(210.0, 0.75, 1.0, 1.0));
-    let width = bounds.size.width.as_f32().max(1.0).round() as u32;
-    for col in 0..width {
-        let alpha = if width <= 1 {
-            1.0
-        } else {
-            col as f32 / (width - 1) as f32
-        };
-        window.paint_quad(fill(
-            Bounds::new(
-                point(bounds.left() + px(col as f32), bounds.top()),
-                size(px(1.0), bounds.size.height),
-            ),
-            base.opacity(alpha),
-        ));
-    }
-
-    let marker_x = bounds.left() + bounds.size.width * selected_alpha.clamp(0.0, 1.0);
-    window.paint_quad(fill(
+fn paint_surface_marker(bounds: Bounds<Pixels>, ratio: f32, horizontal: bool, window: &mut Window) {
+    let ratio = ratio.clamp(0.0, 1.0);
+    let marker_bounds = if horizontal {
         Bounds::new(
-            point(marker_x, bounds.top()),
+            point(bounds.left() + bounds.size.width * ratio, bounds.top()),
             size(px(1.0), bounds.size.height),
-        ),
-        gpui::white(),
-    ));
+        )
+    } else {
+        Bounds::new(
+            point(bounds.left(), bounds.top() + bounds.size.height * ratio),
+            size(bounds.size.width, px(1.0)),
+        )
+    };
+    window.paint_quad(fill(marker_bounds, gpui::white()));
 }
 
 fn hsla_from_hsv(hue: f32, saturation: f32, value: f32, alpha: f32) -> Hsla {

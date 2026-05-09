@@ -1389,3 +1389,19 @@
 
 ### Key Discoveries
 - The visible stall came from tens of thousands of GPUI elements/listeners for a 1px grid; painting quads from one custom element keeps the 1px visual density while avoiding 50k child elements.
+
+## Session 85 — 2026-05-10 (ColorPicker Rasterized Surfaces for Responsiveness)
+
+### Actions
+- Replaced ColorPicker per-frame 1px quad painting with cached `RenderImage` rasters for SV, hue, and alpha surfaces.
+- Cached SV raster by rounded hue, cached hue raster statically, and cached alpha raster by selected color.
+- Kept coordinate-based 1px selection and marker overlays while reducing render work to one image paint per surface.
+
+### Verification
+- `cargo check` passed.
+- `cargo test -p aura-components --test color_picker` passed with 7 tests.
+- `git diff --check` passed.
+- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+
+### Key Discoveries
+- The second stall came from painting tens of thousands of quads each frame; cached raster surfaces keep the 1px appearance and selection accuracy without rebuilding scene geometry on every popup/click.

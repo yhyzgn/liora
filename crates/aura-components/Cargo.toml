@@ -9,3 +9,4 @@ aura-core = { path = "../aura-core" }
 aura-theme = { path = "../aura-theme" }
 aura-icons = { path = "../aura-icons" }
 aura-icons-lucide = { path = "../aura-icons-lucide" }
+image = "0.25"
