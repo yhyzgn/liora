@@ -18,7 +18,7 @@
 | P2 Form | ✅ Done | 10/10 | 10 |
 | P3 Popper+Feedback | ✅ Done | 13/13 | 13 |
 | P4 Nav+Data | ✅ Done | 21/21 | 21 |
-| P5 Advanced | 🏃 In Progress | 5/20 | 20 |
+| P5 Advanced | 🏃 In Progress | 6/20 | 20 |
 | P6 Built-in Unique ID | ⬜ Pending | 0/1 | 1 |
 | P7 Demo Self-Contained | ⬜ Pending | 0/1 | 1 |
 | P8 Engineering | ⬜ Pending | 0/1 | 1 |

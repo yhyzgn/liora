@@ -55,6 +55,7 @@
 
 ### Verification
 - `cargo check` passed.
+- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - GPUI 中 `cx.entity()` 是在 `Render` 过程中获取自身 View 句柄的正确方式，用于在异步或独立 Context 中回调更新原始 View。
@@ -908,6 +909,7 @@
 
 ### Verification
 - `cargo check` passed.
+- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - When the separator already has a chip background, adding backgrounds to both date values makes the range trigger visually heavy and less balanced.
@@ -921,6 +923,7 @@
 
 ### Verification
 - `cargo check` passed.
+- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Even when mutable `cx` use is visually before theme reads, holding an owned theme clone is safer in GPUI demo render functions that update child entities and then render themed content.
@@ -935,6 +938,7 @@
 
 ### Verification
 - `cargo check` passed.
+- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Rebinding child callbacks inside a parent `Render::render` is fragile and can create `Context` borrow overlap diagnostics in downstream editors/toolchains. Demo render paths should prefer read-only child inspection unless mutation is unavoidable.
@@ -972,6 +976,7 @@
 
 ### Verification
 - `cargo check` passed.
+- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Range endpoint values should match the normal DatePicker input text size; only secondary separators need reduced visual weight.
@@ -994,6 +999,7 @@
 
 ### Verification
 - `cargo check` passed.
+- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - DateTime selection benefits from explicit confirm/cancel because users may need to adjust both a calendar date and multiple time columns before committing the value.
@@ -1016,6 +1022,7 @@
 
 ### Verification
 - `cargo check` passed.
+- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - GPUI does not provide a browser-style file input in this component layer, so `Upload` exposes `on_select` for the host app to bridge a native file picker while the component owns presentation and list interactions.
@@ -1055,3 +1062,30 @@
 
 ### Key Discoveries
 - The previous TimePicker popup still used a 260px minimum width while the redesigned three-column panel needed more horizontal space, causing visible overflow.
+
+
+## Session 70 — 2026-05-09 (P5 Cascader)
+
+### Actions
+- **Added Cascader component**:
+  - Implemented `Cascader` and `CascaderOption` in `crates/aura-components/src/cascader.rs`.
+  - Supports multi-level option columns, default selected paths, disabled/loading options, clearable trigger, search-result rendering via `search_query`, width/placeholder/separator options, and `on_change` callbacks.
+  - Added pure path helpers for label resolution and selectable-path validation.
+  - Added public exports in `crates/aura-components/src/lib.rs`.
+- **Added test coverage**:
+  - Created `crates/aura-components/tests/cascader.rs` for selected-path label resolution and disabled/unknown path rejection.
+- **Added Gallery demo**:
+  - Created `apps/aura-gallery/src/demos/cascader_demo.rs`.
+  - Registered `Cascader 级联选择器` in the Gallery demo registry.
+  - Demo covers basic multi-level selection, default selected path, disabled state, and searchable result panel.
+- **Updated memory**:
+  - Marked P5 progress as 6/20 in `.memory/state.md`.
+  - Added Cascader status to `.memory/inventory.md`.
+
+### Verification
+- `cargo test -p aura-components --test cascader` passed after an intentional RED failure for missing `Cascader` exports.
+- `cargo check` passed.
+- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+
+### Key Discoveries
+- Cascader can reuse the Select portal/bounds pattern while keeping hierarchical option traversal as pure helpers, making the path behavior testable without GPUI rendering.

@@ -7,6 +7,7 @@ pub mod badge_demo;
 pub mod breadcrumb_demo;
 pub mod button_demo;
 pub mod card_demo;
+pub mod cascader_demo;
 pub mod collapse_demo;
 pub mod container_demo;
 pub mod date_picker_demo;
@@ -167,6 +168,11 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "Upload 上传",
             description: "上传入口与文件列表",
             render: |cx| upload_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "Cascader 级联选择器",
+            description: "多级联动选择",
+            render: |cx| cascader_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Timeline 时间线",
