@@ -1843,3 +1843,19 @@
 
 ### Key Discoveries
 - Root cause: the Form demo places groups inside a flex-column parent whose default cross-axis alignment stretches child flex items. The group itself needed `self_start()` when not stretched; width auto alone was not enough.
+
+## Session 112 — 2026-05-10 (Independent Form Control Demos)
+
+### Actions
+- Added `form_controls_demo.rs` with independent usage demos for Input, InputNumber, Textarea, Checkbox, Radio, Switch, Select, Slider, and Rate.
+- Registered the new standalone form-control demos in the Gallery navigation before the existing `Form 表单` demo.
+- Preserved `form_demo.rs` without changing its Form/FormItem usage, so form-specific examples remain available.
+
+### Verification
+- `cargo check` passed.
+- `cargo test -p aura-gallery` passed.
+- `git diff --check` passed.
+- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+
+### Key Discoveries
+- The safest extraction path is additive: standalone component demos can duplicate the existing usage examples while leaving `FormDemo` as the form-layout integration reference.

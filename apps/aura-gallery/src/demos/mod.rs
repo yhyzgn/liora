@@ -19,6 +19,7 @@ pub mod dialog_demo;
 pub mod drawer_demo;
 pub mod dropdown_demo;
 pub mod empty_demo;
+pub mod form_controls_demo;
 pub mod form_demo;
 pub mod icon_demo;
 pub mod image_demo;
@@ -87,6 +88,51 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "Badge 徽章",
             description: "右上角的提示信息",
             render: |cx| badge_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "Input 输入框",
+            description: "独立输入框用法",
+            render: |cx| form_controls_demo::render_input(cx),
+        },
+        DemoEntry {
+            name: "InputNumber 数字输入",
+            description: "独立数字输入用法",
+            render: |cx| form_controls_demo::render_input_number(cx),
+        },
+        DemoEntry {
+            name: "Textarea 文本域",
+            description: "独立多行输入用法",
+            render: |cx| form_controls_demo::render_textarea(cx),
+        },
+        DemoEntry {
+            name: "Checkbox 多选",
+            description: "独立多选与多选组用法",
+            render: |cx| form_controls_demo::render_checkbox(cx),
+        },
+        DemoEntry {
+            name: "Radio 单选",
+            description: "独立单选与单选组用法",
+            render: |cx| form_controls_demo::render_radio(cx),
+        },
+        DemoEntry {
+            name: "Switch 开关",
+            description: "独立开关用法",
+            render: |cx| form_controls_demo::render_switch(cx),
+        },
+        DemoEntry {
+            name: "Select 选择器",
+            description: "独立下拉选择用法",
+            render: |cx| form_controls_demo::render_select(cx),
+        },
+        DemoEntry {
+            name: "Slider 滑块",
+            description: "独立滑块用法",
+            render: |cx| form_controls_demo::render_slider(cx),
+        },
+        DemoEntry {
+            name: "Rate 评分",
+            description: "独立评分用法",
+            render: |cx| form_controls_demo::render_rate(cx),
         },
         DemoEntry {
             name: "Form 表单",
