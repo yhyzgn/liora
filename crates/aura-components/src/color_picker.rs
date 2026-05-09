@@ -2,8 +2,9 @@ use aura_core::{Config, push_portal};
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
 use gpui::{
-    App, Bounds, Context, Element, ElementId, Hsla, IntoElement, MouseButton, Pixels, Render,
-    SharedString, Window, div, prelude::*, px,
+    App, Bounds, Context, Element, ElementId, GlobalElementId, Hsla, InspectorElementId,
+    IntoElement, LayoutId, MouseButton, Pixels, Point, Render, Rgba, SharedString, Style, Window,
+    div, fill, point, prelude::*, px, size,
 };
 use std::sync::Arc;
 
@@ -18,6 +19,9 @@ pub struct ColorPicker {
     width: Option<Pixels>,
     is_open: bool,
     last_bounds: Option<Bounds<Pixels>>,
+    sv_bounds: Option<Bounds<Pixels>>,
+    hue_bounds: Option<Bounds<Pixels>>,
+    alpha_bounds: Option<Bounds<Pixels>>,
     on_change: Option<Arc<dyn Fn(SharedString, &mut Window, &mut App) + 'static>>,
 }
 
@@ -37,6 +41,9 @@ impl ColorPicker {
             width: None,
             is_open: false,
             last_bounds: None,
+            sv_bounds: None,
+            hue_bounds: None,
+            alpha_bounds: None,
             on_change: None,
         }
     }
@@ -138,6 +145,34 @@ impl ColorPicker {
             u8::from_str_radix(&raw[2..4], 16).ok()?,
             u8::from_str_radix(&raw[4..6], 16).ok()?,
         ))
+    }
+
+    fn select_sv_at(
+        &mut self,
+        position: Point<Pixels>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if let Some(bounds) = self.sv_bounds {
+            let saturation = ((position.x - bounds.left()) / bounds.size.width).clamp(0.0, 1.0);
+            let value = (1.0 - ((position.y - bounds.top()) / bounds.size.height)).clamp(0.0, 1.0);
+            let color = Self::hex_from_hsv(self.hue, saturation, value);
+            self.select_color(color, window, cx);
+        }
+    }
+
+    fn select_hue_at(&mut self, position: Point<Pixels>, cx: &mut Context<Self>) {
+        if let Some(bounds) = self.hue_bounds {
+            let ratio = ((position.y - bounds.top()) / bounds.size.height).clamp(0.0, 1.0);
+            self.select_hue(ratio * 360.0, cx);
+        }
+    }
+
+    fn select_alpha_at(&mut self, position: Point<Pixels>, cx: &mut Context<Self>) {
+        if let Some(bounds) = self.alpha_bounds {
+            let ratio = ((position.x - bounds.left()) / bounds.size.width).clamp(0.0, 1.0);
+            self.select_alpha(ratio, cx);
+        }
     }
 
     fn select_color(&mut self, color: SharedString, window: &mut Window, cx: &mut Context<Self>) {
@@ -414,117 +449,297 @@ fn render_color_panel(
 
 fn sv_panel(
     id: String,
-    hue: f32,
-    theme: aura_theme::Theme,
+    _hue: f32,
+    _theme: aura_theme::Theme,
     picker: gpui::Entity<ColorPicker>,
 ) -> impl IntoElement {
+    let picker_for_click = picker.clone();
+    let picker_for_drag = picker.clone();
     div()
+        .id(id)
         .w(px(280.0))
         .h(px(180.0))
-        .flex()
-        .flex_col()
-        .children((0..180).map(move |row| {
-            let picker = picker.clone();
-            let theme = theme.clone();
-            let row_id = id.clone();
-            div().flex().children((0..280).map(move |col| {
-                let saturation = col as f32 / 279.0;
-                let value = 1.0 - row as f32 / 179.0;
-                let color = ColorPicker::hex_from_hsv(hue, saturation, value);
-                let hsla = hex_to_hsla(&color).unwrap_or(theme.primary.base);
-                let picker = picker.clone();
-                div()
-                    .id(format!("{}-{}-{}", row_id, row, col))
-                    .w(px(1.0))
-                    .h(px(1.0))
-                    .bg(hsla)
-                    .cursor_pointer()
-                    .on_mouse_down(MouseButton::Left, move |_, window, cx| {
-                        picker.update(cx, |picker, cx| {
-                            picker.select_color(color.clone(), window, cx);
-                        });
-                        cx.stop_propagation();
-                    })
-            }))
-        }))
+        .cursor_pointer()
+        .overflow_hidden()
+        .on_mouse_down(MouseButton::Left, move |event, window, cx| {
+            picker_for_click.update(cx, |picker, cx| {
+                picker.select_sv_at(event.position, window, cx);
+            });
+            cx.stop_propagation();
+        })
+        .on_mouse_move(move |event, window, cx| {
+            if event.pressed_button == Some(MouseButton::Left) {
+                picker_for_drag.update(cx, |picker, cx| {
+                    picker.select_sv_at(event.position, window, cx);
+                });
+                cx.stop_propagation();
+            }
+        })
+        .child(ColorSurfaceElement {
+            picker,
+            kind: ColorSurfaceKind::SaturationValue,
+        })
 }
 
 fn hue_bar(
     id: String,
-    selected_hue: f32,
+    _selected_hue: f32,
     theme: aura_theme::Theme,
     picker: gpui::Entity<ColorPicker>,
 ) -> impl IntoElement {
-    let hues = [
-        0.0, 30.0, 60.0, 90.0, 120.0, 180.0, 210.0, 240.0, 270.0, 300.0, 330.0,
-    ];
+    let picker_for_click = picker.clone();
+    let picker_for_drag = picker.clone();
     div()
+        .id(id)
         .w(px(14.0))
         .h(px(180.0))
-        .flex()
-        .flex_col()
         .rounded(px(4.0))
         .overflow_hidden()
         .border_1()
         .border_color(theme.neutral.border)
-        .children(hues.into_iter().enumerate().map(move |(index, hue)| {
-            let color = ColorPicker::hex_from_hsv(hue, 1.0, 1.0);
-            let active = (normalize_hue(selected_hue) - hue).abs() < 0.1;
-            let picker = picker.clone();
-            div()
-                .id(format!("{}-{}", id, index))
-                .h(px(16.0))
-                .w_full()
-                .border_1()
-                .border_color(if active {
-                    theme.neutral.card
-                } else {
-                    hex_to_hsla(&color).unwrap_or(theme.primary.base)
-                })
-                .bg(hex_to_hsla(&color).unwrap_or(theme.primary.base))
-                .cursor_pointer()
-                .on_mouse_down(MouseButton::Left, move |_, _, cx| {
-                    picker.update(cx, |picker, cx| picker.select_hue(hue, cx));
-                    cx.stop_propagation();
-                })
-        }))
+        .cursor_pointer()
+        .on_mouse_down(MouseButton::Left, move |event, _, cx| {
+            picker_for_click.update(cx, |picker, cx| picker.select_hue_at(event.position, cx));
+            cx.stop_propagation();
+        })
+        .on_mouse_move(move |event, _, cx| {
+            if event.pressed_button == Some(MouseButton::Left) {
+                picker_for_drag.update(cx, |picker, cx| picker.select_hue_at(event.position, cx));
+                cx.stop_propagation();
+            }
+        })
+        .child(ColorSurfaceElement {
+            picker,
+            kind: ColorSurfaceKind::Hue,
+        })
 }
 
 fn alpha_bar(
     id: String,
-    selected: SharedString,
-    alpha: f32,
+    _selected: SharedString,
+    _alpha: f32,
     theme: aura_theme::Theme,
     picker: gpui::Entity<ColorPicker>,
 ) -> impl IntoElement {
-    let base = hex_to_hsla(&selected).unwrap_or(theme.primary.base);
-    let alphas = [0.0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1.0];
+    let picker_for_click = picker.clone();
+    let picker_for_drag = picker.clone();
     div()
-        .flex()
+        .id(id)
+        .w_full()
         .h(px(14.0))
         .rounded(px(3.0))
         .overflow_hidden()
         .border_1()
         .border_color(theme.neutral.border)
-        .children(alphas.into_iter().enumerate().map(move |(index, value)| {
-            let active = (alpha - value).abs() < 0.03;
-            let picker = picker.clone();
-            div()
-                .id(format!("{}-{}", id, index))
-                .flex_1()
-                .border_1()
-                .border_color(if active {
-                    theme.primary.base
-                } else {
-                    base.opacity(value)
-                })
-                .bg(base.opacity(value))
-                .cursor_pointer()
-                .on_mouse_down(MouseButton::Left, move |_, _, cx| {
-                    picker.update(cx, |picker, cx| picker.select_alpha(value, cx));
-                    cx.stop_propagation();
-                })
-        }))
+        .cursor_pointer()
+        .on_mouse_down(MouseButton::Left, move |event, _, cx| {
+            picker_for_click.update(cx, |picker, cx| picker.select_alpha_at(event.position, cx));
+            cx.stop_propagation();
+        })
+        .on_mouse_move(move |event, _, cx| {
+            if event.pressed_button == Some(MouseButton::Left) {
+                picker_for_drag.update(cx, |picker, cx| picker.select_alpha_at(event.position, cx));
+                cx.stop_propagation();
+            }
+        })
+        .child(ColorSurfaceElement {
+            picker,
+            kind: ColorSurfaceKind::Alpha,
+        })
+}
+
+#[derive(Clone, Copy)]
+enum ColorSurfaceKind {
+    SaturationValue,
+    Hue,
+    Alpha,
+}
+
+struct ColorSurfaceElement {
+    picker: gpui::Entity<ColorPicker>,
+    kind: ColorSurfaceKind,
+}
+
+impl IntoElement for ColorSurfaceElement {
+    type Element = Self;
+
+    fn into_element(self) -> Self::Element {
+        self
+    }
+}
+
+impl Element for ColorSurfaceElement {
+    type RequestLayoutState = ();
+    type PrepaintState = ();
+
+    fn id(&self) -> Option<ElementId> {
+        None
+    }
+
+    fn source_location(&self) -> Option<&'static std::panic::Location<'static>> {
+        None
+    }
+
+    fn request_layout(
+        &mut self,
+        _: Option<&GlobalElementId>,
+        _: Option<&InspectorElementId>,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> (LayoutId, ()) {
+        let mut style = Style::default();
+        match self.kind {
+            ColorSurfaceKind::SaturationValue => {
+                style.size.width = px(280.0).into();
+                style.size.height = px(180.0).into();
+            }
+            ColorSurfaceKind::Hue => {
+                style.size.width = px(14.0).into();
+                style.size.height = px(180.0).into();
+            }
+            ColorSurfaceKind::Alpha => {
+                style.size.width = gpui::relative(1.0).into();
+                style.size.height = px(14.0).into();
+            }
+        }
+        (window.request_layout(style, [], cx), ())
+    }
+
+    fn prepaint(
+        &mut self,
+        _: Option<&GlobalElementId>,
+        _: Option<&InspectorElementId>,
+        bounds: Bounds<Pixels>,
+        _: &mut (),
+        _window: &mut Window,
+        cx: &mut App,
+    ) {
+        self.picker.update(cx, |picker, _| match self.kind {
+            ColorSurfaceKind::SaturationValue => picker.sv_bounds = Some(bounds),
+            ColorSurfaceKind::Hue => picker.hue_bounds = Some(bounds),
+            ColorSurfaceKind::Alpha => picker.alpha_bounds = Some(bounds),
+        });
+    }
+
+    fn paint(
+        &mut self,
+        _: Option<&GlobalElementId>,
+        _: Option<&InspectorElementId>,
+        bounds: Bounds<Pixels>,
+        _: &mut (),
+        _: &mut (),
+        window: &mut Window,
+        cx: &mut App,
+    ) {
+        let picker = self.picker.read(cx);
+        match self.kind {
+            ColorSurfaceKind::SaturationValue => paint_sv_surface(bounds, picker.hue, window),
+            ColorSurfaceKind::Hue => paint_hue_surface(bounds, picker.hue, window),
+            ColorSurfaceKind::Alpha => {
+                paint_alpha_surface(bounds, picker.value.clone(), picker.alpha, window)
+            }
+        }
+    }
+}
+
+fn paint_sv_surface(bounds: Bounds<Pixels>, hue: f32, window: &mut Window) {
+    let width = bounds.size.width.as_f32().max(1.0).round() as u32;
+    let height = bounds.size.height.as_f32().max(1.0).round() as u32;
+    for row in 0..height {
+        let value = if height <= 1 {
+            1.0
+        } else {
+            1.0 - row as f32 / (height - 1) as f32
+        };
+        for col in 0..width {
+            let saturation = if width <= 1 {
+                0.0
+            } else {
+                col as f32 / (width - 1) as f32
+            };
+            let color = hsla_from_hsv(hue, saturation, value, 1.0);
+            window.paint_quad(fill(
+                Bounds::new(
+                    point(
+                        bounds.left() + px(col as f32),
+                        bounds.top() + px(row as f32),
+                    ),
+                    size(px(1.0), px(1.0)),
+                ),
+                color,
+            ));
+        }
+    }
+}
+
+fn paint_hue_surface(bounds: Bounds<Pixels>, selected_hue: f32, window: &mut Window) {
+    let height = bounds.size.height.as_f32().max(1.0).round() as u32;
+    for row in 0..height {
+        let hue = if height <= 1 {
+            0.0
+        } else {
+            row as f32 / (height - 1) as f32 * 360.0
+        };
+        window.paint_quad(fill(
+            Bounds::new(
+                point(bounds.left(), bounds.top() + px(row as f32)),
+                size(bounds.size.width, px(1.0)),
+            ),
+            hsla_from_hsv(hue, 1.0, 1.0, 1.0),
+        ));
+    }
+
+    let marker_y = bounds.top() + bounds.size.height * (normalize_hue(selected_hue) / 360.0);
+    window.paint_quad(fill(
+        Bounds::new(
+            point(bounds.left(), marker_y),
+            size(bounds.size.width, px(1.0)),
+        ),
+        gpui::white(),
+    ));
+}
+
+fn paint_alpha_surface(
+    bounds: Bounds<Pixels>,
+    selected: SharedString,
+    selected_alpha: f32,
+    window: &mut Window,
+) {
+    let base = hex_to_hsla(&selected).unwrap_or_else(|| hsla_from_hsv(210.0, 0.75, 1.0, 1.0));
+    let width = bounds.size.width.as_f32().max(1.0).round() as u32;
+    for col in 0..width {
+        let alpha = if width <= 1 {
+            1.0
+        } else {
+            col as f32 / (width - 1) as f32
+        };
+        window.paint_quad(fill(
+            Bounds::new(
+                point(bounds.left() + px(col as f32), bounds.top()),
+                size(px(1.0), bounds.size.height),
+            ),
+            base.opacity(alpha),
+        ));
+    }
+
+    let marker_x = bounds.left() + bounds.size.width * selected_alpha.clamp(0.0, 1.0);
+    window.paint_quad(fill(
+        Bounds::new(
+            point(marker_x, bounds.top()),
+            size(px(1.0), bounds.size.height),
+        ),
+        gpui::white(),
+    ));
+}
+
+fn hsla_from_hsv(hue: f32, saturation: f32, value: f32, alpha: f32) -> Hsla {
+    let (r, g, b) = hsv_to_rgb(hue, saturation, value);
+    Hsla::from(Rgba {
+        r: r as f32 / 255.0,
+        g: g as f32 / 255.0,
+        b: b as f32 / 255.0,
+        a: alpha,
+    })
 }
 
 struct BoundsCapturer {

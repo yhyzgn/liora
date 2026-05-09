@@ -1373,3 +1373,19 @@
 
 ### Key Discoveries
 - Applying alpha to the SV grid made alpha changes visually alter the color-selection surface itself; the selection surface should remain an opaque source of color values while alpha is edited independently.
+
+## Session 84 — 2026-05-10 (ColorPicker Pixel Sliders and Surface Render Optimization)
+
+### Actions
+- Replaced per-pixel `div` children/listeners in the ColorPicker SV panel with a custom painted surface and one click/drag handler.
+- Reworked hue and alpha sliders as 1px-granularity painted surfaces.
+- Added drag selection for SV, hue, and alpha surfaces using coordinate-to-value mapping.
+
+### Verification
+- `cargo check` passed.
+- `cargo test -p aura-components --test color_picker` passed with 7 tests.
+- `git diff --check` passed.
+- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+
+### Key Discoveries
+- The visible stall came from tens of thousands of GPUI elements/listeners for a 1px grid; painting quads from one custom element keeps the 1px visual density while avoiding 50k child elements.
