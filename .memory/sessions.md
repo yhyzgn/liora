@@ -1538,3 +1538,20 @@
 
 ### Key Discoveries
 - The file existed and decoded, so the remaining risks were source classification ambiguity and the custom local painter not filling the visual frame. The demo now exercises the same file-protocol API users should call.
+
+
+## Session 94 — 2026-05-10 (Image Cached Remote Decode)
+
+### Actions
+- Interpreted the screenshot: the local deer image is visible, while remote URL slots are falling back.
+- Added a cached direct remote URL decode path for Aura Image using `ureq`, sharing the same raster painter as local files.
+- Kept source classification: `file://` and `Image::local` use filesystem decode; `https://` URLs use cached URL decode before falling back.
+
+### Verification
+- `cargo check` passed.
+- `cargo test -p aura-components --test image` passed with 7 tests.
+- `git diff --check` passed.
+- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+
+### Key Discoveries
+- The provided screenshot shows the local asset rendering in the middle Image slots; the real remaining failure is GPUI's async remote URL branch falling back for the Element CDN URL.

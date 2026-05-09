@@ -7,8 +7,10 @@ use gpui::{
     SharedString, Style, Window, div, img, prelude::*, px, relative,
 };
 use std::{
+    collections::HashMap,
+    io::Read,
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{Arc, Mutex, OnceLock},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -292,9 +294,9 @@ impl RenderOnce for Image {
         }
 
         if let Some(src) = self.src {
-            let local_image = match &src {
+            let raster_image = match &src {
                 ImageSource::File(path) => load_local_render_image(path),
-                ImageSource::Url(_) => None,
+                ImageSource::Url(url) => load_remote_render_image(url.as_ref()),
             };
             let loading = self.placeholder.unwrap_or_else({
                 let theme = theme.clone();
@@ -304,10 +306,10 @@ impl RenderOnce for Image {
                 let theme = theme.clone();
                 || Arc::new(move || default_fallback(&theme, alt.clone()))
             });
-            if let Some(local_image) = local_image {
+            if let Some(raster_image) = raster_image {
                 frame = frame.child(div().absolute().top_0().left_0().size_full().child(
-                    LocalImageElement {
-                        image: local_image,
+                    RasterImageElement {
+                        image: raster_image,
                         fit: self.fit.as_object_fit(),
                         grayscale: self.grayscale,
                     },
@@ -379,13 +381,13 @@ fn expand_tilde_path(path: &str) -> PathBuf {
     PathBuf::from(path)
 }
 
-struct LocalImageElement {
+struct RasterImageElement {
     image: Arc<RenderImage>,
     fit: ObjectFit,
     grayscale: bool,
 }
 
-impl IntoElement for LocalImageElement {
+impl IntoElement for RasterImageElement {
     type Element = Self;
 
     fn into_element(self) -> Self::Element {
@@ -393,7 +395,7 @@ impl IntoElement for LocalImageElement {
     }
 }
 
-impl Element for LocalImageElement {
+impl Element for RasterImageElement {
     type RequestLayoutState = ();
     type PrepaintState = ();
 
@@ -453,10 +455,36 @@ impl Element for LocalImageElement {
     }
 }
 
+fn remote_image_cache() -> &'static Mutex<HashMap<String, Option<Arc<RenderImage>>>> {
+    static CACHE: OnceLock<Mutex<HashMap<String, Option<Arc<RenderImage>>>>> = OnceLock::new();
+    CACHE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn load_remote_render_image(url: &str) -> Option<Arc<RenderImage>> {
+    if let Some(cached) = remote_image_cache().lock().ok()?.get(url).cloned() {
+        return cached;
+    }
+
+    let image = ureq::get(url).call().ok().and_then(|response| {
+        let mut bytes = Vec::new();
+        response.into_reader().read_to_end(&mut bytes).ok()?;
+        render_image_from_bytes(&bytes)
+    });
+
+    if let Ok(mut cache) = remote_image_cache().lock() {
+        cache.insert(url.to_string(), image.clone());
+    }
+    image
+}
+
 fn load_local_render_image(path: &Path) -> Option<Arc<RenderImage>> {
     let bytes = std::fs::read(path).ok()?;
-    let format = image::guess_format(&bytes).ok()?;
-    let mut data = image::load_from_memory_with_format(&bytes, format)
+    render_image_from_bytes(&bytes)
+}
+
+fn render_image_from_bytes(bytes: &[u8]) -> Option<Arc<RenderImage>> {
+    let format = image::guess_format(bytes).ok()?;
+    let mut data = image::load_from_memory_with_format(bytes, format)
         .ok()?
         .into_rgba8();
     for pixel in data.chunks_exact_mut(4) {
