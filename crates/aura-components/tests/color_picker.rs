@@ -44,3 +44,15 @@ fn builds_color_from_hsv_and_alpha() {
     assert_eq!(ColorPicker::hex_from_hsv(60.0, 1.0, 1.0), "#FFFF00");
     assert_eq!(ColorPicker::hex_from_hsv(0.0, 1.0, 1.0), "#FF0000");
 }
+
+#[test]
+fn rgba_display_clamps_alpha() {
+    assert_eq!(
+        ColorPicker::rgba_display("#000000", 2.0),
+        Some("rgba(0, 0, 0, 1.00)".into())
+    );
+    assert_eq!(
+        ColorPicker::rgba_display("#000000", -1.0),
+        Some("rgba(0, 0, 0, 0.00)".into())
+    );
+}

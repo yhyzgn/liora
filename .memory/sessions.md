@@ -1336,3 +1336,24 @@
 
 ### Key Discoveries
 - Without a native gradient background API, a dense HSV grid provides free-ish color selection and predictable click targets while visually matching a gradient picker much more closely than static presets.
+
+
+## Session 82 — 2026-05-10 (ColorPicker Alpha Rendering and Dense Grid)
+
+### Actions
+- **Fixed ColorPicker alpha rendering**:
+  - Applied current alpha to the trigger cube color.
+  - Applied current alpha to the large saturation/value panel colors.
+  - Kept rgba display clamped and added test coverage for alpha clamping.
+- **Improved color panel density**:
+  - Increased the saturation/value picker from a coarse 20×12 grid to a dense 70×45 grid.
+  - Reduced each cell to roughly 4px to better approximate a continuous gradient panel.
+
+### Verification
+- `cargo check` passed.
+- `cargo test -p aura-components --test color_picker` passed with 7 tests.
+- `git diff --check` passed.
+- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+
+### Key Discoveries
+- Alpha previously only affected the text/alpha bar, not the rendered picker swatch or SV panel; applying opacity at render points makes the demo visibly respond to alpha changes.
