@@ -1724,3 +1724,21 @@
 
 ### Key Discoveries
 - Autocomplete's absolute bounds-capture child was rendered above the Input child, blocking Input's own clear icon interactions. Reordering the capture child behind Input preserves composition and lets Input own clear behavior.
+
+
+## Session 105 — 2026-05-10 (Autocomplete Clear Event Ownership)
+
+### Actions
+- Kept clear icon ownership in the shared Input used by Autocomplete.
+- Removed Autocomplete's full-width mouse open handler so it no longer competes with Input's inner clear icon hover/click handling.
+- Preserved the bounds capture layer behind the Input child.
+
+### Verification
+- `cargo check` passed.
+- `cargo test -p aura-components --test autocomplete` passed: 4 tests.
+- `cargo test -p aura-components` passed.
+- `git diff --check` passed.
+- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; timeout stopped the running GUI smoke test.
+
+### Key Discoveries
+- Input's clear icon already works by itself. In Autocomplete, the remaining blocker was the Autocomplete wrapper registering its own full-width mouse handler over the same interaction area, competing with the composed Input's inner controls.

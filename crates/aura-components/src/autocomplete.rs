@@ -163,13 +163,6 @@ impl Autocomplete {
         )
     }
 
-    fn open(&mut self, cx: &mut Context<Self>) {
-        if !self.disabled {
-            self.is_open = true;
-            cx.notify();
-        }
-    }
-
     fn close(&mut self, cx: &mut Context<Self>) {
         if self.is_open {
             self.is_open = false;
@@ -359,7 +352,7 @@ impl Render for Autocomplete {
             );
         }
 
-        let mut frame = gpui::div()
+        let frame = gpui::div()
             .relative()
             .when_some(self.width, |s, width| s.w(width))
             .when(self.width.is_none(), |s| s.w_full())
@@ -375,15 +368,6 @@ impl Render for Autocomplete {
             )
             .child(self.input.clone())
             .on_mouse_down_out(cx.listener(|this, _, _, cx| this.close(cx)));
-
-        if self.trigger_on_focus && !disabled {
-            frame = frame.on_mouse_down(
-                MouseButton::Left,
-                cx.listener(|this, _, _window, cx| {
-                    this.open(cx);
-                }),
-            );
-        }
 
         frame
     }
