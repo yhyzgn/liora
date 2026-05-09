@@ -446,6 +446,12 @@ fn render_button_trigger(
     theme: &aura_theme::Theme,
     upload: gpui::Entity<Upload>,
 ) -> impl IntoElement {
+    let trigger_color = if enabled {
+        theme.primary.base
+    } else {
+        theme.neutral.text_3
+    };
+
     div()
         .id(id)
         .flex()
@@ -465,11 +471,7 @@ fn render_button_trigger(
         } else {
             theme.neutral.hover
         })
-        .text_color(if enabled {
-            theme.primary.base
-        } else {
-            theme.neutral.text_3
-        })
+        .text_color(trigger_color)
         .cursor_pointer()
         .hover(|s| {
             if enabled {
@@ -483,7 +485,11 @@ fn render_button_trigger(
                 upload.update(cx, |upload, cx| upload.trigger_select(window, cx));
             }
         })
-        .child(Icon::new(IconName::Upload).size(px(16.0)))
+        .child(
+            Icon::new(IconName::Upload)
+                .size(px(16.0))
+                .color(trigger_color),
+        )
         .child(div().text_sm().child(text))
 }
 
@@ -506,6 +512,11 @@ fn render_drag_trigger(
     let hint = match max_size {
         Some(max_size) => format!("{}，单文件 ≤ {}", hint, format_size(max_size)),
         None => hint,
+    };
+    let text_color = if enabled {
+        theme.neutral.text_1
+    } else {
+        theme.neutral.text_3
     };
 
     div()
@@ -541,12 +552,8 @@ fn render_drag_trigger(
                 upload.update(cx, |upload, cx| upload.trigger_select(window, cx));
             }
         })
-        .child(
-            Icon::new(IconName::Upload)
-                .size(px(32.0))
-                .color(theme.primary.base),
-        )
-        .child(div().text_sm().text_color(theme.neutral.text_1).child(text))
+        .child(Icon::new(IconName::Upload).size(px(32.0)).color(text_color))
+        .child(div().text_sm().text_color(text_color).child(text))
         .child(div().text_xs().text_color(theme.neutral.text_3).child(hint))
 }
 
