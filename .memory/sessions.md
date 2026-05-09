@@ -1150,3 +1150,21 @@
 
 ### Key Discoveries
 - Lazy Cascader needs an explicit `leaf(true)` marker because an empty child list can mean either a final selectable node or a not-yet-loaded branch.
+
+
+## Session 74 — 2026-05-09 (Cascader Lazy Callback Reentrancy Fix)
+
+### Actions
+- **Fixed Cascader lazy-loading crash**:
+  - Changed lazy-load callbacks to receive `&mut Cascader` and `&mut Context<Cascader>` directly.
+  - Updated the Gallery lazy demo to call `set_children_at_path` inside the provided callback without nested `Entity::update`.
+  - This avoids GPUI double-lease panics when lazy loading is triggered from inside the component's own event update.
+
+### Verification
+- `cargo check` passed.
+- `cargo test -p aura-components --test cascader` passed with 5 tests.
+- `git diff --check` passed.
+- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+
+### Key Discoveries
+- GPUI entities cannot be updated recursively while already leased; component callbacks that may mutate the same component should receive the active mutable component/context rather than requiring callers to re-enter `Entity::update`.

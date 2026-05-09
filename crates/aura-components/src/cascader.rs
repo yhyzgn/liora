@@ -34,7 +34,11 @@ pub struct Cascader {
     last_bounds: Option<Bounds<Pixels>>,
     lazy: bool,
     on_change: Option<Arc<dyn Fn(Vec<SharedString>, &mut Window, &mut App) + 'static>>,
-    on_lazy_load: Option<Arc<dyn Fn(Vec<SharedString>, &mut Window, &mut App) + 'static>>,
+    on_lazy_load: Option<
+        Arc<
+            dyn Fn(&mut Cascader, Vec<SharedString>, &mut Window, &mut Context<Cascader>) + 'static,
+        >,
+    >,
 }
 
 impl CascaderOption {
@@ -178,7 +182,7 @@ impl Cascader {
 
     pub fn on_lazy_load(
         mut self,
-        f: impl Fn(Vec<SharedString>, &mut Window, &mut App) + 'static,
+        f: impl Fn(&mut Cascader, Vec<SharedString>, &mut Window, &mut Context<Cascader>) + 'static,
     ) -> Self {
         self.on_lazy_load = Some(Arc::new(f));
         self
@@ -186,7 +190,7 @@ impl Cascader {
 
     pub fn set_on_lazy_load(
         &mut self,
-        f: impl Fn(Vec<SharedString>, &mut Window, &mut App) + 'static,
+        f: impl Fn(&mut Cascader, Vec<SharedString>, &mut Window, &mut Context<Cascader>) + 'static,
         cx: &mut Context<Self>,
     ) {
         self.on_lazy_load = Some(Arc::new(f));
@@ -411,10 +415,11 @@ impl Cascader {
         if Self::should_lazy_load_option(option, self.lazy) {
             self.active_path = path.clone();
             Self::set_loading_in_options(&mut self.options, &path, true);
-            if let Some(on_lazy_load) = &self.on_lazy_load {
-                on_lazy_load(path, window, cx);
+            if let Some(on_lazy_load) = self.on_lazy_load.clone() {
+                on_lazy_load(self, path, window, cx);
+            } else {
+                cx.notify();
             }
-            cx.notify();
             return;
         }
 

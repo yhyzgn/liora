@@ -42,28 +42,16 @@ impl CascaderDemo {
                     .placeholder("搜索 hang")
                     .width(px(360.0))
             }),
-            lazy: {
-                let lazy = cx.new(|cx| {
-                    Cascader::new(lazy_options(), cx)
-                        .lazy(true)
-                        .placeholder("请选择远程节点")
-                        .width(px(360.0))
-                });
-                let lazy_handle = lazy.clone();
-                lazy.update(cx, |cascader, cx| {
-                    cascader.set_on_lazy_load(
-                        move |path, _, cx| {
-                            let children = lazy_children_for(&path);
-                            let lazy_handle = lazy_handle.clone();
-                            lazy_handle.update(cx, |cascader, cx| {
-                                cascader.set_children_at_path(&path, children, cx);
-                            });
-                        },
-                        cx,
-                    );
-                });
-                lazy
-            },
+            lazy: cx.new(|cx| {
+                Cascader::new(lazy_options(), cx)
+                    .lazy(true)
+                    .placeholder("请选择远程节点")
+                    .width(px(360.0))
+                    .on_lazy_load(|cascader, path, _, cx| {
+                        let children = lazy_children_for(&path);
+                        cascader.set_children_at_path(&path, children, cx);
+                    })
+            }),
         }
     }
 }
@@ -123,7 +111,7 @@ impl Render for CascaderDemo {
                     .gap_3()
                     .child(self.lazy.clone())
                     .child(
-                        Text::new("点击空子级的分支会触发 on_lazy_load，宿主通过 set_children_at_path 写回远程子节点；点击最终 leaf(true) 节点才会选择并关闭。")
+                        Text::new("点击空子级的分支会触发 on_lazy_load，回调内通过 set_children_at_path 写回远程子节点；点击最终 leaf(true) 节点才会选择并关闭。")
                             .size(px(theme.font_size.sm)),
                     ),
             ))
