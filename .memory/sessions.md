@@ -1107,3 +1107,21 @@
 
 ### Key Discoveries
 - Portal popup rows inside scrollable columns need stable element ids for reliable hover/click hit testing, matching the DatePicker/TimePicker item pattern.
+
+
+## Session 72 — 2026-05-09 (Cascader Leaf-only Dismissal)
+
+### Actions
+- **Fixed Cascader popup dismissal semantics**:
+  - Removed trigger-level `on_mouse_down_out` closing, which treated portal panel clicks as outside-trigger clicks.
+  - Wrapped the popup panel in a transparent backdrop that closes only when the backdrop itself is clicked.
+  - Kept panel and option clicks from propagating so parent-group clicks update `active_path` and keep the popup open, while leaf clicks select and close through `choose_path`.
+
+### Verification
+- `cargo check` passed.
+- `cargo test -p aura-components --test cascader` passed with 3 tests.
+- `git diff --check` passed.
+- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+
+### Key Discoveries
+- Trigger-level outside-click handlers do not distinguish portal descendants from true outside clicks; dropdown-style portal components should own their backdrop/inside-click propagation policy.

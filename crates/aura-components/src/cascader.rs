@@ -360,7 +360,8 @@ impl Render for Cascader {
                     let theme = theme_portal.clone();
                     let entity = entity.clone();
 
-                    div()
+                    let close_entity = entity.clone();
+                    let panel = div()
                         .id(format!("{}-panel", cascader_id))
                         .absolute()
                         .top(top)
@@ -399,7 +400,21 @@ impl Render for Cascader {
                                 entity.clone(),
                                 theme.clone(),
                             ))
+                        });
+
+                    div()
+                        .absolute()
+                        .top_0()
+                        .left_0()
+                        .size_full()
+                        .bg(gpui::transparent_black())
+                        .on_mouse_down(MouseButton::Left, move |_, _, cx| {
+                            close_entity.update(cx, |this, cx| {
+                                this.is_open = false;
+                                cx.notify();
+                            });
                         })
+                        .child(panel)
                         .into_any_element()
                 },
                 cx,
@@ -479,10 +494,6 @@ impl Render for Cascader {
                     this.toggle_open(window, cx);
                 }),
             )
-            .on_mouse_down_out(cx.listener(|this, _, _, cx| {
-                this.is_open = false;
-                cx.notify();
-            }))
     }
 }
 
@@ -572,6 +583,7 @@ fn render_columns(
                                 entity.update(cx, |this, cx| {
                                     this.choose_path(path.clone(), window, cx);
                                 });
+                                cx.stop_propagation();
                             })
                     }
                 }))
@@ -614,6 +626,7 @@ fn render_match_list(
                     entity.update(cx, |this, cx| {
                         this.choose_path(path.clone(), window, cx);
                     });
+                    cx.stop_propagation();
                 })
         }))
         .into_any_element()
