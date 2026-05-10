@@ -1944,3 +1944,14 @@
 ### Key Discoveries
 - Menu popover close must clear the trigger popover id, not a child item id-derived string.
 - Select portal options need their own stable IDs for hover styles to be tracked consistently.
+
+
+## Session 117 — 2026-05-10 (Pagination Hover Color Correction)
+
+### Actions
+- Corrected Pagination hover semantics: active/current page hover now uses a primary-color darkening treatment, while inactive pages use a darker neutral gray hover.
+
+### Verification
+- `cargo fmt --all` passed.
+- `cargo check` passed.
+- `git diff --check` passed.

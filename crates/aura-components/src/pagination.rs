@@ -217,12 +217,12 @@ impl Render for Pagination {
 
             let hover_bg = if active {
                 if background {
-                    theme.neutral.text_3.opacity(0.35)
+                    theme.primary.hover
                 } else {
-                    theme.neutral.text_3.opacity(0.18)
+                    theme.primary.base.opacity(0.18)
                 }
             } else {
-                theme.neutral.text_3.opacity(0.14)
+                theme.neutral.text_3.opacity(0.22)
             };
             let hover_text_color = if active {
                 if background {
