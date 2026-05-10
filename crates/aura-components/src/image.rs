@@ -1,8 +1,10 @@
-use aura_core::{Config, push_portal};
+use crate::preview::Preview;
+pub use crate::preview::render_image_preview;
+use aura_core::Config;
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
 use gpui::{
-    AnyElement, App, Bounds, Component, Corners, Element, ElementId, Global, GlobalElementId, Hsla,
+    AnyElement, App, Bounds, Component, Corners, Element, ElementId, GlobalElementId, Hsla,
     InspectorElementId, IntoElement, LayoutId, ObjectFit, Pixels, RenderImage, RenderOnce,
     SharedString, Style, Window, div, img, prelude::*, px, relative,
 };
@@ -326,71 +328,9 @@ impl Image {
     pub fn source(&self) -> Option<&ImageSource> {
         self.src.as_ref()
     }
-}
-
-pub struct ActiveImagePreview {
-    image: Option<Arc<RenderImage>>,
-}
-
-impl Global for ActiveImagePreview {}
-
-pub fn render_image_preview(window: &mut Window, cx: &mut App) {
-    let Some(image) = cx
-        .try_global::<ActiveImagePreview>()
-        .and_then(|preview| preview.image.clone())
-    else {
-        return;
-    };
-
-    let theme = cx.global::<Config>().theme.clone();
-    push_portal(
-        move |window, _cx| {
-            let viewport = window.viewport_size();
-            div()
-                .absolute()
-                .top_0()
-                .left_0()
-                .size_full()
-                .flex()
-                .items_center()
-                .justify_center()
-                .bg(gpui::black().opacity(0.55))
-                .on_mouse_down(gpui::MouseButton::Left, |_, _, cx| {
-                    if cx.has_global::<ActiveImagePreview>() {
-                        cx.global_mut::<ActiveImagePreview>().image = None;
-                    }
-                    cx.refresh_windows();
-                    cx.stop_propagation();
-                })
-                .child(
-                    div()
-                        .w(viewport.width * 0.72)
-                        .h(viewport.height * 0.72)
-                        .rounded(px(theme.radius.lg))
-                        .overflow_hidden()
-                        .shadow_xl()
-                        .on_mouse_down(gpui::MouseButton::Left, |_, _, cx| {
-                            cx.stop_propagation();
-                        })
-                        .child(RasterImageElement {
-                            image,
-                            fit: ObjectFit::Contain,
-                            grayscale: false,
-                            radius: px(theme.radius.lg),
-                            round: false,
-                            round_options: ImageRoundOptions::without_square_crop(),
-                        }),
-                )
-                .into_any_element()
-        },
-        cx,
-    );
-
-    let _ = window;
-}
-
-fn src_for_preview(src: &Option<ImageSource>) -> Option<ImageSource> {
-    src.clone()
+    pub fn preview_enabled(&self) -> bool {
+        self.preview
+    }
 }
 
 impl RenderOnce for Image {
@@ -490,27 +430,17 @@ impl RenderOnce for Image {
         }
 
         if self.preview {
-            let preview_image = match &src_for_preview(&preview_src) {
-                Some(ImageSource::File(path)) => load_local_render_image(path),
-                Some(ImageSource::Url(url)) => load_remote_render_image(url.as_ref(), window, cx),
-                None => None,
-            };
             frame = frame
                 .cursor_pointer()
-                .hover(|s| s.border_color(theme.primary.base).shadow_lg())
-                .on_mouse_down(gpui::MouseButton::Left, move |_, _, cx| {
-                    if let Some(image) = preview_image.clone() {
-                        if !cx.has_global::<ActiveImagePreview>() {
-                            cx.set_global(ActiveImagePreview { image: None });
-                        }
-                        cx.global_mut::<ActiveImagePreview>().image = Some(image);
-                        cx.refresh_windows();
-                    }
-                    cx.stop_propagation();
-                });
+                .hover(|s| s.border_color(theme.primary.base).shadow_lg());
+            return Preview::empty()
+                .src_from_image_source(preview_src)
+                .hover_effect(false)
+                .child(frame)
+                .into_any_element();
         }
 
-        frame
+        frame.into_any_element()
     }
 }
 
@@ -538,13 +468,13 @@ fn expand_tilde_path(path: &str) -> PathBuf {
     PathBuf::from(path)
 }
 
-struct RasterImageElement {
-    image: Arc<RenderImage>,
-    fit: ObjectFit,
-    grayscale: bool,
-    radius: Pixels,
-    round: bool,
-    round_options: ImageRoundOptions,
+pub(crate) struct RasterImageElement {
+    pub(crate) image: Arc<RenderImage>,
+    pub(crate) fit: ObjectFit,
+    pub(crate) grayscale: bool,
+    pub(crate) radius: Pixels,
+    pub(crate) round: bool,
+    pub(crate) round_options: ImageRoundOptions,
 }
 
 impl IntoElement for RasterImageElement {
@@ -762,7 +692,7 @@ fn remote_image_cache() -> &'static Mutex<HashMap<String, RemoteImageState>> {
     CACHE.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
-fn load_remote_render_image(
+pub(crate) fn load_remote_render_image(
     url: &str,
     window: &mut Window,
     _cx: &mut App,
@@ -813,7 +743,7 @@ fn fetch_remote_render_image(url: &str) -> Option<Arc<RenderImage>> {
     })
 }
 
-fn load_local_render_image(path: &Path) -> Option<Arc<RenderImage>> {
+pub(crate) fn load_local_render_image(path: &Path) -> Option<Arc<RenderImage>> {
     let bytes = std::fs::read(path).ok()?;
     render_image_from_bytes(&bytes)
 }

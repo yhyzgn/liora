@@ -34,6 +34,7 @@ pub mod page_header_demo;
 pub mod pagination_demo;
 pub mod popconfirm_demo;
 pub mod popover_demo;
+pub mod preview_demo;
 pub mod progress_demo;
 pub mod result_demo;
 pub mod scrollbar_demo;
@@ -243,6 +244,11 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "Image 图片",
             description: "图片容器与加载状态",
             render: |cx| image_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "Preview 预览",
+            description: "图片预览弹层",
+            render: |cx| preview_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Timeline 时间线",

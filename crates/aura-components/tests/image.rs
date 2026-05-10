@@ -1,4 +1,5 @@
 use aura_components::{Image, ImageFit};
+use gpui::prelude::*;
 
 #[test]
 fn image_defaults_to_contain_fit() {
@@ -72,4 +73,20 @@ fn image_supports_transparent_ring_sleeve() {
 
     assert_eq!(image.radius_kind(), aura_components::ImageRadius::Round);
     assert_eq!(image.round_config().ring, Some(ring));
+}
+
+#[test]
+fn preview_builder_tracks_source_and_trigger() {
+    let preview = aura_components::Preview::new("https://example.com/full.png")
+        .child(gpui::div().child("Open preview"));
+
+    assert!(preview.source().is_some_and(|source| source.is_url()));
+    assert!(preview.has_trigger());
+}
+
+#[test]
+fn image_preview_builder_still_tracks_enabled_state() {
+    let image = Image::new("https://example.com/image.png").preview(true);
+
+    assert!(image.preview_enabled());
 }

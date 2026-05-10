@@ -1972,3 +1972,25 @@
 
 ### Key Discoveries
 - GPUI `linear_gradient` currently accepts two stops, so arbitrary multi-color gradients are best represented as equal-width adjacent two-stop segments until a multi-stop background API exists.
+
+## Session 119 — 2026-05-10 (Extract Preview Component)
+
+### Actions
+- Extracted Image preview behavior into a standalone `Preview` component with image URL/file source builders and arbitrary trigger content.
+- Kept `Image::preview(true)` behavior and hover styling intact by delegating click/overlay behavior to `Preview` while preserving the Image frame styling.
+- Moved the shared preview portal/global state to the new Preview module and kept `aura_components::image::render_image_preview` as a compatibility re-export.
+- Added a Gallery `Preview 预览` demo entry showing image and custom-card triggers.
+- Added regression tests for the new Preview builder and existing Image preview flag behavior.
+
+### Verification
+- Wrote failing tests first: `cargo test -p aura-components --test image` failed because `Preview` and `Image::preview_enabled` did not exist.
+- `cargo fmt --all` passed.
+- `cargo test -p aura-components --test image` passed.
+- `cargo test -p aura-components` passed.
+- `cargo check` passed.
+- `git diff --check` passed.
+- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+
+### Key Discoveries
+- The preview overlay can be separated cleanly from Image rendering by sharing the existing `RasterImageElement` and image-loading helpers within the crate.
+- Image preview hover styling must remain on the Image frame rather than a wrapper to preserve the existing visual effect.
