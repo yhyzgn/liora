@@ -1,4 +1,4 @@
-use aura_core::{Config, push_portal};
+use aura_core::{Config, push_passive_portal};
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
 use gpui::{
@@ -151,6 +151,8 @@ pub fn show_notification(
 pub fn render_notifications(cx: &mut App) {
     if cx.has_global::<NotificationManagerGlobal>() {
         let manager = cx.global::<NotificationManagerGlobal>().0.clone();
-        push_portal(move |_window, _cx| manager.clone().into_any_element(), cx);
+        if !manager.read(cx).notifications.is_empty() {
+            push_passive_portal(move |_window, _cx| manager.clone().into_any_element(), cx);
+        }
     }
 }

@@ -1902,3 +1902,24 @@
 - Atomic/generated IDs satisfy uniqueness but are unsafe in `RenderOnce` render paths unless the generated value is stored in persistent entity/element state.
 - For persistent `Render` components, constructor-time `unique_id(prefix)` is acceptable because it runs once per entity instance.
 - For stateless `RenderOnce` builders created every frame, use `stable_unique_id` with a stable key, explicit `.id(...)`, or wrap the component in a persistent entity before using runtime-generated IDs.
+
+
+## Session 115 — 2026-05-10 (Portal Interaction Fixes)
+
+### Actions
+- Changed Message and Notification renderers to use passive portals and skip portal creation when empty, so expired toasts no longer leave an input-blocking active portal layer.
+- Rendered Tooltip through the passive portal path because hover-only hints should not create a global input mask.
+- Adjusted Pagination active-page hover to use a distinct active hover background instead of the normal page-hover treatment.
+- Closed collapsed and horizontal Menu popovers after selecting a popover item.
+
+### Verification
+- `cargo fmt --all` passed.
+- `cargo check` passed.
+- `cargo test -p aura-components` passed.
+- `cargo test -p aura-core unique_id_tests::generated_ids_are_prefixed_and_unique` passed.
+- `git diff --check` passed.
+- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+
+### Key Discoveries
+- Passive/non-modal overlays must not use the active `Portal` layer because `PortalLayer` intentionally occludes the full window whenever active portals exist.
+- Toasts and tooltips are visual overlays, not modal interaction surfaces; modal/popover overlays can remain active portals.

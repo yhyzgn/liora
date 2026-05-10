@@ -1,4 +1,4 @@
-use aura_core::{Config, push_portal};
+use aura_core::{Config, push_passive_portal};
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
 use aura_theme::Theme;
@@ -132,7 +132,9 @@ pub fn show_message(content: impl Into<SharedString>, msg_type: MessageType, cx:
 pub fn render_messages(cx: &mut App) {
     if cx.has_global::<MessageManagerGlobal>() {
         let manager = cx.global::<MessageManagerGlobal>().0.clone();
-        push_portal(move |_window, _cx| manager.clone().into_any_element(), cx);
+        if !manager.read(cx).messages.is_empty() {
+            push_passive_portal(move |_window, _cx| manager.clone().into_any_element(), cx);
+        }
     }
 }
 

@@ -604,11 +604,19 @@ impl Menu {
                                 gpui::transparent_black()
                             })
                             .hover(|s| s.bg(theme.neutral.hover))
-                            .on_click(move |_, window, cx| {
-                                let _ = menu_handle.update(cx, |this, cx| {
-                                    this.select_item(id.clone(), window, cx);
-                                    cx.notify();
-                                });
+                            .on_click({
+                                let popover_id = format!(
+                                    "{}-collapsed-popover-{}",
+                                    menu_handle.read(_cx).id,
+                                    id
+                                );
+                                move |_, window, cx| {
+                                    let _ = menu_handle.update(cx, |this, cx| {
+                                        this.select_item(id.clone(), window, cx);
+                                        cx.notify();
+                                    });
+                                    aura_core::clear_popover(&popover_id.clone().into(), cx);
+                                }
                             })
                             .when_some(icon, |s, i| {
                                 s.child(Icon::new(i).size(px(16.0)).color(item_color))

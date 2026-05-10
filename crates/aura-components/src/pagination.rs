@@ -214,6 +214,21 @@ impl Render for Pagination {
             } else {
                 theme.neutral.text_2
             };
+
+            let hover_bg = if active {
+                if background {
+                    theme.primary.hover
+                } else {
+                    theme.primary.base.opacity(0.16)
+                }
+            } else {
+                theme.primary.base.opacity(0.1)
+            };
+            let hover_text_color = if active && background {
+                gpui::white()
+            } else {
+                theme.primary.base
+            };
             let hover_group = SharedString::from(format!("{}-hover", id));
 
             div()
@@ -229,10 +244,8 @@ impl Render for Pagination {
                 .rounded(px(theme.radius.sm))
                 .text_color(text_color)
                 .when(action.is_some() && !disabled, |s| {
-                    s.cursor_pointer().hover(|s| {
-                        s.cursor_pointer()
-                            .bg(theme.primary.base.opacity(0.1))
-                            .text_color(theme.primary.base)
+                    s.cursor_pointer().hover(move |s| {
+                        s.cursor_pointer().bg(hover_bg).text_color(hover_text_color)
                     })
                 })
                 .when_some(action.filter(|_| !disabled), |s, action| {

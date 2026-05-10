@@ -123,7 +123,7 @@ pub fn render_active_tooltip_in_window(window: &mut gpui::Window, cx: &mut App) 
             height: line_height + padding_v * 2.0,
         };
 
-        push_portal(
+        push_passive_portal(
             move |window, _cx| {
                 let viewport = Bounds {
                     origin: gpui::Point::default(),
