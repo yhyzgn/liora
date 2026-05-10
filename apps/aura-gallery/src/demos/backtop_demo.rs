@@ -1,8 +1,10 @@
-use aura_components::Backtop;
+use aura_components::{Backtop, Flex, Space, Text};
 use aura_core::Config;
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
-use gpui::{AnyView, App, Context, Entity, Render, ScrollHandle, Window, div, prelude::*, px};
+use gpui::{AnyView, App, Context, Entity, IntoElement, Render, ScrollHandle, Window, prelude::*};
+
+use super::common::page;
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|cx| BacktopDemo::new(cx)).into()
@@ -23,7 +25,7 @@ impl BacktopDemo {
                 |_| {
                     Backtop::new(scroll_handle)
                         .id("backtop-demo-primary")
-                        .visibility_height(px(100.0))
+                        .visibility_height_sm()
                 }
             }),
             custom: cx.new({
@@ -31,19 +33,17 @@ impl BacktopDemo {
                 |_| {
                     Backtop::new(scroll_handle)
                         .id("backtop-demo-custom")
-                        .visibility_height(px(200.0))
-                        .right(px(100.0))
-                        .content(|_, _| {
-                            div()
-                                .flex()
-                                .items_center()
-                                .justify_center()
+                        .right_lg()
+                        .content(|_, cx| {
+                            let theme = cx.global::<Config>().theme.clone();
+                            Flex::new()
                                 .size_full()
-                                .bg(gpui::blue())
+                                .center()
+                                .bg(theme.primary.base)
                                 .child(
                                     Icon::new(IconName::ArrowUp)
-                                        .size(px(20.0))
-                                        .color(gpui::white()),
+                                        .size_md()
+                                        .color(theme.neutral.card),
                                 )
                                 .into_any_element()
                         })
@@ -59,61 +59,35 @@ impl Render for BacktopDemo {
         let theme = cx.global::<Config>().theme.clone();
         let scroll_handle = self.scroll_handle.clone();
 
-        div()
-            .flex()
-            .flex_col()
-            .gap_8()
-            .p_4()
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap_2()
-                    .child(
-                        div()
-                            .text_lg()
-                            .font_weight(gpui::FontWeight::BOLD)
-                            .child("Backtop 回到顶部"),
-                    )
-                    .child(
-                        div()
-                            .text_sm()
-                            .text_color(theme.neutral.text_3)
-                            .child("向下滚动查看右下角的回到顶部按钮。"),
-                    ),
-            )
-            .child(
-                div()
-                    .relative()
-                    .h(px(560.0))
-                    .overflow_hidden()
-                    .border_1()
-                    .border_color(theme.neutral.border)
-                    .rounded(px(theme.radius.md))
-                    .child(
-                        div()
-                            .size_full()
-                            .id("backtop-scroll-view")
-                            .overflow_y_scroll()
-                            .track_scroll(&scroll_handle)
-                            .on_scroll_wheel(cx.listener(|_, _, _, cx| {
-                                cx.notify();
-                            }))
-                            .child(div().flex().flex_col().gap_4().p_4().children((0..50).map(
-                                |i| {
-                                    div()
-                                        .h(px(40.0))
-                                        .flex()
-                                        .items_center()
-                                        .px_4()
-                                        .bg(theme.neutral.hover)
-                                        .rounded(px(theme.radius.sm))
-                                        .child(format!("Scroll Item {}", i))
-                                },
-                            ))),
-                    )
-                    .child(self.primary.clone())
-                    .child(self.custom.clone()),
-            )
+        page(
+            "Backtop 回到顶部",
+            "向下滚动查看右下角的回到顶部按钮。",
+            Flex::new()
+                .relative()
+                .height_units(560.0)
+                .overflow_hidden()
+                .border()
+                .border_color(theme.neutral.border)
+                .rounded_md()
+                .child(
+                    Flex::new()
+                        .size_full()
+                        .id("backtop-scroll-view")
+                        .overflow_y_scroll()
+                        .track_scroll(&scroll_handle)
+                        .child(Space::new().vertical().gap_sm().children((0..50).map(|i| {
+                            Flex::new()
+                                .height_units(40.0)
+                                .row()
+                                .align_center()
+                                .padding_x_units(16.0)
+                                .bg(theme.neutral.hover)
+                                .rounded_units(4.0)
+                                .child(Text::new(format!("Scroll Item {}", i)))
+                        }))),
+                )
+                .child(self.primary.clone())
+                .child(self.custom.clone()),
+        )
     }
 }

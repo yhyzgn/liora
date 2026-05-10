@@ -2680,3 +2680,28 @@
 
 ### Key Discoveries
 - `Card::overflow_hidden()` is correct for visual clipping, but scroll-region content cards must be non-shrinking so long child content contributes to the outer scroll height instead of being clipped inside the card.
+
+
+## Session 147 — 2026-05-11 (Complete Demo Self-Bootstrap)
+
+### Actions
+- Completed the remaining demo self-bootstrap work for `affix_demo.rs`, `anchor_demo.rs`, `backtop_demo.rs`, `container_demo.rs`, `form_controls_demo.rs`, `form_demo.rs`, `layout_demo.rs`, and `table_demo.rs`.
+- Added the reusable Aura `Flex` layout primitive so demos can express row/column layout, fixed-size showcase panels, scroll viewports, borders, rounded surfaces, padding, and tracked scroll containers without raw GPUI `div()`/`px()` layout calls.
+- Added small convenience APIs needed by self-bootstrapped demos: Affix offset helpers, Anchor offset helper, Backtop visibility/right helpers, Input text/icon addon helpers, Select compact width/text/padding helpers, and Table width/height helpers.
+- Extended gallery regression tests to cover the last self-bootstrap files.
+- Marked P7 Demo Self-Contained complete in `.memory/state.md`.
+
+### Verification
+- Red phase: `cargo test -p aura-gallery demos::tests::` failed on the newly added checks for the remaining non-self-contained demos.
+- `cargo test -p aura-components flex_tracks --lib` passed.
+- `cargo test -p aura-gallery demos::tests::` passed: 24 demo regression tests before full suite, then 25 gallery tests after shell test inclusion.
+- `cargo test -p aura-components` passed: 35 component unit tests plus integration/doc tests.
+- `cargo test -p aura-gallery` passed: 25 gallery tests.
+- `cargo check` passed.
+- `git diff --check` passed.
+- `rg -n "div\(|px\(|\.flex\(\)|\.flex_col\(\)|\.flex_row\(\)" apps/aura-gallery/src/demos -g'*.rs'` now reports only the forbidden-token test list in `demos/mod.rs`.
+- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+
+### Key Discoveries
+- A single Aura-owned `Flex` primitive covers the remaining demo-only layout needs better than continuing to add ad hoc raw GPUI layout snippets in each demo.
+- The last raw GPUI usage was concentrated in complex scroll showcases and older form/table/layout demos; the whole `apps/aura-gallery/src/demos` tree is now guarded by regression tests.

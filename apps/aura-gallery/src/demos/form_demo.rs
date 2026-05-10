@@ -1,9 +1,8 @@
 use aura_components::{
     Checkbox, CheckboxGroup, Form, FormItem, Input, InputNumber, Radio, RadioGroup, Rate, Select,
-    Slider, Switch, Textarea,
+    Slider, Space, Switch, Textarea,
 };
-use aura_icons::Icon;
-use gpui::{App, Context, Entity, IntoElement, Render, Window, div, prelude::*, px};
+use gpui::{App, Context, Entity, IntoElement, Render, Window, prelude::*};
 
 pub fn render(cx: &mut App) -> Entity<FormDemo> {
     cx.new(|cx| FormDemo::new(cx))
@@ -61,8 +60,14 @@ pub struct FormDemo {
 
 impl FormDemo {
     pub fn new(cx: &mut Context<Self>) -> Self {
-        let protocol_select =
-            cx.new(|cx| Select::new(vec!["http://", "https://", "ftp://"], Some(1), cx));
+        let protocol_select = cx.new(|cx| {
+            Select::new(vec!["http://", "https://", "ftp://"], Some(1), cx)
+                .borderless()
+                .radius_right_none()
+                .width_xs()
+                .text_sm()
+                .padding_x_sm()
+        });
 
         Self {
             switch_on: cx.new(|cx| Switch::new(true, cx)),
@@ -162,46 +167,17 @@ impl FormDemo {
             input_password_custom: cx.new(|cx| Input::new("secret", cx).password().mask_char('*')),
             input_maxlength: cx
                 .new(|cx| Input::new("", cx).placeholder("Max 5 chars").max_length(5)),
-            input_prepend: cx.new(|cx| {
-                Input::new("", cx).prepend(|_, _| div().px_3().child("http://").into_any_element())
-            }),
-            input_append: cx.new(|cx| {
-                Input::new("", cx).append(|_, _| div().px_3().child(".com").into_any_element())
-            }),
+            input_prepend: cx.new(|cx| Input::new("", cx).prepend_text("http://")),
+            input_append: cx.new(|cx| Input::new("", cx).append_text(".com")),
             input_composite: cx.new(|cx| {
                 Input::new("", cx)
-                    .prepend(|_, _| {
-                        gpui::div()
-                            .px_3()
-                            .flex()
-                            .items_center()
-                            .child(Icon::new(aura_icons_lucide::IconName::User).size(px(14.0)))
-                            .into_any_element()
-                    })
-                    .append(|_, _| {
-                        div()
-                            .px_3()
-                            .text_size(px(12.0))
-                            .child("Admin")
-                            .into_any_element()
-                    })
+                    .prepend_icon(aura_icons_lucide::IconName::User)
+                    .append_text("Admin")
             }),
             input_select_prepend: cx.new(|cx| {
                 let sel = protocol_select.clone();
                 Input::new("", cx)
-                    .prepend(move |_, cx| {
-                        let theme = cx.global::<aura_core::Config>().theme.clone();
-                        sel.update(cx, |s, cx| {
-                            s.set_borderless(true, cx);
-                            s.set_radius_none(true, cx);
-                            s.set_radius_left_none(false, cx);
-                            s.set_width(px(90.0), cx);
-                            s.set_text_size(px(theme.font_size.sm), cx);
-                            s.set_text_color(theme.neutral.text_3, cx);
-                            s.set_padding_x(px(8.0), cx);
-                        });
-                        div().w(px(90.0)).child(sel.clone()).into_any_element()
-                    })
+                    .prepend(move |_, _| sel.clone().into_any_element())
                     .placeholder("domain.com")
             }),
             input_icon: cx.new(|cx| {
@@ -239,77 +215,55 @@ impl FormDemo {
 }
 
 impl Render for FormDemo {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let _theme = &cx.global::<aura_core::Config>().theme;
-
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         Form::new()
+            .child(FormItem::new().label("Switch 开关").child(control_row(vec![
+                self.switch_on.clone().into_any_element(),
+                self.switch_off.clone().into_any_element(),
+                self.switch_disabled.clone().into_any_element(),
+                self.switch_disabled_on.clone().into_any_element(),
+            ])))
             .child(
-                FormItem::new().label("Switch 开关").child(
-                    div()
-                        .flex()
-                        .flex_row()
-                        .gap_4()
-                        .items_center()
-                        .child(self.switch_on.clone())
-                        .child(self.switch_off.clone())
-                        .child(self.switch_disabled.clone())
-                        .child(self.switch_disabled_on.clone()),
-                ),
+                FormItem::new()
+                    .label("Checkbox 多选")
+                    .required(true)
+                    .child(control_row(vec![
+                        self.cb_checked.clone().into_any_element(),
+                        self.cb_unchecked.clone().into_any_element(),
+                        self.cb_labeled.clone().into_any_element(),
+                        self.cb_disabled.clone().into_any_element(),
+                        self.cb_disabled_checked.clone().into_any_element(),
+                    ])),
             )
             .child(
-                FormItem::new().label("Checkbox 多选").required(true).child(
-                    div()
-                        .flex()
-                        .flex_row()
-                        .gap_4()
-                        .items_center()
-                        .child(self.cb_checked.clone())
-                        .child(self.cb_unchecked.clone())
-                        .child(self.cb_labeled.clone())
-                        .child(self.cb_disabled.clone())
-                        .child(self.cb_disabled_checked.clone()),
-                ),
+                FormItem::new()
+                    .label("CheckboxGroup 多选组")
+                    .child(control_stack(vec![
+                        self.cb_group.clone().into_any_element(),
+                        self.cb_group_buttons_large.clone().into_any_element(),
+                        self.cb_group_buttons_default.clone().into_any_element(),
+                        self.cb_group_buttons_small.clone().into_any_element(),
+                        self.cb_group_buttons_stretch.clone().into_any_element(),
+                    ])),
             )
+            .child(FormItem::new().label("Radio 单选").child(control_row(vec![
+                self.radio_checked.clone().into_any_element(),
+                self.radio_unchecked.clone().into_any_element(),
+                self.radio_labeled.clone().into_any_element(),
+                self.radio_disabled.clone().into_any_element(),
+                self.radio_disabled_checked.clone().into_any_element(),
+            ])))
             .child(
-                FormItem::new().label("CheckboxGroup 多选组").child(
-                    div()
-                        .flex()
-                        .flex_col()
-                        .gap_3()
-                        .child(self.cb_group.clone())
-                        .child(self.cb_group_buttons_large.clone())
-                        .child(self.cb_group_buttons_default.clone())
-                        .child(self.cb_group_buttons_small.clone())
-                        .child(self.cb_group_buttons_stretch.clone()),
-                ),
-            )
-            .child(
-                FormItem::new().label("Radio 单选").child(
-                    div()
-                        .flex()
-                        .flex_row()
-                        .gap_4()
-                        .items_center()
-                        .child(self.radio_checked.clone())
-                        .child(self.radio_unchecked.clone())
-                        .child(self.radio_labeled.clone())
-                        .child(self.radio_disabled.clone())
-                        .child(self.radio_disabled_checked.clone()),
-                ),
-            )
-            .child(
-                FormItem::new().label("RadioGroup 单选组").child(
-                    div()
-                        .flex()
-                        .flex_col()
-                        .gap_2()
-                        .child(self.radio_group.clone())
-                        .child(self.radio_group_buttons_large.clone())
-                        .child(self.radio_group_buttons_default.clone())
-                        .child(self.radio_group_buttons_small.clone())
-                        .child(self.radio_group_buttons_stretch.clone())
-                        .child(self.radio_group_disabled.clone()),
-                ),
+                FormItem::new()
+                    .label("RadioGroup 单选组")
+                    .child(control_stack(vec![
+                        self.radio_group.clone().into_any_element(),
+                        self.radio_group_buttons_large.clone().into_any_element(),
+                        self.radio_group_buttons_default.clone().into_any_element(),
+                        self.radio_group_buttons_small.clone().into_any_element(),
+                        self.radio_group_buttons_stretch.clone().into_any_element(),
+                        self.radio_group_disabled.clone().into_any_element(),
+                    ])),
             )
             .child(
                 FormItem::new()
@@ -317,68 +271,61 @@ impl Render for FormDemo {
                     .child(self.select_basic.clone()),
             )
             .child(
-                FormItem::new().label("Input 输入框").required(true).child(
-                    div()
-                        .flex()
-                        .flex_col()
-                        .gap_2()
-                        .child(self.input_plain.clone())
-                        .child(self.input_placeholder.clone())
-                        .child(self.input_password.clone())
-                        .child(self.input_password_custom.clone())
-                        .child(self.input_maxlength.clone())
-                        .child(self.input_prepend.clone())
-                        .child(self.input_append.clone())
-                        .child(self.input_select_prepend.clone())
-                        .child(self.input_composite.clone())
-                        .child(self.input_icon.clone())
-                        .child(self.input_clearable.clone())
-                        .child(self.input_disabled.clone()),
-                ),
+                FormItem::new()
+                    .label("Input 输入框")
+                    .required(true)
+                    .child(control_stack(vec![
+                        self.input_plain.clone().into_any_element(),
+                        self.input_placeholder.clone().into_any_element(),
+                        self.input_password.clone().into_any_element(),
+                        self.input_password_custom.clone().into_any_element(),
+                        self.input_maxlength.clone().into_any_element(),
+                        self.input_prepend.clone().into_any_element(),
+                        self.input_append.clone().into_any_element(),
+                        self.input_select_prepend.clone().into_any_element(),
+                        self.input_composite.clone().into_any_element(),
+                        self.input_icon.clone().into_any_element(),
+                        self.input_clearable.clone().into_any_element(),
+                        self.input_disabled.clone().into_any_element(),
+                    ])),
             )
             .child(
-                FormItem::new().label("InputNumber 数字输入").child(
-                    div()
-                        .flex()
-                        .flex_col()
-                        .gap_2()
-                        .child(self.input_number.clone())
-                        .child(self.input_number_vertical.clone())
-                        .child(self.input_number_precision.clone()),
-                ),
+                FormItem::new()
+                    .label("InputNumber 数字输入")
+                    .child(control_stack(vec![
+                        self.input_number.clone().into_any_element(),
+                        self.input_number_vertical.clone().into_any_element(),
+                        self.input_number_precision.clone().into_any_element(),
+                    ])),
             )
             .child(
                 FormItem::new()
                     .label("Textarea 文本域")
                     .error("This is an error message")
-                    .child(
-                        div()
-                            .flex()
-                            .flex_col()
-                            .gap_2()
-                            .child(self.textarea.clone())
-                            .child(self.textarea_limit.clone()),
-                    ),
+                    .child(control_stack(vec![
+                        self.textarea.clone().into_any_element(),
+                        self.textarea_limit.clone().into_any_element(),
+                    ])),
             )
             .child(
-                FormItem::new().label("Slider 滑块").child(
-                    div()
-                        .flex()
-                        .flex_col()
-                        .gap_2()
-                        .child(self.slider_basic.clone())
-                        .child(self.slider_step.clone()),
-                ),
+                FormItem::new()
+                    .label("Slider 滑块")
+                    .child(control_stack(vec![
+                        self.slider_basic.clone().into_any_element(),
+                        self.slider_step.clone().into_any_element(),
+                    ])),
             )
-            .child(
-                FormItem::new().label("Rate 评分").child(
-                    div()
-                        .flex()
-                        .flex_col()
-                        .gap_2()
-                        .child(self.rate_basic.clone())
-                        .child(self.rate_custom.clone()),
-                ),
-            )
+            .child(FormItem::new().label("Rate 评分").child(control_stack(vec![
+                self.rate_basic.clone().into_any_element(),
+                self.rate_custom.clone().into_any_element(),
+            ])))
     }
+}
+
+fn control_row(children: Vec<impl IntoElement>) -> impl IntoElement {
+    Space::new().wrap().gap_lg().children(children)
+}
+
+fn control_stack(children: Vec<impl IntoElement>) -> impl IntoElement {
+    Space::new().vertical().gap_sm().children(children)
 }

@@ -67,9 +67,18 @@ impl Select {
         self.width = Some(w.into());
         self
     }
+
+    pub fn width_xs(self) -> Self {
+        self.width(gpui::px(90.0))
+    }
+
     pub fn text_size(mut self, s: impl Into<Pixels>) -> Self {
         self.text_size = Some(s.into());
         self
+    }
+
+    pub fn text_sm(self) -> Self {
+        self.text_size(gpui::px(14.0))
     }
     pub fn text_color(mut self, c: Hsla) -> Self {
         self.text_color = Some(c);
@@ -78,6 +87,10 @@ impl Select {
     pub fn padding_x(mut self, p: impl Into<Pixels>) -> Self {
         self.padding_x = Some(p.into());
         self
+    }
+
+    pub fn padding_x_sm(self) -> Self {
+        self.padding_x(gpui::px(8.0))
     }
 
     pub fn set_borderless(&mut self, b: bool, cx: &mut Context<Self>) {

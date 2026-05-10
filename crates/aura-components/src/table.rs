@@ -84,9 +84,17 @@ impl TableColumn {
         self
     }
 
+    pub fn width_sm(self) -> Self {
+        self.width(px(120.0))
+    }
+
     pub fn min_width(mut self, width: impl Into<Pixels>) -> Self {
         self.min_width = width.into();
         self
+    }
+
+    pub fn min_width_lg(self) -> Self {
+        self.min_width(px(260.0))
     }
 
     pub fn align(mut self, align: TableAlign) -> Self {
@@ -177,6 +185,10 @@ impl Table {
     pub fn height(mut self, height: impl Into<Pixels>) -> Self {
         self.height = Some(height.into());
         self
+    }
+
+    pub fn height_md(self) -> Self {
+        self.height(px(260.0))
     }
 
     pub fn empty_text(mut self, text: impl Into<SharedString>) -> Self {

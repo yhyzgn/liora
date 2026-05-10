@@ -1,11 +1,13 @@
-use aura_components::{Affix, AffixPosition, Button, ButtonVariant};
+use aura_components::{Affix, AffixPosition, Button, ButtonVariant, Flex, Text};
 use aura_core::Config;
-use gpui::{AnyView, App, Context, Entity, Render, Window, div, prelude::*, px};
+use gpui::{AnyView, App, Context, Entity, IntoElement, Render, Window, prelude::*};
+
+use super::common::page;
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|cx| AffixDemo {
         top_affix: cx.new(|_| {
-            Affix::new().offset(px(80.0)).content(|_, _| {
+            Affix::new().offset_lg().content(|_, _| {
                 Button::new("固钉在距离顶部 80px 的位置")
                     .variant(ButtonVariant::Primary)
                     .into_any_element()
@@ -14,7 +16,7 @@ pub fn render(cx: &mut App) -> AnyView {
         bottom_affix: cx.new(|_| {
             Affix::new()
                 .position(AffixPosition::Bottom)
-                .offset(px(20.0))
+                .offset_md()
                 .content(|_, _| {
                     Button::new("固钉在距离底部 20px 的位置")
                         .variant(ButtonVariant::Success)
@@ -34,76 +36,40 @@ impl Render for AffixDemo {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
 
-        div()
-            .flex()
-            .flex_col()
-            .gap_8()
-            .p_4()
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap_2()
-                    .child(
-                        div()
-                            .text_lg()
-                            .font_weight(gpui::FontWeight::BOLD)
-                            .child("Affix 固钉"),
-                    )
-                    .child(
-                        div()
-                            .text_sm()
-                            .text_color(theme.neutral.text_3)
-                            .child("将内容固定在特定可视区域。"),
-                    ),
-            )
-            .child(
-                div()
-                    .relative()
-                    .h(px(560.0))
-                    .overflow_hidden()
-                    .border_1()
-                    .border_color(theme.neutral.border)
-                    .rounded(px(theme.radius.md))
-                    .bg(theme.neutral.hover)
-                    .child(
-                        div()
-                            .size_full()
-                            .id("affix-scroll-view")
-                            .overflow_y_scroll()
-                            .on_scroll_wheel(cx.listener(|_, _, _, cx| {
-                                cx.notify();
-                            }))
-                            .p_4()
-                            .child(
-                                div()
-                                    .h(px(200.0))
-                                    .flex()
-                                    .items_center()
-                                    .justify_center()
-                                    .child(
-                                        div()
-                                            .text_sm()
-                                            .text_color(theme.neutral.text_3)
-                                            .child("向下滚动查看固钉效果"),
-                                    ),
-                            )
-                            .child(self.top_affix.clone())
-                            .child(
-                                div()
-                                    .h(px(800.0))
-                                    .bg(theme.neutral.card)
-                                    .my_4()
-                                    .border_1()
-                                    .border_color(theme.neutral.border)
-                                    .flex()
-                                    .items_center()
-                                    .justify_center()
-                                    .child(div().child("长内容占位")),
-                            )
-                            .child(self.bottom_affix.clone())
-                            .child(div().h(px(400.0))),
-                    ),
-            )
+        page(
+            "Affix 固钉",
+            "将内容固定在特定可视区域。",
+            Flex::new()
+                .relative()
+                .height_units(560.0)
+                .overflow_hidden()
+                .border()
+                .border_color(theme.neutral.border)
+                .rounded_md()
+                .bg(theme.neutral.hover)
+                .child(
+                    Flex::new()
+                        .size_full()
+                        .id("affix-scroll-view")
+                        .overflow_y_scroll()
+                        .padding_md()
+                        .child(Flex::new().height_units(200.0).center().child(
+                            Text::new("向下滚动查看固钉效果").text_color(theme.neutral.text_3),
+                        ))
+                        .child(self.top_affix.clone())
+                        .child(
+                            Flex::new()
+                                .height_units(800.0)
+                                .bg(theme.neutral.card)
+                                .margin_y_units(16.0)
+                                .border()
+                                .border_color(theme.neutral.border)
+                                .center()
+                                .child(Text::new("长内容占位")),
+                        )
+                        .child(self.bottom_affix.clone())
+                        .child(Flex::new().height_units(400.0)),
+                ),
+        )
     }
 }

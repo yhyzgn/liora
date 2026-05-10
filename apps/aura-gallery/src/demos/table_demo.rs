@@ -1,9 +1,11 @@
 use aura_components::{
-    Button, ButtonSize, ButtonVariant, Table, TableAlign, TableColumn, TableRow, TableSortOrder,
-    TableSortState, Text,
+    Button, ButtonSize, ButtonVariant, Space, Table, TableAlign, TableColumn, TableRow,
+    TableSortOrder, TableSortState, Tag, Text,
 };
 use aura_core::Config;
-use gpui::{AnyView, App, Context, Render, SharedString, Window, div, prelude::*, px};
+use gpui::{AnyView, App, Context, IntoElement, Render, SharedString, Window, prelude::*};
+
+use super::common::{page, section};
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|_| TableDemo {
@@ -41,96 +43,70 @@ impl Render for TableDemo {
             sortable_table = sortable_table.sort(key, sort_order);
         }
 
-        div()
-            .flex()
-            .flex_col()
-            .gap_8()
-            .p_4()
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap_2()
-                    .child(
-                        div()
-                            .text_lg()
-                            .font_weight(gpui::FontWeight::BOLD)
-                            .child("Table 表格"),
-                    )
-                    .child(
-                        div()
-                            .text_sm()
-                            .text_color(theme.neutral.text_3)
-                            .child("用于展示多条结构化数据，支持基础表格、斑马纹、边框、固定表头、加载、空状态、自定义表头和开发者启用的三态排序。"),
-                    ),
-            )
-            .child(section(
-                "自定义表头与可排序列",
-                sortable_table.into_any_element(),
-            ))
-            .child(section(
-                "基础用法",
-                Table::new(basic_columns()).rows(basic_rows()).into_any_element(),
-            ))
-            .child(section(
-                "斑马纹与边框",
-                Table::new(basic_columns())
-                    .rows(basic_rows())
-                    .stripe(true)
-                    .border(true)
-                    .into_any_element(),
-            ))
-            .child(section(
-                "固定表头",
-                Table::new(basic_columns())
-                    .rows(long_rows())
-                    .stripe(true)
-                    .fixed_header(true)
-                    .height(px(260.0))
-                    .into_any_element(),
-            ))
-            .child(section(
-                "加载状态",
-                Table::new(basic_columns())
-                    .rows(basic_rows())
-                    .loading(true)
-                    .into_any_element(),
-            ))
-            .child(section(
-                "空数据",
-                Table::new(basic_columns())
-                    .empty_text("暂无订单数据")
-                    .into_any_element(),
-            ))
+        page(
+            "Table 表格",
+            "用于展示多条结构化数据，支持基础表格、斑马纹、边框、固定表头、加载、空状态、自定义表头和开发者启用的三态排序。",
+            Space::new()
+                .vertical()
+                .gap_xl()
+                .child(section(
+                    "自定义表头与可排序列",
+                    "点击表头可切换三态排序。",
+                    sortable_table,
+                ))
+                .child(section(
+                    "基础用法",
+                    "基础表格行列展示。",
+                    Table::new(basic_columns()).rows(basic_rows()),
+                ))
+                .child(section(
+                    "斑马纹与边框",
+                    "通过 stripe 和 border 强化表格层次。",
+                    Table::new(basic_columns())
+                        .rows(basic_rows())
+                        .stripe(true)
+                        .border(true),
+                ))
+                .child(section(
+                    "固定表头",
+                    "长列表在固定高度中滚动。",
+                    Table::new(basic_columns())
+                        .rows(long_rows())
+                        .stripe(true)
+                        .fixed_header(true)
+                        .height_md(),
+                ))
+                .child(section(
+                    "加载状态",
+                    "加载遮罩覆盖表格内容。",
+                    Table::new(basic_columns()).rows(basic_rows()).loading(true),
+                ))
+                .child(section(
+                    "空数据",
+                    "无数据时展示空状态文案。",
+                    Table::new(basic_columns()).empty_text("暂无订单数据"),
+                )),
+        )
     }
-}
-
-fn section(title: &'static str, content: gpui::AnyElement) -> gpui::Div {
-    div()
-        .flex()
-        .flex_col()
-        .gap_4()
-        .child(div().font_weight(gpui::FontWeight::BOLD).child(title))
-        .child(content)
 }
 
 fn basic_columns() -> Vec<TableColumn> {
     vec![
-        TableColumn::new("date", "日期").width(px(120.0)),
-        TableColumn::new("name", "姓名").width(px(120.0)),
-        TableColumn::new("address", "地址").min_width(px(260.0)),
+        TableColumn::new("date", "日期").width_sm(),
+        TableColumn::new("name", "姓名").width_sm(),
+        TableColumn::new("address", "地址").min_width_lg(),
         TableColumn::new("status", "状态")
-            .width(px(120.0))
+            .width_sm()
             .align(TableAlign::Center),
         TableColumn::new("action", "操作")
-            .width(px(120.0))
+            .width_sm()
             .align(TableAlign::Right),
     ]
 }
 
 fn sortable_columns(theme: &aura_theme::Theme) -> Vec<TableColumn> {
     vec![
-        TableColumn::new("date", "日期").width(px(120.0)).sortable(),
+        TableColumn::new("date", "日期").width_sm().sortable(),
         TableColumn::new("name", "姓名")
             .header(
                 Text::new("客户")
@@ -138,15 +114,15 @@ fn sortable_columns(theme: &aura_theme::Theme) -> Vec<TableColumn> {
                     .text_color(theme.primary.base)
                     .nowrap(),
             )
-            .width(px(120.0))
+            .width_sm()
             .sortable(),
-        TableColumn::new("address", "地址").min_width(px(260.0)),
+        TableColumn::new("address", "地址").min_width_lg(),
         TableColumn::new("status", "状态")
-            .width(px(120.0))
+            .width_sm()
             .align(TableAlign::Center)
             .sortable(),
         TableColumn::new("action", "操作")
-            .width(px(120.0))
+            .width_sm()
             .align(TableAlign::Right),
     ]
 }
@@ -255,29 +231,20 @@ fn row(
         .cell("date", date)
         .cell("name", name)
         .cell("address", address)
-        .cell(
-            "status",
-            div()
-                .px_2()
-                .py_1()
-                .rounded(px(999.0))
-                .bg(match status {
-                    "已完成" => gpui::green().opacity(0.12),
-                    "进行中" => gpui::blue().opacity(0.12),
-                    _ => gpui::yellow().opacity(0.18),
-                })
-                .text_color(match status {
-                    "已完成" => gpui::green(),
-                    "进行中" => gpui::blue(),
-                    _ => gpui::yellow(),
-                })
-                .text_xs()
-                .child(status),
-        )
+        .cell("status", status_tag(status))
         .cell(
             "action",
             Button::new("查看")
                 .variant(ButtonVariant::Primary)
                 .size(ButtonSize::Small),
         )
+}
+
+fn status_tag(status: &'static str) -> impl IntoElement {
+    let tag = Tag::new(status).round(true).small();
+    match status {
+        "已完成" => tag.success(),
+        "进行中" => tag.info(),
+        _ => tag.warning(),
+    }
 }

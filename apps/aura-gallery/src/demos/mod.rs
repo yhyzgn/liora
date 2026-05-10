@@ -512,6 +512,8 @@ mod tests {
     fn layout_container_demos_use_aura_layout_primitives() {
         for (file_name, source) in [
             ("card_demo.rs", include_str!("card_demo.rs")),
+            ("container_demo.rs", include_str!("container_demo.rs")),
+            ("layout_demo.rs", include_str!("layout_demo.rs")),
             ("scrollbar_demo.rs", include_str!("scrollbar_demo.rs")),
             ("splitter_demo.rs", include_str!("splitter_demo.rs")),
         ] {
@@ -583,6 +585,35 @@ mod tests {
     #[test]
     fn image_demo_uses_aura_layout_primitives() {
         assert_demo_uses_aura_layout_primitives("image_demo.rs", include_str!("image_demo.rs"));
+    }
+
+    #[test]
+    fn form_demos_use_aura_layout_primitives() {
+        for (file_name, source) in [
+            (
+                "form_controls_demo.rs",
+                include_str!("form_controls_demo.rs"),
+            ),
+            ("form_demo.rs", include_str!("form_demo.rs")),
+        ] {
+            assert_demo_uses_aura_layout_primitives(file_name, source);
+        }
+    }
+
+    #[test]
+    fn complex_scroll_demos_use_aura_layout_primitives() {
+        for (file_name, source) in [
+            ("affix_demo.rs", include_str!("affix_demo.rs")),
+            ("anchor_demo.rs", include_str!("anchor_demo.rs")),
+            ("backtop_demo.rs", include_str!("backtop_demo.rs")),
+        ] {
+            assert_demo_uses_aura_layout_primitives(file_name, source);
+        }
+    }
+
+    #[test]
+    fn table_demo_uses_aura_layout_primitives() {
+        assert_demo_uses_aura_layout_primitives("table_demo.rs", include_str!("table_demo.rs"));
     }
 
     #[test]

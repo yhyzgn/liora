@@ -656,12 +656,27 @@ impl Input {
         self.prepend = Some(Box::new(render));
         self
     }
+
+    pub fn prepend_text(self, text: impl Into<SharedString>) -> Self {
+        let text = text.into();
+        self.prepend(move |_, _| gpui::div().px_3().child(text.clone()).into_any_element())
+    }
+
+    pub fn prepend_icon(self, icon: IconName) -> Self {
+        self.prepend(move |_, _| Icon::new(icon).size(px(14.0)).into_any_element())
+    }
+
     pub fn append(
         mut self,
         render: impl Fn(&mut Window, &mut App) -> AnyElement + 'static,
     ) -> Self {
         self.append = Some(Box::new(render));
         self
+    }
+
+    pub fn append_text(self, text: impl Into<SharedString>) -> Self {
+        let text = text.into();
+        self.append(move |_, _| gpui::div().px_3().child(text.clone()).into_any_element())
     }
 }
 
@@ -1338,5 +1353,17 @@ mod width_tests {
         assert!(source.contains("width: Option<Pixels>"));
         assert!(source.contains("pub fn width_sm(self) -> Self"));
         assert!(source.contains(".when_some(self.width, |s, w| s.w(w))"));
+    }
+
+    #[test]
+    fn input_text_addons_are_available_for_self_bootstrapped_demos() {
+        let source = include_str!("input.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(source.contains("pub fn prepend_text"));
+        assert!(source.contains("pub fn append_text"));
+        assert!(source.contains("pub fn prepend_icon"));
     }
 }

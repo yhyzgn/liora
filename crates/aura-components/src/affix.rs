@@ -39,6 +39,14 @@ impl Affix {
         self
     }
 
+    pub fn offset_md(self) -> Self {
+        self.offset(px(20.0))
+    }
+
+    pub fn offset_lg(self) -> Self {
+        self.offset(px(80.0))
+    }
+
     pub fn position(mut self, pos: AffixPosition) -> Self {
         self.position = pos;
         self

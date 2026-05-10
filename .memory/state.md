@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-**P7 - Demo Self-Contained** (进行中；已启动 Demo 自举改造与组件名 ASC 排序；P9 deferred backlog 保持等待明确请求)
+**P8 - Engineering** (待启动；P7 Demo 完全自举已完成，P9 deferred backlog 保持等待明确请求)
 
 ## Completed in P4
 
@@ -27,7 +27,7 @@
 | P4 Nav+Data | ✅ Done | 21/21 | 21 |
 | P5 Advanced | 🏁 Requested subset complete / remaining deferred | 11/20 | 20 |
 | P6 Built-in Unique ID | ✅ Done | 1/1 | 1 |
-| P7 Demo Self-Contained | 🔄 In Progress | 0/1 | 1 |
+| P7 Demo Self-Contained | ✅ Done | 1/1 | 1 |
 | P8 Engineering | ⬜ Pending | 0/1 | 1 |
 | P9 Deferred Advanced | ⏸️ Deferred backlog | 0/9 | 9 |
 

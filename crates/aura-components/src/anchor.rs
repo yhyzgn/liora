@@ -51,6 +51,10 @@ impl Anchor {
         self
     }
 
+    pub fn offset_sm(self) -> Self {
+        self.offset(px(20.0))
+    }
+
     pub fn link(mut self, link: AnchorLink) -> Self {
         self.links.push(link);
         self

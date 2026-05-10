@@ -1,6 +1,8 @@
-use aura_components::{Anchor, AnchorLink, AnchorTarget};
+use aura_components::{Anchor, AnchorLink, AnchorTarget, Flex, Space, Text};
 use aura_core::Config;
-use gpui::{AnyView, App, Context, Entity, Render, ScrollHandle, Window, div, prelude::*, px};
+use gpui::{AnyView, App, Context, Entity, IntoElement, Render, ScrollHandle, Window, prelude::*};
+
+use super::common::page;
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|cx| AnchorDemo::new(cx)).into()
@@ -18,7 +20,7 @@ impl AnchorDemo {
             let scroll_handle = scroll_handle.clone();
             |_| {
                 Anchor::new(scroll_handle)
-                    .offset(px(20.0))
+                    .offset_sm()
                     .link(AnchorLink::new("基础用法", "basic"))
                     .link(
                         AnchorLink::new("API", "api")
@@ -40,114 +42,63 @@ impl Render for AnchorDemo {
         let scroll_handle = self.scroll_handle.clone();
         let anchor = self.anchor.clone();
 
-        div()
-            .flex()
-            .flex_col()
-            .gap_8()
-            .p_4()
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap_2()
-                    .child(
-                        div()
-                            .text_lg()
-                            .font_weight(gpui::FontWeight::BOLD)
-                            .child("Anchor 锚点"),
-                    )
-                    .child(
-                        div()
-                            .text_sm()
-                            .text_color(theme.neutral.text_3)
-                            .child("用于在长页面中提供快速跳转。"),
-                    ),
-            )
-            .child(
-                div()
-                    .flex()
-                    .flex_row()
-                    .gap_4()
-                    .h(px(620.0))
-                    .overflow_hidden()
-                    .border_1()
-                    .border_color(theme.neutral.border)
-                    .rounded(px(theme.radius.md))
-                    .p_4()
-                    .child(
-                        div()
-                            .flex()
-                            .flex_col()
-                            .w(gpui::relative(0.75))
-                            .h_full()
+        page(
+            "Anchor 锚点",
+            "用于在长页面中提供快速跳转。",
+            Flex::new()
+                .row()
+                .gap_lg()
+                .height_units(620.0)
+                .overflow_hidden()
+                .border()
+                .border_color(theme.neutral.border)
+                .rounded_md()
+                .padding_md()
+                .child(
+                    Flex::new().column().width_percent(75.0).h_full().child(
+                        Flex::new()
+                            .flex_1()
+                            .id("anchor-scroll-view")
+                            .overflow_y_scroll()
+                            .track_scroll(&scroll_handle)
                             .child(
-                                div()
-                                    .flex_1()
-                                    .id("anchor-scroll-view")
-                                    .overflow_y_scroll()
-                                    .track_scroll(&scroll_handle)
-                                    .on_scroll_wheel(cx.listener(|_, _, _, cx| {
-                                        cx.notify();
-                                    }))
-                                    .child(
-                                        div()
-                                            .flex()
-                                            .flex_col()
-                                            .gap_10()
-                                            .p_4()
-                                            .child(AnchorTarget::new(
-                                                "basic",
-                                                anchor.clone(),
-                                                div()
-                                                    .h(px(400.0))
-                                                    .bg(theme.neutral.hover)
-                                                    .rounded(px(theme.radius.md))
-                                                    .flex()
-                                                    .items_center()
-                                                    .justify_center()
-                                                    .child("基础用法内容区域"),
-                                            ))
-                                            .child(AnchorTarget::new(
-                                                "api",
-                                                anchor.clone(),
-                                                div()
-                                                    .h(px(200.0))
-                                                    .bg(theme.neutral.hover)
-                                                    .rounded(px(theme.radius.md))
-                                                    .flex()
-                                                    .items_center()
-                                                    .justify_center()
-                                                    .child("API 内容区域"),
-                                            ))
-                                            .child(AnchorTarget::new(
-                                                "attributes",
-                                                anchor.clone(),
-                                                div()
-                                                    .h(px(400.0))
-                                                    .bg(theme.neutral.hover)
-                                                    .rounded(px(theme.radius.md))
-                                                    .flex()
-                                                    .items_center()
-                                                    .justify_center()
-                                                    .child("Attributes 内容区域"),
-                                            ))
-                                            .child(AnchorTarget::new(
-                                                "events",
-                                                anchor.clone(),
-                                                div()
-                                                    .h(px(400.0))
-                                                    .bg(theme.neutral.hover)
-                                                    .rounded(px(theme.radius.md))
-                                                    .flex()
-                                                    .items_center()
-                                                    .justify_center()
-                                                    .child("Events 内容区域"),
-                                            ))
-                                            .child(div().h(px(400.0))), // Bottom spacer
-                                    ),
+                                Space::new()
+                                    .vertical()
+                                    .gap_xl()
+                                    .child(AnchorTarget::new(
+                                        "basic",
+                                        anchor.clone(),
+                                        anchor_panel(&theme, "基础用法内容区域", 400.0),
+                                    ))
+                                    .child(AnchorTarget::new(
+                                        "api",
+                                        anchor.clone(),
+                                        anchor_panel(&theme, "API 内容区域", 200.0),
+                                    ))
+                                    .child(AnchorTarget::new(
+                                        "attributes",
+                                        anchor.clone(),
+                                        anchor_panel(&theme, "Attributes 内容区域", 400.0),
+                                    ))
+                                    .child(AnchorTarget::new(
+                                        "events",
+                                        anchor.clone(),
+                                        anchor_panel(&theme, "Events 内容区域", 400.0),
+                                    ))
+                                    .child(Flex::new().height_units(400.0)),
                             ),
-                    )
-                    .child(div().w(gpui::relative(0.25)).child(anchor)),
-            )
+                    ),
+                )
+                .child(Flex::new().width_percent(25.0).child(anchor)),
+        )
     }
+}
+
+fn anchor_panel(theme: &aura_theme::Theme, label: &'static str, height: f32) -> impl IntoElement {
+    Flex::new()
+        .height_units(height)
+        .bg(theme.neutral.hover)
+        .rounded_md()
+        .center()
+        .child(Text::new(label))
 }

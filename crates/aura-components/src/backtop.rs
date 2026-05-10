@@ -39,9 +39,17 @@ impl Backtop {
         self
     }
 
+    pub fn visibility_height_sm(self) -> Self {
+        self.visibility_height(px(100.0))
+    }
+
     pub fn right(mut self, r: impl Into<Pixels>) -> Self {
         self.right = r.into();
         self
+    }
+
+    pub fn right_lg(self) -> Self {
+        self.right(px(100.0))
     }
 
     pub fn bottom(mut self, b: impl Into<Pixels>) -> Self {

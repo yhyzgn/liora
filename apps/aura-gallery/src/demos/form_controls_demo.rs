@@ -1,17 +1,23 @@
 use aura_components::{
-    Checkbox, CheckboxGroup, Input, InputNumber, Radio, RadioGroup, Rate, Select, Slider, Switch,
-    Textarea,
+    Checkbox, CheckboxGroup, Input, InputNumber, Radio, RadioGroup, Rate, Select, Slider, Space,
+    Switch, Text, Textarea,
 };
-use aura_icons::Icon;
-use gpui::{AnyView, App, Context, Entity, IntoElement, Render, Window, div, prelude::*, px};
+use gpui::{AnyView, App, Context, Entity, IntoElement, Render, Window, prelude::*};
 
 fn section(title: &'static str, content: impl IntoElement) -> impl IntoElement {
-    div()
-        .flex()
-        .flex_col()
-        .gap_3()
-        .child(div().font_weight(gpui::FontWeight::BOLD).child(title))
+    Space::new()
+        .vertical()
+        .gap_md()
+        .child(Text::new(title).bold())
         .child(content)
+}
+
+fn control_row(children: Vec<impl IntoElement>) -> impl IntoElement {
+    Space::new().wrap().gap_lg().children(children)
+}
+
+fn control_stack(children: Vec<impl IntoElement>) -> impl IntoElement {
+    Space::new().vertical().gap_md().children(children)
 }
 
 pub fn render_input(cx: &mut App) -> AnyView {
@@ -35,8 +41,14 @@ struct InputUsage {
 
 impl InputUsage {
     fn new(cx: &mut Context<Self>) -> Self {
-        let protocol_select =
-            cx.new(|cx| Select::new(vec!["http://", "https://", "ftp://"], Some(1), cx));
+        let protocol_select = cx.new(|cx| {
+            Select::new(vec!["http://", "https://", "ftp://"], Some(1), cx)
+                .borderless()
+                .radius_right_none()
+                .width_xs()
+                .text_sm()
+                .padding_x_sm()
+        });
 
         Self {
             plain: cx.new(|cx| Input::new("", cx)),
@@ -44,46 +56,17 @@ impl InputUsage {
             password: cx.new(|cx| Input::new("", cx).password().placeholder("Password")),
             password_custom: cx.new(|cx| Input::new("secret", cx).password().mask_char('*')),
             maxlength: cx.new(|cx| Input::new("", cx).placeholder("Max 5 chars").max_length(5)),
-            prepend: cx.new(|cx| {
-                Input::new("", cx).prepend(|_, _| div().px_3().child("http://").into_any_element())
-            }),
-            append: cx.new(|cx| {
-                Input::new("", cx).append(|_, _| div().px_3().child(".com").into_any_element())
-            }),
+            prepend: cx.new(|cx| Input::new("", cx).prepend_text("http://")),
+            append: cx.new(|cx| Input::new("", cx).append_text(".com")),
             composite: cx.new(|cx| {
                 Input::new("", cx)
-                    .prepend(|_, _| {
-                        div()
-                            .px_3()
-                            .flex()
-                            .items_center()
-                            .child(Icon::new(aura_icons_lucide::IconName::User).size(px(14.0)))
-                            .into_any_element()
-                    })
-                    .append(|_, _| {
-                        div()
-                            .px_3()
-                            .text_size(px(12.0))
-                            .child("Admin")
-                            .into_any_element()
-                    })
+                    .prepend_icon(aura_icons_lucide::IconName::User)
+                    .append_text("Admin")
             }),
             select_prepend: cx.new(|cx| {
                 let sel = protocol_select.clone();
                 Input::new("", cx)
-                    .prepend(move |_, cx| {
-                        let theme = cx.global::<aura_core::Config>().theme.clone();
-                        sel.update(cx, |s, cx| {
-                            s.set_borderless(true, cx);
-                            s.set_radius_none(true, cx);
-                            s.set_radius_left_none(false, cx);
-                            s.set_width(px(90.0), cx);
-                            s.set_text_size(px(theme.font_size.sm), cx);
-                            s.set_text_color(theme.neutral.text_3, cx);
-                            s.set_padding_x(px(8.0), cx);
-                        });
-                        div().w(px(90.0)).child(sel.clone()).into_any_element()
-                    })
+                    .prepend(move |_, _| sel.clone().into_any_element())
                     .placeholder("domain.com")
             }),
             icon: cx.new(|cx| {
@@ -100,22 +83,20 @@ impl InputUsage {
 
 impl Render for InputUsage {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        div()
-            .flex()
-            .flex_col()
-            .gap_3()
-            .child(self.plain.clone())
-            .child(self.placeholder.clone())
-            .child(self.password.clone())
-            .child(self.password_custom.clone())
-            .child(self.maxlength.clone())
-            .child(self.prepend.clone())
-            .child(self.append.clone())
-            .child(self.select_prepend.clone())
-            .child(self.composite.clone())
-            .child(self.icon.clone())
-            .child(self.clearable.clone())
-            .child(self.disabled.clone())
+        control_stack(vec![
+            self.plain.clone().into_any_element(),
+            self.placeholder.clone().into_any_element(),
+            self.password.clone().into_any_element(),
+            self.password_custom.clone().into_any_element(),
+            self.maxlength.clone().into_any_element(),
+            self.prepend.clone().into_any_element(),
+            self.append.clone().into_any_element(),
+            self.select_prepend.clone().into_any_element(),
+            self.composite.clone().into_any_element(),
+            self.icon.clone().into_any_element(),
+            self.clearable.clone().into_any_element(),
+            self.disabled.clone().into_any_element(),
+        ])
     }
 }
 
@@ -157,34 +138,28 @@ impl CheckboxUsage {
 
 impl Render for CheckboxUsage {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        div()
-            .flex()
-            .flex_col()
-            .gap_6()
+        Space::new()
+            .vertical()
+            .gap_xl()
             .child(section(
                 "Basic",
-                div()
-                    .flex()
-                    .flex_row()
-                    .gap_4()
-                    .items_center()
-                    .child(self.checked.clone())
-                    .child(self.unchecked.clone())
-                    .child(self.labeled.clone())
-                    .child(self.disabled.clone())
-                    .child(self.disabled_checked.clone()),
+                control_row(vec![
+                    self.checked.clone().into_any_element(),
+                    self.unchecked.clone().into_any_element(),
+                    self.labeled.clone().into_any_element(),
+                    self.disabled.clone().into_any_element(),
+                    self.disabled_checked.clone().into_any_element(),
+                ]),
             ))
             .child(section(
                 "Group",
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap_3()
-                    .child(self.group.clone())
-                    .child(self.buttons_large.clone())
-                    .child(self.buttons_default.clone())
-                    .child(self.buttons_small.clone())
-                    .child(self.buttons_stretch.clone()),
+                control_stack(vec![
+                    self.group.clone().into_any_element(),
+                    self.buttons_large.clone().into_any_element(),
+                    self.buttons_default.clone().into_any_element(),
+                    self.buttons_small.clone().into_any_element(),
+                    self.buttons_stretch.clone().into_any_element(),
+                ]),
             ))
     }
 }
@@ -228,35 +203,29 @@ impl RadioUsage {
 
 impl Render for RadioUsage {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        div()
-            .flex()
-            .flex_col()
-            .gap_6()
+        Space::new()
+            .vertical()
+            .gap_xl()
             .child(section(
                 "Basic",
-                div()
-                    .flex()
-                    .flex_row()
-                    .gap_4()
-                    .items_center()
-                    .child(self.checked.clone())
-                    .child(self.unchecked.clone())
-                    .child(self.labeled.clone())
-                    .child(self.disabled.clone())
-                    .child(self.disabled_checked.clone()),
+                control_row(vec![
+                    self.checked.clone().into_any_element(),
+                    self.unchecked.clone().into_any_element(),
+                    self.labeled.clone().into_any_element(),
+                    self.disabled.clone().into_any_element(),
+                    self.disabled_checked.clone().into_any_element(),
+                ]),
             ))
             .child(section(
                 "Group",
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap_3()
-                    .child(self.group.clone())
-                    .child(self.buttons_large.clone())
-                    .child(self.buttons_default.clone())
-                    .child(self.buttons_small.clone())
-                    .child(self.buttons_stretch.clone())
-                    .child(self.group_disabled.clone()),
+                control_stack(vec![
+                    self.group.clone().into_any_element(),
+                    self.buttons_large.clone().into_any_element(),
+                    self.buttons_default.clone().into_any_element(),
+                    self.buttons_small.clone().into_any_element(),
+                    self.buttons_stretch.clone().into_any_element(),
+                    self.group_disabled.clone().into_any_element(),
+                ]),
             ))
     }
 }
@@ -280,15 +249,12 @@ struct SwitchUsage {
 
 impl Render for SwitchUsage {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        div()
-            .flex()
-            .flex_row()
-            .gap_4()
-            .items_center()
-            .child(self.on.clone())
-            .child(self.off.clone())
-            .child(self.disabled.clone())
-            .child(self.disabled_on.clone())
+        control_row(vec![
+            self.on.clone().into_any_element(),
+            self.off.clone().into_any_element(),
+            self.disabled.clone().into_any_element(),
+            self.disabled_on.clone().into_any_element(),
+        ])
     }
 }
 
@@ -314,13 +280,11 @@ struct InputNumberUsage {
 
 impl Render for InputNumberUsage {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        div()
-            .flex()
-            .flex_col()
-            .gap_3()
-            .child(self.basic.clone())
-            .child(self.vertical.clone())
-            .child(self.precision.clone())
+        control_stack(vec![
+            self.basic.clone().into_any_element(),
+            self.vertical.clone().into_any_element(),
+            self.precision.clone().into_any_element(),
+        ])
     }
 }
 
@@ -339,12 +303,10 @@ struct TextareaUsage {
 
 impl Render for TextareaUsage {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        div()
-            .flex()
-            .flex_col()
-            .gap_3()
-            .child(self.basic.clone())
-            .child(self.limit.clone())
+        control_stack(vec![
+            self.basic.clone().into_any_element(),
+            self.limit.clone().into_any_element(),
+        ])
     }
 }
 
@@ -363,12 +325,10 @@ struct SliderUsage {
 
 impl Render for SliderUsage {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        div()
-            .flex()
-            .flex_col()
-            .gap_3()
-            .child(self.basic.clone())
-            .child(self.step.clone())
+        control_stack(vec![
+            self.basic.clone().into_any_element(),
+            self.step.clone().into_any_element(),
+        ])
     }
 }
 
@@ -387,12 +347,10 @@ struct RateUsage {
 
 impl Render for RateUsage {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        div()
-            .flex()
-            .flex_col()
-            .gap_3()
-            .child(self.basic.clone())
-            .child(self.custom.clone())
+        control_stack(vec![
+            self.basic.clone().into_any_element(),
+            self.custom.clone().into_any_element(),
+        ])
     }
 }
 
