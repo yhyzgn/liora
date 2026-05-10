@@ -1,4 +1,4 @@
-use gpui::{App, Bounds, Context, Global, Hsla, TextRun, prelude::*, px};
+use gpui::{App, Bounds, Context, Global, Hsla, TextRun, Window, prelude::*, px};
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -10,8 +10,31 @@ pub fn next_unique_id() -> u64 {
 }
 
 /// Generate a process-wide unique id string with a stable component prefix.
+///
+/// Important: GPUI interactive state is keyed by `ElementId`, so call this only
+/// when constructing a persistent component/entity instance. Do not call it from
+/// a per-frame `render` path for a `RenderOnce` component, because that would
+/// assign a new ID every frame and break hover/click/portal state.
 pub fn unique_id(prefix: &str) -> gpui::SharedString {
     format!("{}-{}", prefix, next_unique_id()).into()
+}
+
+/// Return a stable process-wide unique id for the current element path.
+///
+/// This is safe inside render paths because GPUI stores the generated value in
+/// keyed element state and reuses it for the same element across frames. The
+/// `key` must itself be stable for the visual element being rendered.
+pub fn stable_unique_id(
+    key: impl Into<gpui::ElementId>,
+    prefix: &str,
+    window: &mut Window,
+    cx: &mut App,
+) -> gpui::SharedString {
+    let prefix = prefix.to_string();
+    window
+        .use_keyed_state(key, cx, move |_, _| unique_id(&prefix))
+        .read(cx)
+        .clone()
 }
 
 pub mod popper;

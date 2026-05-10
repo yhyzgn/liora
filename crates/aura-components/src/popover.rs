@@ -1,4 +1,6 @@
-use aura_core::{Config, Placement, clear_popover, is_popover_active, set_active_popover, unique_id};
+use aura_core::{
+    Config, Placement, clear_popover, is_popover_active, set_active_popover, stable_unique_id,
+};
 use gpui::{
     AnyElement, App, Bounds, Component, Context, ElementId, GlobalElementId, InspectorElementId,
     IntoElement, LayoutId, MouseButton, Pixels, Render, RenderOnce, SharedString, Window, div,
@@ -14,7 +16,7 @@ pub struct Popover {
     placement: Placement,
     offset: Pixels,
     close_on_click_outside: bool,
-    trigger_id: ElementId,
+    trigger_id: Option<ElementId>,
 }
 
 pub struct PopoverView {
@@ -179,7 +181,7 @@ impl Popover {
             placement: Placement::Bottom,
             offset: px(8.0),
             close_on_click_outside: true,
-            trigger_id: ElementId::from(unique_id("popover-trigger")),
+            trigger_id: None,
         }
     }
 
@@ -208,7 +210,7 @@ impl Popover {
     }
 
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
-        self.trigger_id = ElementId::from(id.into());
+        self.trigger_id = Some(ElementId::from(id.into()));
         self
     }
 }
@@ -219,7 +221,9 @@ impl RenderOnce for Popover {
         let offset = self.offset;
         let close_on_click_outside = self.close_on_click_outside;
         let content = self.content.clone();
-        let trigger_id = self.trigger_id;
+        let trigger_id = self.trigger_id.unwrap_or_else(|| {
+            stable_unique_id("popover-trigger", "popover-trigger", _window, _cx).into()
+        });
         let popover_id = match &trigger_id {
             ElementId::Name(name) => name.clone(),
             _ => SharedString::from(format!("popover-{:?}", trigger_id)),

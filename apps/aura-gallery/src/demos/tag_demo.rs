@@ -84,11 +84,15 @@ impl Render for TagDemo {
                                                 move |input, value, _, cx| {
                                                     if !value.trim().is_empty() {
                                                         input.set_value("", cx);
-                                                        view_handle.update(cx, |view: &mut Self, cx| {
-                                                            view.tags.push(value.trim().to_string());
-                                                            view.is_input_visible = false;
-                                                            cx.notify();
-                                                        });
+                                                        view_handle.update(
+                                                            cx,
+                                                            |view: &mut Self, cx| {
+                                                                view.tags
+                                                                    .push(value.trim().to_string());
+                                                                view.is_input_visible = false;
+                                                                cx.notify();
+                                                            },
+                                                        );
                                                     } else {
                                                         view_handle.update(cx, |view, cx| {
                                                             view.is_input_visible = false;
@@ -100,7 +104,7 @@ impl Render for TagDemo {
                                             cx,
                                         );
                                     });
-                                    
+
                                     div().w_24().child(self.input.clone()).into_any_element()
                                 } else {
                                     Button::new("+ New Tag")

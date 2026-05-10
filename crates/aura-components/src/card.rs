@@ -1,4 +1,4 @@
-use aura_core::{Config, unique_id};
+use aura_core::{Config, stable_unique_id};
 use gpui::{
     AnyElement, App, Component, IntoElement, RenderOnce, SharedString, Window, div, prelude::*, px,
 };
@@ -53,7 +53,7 @@ impl Card {
 impl RenderOnce for Card {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
-        let id = unique_id("card");
+        let id = stable_unique_id("card", "card", _window, cx);
 
         let mut el = div()
             .id(id)

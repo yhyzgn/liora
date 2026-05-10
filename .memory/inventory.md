@@ -120,7 +120,7 @@
 
 | Item | File(s) | Status |
 |------|---------|--------|
-| Global unique ID generator | `crates/aura-core/src/lib.rs` | ✅ `next_unique_id()` + `unique_id(prefix)` |
+| Global unique ID generator | `crates/aura-core/src/lib.rs` | ✅ `next_unique_id()` + `unique_id(prefix)` + `stable_unique_id(...)`; direct allocation only at persistent construction, `stable_unique_id` in render paths |
 | Component default IDs | `crates/aura-components/src/*.rs` | ✅ Runtime unique IDs replace `track_caller`/literal repeated interactive IDs in migrated components |
 | Override APIs | Multiple components | ✅ `.id(...)` retained or added for migrated interactive components |
 

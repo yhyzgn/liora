@@ -1,5 +1,5 @@
 use crate::Popover;
-use aura_core::{Config, Placement, clear_popover};
+use aura_core::{Config, Placement, clear_popover, stable_unique_id};
 use gpui::{
     AnyElement, App, Component, IntoElement, RenderOnce, SharedString, Window, div, prelude::*, px,
 };
@@ -14,7 +14,7 @@ pub struct Dropdown {
     trigger: AnyElement,
     items: Vec<DropdownItem>,
     placement: Placement,
-    id: SharedString,
+    id: Option<SharedString>,
 }
 
 impl Dropdown {
@@ -23,7 +23,7 @@ impl Dropdown {
             trigger: trigger.into_any_element(),
             items: vec![],
             placement: Placement::BottomStart,
-            id: aura_core::unique_id("dropdown"),
+            id: None,
         }
     }
 
@@ -45,7 +45,7 @@ impl Dropdown {
     }
 
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
-        self.id = id.into();
+        self.id = Some(id.into());
         self
     }
 }
@@ -54,7 +54,9 @@ impl RenderOnce for Dropdown {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
         let items = self.items;
-        let dropdown_id = self.id.clone();
+        let dropdown_id = self.id.clone().unwrap_or_else(|| {
+            stable_unique_id(format!("dropdown:{}", items.len()), "dropdown", _window, cx)
+        });
 
         Popover::new(self.trigger)
             .id(dropdown_id.clone())

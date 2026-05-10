@@ -733,7 +733,7 @@ fn render_match_list(
     theme: aura_theme::Theme,
 ) -> AnyElement {
     div()
-        .id(format!("{}-search-results", cascader_id))
+        .id("cascader-search-results")
         .flex()
         .flex_col()
         .max_h(px(280.0))

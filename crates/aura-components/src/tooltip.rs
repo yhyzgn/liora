@@ -1,4 +1,4 @@
-use aura_core::{Placement, TooltipData, clear_tooltip, set_active_tooltip};
+use aura_core::{Placement, TooltipData, clear_tooltip, set_active_tooltip, stable_unique_id};
 use gpui::{
     AnyElement, App, Bounds, Component, ElementId, GlobalElementId, InspectorElementId,
     IntoElement, LayoutId, Pixels, RenderOnce, SharedString, Window, div, prelude::*, px,
@@ -11,7 +11,7 @@ pub struct Tooltip {
     content: SharedString,
     placement: Placement,
     offset: Pixels,
-    id: SharedString,
+    id: Option<SharedString>,
 }
 
 impl Tooltip {
@@ -21,7 +21,7 @@ impl Tooltip {
             content: SharedString::default(),
             placement: Placement::Top,
             offset: px(8.0),
-            id: aura_core::unique_id("tooltip"),
+            id: None,
         }
     }
 
@@ -41,7 +41,7 @@ impl Tooltip {
     }
 
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
-        self.id = id.into();
+        self.id = Some(id.into());
         self
     }
 }
@@ -51,7 +51,14 @@ impl RenderOnce for Tooltip {
         let content = self.content.clone();
         let placement = self.placement;
         let offset = self.offset;
-        let id = self.id.clone();
+        let id = self.id.clone().unwrap_or_else(|| {
+            stable_unique_id(
+                format!("tooltip:{}:{:?}", self.content, self.placement),
+                "tooltip",
+                _window,
+                _cx,
+            )
+        });
 
         let bounds_cell = Rc::new(Cell::new(Bounds::default()));
         let bounds_cell_clone = bounds_cell.clone();

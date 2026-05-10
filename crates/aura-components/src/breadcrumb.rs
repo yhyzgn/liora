@@ -1,4 +1,4 @@
-use aura_core::{Config, unique_id};
+use aura_core::Config;
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
 use gpui::{App, IntoElement, RenderOnce, SharedString, Window, div, prelude::*, px};
@@ -18,7 +18,6 @@ pub struct BreadcrumbItem {
 pub struct Breadcrumb {
     separator: BreadcrumbSeparator,
     items: Vec<BreadcrumbItem>,
-    id: SharedString,
 }
 
 impl BreadcrumbItem {
@@ -46,17 +45,11 @@ impl Breadcrumb {
         Self {
             separator: BreadcrumbSeparator::String("/".into()),
             items: vec![],
-            id: unique_id("breadcrumb"),
         }
     }
 
     pub fn separator(mut self, s: impl Into<SharedString>) -> Self {
         self.separator = BreadcrumbSeparator::String(s.into());
-        self
-    }
-
-    pub fn id(mut self, id: impl Into<SharedString>) -> Self {
-        self.id = id.into();
         self
     }
 
@@ -76,7 +69,6 @@ impl RenderOnce for Breadcrumb {
         let theme = cx.global::<Config>().theme.clone();
         let items_count = self.items.len();
         let separator = self.separator;
-        let breadcrumb_id = self.id;
 
         div().flex().flex_row().items_center().gap_1().children(
             self.items.into_iter().enumerate().map(|(i, item)| {
@@ -90,7 +82,7 @@ impl RenderOnce for Breadcrumb {
                     .items_center()
                     .child(
                         div()
-                            .id(format!("{}-item-{}", breadcrumb_id, i))
+                            .id(format!("breadcrumb-item-{}", i))
                             .flex()
                             .flex_row()
                             .items_center()

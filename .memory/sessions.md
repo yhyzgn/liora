@@ -1879,3 +1879,26 @@
 ### Key Discoveries
 - Several components already prefixed child IDs with a component ID but seeded that component ID from `track_caller`; loops/helpers could still collide.
 - Literal IDs remained in a few interactive children (`close-btn`, `back-btn`, `scroll-viewport`, Cascader search results); those now derive from the component ID.
+
+
+## Session 114 — 2026-05-10 (Fix ID Stability Regression)
+
+### Actions
+- Root-caused the interaction regression introduced by P6: several `RenderOnce` components were assigning fresh atomic IDs during each render, which changes GPUI `ElementId`s across frames and breaks hover/click/portal state.
+- Restored cross-frame stable IDs for transient `RenderOnce` controls including Button, Link, Tooltip, Popover, Popconfirm, Tag, Tree child elements, Alert, PageHeader, Scrollbar, and related demo controls.
+- Added `aura_core::stable_unique_id(...)`, which stores a generated ID in GPUI keyed element state so render-path components can get a globally unique ID without changing it every frame.
+- Kept `aura_core::unique_id(prefix)` for persistent component/entity construction where the ID is assigned once and then remains stable.
+- Updated `unique_id` documentation to explicitly forbid direct per-frame allocation.
+
+### Verification
+- `cargo check` passed.
+- `cargo test -p aura-components` passed.
+- `cargo test -p aura-core unique_id_tests::generated_ids_are_prefixed_and_unique` passed.
+- `git diff --check` passed.
+- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+
+### Key Discoveries
+- GPUI `ElementId` must be globally unique enough for the rendered tree and stable across frames for the same visual element.
+- Atomic/generated IDs satisfy uniqueness but are unsafe in `RenderOnce` render paths unless the generated value is stored in persistent entity/element state.
+- For persistent `Render` components, constructor-time `unique_id(prefix)` is acceptable because it runs once per entity instance.
+- For stateless `RenderOnce` builders created every frame, use `stable_unique_id` with a stable key, explicit `.id(...)`, or wrap the component in a persistent entity before using runtime-generated IDs.

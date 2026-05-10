@@ -1,4 +1,4 @@
-use aura_core::{Config, unique_id};
+use aura_core::{Config, stable_unique_id};
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
 use aura_theme::{ButtonVariant, Theme};
@@ -15,7 +15,7 @@ pub struct Link {
     underline: bool,
     icon_start: Option<IconName>,
     icon_end: Option<IconName>,
-    id: SharedString,
+    id: Option<SharedString>,
 }
 
 impl Link {
@@ -28,7 +28,7 @@ impl Link {
             underline: true,
             icon_start: None,
             icon_end: None,
-            id: unique_id("link"),
+            id: None,
         }
     }
     pub fn href(mut self, url: impl Into<SharedString>) -> Self {
@@ -77,7 +77,7 @@ impl Link {
     }
 
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
-        self.id = id.into();
+        self.id = Some(id.into());
         self
     }
 
@@ -98,11 +98,26 @@ impl Link {
         (family.base, family.hover)
     }
 
-    fn render_with_theme(self, theme: &Theme) -> impl IntoElement {
-        let (color, hover_color) = self.color_for(theme);
+    fn render_with_theme(
+        self,
+        theme: Theme,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> impl IntoElement {
+        let (color, hover_color) = self.color_for(&theme);
         let fs = theme.font_size.md;
         let icon_sz = 14.0;
-        let id = self.id.clone();
+        let id = self.id.clone().unwrap_or_else(|| {
+            stable_unique_id(
+                format!(
+                    "link:{}:{:?}:disabled={}:underline={}",
+                    self.label, self.variant, self.disabled, self.underline
+                ),
+                "link",
+                window,
+                cx,
+            )
+        });
 
         let mut div = gpui::div()
             .flex()
@@ -179,8 +194,8 @@ fn open_url(url: &str) {
 
 impl RenderOnce for Link {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let theme = &cx.global::<Config>().theme;
-        self.render_with_theme(theme)
+        let theme = cx.global::<Config>().theme.clone();
+        self.render_with_theme(theme, _window, cx)
     }
 }
 

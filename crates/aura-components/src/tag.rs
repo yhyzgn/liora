@@ -1,4 +1,4 @@
-use aura_core::{Config, unique_id};
+use aura_core::Config;
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
 use gpui::{App, Component, IntoElement, RenderOnce, SharedString, Window, div, prelude::*, px};
@@ -36,7 +36,6 @@ pub struct Tag {
     closable: bool,
     round: bool,
     on_close: Option<Box<dyn Fn(&mut Window, &mut App) + 'static>>,
-    id: SharedString,
 }
 
 impl Tag {
@@ -49,17 +48,11 @@ impl Tag {
             closable: false,
             round: false,
             on_close: None,
-            id: unique_id("tag"),
         }
     }
 
     pub fn tag_type(mut self, t: TagType) -> Self {
         self.tag_type = t;
-        self
-    }
-
-    pub fn id(mut self, id: impl Into<SharedString>) -> Self {
-        self.id = id.into();
         self
     }
 
@@ -181,9 +174,10 @@ impl RenderOnce for Tag {
             .text_color(actual_text_color)
             .child(div().child(self.label.clone()))
             .when(self.closable, |s| {
+                let label = self.label.clone();
                 s.child(
                     div()
-                        .id(format!("{}-close-btn", self.id))
+                        .id(format!("close-btn-{}", label))
                         .ml_1()
                         .flex()
                         .items_center()

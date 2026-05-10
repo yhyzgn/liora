@@ -1,4 +1,4 @@
-use aura_core::{Config, unique_id};
+use aura_core::Config;
 use gpui::{
     AnyElement, App, Context, IntoElement, Pixels, Render, ScrollHandle, Window, div, prelude::*,
 };
@@ -7,7 +7,6 @@ pub struct Scrollbar {
     scroll_handle: ScrollHandle,
     render_content: Box<dyn Fn(&mut Window, &mut App) -> AnyElement + 'static>,
     height: Option<Pixels>,
-    id: gpui::SharedString,
 }
 
 impl Scrollbar {
@@ -22,17 +21,11 @@ impl Scrollbar {
                 render_content(window, cx).into_any_element()
             }),
             height: None,
-            id: unique_id("scrollbar"),
         }
     }
 
     pub fn height(mut self, h: impl Into<Pixels>) -> Self {
         self.height = Some(h.into());
-        self
-    }
-
-    pub fn id(mut self, id: impl Into<gpui::SharedString>) -> Self {
-        self.id = id.into();
         self
     }
 }
@@ -54,7 +47,7 @@ impl Render for Scrollbar {
             .child(
                 div()
                     .flex_1()
-                    .id(format!("{}-viewport", self.id))
+                    .id("scroll-viewport")
                     .overflow_y_scroll()
                     .track_scroll(&scroll_handle)
                     .on_scroll_wheel(cx.listener(|_, _, _, cx| {

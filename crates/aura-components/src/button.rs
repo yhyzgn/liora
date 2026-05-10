@@ -1,4 +1,4 @@
-use aura_core::{Config, unique_id};
+use aura_core::{Config, stable_unique_id};
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
 use aura_theme::{ButtonSize, ButtonVariant, ButtonVariantColors, Theme};
@@ -197,10 +197,6 @@ impl Button {
         }
     }
 
-    fn auto_id(&self) -> ElementId {
-        unique_id("aura-button").into()
-    }
-
     fn icon_size(&self) -> f32 {
         match self.size {
             ButtonSize::Small => 12.0,
@@ -209,8 +205,13 @@ impl Button {
         }
     }
 
-    fn render_with_theme(self, theme: &Theme) -> impl IntoElement {
-        let c = self.colors(theme);
+    fn render_with_theme(
+        self,
+        theme: Theme,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> impl IntoElement {
+        let c = self.colors(&theme);
         let h = self.size.height();
         let px_h = self.size.padding_x();
         let fs = match self.size {
@@ -219,7 +220,24 @@ impl Button {
             ButtonSize::Large => theme.font_size.lg,
         };
         let r = self.rounded.unwrap_or_else(|| px(theme.radius.md).into());
-        let id = self.id.clone().unwrap_or_else(|| self.auto_id());
+        let id = self.id.clone().unwrap_or_else(|| {
+            stable_unique_id(
+                format!(
+                    "aura-button:{}:{:?}:{:?}:secondary={}:background={}:border={}:rounded={:?}",
+                    self.label,
+                    self.variant,
+                    self.size,
+                    self.secondary,
+                    self.background,
+                    self.border,
+                    self.rounded
+                ),
+                "aura-button",
+                window,
+                cx,
+            )
+            .into()
+        });
         let icon_sz = self.icon_size();
 
         let icon_only = self.icon_only.is_some();
@@ -404,8 +422,8 @@ impl Button {
 
 impl RenderOnce for Button {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let theme = &cx.global::<Config>().theme;
-        self.render_with_theme(theme)
+        let theme = cx.global::<Config>().theme.clone();
+        self.render_with_theme(theme, _window, cx)
     }
 }
 

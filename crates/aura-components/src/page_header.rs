@@ -1,4 +1,4 @@
-use aura_core::{Config, unique_id};
+use aura_core::Config;
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
 use gpui::{AnyElement, App, IntoElement, RenderOnce, SharedString, Window, div, prelude::*, px};
@@ -11,7 +11,6 @@ pub struct PageHeader {
     extra: Option<Box<dyn Fn(&mut Window, &mut App) -> AnyElement + 'static>>,
     content: Option<Box<dyn Fn(&mut Window, &mut App) -> AnyElement + 'static>>,
     footer: Option<Box<dyn Fn(&mut Window, &mut App) -> AnyElement + 'static>>,
-    id: SharedString,
 }
 
 impl PageHeader {
@@ -24,17 +23,11 @@ impl PageHeader {
             extra: None,
             content: None,
             footer: None,
-            id: unique_id("page-header"),
         }
     }
 
     pub fn sub_title(mut self, sub_title: impl Into<SharedString>) -> Self {
         self.sub_title = Some(sub_title.into());
-        self
-    }
-
-    pub fn id(mut self, id: impl Into<SharedString>) -> Self {
-        self.id = id.into();
         self
     }
 
@@ -100,7 +93,7 @@ impl RenderOnce for PageHeader {
                             .when_some(self.back_icon, |s, icon| {
                                 s.child(
                                     div()
-                                        .id(format!("{}-back-btn", self.id))
+                                        .id("back-btn")
                                         .cursor_pointer()
                                         .flex()
                                         .items_center()
