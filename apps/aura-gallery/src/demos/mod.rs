@@ -400,15 +400,22 @@ mod tests {
         assert_eq!(names, sorted);
     }
 
-    #[test]
-    fn button_demo_uses_aura_layout_primitives() {
-        let source = include_str!("button_demo.rs");
-
+    fn assert_demo_uses_aura_layout_primitives(file_name: &str, source: &str) {
         for forbidden in ["div(", "px(", ".flex()", ".flex_col()", ".flex_row()"] {
             assert!(
                 !source.contains(forbidden),
-                "button_demo.rs still contains forbidden GPUI primitive `{forbidden}`"
+                "{file_name} still contains forbidden GPUI primitive `{forbidden}`"
             );
         }
+    }
+
+    #[test]
+    fn button_demo_uses_aura_layout_primitives() {
+        assert_demo_uses_aura_layout_primitives("button_demo.rs", include_str!("button_demo.rs"));
+    }
+
+    #[test]
+    fn link_demo_uses_aura_layout_primitives() {
+        assert_demo_uses_aura_layout_primitives("link_demo.rs", include_str!("link_demo.rs"));
     }
 }

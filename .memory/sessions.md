@@ -2034,3 +2034,22 @@
 ### Key Discoveries
 - P7 needs a few small semantic builder helpers in existing Aura components before demos can stop using GPUI primitives cleanly.
 - Sorting the registry at return time enforces the ASC requirement without risky manual reorder churn.
+
+## Session 122 — 2026-05-10 (P7 Link Demo Migration)
+
+### Actions
+- Added a reusable Gallery test helper that bans direct demo usage of `div(`, `px(`, and low-level flex method chains for migrated demo files.
+- Added and confirmed a failing self-contained test for `link_demo.rs` before migration.
+- Migrated `link_demo.rs` to use Aura `Space` and `Title` for layout/section headings instead of GPUI primitives.
+
+### Verification
+- `cargo test -p aura-gallery link_demo_uses_aura_layout_primitives` failed before migration and passed after migration.
+- `cargo test -p aura-gallery button_demo_uses_aura_layout_primitives` passed.
+- `cargo test -p aura-gallery registry_entries_are_sorted_by_component_name` passed.
+- `cargo test -p aura-gallery` passed.
+- `cargo check` passed.
+- `git diff --check` passed.
+- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+
+### Key Discoveries
+- The same `Space` + `Title` pattern used for Button demo cleanly covers Link demo without adding new component API.
