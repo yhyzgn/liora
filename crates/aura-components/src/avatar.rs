@@ -2,7 +2,7 @@ use aura_core::Config;
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
 use gpui::{
-    App, Component, IntoElement, RenderOnce, SharedString, Window, div, img, prelude::*, px,
+    App, Component, Hsla, IntoElement, RenderOnce, SharedString, Window, div, img, prelude::*, px,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -26,6 +26,7 @@ pub struct Avatar {
     size: AvatarSize,
     shape: AvatarShape,
     alt: Option<SharedString>,
+    background: Option<Hsla>,
 }
 
 impl Avatar {
@@ -36,6 +37,7 @@ impl Avatar {
             size: AvatarSize::Default,
             shape: AvatarShape::Circle,
             alt: None,
+            background: None,
         }
     }
 
@@ -78,6 +80,11 @@ impl Avatar {
         self.alt = Some(alt.into());
         self
     }
+
+    pub fn background(mut self, background: Hsla) -> Self {
+        self.background = Some(background);
+        self
+    }
 }
 
 impl RenderOnce for Avatar {
@@ -101,7 +108,7 @@ impl RenderOnce for Avatar {
             .justify_center()
             .size(size_px)
             .rounded(radius)
-            .bg(theme.neutral.border)
+            .bg(self.background.unwrap_or(theme.neutral.border))
             .overflow_hidden();
 
         if let Some(src) = self.src {
@@ -129,5 +136,17 @@ impl IntoElement for Avatar {
     type Element = Component<Self>;
     fn into_element(self) -> Self::Element {
         Component::new(self)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn avatar_background_tracks_custom_color() {
+        let color = gpui::blue();
+
+        assert_eq!(Avatar::new().background(color).background, Some(color));
     }
 }

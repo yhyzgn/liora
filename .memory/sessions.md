@@ -2455,3 +2455,40 @@
 
 ### Key Discoveries
 - Aura `Space` needed explicit cross-axis alignment to replace raw GPUI layout in vertical label stacks without losing visual centering.
+
+## Session 139 — 2026-05-11 (P7 Skeleton Demo Self-Bootstrap Batch)
+
+### Actions
+- Added a gallery guard for `skeleton_demo.rs` so it cannot use raw GPUI demo primitives (`div`, `px`, flex helpers) going forward.
+- Added `Space::grow()` to express flex growth through the Aura layout primitive instead of demo-level `flex_1`.
+- Added `SkeletonItem::width(...)` and `SkeletonItem::width_2_5()` so custom skeleton templates can express partial-width paragraph placeholders without raw wrapper divs.
+- Added `Avatar::background(...)` so loaded skeleton content can keep the colored avatar without raw demo-level circle styling.
+- Rewrote the Skeleton demo with `page`/`section`/`row`, `Space`, `Text`, `Avatar`, `Skeleton`, and `SkeletonItem` while preserving loading toggle, common variants, custom template, and loaded content.
+
+### Verification
+- `cargo test -p aura-gallery skeleton_demo_uses_aura_layout_primitives` failed before migration and passed after migration.
+- `cargo test -p aura-components skeleton_item_width_2_5_sets_fraction_width --lib` passed.
+- `cargo test -p aura-components space_grow_tracks_flex_growth --lib` passed.
+- `cargo test -p aura-components avatar_background_tracks_custom_color --lib` passed.
+- `cargo test -p aura-components` passed: 25 component tests plus integration/doc tests.
+- `cargo test -p aura-gallery` passed: 19 gallery tests.
+- `cargo check` passed.
+- `git diff --check` passed.
+- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+
+### Remaining Not Self-Contained After This Session
+- `affix_demo.rs`
+- `anchor_demo.rs`
+- `backtop_demo.rs`
+- `container_demo.rs`
+- `form_controls_demo.rs`
+- `form_demo.rs`
+- `image_demo.rs`
+- `layout_demo.rs`
+- `menu_demo.rs`
+- `preview_demo.rs`
+- `table_demo.rs`
+
+### Key Discoveries
+- Skeleton's custom template needed component-level equivalents for flex growth and partial-width paragraph rows.
+- Avatar background color is useful beyond this demo and avoids hand-rolled colored circles in gallery code.

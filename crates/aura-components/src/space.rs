@@ -8,6 +8,7 @@ pub struct Space {
     wrap: bool,
     gap: Option<DefiniteLength>,
     align: Option<SpaceAlign>,
+    grow: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -25,6 +26,7 @@ impl Space {
             wrap: false,
             gap: None,
             align: None,
+            grow: false,
         }
     }
 
@@ -80,6 +82,11 @@ impl Space {
         self.align(SpaceAlign::End)
     }
 
+    pub fn grow(mut self) -> Self {
+        self.grow = true;
+        self
+    }
+
     pub fn child(mut self, child: impl IntoElement) -> Self {
         self.children.push(child.into_any_element());
         self
@@ -95,6 +102,10 @@ impl Space {
 impl RenderOnce for Space {
     fn render(self, _window: &mut Window, _cx: &mut App) -> impl IntoElement {
         let mut div = gpui::div().flex();
+        if self.grow {
+            div = div.flex_1();
+        }
+
         if self.vertical {
             div = div.flex_col();
         } else {
@@ -145,5 +156,10 @@ mod tests {
         let space = Space::new().vertical().align_center();
 
         assert_eq!(space.align, Some(SpaceAlign::Center));
+    }
+
+    #[test]
+    fn space_grow_tracks_flex_growth() {
+        assert!(Space::new().grow().grow);
     }
 }

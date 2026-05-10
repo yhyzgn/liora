@@ -1,5 +1,5 @@
 use aura_core::Config;
-use gpui::{AnyElement, App, IntoElement, RenderOnce, Window, div, prelude::*, px};
+use gpui::{AnyElement, App, DefiniteLength, IntoElement, RenderOnce, Window, div, prelude::*, px};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum SkeletonVariant {
@@ -12,6 +12,7 @@ pub enum SkeletonVariant {
 
 pub struct SkeletonItem {
     variant: SkeletonVariant,
+    width: Option<DefiniteLength>,
 }
 
 pub struct Skeleton {
@@ -24,7 +25,19 @@ pub struct Skeleton {
 
 impl SkeletonItem {
     pub fn new(variant: SkeletonVariant) -> Self {
-        Self { variant }
+        Self {
+            variant,
+            width: None,
+        }
+    }
+
+    pub fn width(mut self, width: impl Into<DefiniteLength>) -> Self {
+        self.width = Some(width.into());
+        self
+    }
+
+    pub fn width_2_5(self) -> Self {
+        self.width(gpui::relative(0.4))
     }
 }
 
@@ -73,7 +86,7 @@ impl RenderOnce for SkeletonItem {
         let theme = cx.global::<Config>().theme.clone();
         let skeleton_bg = theme.neutral.hover;
 
-        match self.variant {
+        let item = match self.variant {
             SkeletonVariant::Circle => div().w(px(40.0)).h(px(40.0)).bg(skeleton_bg).rounded_full(),
             SkeletonVariant::Square => div()
                 .w_full()
@@ -88,7 +101,9 @@ impl RenderOnce for SkeletonItem {
                 .h(px(150.0))
                 .bg(skeleton_bg)
                 .rounded(px(theme.radius.sm)),
-        }
+        };
+
+        item.when_some(self.width, |s, width| s.w(width))
     }
 }
 
@@ -135,5 +150,20 @@ impl IntoElement for Skeleton {
     type Element = gpui::Component<Self>;
     fn into_element(self) -> Self::Element {
         gpui::Component::new(self)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn skeleton_item_width_2_5_sets_fraction_width() {
+        assert_eq!(
+            SkeletonItem::new(SkeletonVariant::Paragraph)
+                .width_2_5()
+                .width,
+            Some(gpui::relative(0.4))
+        );
     }
 }

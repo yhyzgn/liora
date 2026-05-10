@@ -1,6 +1,8 @@
-use aura_components::{Button, Skeleton, SkeletonItem, SkeletonVariant};
+use aura_components::{Avatar, Button, Skeleton, SkeletonItem, SkeletonVariant, Space, Text};
 use aura_core::Config;
-use gpui::{AnyView, App, Context, Render, Window, div, prelude::*, px};
+use gpui::{AnyElement, AnyView, App, Context, Hsla, Render, Window, prelude::*};
+
+use super::common::{page, row, section};
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|_| SkeletonDemo { loading: true }).into()
@@ -15,62 +17,82 @@ impl Render for SkeletonDemo {
         let theme = &cx.global::<Config>().theme;
         let loading = self.loading;
 
-        div().flex().flex_col().gap_8().p_4()
-            .child(
-                div().flex().flex_col().gap_2()
-                    .child(div().text_lg().font_weight(gpui::FontWeight::BOLD).child("Skeleton 骨架屏"))
-                    .child(div().text_sm().text_color(theme.neutral.text_3).child("在页面数据加载时展示占位内容。"))
-            )
-            .child(
-                div().flex().flex_row().items_center().gap_4()
-                    .child(div().child("切换 Loading 状态:"))
-                    .child(
-                        Button::new(if loading { "停止加载" } else { "开始加载" })
+        page(
+            "Skeleton 骨架屏",
+            "在页面数据加载时展示占位内容。",
+            Space::new()
+                .vertical()
+                .gap_xl()
+                .child(
+                    Space::new()
+                        .gap_lg()
+                        .child(Text::new("切换 Loading 状态:").nowrap())
+                        .child(
+                            Button::new(if loading {
+                                "停止加载"
+                            } else {
+                                "开始加载"
+                            })
                             .on_click(cx.listener(|this, _, _, _| {
                                 this.loading = !this.loading;
-                            }))
-                    )
-            )
-            .child(
-                div().flex().flex_col().gap_4()
-                    .child(div().font_weight(gpui::FontWeight::BOLD).child("基础用法"))
-                    .child(Skeleton::new().loading(loading).rows(4))
-            )
-            .child(
-                div().flex().flex_col().gap_4()
-                    .child(div().font_weight(gpui::FontWeight::BOLD).child("常见占位类型"))
-                    .child(
-                        div().flex().flex_row().items_center().gap_6()
-                            .child(SkeletonItem::new(SkeletonVariant::Circle))
-                            .child(SkeletonItem::new(SkeletonVariant::Square).into_element())
-                            .child(SkeletonItem::new(SkeletonVariant::Image))
-                    )
-            )
-            .child(
-                div().flex().flex_col().gap_4()
-                    .child(div().font_weight(gpui::FontWeight::BOLD).child("自定义模板"))
-                    .child(
-                        Skeleton::new().loading(loading)
-                            .template(|_, _| {
-                                div().flex().flex_row().gap_4().items_start()
-                                    .child(SkeletonItem::new(SkeletonVariant::Circle))
-                                    .child(
-                                        div().flex_1().flex().flex_col().gap_2()
-                                            .child(div().w_2_5().child(SkeletonItem::new(SkeletonVariant::Paragraph)))
-                                            .child(Skeleton::new().rows(2))
-                                    )
-                                    .into_any_element()
-                            })
-                            .child(
-                                div().flex().flex_row().gap_4().items_start()
-                                    .child(div().size(px(40.0)).bg(gpui::blue()).rounded_full())
-                                    .child(
-                                        div().flex_1().flex().flex_col().gap_2()
-                                            .child(div().font_weight(gpui::FontWeight::BOLD).child("Zed Industries"))
-                                            .child(div().text_sm().child("GPUI 是一套基于 GPU 加速的 Rust UI 框架，用于构建 Zed 编辑器。"))
-                                    )
-                            )
-                    )
-            )
+                            })),
+                        ),
+                )
+                .child(section(
+                    "基础用法",
+                    "通过 rows 配置基础段落占位行数。",
+                    Skeleton::new().loading(loading).rows(4),
+                ))
+                .child(section(
+                    "常见占位类型",
+                    "提供圆形、方形、图片和段落占位。",
+                    row(vec![
+                        SkeletonItem::new(SkeletonVariant::Circle),
+                        SkeletonItem::new(SkeletonVariant::Square),
+                        SkeletonItem::new(SkeletonVariant::Image),
+                    ]),
+                ))
+                .child(section(
+                    "自定义模板",
+                    "组合 SkeletonItem、Skeleton 与真实内容，加载结束后显示业务内容。",
+                    Skeleton::new()
+                        .loading(loading)
+                        .template(|_, _| skeleton_template())
+                        .child(loaded_content(theme.primary.base)),
+                )),
+        )
     }
+}
+
+fn skeleton_template() -> AnyElement {
+    Space::new()
+        .align_start()
+        .gap_lg()
+        .child(SkeletonItem::new(SkeletonVariant::Circle))
+        .child(
+            Space::new()
+                .vertical()
+                .grow()
+                .gap_sm()
+                .child(SkeletonItem::new(SkeletonVariant::Paragraph).width_2_5())
+                .child(Skeleton::new().rows(2)),
+        )
+        .into_any_element()
+}
+
+fn loaded_content(avatar_bg: Hsla) -> impl IntoElement {
+    Space::new()
+        .align_start()
+        .gap_lg()
+        .child(Avatar::new().background(avatar_bg))
+        .child(
+            Space::new()
+                .vertical()
+                .grow()
+                .gap_sm()
+                .child(Text::new("Zed Industries").bold())
+                .child(Text::new(
+                    "GPUI 是一套基于 GPU 加速的 Rust UI 框架，用于构建 Zed 编辑器。",
+                )),
+        )
 }
