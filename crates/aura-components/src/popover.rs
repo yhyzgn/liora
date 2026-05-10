@@ -204,6 +204,10 @@ impl Popover {
         self
     }
 
+    pub fn offset_lg(self) -> Self {
+        self.offset(px(20.0))
+    }
+
     pub fn close_on_click_outside(mut self, c: bool) -> Self {
         self.close_on_click_outside = c;
         self
@@ -331,5 +335,15 @@ impl gpui::Element for BoundsTracker {
     ) {
         self.bounds.set(Some(bounds));
         self.trigger.paint(window, cx);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn popover_offset_lg_sets_demo_offset() {
+        assert_eq!(Popover::new("trigger").offset_lg().offset, px(20.0));
     }
 }

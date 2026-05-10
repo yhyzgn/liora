@@ -221,9 +221,21 @@ impl Drawer {
         self
     }
 
+    pub fn width_lg(self) -> Self {
+        self.width(px(480.0))
+    }
+
     pub fn height(mut self, h: impl Into<Pixels>) -> Self {
         self.height = h.into();
         self
+    }
+
+    pub fn height_sm(self) -> Self {
+        self.height(px(200.0))
+    }
+
+    pub fn height_lg(self) -> Self {
+        self.height(px(360.0))
     }
 
     pub fn close_on_click_outside(mut self, c: bool) -> Self {
@@ -282,5 +294,17 @@ impl Drawer {
     pub fn close_id(id: impl Into<SharedString>, cx: &mut App) {
         let id = id.into();
         aura_core::clear_drawer(&id, cx);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn drawer_size_helpers_set_demo_sizes() {
+        assert_eq!(Drawer::new().width_lg().width, px(480.0));
+        assert_eq!(Drawer::new().height_sm().height, px(200.0));
+        assert_eq!(Drawer::new().height_lg().height, px(360.0));
     }
 }

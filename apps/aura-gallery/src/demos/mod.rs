@@ -528,4 +528,16 @@ mod tests {
             assert_demo_uses_aura_layout_primitives(file_name, source);
         }
     }
+
+    #[test]
+    fn overlay_demos_use_aura_layout_primitives() {
+        for (file_name, source) in [
+            ("dialog_demo.rs", include_str!("dialog_demo.rs")),
+            ("drawer_demo.rs", include_str!("drawer_demo.rs")),
+            ("popover_demo.rs", include_str!("popover_demo.rs")),
+            ("page_header_demo.rs", include_str!("page_header_demo.rs")),
+        ] {
+            assert_demo_uses_aura_layout_primitives(file_name, source);
+        }
+    }
 }

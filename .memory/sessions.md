@@ -2260,3 +2260,43 @@
 - `table_demo.rs`
 - `tabs_demo.rs`
 - `tag_demo.rs`
+
+## Session 132 — 2026-05-11 (P7 Overlay Demo Batch)
+
+### Actions
+- Added and confirmed a failing self-contained guard test for Dialog, Drawer, Popover, and PageHeader demos before migration.
+- Migrated those demos to shared Aura helpers and Aura content/layout components, including content closures.
+- Added semantic helpers used by overlay demos:
+  - `Drawer::width_lg()`
+  - `Drawer::height_sm()` / `Drawer::height_lg()`
+  - `Popover::offset_lg()`
+- Added unit coverage for Drawer size helpers and Popover offset helper.
+- Kept PageHeader API unchanged after validating that existing closure APIs can return Aura components without demo-level GPUI primitives.
+- Regenerated the remaining non-self-contained demo scan after migration.
+
+### Verification
+- `cargo test -p aura-gallery overlay_demos_use_aura_layout_primitives` failed before migration and passed after migration.
+- `cargo test -p aura-components demo_` passed the helper-focused tests.
+- `cargo test -p aura-gallery` passed.
+- `cargo check` passed.
+- `cargo test -p aura-components` passed.
+- `git diff --check` passed.
+- Confirmed Dialog/Drawer/Popover/PageHeader demo files have zero occurrences of `div(`, `px(`, `.flex()`, `.flex_col()`, `.flex_row()`.
+- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+
+### Remaining Not Self-Contained After This Session
+- `affix_demo.rs`
+- `anchor_demo.rs`
+- `backtop_demo.rs`
+- `container_demo.rs`
+- `form_controls_demo.rs`
+- `form_demo.rs`
+- `icon_demo.rs`
+- `image_demo.rs`
+- `layout_demo.rs`
+- `menu_demo.rs`
+- `preview_demo.rs`
+- `skeleton_demo.rs`
+- `table_demo.rs`
+- `tabs_demo.rs`
+- `tag_demo.rs`
