@@ -2071,3 +2071,21 @@
 
 ### Key Discoveries
 - A shared Aura-only demo helper allows multiple feedback demos to migrate without adding new production component APIs.
+
+## Session 124 — 2026-05-10 (P7 Display Demo Batch)
+
+### Actions
+- Added and confirmed a failing self-contained guard test for display demos before migration.
+- Migrated `alert_demo.rs`, `empty_demo.rs`, `result_demo.rs`, `segmented_demo.rs`, `statistic_demo.rs`, and `tree_demo.rs` to Aura/common demo helpers.
+- Removed direct demo-level `div(`, `px(`, and low-level flex primitives from that batch.
+
+### Verification
+- `cargo test -p aura-gallery display_demos_use_aura_layout_primitives` failed before migration and passed after migration.
+- `cargo test -p aura-gallery` passed.
+- `cargo check` passed.
+- `git diff --check` passed.
+- Confirmed migrated display demo files have zero occurrences of `div(`, `px(`, `.flex()`, `.flex_col()`, `.flex_row()`.
+- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+
+### Key Discoveries
+- Several display demos can be significantly reduced by composing `page`, `section`, `row`, `Space`, and existing Aura presentation components.

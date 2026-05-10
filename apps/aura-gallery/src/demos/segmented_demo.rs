@@ -1,6 +1,7 @@
-use aura_components::{Segmented, SegmentedOption};
-use aura_core::Config;
-use gpui::{AnyView, App, Context, Entity, Render, Window, div, prelude::*};
+use aura_components::{Segmented, SegmentedOption, Space};
+use gpui::{AnyView, App, Context, Entity, Render, Window, prelude::*};
+
+use super::common::{page, section};
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|cx| SegmentedDemo {
@@ -46,63 +47,24 @@ struct SegmentedDemo {
 }
 
 impl Render for SegmentedDemo {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let theme = &cx.global::<Config>().theme;
-
-        div()
-            .flex()
-            .flex_col()
-            .gap_8()
-            .p_4()
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap_2()
-                    .child(
-                        div()
-                            .text_lg()
-                            .font_weight(gpui::FontWeight::BOLD)
-                            .child("Segmented 分段控制器"),
-                    )
-                    .child(
-                        div()
-                            .text_sm()
-                            .text_color(theme.neutral.text_3)
-                            .child("用于展示多个选项并允许用户选择其中单个选项。"),
-                    ),
-            )
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap_4()
-                    .child(div().font_weight(gpui::FontWeight::BOLD).child("基础用法"))
-                    .child(self.basic.clone()),
-            )
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap_4()
-                    .child(
-                        div()
-                            .font_weight(gpui::FontWeight::BOLD)
-                            .child("不可用状态"),
-                    )
-                    .child(self.disabled.clone()),
-            )
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap_4()
-                    .child(
-                        div()
-                            .font_weight(gpui::FontWeight::BOLD)
-                            .child("Block 模式 (撑满宽度)"),
-                    )
-                    .child(self.block.clone()),
-            )
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        page(
+            "Segmented 分段控制器",
+            "用于展示多个选项并允许用户选择其中单个选项。",
+            Space::new()
+                .vertical()
+                .gap_lg()
+                .child(section("基础用法", "基础分段选择。", self.basic.clone()))
+                .child(section(
+                    "不可用状态",
+                    "禁用指定选项。",
+                    self.disabled.clone(),
+                ))
+                .child(section(
+                    "Block 模式",
+                    "撑满父容器宽度。",
+                    self.block.clone(),
+                )),
+        )
     }
 }

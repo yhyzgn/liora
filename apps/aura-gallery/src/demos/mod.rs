@@ -432,4 +432,18 @@ mod tests {
             assert_demo_uses_aura_layout_primitives(file_name, source);
         }
     }
+
+    #[test]
+    fn display_demos_use_aura_layout_primitives() {
+        for (file_name, source) in [
+            ("alert_demo.rs", include_str!("alert_demo.rs")),
+            ("empty_demo.rs", include_str!("empty_demo.rs")),
+            ("result_demo.rs", include_str!("result_demo.rs")),
+            ("segmented_demo.rs", include_str!("segmented_demo.rs")),
+            ("statistic_demo.rs", include_str!("statistic_demo.rs")),
+            ("tree_demo.rs", include_str!("tree_demo.rs")),
+        ] {
+            assert_demo_uses_aura_layout_primitives(file_name, source);
+        }
+    }
 }
