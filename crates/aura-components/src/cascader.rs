@@ -584,6 +584,7 @@ impl Render for Cascader {
                 s.cursor_pointer()
                     .hover(|s| s.border_color(theme.primary.base).cursor_pointer())
             })
+            .when(self.disabled, |s| s.cursor_not_allowed())
             .child(div().flex_1().overflow_hidden().child(display_text))
             .when(self.clearable && has_value && !self.disabled, |s| {
                 s.child(
@@ -700,6 +701,7 @@ fn render_columns(
                                 s.cursor_pointer()
                                     .hover(|s| s.bg(theme.neutral.hover).cursor_pointer())
                             })
+                            .when(disabled, |s| s.cursor_not_allowed())
                             .child(div().flex_1().text_sm().child(option.label.clone()))
                             .when(option.loading, |s| {
                                 s.child(
@@ -875,5 +877,25 @@ impl Element for BoundsCapturer {
         _window: &mut Window,
         _: &mut App,
     ) {
+    }
+}
+
+#[cfg(test)]
+mod cursor_regression_tests {
+    #[test]
+    fn cascader_disabled_states_use_not_allowed_cursor() {
+        let source = include_str!("cascader.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(
+            source.contains(".when(self.disabled, |s| s.cursor_not_allowed())"),
+            "disabled cascader trigger should show a not-allowed cursor"
+        );
+        assert!(
+            source.contains(".when(disabled, |s| s.cursor_not_allowed())"),
+            "disabled cascader options should show a not-allowed cursor"
+        );
     }
 }

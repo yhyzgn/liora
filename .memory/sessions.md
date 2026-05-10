@@ -2300,3 +2300,26 @@
 - `table_demo.rs`
 - `tabs_demo.rs`
 - `tag_demo.rs`
+
+## Session 133 — 2026-05-11 (Popover Spacing and Cascader Disabled Cursor Fix)
+
+### Actions
+- Investigated reported Popover bubble content being visually cramped after overlay demo migration.
+- Identified root cause: the Popover shell rendered content directly inside the bordered/shadowed bubble without default padding, so Aura `Space` content touched the edge and appeared compressed.
+- Added default `.p_4()` padding to the Popover content wrapper.
+- Investigated reported Cascader disabled state cursor.
+- Identified root cause: disabled Cascader trigger and disabled/loading popup options only skipped pointer hover; they did not set `cursor_not_allowed()`.
+- Added not-allowed cursor styling for disabled Cascader trigger and disabled/loading Cascader options.
+- Added source-sliced regression tests so the assertions inspect production code only, not the test body itself.
+
+### Verification
+- `cargo test -p aura-components regression` failed before the fix and passed after the fix.
+- `cargo test -p aura-gallery` passed.
+- `cargo check` passed.
+- `cargo test -p aura-components` passed.
+- `git diff --check` passed.
+- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+
+### Key Discoveries
+- Popover default content padding belongs in the component shell because caller content can be plain text or compact Aura layout primitives.
+- Cursor semantics need to be explicit on disabled states; merely omitting pointer hover leaves the default cursor.

@@ -117,6 +117,7 @@ impl Render for PopoverView {
                             .border_color(theme.neutral.border)
                             .rounded(px(theme.radius.md))
                             .shadow_lg()
+                            .p_4()
                             .child(content),
                     ),
             )
@@ -345,5 +346,21 @@ mod tests {
     #[test]
     fn popover_offset_lg_sets_demo_offset() {
         assert_eq!(Popover::new("trigger").offset_lg().offset, px(20.0));
+    }
+}
+
+#[cfg(test)]
+mod spacing_regression_tests {
+    #[test]
+    fn popover_content_has_default_spacing() {
+        let source = include_str!("popover.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(
+            source.contains(".p_4()"),
+            "popover content wrapper should provide default padding so bubble content is not cramped"
+        );
     }
 }
