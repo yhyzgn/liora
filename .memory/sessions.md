@@ -1994,3 +1994,16 @@
 ### Key Discoveries
 - The preview overlay can be separated cleanly from Image rendering by sharing the existing `RasterImageElement` and image-loading helpers within the crate.
 - Image preview hover styling must remain on the Image frame rather than a wrapper to preserve the existing visual effect.
+
+## Session 120 — 2026-05-10 (Component Performance Audit Document)
+
+### Actions
+- Converted the read-only component performance audit into `docs/component-performance-audit-2026-05-10.md`.
+- Preserved the overall conclusions, full component risk table, focused hotspots, evidence boundaries, and non-regression constraint.
+
+### Verification
+- `git diff --check` passed.
+- Reviewed the generated Markdown header/table preview with `sed`.
+
+### Key Discoveries
+- The audit is documentation-only and does not modify component behavior.
