@@ -104,8 +104,8 @@ impl Container {
 
 impl RenderOnce for Container {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let aside_id = stable_unique_id("container", "aside", window, cx);
-        let main_id = stable_unique_id("container", "main", window, cx);
+        let aside_id = stable_unique_id("container-aside-scroll", "aside", window, cx);
+        let main_id = stable_unique_id("container-main-scroll", "main", window, cx);
         let theme = cx.global::<aura_core::Config>().theme.clone();
         let aside_right = self.aside_right;
         let main_children = self.main;
@@ -219,5 +219,26 @@ mod tests {
         assert!(container.main_scroll);
         assert_eq!(container.main_padding, Some(px(32.0)));
         assert_eq!(container.overlays.len(), 1);
+    }
+
+    #[test]
+    fn container_scroll_regions_use_distinct_stable_id_keys() {
+        let production = include_str!("container.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(
+            production.contains(r#"stable_unique_id("container-aside-scroll""#),
+            "aside scroll region needs its own stable key"
+        );
+        assert!(
+            production.contains(r#"stable_unique_id("container-main-scroll""#),
+            "main scroll region needs its own stable key"
+        );
+        assert!(
+            !production.contains(r#"stable_unique_id("container", "aside""#),
+            "aside/main scroll regions must not share the same keyed state"
+        );
     }
 }

@@ -2617,3 +2617,24 @@
 ### Key Discoveries
 - `Container` needed app-shell capabilities (scrolling slots, wider aside, taller header, overlay support) before it could credibly dogfood the gallery root.
 - `Menu` can drive the gallery navigation as single-line demo labels; detailed descriptions remain in the selected content card.
+
+## Session 144 — 2026-05-11 (Container Shell Scroll ID Fix)
+
+### Actions
+- Investigated the gallery shell regression where the left menu jittered while scrolling and the right content panel did not respond to scroll.
+- Identified root cause: `Container` generated both aside and main scroll element IDs through `stable_unique_id` with the same keyed-state key (`"container"`), so the two scroll regions shared/competed for one GPUI interactive state entry.
+- Changed the scroll region keys to distinct stable keys: `container-aside-scroll` and `container-main-scroll`.
+- Added a source-sliced regression test ensuring the two scroll regions keep distinct stable ID keys and do not regress to the shared key.
+
+### Verification
+- `cargo test -p aura-components container_scroll_regions_use_distinct_stable_id_keys --lib` failed before the fix and passed after it.
+- `cargo test -p aura-components container_gallery_shell_helpers_track_layout_state --lib` passed.
+- `cargo test -p aura-gallery gallery_shell_uses_container_and_menu` passed.
+- `cargo test -p aura-components` passed: 30 component tests plus integration/doc tests.
+- `cargo test -p aura-gallery` passed: 22 gallery tests.
+- `cargo check` passed.
+- `git diff --check` passed.
+- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+
+### Key Discoveries
+- `stable_unique_id`'s first argument is the keyed-state key; the prefix only affects the generated value. Distinct scroll regions must not share the same key even if their prefixes differ.
