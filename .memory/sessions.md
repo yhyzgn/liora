@@ -2053,3 +2053,21 @@
 
 ### Key Discoveries
 - The same `Space` + `Title` pattern used for Button demo cleanly covers Link demo without adding new component API.
+
+## Session 123 — 2026-05-10 (P7 Feedback Demo Batch)
+
+### Actions
+- Added `apps/aura-gallery/src/demos/common.rs` with Aura-only demo helpers: `page`, `section`, `header`, `row`, and `row_md`.
+- Added a batch self-contained guard test for feedback demos and confirmed it failed before migration.
+- Migrated `dropdown_demo.rs`, `loading_demo.rs`, `message_box_demo.rs`, `message_demo.rs`, and `notification_demo.rs` away from direct demo-level `div(`, `px(`, and low-level flex primitives.
+
+### Verification
+- `cargo test -p aura-gallery feedback_demos_use_aura_layout_primitives` failed before migration and passed after migration.
+- `cargo test -p aura-gallery` passed.
+- `cargo check` passed.
+- `git diff --check` passed.
+- Confirmed migrated Button/Link/feedback demo files have zero occurrences of `div(`, `px(`, `.flex()`, `.flex_col()`, `.flex_row()`.
+- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+
+### Key Discoveries
+- A shared Aura-only demo helper allows multiple feedback demos to migrate without adding new production component APIs.

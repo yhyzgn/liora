@@ -11,6 +11,7 @@ pub mod card_demo;
 pub mod cascader_demo;
 pub mod collapse_demo;
 pub mod color_picker_demo;
+pub mod common;
 pub mod container_demo;
 pub mod date_picker_demo;
 pub mod date_time_picker_demo;
@@ -417,5 +418,18 @@ mod tests {
     #[test]
     fn link_demo_uses_aura_layout_primitives() {
         assert_demo_uses_aura_layout_primitives("link_demo.rs", include_str!("link_demo.rs"));
+    }
+
+    #[test]
+    fn feedback_demos_use_aura_layout_primitives() {
+        for (file_name, source) in [
+            ("dropdown_demo.rs", include_str!("dropdown_demo.rs")),
+            ("loading_demo.rs", include_str!("loading_demo.rs")),
+            ("message_box_demo.rs", include_str!("message_box_demo.rs")),
+            ("message_demo.rs", include_str!("message_demo.rs")),
+            ("notification_demo.rs", include_str!("notification_demo.rs")),
+        ] {
+            assert_demo_uses_aura_layout_primitives(file_name, source);
+        }
     }
 }
