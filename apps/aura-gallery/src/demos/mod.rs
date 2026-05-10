@@ -575,6 +575,11 @@ mod tests {
     }
 
     #[test]
+    fn preview_demo_uses_aura_layout_primitives() {
+        assert_demo_uses_aura_layout_primitives("preview_demo.rs", include_str!("preview_demo.rs"));
+    }
+
+    #[test]
     fn tag_dynamic_input_uses_compact_input_width() {
         let source = include_str!("tag_demo.rs");
 

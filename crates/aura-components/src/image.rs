@@ -208,6 +208,10 @@ impl Image {
         self
     }
 
+    pub fn thumbnail(self) -> Self {
+        self.size(px(180.0), px(120.0))
+    }
+
     pub fn square(mut self, size: impl Into<Pixels>) -> Self {
         let size = size.into();
         self.width = Some(size);
@@ -811,4 +815,17 @@ fn default_empty(theme: &aura_theme::Theme) -> AnyElement {
         )
         .child(div().text_xs().child("No image"))
         .into_any_element()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn image_thumbnail_sets_preview_dimensions() {
+        let image = Image::new("https://example.com/image.png").thumbnail();
+
+        assert_eq!(image.width, Some(px(180.0)));
+        assert_eq!(image.height, Some(px(120.0)));
+    }
 }

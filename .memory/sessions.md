@@ -2492,3 +2492,35 @@
 ### Key Discoveries
 - Skeleton's custom template needed component-level equivalents for flex growth and partial-width paragraph rows.
 - Avatar background color is useful beyond this demo and avoids hand-rolled colored circles in gallery code.
+
+## Session 140 — 2026-05-11 (P7 Preview Demo Self-Bootstrap Batch)
+
+### Actions
+- Added a gallery guard for `preview_demo.rs` so it cannot use raw GPUI demo primitives (`div`, `px`, flex helpers) going forward.
+- Added `Image::thumbnail()` to express the common preview thumbnail size through the Image API instead of demo-level pixel sizing.
+- Rewrote the Preview demo with shared `page`/`section`/`row` helpers plus `Space`, `Text`, `Card`, `Icon`, `Image`, and `Preview`.
+- Preserved remote/local image triggers and the custom card trigger while keeping Image preview disabled inside wrapped Preview triggers.
+
+### Verification
+- `cargo test -p aura-gallery preview_demo_uses_aura_layout_primitives` failed before migration and passed after migration.
+- `cargo test -p aura-components image_thumbnail_sets_preview_dimensions --lib` failed before `Image::thumbnail()` and passed after implementation.
+- `cargo test -p aura-components` passed: 26 component tests plus integration/doc tests.
+- `cargo test -p aura-gallery` passed: 20 gallery tests.
+- `cargo check` passed.
+- `git diff --check` passed.
+- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+
+### Remaining Not Self-Contained After This Session
+- `affix_demo.rs`
+- `anchor_demo.rs`
+- `backtop_demo.rs`
+- `container_demo.rs`
+- `form_controls_demo.rs`
+- `form_demo.rs`
+- `image_demo.rs`
+- `layout_demo.rs`
+- `menu_demo.rs`
+- `table_demo.rs`
+
+### Key Discoveries
+- Preview demos commonly need a thumbnail-sized Image; making that a component API avoids repeating raw pixel sizing in demos.
