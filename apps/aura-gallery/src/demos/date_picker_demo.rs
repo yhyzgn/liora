@@ -1,6 +1,7 @@
-use aura_components::{DatePicker, DateValue, Text};
-use aura_core::Config;
-use gpui::{AnyView, App, Context, Entity, Render, Window, div, prelude::*, px};
+use aura_components::{DatePicker, DateValue, Space, Text};
+use gpui::{AnyView, App, Context, Entity, Render, Window, prelude::*};
+
+use super::common::{page, section};
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|cx| DatePickerDemo::new(cx)).into()
@@ -20,12 +21,12 @@ struct DatePickerDemo {
 impl DatePickerDemo {
     fn new(cx: &mut Context<Self>) -> Self {
         Self {
-            basic: cx.new(|_| DatePicker::new().width(px(260.0))),
+            basic: cx.new(|_| DatePicker::new().width_md()),
             formatted: cx.new(|_| {
                 DatePicker::new()
                     .value(DateValue::new(2026, 5, 8).expect("valid date"))
                     .format("YYYY年M月D日")
-                    .width(px(260.0))
+                    .width_md()
             }),
             date_range: cx.new(|_| {
                 DatePicker::new()
@@ -34,13 +35,13 @@ impl DatePickerDemo {
                         DateValue::new(2026, 5, 8).expect("valid date"),
                         DateValue::new(2026, 5, 18).expect("valid date"),
                     )
-                    .width(px(320.0))
+                    .width_lg()
             }),
             month: cx.new(|_| {
                 DatePicker::new()
                     .month()
                     .value(DateValue::new(2026, 5, 1).expect("valid date"))
-                    .width(px(260.0))
+                    .width_md()
             }),
             month_range: cx.new(|_| {
                 DatePicker::new()
@@ -49,13 +50,13 @@ impl DatePickerDemo {
                         DateValue::new(2026, 3, 1).expect("valid date"),
                         DateValue::new(2026, 9, 1).expect("valid date"),
                     )
-                    .width(px(320.0))
+                    .width_lg()
             }),
             year: cx.new(|_| {
                 DatePicker::new()
                     .year()
                     .value(DateValue::new(2026, 1, 1).expect("valid date"))
-                    .width(px(260.0))
+                    .width_md()
             }),
             year_range: cx.new(|_| {
                 DatePicker::new()
@@ -65,9 +66,9 @@ impl DatePickerDemo {
                         DateValue::new(2028, 1, 1).expect("valid date"),
                     )
                     .format("YYYY年")
-                    .width(px(320.0))
+                    .width_lg()
             }),
-            disabled: cx.new(|_| DatePicker::new().disabled(true).width(px(260.0))),
+            disabled: cx.new(|_| DatePicker::new().disabled(true).width_md()),
         }
     }
 }
@@ -80,55 +81,49 @@ impl Render for DatePickerDemo {
             .value_ref()
             .map(|value| value.format())
             .unwrap_or_else(|| "尚未选择".to_string());
-        let theme = cx.global::<Config>().theme.clone();
 
-        div()
-            .flex()
-            .flex_col()
-            .gap_8()
-            .p_4()
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap_2()
-                    .child(
-                        div()
-                            .text_lg()
-                            .font_weight(gpui::FontWeight::BOLD)
-                            .child("DatePicker 日期选择器"),
-                    )
-                    .child(div().text_sm().text_color(theme.neutral.text_3).child(
-                        "用于选择日期、日期范围、月份/月范围和年份/年范围，支持自定义展示格式。",
-                    )),
-            )
-            .child(section(
-                "基础用法",
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap_3()
-                    .child(self.basic.clone())
-                    .child(
-                        Text::new(format!("当前选择：{}", selected_text))
-                            .size(px(theme.font_size.sm)),
-                    ),
-            ))
-            .child(section("自定义展示格式", self.formatted.clone()))
-            .child(section("日期范围", self.date_range.clone()))
-            .child(section("月份选择", self.month.clone()))
-            .child(section("月份范围", self.month_range.clone()))
-            .child(section("年份选择", self.year.clone()))
-            .child(section("年份范围", self.year_range.clone()))
-            .child(section("禁用状态", self.disabled.clone()))
+        page(
+            "DatePicker 日期选择器",
+            "用于选择日期、日期范围、月份/月范围和年份/年范围，支持自定义展示格式。",
+            Space::new()
+                .vertical()
+                .gap_lg()
+                .child(section(
+                    "基础用法",
+                    "选择单个日期并读取当前值。",
+                    Space::new()
+                        .vertical()
+                        .gap_md()
+                        .child(self.basic.clone())
+                        .child(Text::new(format!("当前选择：{}", selected_text))),
+                ))
+                .child(section(
+                    "自定义展示格式",
+                    "使用中文格式展示已选日期。",
+                    self.formatted.clone(),
+                ))
+                .child(section(
+                    "日期范围",
+                    "选择开始日期和结束日期。",
+                    self.date_range.clone(),
+                ))
+                .child(section("月份选择", "按月粒度选择。", self.month.clone()))
+                .child(section(
+                    "月份范围",
+                    "选择月份区间。",
+                    self.month_range.clone(),
+                ))
+                .child(section("年份选择", "按年粒度选择。", self.year.clone()))
+                .child(section(
+                    "年份范围",
+                    "选择年份区间。",
+                    self.year_range.clone(),
+                ))
+                .child(section(
+                    "禁用状态",
+                    "禁用后不可打开面板。",
+                    self.disabled.clone(),
+                )),
+        )
     }
-}
-
-fn section(title: &'static str, content: impl IntoElement) -> gpui::Div {
-    div()
-        .flex()
-        .flex_col()
-        .gap_4()
-        .child(div().font_weight(gpui::FontWeight::BOLD).child(title))
-        .child(content)
 }

@@ -2148,3 +2148,29 @@
 
 ### Key Discoveries
 - Navigation/structure demos can be expressed with the existing common helper stack without adding new production component APIs.
+
+## Session 128 — 2026-05-11 (P7 Input Picker Demo Batch)
+
+### Actions
+- Added and confirmed a failing self-contained guard test for ColorPicker, DatePicker, DateTimePicker, TimePicker, and Upload demos before migration.
+- Migrated those input picker/upload demos to `page`/`section`/`Space` and existing Aura components.
+- Added semantic demo-width helpers so demos no longer need direct `px()` for common picker/upload widths:
+  - `ColorPicker::width_md()`
+  - `DatePicker::width_md()` / `DatePicker::width_lg()`
+  - `TimePicker::width_md()` / `TimePicker::width_lg()`
+  - `DateTimePicker::width_md()` / `DateTimePicker::width_lg()`
+  - `Upload::width_lg()`
+- Added unit coverage for the new width helpers.
+
+### Verification
+- `cargo test -p aura-gallery demos::tests::input_picker_demos_use_aura_layout_primitives -- --exact` failed before migration and passed after migration.
+- `cargo test -p aura-components width_` passed the new helper tests.
+- `cargo test -p aura-gallery` passed.
+- `cargo check` passed.
+- `cargo test -p aura-components` passed.
+- `git diff --check` passed.
+- Confirmed ColorPicker/DatePicker/DateTimePicker/TimePicker/Upload demo files have zero occurrences of `div(`, `px(`, `.flex()`, `.flex_col()`, `.flex_row()`.
+- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+
+### Key Discoveries
+- Picker demos are blocked mostly by repeated literal widths; narrow semantic width helpers keep demos self-contained without changing component behavior.

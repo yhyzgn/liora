@@ -183,6 +183,14 @@ impl DateTimePicker {
         self
     }
 
+    pub fn width_md(self) -> Self {
+        self.width(px(280.0))
+    }
+
+    pub fn width_lg(self) -> Self {
+        self.width(px(460.0))
+    }
+
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
@@ -1331,5 +1339,16 @@ impl Element for DateTimePickerBoundsCapturer {
         _window: &mut Window,
         _cx: &mut App,
     ) {
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn date_time_picker_width_helpers_set_demo_widths() {
+        assert_eq!(DateTimePicker::new().width_md().width, Some(px(280.0)));
+        assert_eq!(DateTimePicker::new().width_lg().width, Some(px(460.0)));
     }
 }

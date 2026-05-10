@@ -193,6 +193,10 @@ impl Upload {
         self
     }
 
+    pub fn width_lg(self) -> Self {
+        self.width(px(420.0))
+    }
+
     pub fn on_select(mut self, f: impl Fn(&mut Upload, &mut Context<Upload>) + 'static) -> Self {
         self.on_select = Some(Arc::new(f));
         self
@@ -787,5 +791,15 @@ fn format_size(size: u64) -> String {
         format!("{:.1} KB", size / KB)
     } else {
         format!("{} B", size as u64)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn upload_width_lg_sets_demo_width() {
+        assert_eq!(Upload::new().width_lg().width, Some(px(420.0)));
     }
 }

@@ -478,4 +478,20 @@ mod tests {
             assert_demo_uses_aura_layout_primitives(file_name, source);
         }
     }
+
+    #[test]
+    fn input_picker_demos_use_aura_layout_primitives() {
+        for (file_name, source) in [
+            ("color_picker_demo.rs", include_str!("color_picker_demo.rs")),
+            ("date_picker_demo.rs", include_str!("date_picker_demo.rs")),
+            (
+                "date_time_picker_demo.rs",
+                include_str!("date_time_picker_demo.rs"),
+            ),
+            ("time_picker_demo.rs", include_str!("time_picker_demo.rs")),
+            ("upload_demo.rs", include_str!("upload_demo.rs")),
+        ] {
+            assert_demo_uses_aura_layout_primitives(file_name, source);
+        }
+    }
 }

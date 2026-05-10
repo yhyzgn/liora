@@ -166,6 +166,14 @@ impl DatePicker {
         self
     }
 
+    pub fn width_md(self) -> Self {
+        self.width(px(260.0))
+    }
+
+    pub fn width_lg(self) -> Self {
+        self.width(px(320.0))
+    }
+
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
@@ -1149,4 +1157,15 @@ fn weekday_monday_based(year: i32, month: u32, day: u32) -> u32 {
     let j = y / 100;
     let h = (day as i32 + (13 * (m + 1)) / 5 + k + k / 4 + j / 4 + 5 * j).rem_euclid(7);
     ((h + 5) % 7) as u32
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn date_picker_width_helpers_set_demo_widths() {
+        assert_eq!(DatePicker::new().width_md().width, Some(px(260.0)));
+        assert_eq!(DatePicker::new().width_lg().width, Some(px(320.0)));
+    }
 }

@@ -88,6 +88,14 @@ impl TimePicker {
         self
     }
 
+    pub fn width_md(self) -> Self {
+        self.width(px(240.0))
+    }
+
+    pub fn width_lg(self) -> Self {
+        self.width(px(280.0))
+    }
+
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
@@ -569,5 +577,16 @@ impl Element for TimePickerBoundsCapturer {
         _window: &mut Window,
         _cx: &mut App,
     ) {
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn time_picker_width_helpers_set_demo_widths() {
+        assert_eq!(TimePicker::new().width_md().width, Some(px(240.0)));
+        assert_eq!(TimePicker::new().width_lg().width, Some(px(280.0)));
     }
 }

@@ -1,6 +1,7 @@
-use aura_components::{Text, Upload, UploadFile, UploadStatus};
-use aura_core::Config;
-use gpui::{AnyView, App, Context, Entity, Render, Window, div, prelude::*, px};
+use aura_components::{Space, Text, Upload, UploadFile, UploadStatus};
+use gpui::{AnyView, App, Context, Entity, Render, Window, prelude::*};
+
+use super::common::{page, section};
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|cx| UploadDemo::new(cx)).into()
@@ -23,7 +24,7 @@ impl UploadDemo {
                     .accept(".pdf,.fig,.txt")
                     .max_size(5 * 1024 * 1024)
                     .tip("点击选择文件会打开系统文件选择器；仅接受 pdf/fig/txt，单文件 ≤ 5MB。")
-                    .width(px(420.0))
+                    .width_lg()
                     .add_file(
                         UploadFile::new("spec", "产品需求说明.pdf")
                             .size(428_000)
@@ -44,7 +45,7 @@ impl UploadDemo {
                     .max_size(2 * 1024 * 1024)
                     .button_text("拖拽文件到这里上传")
                     .tip("点击拖拽区域会打开系统文件选择器；真实拖放接入可由宿主扩展。")
-                    .width(px(420.0))
+                    .width_lg()
                     .add_file(
                         UploadFile::new("error", "合同扫描件.jpg")
                             .size(820_000)
@@ -59,7 +60,7 @@ impl UploadDemo {
                     .multiple(true)
                     .accept("image/*")
                     .max_size(2 * 1024 * 1024)
-                    .width(px(420.0))
+                    .width_lg()
                     .files([
                         UploadFile::new("cover", "cover.png")
                             .size(512_000)
@@ -77,7 +78,7 @@ impl UploadDemo {
                     .max_size(10 * 1024 * 1024)
                     .button_text("达到数量限制")
                     .tip("limit=1 时已有文件，入口自动禁用；移除后可再次点击打开文件选择器。")
-                    .width(px(420.0))
+                    .width_lg()
                     .add_file(
                         UploadFile::new("only", "唯一附件.zip")
                             .size(5_120_000)
@@ -89,57 +90,33 @@ impl UploadDemo {
                     .disabled(true)
                     .button_text("禁用上传")
                     .tip("禁用状态下入口不可用。")
-                    .width(px(420.0))
+                    .width_lg()
             }),
         }
     }
 }
 
 impl Render for UploadDemo {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let theme = cx.global::<Config>().theme.clone();
-
-        div()
-            .flex()
-            .flex_col()
-            .gap_8()
-            .p_4()
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap_2()
-                    .child(
-                        div()
-                            .text_lg()
-                            .font_weight(gpui::FontWeight::BOLD)
-                            .child("Upload 上传"),
-                    )
-                    .child(div().text_sm().text_color(theme.neutral.text_3).child(
-                        "用于呈现上传入口和文件列表，支持系统文件选择器、类型/大小/数量限制、拖拽样式、图片卡片列表、进度、状态和移除回调。",
-                    )),
-            )
-            .child(section(
-                "基础文件列表",
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap_3()
-                    .child(self.basic.clone())
-                    .child(Text::new("点击“选择文件”会打开系统文件选择器；点击垃圾桶图标可从组件内部移除文件。").size(px(theme.font_size.sm))),
-            ))
-            .child(section("拖拽上传样式", self.drag.clone()))
-            .child(section("图片卡片列表", self.picture.clone()))
-            .child(section("数量限制", self.limited.clone()))
-            .child(section("禁用状态", self.disabled.clone()))
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        page(
+            "Upload 上传",
+            "用于呈现上传入口和文件列表，支持系统文件选择器、类型/大小/数量限制、拖拽样式、图片卡片列表、进度、状态和移除回调。",
+            Space::new()
+                .vertical()
+                .gap_lg()
+                .child(section(
+                    "基础文件列表",
+                    "展示普通上传入口与文件状态。",
+                    Space::new()
+                        .vertical()
+                        .gap_md()
+                        .child(self.basic.clone())
+                        .child(Text::new("点击“选择文件”会打开系统文件选择器；点击垃圾桶图标可从组件内部移除文件。")),
+                ))
+                .child(section("拖拽上传样式", "使用拖拽区域样式呈现上传入口。", self.drag.clone()))
+                .child(section("图片卡片列表", "以图片卡片样式展示文件。", self.picture.clone()))
+                .child(section("数量限制", "达到 limit 后入口自动禁用。", self.limited.clone()))
+                .child(section("禁用状态", "整体上传入口不可操作。", self.disabled.clone())),
+        )
     }
-}
-
-fn section(title: &'static str, content: impl IntoElement) -> gpui::Div {
-    div()
-        .flex()
-        .flex_col()
-        .gap_4()
-        .child(div().font_weight(gpui::FontWeight::BOLD).child(title))
-        .child(content)
 }

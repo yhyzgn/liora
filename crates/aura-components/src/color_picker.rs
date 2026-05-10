@@ -101,6 +101,10 @@ impl ColorPicker {
         self
     }
 
+    pub fn width_md(self) -> Self {
+        self.width(px(360.0))
+    }
+
     pub fn on_change(mut self, f: impl Fn(SharedString, &mut Window, &mut App) + 'static) -> Self {
         self.on_change = Some(Arc::new(f));
         self
@@ -889,4 +893,17 @@ fn default_presets() -> Vec<SharedString> {
     .into_iter()
     .map(Into::into)
     .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn color_picker_width_md_sets_demo_width() {
+        assert_eq!(
+            ColorPicker::new("#409eff").width_md().width,
+            Some(px(360.0))
+        );
+    }
 }
