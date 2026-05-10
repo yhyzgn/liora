@@ -99,6 +99,7 @@ impl Render for IconDemo {
 fn icon_labeled(icon: Icon, label: &str) -> impl IntoElement {
     Space::new()
         .vertical()
+        .align_center()
         .gap_xs()
         .child(icon)
         .child(Text::new(label.to_string()).nowrap())

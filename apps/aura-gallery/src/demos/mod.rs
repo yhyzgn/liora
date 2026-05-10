@@ -557,6 +557,16 @@ mod tests {
     }
 
     #[test]
+    fn icon_demo_labels_are_center_aligned_under_icons() {
+        let source = include_str!("icon_demo.rs");
+
+        assert!(
+            source.contains(".align_center()"),
+            "icon labels should use Space::align_center so text is centered under each icon"
+        );
+    }
+
+    #[test]
     fn tag_dynamic_input_uses_compact_input_width() {
         let source = include_str!("tag_demo.rs");
 

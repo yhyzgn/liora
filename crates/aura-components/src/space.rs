@@ -7,6 +7,14 @@ pub struct Space {
     vertical: bool,
     wrap: bool,
     gap: Option<DefiniteLength>,
+    align: Option<SpaceAlign>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SpaceAlign {
+    Start,
+    Center,
+    End,
 }
 
 impl Space {
@@ -16,6 +24,7 @@ impl Space {
             vertical: false,
             wrap: false,
             gap: None,
+            align: None,
         }
     }
 
@@ -54,6 +63,23 @@ impl Space {
         self
     }
 
+    pub fn align(mut self, align: SpaceAlign) -> Self {
+        self.align = Some(align);
+        self
+    }
+
+    pub fn align_start(self) -> Self {
+        self.align(SpaceAlign::Start)
+    }
+
+    pub fn align_center(self) -> Self {
+        self.align(SpaceAlign::Center)
+    }
+
+    pub fn align_end(self) -> Self {
+        self.align(SpaceAlign::End)
+    }
+
     pub fn child(mut self, child: impl IntoElement) -> Self {
         self.children.push(child.into_any_element());
         self
@@ -78,6 +104,13 @@ impl RenderOnce for Space {
         if self.wrap {
             div = div.flex_wrap();
         }
+
+        div = match self.align {
+            Some(SpaceAlign::Start) => div.items_start(),
+            Some(SpaceAlign::Center) => div.items_center(),
+            Some(SpaceAlign::End) => div.items_end(),
+            None => div,
+        };
 
         if let Some(gap) = self.gap {
             div = div.gap(gap);
@@ -105,5 +138,12 @@ mod tests {
         let space = Space::new().wrap();
 
         assert!(space.wrap);
+    }
+
+    #[test]
+    fn space_align_center_tracks_cross_axis_alignment() {
+        let space = Space::new().vertical().align_center();
+
+        assert_eq!(space.align, Some(SpaceAlign::Center));
     }
 }

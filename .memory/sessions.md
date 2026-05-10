@@ -2433,3 +2433,25 @@
 - `preview_demo.rs`
 - `skeleton_demo.rs`
 - `table_demo.rs`
+
+## Session 138 — 2026-05-11 (Icon Demo Label Centering Fix)
+
+### Actions
+- Investigated the Icon demo label alignment regression after the self-bootstrap migration.
+- Identified root cause: the demo uses vertical `Space` for icon+label pairs, but `Space` only controlled direction/wrap/gap and had no cross-axis alignment API, so vertical stacks defaulted to start alignment.
+- Added `SpaceAlign` plus `Space::align`, `align_start`, `align_center`, and `align_end` helpers.
+- Updated `icon_demo.rs` to use `Space::align_center()` for each icon+label stack.
+- Added regression tests covering the Space alignment builder and the Icon demo's centered label requirement.
+
+### Verification
+- `cargo test -p aura-components space_align_center_tracks_cross_axis_alignment --lib` failed before the Space API implementation and passed after it.
+- `cargo test -p aura-gallery icon_demo_labels_are_center_aligned_under_icons` failed before the demo update and passed after it.
+- `cargo test -p aura-gallery icon_demo_uses_aura_layout_primitives` passed.
+- `cargo test -p aura-components` passed: 22 component tests plus integration/doc tests.
+- `cargo test -p aura-gallery` passed: 18 gallery tests.
+- `cargo check` passed.
+- `git diff --check` passed.
+- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+
+### Key Discoveries
+- Aura `Space` needed explicit cross-axis alignment to replace raw GPUI layout in vertical label stacks without losing visual centering.
