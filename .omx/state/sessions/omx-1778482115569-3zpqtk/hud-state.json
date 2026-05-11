@@ -1,6 +1,6 @@
 {
-  "last_turn_at": "2026-05-11T07:11:58.019Z",
-  "last_progress_at": "2026-05-11T07:11:58.019Z",
-  "turn_count": 5,
-  "last_agent_output": "已完成 P8 技术方案重整并推送。\n\n更新内容：\n- `architecture-design.md`\n  - 新增 P8 原生 Aura Gallery 文档架构\n  - 移除旧 VitePress"
+  "last_turn_at": "2026-05-11T07:13:34.584Z",
+  "last_progress_at": "2026-05-11T07:13:34.584Z",
+  "turn_count": 6,
+  "last_agent_output": "已提交并推送 `.omx/`。\n\n提交：\n- `f9a7b8e` — `Track OMX workspace runtime state`\n- `0d92a33` — `Refresh OMX he"
 }

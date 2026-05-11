@@ -410,7 +410,10 @@ mod tests {
             "shared page/section layout helpers should be exported by aura-components::layout_helpers"
         );
         assert!(
-            !registry_source.lines().any(|line| line.trim() == concat!("pub mod ", "common;")) && !component_lib_source.contains("pub mod demo;"),
+            !registry_source
+                .lines()
+                .any(|line| line.trim() == concat!("pub mod ", "common;"))
+                && !component_lib_source.contains("pub mod demo;"),
             "helpers should not remain in gallery-local common or crate-level demo modules once they are crate-owned"
         );
     }
@@ -499,19 +502,23 @@ mod tests {
         let source = include_str!("menu_demo.rs");
 
         assert!(
-            source.contains(r#"Col::new(4).child(
+            source.contains(
+                r#"Col::new(4).child(
                                         Space::new()
                                             .vertical()
                                             .gap_md()
-                                            .child(Text::new("垂直模式").bold())"#),
+                                            .child(Text::new("垂直模式").bold())"#
+            ),
             "vertical menu demo should use a narrower 4/24 grid column instead of the previous 6/24 layout"
         );
         assert!(
-            source.contains(r#"Col::new(2).child(
+            source.contains(
+                r#"Col::new(2).child(
                                         Space::new()
                                             .vertical()
                                             .gap_md()
-                                            .child(Text::new("折叠").bold())"#),
+                                            .child(Text::new("折叠").bold())"#
+            ),
             "collapsed menu demo should use a compact 2/24 grid column instead of the regular menu width"
         );
     }
@@ -621,6 +628,20 @@ mod tests {
     #[test]
     fn image_demo_uses_aura_layout_primitives() {
         assert_demo_uses_aura_layout_primitives("image_demo.rs", include_str!("image_demo.rs"));
+    }
+
+    #[test]
+    fn image_and_preview_demos_keep_remote_loading_coverage_bounded() {
+        for (file_name, source) in [
+            ("image_demo.rs", include_str!("image_demo.rs")),
+            ("preview_demo.rs", include_str!("preview_demo.rs")),
+        ] {
+            let remote_count = source.matches("https://").count();
+            assert_eq!(
+                remote_count, 1,
+                "{file_name} should keep exactly one remote image for remote-loading coverage without triggering many network loads"
+            );
+        }
     }
 
     #[test]

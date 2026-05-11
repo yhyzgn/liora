@@ -2754,3 +2754,22 @@
 ### Key Discoveries
 - The new P8 plan should dogfood Aura's own text/layout primitives instead of creating a separate Web documentation surface.
 - The repo currently uses Rust edition 2024; the new P8 plan treats Rust 2021 as a minimum language baseline but does not downgrade the workspace edition.
+
+## Session 151 — 2026-05-11 (Image/Preview Menu Switch Performance)
+
+### Actions
+- Investigated Image and Preview menu-switch stutter and slow remote image display.
+- Identified two image loading issues: URL rendering scheduled Aura's own background `ureq` fetch while also returning GPUI `img(src)`, causing a second remote loading path; cached remote states also requested animation frames during render.
+- Changed remote URL rendering to use the Aura remote cache path only: loading renders the Aura placeholder, completion refreshes windows explicitly, and no GPUI `img(src)` fallback is started.
+- Added a local image render cache so repeated local thumbnails in Image/Preview demos do not synchronously read/decode the same file on every render.
+- Kept exactly one remote image in each Image/Preview demo for remote-loading coverage while moving repeated examples to the bundled local asset, so menu switching does not trigger many network loads.
+- Added regression tests for passive remote loading state, single remote fetch path, local render-image cache, and bounded remote demo coverage.
+
+### Verification
+- `cargo test -p aura-components remote_image_loading_state_is_passive_after_first_fetch --lib` failed before the helper existed and passed after the remote state change.
+- `cargo test -p aura-gallery image_and_preview_demos_keep_remote_loading_coverage_bounded` failed when the demos had zero remote URLs and passed after keeping exactly one remote URL per demo.
+- Full verification rerun after formatting is recorded in the assistant response for this session.
+
+### Key Discoveries
+- The previous URL branch could start two remote image loaders for the same URL: Aura's background cache fetch plus GPUI `img(src)`.
+- The Image and Preview gallery pages are performance-sensitive because selecting those cached views renders many image instances at once; local file decode must be cached too.

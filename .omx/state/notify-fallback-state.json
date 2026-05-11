@@ -6,18 +6,18 @@
   "notify_script": "/home/neo/.bun/install/global/node_modules/oh-my-codex/dist/scripts/notify-hook.js",
   "authority_only": false,
   "poll_ms": 250,
-  "effective_poll_ms": 1000,
+  "effective_poll_ms": 250,
   "idle_max_poll_ms": 1000,
   "pid_file": "/home/neo/Projects/neo/lib/aura/.omx/state/notify-fallback.pid",
   "max_lifetime_ms": 21600000,
   "tracked_files": 1,
-  "seen_turns": 5,
+  "seen_turns": 6,
   "dispatch_drain": {
     "enabled": true,
     "max_per_tick": 5,
-    "run_count": 4869,
+    "run_count": 6484,
     "leader_only": true,
-    "last_tick_at": "2026-05-11T07:13:16.577Z",
+    "last_tick_at": "2026-05-11T07:22:35.799Z",
     "last_result": {
       "processed": 0,
       "skipped": 0,
@@ -29,17 +29,17 @@
     "enabled": true,
     "leader_only": true,
     "stale_threshold_ms": 180000,
-    "precomputed_leader_stale": false,
-    "last_tick_at": "2026-05-11T07:13:16.577Z",
+    "precomputed_leader_stale": true,
+    "last_tick_at": "2026-05-11T07:22:35.799Z",
     "last_error": null,
-    "run_count": 4869
+    "run_count": 6484
   },
   "ralph_continue_steer": {
     "enabled": true,
     "cadence_ms": 60000,
     "message": "Ralph loop active continue",
     "active": false,
-    "last_state_check_at": "2026-05-11T07:13:16.602Z",
+    "last_state_check_at": "2026-05-11T07:22:35.816Z",
     "last_sent_at": "",
     "cooldown_anchor_at": "",
     "last_reason": "blocked_by_current_session",
@@ -57,32 +57,32 @@
   "fallback_auto_nudge": {
     "enabled": true,
     "stall_ms": 5000,
-    "last_tick_at": "2026-05-11T07:13:16.589Z",
-    "last_turn_at": "2026-05-11T07:11:58.019Z",
-    "last_turn_count": 5,
-    "last_message": "已完成 P8 技术方案重整并推送。\n\n更新内容：\n- `architecture-design.md`\n  - 新增 P8 原生 Aura Gallery 文档架构\n  - 移除旧 VitePress",
+    "last_tick_at": "2026-05-11T07:22:35.800Z",
+    "last_turn_at": "2026-05-11T07:13:34.584Z",
+    "last_turn_count": 6,
+    "last_message": "已提交并推送 `.omx/`。\n\n提交：\n- `f9a7b8e` — `Track OMX workspace runtime state`\n- `0d92a33` — `Refresh OMX he",
     "last_reason": "eligible_but_not_sent",
     "last_error": null,
     "last_nudged_signature": "",
     "last_nudged_at": ""
   },
   "authority_backoff": {
-    "active": true,
-    "reason": "primary_watcher_healthy",
-    "primary_pid": 86888,
-    "primary_last_tick_at": "2026-05-11T07:13:16.602Z",
-    "freshness_ms": 674,
-    "threshold_ms": 1000
+    "active": false,
+    "reason": "",
+    "primary_pid": null,
+    "primary_last_tick_at": "",
+    "freshness_ms": null,
+    "threshold_ms": null
   },
   "adaptive_poll": {
     "enabled": true,
     "base_ms": 250,
     "max_ms": 1000,
-    "current_ms": 1000,
-    "idle_streak": 3,
-    "last_tick_at": "2026-05-11T07:13:16.602Z",
-    "last_activity_at": "2026-05-11T07:13:14.794Z",
-    "last_activity_reason": "eligible_but_not_sent"
+    "current_ms": 250,
+    "idle_streak": 0,
+    "last_tick_at": "2026-05-11T07:22:35.816Z",
+    "last_activity_at": "2026-05-11T07:22:35.816Z",
+    "last_activity_reason": "leader_nudge"
   },
-  "last_cycle_activity": "eligible_but_not_sent"
+  "last_cycle_activity": "leader_nudge"
 }

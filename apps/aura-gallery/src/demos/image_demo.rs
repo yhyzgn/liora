@@ -11,7 +11,7 @@ struct ImageDemo;
 
 impl Render for ImageDemo {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        let remote = "https://cube.elemecdn.com/6/94/4d3ea53c084bad6931a56d5158a48jpeg.jpeg";
+        let remote = "https://placehold.co/320x180/png?text=Aura+Remote";
         let local = format!("file://{}/assets/local.jpeg", env!("CARGO_MANIFEST_DIR"));
 
         page(
@@ -26,7 +26,7 @@ impl Render for ImageDemo {
                     row(vec![
                         Image::new(remote).thumbnail().cover().preview(true),
                         Image::new(local.clone()).thumbnail().cover(),
-                        Image::new(remote).thumbnail().contain(),
+                        Image::new(local.clone()).thumbnail().contain(),
                     ]),
                 ))
                 .child(section(
@@ -44,7 +44,7 @@ impl Render for ImageDemo {
                             Space::new()
                                 .vertical()
                                 .gap_sm()
-                                .child(Image::new(remote).thumbnail_sm().fit(fit))
+                                .child(Image::new(local.clone()).thumbnail_sm().fit(fit))
                                 .child(Text::new(label).nowrap()),
                         )
                         .no_shadow()

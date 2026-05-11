@@ -6,7 +6,7 @@ use aura_icons_lucide::IconName;
 use gpui::{
     AnyElement, App, Bounds, Component, Corners, Element, ElementId, GlobalElementId, Hsla,
     InspectorElementId, IntoElement, LayoutId, ObjectFit, Pixels, RenderImage, RenderOnce,
-    SharedString, Style, Window, div, img, prelude::*, px, relative,
+    SharedString, Style, Window, div, prelude::*, px, relative,
 };
 use std::{
     collections::HashMap,
@@ -412,15 +412,8 @@ impl RenderOnce for Image {
                         round_options: self.round_options,
                     },
                 ));
-            } else if let ImageSource::Url(src) = src {
-                frame = frame.child(
-                    img(src)
-                        .size_full()
-                        .object_fit(self.fit.as_object_fit())
-                        .grayscale(self.grayscale)
-                        .with_loading(move || loading())
-                        .with_fallback(move || fallback()),
-                );
+            } else if matches!(src, ImageSource::Url(_)) {
+                frame = frame.child(loading());
             } else {
                 frame = frame.child(fallback());
             }
@@ -703,6 +696,12 @@ enum RemoteImageState {
     Failed,
 }
 
+impl RemoteImageState {
+    fn should_request_animation_frame(&self) -> bool {
+        false
+    }
+}
+
 fn remote_image_cache() -> &'static Mutex<HashMap<String, RemoteImageState>> {
     static CACHE: OnceLock<Mutex<HashMap<String, RemoteImageState>>> = OnceLock::new();
     CACHE.get_or_init(|| Mutex::new(HashMap::new()))
@@ -714,13 +713,12 @@ pub(crate) fn load_remote_render_image(
     _cx: &mut App,
 ) -> Option<Arc<RenderImage>> {
     if let Some(cached) = remote_image_cache().lock().ok()?.get(url).cloned() {
+        if cached.should_request_animation_frame() {
+            window.request_animation_frame();
+        }
         return match cached {
             RemoteImageState::Ready(image) => Some(image),
-            RemoteImageState::Loading => {
-                window.request_animation_frame();
-                None
-            }
-            RemoteImageState::Failed => None,
+            RemoteImageState::Loading | RemoteImageState::Failed => None,
         };
     }
 
@@ -759,9 +757,26 @@ fn fetch_remote_render_image(url: &str) -> Option<Arc<RenderImage>> {
     })
 }
 
+fn local_image_cache() -> &'static Mutex<HashMap<PathBuf, Arc<RenderImage>>> {
+    static CACHE: OnceLock<Mutex<HashMap<PathBuf, Arc<RenderImage>>>> = OnceLock::new();
+    CACHE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
 pub(crate) fn load_local_render_image(path: &Path) -> Option<Arc<RenderImage>> {
+    if let Some(cached) = local_image_cache()
+        .lock()
+        .ok()
+        .and_then(|cache| cache.get(path).cloned())
+    {
+        return Some(cached);
+    }
+
     let bytes = std::fs::read(path).ok()?;
-    render_image_from_bytes(&bytes)
+    let image = render_image_from_bytes(&bytes)?;
+    if let Ok(mut cache) = local_image_cache().lock() {
+        cache.insert(path.to_path_buf(), image.clone());
+    }
+    Some(image)
 }
 
 fn render_image_from_bytes(bytes: &[u8]) -> Option<Arc<RenderImage>> {
@@ -861,5 +876,35 @@ mod tests {
             image.round_options.ring.map(|ring| ring.width),
             Some(px(6.0))
         );
+    }
+
+    #[test]
+    fn remote_image_loading_state_is_passive_after_first_fetch() {
+        assert!(
+            !RemoteImageState::Loading.should_request_animation_frame(),
+            "loading remote images should not request animation frames on every render; completion refreshes windows explicitly"
+        );
+        assert!(!RemoteImageState::Failed.should_request_animation_frame());
+    }
+
+    #[test]
+    fn remote_url_rendering_uses_single_aura_fetch_path() {
+        let source = include_str!("image.rs");
+        let production = source.split("#[cfg(test)]").next().unwrap();
+
+        assert!(
+            !production.contains("img(src)"),
+            "remote Image rendering should not start GPUI img loading after scheduling the Aura remote cache fetch"
+        );
+    }
+
+    #[test]
+    fn local_image_loading_uses_render_image_cache() {
+        let source = include_str!("image.rs");
+        let production = source.split("#[cfg(test)]").next().unwrap();
+
+        assert!(production.contains("fn local_image_cache()"));
+        assert!(production.contains("cache.get(path).cloned()"));
+        assert!(production.contains("cache.insert(path.to_path_buf(), image.clone())"));
     }
 }
