@@ -2916,3 +2916,22 @@
 ### Key Discoveries
 - `pulldown-cmark` 0.13 uses `Tag::Heading { level, .. }` and `TagEnd::Heading(level)`, so the renderer stores heading level on Start and pops the frame on End.
 - Phase 2 intentionally leaves fenced/indented code block handling for Phase 3; inline code is already mapped through Aura `Text::code_style`.
+
+## Session 83 — 2026-05-11 (P8 Phase 3 Code Blocks + Docs Shell)
+
+### Actions
+- Extended the native Markdown renderer with fenced/indented code block parsing using `Tag::CodeBlock` and `CodeBlockKind`.
+- Rendered code blocks as native GPUI/Aura shells with neutral background, border, monospace text, no wrapping, and horizontal scrolling via `overflow_x_scroll`.
+- Added a `DocsShell` native two-column document window: Aura `Container` + left Aura `Menu` navigation + right Markdown-rendered document content with vertical scrolling.
+- Registered `Docs 原生文档` in the Gallery registry so the native docs shell is reachable from the existing demo bootstrap.
+- Kept inline code styling through the existing `Text::code_style` path from Phase 1/2.
+- Added tests for fenced code parsing, code block horizontal scroll styling, and docs shell native Container/Menu integration.
+- Updated P8 tracking docs to mark Phase 3 complete and set Phase 4 Live Demo injection as next.
+
+### Verification
+- `cargo test -p aura-gallery markdown` passed during implementation.
+- `cargo check -p aura-gallery` passed without warnings during implementation.
+
+### Key Discoveries
+- Current GPUI supports `overflow_x_scroll` on stateful divs, which is sufficient for Phase 3 horizontal code scrolling without introducing a custom horizontal Scrollbar component.
+- The docs shell can be introduced as a normal Gallery registry entry first, avoiding a disruptive replacement of the existing component demo bootstrap before Live Demo injection is ready.

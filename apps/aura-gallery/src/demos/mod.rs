@@ -71,6 +71,11 @@ pub fn registry() -> Vec<DemoEntry> {
             render: |cx| button_demo::render(cx).into(),
         },
         DemoEntry {
+            name: "Docs 原生文档",
+            description: "GPUI 原生 Markdown 文档大屏",
+            render: |cx| crate::markdown::render_docs_shell(cx).into(),
+        },
+        DemoEntry {
             name: "Tag 标签",
             description: "用于标记和选择",
             render: |cx| tag_demo::render(cx).into(),

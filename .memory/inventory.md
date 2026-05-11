@@ -142,7 +142,7 @@
 |------|--------|--------|
 | Typography bootstrapping | `crates/aura-components/src/` rich text/paragraph primitives | ✅ `Paragraph` now renders GPUI `StyledText` runs from `Text` segments |
 | Markdown renderer | `apps/aura-gallery/src/markdown.rs` + `pulldown-cmark` | ✅ Stack-based native renderer for headings, paragraphs, inline strong/em/code/strike, lists, blockquotes |
-| Code block styling + document shell | Native Aura/GPUI two-column gallery docs UI | ⬜ Pending |
+| Code block styling + document shell | Native Aura/GPUI two-column gallery docs UI | ✅ Fenced code blocks + `Docs 原生文档` Gallery entry with `Container`/`Menu` shell |
 | Live Demo injection | `::AuraDemo{component="..."}::` → real Aura view nodes | ⬜ Pending |
 
 ## P9 Deferred Advanced ⏸️ (0/9 — backlog for later supplementation)

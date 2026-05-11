@@ -1,9 +1,80 @@
-use aura_components::{Paragraph, Space, Text, Title};
+use aura_components::{Button, Card, Container, Menu, MenuMode, Paragraph, Space, Text, Title};
 use aura_core::Config;
 use gpui::{
-    AnyElement, App, Component, IntoElement, RenderOnce, SharedString, Window, div, prelude::*, px,
+    AnyElement, App, Component, Context, Entity, IntoElement, Render, RenderOnce, SharedString,
+    WeakEntity, Window, div, prelude::*, px,
 };
-use pulldown_cmark::{Event, HeadingLevel, Options, Parser, Tag, TagEnd};
+use pulldown_cmark::{CodeBlockKind, Event, HeadingLevel, Options, Parser, Tag, TagEnd};
+
+const INTRO_DOC: &str = r#"# Aura Gallery
+
+Aura Gallery 是 Aura UI 的原生文档与组件展示大屏。Markdown 只作为输入格式，最终结果全部映射为 GPUI 原生元素树。
+
+## Native bootstrapping
+
+- 使用 `pulldown-cmark` 解析 Markdown 事件。
+- 使用 Aura `Paragraph` 和 `Text` 自举富文本渲染。
+- 使用原生 `Container` / `Menu` 构建双栏文档窗口。
+
+> 所有内容仍然运行在 GPUI 原生窗口内，不经过 HTML、CSS、DOM 或 WebView。
+
+```rust
+Button::new("Primary")
+    .primary()
+    .on_click(|_, _, _| {
+        // Native GPUI interaction
+    });
+```
+"#;
+
+const TYPOGRAPHY_DOC: &str = r#"# Typography
+
+Aura Typography 现在可以把多个不同样式的文本片段合成为同一个 `StyledText` 流。
+
+这意味着 **strong**、*emphasis*、~~strike~~ 和 `inline code` 可以在同一段落内自动折行，而不是拆成多个独立块。
+
+```rust
+Paragraph::new()
+    .child(Text::new("Normal "))
+    .child(Text::new("Bold").bold())
+    .child(Text::new(" code ").code_style(theme));
+```
+"#;
+
+const COMPONENT_DOC: &str = r#"# Component docs
+
+后续 Phase 4 会支持类似 `::AuraDemo{component="Button"}::` 的活体组件注入语法。
+
+当前 Phase 3 先验证文档壳、导航、纵向滚动和代码块横向滚动。
+
+1. 左侧使用 Aura `Menu`。
+2. 右侧使用 Markdown renderer。
+3. 文档内容保持原生可组合元素。
+"#;
+
+pub struct DocPage {
+    pub id: &'static str,
+    pub title: &'static str,
+    pub markdown: &'static str,
+}
+
+const DOC_PAGES: &[DocPage] = &[
+    DocPage {
+        id: "intro",
+        title: "Overview",
+        markdown: INTRO_DOC,
+    },
+    DocPage {
+        id: "typography",
+        title: "Typography",
+        markdown: TYPOGRAPHY_DOC,
+    },
+    DocPage {
+        id: "components",
+        title: "Components",
+        markdown: COMPONENT_DOC,
+    },
+];
 
 pub fn render_markdown(md_text: &str) -> AnyElement {
     Component::new(MarkdownDocument::parse(md_text)).into_any_element()
@@ -26,6 +97,10 @@ enum Block {
         start: u64,
         items: Vec<Vec<Block>>,
     },
+    CodeBlock {
+        language: Option<SharedString>,
+        code: SharedString,
+    },
     Rule,
 }
 
@@ -44,6 +119,10 @@ enum Frame {
         items: Vec<Vec<Block>>,
     },
     Item(Vec<Block>),
+    CodeBlock {
+        language: Option<SharedString>,
+        code: String,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -136,12 +215,25 @@ impl ParserState {
                 items: Vec::new(),
             }),
             Tag::Item => self.stack.push(Frame::Item(Vec::new())),
+            Tag::CodeBlock(kind) => {
+                let language = match kind {
+                    CodeBlockKind::Indented => None,
+                    CodeBlockKind::Fenced(info) => info
+                        .split_whitespace()
+                        .next()
+                        .filter(|lang| !lang.is_empty())
+                        .map(|lang| SharedString::from(lang.to_string())),
+                };
+                self.stack.push(Frame::CodeBlock {
+                    language,
+                    code: String::new(),
+                });
+            }
             Tag::Emphasis => self.inline_style.emphasis = true,
             Tag::Strong => self.inline_style.strong = true,
             Tag::Strikethrough => self.inline_style.strikethrough = true,
             Tag::Link { .. } | Tag::Image { .. } => {}
-            Tag::CodeBlock(_)
-            | Tag::HtmlBlock
+            Tag::HtmlBlock
             | Tag::FootnoteDefinition(_)
             | Tag::DefinitionList
             | Tag::DefinitionListTitle
@@ -162,15 +254,15 @@ impl ParserState {
             | TagEnd::Heading(_)
             | TagEnd::BlockQuote(_)
             | TagEnd::List(_)
-            | TagEnd::Item => {
+            | TagEnd::Item
+            | TagEnd::CodeBlock => {
                 self.close_top_frame();
             }
             TagEnd::Emphasis => self.inline_style.emphasis = false,
             TagEnd::Strong => self.inline_style.strong = false,
             TagEnd::Strikethrough => self.inline_style.strikethrough = false,
             TagEnd::Link | TagEnd::Image => {}
-            TagEnd::CodeBlock
-            | TagEnd::HtmlBlock
+            TagEnd::HtmlBlock
             | TagEnd::FootnoteDefinition
             | TagEnd::DefinitionList
             | TagEnd::DefinitionListTitle
@@ -231,6 +323,12 @@ impl ParserState {
                     });
                 }
             }
+            Frame::CodeBlock { language, code } => {
+                self.push_block(Block::CodeBlock {
+                    language,
+                    code: code.into(),
+                });
+            }
         }
     }
 
@@ -247,6 +345,7 @@ impl ParserState {
         match self.stack.last_mut() {
             Some(Frame::Paragraph(segments)) => segments.push(segment),
             Some(Frame::Heading { content, .. }) => content.push(segment),
+            Some(Frame::CodeBlock { code, .. }) => code.push_str(text),
             _ => self.push_block(Block::Paragraph(vec![segment])),
         }
     }
@@ -259,7 +358,10 @@ impl ParserState {
                 blocks.push(block);
             }
             Some(Frame::List { items, .. }) => items.push(vec![block]),
-            Some(Frame::Paragraph(_)) | Some(Frame::Heading { .. }) | None => {}
+            Some(Frame::Paragraph(_))
+            | Some(Frame::Heading { .. })
+            | Some(Frame::CodeBlock { .. })
+            | None => {}
         }
     }
 }
@@ -308,6 +410,7 @@ impl Block {
                 start,
                 items,
             } => render_list(ordered, start, items, theme),
+            Self::CodeBlock { language, code } => render_code_block(language, code, theme),
             Self::Rule => div()
                 .h(px(1.0))
                 .w_full()
@@ -317,10 +420,137 @@ impl Block {
     }
 }
 
+fn render_code_block(
+    language: Option<SharedString>,
+    code: SharedString,
+    theme: &aura_theme::Theme,
+) -> AnyElement {
+    let mut content = Space::new().vertical().gap_sm();
+    if let Some(language) = language {
+        content = content.child(
+            div()
+                .text_xs()
+                .font_weight(gpui::FontWeight::BOLD)
+                .text_color(theme.neutral.text_3)
+                .child(language),
+        );
+    }
+    content = content.child(
+        div()
+            .font_family("Monospace")
+            .text_sm()
+            .line_height(px(theme.font_size.md * 1.6))
+            .text_color(theme.neutral.text_1)
+            .whitespace_nowrap()
+            .child(code),
+    );
+
+    div()
+        .id("aura-markdown-code-scroll")
+        .overflow_x_scroll()
+        .w_full()
+        .rounded(px(theme.radius.md))
+        .border_1()
+        .border_color(theme.neutral.border)
+        .bg(theme.neutral.hover)
+        .p_4()
+        .child(content)
+        .into_any_element()
+}
+
 fn render_paragraph(segments: Vec<InlineSegment>, theme: &aura_theme::Theme) -> AnyElement {
     Paragraph::new()
         .children(segments.into_iter().map(|segment| segment.into_text(theme)))
         .into_any_element()
+}
+
+pub fn render_docs_shell(cx: &mut App) -> Entity<DocsShell> {
+    cx.new(|_| DocsShell {
+        selected: 0,
+        nav_menu: None,
+    })
+}
+
+pub struct DocsShell {
+    selected: usize,
+    nav_menu: Option<Entity<Menu>>,
+}
+
+impl Render for DocsShell {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let selected = self.selected.min(DOC_PAGES.len().saturating_sub(1));
+        self.selected = selected;
+
+        let nav_menu = self.nav_menu(selected, cx);
+        let page = &DOC_PAGES[selected];
+
+        Container::new()
+            .header(
+                Space::new()
+                    .vertical()
+                    .gap_xs()
+                    .child(Title::new("Aura Gallery Docs").h2())
+                    .child(Text::new(
+                        "Native Markdown · GPUI elements · Aura components",
+                    )),
+            )
+            .header_height_lg()
+            .aside(nav_menu)
+            .aside_width_lg()
+            .aside_scroll()
+            .main_scroll()
+            .main_padding_xl()
+            .child(
+                Card::new(
+                    Space::new()
+                        .vertical()
+                        .gap_lg()
+                        .child(render_markdown(page.markdown))
+                        .child(
+                            Button::new("Native action")
+                                .primary()
+                                .on_click(|_, _, _| {}),
+                        ),
+                )
+                .no_shadow()
+                .no_shrink(),
+            )
+    }
+}
+
+impl DocsShell {
+    fn nav_menu(&mut self, selected: usize, cx: &mut Context<Self>) -> Entity<Menu> {
+        if let Some(nav_menu) = &self.nav_menu {
+            return nav_menu.clone();
+        }
+
+        let docs = cx.entity().downgrade();
+        let nav_menu = cx.new(move |_| build_docs_menu(selected, docs));
+        self.nav_menu = Some(nav_menu.clone());
+        nav_menu
+    }
+}
+
+fn build_docs_menu(selected: usize, docs: WeakEntity<DocsShell>) -> Menu {
+    let mut menu = Menu::new()
+        .id("aura-docs-menu")
+        .mode(MenuMode::Vertical)
+        .default_active(selected.to_string())
+        .on_select(move |id, _, cx| {
+            let Ok(index) = id.parse::<usize>() else {
+                return;
+            };
+            let _ = docs.update(cx, |docs, cx| {
+                docs.selected = index;
+                cx.notify();
+            });
+        });
+
+    for (index, page) in DOC_PAGES.iter().enumerate() {
+        menu = menu.item(index.to_string(), page.title, None);
+    }
+
+    menu
 }
 
 fn render_list(
@@ -461,5 +691,37 @@ mod tests {
 
         assert_eq!(children.len(), 1);
         assert!(matches!(&children[0], Block::Paragraph(_)));
+    }
+
+    #[test]
+    fn parses_fenced_code_block_with_language() {
+        let document = MarkdownDocument::parse("```rust\nlet answer = 42;\n```");
+        let [Block::CodeBlock { language, code }] = document.blocks() else {
+            panic!("expected one code block");
+        };
+
+        assert_eq!(language.as_ref().map(SharedString::as_ref), Some("rust"));
+        assert_eq!(code.as_ref(), "let answer = 42;\n");
+    }
+
+    #[test]
+    fn code_blocks_render_with_horizontal_scroll_shell() {
+        let source = include_str!("markdown.rs");
+
+        assert!(source.contains(".overflow_x_scroll()"));
+        assert!(source.contains(".font_family(\"Monospace\")"));
+        assert!(source.contains(".whitespace_nowrap()"));
+    }
+
+    #[test]
+    fn docs_shell_uses_native_container_and_menu() {
+        let source = include_str!("markdown.rs");
+        let registry = include_str!("demos/mod.rs");
+
+        assert!(source.contains("Container::new()"));
+        assert!(source.contains("Menu::new()"));
+        assert!(source.contains(".aside_scroll()"));
+        assert!(source.contains(".main_scroll()"));
+        assert!(registry.contains("Docs 原生文档"));
     }
 }
