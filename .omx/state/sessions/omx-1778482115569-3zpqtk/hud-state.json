@@ -1,6 +1,6 @@
 {
-  "last_turn_at": "2026-05-11T07:13:34.584Z",
-  "last_progress_at": "2026-05-11T07:13:34.584Z",
-  "turn_count": 6,
-  "last_agent_output": "已提交并推送 `.omx/`。\n\n提交：\n- `f9a7b8e` — `Track OMX workspace runtime state`\n- `0d92a33` — `Refresh OMX he"
+  "last_turn_at": "2026-05-11T07:22:53.795Z",
+  "last_progress_at": "2026-05-11T07:22:53.795Z",
+  "turn_count": 7,
+  "last_agent_output": "已按你的要求改回“保留网络资源验证远程加载”，并控制数量避免卡顿。\n\n修复点：\n- Image/Preview demo 各保留 **1 个远程网络 PNG**：\n  - `https://place"
 }
