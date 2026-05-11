@@ -2897,3 +2897,22 @@
 ### Key Discoveries
 - GPUI `StyledText` supports per-run font family/weight/style/color/background/underline/strikethrough via `TextRun`; per-run font size is not represented in `TextRun`, so segment-level size remains a standalone `Text` behavior rather than mixed-run paragraph behavior.
 - Native wrapping is controlled by inherited GPUI `TextStyle.white_space`, so `Paragraph` sets a normal whitespace, full-width, no-overflow/no-line-clamp shell around the `StyledText`.
+
+## Session 82 — 2026-05-11 (P8 Phase 2 Markdown Renderer)
+
+### Actions
+- Added `pulldown-cmark` to `aura-gallery`.
+- Created `apps/aura-gallery/src/markdown.rs` with `render_markdown(md_text: &str) -> gpui::AnyElement`.
+- Implemented a stack-based Markdown parser using `Vec<Frame>` for Root/Paragraph/Heading/BlockQuote/List/ListItem and an inline style context for strong/emphasis/code/strikethrough.
+- Mapped parsed Markdown blocks to native Aura/GPUI elements: `Title`, `Paragraph`, `Text`, `Space`, and GPUI layout primitives.
+- Added regression tests for entrypoint construction, heading + mixed inline styles, unordered/ordered lists, and blockquote nesting.
+- Exported the `markdown` module from the Gallery binary so the public renderer surface stays warning-free before the full document shell consumes it.
+- Updated P8 tracking docs to mark Phase 2 complete and set Phase 3 code block styling + docs shell as next.
+
+### Verification
+- `cargo test -p aura-gallery markdown` passed during implementation.
+- `cargo check -p aura-gallery` passed with no warnings after making the module public and test-gating parser inspection helpers.
+
+### Key Discoveries
+- `pulldown-cmark` 0.13 uses `Tag::Heading { level, .. }` and `TagEnd::Heading(level)`, so the renderer stores heading level on Start and pops the frame on End.
+- Phase 2 intentionally leaves fenced/indented code block handling for Phase 3; inline code is already mapped through Aura `Text::code_style`.

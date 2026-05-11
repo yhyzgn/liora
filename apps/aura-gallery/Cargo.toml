@@ -15,3 +15,4 @@ aura-theme = { path = "../../crates/aura-theme" }
 aura-components = { path = "../../crates/aura-components" }
 aura-icons = { path = "../../crates/aura-icons" }
 aura-icons-lucide = { path = "../../crates/aura-icons-lucide" }
+pulldown-cmark = "0.13.3"
