@@ -3,3 +3,10 @@
 .idea/
 .zed/
 .vscode/
+
+# OMX runtime-local churn. Keep durable planning/memory artifacts trackable:
+# .omx/plans/, .omx/notepad.md, .omx/project-memory.json, .omx/wiki/
+.omx/cache/
+.omx/logs/
+.omx/state/
+.omx/metrics.json

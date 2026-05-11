@@ -1,6 +1,0 @@
-{
-  "last_turn_at": "2026-05-11T10:08:27.219Z",
-  "last_progress_at": "2026-05-11T10:08:27.219Z",
-  "turn_count": 5,
-  "last_agent_output": "已看完整个组件库，并把“应该补、且低风险”的动效补上了，已提交并推送。\n\n### 已补动画的控件\n\n新增覆盖：\n\n- 弹出/选择面板：`Select`、`Cascader`、`DatePicker`、"
-}
