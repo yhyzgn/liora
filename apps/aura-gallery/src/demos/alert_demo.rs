@@ -1,7 +1,7 @@
 use aura_components::{Alert, AlertType, Space, Title};
 use gpui::{AnyView, App, Context, Render, Window, prelude::*};
 
-use super::common::page;
+use aura_components::layout_helpers::page;
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|_| AlertDemo).into()

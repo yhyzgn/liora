@@ -1,7 +1,7 @@
 use aura_components::{Button, Card, Row, Space};
 use gpui::{AnyView, App, Context, Render, Window, prelude::*};
 
-use super::common::{page, row_md, section};
+use aura_components::layout_helpers::{page, row_md, section};
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|_| CardDemo).into()

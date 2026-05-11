@@ -4,7 +4,7 @@ use aura_icons::Icon;
 use aura_icons_lucide::IconName;
 use gpui::{AnyView, App, Context, Entity, IntoElement, Render, ScrollHandle, Window, prelude::*};
 
-use super::common::page;
+use aura_components::layout_helpers::page;
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|cx| BacktopDemo::new(cx)).into()

@@ -2,7 +2,7 @@ use aura_components::{Avatar, Button, Skeleton, SkeletonItem, SkeletonVariant, S
 use aura_core::Config;
 use gpui::{AnyElement, AnyView, App, Context, Hsla, Render, Window, prelude::*};
 
-use super::common::{page, row, section};
+use aura_components::layout_helpers::{page, row, section};
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|_| SkeletonDemo { loading: true }).into()

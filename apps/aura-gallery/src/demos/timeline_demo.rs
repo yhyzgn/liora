@@ -2,7 +2,7 @@ use aura_components::{Card, Space, Timeline, TimelineItem, TimelinePlacement};
 use aura_icons_lucide::IconName;
 use gpui::{AnyView, App, Context, Render, Window, prelude::*};
 
-use super::common::{page, section};
+use aura_components::layout_helpers::{page, section};
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|_| TimelineDemo).into()

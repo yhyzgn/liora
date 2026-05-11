@@ -3,7 +3,7 @@ use aura_core::Config;
 use aura_icons_lucide::IconName;
 use gpui::{AnyView, App, Context, Entity, Render, Window, prelude::*};
 
-use super::common::{page, section};
+use aura_components::layout_helpers::{page, section};
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|cx| {
@@ -197,7 +197,7 @@ impl Render for MenuDemo {
                         .child(
                             Row::new()
                                 .column(
-                                    Col::new(6).child(
+                                    Col::new(4).child(
                                         Space::new()
                                             .vertical()
                                             .gap_md()
@@ -205,12 +205,12 @@ impl Render for MenuDemo {
                                             .child(self.vertical.clone()),
                                     ),
                                 )
-                                .column(Col::new(18).child(self.vertical_content.clone())),
+                                .column(Col::new(20).child(self.vertical_content.clone())),
                         )
                         .child(
                             Row::new()
                                 .column(
-                                    Col::new(4).child(
+                                    Col::new(2).child(
                                         Space::new()
                                             .vertical()
                                             .gap_md()
@@ -218,7 +218,7 @@ impl Render for MenuDemo {
                                             .child(self.collapsed.clone()),
                                     ),
                                 )
-                                .column(Col::new(20).child(self.collapsed_content.clone())),
+                                .column(Col::new(22).child(self.collapsed_content.clone())),
                         ),
                 )),
         )

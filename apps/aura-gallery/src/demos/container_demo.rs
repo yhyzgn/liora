@@ -1,7 +1,7 @@
 use aura_components::{Button, Container, Divider, Flex, Space, Text, Title};
 use gpui::{App, Context, Entity, IntoElement, Render, Window, prelude::*};
 
-use super::common::{page, section};
+use aura_components::layout_helpers::{page, section};
 
 pub fn render(cx: &mut App) -> Entity<ContainerDemo> {
     cx.new(|_| ContainerDemo)

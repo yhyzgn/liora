@@ -2,7 +2,7 @@ use aura_components::{Avatar, Space};
 use aura_icons_lucide::IconName;
 use gpui::{AnyView, App, Context, Render, Window, prelude::*};
 
-use super::common::{page, row, section};
+use aura_components::layout_helpers::{page, row, section};
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|_| AvatarDemo).into()

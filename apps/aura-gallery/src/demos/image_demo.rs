@@ -1,7 +1,7 @@
 use aura_components::{Card, Image, ImageFit, ImageRadius, ImageRoundOptions, Space, Text};
 use gpui::{AnyView, App, Context, Render, Window, prelude::*};
 
-use super::common::{page, row, section};
+use aura_components::layout_helpers::{page, row, section};
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|_| ImageDemo).into()

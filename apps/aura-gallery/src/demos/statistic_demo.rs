@@ -3,7 +3,7 @@ use aura_icons::Icon;
 use aura_icons_lucide::IconName;
 use gpui::{AnyView, App, Context, Render, Window, prelude::*};
 
-use super::common::{page, row, row_md, section};
+use aura_components::layout_helpers::{page, row, row_md, section};
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|_| StatisticDemo).into()

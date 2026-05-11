@@ -1,7 +1,7 @@
 use aura_components::{Button, Dialog, Row, RowJustify, Space, Text};
 use gpui::{AnyView, App, Context, Render, Window, prelude::*};
 
-use super::common::{page, section};
+use aura_components::layout_helpers::{page, section};
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|_| DialogDemo).into()

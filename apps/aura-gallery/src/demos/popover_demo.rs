@@ -2,7 +2,7 @@ use aura_components::{Button, Popover, Space, Text};
 use aura_core::Placement;
 use gpui::{AnyView, App, Context, Render, Window, prelude::*};
 
-use super::common::{page, section};
+use aura_components::layout_helpers::{page, section};
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|_| PopoverDemo).into()

@@ -1,7 +1,7 @@
 use aura_components::{Space, Text, TimePicker, TimeValue};
 use gpui::{AnyView, App, Context, Entity, Render, Window, prelude::*};
 
-use super::common::{page, section};
+use aura_components::layout_helpers::{page, section};
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|cx| TimePickerDemo::new(cx)).into()

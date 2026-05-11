@@ -1,7 +1,7 @@
 use aura_components::{Button, MessageType, show_message};
 use gpui::{AnyView, App, Context, Render, Window, prelude::*};
 
-use super::common::{page, row};
+use aura_components::layout_helpers::{page, row};
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|_| MessageDemo).into()

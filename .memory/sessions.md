@@ -2705,3 +2705,35 @@
 ### Key Discoveries
 - A single Aura-owned `Flex` primitive covers the remaining demo-only layout needs better than continuing to add ad hoc raw GPUI layout snippets in each demo.
 - The last raw GPUI usage was concentrated in complex scroll showcases and older form/table/layout demos; the whole `apps/aura-gallery/src/demos` tree is now guarded by regression tests.
+
+## Session 148 — 2026-05-11 (Fedora Dependency Script + Compact Menu Demo)
+
+### Actions
+- Added `scripts/install-fedora-deps.sh` to install Fedora system dependencies needed by Aura Gallery / GPUI (`gcc-c++`, `fontconfig-devel`, `freetype-devel`, Wayland/X11/XCB/Vulkan headers and loaders, clang/LLVM helpers, etc.).
+- Narrowed the Menu demo vertical layout so the regular vertical menu uses a 4/24 sidebar column instead of 6/24, and the collapsed menu uses a 2/24 compact column instead of 4/24.
+- Added a gallery regression test that keeps the Menu demo vertical and collapsed sidebars compact while preserving the existing self-contained demo guard.
+
+### Verification
+- `cargo test -p aura-gallery menu_demo_keeps_vertical_menu_compact` failed before the layout change and passed after the Menu demo columns were narrowed.
+- `cargo test -p aura-gallery navigation_demos_use_aura_layout_primitives` passed after keeping the fix within Aura layout primitives.
+- Full verification rerun after memory update is recorded in the assistant response for this session.
+
+### Key Discoveries
+- Menu itself renders with `.w_full()`, so demo sidebar width should be controlled by the surrounding Aura grid column rather than raw GPUI pixel wrappers.
+
+## Session 149 — 2026-05-11 (Promote Demo Helpers to Component Crate)
+
+### Actions
+- Reviewed gallery demo self-bootstrap boundaries: the raw GPUI primitive scan only reports the forbidden-token test list in `demos/mod.rs`; no demo page leaked raw layout primitives.
+- Moved shared demo layout helpers from `apps/aura-gallery/src/demos/common.rs` into `crates/aura-components/src/layout_helpers.rs` as `aura_components::layout_helpers::{page, section, header, row, row_md}`.
+- Removed the gallery-local `common` module and updated demo files to import shared helpers from the component crate.
+- Added a gallery regression test requiring shared demo helpers to live in `aura-components::demo` and preventing reintroduction of `pub mod common` in the gallery demos registry.
+
+### Verification
+- `cargo test -p aura-gallery layout_helpers_live_in_component_crate` failed before renaming/promoting helpers and passed after the migration.
+- `rg -n "super::common|pub mod common|demos/common" apps/aura-gallery/src/demos crates/aura-components/src -S` no longer reports stale local common imports/module declarations.
+- `rg -n "\\bdiv\\(|\\bpx\\(|\\.flex\\(\\)|\\.flex_col\\(\\)|\\.flex_row\\(|rgb\\(|hsla\\(" apps/aura-gallery/src/demos -g'*.rs' -S` reports only the guard token list in `demos/mod.rs`.
+- Full verification rerun after memory update is recorded in the assistant response for this session.
+
+### Key Discoveries
+- The old `common.rs` helpers were already pure Aura component compositions, so the cleanest boundary is a namespaced `aura_components::layout_helpers` module rather than re-exporting generic names like `page` and `section` at crate root.

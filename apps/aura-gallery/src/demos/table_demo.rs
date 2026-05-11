@@ -5,7 +5,7 @@ use aura_components::{
 use aura_core::Config;
 use gpui::{AnyView, App, Context, IntoElement, Render, SharedString, Window, prelude::*};
 
-use super::common::{page, section};
+use aura_components::layout_helpers::{page, section};
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|_| TableDemo {

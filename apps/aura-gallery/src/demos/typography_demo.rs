@@ -1,7 +1,7 @@
 use aura_components::{Divider, Link, Paragraph, Space, Text, Title};
 use gpui::{App, Context, Entity, IntoElement, Render, Window, prelude::*};
 
-use super::common::{page, row, section};
+use aura_components::layout_helpers::{page, row, section};
 
 pub fn render(cx: &mut App) -> Entity<TypographyDemo> {
     cx.new(|_| TypographyDemo)

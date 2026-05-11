@@ -2,7 +2,7 @@ use aura_components::{Autocomplete, AutocompleteItem, Card, Space, Text};
 use aura_icons_lucide::IconName;
 use gpui::{AnyView, App, Context, Entity, Render, Window, prelude::*};
 
-use super::common::{page, section};
+use aura_components::layout_helpers::{page, section};
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|cx| AutocompleteDemo::new(cx)).into()

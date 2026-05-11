@@ -11,7 +11,6 @@ pub mod card_demo;
 pub mod cascader_demo;
 pub mod collapse_demo;
 pub mod color_picker_demo;
-pub mod common;
 pub mod container_demo;
 pub mod date_picker_demo;
 pub mod date_time_picker_demo;
@@ -401,6 +400,21 @@ mod tests {
         assert_eq!(names, sorted);
     }
 
+    #[test]
+    fn layout_helpers_live_in_component_crate() {
+        let registry_source = include_str!("mod.rs");
+        let component_lib_source = include_str!("../../../../crates/aura-components/src/lib.rs");
+
+        assert!(
+            component_lib_source.contains("pub mod layout_helpers;"),
+            "shared page/section layout helpers should be exported by aura-components::layout_helpers"
+        );
+        assert!(
+            !registry_source.lines().any(|line| line.trim() == concat!("pub mod ", "common;")) && !component_lib_source.contains("pub mod demo;"),
+            "helpers should not remain in gallery-local common or crate-level demo modules once they are crate-owned"
+        );
+    }
+
     fn assert_demo_uses_aura_layout_primitives(file_name: &str, source: &str) {
         for forbidden in ["div(", "px(", ".flex()", ".flex_col()", ".flex_row()"] {
             assert!(
@@ -478,6 +492,28 @@ mod tests {
         ] {
             assert_demo_uses_aura_layout_primitives(file_name, source);
         }
+    }
+
+    #[test]
+    fn menu_demo_keeps_vertical_menu_compact() {
+        let source = include_str!("menu_demo.rs");
+
+        assert!(
+            source.contains(r#"Col::new(4).child(
+                                        Space::new()
+                                            .vertical()
+                                            .gap_md()
+                                            .child(Text::new("垂直模式").bold())"#),
+            "vertical menu demo should use a narrower 4/24 grid column instead of the previous 6/24 layout"
+        );
+        assert!(
+            source.contains(r#"Col::new(2).child(
+                                        Space::new()
+                                            .vertical()
+                                            .gap_md()
+                                            .child(Text::new("折叠").bold())"#),
+            "collapsed menu demo should use a compact 2/24 grid column instead of the regular menu width"
+        );
     }
 
     #[test]

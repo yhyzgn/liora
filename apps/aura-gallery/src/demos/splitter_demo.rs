@@ -1,7 +1,7 @@
 use aura_components::{Card, Splitter, Text};
 use gpui::{App, Context, Entity, IntoElement, Render, Window, prelude::*};
 
-use super::common::{page, section};
+use aura_components::layout_helpers::{page, section};
 
 pub fn render(cx: &mut App) -> Entity<SplitterDemo> {
     cx.new(|_| SplitterDemo)

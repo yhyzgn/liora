@@ -2,7 +2,7 @@ use aura_components::{Button, Col, Divider, Flex, Row, Space, Text};
 use aura_core::Config;
 use gpui::{App, Context, Entity, IntoElement, Render, Window, prelude::*};
 
-use super::common::{page, section};
+use aura_components::layout_helpers::{page, section};
 
 pub fn render(cx: &mut App) -> Entity<LayoutDemo> {
     cx.new(|_| LayoutDemo)

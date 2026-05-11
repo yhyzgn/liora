@@ -1,4 +1,4 @@
-use aura_components::{Paragraph, Space, Title};
+use crate::{Paragraph, Space, Title};
 use gpui::IntoElement;
 
 pub fn page(

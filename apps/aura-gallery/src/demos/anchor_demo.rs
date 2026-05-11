@@ -2,7 +2,7 @@ use aura_components::{Anchor, AnchorLink, AnchorTarget, Flex, Space, Text};
 use aura_core::Config;
 use gpui::{AnyView, App, Context, Entity, IntoElement, Render, ScrollHandle, Window, prelude::*};
 
-use super::common::page;
+use aura_components::layout_helpers::page;
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|cx| AnchorDemo::new(cx)).into()
