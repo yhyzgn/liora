@@ -8152,3 +8152,7 @@
 {"timestamp":"2026-05-11T07:38:03.378Z","type":"leader_nudge_tick","leader_only":true,"run_count":9003,"stale_threshold_ms":180000,"precomputed_leader_stale":true,"reason":"leader_nudge_checked"}
 {"timestamp":"2026-05-11T07:38:03.642Z","type":"leader_nudge_tick","leader_only":true,"run_count":9004,"stale_threshold_ms":180000,"precomputed_leader_stale":true,"reason":"leader_nudge_checked"}
 {"timestamp":"2026-05-11T07:38:03.904Z","type":"leader_nudge_tick","leader_only":true,"run_count":9005,"stale_threshold_ms":180000,"precomputed_leader_stale":true,"reason":"leader_nudge_checked"}
+{"timestamp":"2026-05-11T07:38:04.166Z","type":"leader_nudge_tick","leader_only":true,"run_count":9006,"stale_threshold_ms":180000,"precomputed_leader_stale":true,"reason":"leader_nudge_checked"}
+{"timestamp":"2026-05-11T07:38:04.429Z","type":"leader_nudge_tick","leader_only":true,"run_count":9007,"stale_threshold_ms":180000,"precomputed_leader_stale":true,"reason":"leader_nudge_checked"}
+{"timestamp":"2026-05-11T07:38:04.691Z","type":"leader_nudge_tick","leader_only":true,"run_count":9008,"stale_threshold_ms":180000,"precomputed_leader_stale":true,"reason":"leader_nudge_checked"}
+{"timestamp":"2026-05-11T07:38:04.953Z","type":"leader_nudge_tick","leader_only":true,"run_count":9009,"stale_threshold_ms":180000,"precomputed_leader_stale":true,"reason":"leader_nudge_checked"}
