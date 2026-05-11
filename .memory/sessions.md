@@ -2737,3 +2737,20 @@
 
 ### Key Discoveries
 - The old `common.rs` helpers were already pure Aura component compositions, so the cleanest boundary is a namespaced `aura_components::layout_helpers` module rather than re-exporting generic names like `page` and `section` at crate root.
+
+## Session 150 — 2026-05-11 (P8 Native Gallery Documentation Replan)
+
+### Actions
+- Replaced the previous P8 VitePress/Web documentation plan with a pure GPUI native Aura Gallery documentation architecture.
+- Updated `architecture-design.md` with the new P8 native documentation architecture: `pulldown-cmark` parsing, Aura Typography bootstrapping, stack-based Markdown renderer, code block rendering, two-column document shell, and Live Demo injection.
+- Updated `prompt.md` so future sessions treat P8 as a native Aura Gallery documentation phase and not as a Web docs phase.
+- Rewrote `.prompt/P8-engineering.md` into a four-phase execution plan: Typography infrastructure, Markdown renderer/state machine, code block/document shell polish, and Live Demo injection.
+- Added ADR-013 documenting the decision to run official documentation entirely inside the GPUI native gallery.
+- Updated `.memory/state.md` and `.memory/inventory.md` to reflect the new P8 scope.
+
+### Verification
+- Documentation consistency checks and project verification were run after the edits; see the assistant response for exact commands and outcomes.
+
+### Key Discoveries
+- The new P8 plan should dogfood Aura's own text/layout primitives instead of creating a separate Web documentation surface.
+- The repo currently uses Rust edition 2024; the new P8 plan treats Rust 2021 as a minimum language baseline but does not downgrade the workspace edition.

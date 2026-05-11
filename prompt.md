@@ -43,13 +43,13 @@ aura/
 │   │   └── lib.rs
 │   └── aura-icons/      lib.rs      # Icon trait、图标函数
 ├── apps/
-│   ├── aura-gallery/    src/        # Native 组件看板 (GPUI 窗口)
-│   │   ├── main.rs
-│   │   ├── category.rs
-│   │   └── demos/
-│   │       ├── mod.rs               # Demo 注册表 registry()
-│   │       └── *_demo.rs           # 各组件 Demo 页面
-│   └── docs/                        # Vitepress 文档站 (P6)
+│   └── aura-gallery/    src/        # 官方原生文档与组件展示大屏 (GPUI 窗口)
+│       ├── main.rs
+│       ├── category.rs
+│       ├── markdown.rs              # P8: Markdown AST → Aura 原生元素树（规划）
+│       └── demos/
+│           ├── mod.rs               # Demo 注册表 registry()
+│           └── *_demo.rs            # 各组件 Demo 页面
 ├── .memory/                          # 🧠 记忆库 (跨会话状态)
 │   ├── state.md                     # 当前阶段 + 进度
 │   ├── decisions.md                 # 架构决策记录
@@ -88,6 +88,7 @@ aura/
 ### 4.1.1 阶段状态提示
 
 - P5 当前请求范围已结束；Carousel、Calendar、TreeSelect、InputTag、Mention、Watermark、Tour、VirtualizedTable、VirtualizedTree 已移入 `.prompt/P9-deferred-advanced.md`。
+- P8 当前技术路线已调整为 **Aura Gallery 原生文档大屏**：官方文档在 GPUI 原生窗口中渲染，不再使用 VitePress/Web 文档站。
 - P9 是最新阶段，但属于 deferred backlog；只有用户明确要求补齐这些组件时才启动。
 
 ### 4.2 每个组件/功能开发流程
@@ -210,9 +211,40 @@ aura-gallery/Cargo.toml:
 
 ---
 
-## 6. Gallery Demo 规约
+## 6. P8 Aura Gallery 原生文档大屏规约
 
-### 6.1 Demo 函数签名
+P8 的目标不是搭建网页文档站，而是把 `aura-gallery` 升级为官方原生文档与组件展示大屏。
+
+### 6.1 绝对边界
+
+- 100% GPUI 原生窗口运行。
+- 文档渲染基于 Rust、GPUI 元素树、Aura 组件、Flex 布局和原生滚动容器。
+- 禁止引入 Web 文档站、浏览器渲染路径、跨端转译运行时或网页排版模型。
+- Markdown 只允许作为输入文本格式；解析后必须映射为 Aura/GPUI 原生节点。
+
+### 6.2 Markdown 自举架构
+
+- `pulldown-cmark` 只负责 Markdown AST/Event 解析。
+- 富文本折行、样式、段落布局由 Aura Typography 组件负责。
+- P8 需要优先补齐富文本文本片段与段落能力：多样式片段在同一段落中流式拼接、自动换行、不截断。
+- `apps/aura-gallery/src/markdown.rs` 负责 `render_markdown(md_text: &str) -> gpui::AnyElement`。
+- Renderer 使用 `Vec` 栈管理块级容器，使用文本样式上下文管理 strong/emphasis/code 等内联状态。
+
+### 6.3 Live Demo 注入
+
+Markdown 中的特殊语法：
+
+```text
+::AuraDemo{component="Button"}::
+```
+
+必须被解析为真实 Aura/GPUI view node，而不是普通文本。插入后的组件必须保留 hover、click 等真实交互能力。
+
+---
+
+## 7. Gallery Demo 规约
+
+### 7.1 Demo 函数签名
 
 ```rust
 // apps/aura-gallery/src/demos/<name>_demo.rs
@@ -232,7 +264,7 @@ impl gpui::RenderOnce for NameDemo {
 }
 ```
 
-### 6.2 注册表 (增量添加)
+### 7.2 注册表 (增量添加)
 
 ```rust
 // apps/aura-gallery/src/demos/mod.rs
@@ -255,7 +287,7 @@ pub fn registry() -> Vec<DemoEntry> {
 }
 ```
 
-### 6.3 Category 分类
+### 7.3 Category 分类
 
 ```rust
 Category::Basic       // ⊞ Basic 基础
@@ -268,9 +300,9 @@ Category::Others      // ⋯ Others 其他
 
 ---
 
-## 7. 记忆系统 🧠
+## 8. 记忆系统 🧠
 
-### 7.1 记忆库更新时机
+### 8.1 记忆库更新时机
 
 | 事件 | 更新文件 |
 |------|---------|
@@ -280,15 +312,15 @@ Category::Others      // ⋯ Others 其他
 | 架构决策 | `.memory/decisions.md` (追加 ADR) |
 | 发现 API 差异 | `.memory/sessions.md` (Key Discoveries) |
 
-### 7.2 记忆库格式
+### 8.2 记忆库格式
 
 所有 .memory/ 文件使用 Markdown，保持简洁、结构化、可追加。新条目追加在文件末尾或对应位置。
 
 ---
 
-## 8. Git 提交规范
+## 9. Git 提交规范
 
-### 8.1 Commit Message 格式
+### 9.1 Commit Message 格式
 
 ```
 <emoji> <scope>: <subject>
@@ -298,7 +330,7 @@ Category::Others      // ⋯ Others 其他
 <footer — 可选，关联 issue>
 ```
 
-### 8.2 Emoji 参考
+### 9.2 Emoji 参考
 
 | Emoji | 用途 |
 |-------|------|
@@ -314,7 +346,7 @@ Category::Others      // ⋯ Others 其他
 | 🧠 `:brain:` | 记忆库更新 |
 | 📋 `:clipboard:` | 阶段提示词更新 |
 
-### 8.3 示例
+### 9.3 示例
 
 ```
 ✨ button: add icon_start/icon_end support
@@ -328,7 +360,7 @@ Closes #P1-button-icons
 
 ---
 
-## 9. 阶段导航
+## 10. 阶段导航
 
 ```
 当前阶段 → 读取 .memory/state.md 获取
@@ -340,12 +372,12 @@ Closes #P1-button-icons
 ├── P5 Advanced            ⬜ → .prompt/P5-advanced.md
 ├── P6 Built-in Unique ID  ⬜ → .prompt/P6-builtin-id.md
 ├── P7 Demo Self-Contained ⬜ → .prompt/P7-demo-self-contained.md
-└── P8 Engineering         ⬜ → .prompt/P8-engineering.md
+└── P8 Native Gallery Docs ⬜ → .prompt/P8-engineering.md
 ```
 
 ---
 
-## 10. 快速命令
+## 11. 快速命令
 
 ```bash
 # 编译检查
@@ -366,7 +398,7 @@ cargo clean
 
 ---
 
-## 11. 启动检查清单 ⚡
+## 12. 启动检查清单 ⚡
 
 接手本项目时的最小行动集：
 

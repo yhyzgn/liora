@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-**P8 - Engineering** (待启动；P7 Demo 完全自举已完成，P9 deferred backlog 保持等待明确请求)
+**P8 - Native Gallery Documentation** (待启动；技术路线已改为 GPUI 原生文档大屏，不再使用 VitePress/Web 文档站；P9 deferred backlog 保持等待明确请求)
 
 ## Completed in P4
 
@@ -28,7 +28,7 @@
 | P5 Advanced | 🏁 Requested subset complete / remaining deferred | 11/20 | 20 |
 | P6 Built-in Unique ID | ✅ Done | 1/1 | 1 |
 | P7 Demo Self-Contained | ✅ Done | 1/1 | 1 |
-| P8 Engineering | ⬜ Pending | 0/1 | 1 |
+| P8 Native Gallery Docs | ⬜ Pending | 0/4 | 4 |
 | P9 Deferred Advanced | ⏸️ Deferred backlog | 0/9 | 9 |
 
 ## Git Status

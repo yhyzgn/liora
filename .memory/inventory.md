@@ -134,9 +134,16 @@
 | Button demo self-contained slice | `apps/aura-gallery/src/demos/button_demo.rs` | ✅ Uses Aura `Space`/`Title` instead of direct `div()`/`px()` layout primitives |
 | Aura demo helpers | `crates/aura-components/src/space.rs`, `button.rs` | ✅ `Space::wrap` + semantic gaps; Button rounded helpers |
 
-## P8 Engineering ⬜
+## P8 Native Gallery Documentation ⬜
 
-— See `.prompt/P8-engineering.md` for task list
+— See `.prompt/P8-engineering.md` for the updated native documentation plan.
+
+| Item | Target | Status |
+|------|--------|--------|
+| Typography bootstrapping | `crates/aura-components/src/` rich text/paragraph primitives | ⬜ Pending |
+| Markdown renderer | `apps/aura-gallery/src/markdown.rs` + `pulldown-cmark` | ⬜ Pending |
+| Code block styling + document shell | Native Aura/GPUI two-column gallery docs UI | ⬜ Pending |
+| Live Demo injection | `::AuraDemo{component="..."}::` → real Aura view nodes | ⬜ Pending |
 
 ## P9 Deferred Advanced ⏸️ (0/9 — backlog for later supplementation)
 
