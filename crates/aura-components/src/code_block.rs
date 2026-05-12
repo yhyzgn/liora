@@ -174,7 +174,10 @@ pub struct CodeBlock {
     copyable: bool,
     selectable: bool,
     id: Option<ElementId>,
+    on_copy: Option<Arc<CodeCopyCallback>>,
 }
+
+type CodeCopyCallback = dyn Fn(&str, &mut Window, &mut App) + 'static;
 
 impl CodeBlock {
     pub fn new(code: impl Into<SharedString>) -> Self {
@@ -187,6 +190,7 @@ impl CodeBlock {
             copyable: true,
             selectable: true,
             id: None,
+            on_copy: None,
         }
     }
 
@@ -293,6 +297,11 @@ impl CodeBlock {
         self
     }
 
+    pub fn on_copy(mut self, callback: impl Fn(&str, &mut Window, &mut App) + 'static) -> Self {
+        self.on_copy = Some(Arc::new(callback));
+        self
+    }
+
     pub fn selectable(mut self, selectable: bool) -> Self {
         self.selectable = selectable;
         self
@@ -369,6 +378,7 @@ impl RenderOnce for CodeBlock {
                 self.highlighter,
                 self.theme,
                 &theme,
+                self.on_copy,
                 window,
                 cx,
             ),
@@ -419,6 +429,7 @@ fn render_block_code(
     highlighter: CodeHighlighter,
     code_theme: CodeTheme,
     theme: &aura_theme::Theme,
+    on_copy: Option<Arc<CodeCopyCallback>>,
     window: &mut Window,
     cx: &mut App,
 ) -> gpui::AnyElement {
@@ -470,8 +481,11 @@ fn render_block_code(
                         .bg(code_hover_surface(resolved_theme))
                         .text_color(code_accent(theme, resolved_theme))
                 })
-                .on_click(move |_, _, cx| {
+                .on_click(move |_, window, cx| {
                     cx.write_to_clipboard(ClipboardItem::new_string(copied_code.clone()));
+                    if let Some(on_copy) = on_copy.as_ref() {
+                        on_copy(copied_code.as_str(), window, cx);
+                    }
                 })
                 .child(
                     Icon::new(IconName::Copy)
@@ -915,11 +929,23 @@ struct SelectableCodeLayout {
 struct SelectableCodeLine {
     shaped: ShapedLine,
     start: usize,
+    y: Pixels,
 }
 
 fn selectable_state_map() -> &'static Mutex<HashMap<String, SelectableCodeState>> {
     static STATES: OnceLock<Mutex<HashMap<String, SelectableCodeState>>> = OnceLock::new();
     STATES.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn set_selectable_layout_state(
+    id: &ElementId,
+    lines: Vec<(ShapedLine, Pixels, usize)>,
+    bounds: Bounds<Pixels>,
+) {
+    with_selectable_state(id, |state| {
+        state.lines = lines;
+        state.bounds = Some(bounds);
+    });
 }
 
 fn selectable_key(id: &ElementId) -> String {
@@ -1224,6 +1250,7 @@ impl SelectableCodeText {
         let mut max_width = px(1.0);
         let line_height = self.line_height();
         let mut offset = 0;
+        let mut y = px(0.0);
         let mut lines = Vec::new();
         for line in code_lines(self.code.as_ref()) {
             let line_len = line.len();
@@ -1238,8 +1265,10 @@ impl SelectableCodeText {
             lines.push(SelectableCodeLine {
                 shaped,
                 start: offset,
+                y,
             });
             offset += line_len + 1;
+            y += line_height;
         }
 
         let layout = Arc::new(SelectableCodeLayout {
@@ -1264,7 +1293,7 @@ struct SelectableCodeElement {
 }
 
 struct SelectableCodePrepaint {
-    lines: Vec<(ShapedLine, Pixels, usize)>,
+    layout: Arc<SelectableCodeLayout>,
     selection: Vec<PaintQuad>,
     hitbox: gpui::Hitbox,
 }
@@ -1317,12 +1346,12 @@ impl Element for SelectableCodeElement {
     ) -> SelectableCodePrepaint {
         let input = self.input.read(cx);
         let line_height = input.line_height();
-        let mut lines = Vec::new();
+        let mut state_lines = Vec::new();
         let mut selection_quads = Vec::new();
-        let mut y = bounds.top();
         let selected_range = selectable_state_snapshot(&input.id).selected_range;
 
         for line in &layout.lines {
+            let y = bounds.top() + line.y;
             if !selected_range.is_empty() {
                 let line_end = line.start + line.shaped.len();
                 let start = selected_range.start.max(line.start);
@@ -1340,14 +1369,14 @@ impl Element for SelectableCodeElement {
                 }
             }
 
-            lines.push((line.shaped.clone(), y, line.start));
-            y += line_height;
+            state_lines.push((line.shaped.clone(), y, line.start));
         }
 
         let hitbox = window.insert_hitbox(bounds, gpui::HitboxBehavior::Normal);
+        set_selectable_layout_state(&input.id, state_lines, bounds);
 
         SelectableCodePrepaint {
-            lines,
+            layout: layout.clone(),
             selection: selection_quads,
             hitbox,
         }
@@ -1364,7 +1393,6 @@ impl Element for SelectableCodeElement {
         cx: &mut App,
     ) {
         let focus_handle = self.input.read(cx).focus_handle.clone();
-        let _ = bounds;
         window.set_cursor_style(gpui::CursorStyle::IBeam, &prepaint.hitbox);
 
         let input = self.input.clone();
@@ -1399,9 +1427,9 @@ impl Element for SelectableCodeElement {
             window.paint_quad(selection);
         }
 
-        for (line, y, _) in &prepaint.lines {
-            line.paint(
-                point(bounds.left(), *y),
+        for line in &prepaint.layout.lines {
+            line.shaped.paint(
+                point(bounds.left(), bounds.top() + line.y),
                 self.input.read(cx).line_height(),
                 gpui::TextAlign::Left,
                 None,
@@ -1410,13 +1438,6 @@ impl Element for SelectableCodeElement {
             )
             .unwrap();
         }
-
-        let id = self.input.read(cx).id.clone();
-        let lines = prepaint.lines.clone();
-        with_selectable_state(&id, |state| {
-            state.lines = lines;
-            state.bounds = Some(bounds);
-        });
     }
 }
 
@@ -1581,6 +1602,8 @@ mod tests {
         assert!(source.contains("SyntaxSet::load_defaults_newlines"));
         assert!(source.contains("ThemeSet::load_defaults"));
         assert!(source.contains("ClipboardItem::new_string"));
+        assert!(source.contains("on_copy"));
+        assert!(source.contains("CodeCopyCallback"));
         assert!(source.contains("CodeFormat::Inline"));
         assert!(source.contains("selectable"));
         assert!(source.contains("SelectableCodeText"));
@@ -1591,6 +1614,7 @@ mod tests {
         assert!(source.contains("with_selectable_state(&self.id"));
         assert!(source.contains("prewarm_highlighter"));
         assert!(source.contains("SelectableCodeLayout"));
+        assert!(source.contains("set_selectable_layout_state"));
         assert!(source.contains("fn id(&self) -> Option<ElementId>"));
         assert!(source.contains("fn font_size(&self) -> Pixels"));
         assert!(source.contains("theme.font_size.md"));

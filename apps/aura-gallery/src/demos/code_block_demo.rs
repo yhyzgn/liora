@@ -1,5 +1,7 @@
 use aura_components::layout_helpers::{page, section};
-use aura_components::{CodeBlock, CodeHighlighter, CodeLanguage, CodeTheme, Divider, Space};
+use aura_components::{
+    CodeBlock, CodeHighlighter, CodeLanguage, CodeTheme, Divider, MessageType, Space, show_message,
+};
 use gpui::{App, Context, Entity, IntoElement, Render, Window, prelude::*};
 
 pub fn render(cx: &mut App) -> Entity<CodeBlockDemo> {
@@ -19,7 +21,12 @@ impl Render for CodeBlockDemo {
                 .child(section(
                     "Rust 高亮 + 复制",
                     "显示语言标签并提供复制按钮，内容在容器内横向滚动。",
-                    CodeBlock::new(RUST_SAMPLE).rust().selectable(true),
+                    CodeBlock::new(RUST_SAMPLE)
+                        .rust()
+                        .selectable(true)
+                        .on_copy(|_, _, cx| {
+                            show_message("复制成功", MessageType::Success, cx);
+                        }),
                 ))
                 .child(Divider::new())
                 .child(section(
@@ -96,6 +103,8 @@ mod tests {
         let source = include_str!("code_block_demo.rs");
 
         assert!(source.contains("CodeBlock::new"));
+        assert!(source.contains(".on_copy("));
+        assert!(source.contains("复制成功"));
         assert!(source.contains(".rust()"));
         assert!(source.contains(".shell()"));
         assert!(source.contains(".inline()"));
