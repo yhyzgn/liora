@@ -9,6 +9,7 @@ pub mod breadcrumb_demo;
 pub mod button_demo;
 pub mod card_demo;
 pub mod cascader_demo;
+pub mod code_block_demo;
 pub mod collapse_demo;
 pub mod color_picker_demo;
 pub mod container_demo;
@@ -69,6 +70,11 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "Button 按钮",
             description: "常用的操作按钮",
             render: |cx| button_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "CodeBlock 代码块",
+            description: "代码高亮显示、语言标签和复制",
+            render: |cx| code_block_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Tag 标签",

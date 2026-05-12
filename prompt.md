@@ -149,6 +149,7 @@ aura/
 // ✅ 正确 — RenderOnce + IntoElement，主题从 cx.global 自动读取
 Button::new("Save").primary().large()
 Icon::new(IconName::House).size(24.0)
+CodeBlock::new("cargo run -p aura-docs").shell().copyable(true)
 
 // 实现范式
 impl RenderOnce for MyComponent {

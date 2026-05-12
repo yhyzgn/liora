@@ -267,7 +267,7 @@ Markdown 中的特殊语法：
 
 参照 Element-Plus 官网组件分类，共 81 个组件，分为 7 大类。标注 `GPUI原生` 表示 GPUI 已内置无需单独实现，`v2` 表示第二阶段迭代。
 
-### 3.1 Basic 基础组件 (12)
+### 3.1 Basic 基础组件 (13)
 
 | Element-Plus | Aura 组件 | 阶段 | 说明 |
 |-------------|----------|------|------|
@@ -278,6 +278,7 @@ Markdown 中的特殊语法：
 | Typography | `AuraTitle` / `AuraParagraph` | P1 | 排版组件 |
 | Space | `AuraSpace` | P1 | 间距组件 |
 | Divider | `AuraDivider` | P1 | 分割线 |
+| CodeBlock | `CodeBlock` | P1 ✅ | 代码高亮显示，支持语言标签、复制、块级/行内格式 |
 | Scrollbar | `AuraScrollbar` | P2 | 自定义滚动条 |
 | Layout | `AuraRow` / `AuraCol` | P2 | 24 栅格布局（GPUI flexbox 已有基础，此为语义封装） |
 | Container | `AuraContainer` | P2 | 布局容器（header/aside/main/footer） |
@@ -391,7 +392,7 @@ Markdown 中的特殊语法：
 
 ```
 P0 · Foundation       ██░░░░░░░░  已完成 — 工程骨架 + 主题 + Button 最小闭环
-P1 · Basic Elements   ░░░░░░░░░░  基础组件 12 个 + Divider/Space
+P1 · Basic Elements   ░░░░░░░░░░  基础组件 + CodeBlock 代码显示
 P2 · Form Controls    ░░░░░░░░░░  表单控件 24 个（前 10 个核心）
 P3 · Popper + Feedback ░░░░░░░░░░  弹出层基建 + 反馈组件 + Data 初步
 P4 · Navigation + Data ░░░░░░░░░░  导航组件 + 数据展示扩容
@@ -765,7 +766,7 @@ pub struct FormRule {
 | 阶段 | 组件数 | 预计周期 | 交付物 |
 |------|--------|---------|--------|
 | P0 Foundation | — | ✅ 已完成 | Workspace + Theme + Config + Button |
-| P1 Basic | 13 | 2-3 周 | Icon/Link/Text/Layout/Space/Divider/Row/Col/Container/Scrollbar |
+| P1 Basic | 15 | 2-3 周 | Icon/Link/Text/Layout/Space/Divider/Row/Col/Container/Scrollbar/CodeBlock |
 | P2 Form | 10 | 3-4 周 | Input/InputNumber/Switch/Checkbox/Radio/Select/Slider/Form/Rate |
 | P3 Popper+Feedback | 13 | 4-5 周 ⚠️ | Popper 基建 + Tooltip/Dialog/Drawer/Message/Dropdown/Popover/Popconfirm |
 | P4 Navigation+Data | 20 | 3-4 周 | Menu/Tabs/Steps/Progress/Skeleton/Tree/Pagination+ |

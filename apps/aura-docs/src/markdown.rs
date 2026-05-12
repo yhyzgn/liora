@@ -1,4 +1,7 @@
-use aura_components::{Button, Card, Container, Menu, MenuMode, Paragraph, Space, Text, Title};
+use aura_components::{
+    Button, Card, CodeBlock as AuraCodeBlock, Container, Menu, MenuMode, Paragraph, Space, Text,
+    Title,
+};
 use aura_core::Config;
 use gpui::{
     AnyElement, App, Component, Context, Entity, IntoElement, Render, RenderOnce, SharedString,
@@ -547,39 +550,13 @@ fn render_live_demo(component: SharedString, theme: &aura_theme::Theme) -> AnyEl
 fn render_code_block(
     language: Option<SharedString>,
     code: SharedString,
-    theme: &aura_theme::Theme,
+    _theme: &aura_theme::Theme,
 ) -> AnyElement {
-    let mut content = Space::new().vertical().gap_sm();
+    let mut code_block = AuraCodeBlock::new(code);
     if let Some(language) = language {
-        content = content.child(
-            div()
-                .text_xs()
-                .font_weight(gpui::FontWeight::BOLD)
-                .text_color(theme.neutral.text_3)
-                .child(language),
-        );
+        code_block = code_block.language(language.as_ref());
     }
-    content = content.child(
-        div()
-            .font_family("Monospace")
-            .text_sm()
-            .line_height(px(theme.font_size.md * 1.6))
-            .text_color(theme.neutral.text_1)
-            .whitespace_nowrap()
-            .child(code),
-    );
-
-    div()
-        .id("aura-markdown-code-scroll")
-        .overflow_x_scroll()
-        .w_full()
-        .rounded(px(theme.radius.md))
-        .border_1()
-        .border_color(theme.neutral.border)
-        .bg(theme.neutral.hover)
-        .p_4()
-        .child(content)
-        .into_any_element()
+    code_block.into_any_element()
 }
 
 fn render_paragraph(segments: Vec<InlineSegment>, theme: &aura_theme::Theme) -> AnyElement {
@@ -832,9 +809,8 @@ mod tests {
     fn code_blocks_render_with_horizontal_scroll_shell() {
         let source = include_str!("markdown.rs");
 
-        assert!(source.contains(".overflow_x_scroll()"));
-        assert!(source.contains(".font_family(\"Monospace\")"));
-        assert!(source.contains(".whitespace_nowrap()"));
+        assert!(source.contains("AuraCodeBlock::new"));
+        assert!(source.contains(".language(language.as_ref())"));
     }
 
     #[test]

@@ -12,7 +12,7 @@
 | Button | `crates/aura-components/src/button.rs` | — | ✅ |
 | Gallery app | `apps/aura-gallery/src/` | — | ✅ |
 
-## P1 Basic Elements ✅ (13/13)
+## P1 Basic Elements ✅ (15/15)
 
 | # | Component | File | Demo | Status |
 |---|-----------|------|------|--------|
@@ -30,6 +30,7 @@
 | 12 | Scrollbar | `crates/aura-components/src/scrollbar.rs` | ✅ | ✅ |
 | 13 | Splitter | `crates/aura-components/src/splitter.rs` | ✅ | ✅ |
 | 14 | ButtonGroup | `crates/aura-components/src/button_group.rs` | ✅ | ✅ |
+| 15 | CodeBlock | `crates/aura-components/src/code_block.rs` | ✅ | ✅ Code highlighting, language label, copy button, inline/block formats |
 
 ## P2 Form Controls 🔄 (8/10)
 

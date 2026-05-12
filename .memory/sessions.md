@@ -2966,3 +2966,19 @@
 - `cargo test -p aura-docs --no-run` passed.
 - `timeout 8s cargo run -p aura-docs` started successfully and was stopped by timeout.
 - `timeout 8s cargo run -p aura-gallery` started successfully and was stopped by timeout.
+
+## Session 86 — 2026-05-12 (CodeBlock Component)
+
+### Actions
+- Added `CodeBlock` to `aura-components` with block and inline formats.
+- Implemented lightweight native syntax highlighting with `StyledText`/`TextRun` for common Rust/TOML/JSON/Markdown/Shell/TS/JS tokens.
+- Added language labels, convenience language builders, and a copy button backed by GPUI clipboard APIs.
+- Replaced the Aura Docs Markdown code-block renderer with the reusable `CodeBlock` component.
+- Added a Gallery demo covering Rust, JSON, Shell, and inline usage.
+
+### Verification
+- `cargo test -p aura-components code_block -- --nocapture` passed.
+- `cargo check -p aura-docs -p aura-gallery` passed.
+- `cargo test -p aura-gallery code_block_demo_uses_component_api` passed.
+- `timeout 8s cargo run -p aura-gallery` started successfully and was stopped by timeout.
+- `timeout 8s cargo run -p aura-docs` started successfully and was stopped by timeout.
