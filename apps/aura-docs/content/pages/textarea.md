@@ -1,16 +1,25 @@
 # Textarea
 
-独立多行输入用法。
+`Textarea` 用于多行文本输入，支持行数和最大长度提示。
 
-## 完整示例
-
-此示例复用 Aura Gallery 中同名控件的原生 demo，确保文档效果与演示大屏保持一致。
+## 基础多行
 
 ### 效果
 
-::AuraDemo{component="Textarea"}::
+::AuraDemo{component="TextareaBasic"}::
 
 ### 代码
 
-```rust src="gallery/form_controls_demo.rs"
+```rust src="textarea/basic.rs"
+```
+
+## 长度限制
+
+### 效果
+
+::AuraDemo{component="TextareaLimit"}::
+
+### 代码
+
+```rust src="textarea/limit.rs"
 ```

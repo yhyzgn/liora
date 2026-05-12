@@ -1,16 +1,36 @@
 # Radio
 
-独立单选与单选组用法。
+`Radio` 用于单选项和单选组，适合互斥选择场景。
 
-## 完整示例
-
-此示例复用 Aura Gallery 中同名控件的原生 demo，确保文档效果与演示大屏保持一致。
+## 基础状态
 
 ### 效果
 
-::AuraDemo{component="Radio"}::
+::AuraDemo{component="RadioBasic"}::
 
 ### 代码
 
-```rust src="gallery/form_controls_demo.rs"
+```rust src="radio/basic.rs"
+```
+
+## 单选组
+
+### 效果
+
+::AuraDemo{component="RadioGroup"}::
+
+### 代码
+
+```rust src="radio/group.rs"
+```
+
+## 按钮样式
+
+### 效果
+
+::AuraDemo{component="RadioButtons"}::
+
+### 代码
+
+```rust src="radio/buttons.rs"
 ```

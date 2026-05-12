@@ -1,7 +1,8 @@
 use aura_components::{
     Alert, AlertType, Autocomplete, AutocompleteItem, Avatar, Badge, BadgeType, Button, Card,
-    CodeBlock as AuraCodeBlock, Container, Input, Menu, MenuMode, Paragraph, Space, Switch,
-    Tag as AuraTag, Text, Title, toast_error, toast_info, toast_success, toast_warning,
+    Checkbox, CheckboxGroup, CodeBlock as AuraCodeBlock, Container, Input, InputNumber,
+    InputNumberControlsPosition, Menu, MenuMode, Paragraph, Radio, RadioGroup, Space, Switch,
+    Tag as AuraTag, Text, Textarea, Title, toast_error, toast_info, toast_success, toast_warning,
 };
 use aura_core::{Config, PassivePortal, Portal};
 use aura_icons_lucide::IconName;
@@ -843,6 +844,21 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "badge/basic.rs" => Some(include_str!("../content/snippets/badge/basic.rs")),
         "badge/max.rs" => Some(include_str!("../content/snippets/badge/max.rs")),
         "badge/dot.rs" => Some(include_str!("../content/snippets/badge/dot.rs")),
+        "input_number/basic.rs" => Some(include_str!("../content/snippets/input_number/basic.rs")),
+        "input_number/vertical.rs" => {
+            Some(include_str!("../content/snippets/input_number/vertical.rs"))
+        }
+        "input_number/precision.rs" => Some(include_str!(
+            "../content/snippets/input_number/precision.rs"
+        )),
+        "textarea/basic.rs" => Some(include_str!("../content/snippets/textarea/basic.rs")),
+        "textarea/limit.rs" => Some(include_str!("../content/snippets/textarea/limit.rs")),
+        "checkbox/basic.rs" => Some(include_str!("../content/snippets/checkbox/basic.rs")),
+        "checkbox/group.rs" => Some(include_str!("../content/snippets/checkbox/group.rs")),
+        "checkbox/buttons.rs" => Some(include_str!("../content/snippets/checkbox/buttons.rs")),
+        "radio/basic.rs" => Some(include_str!("../content/snippets/radio/basic.rs")),
+        "radio/group.rs" => Some(include_str!("../content/snippets/radio/group.rs")),
+        "radio/buttons.rs" => Some(include_str!("../content/snippets/radio/buttons.rs")),
         "code_block/basic.rs" => Some(include_str!("../content/snippets/code_block/basic.rs")),
         "code_block/language.rs" => {
             Some(include_str!("../content/snippets/code_block/language.rs"))
@@ -1104,7 +1120,13 @@ struct LiveDemoContent {
     component: SharedString,
     gallery_demo: Option<AnyView>,
     autocompletes: Vec<Entity<Autocomplete>>,
+    input_numbers: Vec<Entity<InputNumber>>,
+    textareas: Vec<Entity<Textarea>>,
+    checkboxes: Vec<Entity<Checkbox>>,
+    checkbox_groups: Vec<Entity<CheckboxGroup>>,
     inputs: Vec<Entity<Input>>,
+    radios: Vec<Entity<Radio>>,
+    radio_groups: Vec<Entity<RadioGroup>>,
     switches: Vec<Entity<Switch>>,
 }
 
@@ -1112,7 +1134,13 @@ impl LiveDemoContent {
     fn new(component: SharedString, cx: &mut Context<Self>) -> Self {
         let gallery_demo = aura_gallery::demos::render_doc_demo(component.as_ref(), cx);
         let mut autocompletes = Vec::new();
+        let mut input_numbers = Vec::new();
+        let mut textareas = Vec::new();
+        let mut checkboxes = Vec::new();
+        let mut checkbox_groups = Vec::new();
         let mut inputs = Vec::new();
+        let mut radios = Vec::new();
+        let mut radio_groups = Vec::new();
         let mut switches = Vec::new();
 
         match component.as_ref() {
@@ -1157,6 +1185,20 @@ impl LiveDemoContent {
                 inputs.push(cx.new(|cx| Input::new("", cx)));
                 inputs.push(cx.new(|cx| Input::new("", cx).placeholder("Type something...")));
             }
+            "InputNumberBasic" => {
+                input_numbers.push(cx.new(|cx| InputNumber::new(10.0, cx).min(0.0).max(10.0)));
+            }
+            "InputNumberVertical" => {
+                input_numbers.push(cx.new(|cx| {
+                    InputNumber::new(5.0, cx)
+                        .min(0.0)
+                        .max(10.0)
+                        .controls_position(InputNumberControlsPosition::Right)
+                }));
+            }
+            "InputNumberPrecision" => {
+                input_numbers.push(cx.new(|cx| InputNumber::new(1.23, cx).precision(2).step(0.01)));
+            }
             "InputPassword" => {
                 inputs.push(cx.new(|cx| Input::new("", cx).password().placeholder("Password")));
                 inputs.push(cx.new(|cx| Input::new("secret", cx).password().mask_char('*')));
@@ -1173,6 +1215,52 @@ impl LiveDemoContent {
             "InputStates" => {
                 inputs.push(cx.new(|cx| Input::new("Clear me", cx).clearable(true)));
                 inputs.push(cx.new(|cx| Input::new("Disabled", cx).disabled(true)));
+            }
+            "TextareaBasic" => {
+                textareas.push(cx.new(|cx| Textarea::new("Line 1\nLine 2", cx).rows(3)));
+            }
+            "TextareaLimit" => {
+                textareas
+                    .push(cx.new(|cx| Textarea::new("Limited content", cx).max_length(50).rows(2)));
+            }
+            "CheckboxBasic" => {
+                checkboxes.push(cx.new(|cx| Checkbox::new(true, cx)));
+                checkboxes.push(cx.new(|cx| Checkbox::new(false, cx)));
+                checkboxes.push(cx.new(|cx| Checkbox::new(false, cx).label("Label")));
+                checkboxes.push(cx.new(|cx| Checkbox::new(false, cx).disabled(true)));
+                checkboxes.push(cx.new(|cx| Checkbox::new(true, cx).disabled(true)));
+            }
+            "CheckboxGroup" => {
+                checkbox_groups.push(cx.new(|cx| {
+                    CheckboxGroup::new(vec!["Option 1", "Option 2", "Option 3"], vec![0, 2], cx)
+                }));
+            }
+            "CheckboxButtons" => {
+                checkbox_groups.push(cx.new(|cx| city_checkbox_group(cx).large()));
+                checkbox_groups.push(cx.new(city_checkbox_group));
+                checkbox_groups.push(cx.new(|cx| city_checkbox_group(cx).small()));
+                checkbox_groups.push(cx.new(|cx| city_checkbox_group(cx).stretch(true)));
+            }
+            "RadioBasic" => {
+                radios.push(cx.new(|cx| Radio::new(true, cx)));
+                radios.push(cx.new(|cx| Radio::new(false, cx)));
+                radios.push(cx.new(|cx| Radio::new(false, cx).label("Label")));
+                radios.push(cx.new(|cx| Radio::new(false, cx).disabled(true)));
+                radios.push(cx.new(|cx| Radio::new(true, cx).disabled(true)));
+            }
+            "RadioGroup" => {
+                radio_groups.push(
+                    cx.new(|cx| RadioGroup::new(vec!["Option A", "Option B", "Option C"], 1, cx)),
+                );
+                radio_groups.push(cx.new(|cx| {
+                    RadioGroup::new(vec!["Disabled A", "Disabled B"], 0, cx).disabled(true)
+                }));
+            }
+            "RadioButtons" => {
+                radio_groups.push(cx.new(|cx| city_radio_group(cx).large()));
+                radio_groups.push(cx.new(city_radio_group));
+                radio_groups.push(cx.new(|cx| city_radio_group(cx).small()));
+                radio_groups.push(cx.new(|cx| city_radio_group(cx).stretch(true)));
             }
             "SwitchBasic" => {
                 switches.push(cx.new(|cx| Switch::new(true, cx)));
@@ -1200,7 +1288,13 @@ impl LiveDemoContent {
             component,
             gallery_demo,
             autocompletes,
+            input_numbers,
+            textareas,
+            checkboxes,
+            checkbox_groups,
             inputs,
+            radios,
+            radio_groups,
             switches,
         }
     }
@@ -1368,6 +1462,48 @@ impl Render for LiveDemoContent {
                     .map(Entity::into_any_element)
                     .collect(),
             ),
+            "InputNumberBasic" | "InputNumberVertical" | "InputNumberPrecision" => demo_stack(
+                self.input_numbers
+                    .iter()
+                    .cloned()
+                    .map(Entity::into_any_element)
+                    .collect(),
+            ),
+            "TextareaBasic" | "TextareaLimit" => demo_stack(
+                self.textareas
+                    .iter()
+                    .cloned()
+                    .map(Entity::into_any_element)
+                    .collect(),
+            ),
+            "CheckboxBasic" => demo_row(
+                self.checkboxes
+                    .iter()
+                    .cloned()
+                    .map(Entity::into_any_element)
+                    .collect(),
+            ),
+            "CheckboxGroup" | "CheckboxButtons" => demo_stack(
+                self.checkbox_groups
+                    .iter()
+                    .cloned()
+                    .map(Entity::into_any_element)
+                    .collect(),
+            ),
+            "RadioBasic" => demo_row(
+                self.radios
+                    .iter()
+                    .cloned()
+                    .map(Entity::into_any_element)
+                    .collect(),
+            ),
+            "RadioGroup" | "RadioButtons" => demo_stack(
+                self.radio_groups
+                    .iter()
+                    .cloned()
+                    .map(Entity::into_any_element)
+                    .collect(),
+            ),
             "AvatarShapes" => demo_row(vec![
                 Avatar::new().into_any_element(),
                 Avatar::new().square().into_any_element(),
@@ -1491,6 +1627,24 @@ fn basic_autocomplete_items() -> Vec<AutocompleteItem> {
         AutocompleteItem::labeled("element-plus", "Element Plus"),
         AutocompleteItem::labeled("autocomplete", "Autocomplete"),
     ]
+}
+
+fn city_checkbox_group(cx: &mut Context<CheckboxGroup>) -> CheckboxGroup {
+    CheckboxGroup::new(
+        vec!["New York", "Washington", "Los Angeles", "Chicago"],
+        vec![1],
+        cx,
+    )
+    .button()
+}
+
+fn city_radio_group(cx: &mut Context<RadioGroup>) -> RadioGroup {
+    RadioGroup::new(
+        vec!["New York", "Washington", "Los Angeles", "Chicago"],
+        1,
+        cx,
+    )
+    .button()
 }
 
 fn demo_stack(children: Vec<AnyElement>) -> AnyElement {
@@ -2275,6 +2429,34 @@ mod tests {
                 include_str!("../content/pages/badge.md"),
                 "BadgeBasic",
                 &["badge/basic.rs", "badge/max.rs", "badge/dot.rs"][..],
+            ),
+            (
+                include_str!("../content/pages/input_number.md"),
+                "InputNumberBasic",
+                &[
+                    "input_number/basic.rs",
+                    "input_number/vertical.rs",
+                    "input_number/precision.rs",
+                ][..],
+            ),
+            (
+                include_str!("../content/pages/textarea.md"),
+                "TextareaBasic",
+                &["textarea/basic.rs", "textarea/limit.rs"][..],
+            ),
+            (
+                include_str!("../content/pages/checkbox.md"),
+                "CheckboxBasic",
+                &[
+                    "checkbox/basic.rs",
+                    "checkbox/group.rs",
+                    "checkbox/buttons.rs",
+                ][..],
+            ),
+            (
+                include_str!("../content/pages/radio.md"),
+                "RadioBasic",
+                &["radio/basic.rs", "radio/group.rs", "radio/buttons.rs"][..],
             ),
         ] {
             assert!(!page.contains("## 完整示例"));

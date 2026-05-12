@@ -47,6 +47,12 @@ mod button_states;
 mod button_text;
 #[path = "../../content/snippets/button/types.rs"]
 mod button_types;
+#[path = "../../content/snippets/checkbox/basic.rs"]
+mod checkbox_basic;
+#[path = "../../content/snippets/checkbox/buttons.rs"]
+mod checkbox_buttons;
+#[path = "../../content/snippets/checkbox/group.rs"]
+mod checkbox_group;
 #[path = "../../content/snippets/code_block/basic.rs"]
 mod code_block_basic;
 #[path = "../../content/snippets/code_block/inline.rs"]
@@ -59,6 +65,12 @@ mod code_block_theme;
 mod input_affix;
 #[path = "../../content/snippets/input/basic.rs"]
 mod input_basic;
+#[path = "../../content/snippets/input_number/basic.rs"]
+mod input_number_basic;
+#[path = "../../content/snippets/input_number/precision.rs"]
+mod input_number_precision;
+#[path = "../../content/snippets/input_number/vertical.rs"]
+mod input_number_vertical;
 #[path = "../../content/snippets/input/password.rs"]
 mod input_password;
 #[path = "../../content/snippets/input/states.rs"]
@@ -75,6 +87,12 @@ mod message_types;
 mod quick_start_components;
 #[path = "../../content/snippets/quick_start/init.rs"]
 mod quick_start_init;
+#[path = "../../content/snippets/radio/basic.rs"]
+mod radio_basic;
+#[path = "../../content/snippets/radio/buttons.rs"]
+mod radio_buttons;
+#[path = "../../content/snippets/radio/group.rs"]
+mod radio_group;
 #[path = "../../content/snippets/switch/basic.rs"]
 mod switch_basic;
 #[path = "../../content/snippets/switch/callback.rs"]
@@ -91,6 +109,10 @@ mod tag_sizes;
 mod tag_themes;
 #[path = "../../content/snippets/tag/types.rs"]
 mod tag_types;
+#[path = "../../content/snippets/textarea/basic.rs"]
+mod textarea_basic;
+#[path = "../../content/snippets/textarea/limit.rs"]
+mod textarea_limit;
 #[path = "../../content/snippets/typography/paragraph.rs"]
 mod typography_paragraph;
 

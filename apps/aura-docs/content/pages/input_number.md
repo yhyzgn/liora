@@ -1,16 +1,36 @@
 # InputNumber
 
-独立数字输入用法。
+`InputNumber` 用于输入受约束的数值，支持范围、步进、精度和控制按钮布局。
 
-## 完整示例
-
-此示例复用 Aura Gallery 中同名控件的原生 demo，确保文档效果与演示大屏保持一致。
+## 基础范围
 
 ### 效果
 
-::AuraDemo{component="InputNumber"}::
+::AuraDemo{component="InputNumberBasic"}::
 
 ### 代码
 
-```rust src="gallery/form_controls_demo.rs"
+```rust src="input_number/basic.rs"
+```
+
+## 右侧控制按钮
+
+### 效果
+
+::AuraDemo{component="InputNumberVertical"}::
+
+### 代码
+
+```rust src="input_number/vertical.rs"
+```
+
+## 精度与步进
+
+### 效果
+
+::AuraDemo{component="InputNumberPrecision"}::
+
+### 代码
+
+```rust src="input_number/precision.rs"
 ```

@@ -1,16 +1,36 @@
 # Checkbox
 
-独立多选与多选组用法。
+`Checkbox` 用于独立多选和多选组。每个示例都把效果与代码放在一起。
 
-## 完整示例
-
-此示例复用 Aura Gallery 中同名控件的原生 demo，确保文档效果与演示大屏保持一致。
+## 基础状态
 
 ### 效果
 
-::AuraDemo{component="Checkbox"}::
+::AuraDemo{component="CheckboxBasic"}::
 
 ### 代码
 
-```rust src="gallery/form_controls_demo.rs"
+```rust src="checkbox/basic.rs"
+```
+
+## 多选组
+
+### 效果
+
+::AuraDemo{component="CheckboxGroup"}::
+
+### 代码
+
+```rust src="checkbox/group.rs"
+```
+
+## 按钮样式
+
+### 效果
+
+::AuraDemo{component="CheckboxButtons"}::
+
+### 代码
+
+```rust src="checkbox/buttons.rs"
 ```
