@@ -85,10 +85,24 @@ pub enum CodeFormat {
     Inline,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CodeTheme {
+    Auto,
+    Light,
+    Dark,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ResolvedCodeTheme {
+    Light,
+    Dark,
+}
+
 pub struct CodeBlock {
     code: SharedString,
     language: CodeLanguage,
     format: CodeFormat,
+    theme: CodeTheme,
     copyable: bool,
     id: Option<ElementId>,
 }
@@ -99,6 +113,7 @@ impl CodeBlock {
             code: code.into(),
             language: CodeLanguage::PlainText,
             format: CodeFormat::Block,
+            theme: CodeTheme::Auto,
             copyable: true,
             id: None,
         }
@@ -148,6 +163,23 @@ impl CodeBlock {
         self
     }
 
+    pub fn theme(mut self, theme: CodeTheme) -> Self {
+        self.theme = theme;
+        self
+    }
+
+    pub fn auto_theme(self) -> Self {
+        self.theme(CodeTheme::Auto)
+    }
+
+    pub fn light_theme(self) -> Self {
+        self.theme(CodeTheme::Light)
+    }
+
+    pub fn dark_theme(self) -> Self {
+        self.theme(CodeTheme::Dark)
+    }
+
     pub fn copyable(mut self, copyable: bool) -> Self {
         self.copyable = copyable;
         self
@@ -165,10 +197,11 @@ impl RenderOnce for CodeBlock {
         let id = self.id.clone().unwrap_or_else(|| {
             stable_unique_id(
                 format!(
-                    "aura-code-block:{}:{}:{:?}:copyable={}",
+                    "aura-code-block:{}:{}:{:?}:{:?}:copyable={}",
                     self.language.label(),
                     self.code.as_ref(),
                     self.format,
+                    self.theme,
                     self.copyable
                 ),
                 "aura-code-block",
@@ -179,10 +212,15 @@ impl RenderOnce for CodeBlock {
         });
 
         match self.format {
-            CodeFormat::Inline => render_inline_code(self.code, self.language, &theme),
-            CodeFormat::Block => {
-                render_block_code(id, self.code, self.language, self.copyable, &theme)
-            }
+            CodeFormat::Inline => render_inline_code(self.code, self.language, self.theme, &theme),
+            CodeFormat::Block => render_block_code(
+                id,
+                self.code,
+                self.language,
+                self.copyable,
+                self.theme,
+                &theme,
+            ),
         }
     }
 }
@@ -198,16 +236,24 @@ impl IntoElement for CodeBlock {
 fn render_inline_code(
     code: SharedString,
     language: CodeLanguage,
+    code_theme: CodeTheme,
     theme: &aura_theme::Theme,
 ) -> gpui::AnyElement {
+    let resolved_theme = resolve_code_theme(code_theme, theme);
     div()
         .rounded(px(theme.radius.sm))
-        .bg(code_surface(theme).opacity(0.72))
+        .bg(code_surface(resolved_theme).opacity(0.72))
         .border_1()
-        .border_color(code_border(theme))
+        .border_color(code_border(resolved_theme))
         .px_1()
         .py_0p5()
-        .child(render_highlighted_text(code, language, theme, false))
+        .child(render_highlighted_text(
+            code,
+            language,
+            resolved_theme,
+            theme,
+            false,
+        ))
         .into_any_element()
 }
 
@@ -216,8 +262,10 @@ fn render_block_code(
     code: SharedString,
     language: CodeLanguage,
     copyable: bool,
+    code_theme: CodeTheme,
     theme: &aura_theme::Theme,
 ) -> gpui::AnyElement {
+    let resolved_theme = resolve_code_theme(code_theme, theme);
     let copied_code = code.to_string();
     let scroll_id = format!("{id}-scroll");
 
@@ -229,20 +277,20 @@ fn render_block_code(
         .px_4()
         .py_2()
         .border_b_1()
-        .border_color(code_border(theme))
-        .bg(code_header_surface(theme))
+        .border_color(code_border(resolved_theme))
+        .bg(code_header_surface(resolved_theme))
         .child(
             div()
                 .flex()
                 .items_center()
                 .gap_2()
-                .text_color(code_muted_text(theme))
+                .text_color(code_muted_text(resolved_theme))
                 .text_xs()
                 .font_weight(FontWeight::BOLD)
                 .child(
                     Icon::new(IconName::FileCode)
                         .size(px(14.0))
-                        .color(code_muted_text(theme)),
+                        .color(code_muted_text(resolved_theme)),
                 )
                 .child(language.label()),
         );
@@ -258,12 +306,12 @@ fn render_block_code(
                 .py_1()
                 .rounded(px(theme.radius.sm))
                 .text_xs()
-                .text_color(code_muted_text(theme))
+                .text_color(code_muted_text(resolved_theme))
                 .cursor_pointer()
                 .hover(|style| {
                     style
-                        .bg(code_hover_surface(theme))
-                        .text_color(code_accent(theme))
+                        .bg(code_hover_surface(resolved_theme))
+                        .text_color(code_accent(theme, resolved_theme))
                 })
                 .on_click(move |_, _, cx| {
                     cx.write_to_clipboard(ClipboardItem::new_string(copied_code.clone()));
@@ -271,7 +319,7 @@ fn render_block_code(
                 .child(
                     Icon::new(IconName::Copy)
                         .size(px(12.0))
-                        .color(code_muted_text(theme)),
+                        .color(code_muted_text(resolved_theme)),
                 )
                 .child("Copy"),
         );
@@ -282,8 +330,8 @@ fn render_block_code(
         .w_full()
         .rounded(px(theme.radius.lg))
         .border_1()
-        .border_color(code_border(theme))
-        .bg(code_surface(theme))
+        .border_color(code_border(resolved_theme))
+        .bg(code_surface(resolved_theme))
         .overflow_hidden()
         .child(header)
         .child(
@@ -291,8 +339,14 @@ fn render_block_code(
                 .id(scroll_id)
                 .overflow_x_scroll()
                 .p_4()
-                .bg(code_surface(theme))
-                .child(render_highlighted_text(code, language, theme, true)),
+                .bg(code_surface(resolved_theme))
+                .child(render_highlighted_text(
+                    code,
+                    language,
+                    resolved_theme,
+                    theme,
+                    true,
+                )),
         )
         .into_any_element()
 }
@@ -300,22 +354,24 @@ fn render_block_code(
 fn render_highlighted_text(
     code: SharedString,
     language: CodeLanguage,
+    code_theme: ResolvedCodeTheme,
     theme: &aura_theme::Theme,
     block: bool,
 ) -> StyledText {
     let text = code.to_string();
-    let runs = syntect_runs(&text, language, theme, block);
+    let runs = syntect_runs(&text, language, code_theme, theme, block);
     StyledText::new(code).with_runs(runs)
 }
 
 fn syntect_runs(
     text: &str,
     language: CodeLanguage,
+    code_theme: ResolvedCodeTheme,
     theme: &aura_theme::Theme,
     block: bool,
 ) -> Vec<TextRun> {
     if text.is_empty() {
-        return vec![base_style(theme, block).to_run(0)];
+        return vec![base_style(theme, code_theme, block).to_run(0)];
     }
 
     let syntax_set = syntax_set();
@@ -323,7 +379,7 @@ fn syntect_runs(
         .find_syntax_by_token(language.syntect_token())
         .or_else(|| syntax_set.find_syntax_by_extension(language.syntect_token()))
         .unwrap_or_else(|| syntax_set.find_syntax_plain_text());
-    let syntect_theme = syntect_theme();
+    let syntect_theme = syntect_theme(code_theme);
     let mut highlighter = HighlightLines::new(syntax, syntect_theme);
     let mut runs = Vec::new();
 
@@ -334,17 +390,20 @@ fn syntect_runs(
                     if !slice.is_empty() {
                         push_run(
                             &mut runs,
-                            syntect_style_run(slice.len(), style, theme, block),
+                            syntect_style_run(slice.len(), style, theme, code_theme, block),
                         );
                     }
                 }
             }
-            Err(_) => push_run(&mut runs, base_style(theme, block).to_run(line.len())),
+            Err(_) => push_run(
+                &mut runs,
+                base_style(theme, code_theme, block).to_run(line.len()),
+            ),
         }
     }
 
     if runs.is_empty() {
-        runs.push(base_style(theme, block).to_run(text.len()));
+        runs.push(base_style(theme, code_theme, block).to_run(text.len()));
     }
 
     runs
@@ -374,9 +433,10 @@ fn syntect_style_run(
     len: usize,
     syntect_style: SyntectStyle,
     theme: &aura_theme::Theme,
+    code_theme: ResolvedCodeTheme,
     block: bool,
 ) -> TextRun {
-    let mut style = base_style(theme, block);
+    let mut style = base_style(theme, code_theme, block);
     style.color = syntect_color(syntect_style.foreground);
 
     if syntect_style.font_style.contains(SyntectFontStyle::BOLD) {
@@ -401,7 +461,7 @@ fn syntect_style_run(
     style.to_run(len)
 }
 
-fn base_style(theme: &aura_theme::Theme, block: bool) -> TextStyle {
+fn base_style(theme: &aura_theme::Theme, code_theme: ResolvedCodeTheme, block: bool) -> TextStyle {
     let mut style = TextStyle::default();
     style.font_family = "Monospace".into();
     style.font_size = px(if block {
@@ -412,7 +472,7 @@ fn base_style(theme: &aura_theme::Theme, block: bool) -> TextStyle {
     .into();
     style.line_height = px(theme.font_size.md * 1.7).into();
     style.white_space = WhiteSpace::Nowrap;
-    style.color = code_text(theme);
+    style.color = code_text(code_theme);
     style
 }
 
@@ -421,13 +481,28 @@ fn syntax_set() -> &'static SyntaxSet {
     SYNTAX_SET.get_or_init(SyntaxSet::load_defaults_newlines)
 }
 
-fn syntect_theme() -> &'static Theme {
+fn resolve_code_theme(code_theme: CodeTheme, theme: &aura_theme::Theme) -> ResolvedCodeTheme {
+    match code_theme {
+        CodeTheme::Light => ResolvedCodeTheme::Light,
+        CodeTheme::Dark => ResolvedCodeTheme::Dark,
+        CodeTheme::Auto if theme.name.eq_ignore_ascii_case("dark") => ResolvedCodeTheme::Dark,
+        CodeTheme::Auto => ResolvedCodeTheme::Light,
+    }
+}
+
+fn syntect_theme(code_theme: ResolvedCodeTheme) -> &'static Theme {
     static THEME_SET: OnceLock<ThemeSet> = OnceLock::new();
     let theme_set = THEME_SET.get_or_init(ThemeSet::load_defaults);
-    theme_set
-        .themes
-        .get("base16-ocean.dark")
-        .or_else(|| theme_set.themes.get("InspiredGitHub"))
+    let candidates = match code_theme {
+        ResolvedCodeTheme::Light => {
+            &["InspiredGitHub", "base16-ocean.light", "Solarized (light)"][..]
+        }
+        ResolvedCodeTheme::Dark => &["base16-ocean.dark", "Solarized (dark)", "InspiredGitHub"][..],
+    };
+
+    candidates
+        .iter()
+        .find_map(|name| theme_set.themes.get(*name))
         .or_else(|| theme_set.themes.values().next())
         .expect("syntect default themes should not be empty")
 }
@@ -442,32 +517,53 @@ fn syntect_color(color: syntect::highlighting::Color) -> Hsla {
     .into()
 }
 
-fn code_surface(_theme: &aura_theme::Theme) -> Hsla {
-    rgb(0x1b2b34)
+fn code_surface(code_theme: ResolvedCodeTheme) -> Hsla {
+    match code_theme {
+        ResolvedCodeTheme::Light => rgb(0xf7f8fa),
+        ResolvedCodeTheme::Dark => rgb(0x1b2b34),
+    }
 }
 
-fn code_header_surface(_theme: &aura_theme::Theme) -> Hsla {
-    rgb(0x16242c)
+fn code_header_surface(code_theme: ResolvedCodeTheme) -> Hsla {
+    match code_theme {
+        ResolvedCodeTheme::Light => rgb(0xf0f2f5),
+        ResolvedCodeTheme::Dark => rgb(0x16242c),
+    }
 }
 
-fn code_hover_surface(_theme: &aura_theme::Theme) -> Hsla {
-    rgb(0x253c49)
+fn code_hover_surface(code_theme: ResolvedCodeTheme) -> Hsla {
+    match code_theme {
+        ResolvedCodeTheme::Light => rgb(0xe8edf3),
+        ResolvedCodeTheme::Dark => rgb(0x253c49),
+    }
 }
 
-fn code_border(_theme: &aura_theme::Theme) -> Hsla {
-    rgb(0x334d5c)
+fn code_border(code_theme: ResolvedCodeTheme) -> Hsla {
+    match code_theme {
+        ResolvedCodeTheme::Light => rgb(0xd8dee8),
+        ResolvedCodeTheme::Dark => rgb(0x334d5c),
+    }
 }
 
-fn code_text(_theme: &aura_theme::Theme) -> Hsla {
-    rgb(0xc0c5ce)
+fn code_text(code_theme: ResolvedCodeTheme) -> Hsla {
+    match code_theme {
+        ResolvedCodeTheme::Light => rgb(0x2b303b),
+        ResolvedCodeTheme::Dark => rgb(0xc0c5ce),
+    }
 }
 
-fn code_muted_text(_theme: &aura_theme::Theme) -> Hsla {
-    rgb(0xa7adba)
+fn code_muted_text(code_theme: ResolvedCodeTheme) -> Hsla {
+    match code_theme {
+        ResolvedCodeTheme::Light => rgb(0x65737e),
+        ResolvedCodeTheme::Dark => rgb(0xa7adba),
+    }
 }
 
-fn code_accent(_theme: &aura_theme::Theme) -> Hsla {
-    rgb(0x96b5b4)
+fn code_accent(theme: &aura_theme::Theme, code_theme: ResolvedCodeTheme) -> Hsla {
+    match code_theme {
+        ResolvedCodeTheme::Light => theme.info.base,
+        ResolvedCodeTheme::Dark => rgb(0x96b5b4),
+    }
 }
 
 fn rgb(hex: u32) -> Hsla {
@@ -495,16 +591,41 @@ mod tests {
     #[test]
     fn syntect_highlighter_generates_multiple_styled_runs_for_rust() {
         let theme = aura_theme::Theme::light();
+        let code_theme = resolve_code_theme(CodeTheme::Auto, &theme);
         let runs = syntect_runs(
             "fn main() { let n = 42; // ok\n println!(\"hi\"); }",
             CodeLanguage::Rust,
+            code_theme,
             &theme,
             true,
         );
 
         assert!(runs.len() > 3);
         assert_eq!(runs.iter().map(|run| run.len).sum::<usize>(), 48);
-        assert!(runs.iter().any(|run| run.color != code_text(&theme)));
+        assert!(runs.iter().any(|run| run.color != code_text(code_theme)));
+    }
+
+    #[test]
+    fn themes_resolve_to_distinct_syntect_and_surface_palettes() {
+        let light = aura_theme::Theme::light();
+        let dark = aura_theme::Theme::dark();
+
+        assert_eq!(
+            resolve_code_theme(CodeTheme::Auto, &light),
+            ResolvedCodeTheme::Light
+        );
+        assert_eq!(
+            resolve_code_theme(CodeTheme::Auto, &dark),
+            ResolvedCodeTheme::Dark
+        );
+        assert_ne!(
+            syntect_theme(ResolvedCodeTheme::Light).settings.background,
+            syntect_theme(ResolvedCodeTheme::Dark).settings.background
+        );
+        assert_ne!(
+            code_surface(ResolvedCodeTheme::Light),
+            code_surface(ResolvedCodeTheme::Dark)
+        );
     }
 
     #[test]
@@ -516,6 +637,9 @@ mod tests {
         assert!(source.contains("ThemeSet::load_defaults"));
         assert!(source.contains("ClipboardItem::new_string"));
         assert!(source.contains("CodeFormat::Inline"));
+        assert!(source.contains("CodeTheme::Auto"));
+        assert!(source.contains("light_theme"));
+        assert!(source.contains("dark_theme"));
         assert!(source.contains("StyledText::new"));
         assert!(source.contains("with_runs"));
     }

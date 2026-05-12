@@ -1,5 +1,5 @@
 use aura_components::layout_helpers::{page, section};
-use aura_components::{CodeBlock, CodeLanguage, Divider, Space};
+use aura_components::{CodeBlock, CodeLanguage, CodeTheme, Divider, Space};
 use gpui::{App, Context, Entity, IntoElement, Render, Window, prelude::*};
 
 pub fn render(cx: &mut App) -> Entity<CodeBlockDemo> {
@@ -12,7 +12,7 @@ impl Render for CodeBlockDemo {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         page(
             "CodeBlock 代码块",
-            "原生代码高亮显示，支持语言指定、格式指定和复制。",
+            "原生代码高亮显示，支持语言指定、主题切换、格式指定和复制。",
             Space::new()
                 .vertical()
                 .gap_lg()
@@ -30,6 +30,17 @@ impl Render for CodeBlockDemo {
                         .gap_md()
                         .child(CodeBlock::new(JSON_SAMPLE).language(CodeLanguage::Json))
                         .child(CodeBlock::new(SHELL_SAMPLE).shell()),
+                ))
+                .child(Divider::new())
+                .child(section(
+                    "主题切换",
+                    "默认 auto_theme() 跟随 Aura 全局主题，也可以显式指定 light_theme() / dark_theme()。",
+                    Space::new()
+                        .vertical()
+                        .gap_md()
+                        .child(CodeBlock::new(RUST_SAMPLE).rust().light_theme())
+                        .child(CodeBlock::new(RUST_SAMPLE).rust().dark_theme())
+                        .child(CodeBlock::new(TOML_SAMPLE).toml().theme(CodeTheme::Auto)),
                 ))
                 .child(Divider::new())
                 .child(section(
@@ -58,6 +69,11 @@ const JSON_SAMPLE: &str = r#"{
   "phase": 8
 }"#;
 
+const TOML_SAMPLE: &str = r#"[code_block]
+theme = "auto"
+copyable = true
+"#;
+
 const SHELL_SAMPLE: &str = r#"# build and run docs
 cargo check -p aura-components
 cargo run -p aura-docs
@@ -73,5 +89,8 @@ mod tests {
         assert!(source.contains(".rust()"));
         assert!(source.contains(".shell()"));
         assert!(source.contains(".inline()"));
+        assert!(source.contains(".light_theme()"));
+        assert!(source.contains(".dark_theme()"));
+        assert!(source.contains("CodeTheme::Auto"));
     }
 }
