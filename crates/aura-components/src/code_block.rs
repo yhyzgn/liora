@@ -7,13 +7,13 @@ use gpui::{
     IntoElement, LayoutId, MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, PaintQuad,
     Pixels, Point, Render, RenderOnce, Rgba, ShapedLine, SharedString, Style, StyledText, TextRun,
     TextStyle, UTF16Selection, UnderlineStyle, WhiteSpace, Window, actions, div, fill, point,
-    prelude::*, px, size,
+    prelude::*, px, relative, size,
 };
 use std::{
     collections::HashMap,
     hash::{Hash, Hasher},
     ops::Range,
-    sync::{Mutex, OnceLock},
+    sync::{Arc, Mutex, OnceLock},
 };
 use syntect::{
     easy::HighlightLines,
@@ -353,6 +353,7 @@ impl RenderOnce for CodeBlock {
                 self.highlighter,
                 self.theme,
                 &theme,
+                window,
                 cx,
             ),
         }
@@ -402,6 +403,7 @@ fn render_block_code(
     highlighter: CodeHighlighter,
     code_theme: CodeTheme,
     theme: &aura_theme::Theme,
+    window: &mut Window,
     cx: &mut App,
 ) -> gpui::AnyElement {
     let resolved_theme = resolve_code_theme(code_theme, theme);
@@ -488,6 +490,7 @@ fn render_block_code(
                     resolved_theme,
                     selectable,
                     theme,
+                    window,
                     cx,
                 )),
         )
@@ -521,6 +524,7 @@ fn render_code_content(
     code_theme: ResolvedCodeTheme,
     selectable: bool,
     theme: &aura_theme::Theme,
+    window: &mut Window,
     cx: &mut App,
 ) -> gpui::AnyElement {
     let runs = cached_highlight_runs(
@@ -533,10 +537,47 @@ fn render_code_content(
     );
 
     if selectable {
-        cx.new(|cx| SelectableCodeText::new(cx, id, code, runs, code_theme, theme))
-            .into_any_element()
+        let state_key =
+            ElementId::NamedChild(Arc::new(id.clone()), SharedString::from("selectable-code-text"));
+        let initial_id = id.clone();
+        let initial_code = code.clone();
+        let initial_runs = runs.clone();
+        let initial_theme = theme.clone();
+        let input = window.use_keyed_state(state_key, cx, move |_, cx| {
+            SelectableCodeText::new(
+                cx,
+                initial_id,
+                initial_code,
+                initial_runs,
+                code_theme,
+                &initial_theme,
+            )
+        });
+        input.update(cx, |text, cx| {
+            text.update_content(id, code, runs, code_theme, theme, cx);
+        });
+        SelectableCodeTextView { input }.into_any_element()
     } else {
         StyledText::new(code).with_runs(runs).into_any_element()
+    }
+}
+
+struct SelectableCodeTextView {
+    input: Entity<SelectableCodeText>,
+}
+
+impl IntoElement for SelectableCodeTextView {
+    type Element = Component<Self>;
+
+    fn into_element(self) -> Self::Element {
+        Component::new(self)
+    }
+}
+
+impl RenderOnce for SelectableCodeTextView {
+    fn render(self, _window: &mut Window, _cx: &mut App) -> impl IntoElement {
+        self.input
+            .into_any_element()
     }
 }
 
@@ -898,6 +939,48 @@ impl SelectableCodeText {
         }
     }
 
+    fn update_content(
+        &mut self,
+        id: ElementId,
+        code: SharedString,
+        runs: Vec<TextRun>,
+        _code_theme: ResolvedCodeTheme,
+        theme: &aura_theme::Theme,
+        cx: &mut Context<Self>,
+    ) {
+        let changed = self.id != id
+            || self.code != code
+            || self.runs != runs
+            || self.theme.name != theme.name
+            || self.theme.font_size.sm != theme.font_size.sm
+            || self.theme.font_size.md != theme.font_size.md
+            || self.theme.primary.base != theme.primary.base;
+        if !changed {
+            return;
+        }
+
+        let old_id = self.id.clone();
+        self.id = id;
+        self.code = code;
+        self.runs = runs;
+        self.theme = theme.clone();
+
+        if old_id != self.id {
+            let old_state = selectable_state_snapshot(&old_id);
+            with_selectable_state(&self.id, |state| *state = old_state);
+        }
+
+        with_selectable_state(&self.id, |state| {
+            state.selected_range.start = self.clamp_boundary(state.selected_range.start);
+            state.selected_range.end = self.clamp_boundary(state.selected_range.end);
+            if state.selected_range.end < state.selected_range.start {
+                state.selected_range = state.selected_range.end..state.selected_range.start;
+                state.selection_reversed = !state.selection_reversed;
+            }
+        });
+        cx.notify();
+    }
+
     fn move_to(&self, state: &mut SelectableCodeState, offset: usize, cx: &mut Context<Self>) {
         let offset = self.clamp_boundary(offset);
         state.selected_range = offset..offset;
@@ -1017,12 +1100,7 @@ impl SelectableCodeText {
         });
     }
 
-    fn on_mouse_move(
-        &mut self,
-        event: &MouseMoveEvent,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn on_mouse_move(&mut self, event: &MouseMoveEvent, cx: &mut Context<Self>) {
         with_selectable_state(&self.id, |state| {
             if state.selecting || event.pressed_button == Some(MouseButton::Left) {
                 self.select_to(state, self.index_for_point(event.position), cx);
@@ -1090,6 +1168,24 @@ impl SelectableCodeText {
 
     fn line_height(&self) -> Pixels {
         px(self.theme.font_size.md * 1.7)
+    }
+
+    fn content_width(&self, window: &mut Window) -> Pixels {
+        let mut max_width = px(1.0);
+        let mut offset = 0;
+        for line in code_lines(self.code.as_ref()) {
+            let line_len = line.len();
+            let line_runs = slice_runs(&self.runs, offset, offset + line_len);
+            let shaped = window.text_system().shape_line(
+                SharedString::from(line.to_string()),
+                self.font_size(),
+                &line_runs,
+                None,
+            );
+            max_width = max_width.max(shaped.width());
+            offset += line_len + 1;
+        }
+        max_width
     }
 }
 
@@ -1195,6 +1291,7 @@ struct SelectableCodeElement {
 struct SelectableCodePrepaint {
     lines: Vec<(ShapedLine, Pixels, usize)>,
     selection: Vec<PaintQuad>,
+    hitbox: gpui::Hitbox,
 }
 
 impl IntoElement for SelectableCodeElement {
@@ -1227,7 +1324,8 @@ impl Element for SelectableCodeElement {
         let input = self.input.read(cx);
         let line_count = code_lines(input.code.as_ref()).count().max(1) as f32;
         let mut style = Style::default();
-        style.size.width = gpui::relative(1.).into();
+        style.size.width = input.content_width(window).into();
+        style.min_size.width = relative(1.).into();
         style.size.height = (input.line_height() * line_count).into();
         (window.request_layout(style, [], cx), ())
     }
@@ -1281,9 +1379,12 @@ impl Element for SelectableCodeElement {
             offset += line_len + 1;
         }
 
+        let hitbox = window.insert_hitbox(bounds, gpui::HitboxBehavior::Normal);
+
         SelectableCodePrepaint {
             lines,
             selection: selection_quads,
+            hitbox,
         }
     }
 
@@ -1303,6 +1404,35 @@ impl Element for SelectableCodeElement {
             ElementInputHandler::new(bounds, self.input.clone()),
             cx,
         );
+        window.set_cursor_style(gpui::CursorStyle::IBeam, &prepaint.hitbox);
+
+        let input = self.input.clone();
+        let focus_handle_for_down = focus_handle.clone();
+        let hitbox = prepaint.hitbox.clone();
+        window.on_mouse_event(move |event: &MouseDownEvent, phase, window, cx| {
+            if phase.bubble() && event.button == MouseButton::Left && hitbox.is_hovered(window) {
+                window.capture_pointer(hitbox.id);
+                window.focus(&focus_handle_for_down, cx);
+                input.update(cx, |input, cx| input.on_mouse_down(event, window, cx));
+                cx.stop_propagation();
+            }
+        });
+
+        let input = self.input.clone();
+        let hitbox = prepaint.hitbox.clone();
+        window.on_mouse_event(move |event: &MouseMoveEvent, phase, window, cx| {
+            if phase.capture() && hitbox.is_hovered(window) {
+                input.update(cx, |input, cx| input.on_mouse_move(event, cx));
+            }
+        });
+
+        let input = self.input.clone();
+        let hitbox = prepaint.hitbox.clone();
+        window.on_mouse_event(move |event: &MouseUpEvent, phase, window, cx| {
+            if phase.capture() && event.button == MouseButton::Left && hitbox.is_hovered(window) {
+                input.update(cx, |input, cx| input.on_mouse_up(event, window, cx));
+            }
+        });
 
         for selection in prepaint.selection.drain(..) {
             window.paint_quad(selection);
@@ -1338,10 +1468,6 @@ impl Render for SelectableCodeText {
             .cursor_text()
             .on_action(cx.listener(Self::select_all))
             .on_action(cx.listener(Self::copy))
-            .on_mouse_down(MouseButton::Left, cx.listener(Self::on_mouse_down))
-            .on_mouse_move(cx.listener(Self::on_mouse_move))
-            .on_mouse_up(MouseButton::Left, cx.listener(Self::on_mouse_up))
-            .on_mouse_up_out(MouseButton::Left, cx.listener(Self::on_mouse_up))
             .child(SelectableCodeElement {
                 id: format!("{}-text", self.id).into(),
                 input: cx.entity(),
