@@ -9,32 +9,117 @@ use gpui::{
 };
 use pulldown_cmark::{CodeBlockKind, Event, HeadingLevel, Options, Parser, Tag, TagEnd};
 
-const INTRO_DOC: &str = r#"# Aura Docs
+const INTRO_DOC: &str = r###"# Aura Docs
 
-Aura Docs 是 Aura UI 的官方原生文档主程序。Markdown 只作为输入格式，最终结果全部映射为 GPUI 原生元素树。
+Aura Docs 是 Aura UI 的官方原生文档主程序。它不是网页文档站，也不是 WebView，而是一个运行在 GPUI 原生窗口里的 Rust 应用。
 
-## Native bootstrapping
+## 目标
 
-- 使用 `pulldown-cmark` 解析 Markdown 事件。
-- 使用 Aura `Paragraph` 和 `Text` 自举富文本渲染。
-- 使用原生 `Container` / `Menu` 构建双栏文档窗口。
+- 在原生窗口内展示 Aura UI 的设计理念、组件 API 和使用示例。
+- 使用 `pulldown-cmark` 只解析 Markdown AST/Event。
+- 把所有内容渲染为 Aura/GPUI 原生元素树。
+- 通过 Live Demo 把真实组件直接插入文档流。
 
-> 所有内容仍然运行在 GPUI 原生窗口内，不经过 HTML、CSS、DOM 或 WebView。
+> 绝对边界：不引入 HTML、CSS、DOM、WebAssembly、WebView 或跨端转译路径。
+
+## 当前文档能力
+
+- 标题、段落、列表、引用块、分割线。
+- 粗体、斜体、删除线、行内代码。
+- 代码块语言识别、语法高亮和复制。
+- `::AuraDemo{component="Button"}::` 活体组件注入。
+"###;
+
+const QUICK_START_DOC: &str = r###"# Quick Start
+
+Aura 是一个 Cargo workspace，组件库和官方应用都在同一个仓库中。
+
+## 常用命令
+
+```shell
+# 组件看板
+cargo run -p aura-gallery
+
+# 官方原生文档主程序
+cargo run -p aura-docs
+
+# 检查两个应用
+cargo check -p aura-gallery -p aura-docs
+```
+
+## 在应用中初始化 Aura
 
 ```rust
-Button::new("Primary")
-    .primary()
-    .on_click(|_, _, _| {
-        // Native GPUI interaction
+use aura_core::init_aura;
+use aura_theme::Theme;
+
+fn main() {
+    gpui_platform::application().run(|cx| {
+        init_aura(cx, Theme::light());
+        // open_window(...)
     });
+}
 ```
-"#;
 
-const TYPOGRAPHY_DOC: &str = r#"# Typography
+## 使用组件
 
-Aura Typography 现在可以把多个不同样式的文本片段合成为同一个 `StyledText` 流。
+```rust
+use aura_components::{Button, CodeBlock, Space, Title};
+
+Space::new()
+    .vertical()
+    .gap_lg()
+    .child(Title::new("Aura UI").h2())
+    .child(Button::new("Primary").primary())
+    .child(CodeBlock::new("cargo run -p aura-docs").shell());
+```
+"###;
+
+const ARCHITECTURE_DOC: &str = r###"# Native Architecture
+
+Aura Docs 的核心原则是“文档也是原生应用”。Markdown 只是输入格式，最终输出必须是 Aura/GPUI 节点。
+
+## Workspace 边界
+
+- `crates/aura-components`：所有可复用 UI 组件。
+- `apps/aura-gallery`：组件看板，用于展示组件交互效果。
+- `apps/aura-docs`：官方文档主程序，负责 Markdown 文档渲染和活体组件注入。
+
+## 文档渲染流水线
+
+1. `pulldown-cmark` 读取 Markdown 文本并产生事件。
+2. Renderer 使用 `Vec` 栈管理块级结构。
+3. Inline 样式通过上下文状态记录。
+4. 文本片段交给 `Paragraph` / `Text` 渲染为 `StyledText`。
+5. 代码块交给 `CodeBlock` 组件。
+6. Live Demo 标记转换为真实 Aura 组件。
+
+```rust
+pub fn render_markdown(md_text: &str) -> gpui::AnyElement {
+    Component::new(MarkdownDocument::parse(md_text)).into_any_element()
+}
+```
+
+## 为什么不使用 Web 文档站
+
+- Aura 的目标运行时是 GPUI 原生窗口。
+- 文档系统必须反向验证组件库自己的排版、滚动、文本和交互能力。
+- Live Demo 必须是真实组件，而不是截图、iframe 或转译产物。
+"###;
+
+const TYPOGRAPHY_DOC: &str = r###"# Typography
+
+Aura Typography 可以把多个不同样式的文本片段合成为同一个 `StyledText` 流。
 
 这意味着 **strong**、*emphasis*、~~strike~~ 和 `inline code` 可以在同一段落内自动折行，而不是拆成多个独立块。
+
+## Text
+
+`Text` 用于描述一段文字及其样式：颜色、背景、字号、字重、斜体、下划线、删除线和等宽字体。
+
+## Paragraph
+
+`Paragraph` 接收一个或多个 `Text` 片段，并把它们拼接为单个 GPUI `StyledText`。
 
 ```rust
 Paragraph::new()
@@ -42,20 +127,150 @@ Paragraph::new()
     .child(Text::new("Bold").bold())
     .child(Text::new(" code ").code_style(theme));
 ```
-"#;
 
-const COMPONENT_DOC: &str = r#"# Component docs
+## 自举意义
 
-Phase 4 支持类似 `::AuraDemo{component="Button"}::` 的活体组件注入语法。
+文档渲染不实现独立排版引擎，而是依赖 Aura 自己的 Typography 组件。这样文档能力和组件库能力会同步成长。
+"###;
+
+const CODE_BLOCK_DOC: &str = r###"# CodeBlock
+
+`CodeBlock` 是 Aura 的原生代码显示控件，用于展示代码片段、语言标签和复制按钮。
+
+## 能力
+
+- 块级代码显示。
+- 行内代码显示。
+- 语言标识：Rust、TOML、JSON、Markdown、Shell、TypeScript、JavaScript。
+- 轻量原生语法高亮。
+- 复制按钮：使用 GPUI clipboard API。
+- 横向滚动：长代码不会撑破布局。
+
+## 基础用法
+
+```rust
+CodeBlock::new("cargo run -p aura-docs")
+    .shell()
+    .copyable(true);
+```
+
+## 指定语言
+
+```rust
+CodeBlock::new(r#"fn main() { println!(\"Aura\"); }"#)
+    .language("rust");
+```
+
+## 行内格式
+
+```rust
+CodeBlock::new("cargo check")
+    .shell()
+    .inline();
+```
+
+## 设计说明
+
+CodeBlock 不依赖外部 Web 高亮器。它使用 GPUI `StyledText` 和 `TextRun` 生成原生样式片段，确保代码显示仍然属于组件库能力。
+"###;
+
+const MARKDOWN_DOC: &str = r###"# Markdown Renderer
+
+Aura Docs 的 Markdown renderer 是一个栈式状态机。
+
+## 块级元素
+
+- Heading
+- Paragraph
+- BlockQuote
+- List / Item
+- CodeBlock
+- Rule
+
+## 内联元素
+
+- Strong
+- Emphasis
+- Strikethrough
+- Inline code
+
+## 状态机核心
+
+```rust
+match event {
+    Event::Start(tag) => state.start_tag(tag),
+    Event::End(tag) => state.end_tag(tag),
+    Event::Text(text) => state.push_text_with_live_demos(text.as_ref(), style),
+    Event::Code(text) => state.push_inline_code(text.as_ref()),
+    Event::Rule => state.push_block(Block::Rule),
+    _ => {}
+}
+```
+
+## 当前边界
+
+Markdown 表格、图片、链接跳转等能力还未作为交互控件完整实现。它们应该继续以 Aura 原生组件方式补齐，而不是引入浏览器能力。
+"###;
+
+const LIVE_DEMO_DOC: &str = r###"# Live Demo
+
+Live Demo 是 Aura Docs 区别于静态 Markdown 文档的核心能力。
+
+当 renderer 识别到特殊语法时，不渲染为普通文字，而是创建真实 Aura 组件节点。
+
+```text
+::AuraDemo{component="Button"}::
+```
 
 下面的按钮不是截图或文本，而是真实的 Aura `Button` 节点：
 
 ::AuraDemo{component="Button"}::
 
-1. 左侧使用 Aura `Menu`。
-2. 右侧使用 Markdown renderer。
-3. 文档内容保持原生可组合元素。
-"#;
+## 为什么这样设计
+
+- 文档示例和组件实现不会分叉。
+- Hover、click、focus 等交互保留真实行为。
+- 文档本身成为组件库的集成测试面。
+
+## 后续扩展方向
+
+- 支持更多组件：`CodeBlock`、`Input`、`Switch`、`Table`。
+- 支持 demo 参数：variant、size、disabled、loading。
+- 支持 demo 容器：示例区、源码区、说明区。
+"###;
+
+const COMPONENT_DOC: &str = r###"# Component Authoring
+
+新增组件时，应先把可复用能力放进 `crates/aura-components`，再在 Gallery 和 Docs 中使用。
+
+## 推荐流程
+
+1. 在 `crates/aura-components/src/<name>.rs` 实现组件。
+2. 在 `crates/aura-components/src/lib.rs` 中 `pub mod` 和 `pub use`。
+3. 在 `apps/aura-gallery/src/demos/` 添加交互 demo。
+4. 如该组件服务文档系统，在 `apps/aura-docs` 中复用它。
+5. 添加最小回归测试。
+
+## 示例：CodeBlock
+
+`CodeBlock` 先进入组件库，然后 Aura Docs 的 fenced code block 渲染改为复用该组件。
+
+```rust
+fn render_code_block(language: Option<SharedString>, code: SharedString) -> AnyElement {
+    let mut code_block = CodeBlock::new(code);
+    if let Some(language) = language {
+        code_block = code_block.language(language.as_ref());
+    }
+    code_block.into_any_element()
+}
+```
+
+## 约束
+
+- Demo 不能绕过组件库重新实现同类 UI。
+- Docs 不能维护一套 app-local 组件替代库。
+- 公共组件命名遵循当前 ADR：不加 `Aura` 前缀。
+"###;
 
 pub struct DocPage {
     pub title: &'static str,
@@ -68,11 +283,31 @@ const DOC_PAGES: &[DocPage] = &[
         markdown: INTRO_DOC,
     },
     DocPage {
+        title: "Quick Start",
+        markdown: QUICK_START_DOC,
+    },
+    DocPage {
+        title: "Architecture",
+        markdown: ARCHITECTURE_DOC,
+    },
+    DocPage {
         title: "Typography",
         markdown: TYPOGRAPHY_DOC,
     },
     DocPage {
-        title: "Components",
+        title: "CodeBlock",
+        markdown: CODE_BLOCK_DOC,
+    },
+    DocPage {
+        title: "Markdown",
+        markdown: MARKDOWN_DOC,
+    },
+    DocPage {
+        title: "Live Demo",
+        markdown: LIVE_DEMO_DOC,
+    },
+    DocPage {
+        title: "Authoring",
         markdown: COMPONENT_DOC,
     },
 ];
@@ -729,6 +964,18 @@ impl InlineSegment {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn docs_shell_registers_core_documentation_pages() {
+        let titles = DOC_PAGES.iter().map(|page| page.title).collect::<Vec<_>>();
+
+        assert!(titles.contains(&"Quick Start"));
+        assert!(titles.contains(&"Architecture"));
+        assert!(titles.contains(&"CodeBlock"));
+        assert!(titles.contains(&"Live Demo"));
+        assert!(titles.contains(&"Authoring"));
+        assert!(DOC_PAGES.len() >= 8);
+    }
 
     #[test]
     fn render_markdown_entrypoint_returns_native_element() {

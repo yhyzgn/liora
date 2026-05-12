@@ -2982,3 +2982,16 @@
 - `cargo test -p aura-gallery code_block_demo_uses_component_api` passed.
 - `timeout 8s cargo run -p aura-gallery` started successfully and was stopped by timeout.
 - `timeout 8s cargo run -p aura-docs` started successfully and was stopped by timeout.
+
+## Session 87 — 2026-05-12 (Aura Docs Content Expansion)
+
+### Actions
+- Expanded `aura-docs` from three placeholder pages to a fuller native documentation set: Overview, Quick Start, Architecture, Typography, CodeBlock, Markdown, Live Demo, and Authoring.
+- Added runnable command snippets, component examples, Markdown renderer architecture notes, and CodeBlock API docs.
+- Added a regression test that verifies the core documentation pages are registered in the docs navigation.
+
+### Verification
+- `cargo test -p aura-docs markdown -- --nocapture` passed during implementation.
+- `cargo check -p aura-docs` passed during implementation.
+- `cargo check -p aura-gallery` passed.
+- `timeout 8s cargo run -p aura-docs` started successfully and was stopped by timeout.
