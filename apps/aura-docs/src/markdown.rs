@@ -5,38 +5,83 @@ use aura_components::{
 use aura_core::{Config, PassivePortal, Portal};
 use aura_icons_lucide::IconName;
 use gpui::{
-    AnyElement, App, Component, Context, Entity, IntoElement, Render, RenderOnce, SharedString,
-    WeakEntity, Window, div, prelude::*, px,
+    AnyElement, AnyView, App, Component, Context, Entity, IntoElement, Render, RenderOnce,
+    SharedString, WeakEntity, Window, div, prelude::*, px,
 };
 use pulldown_cmark::{CodeBlockKind, Event, HeadingLevel, Options, Parser, Tag, TagEnd};
 
 const INTRO_DOC: &str = include_str!("../content/pages/overview.md");
-
 const QUICK_START_DOC: &str = include_str!("../content/pages/quick_start.md");
-
 const ARCHITECTURE_DOC: &str = include_str!("../content/pages/architecture.md");
 
-const TYPOGRAPHY_DOC: &str = include_str!("../content/pages/typography.md");
-
+const AFFIX_DOC: &str = include_str!("../content/pages/affix.md");
+const ALERT_DOC: &str = include_str!("../content/pages/alert.md");
+const ANCHOR_DOC: &str = include_str!("../content/pages/anchor.md");
+const AUTOCOMPLETE_DOC: &str = include_str!("../content/pages/autocomplete.md");
+const AVATAR_DOC: &str = include_str!("../content/pages/avatar.md");
+const BACKTOP_DOC: &str = include_str!("../content/pages/backtop.md");
+const BADGE_DOC: &str = include_str!("../content/pages/badge.md");
+const BREADCRUMB_DOC: &str = include_str!("../content/pages/breadcrumb.md");
 const BUTTON_DOC: &str = include_str!("../content/pages/button.md");
-
+const CARD_DOC: &str = include_str!("../content/pages/card.md");
+const CASCADER_DOC: &str = include_str!("../content/pages/cascader.md");
+const CHECKBOX_DOC: &str = include_str!("../content/pages/checkbox.md");
 const CODE_BLOCK_DOC: &str = include_str!("../content/pages/code_block.md");
-
+const COLLAPSE_DOC: &str = include_str!("../content/pages/collapse.md");
+const COLOR_PICKER_DOC: &str = include_str!("../content/pages/color_picker.md");
+const CONTAINER_DOC: &str = include_str!("../content/pages/container.md");
+const DATE_PICKER_DOC: &str = include_str!("../content/pages/date_picker.md");
+const DATE_TIME_PICKER_DOC: &str = include_str!("../content/pages/date_time_picker.md");
+const DESCRIPTIONS_DOC: &str = include_str!("../content/pages/descriptions.md");
+const DIALOG_DOC: &str = include_str!("../content/pages/dialog.md");
+const DRAWER_DOC: &str = include_str!("../content/pages/drawer.md");
+const DROPDOWN_DOC: &str = include_str!("../content/pages/dropdown.md");
+const EMPTY_DOC: &str = include_str!("../content/pages/empty.md");
+const FORM_DOC: &str = include_str!("../content/pages/form.md");
+const ICON_DOC: &str = include_str!("../content/pages/icon.md");
+const IMAGE_DOC: &str = include_str!("../content/pages/image.md");
 const INPUT_DOC: &str = include_str!("../content/pages/input.md");
-
-const SWITCH_DOC: &str = include_str!("../content/pages/switch.md");
-
+const INPUT_NUMBER_DOC: &str = include_str!("../content/pages/input_number.md");
+const LAYOUT_DOC: &str = include_str!("../content/pages/layout.md");
+const LINK_DOC: &str = include_str!("../content/pages/link.md");
+const LOADING_DOC: &str = include_str!("../content/pages/loading.md");
+const MENU_DOC: &str = include_str!("../content/pages/menu.md");
 const MESSAGE_DOC: &str = include_str!("../content/pages/message.md");
+const MESSAGE_BOX_DOC: &str = include_str!("../content/pages/message_box.md");
+const NOTIFICATION_DOC: &str = include_str!("../content/pages/notification.md");
+const PAGE_HEADER_DOC: &str = include_str!("../content/pages/page_header.md");
+const PAGINATION_DOC: &str = include_str!("../content/pages/pagination.md");
+const POPCONFIRM_DOC: &str = include_str!("../content/pages/popconfirm.md");
+const POPOVER_DOC: &str = include_str!("../content/pages/popover.md");
+const PREVIEW_DOC: &str = include_str!("../content/pages/preview.md");
+const PROGRESS_DOC: &str = include_str!("../content/pages/progress.md");
+const RADIO_DOC: &str = include_str!("../content/pages/radio.md");
+const RATE_DOC: &str = include_str!("../content/pages/rate.md");
+const RESULT_DOC: &str = include_str!("../content/pages/result.md");
+const SCROLLBAR_DOC: &str = include_str!("../content/pages/scrollbar.md");
+const SEGMENTED_DOC: &str = include_str!("../content/pages/segmented.md");
+const SELECT_DOC: &str = include_str!("../content/pages/select.md");
+const SKELETON_DOC: &str = include_str!("../content/pages/skeleton.md");
+const SLIDER_DOC: &str = include_str!("../content/pages/slider.md");
+const SPLITTER_DOC: &str = include_str!("../content/pages/splitter.md");
+const STATISTIC_DOC: &str = include_str!("../content/pages/statistic.md");
+const STEPS_DOC: &str = include_str!("../content/pages/steps.md");
+const SWITCH_DOC: &str = include_str!("../content/pages/switch.md");
+const TABLE_DOC: &str = include_str!("../content/pages/table.md");
+const TABS_DOC: &str = include_str!("../content/pages/tabs.md");
+const TAG_DOC: &str = include_str!("../content/pages/tag.md");
+const TEXTAREA_DOC: &str = include_str!("../content/pages/textarea.md");
+const TIME_PICKER_DOC: &str = include_str!("../content/pages/time_picker.md");
+const TIMELINE_DOC: &str = include_str!("../content/pages/timeline.md");
+const TOOLTIP_DOC: &str = include_str!("../content/pages/tooltip.md");
+const TRANSFER_DOC: &str = include_str!("../content/pages/transfer.md");
+const TREE_DOC: &str = include_str!("../content/pages/tree.md");
+const TYPOGRAPHY_DOC: &str = include_str!("../content/pages/typography.md");
+const UPLOAD_DOC: &str = include_str!("../content/pages/upload.md");
+
 const MARKDOWN_DOC: &str = include_str!("../content/pages/markdown.md");
-
 const LIVE_DEMO_DOC: &str = include_str!("../content/pages/live_demo.md");
-
 const COMPONENT_DOC: &str = include_str!("../content/pages/authoring.md");
-
-pub struct DocPage {
-    pub title: &'static str,
-    pub markdown: &'static str,
-}
 
 const DOC_PAGES: &[DocPage] = &[
     DocPage {
@@ -52,28 +97,260 @@ const DOC_PAGES: &[DocPage] = &[
         markdown: ARCHITECTURE_DOC,
     },
     DocPage {
-        title: "Typography",
-        markdown: TYPOGRAPHY_DOC,
+        title: "Affix",
+        markdown: AFFIX_DOC,
+    },
+    DocPage {
+        title: "Alert",
+        markdown: ALERT_DOC,
+    },
+    DocPage {
+        title: "Anchor",
+        markdown: ANCHOR_DOC,
+    },
+    DocPage {
+        title: "Autocomplete",
+        markdown: AUTOCOMPLETE_DOC,
+    },
+    DocPage {
+        title: "Avatar",
+        markdown: AVATAR_DOC,
+    },
+    DocPage {
+        title: "Backtop",
+        markdown: BACKTOP_DOC,
+    },
+    DocPage {
+        title: "Badge",
+        markdown: BADGE_DOC,
+    },
+    DocPage {
+        title: "Breadcrumb",
+        markdown: BREADCRUMB_DOC,
     },
     DocPage {
         title: "Button",
         markdown: BUTTON_DOC,
     },
     DocPage {
+        title: "Card",
+        markdown: CARD_DOC,
+    },
+    DocPage {
+        title: "Cascader",
+        markdown: CASCADER_DOC,
+    },
+    DocPage {
+        title: "Checkbox",
+        markdown: CHECKBOX_DOC,
+    },
+    DocPage {
         title: "CodeBlock",
         markdown: CODE_BLOCK_DOC,
+    },
+    DocPage {
+        title: "Collapse",
+        markdown: COLLAPSE_DOC,
+    },
+    DocPage {
+        title: "ColorPicker",
+        markdown: COLOR_PICKER_DOC,
+    },
+    DocPage {
+        title: "Container",
+        markdown: CONTAINER_DOC,
+    },
+    DocPage {
+        title: "DatePicker",
+        markdown: DATE_PICKER_DOC,
+    },
+    DocPage {
+        title: "DateTimePicker",
+        markdown: DATE_TIME_PICKER_DOC,
+    },
+    DocPage {
+        title: "Descriptions",
+        markdown: DESCRIPTIONS_DOC,
+    },
+    DocPage {
+        title: "Dialog",
+        markdown: DIALOG_DOC,
+    },
+    DocPage {
+        title: "Drawer",
+        markdown: DRAWER_DOC,
+    },
+    DocPage {
+        title: "Dropdown",
+        markdown: DROPDOWN_DOC,
+    },
+    DocPage {
+        title: "Empty",
+        markdown: EMPTY_DOC,
+    },
+    DocPage {
+        title: "Form",
+        markdown: FORM_DOC,
+    },
+    DocPage {
+        title: "Icon",
+        markdown: ICON_DOC,
+    },
+    DocPage {
+        title: "Image",
+        markdown: IMAGE_DOC,
     },
     DocPage {
         title: "Input",
         markdown: INPUT_DOC,
     },
     DocPage {
-        title: "Switch",
-        markdown: SWITCH_DOC,
+        title: "InputNumber",
+        markdown: INPUT_NUMBER_DOC,
+    },
+    DocPage {
+        title: "Layout",
+        markdown: LAYOUT_DOC,
+    },
+    DocPage {
+        title: "Link",
+        markdown: LINK_DOC,
+    },
+    DocPage {
+        title: "Loading",
+        markdown: LOADING_DOC,
+    },
+    DocPage {
+        title: "Menu",
+        markdown: MENU_DOC,
     },
     DocPage {
         title: "Message",
         markdown: MESSAGE_DOC,
+    },
+    DocPage {
+        title: "MessageBox",
+        markdown: MESSAGE_BOX_DOC,
+    },
+    DocPage {
+        title: "Notification",
+        markdown: NOTIFICATION_DOC,
+    },
+    DocPage {
+        title: "PageHeader",
+        markdown: PAGE_HEADER_DOC,
+    },
+    DocPage {
+        title: "Pagination",
+        markdown: PAGINATION_DOC,
+    },
+    DocPage {
+        title: "Popconfirm",
+        markdown: POPCONFIRM_DOC,
+    },
+    DocPage {
+        title: "Popover",
+        markdown: POPOVER_DOC,
+    },
+    DocPage {
+        title: "Preview",
+        markdown: PREVIEW_DOC,
+    },
+    DocPage {
+        title: "Progress",
+        markdown: PROGRESS_DOC,
+    },
+    DocPage {
+        title: "Radio",
+        markdown: RADIO_DOC,
+    },
+    DocPage {
+        title: "Rate",
+        markdown: RATE_DOC,
+    },
+    DocPage {
+        title: "Result",
+        markdown: RESULT_DOC,
+    },
+    DocPage {
+        title: "Scrollbar",
+        markdown: SCROLLBAR_DOC,
+    },
+    DocPage {
+        title: "Segmented",
+        markdown: SEGMENTED_DOC,
+    },
+    DocPage {
+        title: "Select",
+        markdown: SELECT_DOC,
+    },
+    DocPage {
+        title: "Skeleton",
+        markdown: SKELETON_DOC,
+    },
+    DocPage {
+        title: "Slider",
+        markdown: SLIDER_DOC,
+    },
+    DocPage {
+        title: "Splitter",
+        markdown: SPLITTER_DOC,
+    },
+    DocPage {
+        title: "Statistic",
+        markdown: STATISTIC_DOC,
+    },
+    DocPage {
+        title: "Steps",
+        markdown: STEPS_DOC,
+    },
+    DocPage {
+        title: "Switch",
+        markdown: SWITCH_DOC,
+    },
+    DocPage {
+        title: "Table",
+        markdown: TABLE_DOC,
+    },
+    DocPage {
+        title: "Tabs",
+        markdown: TABS_DOC,
+    },
+    DocPage {
+        title: "Tag",
+        markdown: TAG_DOC,
+    },
+    DocPage {
+        title: "Textarea",
+        markdown: TEXTAREA_DOC,
+    },
+    DocPage {
+        title: "TimePicker",
+        markdown: TIME_PICKER_DOC,
+    },
+    DocPage {
+        title: "Timeline",
+        markdown: TIMELINE_DOC,
+    },
+    DocPage {
+        title: "Tooltip",
+        markdown: TOOLTIP_DOC,
+    },
+    DocPage {
+        title: "Transfer",
+        markdown: TRANSFER_DOC,
+    },
+    DocPage {
+        title: "Tree",
+        markdown: TREE_DOC,
+    },
+    DocPage {
+        title: "Typography",
+        markdown: TYPOGRAPHY_DOC,
+    },
+    DocPage {
+        title: "Upload",
+        markdown: UPLOAD_DOC,
     },
     DocPage {
         title: "Markdown",
@@ -88,6 +365,11 @@ const DOC_PAGES: &[DocPage] = &[
         markdown: COMPONENT_DOC,
     },
 ];
+
+pub struct DocPage {
+    pub title: &'static str,
+    pub markdown: &'static str,
+}
 
 #[allow(dead_code)]
 pub fn render_markdown(md_text: &str) -> AnyElement {
@@ -559,6 +841,144 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "authoring/code_block.rs" => {
             Some(include_str!("../content/snippets/authoring/code_block.rs"))
         }
+        "gallery/affix_demo.rs" => Some(include_str!("../../aura-gallery/src/demos/affix_demo.rs")),
+        "gallery/alert_demo.rs" => Some(include_str!("../../aura-gallery/src/demos/alert_demo.rs")),
+        "gallery/anchor_demo.rs" => {
+            Some(include_str!("../../aura-gallery/src/demos/anchor_demo.rs"))
+        }
+        "gallery/autocomplete_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/autocomplete_demo.rs"
+        )),
+        "gallery/avatar_demo.rs" => {
+            Some(include_str!("../../aura-gallery/src/demos/avatar_demo.rs"))
+        }
+        "gallery/backtop_demo.rs" => {
+            Some(include_str!("../../aura-gallery/src/demos/backtop_demo.rs"))
+        }
+        "gallery/badge_demo.rs" => Some(include_str!("../../aura-gallery/src/demos/badge_demo.rs")),
+        "gallery/breadcrumb_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/breadcrumb_demo.rs"
+        )),
+        "gallery/button_demo.rs" => {
+            Some(include_str!("../../aura-gallery/src/demos/button_demo.rs"))
+        }
+        "gallery/card_demo.rs" => Some(include_str!("../../aura-gallery/src/demos/card_demo.rs")),
+        "gallery/cascader_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/cascader_demo.rs"
+        )),
+        "gallery/code_block_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/code_block_demo.rs"
+        )),
+        "gallery/collapse_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/collapse_demo.rs"
+        )),
+        "gallery/color_picker_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/color_picker_demo.rs"
+        )),
+        "gallery/container_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/container_demo.rs"
+        )),
+        "gallery/date_picker_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/date_picker_demo.rs"
+        )),
+        "gallery/date_time_picker_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/date_time_picker_demo.rs"
+        )),
+        "gallery/descriptions_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/descriptions_demo.rs"
+        )),
+        "gallery/dialog_demo.rs" => {
+            Some(include_str!("../../aura-gallery/src/demos/dialog_demo.rs"))
+        }
+        "gallery/drawer_demo.rs" => {
+            Some(include_str!("../../aura-gallery/src/demos/drawer_demo.rs"))
+        }
+        "gallery/dropdown_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/dropdown_demo.rs"
+        )),
+        "gallery/empty_demo.rs" => Some(include_str!("../../aura-gallery/src/demos/empty_demo.rs")),
+        "gallery/form_controls_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/form_controls_demo.rs"
+        )),
+        "gallery/form_demo.rs" => Some(include_str!("../../aura-gallery/src/demos/form_demo.rs")),
+        "gallery/icon_demo.rs" => Some(include_str!("../../aura-gallery/src/demos/icon_demo.rs")),
+        "gallery/image_demo.rs" => Some(include_str!("../../aura-gallery/src/demos/image_demo.rs")),
+        "gallery/layout_demo.rs" => {
+            Some(include_str!("../../aura-gallery/src/demos/layout_demo.rs"))
+        }
+        "gallery/link_demo.rs" => Some(include_str!("../../aura-gallery/src/demos/link_demo.rs")),
+        "gallery/loading_demo.rs" => {
+            Some(include_str!("../../aura-gallery/src/demos/loading_demo.rs"))
+        }
+        "gallery/menu_demo.rs" => Some(include_str!("../../aura-gallery/src/demos/menu_demo.rs")),
+        "gallery/message_box_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/message_box_demo.rs"
+        )),
+        "gallery/message_demo.rs" => {
+            Some(include_str!("../../aura-gallery/src/demos/message_demo.rs"))
+        }
+        "gallery/notification_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/notification_demo.rs"
+        )),
+        "gallery/page_header_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/page_header_demo.rs"
+        )),
+        "gallery/pagination_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/pagination_demo.rs"
+        )),
+        "gallery/popconfirm_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/popconfirm_demo.rs"
+        )),
+        "gallery/popover_demo.rs" => {
+            Some(include_str!("../../aura-gallery/src/demos/popover_demo.rs"))
+        }
+        "gallery/preview_demo.rs" => {
+            Some(include_str!("../../aura-gallery/src/demos/preview_demo.rs"))
+        }
+        "gallery/progress_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/progress_demo.rs"
+        )),
+        "gallery/result_demo.rs" => {
+            Some(include_str!("../../aura-gallery/src/demos/result_demo.rs"))
+        }
+        "gallery/scrollbar_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/scrollbar_demo.rs"
+        )),
+        "gallery/segmented_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/segmented_demo.rs"
+        )),
+        "gallery/skeleton_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/skeleton_demo.rs"
+        )),
+        "gallery/splitter_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/splitter_demo.rs"
+        )),
+        "gallery/statistic_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/statistic_demo.rs"
+        )),
+        "gallery/steps_demo.rs" => Some(include_str!("../../aura-gallery/src/demos/steps_demo.rs")),
+        "gallery/table_demo.rs" => Some(include_str!("../../aura-gallery/src/demos/table_demo.rs")),
+        "gallery/tabs_demo.rs" => Some(include_str!("../../aura-gallery/src/demos/tabs_demo.rs")),
+        "gallery/tag_demo.rs" => Some(include_str!("../../aura-gallery/src/demos/tag_demo.rs")),
+        "gallery/time_picker_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/time_picker_demo.rs"
+        )),
+        "gallery/timeline_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/timeline_demo.rs"
+        )),
+        "gallery/tooltip_demo.rs" => {
+            Some(include_str!("../../aura-gallery/src/demos/tooltip_demo.rs"))
+        }
+        "gallery/transfer_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/transfer_demo.rs"
+        )),
+        "gallery/tree_demo.rs" => Some(include_str!("../../aura-gallery/src/demos/tree_demo.rs")),
+        "gallery/typography_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/typography_demo.rs"
+        )),
+        "gallery/upload_demo.rs" => {
+            Some(include_str!("../../aura-gallery/src/demos/upload_demo.rs"))
+        }
         _ => None,
     }
 }
@@ -658,12 +1078,14 @@ impl Render for LiveDemoHost {
 
 struct LiveDemoContent {
     component: SharedString,
+    gallery_demo: Option<AnyView>,
     inputs: Vec<Entity<Input>>,
     switches: Vec<Entity<Switch>>,
 }
 
 impl LiveDemoContent {
     fn new(component: SharedString, cx: &mut Context<Self>) -> Self {
+        let gallery_demo = aura_gallery::demos::render_doc_demo(component.as_ref(), cx);
         let mut inputs = Vec::new();
         let mut switches = Vec::new();
 
@@ -713,6 +1135,7 @@ impl LiveDemoContent {
 
         Self {
             component,
+            gallery_demo,
             inputs,
             switches,
         }
@@ -846,11 +1269,16 @@ impl Render for LiveDemoContent {
                     })
                     .into_any_element(),
             ]),
-            _ => Paragraph::with_text(format!(
-                "Unsupported Aura demo component: {}",
-                self.component.as_ref()
-            ))
-            .into_any_element(),
+            _ => self.gallery_demo.clone().map_or_else(
+                || {
+                    Paragraph::with_text(format!(
+                        "Unsupported Aura demo component: {}",
+                        self.component.as_ref()
+                    ))
+                    .into_any_element()
+                },
+                |demo| demo.into_any_element(),
+            ),
         }
     }
 }
@@ -1025,22 +1453,17 @@ fn render_paragraph(segments: Vec<InlineSegment>, theme: &aura_theme::Theme) -> 
 }
 
 pub fn render_docs_shell(cx: &mut App) -> Entity<DocsShell> {
-    let page_views = DOC_PAGES
-        .iter()
-        .map(|page| cx.new(|cx| DocsPageView::new(page.markdown, cx)))
-        .collect();
-
     cx.new(|_| DocsShell {
         selected: 0,
         nav_menu: None,
-        page_views,
+        page_views: vec![None; DOC_PAGES.len()],
     })
 }
 
 pub struct DocsShell {
     selected: usize,
     nav_menu: Option<Entity<Menu>>,
-    page_views: Vec<Entity<DocsPageView>>,
+    page_views: Vec<Option<Entity<DocsPageView>>>,
 }
 
 impl Render for DocsShell {
@@ -1050,7 +1473,7 @@ impl Render for DocsShell {
 
         let nav_menu = self.nav_menu(selected, cx);
         let page = &DOC_PAGES[selected];
-        let page_view = self.page_views[selected].clone();
+        let page_view = self.page_view(selected, cx);
 
         Container::new()
             .header(
@@ -1133,6 +1556,12 @@ impl IntoElement for DocsPortalLayer {
 impl RenderOnce for DocsPortalLayer {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         aura_components::message::render_messages(cx);
+        aura_components::notification::render_notifications(cx);
+        aura_components::image::render_image_preview(window, cx);
+        aura_core::render_active_tooltip_in_window(window, cx);
+        aura_core::render_active_popover_in_window(window, cx);
+        aura_core::render_active_modal_in_window(window, cx);
+        aura_core::render_active_drawer_in_window(window, cx);
 
         let passive_portals = if cx.has_global::<PassivePortal>() {
             std::mem::take(&mut cx.global_mut::<PassivePortal>().entries)
@@ -1192,6 +1621,18 @@ impl RenderOnce for DocsPortalLayer {
 }
 
 impl DocsShell {
+    fn page_view(&mut self, selected: usize, cx: &mut Context<Self>) -> Entity<DocsPageView> {
+        if let Some(page_view) = self.page_views.get(selected).and_then(Clone::clone) {
+            return page_view;
+        }
+
+        let page_view = cx.new(|cx| DocsPageView::new(DOC_PAGES[selected].markdown, cx));
+        if let Some(slot) = self.page_views.get_mut(selected) {
+            *slot = Some(page_view.clone());
+        }
+        page_view
+    }
+
     fn nav_menu(&mut self, selected: usize, cx: &mut Context<Self>) -> Entity<Menu> {
         if let Some(nav_menu) = &self.nav_menu {
             return nav_menu.clone();
@@ -1324,6 +1765,31 @@ mod tests {
         assert!(titles.contains(&"Live Demo"));
         assert!(titles.contains(&"Authoring"));
         assert!(DOC_PAGES.len() >= 8);
+    }
+
+    #[test]
+    fn component_docs_cover_gallery_registry_order() {
+        let docs_titles = DOC_PAGES.iter().map(|page| page.title).collect::<Vec<_>>();
+        let gallery_keys = aura_gallery::demos::registry()
+            .into_iter()
+            .map(|entry| entry.name.split_whitespace().next().unwrap())
+            .collect::<Vec<_>>();
+
+        let gallery_source = include_str!("../../aura-gallery/src/demos/mod.rs");
+        for key in &gallery_keys {
+            assert!(docs_titles.contains(key), "missing docs page for {key}");
+            assert!(
+                gallery_source.contains(&format!("\"{key}\" => Some(")),
+                "missing reusable gallery demo for {key}"
+            );
+        }
+
+        let docs_component_order = docs_titles
+            .iter()
+            .filter(|title| gallery_keys.contains(title))
+            .copied()
+            .collect::<Vec<_>>();
+        assert_eq!(docs_component_order, gallery_keys);
     }
 
     #[test]

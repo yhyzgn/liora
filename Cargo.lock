@@ -456,6 +456,7 @@ version = "0.1.0"
 dependencies = [
  "aura-components",
  "aura-core",
+ "aura-gallery",
  "aura-icons-lucide",
  "aura-theme",
  "gpui",

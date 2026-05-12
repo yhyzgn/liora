@@ -1,11 +1,9 @@
-mod category;
-mod demos;
-
 use aura_components::{
     Card, Checkbox, CodeBlock, Container, Dialog, Drawer, Input, Menu, MenuMode, MessageManager,
     Paragraph, Preview, Radio, RadioGroup, Space, Switch, Text, Title,
 };
 use aura_core::{PassivePortal, Portal, init_aura};
+use aura_gallery::demos;
 use aura_theme::Theme;
 use gpui::{
     AnyView, App, Bounds, Component, Context, Render, WeakEntity, Window, WindowBounds,
