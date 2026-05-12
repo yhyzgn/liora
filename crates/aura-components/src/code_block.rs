@@ -826,16 +826,53 @@ fn code_accent(theme: &aura_theme::Theme, code_theme: ResolvedCodeTheme) -> Hsla
     }
 }
 
+#[derive(Clone)]
+struct SelectableCodeState {
+    selected_range: Range<usize>,
+    selection_reversed: bool,
+    selecting: bool,
+}
+
+impl Default for SelectableCodeState {
+    fn default() -> Self {
+        Self {
+            selected_range: 0..0,
+            selection_reversed: false,
+            selecting: false,
+        }
+    }
+}
+
+fn selectable_state_map() -> &'static Mutex<HashMap<String, SelectableCodeState>> {
+    static STATES: OnceLock<Mutex<HashMap<String, SelectableCodeState>>> = OnceLock::new();
+    STATES.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn selectable_key(id: &ElementId) -> String {
+    id.to_string()
+}
+
+fn with_selectable_state(id: &ElementId, f: impl FnOnce(&mut SelectableCodeState)) {
+    let mut states = selectable_state_map()
+        .lock()
+        .expect("selectable code state lock poisoned");
+    f(states.entry(selectable_key(id)).or_default());
+}
+
+fn selectable_state_snapshot(id: &ElementId) -> SelectableCodeState {
+    selectable_state_map()
+        .lock()
+        .expect("selectable code state lock poisoned")
+        .get(&selectable_key(id))
+        .cloned()
+        .unwrap_or_default()
+}
+
 struct SelectableCodeText {
     id: ElementId,
     focus_handle: FocusHandle,
     code: SharedString,
     runs: Vec<TextRun>,
-    selected_range: Range<usize>,
-    selection_reversed: bool,
-    selecting: bool,
-    pending_anchor: Option<usize>,
-    pending_focus: bool,
     last_lines: Vec<(ShapedLine, Pixels, usize)>,
     last_bounds: Option<Bounds<Pixels>>,
     theme: aura_theme::Theme,
@@ -855,34 +892,29 @@ impl SelectableCodeText {
             focus_handle: cx.focus_handle(),
             code,
             runs,
-            selected_range: 0..0,
-            selection_reversed: false,
-            selecting: false,
-            pending_anchor: None,
-            pending_focus: false,
             last_lines: Vec::new(),
             last_bounds: None,
             theme: theme.clone(),
         }
     }
 
-    fn move_to(&mut self, offset: usize, cx: &mut Context<Self>) {
+    fn move_to(&self, state: &mut SelectableCodeState, offset: usize, cx: &mut Context<Self>) {
         let offset = self.clamp_boundary(offset);
-        self.selected_range = offset..offset;
-        self.selection_reversed = false;
+        state.selected_range = offset..offset;
+        state.selection_reversed = false;
         cx.notify();
     }
 
-    fn select_to(&mut self, offset: usize, cx: &mut Context<Self>) {
+    fn select_to(&self, state: &mut SelectableCodeState, offset: usize, cx: &mut Context<Self>) {
         let offset = self.clamp_boundary(offset);
-        if self.selection_reversed {
-            self.selected_range.start = offset;
+        if state.selection_reversed {
+            state.selected_range.start = offset;
         } else {
-            self.selected_range.end = offset;
+            state.selected_range.end = offset;
         }
-        if self.selected_range.end < self.selected_range.start {
-            self.selection_reversed = !self.selection_reversed;
-            self.selected_range = self.selected_range.end..self.selected_range.start;
+        if state.selected_range.end < state.selected_range.start {
+            state.selection_reversed = !state.selection_reversed;
+            state.selected_range = state.selected_range.end..state.selected_range.start;
         }
         cx.notify();
     }
@@ -942,15 +974,18 @@ impl SelectableCodeText {
     }
 
     fn select_all(&mut self, _: &CodeSelectAll, _: &mut Window, cx: &mut Context<Self>) {
-        self.selected_range = 0..self.code.len();
-        self.selection_reversed = false;
+        with_selectable_state(&self.id, |state| {
+            state.selected_range = 0..self.code.len();
+            state.selection_reversed = false;
+        });
         cx.notify();
     }
 
     fn copy(&mut self, _: &CodeCopy, _: &mut Window, cx: &mut Context<Self>) {
-        if !self.selected_range.is_empty() {
+        let selected_range = selectable_state_snapshot(&self.id).selected_range;
+        if !selected_range.is_empty() {
             cx.write_to_clipboard(ClipboardItem::new_string(
-                self.code[self.selected_range.clone()].to_string(),
+                self.code[selected_range].to_string(),
             ));
         }
     }
@@ -961,28 +996,24 @@ impl SelectableCodeText {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        self.pending_focus = true;
         window.focus(&self.focus_handle, cx);
-        let idx = if self.last_lines.is_empty() {
-            self.pending_anchor = Some(0);
-            0
-        } else {
-            self.index_for_point(event.position)
-        };
-        self.selecting = true;
-        if event.modifiers.shift {
-            self.select_to(idx, cx);
-        } else if event.click_count >= 3 {
-            self.selected_range = 0..self.code.len();
-            self.selection_reversed = false;
-            cx.notify();
-        } else if event.click_count == 2 {
-            self.selected_range = self.word_range_at(idx);
-            self.selection_reversed = false;
-            cx.notify();
-        } else {
-            self.move_to(idx, cx);
-        }
+        let idx = self.index_for_point(event.position);
+        with_selectable_state(&self.id, |state| {
+            state.selecting = true;
+            if event.modifiers.shift {
+                self.select_to(state, idx, cx);
+            } else if event.click_count >= 3 {
+                state.selected_range = 0..self.code.len();
+                state.selection_reversed = false;
+                cx.notify();
+            } else if event.click_count == 2 {
+                state.selected_range = self.word_range_at(idx);
+                state.selection_reversed = false;
+                cx.notify();
+            } else {
+                self.move_to(state, idx, cx);
+            }
+        });
     }
 
     fn on_mouse_move(
@@ -991,13 +1022,15 @@ impl SelectableCodeText {
         _window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if self.selecting || event.pressed_button == Some(MouseButton::Left) {
-            self.select_to(self.index_for_point(event.position), cx);
-        }
+        with_selectable_state(&self.id, |state| {
+            if state.selecting || event.pressed_button == Some(MouseButton::Left) {
+                self.select_to(state, self.index_for_point(event.position), cx);
+            }
+        });
     }
 
     fn on_mouse_up(&mut self, _: &MouseUpEvent, _: &mut Window, cx: &mut Context<Self>) {
-        self.selecting = false;
+        with_selectable_state(&self.id, |state| state.selecting = false);
         cx.notify();
     }
 
@@ -1085,10 +1118,11 @@ impl EntityInputHandler for SelectableCodeText {
         _: &mut Window,
         _: &mut Context<Self>,
     ) -> Option<UTF16Selection> {
+        let state = selectable_state_snapshot(&self.id);
         Some(UTF16Selection {
-            range: self.offset_to_utf16(self.selected_range.start)
-                ..self.offset_to_utf16(self.selected_range.end),
-            reversed: self.selection_reversed,
+            range: self.offset_to_utf16(state.selected_range.start)
+                ..self.offset_to_utf16(state.selected_range.end),
+            reversed: state.selection_reversed,
         })
     }
 
@@ -1152,6 +1186,7 @@ impl EntityInputHandler for SelectableCodeText {
 }
 
 struct SelectableCodeElement {
+    id: ElementId,
     input: Entity<SelectableCodeText>,
 }
 
@@ -1173,7 +1208,7 @@ impl Element for SelectableCodeElement {
     type PrepaintState = SelectableCodePrepaint;
 
     fn id(&self) -> Option<ElementId> {
-        None
+        Some(self.id.clone())
     }
 
     fn source_location(&self) -> Option<&'static std::panic::Location<'static>> {
@@ -1222,9 +1257,10 @@ impl Element for SelectableCodeElement {
                 None,
             );
 
-            if !input.selected_range.is_empty() {
-                let start = input.selected_range.start.max(offset);
-                let end = input.selected_range.end.min(offset + line_len);
+            let selected_range = selectable_state_snapshot(&input.id).selected_range;
+            if !selected_range.is_empty() {
+                let start = selected_range.start.max(offset);
+                let end = selected_range.end.min(offset + line_len);
                 if start < end {
                     let x_start = shaped.x_for_index(start - offset);
                     let x_end = shaped.x_for_index(end - offset);
@@ -1283,17 +1319,9 @@ impl Element for SelectableCodeElement {
         }
 
         let lines = prepaint.lines.clone();
-        self.input.update(cx, |input, cx| {
+        self.input.update(cx, |input, _| {
             input.last_lines = lines;
             input.last_bounds = Some(bounds);
-            if input.pending_focus {
-                window.focus(&input.focus_handle, cx);
-                input.pending_focus = false;
-            }
-            if let Some(anchor) = input.pending_anchor.take() {
-                input.selected_range = anchor..anchor;
-                input.selection_reversed = false;
-            }
         });
     }
 }
@@ -1311,7 +1339,10 @@ impl Render for SelectableCodeText {
             .on_mouse_move(cx.listener(Self::on_mouse_move))
             .on_mouse_up(MouseButton::Left, cx.listener(Self::on_mouse_up))
             .on_mouse_up_out(MouseButton::Left, cx.listener(Self::on_mouse_up))
-            .child(SelectableCodeElement { input: cx.entity() })
+            .child(SelectableCodeElement {
+                id: format!("{}-text", self.id).into(),
+                input: cx.entity(),
+            })
     }
 }
 
@@ -1470,7 +1501,10 @@ mod tests {
         assert!(source.contains("CodeFormat::Inline"));
         assert!(source.contains("selectable"));
         assert!(source.contains("SelectableCodeText"));
-        assert!(source.contains("pending_anchor"));
+        assert!(source.contains("SelectableCodeState"));
+        assert!(source.contains("selectable_state_map"));
+        assert!(source.contains("with_selectable_state(&self.id"));
+        assert!(source.contains("fn id(&self) -> Option<ElementId>"));
         assert!(source.contains("fn font_size(&self) -> Pixels"));
         assert!(source.contains("theme.font_size.md"));
         assert!(source.contains("cached_highlight_runs"));
