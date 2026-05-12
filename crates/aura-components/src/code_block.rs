@@ -926,11 +926,11 @@ fn selectable_key(id: &ElementId) -> String {
     id.to_string()
 }
 
-fn with_selectable_state(id: &ElementId, f: impl FnOnce(&mut SelectableCodeState)) {
+fn with_selectable_state<R>(id: &ElementId, f: impl FnOnce(&mut SelectableCodeState) -> R) -> R {
     let mut states = selectable_state_map()
         .lock()
         .expect("selectable code state lock poisoned");
-    f(states.entry(selectable_key(id)).or_default());
+    f(states.entry(selectable_key(id)).or_default())
 }
 
 fn selectable_state_snapshot(id: &ElementId) -> SelectableCodeState {
@@ -1013,17 +1013,17 @@ impl SelectableCodeText {
         cx.notify();
     }
 
-    fn move_to(&self, state: &mut SelectableCodeState, offset: usize, cx: &mut Context<Self>) {
+    fn move_to(&self, state: &mut SelectableCodeState, offset: usize) -> bool {
         let offset = self.clamp_boundary(offset);
         if state.selected_range == (offset..offset) && !state.selection_reversed {
-            return;
+            return false;
         }
         state.selected_range = offset..offset;
         state.selection_reversed = false;
-        cx.notify();
+        true
     }
 
-    fn select_to(&self, state: &mut SelectableCodeState, offset: usize, cx: &mut Context<Self>) {
+    fn select_to(&self, state: &mut SelectableCodeState, offset: usize) -> bool {
         let offset = self.clamp_boundary(offset);
         let previous_range = state.selected_range.clone();
         let previous_reversed = state.selection_reversed;
@@ -1037,9 +1037,9 @@ impl SelectableCodeText {
             state.selected_range = state.selected_range.end..state.selected_range.start;
         }
         if state.selected_range == previous_range && state.selection_reversed == previous_reversed {
-            return;
+            return false;
         }
-        cx.notify();
+        true
     }
 
     fn clamp_boundary(&self, mut offset: usize) -> usize {
@@ -1078,11 +1078,15 @@ impl SelectableCodeText {
     }
 
     fn select_all(&mut self, _: &CodeSelectAll, _: &mut Window, cx: &mut Context<Self>) {
-        with_selectable_state(&self.id, |state| {
+        let changed = with_selectable_state(&self.id, |state| {
+            let changed = state.selected_range != (0..self.code.len()) || state.selection_reversed;
             state.selected_range = 0..self.code.len();
             state.selection_reversed = false;
+            changed
         });
-        cx.notify();
+        if changed {
+            cx.notify();
+        }
     }
 
     fn copy(&mut self, _: &CodeCopy, _: &mut Window, cx: &mut Context<Self>) {
@@ -1102,37 +1106,53 @@ impl SelectableCodeText {
     ) {
         window.focus(&self.focus_handle, cx);
         let idx = self.index_for_point(event.position);
-        with_selectable_state(&self.id, |state| {
+        let changed = with_selectable_state(&self.id, |state| {
+            let was_selecting = state.selecting;
             state.selecting = true;
             if event.modifiers.shift {
-                self.select_to(state, idx, cx);
+                self.select_to(state, idx) || !was_selecting
             } else if event.click_count >= 3 {
+                let changed = state.selected_range != (0..self.code.len())
+                    || state.selection_reversed
+                    || !was_selecting;
                 state.selected_range = 0..self.code.len();
                 state.selection_reversed = false;
-                cx.notify();
+                changed
             } else if event.click_count == 2 {
-                state.selected_range = self.word_range_at(idx);
+                let range = self.word_range_at(idx);
+                let changed =
+                    state.selected_range != range || state.selection_reversed || !was_selecting;
+                state.selected_range = range;
                 state.selection_reversed = false;
-                cx.notify();
+                changed
             } else {
-                self.move_to(state, idx, cx);
+                self.move_to(state, idx) || !was_selecting
             }
         });
+        if changed {
+            cx.notify();
+        }
     }
 
     fn on_mouse_move(&mut self, event: &MouseMoveEvent, cx: &mut Context<Self>) {
-        with_selectable_state(&self.id, |state| {
+        let idx = self.index_for_point(event.position);
+        let changed = with_selectable_state(&self.id, |state| {
             if state.selecting || event.pressed_button == Some(MouseButton::Left) {
-                self.select_to(state, self.index_for_point(event.position), cx);
+                self.select_to(state, idx)
+            } else {
+                false
             }
         });
+        if changed {
+            cx.notify();
+        }
     }
 
     fn on_mouse_up(&mut self, _: &MouseUpEvent, _: &mut Window, cx: &mut Context<Self>) {
-        let mut changed = false;
-        with_selectable_state(&self.id, |state| {
-            changed = state.selecting;
+        let changed = with_selectable_state(&self.id, |state| {
+            let changed = state.selecting;
             state.selecting = false;
+            changed
         });
         if changed {
             cx.notify();
