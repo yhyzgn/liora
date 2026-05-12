@@ -1,6 +1,7 @@
 use aura_components::{
-    Button, Card, CodeBlock as AuraCodeBlock, Container, Input, Menu, MenuMode, Paragraph, Space,
-    Switch, Text, Title, toast_error, toast_info, toast_success, toast_warning,
+    Alert, AlertType, Autocomplete, AutocompleteItem, Avatar, Badge, BadgeType, Button, Card,
+    CodeBlock as AuraCodeBlock, Container, Input, Menu, MenuMode, Paragraph, Space, Switch,
+    Tag as AuraTag, Text, Title, toast_error, toast_info, toast_success, toast_warning,
 };
 use aura_core::{Config, PassivePortal, Portal};
 use aura_icons_lucide::IconName;
@@ -819,6 +820,29 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "button/sizes.rs" => Some(include_str!("../content/snippets/button/sizes.rs")),
         "button/states.rs" => Some(include_str!("../content/snippets/button/states.rs")),
         "button/rounded.rs" => Some(include_str!("../content/snippets/button/rounded.rs")),
+        "alert/types.rs" => Some(include_str!("../content/snippets/alert/types.rs")),
+        "alert/description.rs" => Some(include_str!("../content/snippets/alert/description.rs")),
+        "tag/types.rs" => Some(include_str!("../content/snippets/tag/types.rs")),
+        "tag/closable.rs" => Some(include_str!("../content/snippets/tag/closable.rs")),
+        "tag/themes.rs" => Some(include_str!("../content/snippets/tag/themes.rs")),
+        "tag/sizes.rs" => Some(include_str!("../content/snippets/tag/sizes.rs")),
+        "tag/round.rs" => Some(include_str!("../content/snippets/tag/round.rs")),
+        "autocomplete/basic.rs" => Some(include_str!("../content/snippets/autocomplete/basic.rs")),
+        "autocomplete/custom.rs" => {
+            Some(include_str!("../content/snippets/autocomplete/custom.rs"))
+        }
+        "autocomplete/no_suffix.rs" => Some(include_str!(
+            "../content/snippets/autocomplete/no_suffix.rs"
+        )),
+        "autocomplete/disabled.rs" => {
+            Some(include_str!("../content/snippets/autocomplete/disabled.rs"))
+        }
+        "avatar/shapes.rs" => Some(include_str!("../content/snippets/avatar/shapes.rs")),
+        "avatar/sizes.rs" => Some(include_str!("../content/snippets/avatar/sizes.rs")),
+        "avatar/content.rs" => Some(include_str!("../content/snippets/avatar/content.rs")),
+        "badge/basic.rs" => Some(include_str!("../content/snippets/badge/basic.rs")),
+        "badge/max.rs" => Some(include_str!("../content/snippets/badge/max.rs")),
+        "badge/dot.rs" => Some(include_str!("../content/snippets/badge/dot.rs")),
         "code_block/basic.rs" => Some(include_str!("../content/snippets/code_block/basic.rs")),
         "code_block/language.rs" => {
             Some(include_str!("../content/snippets/code_block/language.rs"))
@@ -1079,6 +1103,7 @@ impl Render for LiveDemoHost {
 struct LiveDemoContent {
     component: SharedString,
     gallery_demo: Option<AnyView>,
+    autocompletes: Vec<Entity<Autocomplete>>,
     inputs: Vec<Entity<Input>>,
     switches: Vec<Entity<Switch>>,
 }
@@ -1086,10 +1111,48 @@ struct LiveDemoContent {
 impl LiveDemoContent {
     fn new(component: SharedString, cx: &mut Context<Self>) -> Self {
         let gallery_demo = aura_gallery::demos::render_doc_demo(component.as_ref(), cx);
+        let mut autocompletes = Vec::new();
         let mut inputs = Vec::new();
         let mut switches = Vec::new();
 
         match component.as_ref() {
+            "AutocompleteBasic" => {
+                let suggestions = basic_autocomplete_items();
+                autocompletes.push(cx.new(move |cx| {
+                    Autocomplete::new(suggestions, cx).placeholder("Search component")
+                }));
+            }
+            "AutocompleteCustom" => {
+                let routes = vec![
+                    AutocompleteItem::labeled("/dashboard", "Dashboard"),
+                    AutocompleteItem::labeled("/settings", "Settings"),
+                    AutocompleteItem::labeled("/profile", "Profile"),
+                    AutocompleteItem::labeled("/billing", "Billing"),
+                ];
+                autocompletes.push(cx.new(move |cx| {
+                    Autocomplete::new(routes, cx)
+                        .placeholder("Jump to route")
+                        .width_lg()
+                        .max_suggestions(4)
+                        .suffix_icon(IconName::Command)
+                }));
+            }
+            "AutocompleteNoSuffix" => {
+                let suggestions = basic_autocomplete_items();
+                autocompletes.push(cx.new(move |cx| {
+                    Autocomplete::new(suggestions, cx)
+                        .placeholder("No suffix icon")
+                        .no_suffix_icon()
+                }));
+            }
+            "AutocompleteDisabled" => {
+                let suggestions = basic_autocomplete_items();
+                autocompletes.push(cx.new(move |cx| {
+                    Autocomplete::new(suggestions, cx)
+                        .placeholder("Disabled")
+                        .disabled(true)
+                }));
+            }
             "InputBasic" => {
                 inputs.push(cx.new(|cx| Input::new("", cx)));
                 inputs.push(cx.new(|cx| Input::new("", cx).placeholder("Type something...")));
@@ -1136,6 +1199,7 @@ impl LiveDemoContent {
         Self {
             component,
             gallery_demo,
+            autocompletes,
             inputs,
             switches,
         }
@@ -1221,6 +1285,134 @@ impl Render for LiveDemoContent {
                     .into_any_element(),
                 Button::new("Pill").primary().pill().into_any_element(),
             ]),
+            "AlertTypes" => demo_stack(vec![
+                Alert::new("Info Alert")
+                    .alert_type(AlertType::Info)
+                    .into_any_element(),
+                Alert::new("Success Alert")
+                    .alert_type(AlertType::Success)
+                    .into_any_element(),
+                Alert::new("Warning Alert")
+                    .alert_type(AlertType::Warning)
+                    .into_any_element(),
+                Alert::new("Error Alert")
+                    .alert_type(AlertType::Error)
+                    .into_any_element(),
+            ]),
+            "AlertDescription" => Alert::new("Warning")
+                .alert_type(AlertType::Warning)
+                .description("More detailed description of the warning.")
+                .into_any_element(),
+            "TagTypes" => demo_row(vec![
+                AuraTag::new("Tag 1").into_any_element(),
+                AuraTag::new("Tag 2").success().into_any_element(),
+                AuraTag::new("Tag 3").warning().into_any_element(),
+                AuraTag::new("Tag 4").danger().into_any_element(),
+            ]),
+            "TagClosable" => demo_row(vec![
+                AuraTag::new("Tag 1").closable(true).into_any_element(),
+                AuraTag::new("Tag 2")
+                    .success()
+                    .closable(true)
+                    .into_any_element(),
+                AuraTag::new("Tag 3")
+                    .warning()
+                    .closable(true)
+                    .into_any_element(),
+                AuraTag::new("Tag 4")
+                    .danger()
+                    .closable(true)
+                    .into_any_element(),
+            ]),
+            "TagThemes" => demo_stack(vec![
+                demo_row(vec![
+                    AuraTag::new("Dark").dark().into_any_element(),
+                    AuraTag::new("Success").success().dark().into_any_element(),
+                    AuraTag::new("Warning").warning().dark().into_any_element(),
+                    AuraTag::new("Danger").danger().dark().into_any_element(),
+                ]),
+                demo_row(vec![
+                    AuraTag::new("Plain").plain().into_any_element(),
+                    AuraTag::new("Success").success().plain().into_any_element(),
+                    AuraTag::new("Warning").warning().plain().into_any_element(),
+                    AuraTag::new("Danger").danger().plain().into_any_element(),
+                ]),
+            ]),
+            "TagSizes" => demo_row(vec![
+                AuraTag::new("Default").into_any_element(),
+                AuraTag::new("Large").large().into_any_element(),
+                AuraTag::new("Small").small().into_any_element(),
+            ]),
+            "TagRound" => demo_row(vec![
+                AuraTag::new("Tag 1").round(true).into_any_element(),
+                AuraTag::new("Tag 2")
+                    .success()
+                    .round(true)
+                    .into_any_element(),
+                AuraTag::new("Tag 3")
+                    .warning()
+                    .round(true)
+                    .into_any_element(),
+                AuraTag::new("Tag 4")
+                    .danger()
+                    .round(true)
+                    .into_any_element(),
+            ]),
+            "AutocompleteBasic"
+            | "AutocompleteCustom"
+            | "AutocompleteNoSuffix"
+            | "AutocompleteDisabled" => demo_stack(
+                self.autocompletes
+                    .iter()
+                    .cloned()
+                    .map(Entity::into_any_element)
+                    .collect(),
+            ),
+            "AvatarShapes" => demo_row(vec![
+                Avatar::new().into_any_element(),
+                Avatar::new().square().into_any_element(),
+            ]),
+            "AvatarSizes" => demo_row(vec![
+                Avatar::new().small().into_any_element(),
+                Avatar::new().into_any_element(),
+                Avatar::new().large().into_any_element(),
+            ]),
+            "AvatarContent" => demo_row(vec![
+                Avatar::new().icon(IconName::User).into_any_element(),
+                Avatar::new().icon(IconName::Star).into_any_element(),
+                Avatar::new()
+                    .src("https://github.com/zed-industries.png")
+                    .into_any_element(),
+            ]),
+            "BadgeBasic" => demo_row(vec![
+                Badge::new(Button::new("Messages"))
+                    .value("5")
+                    .into_any_element(),
+                Badge::new(Button::new("Updates"))
+                    .value("10")
+                    .badge_type(BadgeType::Primary)
+                    .into_any_element(),
+                Badge::new(Button::new("Alerts"))
+                    .value("2")
+                    .badge_type(BadgeType::Warning)
+                    .into_any_element(),
+            ]),
+            "BadgeMax" => demo_row(vec![
+                Badge::new(Button::new("Messages"))
+                    .value("200")
+                    .max(99)
+                    .into_any_element(),
+                Badge::new(Button::new("Updates"))
+                    .value("50")
+                    .max(10)
+                    .into_any_element(),
+            ]),
+            "BadgeDot" => demo_row(vec![
+                Badge::new(Text::new("Query"))
+                    .is_dot(true)
+                    .into_any_element(),
+                Badge::new(Avatar::new()).is_dot(true).into_any_element(),
+            ]),
             "InputBasic" | "InputPassword" | "InputAffix" | "InputStates" => demo_stack(
                 self.inputs
                     .iter()
@@ -1289,6 +1481,16 @@ fn demo_row(children: Vec<AnyElement>) -> AnyElement {
         .gap_sm()
         .children(children)
         .into_any_element()
+}
+
+fn basic_autocomplete_items() -> Vec<AutocompleteItem> {
+    vec![
+        AutocompleteItem::labeled("rust", "Rust"),
+        AutocompleteItem::labeled("gpui", "GPUI"),
+        AutocompleteItem::labeled("aura", "Aura UI"),
+        AutocompleteItem::labeled("element-plus", "Element Plus"),
+        AutocompleteItem::labeled("autocomplete", "Autocomplete"),
+    ]
 }
 
 fn demo_stack(children: Vec<AnyElement>) -> AnyElement {
@@ -2032,6 +2234,69 @@ mod tests {
         ] {
             assert!(source.contains(&format!("src=\"{snippet}\"")));
             assert!(load_code_snippet(snippet).is_some());
+        }
+    }
+
+    #[test]
+    fn corrected_component_pages_split_each_effect_before_its_code() {
+        for (page, first_demo, snippets) in [
+            (
+                include_str!("../content/pages/alert.md"),
+                "AlertTypes",
+                &["alert/types.rs", "alert/description.rs"][..],
+            ),
+            (
+                include_str!("../content/pages/tag.md"),
+                "TagTypes",
+                &[
+                    "tag/types.rs",
+                    "tag/closable.rs",
+                    "tag/themes.rs",
+                    "tag/sizes.rs",
+                    "tag/round.rs",
+                ][..],
+            ),
+            (
+                include_str!("../content/pages/autocomplete.md"),
+                "AutocompleteBasic",
+                &[
+                    "autocomplete/basic.rs",
+                    "autocomplete/custom.rs",
+                    "autocomplete/no_suffix.rs",
+                    "autocomplete/disabled.rs",
+                ][..],
+            ),
+            (
+                include_str!("../content/pages/avatar.md"),
+                "AvatarShapes",
+                &["avatar/shapes.rs", "avatar/sizes.rs", "avatar/content.rs"][..],
+            ),
+            (
+                include_str!("../content/pages/badge.md"),
+                "BadgeBasic",
+                &["badge/basic.rs", "badge/max.rs", "badge/dot.rs"][..],
+            ),
+        ] {
+            assert!(!page.contains("## 完整示例"));
+            assert!(!page.contains("src=\"gallery/"));
+            assert!(page.contains(&format!("::AuraDemo{{component=\"{first_demo}\"}}::")));
+
+            for snippet in snippets {
+                let marker = format!("src=\"{snippet}\"");
+                let marker_index = page.find(&marker).expect("snippet should be referenced");
+                let preceding_effect = page[..marker_index]
+                    .rfind("### 效果")
+                    .expect("code should follow an effect section");
+                let preceding_code = page[..marker_index]
+                    .rfind("### 代码")
+                    .expect("snippet should be under a code section");
+
+                assert!(
+                    preceding_effect < preceding_code,
+                    "each code snippet must be paired after its effect"
+                );
+                assert!(load_code_snippet(snippet).is_some());
+            }
         }
     }
 

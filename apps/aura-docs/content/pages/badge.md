@@ -1,16 +1,36 @@
 # Badge
 
-右上角的提示信息。
+`Badge` 用于在按钮、头像或文本上叠加状态和数量提示。
 
-## 完整示例
-
-此示例复用 Aura Gallery 中同名控件的原生 demo，确保文档效果与演示大屏保持一致。
+## 基础用法
 
 ### 效果
 
-::AuraDemo{component="Badge"}::
+::AuraDemo{component="BadgeBasic"}::
 
 ### 代码
 
-```rust src="gallery/badge_demo.rs"
+```rust src="badge/basic.rs"
+```
+
+## 最大值
+
+### 效果
+
+::AuraDemo{component="BadgeMax"}::
+
+### 代码
+
+```rust src="badge/max.rs"
+```
+
+## 小红点
+
+### 效果
+
+::AuraDemo{component="BadgeDot"}::
+
+### 代码
+
+```rust src="badge/dot.rs"
 ```

@@ -7,10 +7,34 @@
 #![allow(unused_imports)]
 #![allow(unused_variables)]
 
+#[path = "../../content/snippets/alert/description.rs"]
+mod alert_description;
+#[path = "../../content/snippets/alert/types.rs"]
+mod alert_types;
 #[path = "../../content/snippets/architecture/render_pipeline.rs"]
 mod architecture_render_pipeline;
 #[path = "../../content/snippets/authoring/code_block.rs"]
 mod authoring_code_block;
+#[path = "../../content/snippets/autocomplete/basic.rs"]
+mod autocomplete_basic;
+#[path = "../../content/snippets/autocomplete/custom.rs"]
+mod autocomplete_custom;
+#[path = "../../content/snippets/autocomplete/disabled.rs"]
+mod autocomplete_disabled;
+#[path = "../../content/snippets/autocomplete/no_suffix.rs"]
+mod autocomplete_no_suffix;
+#[path = "../../content/snippets/avatar/content.rs"]
+mod avatar_content;
+#[path = "../../content/snippets/avatar/shapes.rs"]
+mod avatar_shapes;
+#[path = "../../content/snippets/avatar/sizes.rs"]
+mod avatar_sizes;
+#[path = "../../content/snippets/badge/basic.rs"]
+mod badge_basic;
+#[path = "../../content/snippets/badge/dot.rs"]
+mod badge_dot;
+#[path = "../../content/snippets/badge/max.rs"]
+mod badge_max;
 #[path = "../../content/snippets/button/rounded.rs"]
 mod button_rounded;
 #[path = "../../content/snippets/button/secondary.rs"]
@@ -57,6 +81,16 @@ mod switch_basic;
 mod switch_callback;
 #[path = "../../content/snippets/switch/disabled.rs"]
 mod switch_disabled;
+#[path = "../../content/snippets/tag/closable.rs"]
+mod tag_closable;
+#[path = "../../content/snippets/tag/round.rs"]
+mod tag_round;
+#[path = "../../content/snippets/tag/sizes.rs"]
+mod tag_sizes;
+#[path = "../../content/snippets/tag/themes.rs"]
+mod tag_themes;
+#[path = "../../content/snippets/tag/types.rs"]
+mod tag_types;
 #[path = "../../content/snippets/typography/paragraph.rs"]
 mod typography_paragraph;
 

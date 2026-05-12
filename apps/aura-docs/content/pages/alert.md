@@ -1,16 +1,25 @@
 # Alert
 
-页面展示的重要提示信息。
+`Alert` 用于在页面中展示重要提示。每一种效果都紧跟对应代码，避免把效果和代码拆散。
 
-## 完整示例
-
-此示例复用 Aura Gallery 中同名控件的原生 demo，确保文档效果与演示大屏保持一致。
+## 类型
 
 ### 效果
 
-::AuraDemo{component="Alert"}::
+::AuraDemo{component="AlertTypes"}::
 
 ### 代码
 
-```rust src="gallery/alert_demo.rs"
+```rust src="alert/types.rs"
+```
+
+## 辅助性文字
+
+### 效果
+
+::AuraDemo{component="AlertDescription"}::
+
+### 代码
+
+```rust src="alert/description.rs"
 ```

@@ -1,16 +1,58 @@
 # Tag
 
-用于标记和选择。
+`Tag` 用于标记、分类和轻量选择。Docs 按单个效果拆分展示，代码紧贴对应效果。
 
-## 完整示例
-
-此示例复用 Aura Gallery 中同名控件的原生 demo，确保文档效果与演示大屏保持一致。
+## 基础类型
 
 ### 效果
 
-::AuraDemo{component="Tag"}::
+::AuraDemo{component="TagTypes"}::
 
 ### 代码
 
-```rust src="gallery/tag_demo.rs"
+```rust src="tag/types.rs"
+```
+
+## 可移除标签
+
+### 效果
+
+::AuraDemo{component="TagClosable"}::
+
+### 代码
+
+```rust src="tag/closable.rs"
+```
+
+## 不同主题
+
+### 效果
+
+::AuraDemo{component="TagThemes"}::
+
+### 代码
+
+```rust src="tag/themes.rs"
+```
+
+## 不同尺寸
+
+### 效果
+
+::AuraDemo{component="TagSizes"}::
+
+### 代码
+
+```rust src="tag/sizes.rs"
+```
+
+## 圆角标签
+
+### 效果
+
+::AuraDemo{component="TagRound"}::
+
+### 代码
+
+```rust src="tag/round.rs"
 ```
