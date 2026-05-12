@@ -93,6 +93,16 @@ mod radio_basic;
 mod radio_buttons;
 #[path = "../../content/snippets/radio/group.rs"]
 mod radio_group;
+#[path = "../../content/snippets/rate/basic.rs"]
+mod rate_basic;
+#[path = "../../content/snippets/rate/custom.rs"]
+mod rate_custom;
+#[path = "../../content/snippets/select/basic.rs"]
+mod select_basic;
+#[path = "../../content/snippets/slider/basic.rs"]
+mod slider_basic;
+#[path = "../../content/snippets/slider/step.rs"]
+mod slider_step;
 #[path = "../../content/snippets/switch/basic.rs"]
 mod switch_basic;
 #[path = "../../content/snippets/switch/callback.rs"]

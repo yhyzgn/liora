@@ -1,16 +1,25 @@
 # Rate
 
-独立评分用法。
+`Rate` 用于评分或表达偏好强度，支持自定义最大值。
 
-## 完整示例
-
-此示例复用 Aura Gallery 中同名控件的原生 demo，确保文档效果与演示大屏保持一致。
+## 基础评分
 
 ### 效果
 
-::AuraDemo{component="Rate"}::
+::AuraDemo{component="RateBasic"}::
 
 ### 代码
 
-```rust src="gallery/form_controls_demo.rs"
+```rust src="rate/basic.rs"
+```
+
+## 自定义最大值
+
+### 效果
+
+::AuraDemo{component="RateCustom"}::
+
+### 代码
+
+```rust src="rate/custom.rs"
 ```

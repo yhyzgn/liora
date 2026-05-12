@@ -1,16 +1,25 @@
 # Slider
 
-独立滑块用法。
+`Slider` 用于在连续或离散范围内选择数值。
 
-## 完整示例
-
-此示例复用 Aura Gallery 中同名控件的原生 demo，确保文档效果与演示大屏保持一致。
+## 基础滑块
 
 ### 效果
 
-::AuraDemo{component="Slider"}::
+::AuraDemo{component="SliderBasic"}::
 
 ### 代码
 
-```rust src="gallery/form_controls_demo.rs"
+```rust src="slider/basic.rs"
+```
+
+## 步进滑块
+
+### 效果
+
+::AuraDemo{component="SliderStep"}::
+
+### 代码
+
+```rust src="slider/step.rs"
 ```

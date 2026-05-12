@@ -1,8 +1,9 @@
 use aura_components::{
     Alert, AlertType, Autocomplete, AutocompleteItem, Avatar, Badge, BadgeType, Button, Card,
     Checkbox, CheckboxGroup, CodeBlock as AuraCodeBlock, Container, Input, InputNumber,
-    InputNumberControlsPosition, Menu, MenuMode, Paragraph, Radio, RadioGroup, Space, Switch,
-    Tag as AuraTag, Text, Textarea, Title, toast_error, toast_info, toast_success, toast_warning,
+    InputNumberControlsPosition, Menu, MenuMode, Paragraph, Radio, RadioGroup, Rate, Select,
+    Slider, Space, Switch, Tag as AuraTag, Text, Textarea, Title, toast_error, toast_info,
+    toast_success, toast_warning,
 };
 use aura_core::{Config, PassivePortal, Portal};
 use aura_icons_lucide::IconName;
@@ -859,6 +860,11 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "radio/basic.rs" => Some(include_str!("../content/snippets/radio/basic.rs")),
         "radio/group.rs" => Some(include_str!("../content/snippets/radio/group.rs")),
         "radio/buttons.rs" => Some(include_str!("../content/snippets/radio/buttons.rs")),
+        "select/basic.rs" => Some(include_str!("../content/snippets/select/basic.rs")),
+        "slider/basic.rs" => Some(include_str!("../content/snippets/slider/basic.rs")),
+        "slider/step.rs" => Some(include_str!("../content/snippets/slider/step.rs")),
+        "rate/basic.rs" => Some(include_str!("../content/snippets/rate/basic.rs")),
+        "rate/custom.rs" => Some(include_str!("../content/snippets/rate/custom.rs")),
         "code_block/basic.rs" => Some(include_str!("../content/snippets/code_block/basic.rs")),
         "code_block/language.rs" => {
             Some(include_str!("../content/snippets/code_block/language.rs"))
@@ -1127,6 +1133,9 @@ struct LiveDemoContent {
     inputs: Vec<Entity<Input>>,
     radios: Vec<Entity<Radio>>,
     radio_groups: Vec<Entity<RadioGroup>>,
+    rates: Vec<Entity<Rate>>,
+    selects: Vec<Entity<Select>>,
+    sliders: Vec<Entity<Slider>>,
     switches: Vec<Entity<Switch>>,
 }
 
@@ -1141,6 +1150,9 @@ impl LiveDemoContent {
         let mut inputs = Vec::new();
         let mut radios = Vec::new();
         let mut radio_groups = Vec::new();
+        let mut rates = Vec::new();
+        let mut selects = Vec::new();
+        let mut sliders = Vec::new();
         let mut switches = Vec::new();
 
         match component.as_ref() {
@@ -1262,6 +1274,27 @@ impl LiveDemoContent {
                 radio_groups.push(cx.new(|cx| city_radio_group(cx).small()));
                 radio_groups.push(cx.new(|cx| city_radio_group(cx).stretch(true)));
             }
+            "SelectBasic" => {
+                selects.push(cx.new(|cx| {
+                    Select::new(
+                        vec!["Apple", "Banana", "Orange", "Grape", "Watermelon"],
+                        Some(1),
+                        cx,
+                    )
+                }));
+            }
+            "SliderBasic" => {
+                sliders.push(cx.new(|cx| Slider::new(50.0, cx)));
+            }
+            "SliderStep" => {
+                sliders.push(cx.new(|cx| Slider::new(20.0, cx).step(10.0)));
+            }
+            "RateBasic" => {
+                rates.push(cx.new(|cx| Rate::new(3.0, cx)));
+            }
+            "RateCustom" => {
+                rates.push(cx.new(|cx| Rate::new(4.0, cx).max(10)));
+            }
             "SwitchBasic" => {
                 switches.push(cx.new(|cx| Switch::new(true, cx)));
                 switches.push(cx.new(|cx| Switch::new(false, cx)));
@@ -1295,6 +1328,9 @@ impl LiveDemoContent {
             inputs,
             radios,
             radio_groups,
+            rates,
+            selects,
+            sliders,
             switches,
         }
     }
@@ -1499,6 +1535,27 @@ impl Render for LiveDemoContent {
             ),
             "RadioGroup" | "RadioButtons" => demo_stack(
                 self.radio_groups
+                    .iter()
+                    .cloned()
+                    .map(Entity::into_any_element)
+                    .collect(),
+            ),
+            "SelectBasic" => demo_stack(
+                self.selects
+                    .iter()
+                    .cloned()
+                    .map(Entity::into_any_element)
+                    .collect(),
+            ),
+            "SliderBasic" | "SliderStep" => demo_stack(
+                self.sliders
+                    .iter()
+                    .cloned()
+                    .map(Entity::into_any_element)
+                    .collect(),
+            ),
+            "RateBasic" | "RateCustom" => demo_stack(
+                self.rates
                     .iter()
                     .cloned()
                     .map(Entity::into_any_element)
@@ -2457,6 +2514,21 @@ mod tests {
                 include_str!("../content/pages/radio.md"),
                 "RadioBasic",
                 &["radio/basic.rs", "radio/group.rs", "radio/buttons.rs"][..],
+            ),
+            (
+                include_str!("../content/pages/select.md"),
+                "SelectBasic",
+                &["select/basic.rs"][..],
+            ),
+            (
+                include_str!("../content/pages/slider.md"),
+                "SliderBasic",
+                &["slider/basic.rs", "slider/step.rs"][..],
+            ),
+            (
+                include_str!("../content/pages/rate.md"),
+                "RateBasic",
+                &["rate/basic.rs", "rate/custom.rs"][..],
             ),
         ] {
             assert!(!page.contains("## 完整示例"));
