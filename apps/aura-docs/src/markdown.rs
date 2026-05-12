@@ -16,6 +16,7 @@ use pulldown_cmark::{CodeBlockKind, Event, HeadingLevel, Options, Parser, Tag, T
 const INTRO_DOC: &str = include_str!("../content/pages/overview.md");
 const QUICK_START_DOC: &str = include_str!("../content/pages/quick_start.md");
 const ARCHITECTURE_DOC: &str = include_str!("../content/pages/architecture.md");
+const ABOUT_DOC: &str = include_str!("../content/pages/about.md");
 
 const AFFIX_DOC: &str = include_str!("../content/pages/affix.md");
 const ALERT_DOC: &str = include_str!("../content/pages/alert.md");
@@ -98,6 +99,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Architecture",
         markdown: ARCHITECTURE_DOC,
+    },
+    DocPage {
+        title: "About",
+        markdown: ABOUT_DOC,
     },
     DocPage {
         title: "Affix",
@@ -806,6 +811,31 @@ fn parse_block_attr(attrs: &str, key: &str) -> Option<SharedString> {
 fn load_code_snippet(path: &str) -> Option<&'static str> {
     match path {
         "quick_start/run.sh" => Some(include_str!("../content/snippets/quick_start/run.sh")),
+        "quick_start/deps_fedora.sh" => Some(include_str!(
+            "../content/snippets/quick_start/deps_fedora.sh"
+        )),
+        "quick_start/deps_ubuntu.sh" => Some(include_str!(
+            "../content/snippets/quick_start/deps_ubuntu.sh"
+        )),
+        "quick_start/deps_macos.sh" => Some(include_str!(
+            "../content/snippets/quick_start/deps_macos.sh"
+        )),
+        "quick_start/deps_windows.ps1" => Some(include_str!(
+            "../content/snippets/quick_start/deps_windows.ps1"
+        )),
+        "quick_start/create_project.sh" => Some(include_str!(
+            "../content/snippets/quick_start/create_project.sh"
+        )),
+        "quick_start/app_cargo.toml" => Some(include_str!(
+            "../content/snippets/quick_start/app_cargo.toml"
+        )),
+        "quick_start/main_window.rs" => Some(include_str!(
+            "../content/snippets/quick_start/main_window.rs"
+        )),
+        "quick_start/component_view.rs" => Some(include_str!(
+            "../content/snippets/quick_start/component_view.rs"
+        )),
+        "quick_start/verify.sh" => Some(include_str!("../content/snippets/quick_start/verify.sh")),
         "quick_start/init.rs" => Some(include_str!("../content/snippets/quick_start/init.rs")),
         "quick_start/components.rs" => Some(include_str!(
             "../content/snippets/quick_start/components.rs"
@@ -887,6 +917,7 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "authoring/code_block.rs" => {
             Some(include_str!("../content/snippets/authoring/code_block.rs"))
         }
+        "about/doc_rule.rs" => Some(include_str!("../content/snippets/about/doc_rule.rs")),
         "gallery/affix_demo.rs" => Some(include_str!("../../aura-gallery/src/demos/affix_demo.rs")),
         "gallery/alert_demo.rs" => Some(include_str!("../../aura-gallery/src/demos/alert_demo.rs")),
         "gallery/anchor_demo.rs" => {
@@ -2168,8 +2199,10 @@ mod tests {
     fn docs_shell_registers_core_documentation_pages() {
         let titles = DOC_PAGES.iter().map(|page| page.title).collect::<Vec<_>>();
 
+        assert!(titles.contains(&"Overview"));
         assert!(titles.contains(&"Quick Start"));
         assert!(titles.contains(&"Architecture"));
+        assert!(titles.contains(&"About"));
         assert!(titles.contains(&"Button"));
         assert!(titles.contains(&"CodeBlock"));
         assert!(titles.contains(&"Input"));
@@ -2178,6 +2211,34 @@ mod tests {
         assert!(titles.contains(&"Live Demo"));
         assert!(titles.contains(&"Authoring"));
         assert!(DOC_PAGES.len() >= 8);
+    }
+
+    #[test]
+    fn core_docs_include_operational_gpui_and_aura_guidance() {
+        assert!(INTRO_DOC.contains("纯原生 GPUI"));
+        assert!(INTRO_DOC.contains("crates/aura-components"));
+
+        for snippet in [
+            "quick_start/deps_fedora.sh",
+            "quick_start/deps_ubuntu.sh",
+            "quick_start/deps_macos.sh",
+            "quick_start/deps_windows.ps1",
+            "quick_start/create_project.sh",
+            "quick_start/app_cargo.toml",
+            "quick_start/main_window.rs",
+            "quick_start/component_view.rs",
+            "quick_start/verify.sh",
+        ] {
+            assert!(QUICK_START_DOC.contains(&format!("src=\"{snippet}\"")));
+            assert!(load_code_snippet(snippet).is_some());
+        }
+
+        assert!(QUICK_START_DOC.contains("Application"));
+        assert!(QUICK_START_DOC.contains("Entity<View>"));
+        assert!(QUICK_START_DOC.contains("cx.open_window"));
+        assert!(ARCHITECTURE_DOC.contains("Workspace 分层"));
+        assert!(ARCHITECTURE_DOC.contains("Live Demo 与代码片段"));
+        assert!(ABOUT_DOC.contains("贡献文档的规则"));
     }
 
     #[test]

@@ -7,6 +7,8 @@
 #![allow(unused_imports)]
 #![allow(unused_variables)]
 
+#[path = "../../content/snippets/about/doc_rule.rs"]
+mod about_doc_rule;
 #[path = "../../content/snippets/alert/description.rs"]
 mod alert_description;
 #[path = "../../content/snippets/alert/types.rs"]
@@ -83,10 +85,14 @@ mod markdown_state_machine;
 mod message_formatting;
 #[path = "../../content/snippets/message/types.rs"]
 mod message_types;
+#[path = "../../content/snippets/quick_start/component_view.rs"]
+mod quick_start_component_view;
 #[path = "../../content/snippets/quick_start/components.rs"]
 mod quick_start_components;
 #[path = "../../content/snippets/quick_start/init.rs"]
 mod quick_start_init;
+#[path = "../../content/snippets/quick_start/main_window.rs"]
+mod quick_start_main_window;
 #[path = "../../content/snippets/radio/basic.rs"]
 mod radio_basic;
 #[path = "../../content/snippets/radio/buttons.rs"]
