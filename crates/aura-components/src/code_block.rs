@@ -2,8 +2,16 @@ use aura_core::{Config, stable_unique_id};
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
 use gpui::{
-    App, ClipboardItem, Component, ElementId, FontWeight, IntoElement, RenderOnce, SharedString,
-    StyledText, TextRun, TextStyle, WhiteSpace, Window, div, prelude::*, px,
+    App, ClipboardItem, Component, ElementId, FontStyle, FontWeight, Hsla, IntoElement, RenderOnce,
+    Rgba, SharedString, StyledText, TextRun, TextStyle, UnderlineStyle, WhiteSpace, Window, div,
+    prelude::*, px,
+};
+use std::sync::OnceLock;
+use syntect::{
+    easy::HighlightLines,
+    highlighting::{FontStyle as SyntectFontStyle, Style as SyntectStyle, Theme, ThemeSet},
+    parsing::SyntaxSet,
+    util::LinesWithEndings,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -29,6 +37,19 @@ impl CodeLanguage {
             Self::Shell => "shell",
             Self::TypeScript => "typescript",
             Self::JavaScript => "javascript",
+        }
+    }
+
+    fn syntect_token(self) -> &'static str {
+        match self {
+            Self::PlainText => "txt",
+            Self::Rust => "rs",
+            Self::Toml => "toml",
+            Self::Json => "json",
+            Self::Markdown => "md",
+            Self::Shell => "sh",
+            Self::TypeScript => "ts",
+            Self::JavaScript => "js",
         }
     }
 
@@ -62,23 +83,6 @@ impl From<String> for CodeLanguage {
 pub enum CodeFormat {
     Block,
     Inline,
-}
-
-#[derive(Clone)]
-struct HighlightSpan {
-    start: usize,
-    end: usize,
-    kind: HighlightKind,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum HighlightKind {
-    Keyword,
-    String,
-    Number,
-    Comment,
-    Function,
-    Punctuation,
 }
 
 pub struct CodeBlock {
@@ -198,7 +202,9 @@ fn render_inline_code(
 ) -> gpui::AnyElement {
     div()
         .rounded(px(theme.radius.sm))
-        .bg(theme.neutral.hover)
+        .bg(code_surface(theme).opacity(0.72))
+        .border_1()
+        .border_color(code_border(theme))
         .px_1()
         .py_0p5()
         .child(render_highlighted_text(code, language, theme, false))
@@ -223,19 +229,20 @@ fn render_block_code(
         .px_4()
         .py_2()
         .border_b_1()
-        .border_color(theme.neutral.border)
+        .border_color(code_border(theme))
+        .bg(code_header_surface(theme))
         .child(
             div()
                 .flex()
                 .items_center()
                 .gap_2()
-                .text_color(theme.neutral.text_3)
+                .text_color(code_muted_text(theme))
                 .text_xs()
                 .font_weight(FontWeight::BOLD)
                 .child(
                     Icon::new(IconName::FileCode)
                         .size(px(14.0))
-                        .color(theme.neutral.icon),
+                        .color(code_muted_text(theme)),
                 )
                 .child(language.label()),
         );
@@ -251,16 +258,20 @@ fn render_block_code(
                 .py_1()
                 .rounded(px(theme.radius.sm))
                 .text_xs()
-                .text_color(theme.neutral.text_3)
+                .text_color(code_muted_text(theme))
                 .cursor_pointer()
-                .hover(|style| style.bg(theme.neutral.hover).text_color(theme.primary.base))
+                .hover(|style| {
+                    style
+                        .bg(code_hover_surface(theme))
+                        .text_color(code_accent(theme))
+                })
                 .on_click(move |_, _, cx| {
                     cx.write_to_clipboard(ClipboardItem::new_string(copied_code.clone()));
                 })
                 .child(
                     Icon::new(IconName::Copy)
                         .size(px(12.0))
-                        .color(theme.neutral.icon),
+                        .color(code_muted_text(theme)),
                 )
                 .child("Copy"),
         );
@@ -271,8 +282,8 @@ fn render_block_code(
         .w_full()
         .rounded(px(theme.radius.lg))
         .border_1()
-        .border_color(theme.neutral.border)
-        .bg(theme.neutral.card)
+        .border_color(code_border(theme))
+        .bg(code_surface(theme))
         .overflow_hidden()
         .child(header)
         .child(
@@ -280,7 +291,7 @@ fn render_block_code(
                 .id(scroll_id)
                 .overflow_x_scroll()
                 .p_4()
-                .bg(theme.neutral.hover.opacity(0.55))
+                .bg(code_surface(theme))
                 .child(render_highlighted_text(code, language, theme, true)),
         )
         .into_any_element()
@@ -293,50 +304,104 @@ fn render_highlighted_text(
     block: bool,
 ) -> StyledText {
     let text = code.to_string();
-    let spans = highlight_spans(&text, language);
-    let runs = text_runs(&text, &spans, theme, block);
+    let runs = syntect_runs(&text, language, theme, block);
     StyledText::new(code).with_runs(runs)
 }
 
-fn text_runs(
+fn syntect_runs(
     text: &str,
-    spans: &[HighlightSpan],
+    language: CodeLanguage,
     theme: &aura_theme::Theme,
     block: bool,
 ) -> Vec<TextRun> {
-    let mut runs = Vec::new();
-    let mut cursor = 0;
-
-    for span in spans {
-        if span.start > cursor {
-            runs.push(style_run(span.start - cursor, None, theme, block));
-        }
-        runs.push(style_run(
-            span.end - span.start,
-            Some(span.kind),
-            theme,
-            block,
-        ));
-        cursor = span.end;
+    if text.is_empty() {
+        return vec![base_style(theme, block).to_run(0)];
     }
 
-    if cursor < text.len() {
-        runs.push(style_run(text.len() - cursor, None, theme, block));
+    let syntax_set = syntax_set();
+    let syntax = syntax_set
+        .find_syntax_by_token(language.syntect_token())
+        .or_else(|| syntax_set.find_syntax_by_extension(language.syntect_token()))
+        .unwrap_or_else(|| syntax_set.find_syntax_plain_text());
+    let syntect_theme = syntect_theme();
+    let mut highlighter = HighlightLines::new(syntax, syntect_theme);
+    let mut runs = Vec::new();
+
+    for line in LinesWithEndings::from(text) {
+        match highlighter.highlight_line(line, syntax_set) {
+            Ok(regions) => {
+                for (style, slice) in regions {
+                    if !slice.is_empty() {
+                        push_run(
+                            &mut runs,
+                            syntect_style_run(slice.len(), style, theme, block),
+                        );
+                    }
+                }
+            }
+            Err(_) => push_run(&mut runs, base_style(theme, block).to_run(line.len())),
+        }
     }
 
     if runs.is_empty() {
-        runs.push(style_run(0, None, theme, block));
+        runs.push(base_style(theme, block).to_run(text.len()));
     }
 
     runs
 }
 
-fn style_run(
+fn push_run(runs: &mut Vec<TextRun>, run: TextRun) {
+    if run.len == 0 {
+        return;
+    }
+
+    if let Some(last) = runs.last_mut() {
+        if last.font == run.font
+            && last.color == run.color
+            && last.background_color == run.background_color
+            && last.underline == run.underline
+            && last.strikethrough == run.strikethrough
+        {
+            last.len += run.len;
+            return;
+        }
+    }
+
+    runs.push(run);
+}
+
+fn syntect_style_run(
     len: usize,
-    kind: Option<HighlightKind>,
+    syntect_style: SyntectStyle,
     theme: &aura_theme::Theme,
     block: bool,
 ) -> TextRun {
+    let mut style = base_style(theme, block);
+    style.color = syntect_color(syntect_style.foreground);
+
+    if syntect_style.font_style.contains(SyntectFontStyle::BOLD) {
+        style.font_weight = FontWeight::BOLD;
+    }
+
+    if syntect_style.font_style.contains(SyntectFontStyle::ITALIC) {
+        style.font_style = FontStyle::Italic;
+    }
+
+    if syntect_style
+        .font_style
+        .contains(SyntectFontStyle::UNDERLINE)
+    {
+        style.underline = Some(UnderlineStyle {
+            thickness: px(1.0),
+            color: Some(style.color),
+            ..Default::default()
+        });
+    }
+
+    style.to_run(len)
+}
+
+fn base_style(theme: &aura_theme::Theme, block: bool) -> TextStyle {
     let mut style = TextStyle::default();
     style.font_family = "Monospace".into();
     style.font_size = px(if block {
@@ -347,182 +412,72 @@ fn style_run(
     .into();
     style.line_height = px(theme.font_size.md * 1.7).into();
     style.white_space = WhiteSpace::Nowrap;
-    style.color = theme.neutral.text_1;
+    style.color = code_text(theme);
+    style
+}
 
-    match kind {
-        Some(HighlightKind::Keyword) => {
-            style.color = theme.primary.base;
-            style.font_weight = FontWeight::BOLD;
-        }
-        Some(HighlightKind::String) => style.color = theme.success.base,
-        Some(HighlightKind::Number) => style.color = theme.warning.base,
-        Some(HighlightKind::Comment) => style.color = theme.neutral.text_3,
-        Some(HighlightKind::Function) => style.color = theme.info.base,
-        Some(HighlightKind::Punctuation) => style.color = theme.neutral.text_2,
-        None => {}
+fn syntax_set() -> &'static SyntaxSet {
+    static SYNTAX_SET: OnceLock<SyntaxSet> = OnceLock::new();
+    SYNTAX_SET.get_or_init(SyntaxSet::load_defaults_newlines)
+}
+
+fn syntect_theme() -> &'static Theme {
+    static THEME_SET: OnceLock<ThemeSet> = OnceLock::new();
+    let theme_set = THEME_SET.get_or_init(ThemeSet::load_defaults);
+    theme_set
+        .themes
+        .get("base16-ocean.dark")
+        .or_else(|| theme_set.themes.get("InspiredGitHub"))
+        .or_else(|| theme_set.themes.values().next())
+        .expect("syntect default themes should not be empty")
+}
+
+fn syntect_color(color: syntect::highlighting::Color) -> Hsla {
+    Rgba {
+        r: color.r as f32 / 255.0,
+        g: color.g as f32 / 255.0,
+        b: color.b as f32 / 255.0,
+        a: color.a as f32 / 255.0,
     }
-
-    style.to_run(len)
+    .into()
 }
 
-fn highlight_spans(text: &str, language: CodeLanguage) -> Vec<HighlightSpan> {
-    let mut spans = lexical_spans(text);
+fn code_surface(_theme: &aura_theme::Theme) -> Hsla {
+    rgb(0x1b2b34)
+}
 
-    if matches!(language, CodeLanguage::PlainText | CodeLanguage::Markdown) {
-        spans.retain(|span| matches!(span.kind, HighlightKind::String | HighlightKind::Comment));
-        return spans;
+fn code_header_surface(_theme: &aura_theme::Theme) -> Hsla {
+    rgb(0x16242c)
+}
+
+fn code_hover_surface(_theme: &aura_theme::Theme) -> Hsla {
+    rgb(0x253c49)
+}
+
+fn code_border(_theme: &aura_theme::Theme) -> Hsla {
+    rgb(0x334d5c)
+}
+
+fn code_text(_theme: &aura_theme::Theme) -> Hsla {
+    rgb(0xc0c5ce)
+}
+
+fn code_muted_text(_theme: &aura_theme::Theme) -> Hsla {
+    rgb(0xa7adba)
+}
+
+fn code_accent(_theme: &aura_theme::Theme) -> Hsla {
+    rgb(0x96b5b4)
+}
+
+fn rgb(hex: u32) -> Hsla {
+    Rgba {
+        r: ((hex >> 16) & 0xff) as f32 / 255.0,
+        g: ((hex >> 8) & 0xff) as f32 / 255.0,
+        b: (hex & 0xff) as f32 / 255.0,
+        a: 1.0,
     }
-
-    spans
-}
-
-fn lexical_spans(text: &str) -> Vec<HighlightSpan> {
-    let bytes = text.as_bytes();
-    let mut spans = Vec::new();
-    let mut i = 0;
-
-    while i < bytes.len() {
-        let b = bytes[i];
-
-        if b == b'/' && bytes.get(i + 1) == Some(&b'/') {
-            let start = i;
-            i += 2;
-            while i < bytes.len() && bytes[i] != b'\n' {
-                i += 1;
-            }
-            spans.push(span(start, i, HighlightKind::Comment));
-            continue;
-        }
-
-        if b == b'#' {
-            let start = i;
-            while i < bytes.len() && bytes[i] != b'\n' {
-                i += 1;
-            }
-            spans.push(span(start, i, HighlightKind::Comment));
-            continue;
-        }
-
-        if b == b'"' || b == b'\'' || b == b'`' {
-            let quote = b;
-            let start = i;
-            i += 1;
-            while i < bytes.len() {
-                if bytes[i] == b'\\' {
-                    i = (i + 2).min(bytes.len());
-                    continue;
-                }
-                if bytes[i] == quote {
-                    i += 1;
-                    break;
-                }
-                i += 1;
-            }
-            spans.push(span(start, i, HighlightKind::String));
-            continue;
-        }
-
-        if b.is_ascii_digit() {
-            let start = i;
-            i += 1;
-            while i < bytes.len() && (bytes[i].is_ascii_alphanumeric() || bytes[i] == b'.') {
-                i += 1;
-            }
-            spans.push(span(start, i, HighlightKind::Number));
-            continue;
-        }
-
-        if is_ident_start(b) {
-            let start = i;
-            i += 1;
-            while i < bytes.len() && is_ident_continue(bytes[i]) {
-                i += 1;
-            }
-            let word = &text[start..i];
-            if is_keyword(word) {
-                spans.push(span(start, i, HighlightKind::Keyword));
-            } else if next_non_ws(bytes, i) == Some(b'(') {
-                spans.push(span(start, i, HighlightKind::Function));
-            }
-            continue;
-        }
-
-        if matches!(
-            b,
-            b'{' | b'}' | b'(' | b')' | b'[' | b']' | b':' | b';' | b',' | b'.'
-        ) {
-            spans.push(span(i, i + 1, HighlightKind::Punctuation));
-        }
-
-        i += 1;
-    }
-
-    spans
-}
-
-fn span(start: usize, end: usize, kind: HighlightKind) -> HighlightSpan {
-    HighlightSpan { start, end, kind }
-}
-
-fn is_ident_start(byte: u8) -> bool {
-    byte == b'_' || byte.is_ascii_alphabetic()
-}
-
-fn is_ident_continue(byte: u8) -> bool {
-    byte == b'_' || byte == b'-' || byte.is_ascii_alphanumeric()
-}
-
-fn next_non_ws(bytes: &[u8], mut i: usize) -> Option<u8> {
-    while i < bytes.len() {
-        if !bytes[i].is_ascii_whitespace() {
-            return Some(bytes[i]);
-        }
-        i += 1;
-    }
-    None
-}
-
-fn is_keyword(word: &str) -> bool {
-    matches!(
-        word,
-        "as" | "async"
-            | "await"
-            | "break"
-            | "const"
-            | "continue"
-            | "crate"
-            | "else"
-            | "enum"
-            | "export"
-            | "false"
-            | "fn"
-            | "for"
-            | "from"
-            | "if"
-            | "impl"
-            | "import"
-            | "in"
-            | "let"
-            | "match"
-            | "mod"
-            | "move"
-            | "mut"
-            | "null"
-            | "pub"
-            | "return"
-            | "self"
-            | "Self"
-            | "static"
-            | "struct"
-            | "super"
-            | "trait"
-            | "true"
-            | "type"
-            | "undefined"
-            | "use"
-            | "where"
-            | "while"
-    )
+    .into()
 }
 
 #[cfg(test)]
@@ -538,27 +493,27 @@ mod tests {
     }
 
     #[test]
-    fn highlighter_marks_keywords_strings_numbers_comments_and_functions() {
-        let spans = highlight_spans(
+    fn syntect_highlighter_generates_multiple_styled_runs_for_rust() {
+        let theme = aura_theme::Theme::light();
+        let runs = syntect_runs(
             "fn main() { let n = 42; // ok\n println!(\"hi\"); }",
             CodeLanguage::Rust,
+            &theme,
+            true,
         );
 
-        assert!(spans.iter().any(|span| span.kind == HighlightKind::Keyword));
-        assert!(spans.iter().any(|span| span.kind == HighlightKind::String));
-        assert!(spans.iter().any(|span| span.kind == HighlightKind::Number));
-        assert!(spans.iter().any(|span| span.kind == HighlightKind::Comment));
-        assert!(
-            spans
-                .iter()
-                .any(|span| span.kind == HighlightKind::Function)
-        );
+        assert!(runs.len() > 3);
+        assert_eq!(runs.iter().map(|run| run.len).sum::<usize>(), 48);
+        assert!(runs.iter().any(|run| run.color != code_text(&theme)));
     }
 
     #[test]
-    fn component_supports_copyable_block_and_inline_format() {
+    fn component_uses_syntect_and_supports_copyable_block_and_inline_format() {
         let source = include_str!("code_block.rs");
 
+        assert!(source.contains("HighlightLines"));
+        assert!(source.contains("SyntaxSet::load_defaults_newlines"));
+        assert!(source.contains("ThemeSet::load_defaults"));
         assert!(source.contains("ClipboardItem::new_string"));
         assert!(source.contains("CodeFormat::Inline"));
         assert!(source.contains("StyledText::new"));

@@ -142,7 +142,7 @@ const CODE_BLOCK_DOC: &str = r###"# CodeBlock
 - 块级代码显示。
 - 行内代码显示。
 - 语言标识：Rust、TOML、JSON、Markdown、Shell、TypeScript、JavaScript。
-- 轻量原生语法高亮。
+- `syntect` 语法高亮。
 - 复制按钮：使用 GPUI clipboard API。
 - 横向滚动：长代码不会撑破布局。
 
@@ -171,7 +171,7 @@ CodeBlock::new("cargo check")
 
 ## 设计说明
 
-CodeBlock 不依赖外部 Web 高亮器。它使用 GPUI `StyledText` 和 `TextRun` 生成原生样式片段，确保代码显示仍然属于组件库能力。
+CodeBlock 使用 Rust 原生 `syntect` 解析 Sublime 语法定义和主题，再转换为 GPUI `StyledText` / `TextRun`。高亮能力更完整，但渲染结果仍然是原生 Aura/GPUI 节点。
 "###;
 
 const MARKDOWN_DOC: &str = r###"# Markdown Renderer

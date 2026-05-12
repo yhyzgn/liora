@@ -2995,3 +2995,20 @@
 - `cargo check -p aura-docs` passed during implementation.
 - `cargo check -p aura-gallery` passed.
 - `timeout 8s cargo run -p aura-docs` started successfully and was stopped by timeout.
+
+## Session 88 — 2026-05-12 (CodeBlock Syntect Highlighting)
+
+### Actions
+- Replaced the hand-written CodeBlock token highlighter with `syntect`.
+- Kept rendering native by converting syntect regions into GPUI `TextRun`s inside `StyledText`.
+- Switched CodeBlock visuals to a more polished dark code surface using the `base16-ocean.dark` syntect theme palette.
+- Updated Aura Docs wording to document `syntect` as the highlighter implementation.
+
+### Verification
+- `cargo test -p aura-components code_block -- --nocapture` passed during implementation.
+- `cargo check -p aura-docs -p aura-gallery` passed.
+- `cargo test -p aura-docs markdown` passed.
+- `cargo test -p aura-gallery code_block_demo_uses_component_api` passed.
+- `cargo test -p aura-components code_block` passed.
+- `timeout 8s cargo run -p aura-gallery` started successfully and was stopped by timeout.
+- `timeout 8s cargo run -p aura-docs` started successfully and was stopped by timeout.
