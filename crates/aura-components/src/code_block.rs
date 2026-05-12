@@ -1161,10 +1161,15 @@ impl SelectableCodeText {
     }
 
     fn on_mouse_move(&mut self, event: &MouseMoveEvent, cx: &mut Context<Self>) {
-        let idx = self.index_for_point(event.position);
+        let dragging = event.pressed_button == Some(MouseButton::Left);
+        let idx = dragging.then(|| self.index_for_point(event.position));
         let changed = with_selectable_state(&self.id, |state| {
-            if state.selecting || event.pressed_button == Some(MouseButton::Left) {
-                self.select_to(state, idx)
+            if !dragging {
+                let changed = state.selecting;
+                state.selecting = false;
+                changed
+            } else if state.selecting {
+                self.select_to(state, idx.unwrap_or(self.code.len()))
             } else {
                 false
             }
