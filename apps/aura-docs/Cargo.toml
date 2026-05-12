@@ -13,4 +13,5 @@ gpui_platform = { workspace = true, features = ["wayland", "x11"] }
 aura-core = { path = "../../crates/aura-core" }
 aura-theme = { path = "../../crates/aura-theme" }
 aura-components = { path = "../../crates/aura-components" }
+aura-icons-lucide = { path = "../../crates/aura-icons-lucide" }
 pulldown-cmark = "0.13.3"

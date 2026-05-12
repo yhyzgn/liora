@@ -1,8 +1,9 @@
 use aura_components::{
-    Button, Card, CodeBlock as AuraCodeBlock, Container, Menu, MenuMode, Paragraph, Space, Text,
-    Title, toast_success,
+    Button, Card, CodeBlock as AuraCodeBlock, Container, Input, Menu, MenuMode, Paragraph, Space,
+    Switch, Text, Title, toast_error, toast_info, toast_success, toast_warning,
 };
 use aura_core::{Config, PassivePortal, Portal};
+use aura_icons_lucide::IconName;
 use gpui::{
     AnyElement, App, Component, Context, Entity, IntoElement, Render, RenderOnce, SharedString,
     WeakEntity, Window, div, prelude::*, px,
@@ -27,6 +28,7 @@ Aura Docs 是 Aura UI 的官方原生文档主程序。它不是网页文档站�
 - 标题、段落、列表、引用块、分割线。
 - 粗体、斜体、删除线、行内代码。
 - 代码块语言识别、语法高亮、主题切换和复制。
+- Button / Message 等组件效果与对应代码。
 - 全局提示 Message / toast 宏。
 - `::AuraDemo{component="Button"}::` 活体组件注入。
 "###;
@@ -134,6 +136,106 @@ Paragraph::new()
 文档渲染不实现独立排版引擎，而是依赖 Aura 自己的 Typography 组件。这样文档能力和组件库能力会同步成长。
 "###;
 
+const BUTTON_DOC: &str = r###"# Button
+
+`Button` 用于触发操作。Docs 中每个配置都按“效果 + 代码”展示；Gallery 只负责交互预览。
+
+## 类型
+
+### 效果
+
+::AuraDemo{component="ButtonTypes"}::
+
+### 代码
+
+```rust
+Button::new("Default");
+Button::new("Tertiary").tertiary();
+Button::new("Primary").primary();
+Button::new("Info").info();
+Button::new("Success").success();
+Button::new("Warning").warning();
+Button::new("Danger").danger();
+```
+
+## 次要按钮
+
+### 效果
+
+::AuraDemo{component="ButtonSecondary"}::
+
+### 代码
+
+```rust
+Button::new("Default").secondary();
+Button::new("Primary").primary().secondary();
+Button::new("Info").info().secondary();
+Button::new("Success").success().secondary();
+Button::new("Warning").warning().secondary();
+Button::new("Danger").danger().secondary();
+```
+
+## 文字按钮
+
+### 效果
+
+::AuraDemo{component="ButtonText"}::
+
+### 代码
+
+```rust
+Button::new("Default").text();
+Button::new("Primary").primary().text();
+Button::new("Info").info().text();
+Button::new("Success").success().text();
+Button::new("Warning").warning().text();
+Button::new("Danger").danger().text();
+```
+
+## 尺寸
+
+### 效果
+
+::AuraDemo{component="ButtonSizes"}::
+
+### 代码
+
+```rust
+Button::new("Small").primary().small();
+Button::new("Default").primary();
+Button::new("Large").primary().large();
+```
+
+## 状态
+
+### 效果
+
+::AuraDemo{component="ButtonStates"}::
+
+### 代码
+
+```rust
+Button::new("Disabled").primary().disabled(true);
+Button::new("Loading").primary().loading(true);
+Button::new("Saving").success().loading(true);
+```
+
+## 圆角
+
+### 效果
+
+::AuraDemo{component="ButtonRounded"}::
+
+### 代码
+
+```rust
+Button::new("4px").primary().rounded_sm();
+Button::new("12px").primary().rounded_md();
+Button::new("20px").primary().rounded_lg();
+Button::new("Pill").primary().pill();
+```
+"###;
+
 const CODE_BLOCK_DOC: &str = r###"# CodeBlock
 
 `CodeBlock` 是 Aura 的原生代码显示控件，用于展示代码片段、语言标签和复制按钮。
@@ -201,6 +303,119 @@ CodeBlock 使用 Rust 原生 `syntect` 解析 Sublime 语法定义和主题，�
 `CodeHighlighter` 先保留后端边界，当前仅启用 `Syntect`；如果后续需要代码编辑器、AST 交互或更强语义分析，可在不改调用侧主题 API 的前提下新增 Tree-sitter 后端。
 "###;
 
+const INPUT_DOC: &str = r###"# Input
+
+`Input` 是单行文本输入控件，支持 placeholder、禁用态、清除按钮、密码模式、前后缀和图标。
+
+## 基础输入
+
+### 效果
+
+::AuraDemo{component="InputBasic"}::
+
+### 代码
+
+```rust
+cx.new(|cx| Input::new("", cx));
+cx.new(|cx| Input::new("", cx).placeholder("Type something..."));
+```
+
+## 密码输入
+
+### 效果
+
+::AuraDemo{component="InputPassword"}::
+
+### 代码
+
+```rust
+cx.new(|cx| Input::new("", cx).password().placeholder("Password"));
+cx.new(|cx| Input::new("secret", cx).password().mask_char('*'));
+```
+
+## 前后缀
+
+### 效果
+
+::AuraDemo{component="InputAffix"}::
+
+### 代码
+
+```rust
+cx.new(|cx| Input::new("", cx).prepend_text("http://"));
+cx.new(|cx| Input::new("", cx).append_text(".com"));
+cx.new(|cx| {
+    Input::new("", cx)
+        .prepend_icon(IconName::User)
+        .append_text("Admin")
+});
+```
+
+## 可清除与禁用
+
+### 效果
+
+::AuraDemo{component="InputStates"}::
+
+### 代码
+
+```rust
+cx.new(|cx| Input::new("Clear me", cx).clearable(true));
+cx.new(|cx| Input::new("Disabled", cx).disabled(true));
+```
+"###;
+
+const SWITCH_DOC: &str = r###"# Switch
+
+`Switch` 用于在两个互斥状态之间切换。它支持键盘操作、禁用态和弹性滑动动画。
+
+## 基础状态
+
+### 效果
+
+::AuraDemo{component="SwitchBasic"}::
+
+### 代码
+
+```rust
+cx.new(|cx| Switch::new(true, cx));
+cx.new(|cx| Switch::new(false, cx));
+```
+
+## 禁用状态
+
+### 效果
+
+::AuraDemo{component="SwitchDisabled"}::
+
+### 代码
+
+```rust
+cx.new(|cx| Switch::new(false, cx).disabled(true));
+cx.new(|cx| Switch::new(true, cx).disabled(true));
+```
+
+## 变化回调
+
+### 效果
+
+::AuraDemo{component="SwitchCallback"}::
+
+### 代码
+
+```rust
+cx.new(|cx| {
+    Switch::new(false, cx).on_change(|checked, _window, _cx| {
+        if checked {
+            toast_success!("Switch is on");
+        } else {
+            toast_info!("Switch is off");
+        }
+    })
+});
+```
+"###;
+
 const MESSAGE_DOC: &str = r###"# Message
 
 `Message` 是 Aura 的全局提示层，适合用来展示操作反馈、成功提示、告警和错误。
@@ -211,10 +426,7 @@ const MESSAGE_DOC: &str = r###"# Message
 
 ### 效果
 
-- 信息提示：`toast_info!`
-- 成功提示：`toast_success!`
-- 警告提示：`toast_warning!`
-- 错误提示：`toast_error!`
+::AuraDemo{component="MessageTypes"}::
 
 ### 代码
 
@@ -231,8 +443,7 @@ toast_error!("Operation failed");
 
 ### 效果
 
-- 位置参数：`toast_info!("{}, ...", name, count)`
-- 命名参数：`toast_success!("{component} ... {api}")`
+::AuraDemo{component="MessageFormatting"}::
 
 ### 代码
 
@@ -371,8 +582,20 @@ const DOC_PAGES: &[DocPage] = &[
         markdown: TYPOGRAPHY_DOC,
     },
     DocPage {
+        title: "Button",
+        markdown: BUTTON_DOC,
+    },
+    DocPage {
         title: "CodeBlock",
         markdown: CODE_BLOCK_DOC,
+    },
+    DocPage {
+        title: "Input",
+        markdown: INPUT_DOC,
+    },
+    DocPage {
+        title: "Switch",
+        markdown: SWITCH_DOC,
     },
     DocPage {
         title: "Message",
@@ -782,15 +1005,18 @@ impl RenderOnce for MarkdownDocument {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
 
-        Space::new()
-            .vertical()
-            .gap_lg()
-            .children(self.blocks.into_iter().map(|block| block.render(&theme)))
+        let children = self
+            .blocks
+            .into_iter()
+            .map(|block| block.render(&theme, cx))
+            .collect::<Vec<_>>();
+
+        Space::new().vertical().gap_lg().children(children)
     }
 }
 
 impl Block {
-    fn render(self, theme: &aura_theme::Theme) -> AnyElement {
+    fn render(self, theme: &aura_theme::Theme, cx: &mut App) -> AnyElement {
         match self {
             Self::Paragraph(segments) => render_paragraph(segments, theme),
             Self::Heading { level, content } => {
@@ -811,19 +1037,21 @@ impl Block {
                 .pl_4()
                 .text_color(theme.neutral.text_2)
                 .child(
-                    Space::new()
-                        .vertical()
-                        .gap_md()
-                        .children(blocks.into_iter().map(|block| block.render(theme))),
+                    Space::new().vertical().gap_md().children(
+                        blocks
+                            .into_iter()
+                            .map(|block| block.render(theme, cx))
+                            .collect::<Vec<_>>(),
+                    ),
                 )
                 .into_any_element(),
             Self::List {
                 ordered,
                 start,
                 items,
-            } => render_list(ordered, start, items, theme),
+            } => render_list(ordered, start, items, theme, cx),
             Self::CodeBlock { language, code } => render_code_block(language, code, theme),
-            Self::LiveDemo { component } => render_live_demo(component, theme),
+            Self::LiveDemo { component } => render_live_demo(component, theme, cx),
             Self::Rule => div()
                 .h(px(1.0))
                 .w_full()
@@ -833,7 +1061,11 @@ impl Block {
     }
 }
 
-fn render_live_demo(component: SharedString, theme: &aura_theme::Theme) -> AnyElement {
+fn render_live_demo(
+    component: SharedString,
+    theme: &aura_theme::Theme,
+    cx: &mut App,
+) -> AnyElement {
     let demo = match component.as_ref() {
         "Button" => Space::new()
             .vertical()
@@ -843,6 +1075,165 @@ fn render_live_demo(component: SharedString, theme: &aura_theme::Theme) -> AnyEl
                 toast_success!("Live demo clicked: {}", "Button");
             }))
             .into_any_element(),
+        "ButtonTypes" => demo_row(vec![
+            Button::new("Default").into_any_element(),
+            Button::new("Tertiary").tertiary().into_any_element(),
+            Button::new("Primary").primary().into_any_element(),
+            Button::new("Info").info().into_any_element(),
+            Button::new("Success").success().into_any_element(),
+            Button::new("Warning").warning().into_any_element(),
+            Button::new("Danger").danger().into_any_element(),
+        ]),
+        "ButtonSecondary" => demo_row(vec![
+            Button::new("Default").secondary().into_any_element(),
+            Button::new("Primary")
+                .primary()
+                .secondary()
+                .into_any_element(),
+            Button::new("Info").info().secondary().into_any_element(),
+            Button::new("Success")
+                .success()
+                .secondary()
+                .into_any_element(),
+            Button::new("Warning")
+                .warning()
+                .secondary()
+                .into_any_element(),
+            Button::new("Danger")
+                .danger()
+                .secondary()
+                .into_any_element(),
+        ]),
+        "ButtonText" => demo_row(vec![
+            Button::new("Default").text().into_any_element(),
+            Button::new("Primary").primary().text().into_any_element(),
+            Button::new("Info").info().text().into_any_element(),
+            Button::new("Success").success().text().into_any_element(),
+            Button::new("Warning").warning().text().into_any_element(),
+            Button::new("Danger").danger().text().into_any_element(),
+        ]),
+        "ButtonSizes" => demo_row(vec![
+            Button::new("Small").primary().small().into_any_element(),
+            Button::new("Default").primary().into_any_element(),
+            Button::new("Large").primary().large().into_any_element(),
+        ]),
+        "ButtonStates" => demo_row(vec![
+            Button::new("Disabled")
+                .primary()
+                .disabled(true)
+                .into_any_element(),
+            Button::new("Loading")
+                .primary()
+                .loading(true)
+                .into_any_element(),
+            Button::new("Saving")
+                .success()
+                .loading(true)
+                .into_any_element(),
+        ]),
+        "ButtonRounded" => demo_row(vec![
+            Button::new("4px").primary().rounded_sm().into_any_element(),
+            Button::new("12px")
+                .primary()
+                .rounded_md()
+                .into_any_element(),
+            Button::new("20px")
+                .primary()
+                .rounded_lg()
+                .into_any_element(),
+            Button::new("Pill").primary().pill().into_any_element(),
+        ]),
+        "InputBasic" => {
+            let plain = cx.new(|cx| Input::new("", cx));
+            let placeholder = cx.new(|cx| Input::new("", cx).placeholder("Type something..."));
+            demo_stack(vec![
+                plain.into_any_element(),
+                placeholder.into_any_element(),
+            ])
+        }
+        "InputPassword" => {
+            let password = cx.new(|cx| Input::new("", cx).password().placeholder("Password"));
+            let custom = cx.new(|cx| Input::new("secret", cx).password().mask_char('*'));
+            demo_stack(vec![password.into_any_element(), custom.into_any_element()])
+        }
+        "InputAffix" => {
+            let prepend = cx.new(|cx| Input::new("", cx).prepend_text("http://"));
+            let append = cx.new(|cx| Input::new("", cx).append_text(".com"));
+            let composite = cx.new(|cx| {
+                Input::new("", cx)
+                    .prepend_icon(IconName::User)
+                    .append_text("Admin")
+            });
+            demo_stack(vec![
+                prepend.into_any_element(),
+                append.into_any_element(),
+                composite.into_any_element(),
+            ])
+        }
+        "InputStates" => {
+            let clearable = cx.new(|cx| Input::new("Clear me", cx).clearable(true));
+            let disabled = cx.new(|cx| Input::new("Disabled", cx).disabled(true));
+            demo_stack(vec![
+                clearable.into_any_element(),
+                disabled.into_any_element(),
+            ])
+        }
+        "SwitchBasic" => {
+            let on = cx.new(|cx| Switch::new(true, cx));
+            let off = cx.new(|cx| Switch::new(false, cx));
+            demo_row(vec![on.into_any_element(), off.into_any_element()])
+        }
+        "SwitchDisabled" => {
+            let off = cx.new(|cx| Switch::new(false, cx).disabled(true));
+            let on = cx.new(|cx| Switch::new(true, cx).disabled(true));
+            demo_row(vec![off.into_any_element(), on.into_any_element()])
+        }
+        "SwitchCallback" => {
+            let switch = cx.new(|cx| {
+                Switch::new(false, cx).on_change(|checked, _window, _cx| {
+                    if checked {
+                        toast_success!("Switch is on");
+                    } else {
+                        toast_info!("Switch is off");
+                    }
+                })
+            });
+            demo_row(vec![switch.into_any_element()])
+        }
+        "MessageTypes" => demo_row(vec![
+            Button::new("toast_info!")
+                .on_click(|_, _, _| toast_info!("This is an info toast"))
+                .into_any_element(),
+            Button::new("toast_success!")
+                .primary()
+                .on_click(|_, _, _| toast_success!("Operation completed"))
+                .into_any_element(),
+            Button::new("toast_warning!")
+                .warning()
+                .on_click(|_, _, _| toast_warning!("Please check the input"))
+                .into_any_element(),
+            Button::new("toast_error!")
+                .danger()
+                .on_click(|_, _, _| toast_error!("Operation failed"))
+                .into_any_element(),
+        ]),
+        "MessageFormatting" => demo_row(vec![
+            Button::new("位置参数")
+                .on_click(|_, _, _| {
+                    let name = "Aura";
+                    let count = 4;
+                    toast_info!("{}, you have {} toast variants.", name, count);
+                })
+                .into_any_element(),
+            Button::new("命名参数")
+                .primary()
+                .on_click(|_, _, _| {
+                    let component = "Message";
+                    let api = "toast_success!";
+                    toast_success!("{component} macro {api} works.");
+                })
+                .into_any_element(),
+        ]),
         _ => Paragraph::with_text(format!(
             "Unsupported Aura demo component: {}",
             component.as_ref()
@@ -856,7 +1247,23 @@ fn render_live_demo(component: SharedString, theme: &aura_theme::Theme) -> AnyEl
         .border_color(theme.primary.base.opacity(0.35))
         .bg(theme.primary.light_9)
         .p_3()
-        .child(Card::new(demo).no_shadow().width_lg())
+        .child(Card::new(demo).no_shadow().no_shrink())
+        .into_any_element()
+}
+
+fn demo_row(children: Vec<AnyElement>) -> AnyElement {
+    Space::new()
+        .wrap()
+        .gap_sm()
+        .children(children)
+        .into_any_element()
+}
+
+fn demo_stack(children: Vec<AnyElement>) -> AnyElement {
+    Space::new()
+        .vertical()
+        .gap_md()
+        .children(children)
         .into_any_element()
 }
 
@@ -1042,18 +1449,22 @@ fn render_list(
     start: u64,
     items: Vec<Vec<Block>>,
     theme: &aura_theme::Theme,
+    cx: &mut App,
 ) -> AnyElement {
-    div()
-        .flex()
-        .flex_col()
-        .gap_2()
-        .children(items.into_iter().enumerate().map(|(index, item_blocks)| {
-            let marker = if ordered {
-                format!("{}.", start + index as u64)
-            } else {
-                "•".to_string()
-            };
+    let mut rows = Vec::new();
 
+    for (index, item_blocks) in items.into_iter().enumerate() {
+        let marker = if ordered {
+            format!("{}.", start + index as u64)
+        } else {
+            "•".to_string()
+        };
+        let item_children = item_blocks
+            .into_iter()
+            .map(|block| block.render(theme, cx))
+            .collect::<Vec<_>>();
+
+        rows.push(
             div()
                 .flex()
                 .flex_row()
@@ -1066,14 +1477,18 @@ fn render_list(
                         .child(marker),
                 )
                 .child(
-                    div().flex_1().child(
-                        Space::new()
-                            .vertical()
-                            .gap_sm()
-                            .children(item_blocks.into_iter().map(|block| block.render(theme))),
-                    ),
-                )
-        }))
+                    div()
+                        .flex_1()
+                        .child(Space::new().vertical().gap_sm().children(item_children)),
+                ),
+        );
+    }
+
+    div()
+        .flex()
+        .flex_col()
+        .gap_2()
+        .children(rows)
         .into_any_element()
 }
 
@@ -1119,7 +1534,10 @@ mod tests {
 
         assert!(titles.contains(&"Quick Start"));
         assert!(titles.contains(&"Architecture"));
+        assert!(titles.contains(&"Button"));
         assert!(titles.contains(&"CodeBlock"));
+        assert!(titles.contains(&"Input"));
+        assert!(titles.contains(&"Switch"));
         assert!(titles.contains(&"Message"));
         assert!(titles.contains(&"Live Demo"));
         assert!(titles.contains(&"Authoring"));
@@ -1249,6 +1667,32 @@ mod tests {
             matches!(&parts[1], TextPart::LiveDemo(component) if component.as_ref() == "Button")
         );
         assert!(matches!(parts[2], TextPart::Text(" B")));
+    }
+
+    #[test]
+    fn component_docs_pair_live_effects_with_code_blocks() {
+        let source = include_str!("markdown.rs");
+
+        for marker in [
+            "ButtonTypes",
+            "ButtonSecondary",
+            "ButtonText",
+            "ButtonSizes",
+            "ButtonStates",
+            "ButtonRounded",
+            "InputBasic",
+            "InputPassword",
+            "InputAffix",
+            "InputStates",
+            "SwitchBasic",
+            "SwitchDisabled",
+            "SwitchCallback",
+            "MessageTypes",
+            "MessageFormatting",
+        ] {
+            assert!(source.contains(&format!("component=\"{marker}\"")));
+            assert!(source.contains(&format!("\"{marker}\" =>")));
+        }
     }
 
     #[test]
