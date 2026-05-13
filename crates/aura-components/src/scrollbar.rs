@@ -1,10 +1,16 @@
 use aura_core::Config;
 use gpui::{
-    AnyElement, App, Bounds, Context, DispatchPhase, Element, ElementId, GlobalElementId, Hitbox,
+    AnyElement, App, Bounds, Context, DispatchPhase, Element, GlobalElementId, Hitbox,
     HitboxBehavior, InspectorElementId, IntoElement, LayoutId, ListState, MouseButton,
     MouseDownEvent, MouseMoveEvent, MouseUpEvent, PaintQuad, Pixels, Point, Render, ScrollHandle,
     Size, Style, Window, div, point, prelude::*, px, relative, size,
 };
+use std::cell::Cell;
+
+thread_local! {
+    static VIRTUAL_SCROLLBAR_GRAB_OFFSET: Cell<Option<Pixels>> = const { Cell::new(None) };
+    static SCROLLBAR_GRAB_OFFSET: Cell<Option<Pixels>> = const { Cell::new(None) };
+}
 
 const SCROLLBAR_THUMB_WIDTH: Pixels = px(4.0);
 const SCROLLBAR_THUMB_HOVER_WIDTH: Pixels = px(8.0);
@@ -67,11 +73,6 @@ pub struct VirtualScrollbarPrepaint {
     dragging: bool,
 }
 
-#[derive(Clone, Copy, Default)]
-struct ScrollbarDragState {
-    thumb_grab_offset: Option<Pixels>,
-}
-
 #[derive(Clone, Copy)]
 struct ThumbMetrics {
     bounds: Bounds<Pixels>,
@@ -124,12 +125,7 @@ impl Element for VirtualScrollbar {
             },
         });
         let hitbox = window.insert_hitbox(hitbox_bounds, HitboxBehavior::Normal);
-        let dragging = scrollbar_grab_offset(
-            ElementId::Name("virtual-scrollbar-drag".into()),
-            window,
-            _cx,
-        )
-        .is_some();
+        let dragging = virtual_scrollbar_grab_offset().is_some();
         let active = hitbox.is_hovered(window)
             || dragging
             || hitbox_bounds.contains(&window.mouse_position());
@@ -184,12 +180,7 @@ impl Element for VirtualScrollbar {
         let current_view = window.current_view();
         window.on_mouse_event(move |_: &MouseMoveEvent, phase, window, cx| {
             if phase == DispatchPhase::Capture {
-                let active = scrollbar_grab_offset(
-                    ElementId::Name("virtual-scrollbar-drag".into()),
-                    window,
-                    cx,
-                )
-                .is_some()
+                let active = virtual_scrollbar_grab_offset().is_some()
                     || hover_bounds.contains(&window.mouse_position());
                 if active != was_active {
                     cx.notify(current_view);
@@ -212,12 +203,7 @@ impl Element for VirtualScrollbar {
                 } else {
                     raw_thumb_bounds.size.height / 2.0
                 };
-                set_scrollbar_grab_offset(
-                    ElementId::Name("virtual-scrollbar-drag".into()),
-                    Some(grab_offset),
-                    window,
-                    cx,
-                );
+                set_virtual_scrollbar_grab_offset(Some(grab_offset));
                 list_state.scrollbar_drag_started();
                 set_virtual_scrollbar_position(&list_state, event.position, grab_offset);
                 window.capture_pointer(hitbox.id);
@@ -229,11 +215,7 @@ impl Element for VirtualScrollbar {
         let list_state = self.list_state.clone();
         window.on_mouse_event(move |event: &MouseMoveEvent, phase, window, cx| {
             if phase == DispatchPhase::Capture {
-                let Some(grab_offset) = scrollbar_grab_offset(
-                    ElementId::Name("virtual-scrollbar-drag".into()),
-                    window,
-                    cx,
-                ) else {
+                let Some(grab_offset) = virtual_scrollbar_grab_offset() else {
                     return;
                 };
                 set_virtual_scrollbar_position(&list_state, event.position, grab_offset);
@@ -246,20 +228,10 @@ impl Element for VirtualScrollbar {
         window.on_mouse_event(move |event: &MouseUpEvent, phase, window, cx| {
             if phase == DispatchPhase::Capture
                 && event.button == MouseButton::Left
-                && scrollbar_grab_offset(
-                    ElementId::Name("virtual-scrollbar-drag".into()),
-                    window,
-                    cx,
-                )
-                .is_some()
+                && virtual_scrollbar_grab_offset().is_some()
             {
                 list_state.scrollbar_drag_ended();
-                set_scrollbar_grab_offset(
-                    ElementId::Name("virtual-scrollbar-drag".into()),
-                    None,
-                    window,
-                    cx,
-                );
+                set_virtual_scrollbar_grab_offset(None);
                 cx.stop_propagation();
                 window.refresh();
             }
@@ -343,24 +315,20 @@ fn expand_scrollbar_hitbox(thumb: Bounds<Pixels>) -> Bounds<Pixels> {
     }
 }
 
-fn scrollbar_grab_offset(key: ElementId, window: &mut Window, cx: &mut App) -> Option<Pixels> {
-    window
-        .use_keyed_state(key, cx, |_, _| ScrollbarDragState::default())
-        .read(cx)
-        .thumb_grab_offset
+fn virtual_scrollbar_grab_offset() -> Option<Pixels> {
+    VIRTUAL_SCROLLBAR_GRAB_OFFSET.with(Cell::get)
 }
 
-fn set_scrollbar_grab_offset(
-    key: ElementId,
-    offset: Option<Pixels>,
-    window: &mut Window,
-    cx: &mut App,
-) {
-    window
-        .use_keyed_state(key, cx, |_, _| ScrollbarDragState::default())
-        .update(cx, |state, _| {
-            state.thumb_grab_offset = offset;
-        });
+fn set_virtual_scrollbar_grab_offset(offset: Option<Pixels>) {
+    VIRTUAL_SCROLLBAR_GRAB_OFFSET.with(|state| state.set(offset));
+}
+
+fn scrollbar_grab_offset() -> Option<Pixels> {
+    SCROLLBAR_GRAB_OFFSET.with(Cell::get)
+}
+
+fn set_scrollbar_grab_offset(offset: Option<Pixels>) {
+    SCROLLBAR_GRAB_OFFSET.with(|state| state.set(offset));
 }
 
 fn scroll_handle_thumb_metrics(
@@ -505,7 +473,7 @@ impl gpui::Element for ScrollbarThumb {
         bounds: gpui::Bounds<Pixels>,
         _request_layout: &mut Self::RequestLayoutState,
         window: &mut Window,
-        cx: &mut App,
+        _cx: &mut App,
     ) -> Self::PrepaintState {
         let metrics = scroll_handle_thumb_metrics(&self.scroll_handle, SCROLLBAR_THUMB_WIDTH);
         let thumb = metrics.map(|metrics| metrics.bounds);
@@ -517,9 +485,7 @@ impl gpui::Element for ScrollbarThumb {
             },
         });
         let hitbox = window.insert_hitbox(hover_bounds, HitboxBehavior::Normal);
-        let dragging =
-            scrollbar_grab_offset(ElementId::Name("scrollbar-thumb-drag".into()), window, cx)
-                .is_some();
+        let dragging = scrollbar_grab_offset().is_some();
         let active = hitbox.is_hovered(window)
             || dragging
             || hover_bounds.contains(&window.mouse_position());
@@ -567,12 +533,7 @@ impl gpui::Element for ScrollbarThumb {
         let current_view = window.current_view();
         window.on_mouse_event(move |_: &MouseMoveEvent, phase, window, cx| {
             if phase == DispatchPhase::Capture {
-                let active = scrollbar_grab_offset(
-                    ElementId::Name("scrollbar-thumb-drag".into()),
-                    window,
-                    cx,
-                )
-                .is_some()
+                let active = scrollbar_grab_offset().is_some()
                     || hover_bounds.contains(&window.mouse_position());
                 if active != was_active {
                     cx.notify(current_view);
@@ -595,12 +556,7 @@ impl gpui::Element for ScrollbarThumb {
                 } else {
                     raw_thumb_bounds.size.height / 2.0
                 };
-                set_scrollbar_grab_offset(
-                    ElementId::Name("scrollbar-thumb-drag".into()),
-                    Some(grab_offset),
-                    window,
-                    cx,
-                );
+                set_scrollbar_grab_offset(Some(grab_offset));
                 set_scroll_handle_position(&scroll_handle, event.position, grab_offset);
                 window.capture_pointer(hitbox.id);
                 cx.stop_propagation();
@@ -611,11 +567,7 @@ impl gpui::Element for ScrollbarThumb {
         let scroll_handle = self.scroll_handle.clone();
         window.on_mouse_event(move |event: &MouseMoveEvent, phase, window, cx| {
             if phase == DispatchPhase::Capture {
-                let Some(grab_offset) = scrollbar_grab_offset(
-                    ElementId::Name("scrollbar-thumb-drag".into()),
-                    window,
-                    cx,
-                ) else {
+                let Some(grab_offset) = scrollbar_grab_offset() else {
                     return;
                 };
                 set_scroll_handle_position(&scroll_handle, event.position, grab_offset);
@@ -627,15 +579,9 @@ impl gpui::Element for ScrollbarThumb {
         window.on_mouse_event(move |event: &MouseUpEvent, phase, window, cx| {
             if phase == DispatchPhase::Capture
                 && event.button == MouseButton::Left
-                && scrollbar_grab_offset(ElementId::Name("scrollbar-thumb-drag".into()), window, cx)
-                    .is_some()
+                && scrollbar_grab_offset().is_some()
             {
-                set_scrollbar_grab_offset(
-                    ElementId::Name("scrollbar-thumb-drag".into()),
-                    None,
-                    window,
-                    cx,
-                );
+                set_scrollbar_grab_offset(None);
                 cx.stop_propagation();
                 window.refresh();
             }
@@ -665,7 +611,7 @@ mod tests {
         assert!(source.contains("set_offset_from_scrollbar"));
         assert!(source.contains("scrollbar_drag_started"));
         assert!(source.contains("scrollbar_drag_ended"));
-        assert!(source.contains("scrollbar_grab_offset"));
+        assert!(source.contains("virtual_scrollbar_grab_offset"));
     }
 
     #[test]
@@ -679,6 +625,7 @@ mod tests {
         assert!(source.contains("SCROLLBAR_HIT_WIDTH"));
         assert!(source.contains("scrollbar_thumb_bounds_for_width"));
         assert!(source.contains("set_scrollbar_grab_offset"));
+        assert!(source.contains("set_virtual_scrollbar_grab_offset"));
         assert!(source.contains("set_scroll_handle_position"));
         assert!(source.contains("set_virtual_scrollbar_position"));
         assert!(source.contains("hover_bounds.contains(&window.mouse_position())"));
