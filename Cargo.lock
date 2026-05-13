@@ -457,6 +457,7 @@ dependencies = [
  "aura-components",
  "aura-core",
  "aura-gallery",
+ "aura-icons",
  "aura-icons-lucide",
  "aura-theme",
  "gpui",

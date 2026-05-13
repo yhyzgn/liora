@@ -1,16 +1,47 @@
 # Statistic
 
-展示强调的数值。
+`Statistic` 用于展示重点数值，可组合前缀、后缀、图标和不同布局。
 
-## 完整示例
-
-此示例复用 Aura Gallery 中同名控件的原生 demo，确保文档效果与演示大屏保持一致。
+## 基础用法
 
 ### 效果
 
-::AuraDemo{component="Statistic"}::
+::AuraDemo{component="StatisticBasic"}::
 
 ### 代码
 
-```rust src="gallery/statistic_demo.rs"
+```rust src="statistic/basic.rs"
+```
+
+## 自定义前缀/后缀
+
+### 效果
+
+::AuraDemo{component="StatisticAffix"}::
+
+### 代码
+
+```rust src="statistic/affix.rs"
+```
+
+## 内置图标
+
+### 效果
+
+::AuraDemo{component="StatisticIcons"}::
+
+### 代码
+
+```rust src="statistic/icons.rs"
+```
+
+## 水平布局
+
+### 效果
+
+::AuraDemo{component="StatisticLayout"}::
+
+### 代码
+
+```rust src="statistic/layout.rs"
 ```

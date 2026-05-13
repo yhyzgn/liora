@@ -123,12 +123,30 @@ mod radio_group;
 mod rate_basic;
 #[path = "../../content/snippets/rate/custom.rs"]
 mod rate_custom;
+#[path = "../../content/snippets/result/statuses.rs"]
+mod result_statuses;
+#[path = "../../content/snippets/result/success.rs"]
+mod result_success;
 #[path = "../../content/snippets/select/basic.rs"]
 mod select_basic;
+#[path = "../../content/snippets/skeleton/basic.rs"]
+mod skeleton_basic;
+#[path = "../../content/snippets/skeleton/template.rs"]
+mod skeleton_template;
+#[path = "../../content/snippets/skeleton/variants.rs"]
+mod skeleton_variants;
 #[path = "../../content/snippets/slider/basic.rs"]
 mod slider_basic;
 #[path = "../../content/snippets/slider/step.rs"]
 mod slider_step;
+#[path = "../../content/snippets/statistic/affix.rs"]
+mod statistic_affix;
+#[path = "../../content/snippets/statistic/basic.rs"]
+mod statistic_basic;
+#[path = "../../content/snippets/statistic/icons.rs"]
+mod statistic_icons;
+#[path = "../../content/snippets/statistic/layout.rs"]
+mod statistic_layout;
 #[path = "../../content/snippets/switch/basic.rs"]
 mod switch_basic;
 #[path = "../../content/snippets/switch/callback.rs"]

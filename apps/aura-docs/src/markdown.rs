@@ -1,8 +1,9 @@
 use aura_components::{
-    Alert, AlertType, Autocomplete, AutocompleteItem, Avatar, Badge, BadgeType, Button, Checkbox,
-    CheckboxGroup, CodeBlock as AuraCodeBlock, Container, Input, InputNumber,
+    Alert, AlertType, Autocomplete, AutocompleteItem, Avatar, Badge, BadgeType, Button, Card,
+    Checkbox, CheckboxGroup, CodeBlock as AuraCodeBlock, Container, Input, InputNumber,
     InputNumberControlsPosition, Link, Loading, Menu, MenuMode, Paragraph, Progress,
-    ProgressStatus, Radio, RadioGroup, Rate, Select, Slider, Space, Switch, Tag as AuraTag, Text,
+    ProgressStatus, Radio, RadioGroup, Rate, Result as AuraResult, ResultStatus, Select, Skeleton,
+    SkeletonItem, SkeletonVariant, Slider, Space, Statistic, Switch, Tag as AuraTag, Text,
     Textarea, Title, VirtualizedList, toast_error, toast_info, toast_success, toast_warning,
 };
 use aura_core::{Config, PassivePortal, Portal};
@@ -937,6 +938,15 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "link/underline.rs" => Some(include_str!("../content/snippets/link/underline.rs")),
         "link/states.rs" => Some(include_str!("../content/snippets/link/states.rs")),
         "link/icons.rs" => Some(include_str!("../content/snippets/link/icons.rs")),
+        "skeleton/basic.rs" => Some(include_str!("../content/snippets/skeleton/basic.rs")),
+        "skeleton/variants.rs" => Some(include_str!("../content/snippets/skeleton/variants.rs")),
+        "skeleton/template.rs" => Some(include_str!("../content/snippets/skeleton/template.rs")),
+        "result/success.rs" => Some(include_str!("../content/snippets/result/success.rs")),
+        "result/statuses.rs" => Some(include_str!("../content/snippets/result/statuses.rs")),
+        "statistic/basic.rs" => Some(include_str!("../content/snippets/statistic/basic.rs")),
+        "statistic/affix.rs" => Some(include_str!("../content/snippets/statistic/affix.rs")),
+        "statistic/icons.rs" => Some(include_str!("../content/snippets/statistic/icons.rs")),
+        "statistic/layout.rs" => Some(include_str!("../content/snippets/statistic/layout.rs")),
         "markdown/state_machine.rs" => Some(include_str!(
             "../content/snippets/markdown/state_machine.rs"
         )),
@@ -1806,6 +1816,123 @@ impl Render for LiveDemoContent {
                     .icon_start(IconName::House)
                     .href("https://example.com")
                     .into_any_element(),
+            ]),
+            "SkeletonBasic" => Skeleton::new().rows(4).into_any_element(),
+            "SkeletonVariants" => demo_row(vec![
+                SkeletonItem::new(SkeletonVariant::Circle).into_any_element(),
+                SkeletonItem::new(SkeletonVariant::Square).into_any_element(),
+                SkeletonItem::new(SkeletonVariant::Image).into_any_element(),
+            ]),
+            "SkeletonTemplate" => {
+                let theme = _cx.global::<Config>().theme.clone();
+                Skeleton::new()
+                    .template(|_, _| {
+                        Space::new()
+                            .align_start()
+                            .gap_lg()
+                            .child(SkeletonItem::new(SkeletonVariant::Circle))
+                            .child(
+                                Space::new()
+                                    .vertical()
+                                    .grow()
+                                    .gap_sm()
+                                    .child(
+                                        SkeletonItem::new(SkeletonVariant::Paragraph).width_2_5(),
+                                    )
+                                    .child(Skeleton::new().rows(2)),
+                            )
+                            .into_any_element()
+                    })
+                    .child(
+                        Space::new()
+                            .align_start()
+                            .gap_lg()
+                            .child(Avatar::new().background(theme.primary.base))
+                            .child(
+                                Space::new()
+                                    .vertical()
+                                    .gap_sm()
+                                    .child(Text::new("Zed Industries").bold())
+                                    .child(Text::new("GPUI renders native Rust views on the GPU.")),
+                            ),
+                    )
+                    .into_any_element()
+            }
+            "ResultSuccess" => AuraResult::new("成功购买云服务器")
+                .status(ResultStatus::Success)
+                .sub_title("订单编号：2017182818828182881，请耐心等待审核。")
+                .extra(|_, _| {
+                    Space::new()
+                        .gap_md()
+                        .child(Button::new("返回列表"))
+                        .child(Button::new("查看详情").primary())
+                        .into_any_element()
+                })
+                .into_any_element(),
+            "ResultStatuses" => demo_stack(vec![
+                AuraResult::new("您的账户存在安全风险")
+                    .status(ResultStatus::Warning)
+                    .sub_title("请及时修改密码并开启双重验证。")
+                    .extra(|_, _| Button::new("立即处理").primary().into_any_element())
+                    .into_any_element(),
+                AuraResult::new("提交失败")
+                    .status(ResultStatus::Error)
+                    .sub_title("请检查网络连接并重试。")
+                    .extra(|_, _| Button::new("重新提交").primary().into_any_element())
+                    .into_any_element(),
+                AuraResult::new("您的申请已提交")
+                    .status(ResultStatus::Info)
+                    .sub_title("我们将在 3 个工作日内完成审核。")
+                    .extra(|_, _| Button::new("知道了").into_any_element())
+                    .into_any_element(),
+            ]),
+            "StatisticBasic" => demo_row(vec![
+                Statistic::new("今日活跃用户", "114,514").into_any_element(),
+                Statistic::new("总交易额", "¥ 9,999.00").into_any_element(),
+            ]),
+            "StatisticAffix" => demo_row(vec![
+                Statistic::new("增长率", "12.5")
+                    .suffix(aura_icons::Icon::new(IconName::TrendingUp))
+                    .into_any_element(),
+                Statistic::new("月活下降", "5.2")
+                    .suffix(aura_icons::Icon::new(IconName::TrendingDown))
+                    .into_any_element(),
+                Statistic::new("待办事项", "12")
+                    .prefix(aura_icons::Icon::new(IconName::ListTodo))
+                    .into_any_element(),
+            ]),
+            "StatisticIcons" => demo_row(vec![
+                Statistic::new("转化率", "68%")
+                    .value_color(gpui::green())
+                    .icon(IconName::TrendingUp)
+                    .into_any_element(),
+                Statistic::new("告警数", "7")
+                    .icon(IconName::Bell)
+                    .icon_left()
+                    .icon_color(gpui::red())
+                    .into_any_element(),
+                Statistic::new("完成率", "92%")
+                    .icon(IconName::CircleCheck)
+                    .icon_right()
+                    .icon_color(gpui::blue())
+                    .into_any_element(),
+            ]),
+            "StatisticLayout" => demo_row(vec![
+                Card::new(
+                    Statistic::new("紧凑水平", "1,280")
+                        .icon(IconName::Activity)
+                        .horizontal_compact(),
+                )
+                .width_lg()
+                .into_any_element(),
+                Card::new(
+                    Statistic::new("两端对齐", "¥ 86,420")
+                        .icon(IconName::Wallet)
+                        .icon_left()
+                        .horizontal_between(),
+                )
+                .width_lg()
+                .into_any_element(),
             ]),
             _ => self.gallery_demo.clone().map_or_else(
                 || {
@@ -2848,6 +2975,30 @@ mod tests {
                     "link/underline.rs",
                     "link/states.rs",
                     "link/icons.rs",
+                ][..],
+            ),
+            (
+                include_str!("../content/pages/skeleton.md"),
+                "SkeletonBasic",
+                &[
+                    "skeleton/basic.rs",
+                    "skeleton/variants.rs",
+                    "skeleton/template.rs",
+                ][..],
+            ),
+            (
+                include_str!("../content/pages/result.md"),
+                "ResultSuccess",
+                &["result/success.rs", "result/statuses.rs"][..],
+            ),
+            (
+                include_str!("../content/pages/statistic.md"),
+                "StatisticBasic",
+                &[
+                    "statistic/basic.rs",
+                    "statistic/affix.rs",
+                    "statistic/icons.rs",
+                    "statistic/layout.rs",
                 ][..],
             ),
         ] {

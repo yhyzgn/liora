@@ -1,16 +1,25 @@
 # Result
 
-反馈操作结果。
+`Result` 用于在任务完成后展示成功、警告、错误或信息结果，并可附带后续操作。
 
-## 完整示例
-
-此示例复用 Aura Gallery 中同名控件的原生 demo，确保文档效果与演示大屏保持一致。
+## 成功状态
 
 ### 效果
 
-::AuraDemo{component="Result"}::
+::AuraDemo{component="ResultSuccess"}::
 
 ### 代码
 
-```rust src="gallery/result_demo.rs"
+```rust src="result/success.rs"
+```
+
+## 其他状态
+
+### 效果
+
+::AuraDemo{component="ResultStatuses"}::
+
+### 代码
+
+```rust src="result/statuses.rs"
 ```
