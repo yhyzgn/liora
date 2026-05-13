@@ -1,6 +1,0 @@
-{
-  "last_turn_at": "2026-05-13T05:41:43.734Z",
-  "last_progress_at": "2026-05-13T05:41:43.734Z",
-  "turn_count": 25,
-  "last_agent_output": "已继续完成 Dialog / Drawer 文档拆分并推送。\n\n提交：\n- `8df319c Pair overlay docs with snippets`\n\n验证通过：\n- `cargo fmt`"
-}

@@ -1,24 +1,30 @@
-use crate::Text;
+use crate::{SelectableText, SelectableTextOptions, SelectableTextWrap, Text};
 use aura_core::Config;
 use gpui::{
-    App, Component, IntoElement, RenderOnce, SharedString, StyledText, TextRun, TextStyle,
-    WhiteSpace, Window, div, prelude::*, px,
+    App, Component, ElementId, IntoElement, RenderOnce, SharedString, StyledText, TextRun,
+    TextStyle, WhiteSpace, Window, div, prelude::*, px,
 };
 
 pub struct Paragraph {
     children: Vec<Text>,
+    selectable: bool,
+    id: SharedString,
 }
 
 impl Paragraph {
     pub fn new() -> Self {
         Self {
             children: Vec::new(),
+            selectable: true,
+            id: aura_core::unique_id("paragraph"),
         }
     }
 
     pub fn with_text(text: impl Into<SharedString>) -> Self {
         Self {
             children: vec![Text::new(text)],
+            selectable: true,
+            id: aura_core::unique_id("paragraph"),
         }
     }
 
@@ -30,6 +36,20 @@ impl Paragraph {
     pub fn children(mut self, children: impl IntoIterator<Item = Text>) -> Self {
         self.children.extend(children);
         self
+    }
+
+    pub fn selectable(mut self, selectable: bool) -> Self {
+        self.selectable = selectable;
+        self
+    }
+
+    pub fn id(mut self, id: impl Into<SharedString>) -> Self {
+        self.id = id.into();
+        self
+    }
+
+    pub fn register_key_bindings(cx: &mut App) {
+        SelectableText::register_key_bindings(cx);
     }
 
     fn default_text_style(theme: &aura_theme::Theme) -> TextStyle {
@@ -44,12 +64,12 @@ impl Paragraph {
         style
     }
 
-    fn styled_text_parts(self, theme: &aura_theme::Theme) -> (SharedString, Vec<TextRun>) {
+    fn styled_text_parts(&self, theme: &aura_theme::Theme) -> (SharedString, Vec<TextRun>) {
         let default_style = Self::default_text_style(theme);
         let mut full_text = String::new();
         let mut runs: Vec<TextRun> = Vec::new();
 
-        for segment in self.children {
+        for segment in &self.children {
             if segment.content.is_empty() {
                 continue;
             }
@@ -145,6 +165,24 @@ impl RenderOnce for Paragraph {
         let (full_text, runs) = self.styled_text_parts(theme);
         let font_size = px(theme.font_size.md);
 
+        if self.selectable {
+            return SelectableText::view(
+                SelectableTextOptions {
+                    id: ElementId::from(self.id.clone()),
+                    text: full_text,
+                    runs,
+                    font_size,
+                    line_height: font_size * 1.6,
+                    text_color: theme.neutral.text_2,
+                    wrap: SelectableTextWrap::Normal,
+                    key_context: "SelectableText",
+                    fill_width: true,
+                },
+                _window,
+                cx,
+            );
+        }
+
         div()
             .w_full()
             .text_size(font_size)
@@ -152,6 +190,7 @@ impl RenderOnce for Paragraph {
             .text_color(theme.neutral.text_2)
             .whitespace_normal()
             .child(StyledText::new(full_text).with_runs(runs))
+            .into_any_element()
     }
 }
 
@@ -166,6 +205,22 @@ impl IntoElement for Paragraph {
 mod tests {
     use super::*;
     use gpui::{FontStyle, FontWeight};
+
+    #[test]
+    fn text_and_paragraph_use_selectable_text_for_native_selection() {
+        let text_source = include_str!("text.rs");
+        let paragraph_source = include_str!("paragraph.rs");
+        let selectable_source = include_str!("selectable_text.rs");
+
+        assert!(text_source.contains("SelectableText::view"));
+        assert!(paragraph_source.contains("SelectableText::view"));
+        assert!(text_source.contains("pub fn selectable"));
+        assert!(paragraph_source.contains("pub fn selectable"));
+        assert!(selectable_source.contains("event.click_count == 2"));
+        assert!(selectable_source.contains("ClipboardItem::new_string"));
+        assert!(selectable_source.contains(r#"KeyBinding::new("ctrl-c""#));
+        assert!(selectable_source.contains("window.capture_pointer"));
+    }
 
     #[test]
     fn paragraph_composes_segments_into_one_styled_text_run_list() {

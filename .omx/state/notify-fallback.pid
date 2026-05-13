@@ -1,8 +1,8 @@
 {
-  "pid": 15432,
-  "parent_pid": 15417,
+  "pid": 840059,
+  "parent_pid": 840043,
   "cwd": "/home/neo/Projects/neo/lib/aura",
-  "started_at": "2026-05-13T01:48:01.388Z",
+  "started_at": "2026-05-13T06:35:58.778Z",
   "max_lifetime_ms": 21600000,
-  "owner_token": "15432-1778636881388-dlh4p8pl"
+  "owner_token": "840059-1778654158778-ryywa3mt"
 }

@@ -1,7 +1,9 @@
+use crate::{SelectableText, SelectableTextOptions, SelectableTextWrap};
 use aura_core::Config;
 use gpui::{
-    App, Component, FontStyle, FontWeight, Hsla, IntoElement, Pixels, RenderOnce, SharedString,
-    StrikethroughStyle, TextRun, TextStyle, UnderlineStyle, Window, div, prelude::*, px,
+    App, Component, ElementId, FontStyle, FontWeight, Hsla, IntoElement, Pixels, RenderOnce,
+    SharedString, StrikethroughStyle, TextRun, TextStyle, UnderlineStyle, Window, div, prelude::*,
+    px,
 };
 
 #[derive(Clone)]
@@ -17,6 +19,8 @@ pub struct Text {
     pub(crate) font_family: Option<SharedString>,
     pub(crate) wrap: bool,
     pub(crate) fill_width_on_wrap: bool,
+    pub(crate) selectable: bool,
+    pub(crate) id: SharedString,
 }
 
 impl Text {
@@ -33,6 +37,8 @@ impl Text {
             font_family: None,
             wrap: true,
             fill_width_on_wrap: false,
+            selectable: true,
+            id: aura_core::unique_id("text"),
         }
     }
 
@@ -105,6 +111,16 @@ impl Text {
         self
     }
 
+    pub fn selectable(mut self, selectable: bool) -> Self {
+        self.selectable = selectable;
+        self
+    }
+
+    pub fn id(mut self, id: impl Into<SharedString>) -> Self {
+        self.id = id.into();
+        self
+    }
+
     /// Convenience for "code" style
     pub fn code_style(mut self, theme: &aura_theme::Theme) -> Self {
         self.font_family = Some("Monospace".into());
@@ -155,6 +171,10 @@ impl Text {
         self.apply_to_text_style(default_style.clone())
             .to_run(self.content.len())
     }
+
+    pub fn register_key_bindings(cx: &mut App) {
+        SelectableText::register_key_bindings(cx);
+    }
 }
 
 impl RenderOnce for Text {
@@ -162,11 +182,46 @@ impl RenderOnce for Text {
         let theme = &cx.global::<Config>().theme;
 
         let font_size = self.size.unwrap_or_else(|| px(theme.font_size.md));
+        let line_height = font_size * 1.6;
+        let text_color = self.color.unwrap_or(theme.neutral.text_2);
+
+        if self.selectable {
+            let mut base_style = TextStyle::default();
+            base_style.color = text_color;
+            base_style.font_size = font_size.into();
+            base_style.line_height = line_height.into();
+            base_style.white_space = if self.wrap {
+                gpui::WhiteSpace::Normal
+            } else {
+                gpui::WhiteSpace::Nowrap
+            };
+            let run = self.to_text_run(&base_style);
+            return SelectableText::view(
+                SelectableTextOptions {
+                    id: ElementId::from(self.id.clone()),
+                    text: self.content.clone(),
+                    runs: vec![run],
+                    font_size,
+                    line_height,
+                    text_color,
+                    wrap: if self.wrap {
+                        SelectableTextWrap::Normal
+                    } else {
+                        SelectableTextWrap::NoWrap
+                    },
+                    key_context: "SelectableText",
+                    fill_width: self.fill_width_on_wrap,
+                },
+                _window,
+                cx,
+            );
+        }
+
         let mut el = div()
             .child(self.content.clone())
             .text_size(font_size)
-            .line_height(font_size * 1.6)
-            .text_color(self.color.unwrap_or(theme.neutral.text_2));
+            .line_height(line_height)
+            .text_color(text_color);
 
         if self.wrap {
             el = el.whitespace_normal();
@@ -205,7 +260,7 @@ impl RenderOnce for Text {
             el = el.font_family(family);
         }
 
-        el
+        el.into_any_element()
     }
 }
 
