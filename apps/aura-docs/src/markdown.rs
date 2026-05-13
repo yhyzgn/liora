@@ -2,14 +2,14 @@ use aura_components::{
     Alert, AlertType, Autocomplete, AutocompleteItem, Avatar, Badge, BadgeType, Button, Card,
     Checkbox, CheckboxGroup, CodeBlock as AuraCodeBlock, Container, Input, InputNumber,
     InputNumberControlsPosition, Menu, MenuMode, Paragraph, Radio, RadioGroup, Rate, Select,
-    Slider, Space, Switch, Tag as AuraTag, Text, Textarea, Title, toast_error, toast_info,
-    toast_success, toast_warning,
+    Slider, Space, Switch, Tag as AuraTag, Text, Textarea, Title, VirtualScrollbar, toast_error,
+    toast_info, toast_success, toast_warning,
 };
 use aura_core::{Config, PassivePortal, Portal};
 use aura_icons_lucide::IconName;
 use gpui::{
-    AnyElement, AnyView, App, Component, Context, Entity, IntoElement, Render, RenderOnce,
-    SharedString, WeakEntity, Window, div, prelude::*, px,
+    AnyElement, AnyView, App, Component, Context, Entity, IntoElement, ListAlignment, ListState,
+    Render, RenderOnce, SharedString, WeakEntity, Window, div, list, prelude::*, px,
 };
 use pulldown_cmark::{CodeBlockKind, Event, HeadingLevel, Options, Parser, Tag, TagEnd};
 
@@ -1944,18 +1944,21 @@ impl Render for DocsShell {
             .aside(nav_menu)
             .aside_width_lg()
             .aside_scroll()
-            .main_scroll()
             .main_padding_xl()
             .child(
-                Card::new(
-                    Space::new()
-                        .vertical()
-                        .gap_xs()
-                        .child(Title::new(page.title).h3())
-                        .child(page_view),
-                )
-                .no_shadow()
-                .no_shrink(),
+                div().size_full().child(
+                    Card::new(
+                        div()
+                            .flex()
+                            .flex_col()
+                            .size_full()
+                            .gap_3()
+                            .child(Title::new(page.title).h3())
+                            .child(div().flex_1().min_h_0().child(page_view)),
+                    )
+                    .no_shadow()
+                    .no_shrink(),
+                ),
             )
             .overlay(DocsPortalLayer)
     }
@@ -1964,6 +1967,7 @@ impl Render for DocsShell {
 struct DocsPageView {
     document: MarkdownDocument,
     live_demos: Vec<Entity<LiveDemoHost>>,
+    list_state: ListState,
 }
 
 impl DocsPageView {
@@ -1976,25 +1980,53 @@ impl DocsPageView {
             .map(|component| cx.new(|cx| LiveDemoHost::new(component, cx)))
             .collect();
 
+        let list_state = ListState::new(document.blocks.len(), ListAlignment::Top, px(640.0));
+
         Self {
             document,
             live_demos,
+            list_state,
         }
     }
 }
 
 impl Render for DocsPageView {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let blocks = self.document.blocks.clone();
+        let live_demos = self.live_demos.clone();
         let theme = cx.global::<Config>().theme.clone();
-        let mut demo_index = 0;
-        let children = self
-            .document
-            .blocks
-            .iter()
-            .map(|block| render_persistent_block(block, &theme, &self.live_demos, &mut demo_index))
-            .collect::<Vec<_>>();
 
-        Space::new().vertical().gap_lg().children(children)
+        div()
+            .relative()
+            .size_full()
+            .child(
+                list(self.list_state.clone(), move |index, _window, _cx| {
+                    let Some(block) = blocks.get(index) else {
+                        return div().into_any_element();
+                    };
+                    let mut demo_index = live_demo_index_before(&blocks, index);
+                    render_persistent_block(block, &theme, &live_demos, &mut demo_index)
+                })
+                .size_full(),
+            )
+            .child(VirtualScrollbar::new(self.list_state.clone()))
+    }
+}
+
+fn live_demo_index_before(blocks: &[Block], end: usize) -> usize {
+    blocks.iter().take(end).map(count_live_demos_in_block).sum()
+}
+
+fn count_live_demos_in_block(block: &Block) -> usize {
+    match block {
+        Block::LiveDemo { .. } => 1,
+        Block::BlockQuote(children) => children.iter().map(count_live_demos_in_block).sum(),
+        Block::List { items, .. } => items
+            .iter()
+            .flat_map(|item| item.iter())
+            .map(count_live_demos_in_block)
+            .sum(),
+        Block::Paragraph(_) | Block::Heading { .. } | Block::CodeBlock { .. } | Block::Rule => 0,
     }
 }
 
@@ -2476,13 +2508,30 @@ mod tests {
     }
 
     #[test]
+    fn docs_page_uses_gpui_virtual_list_for_visible_area_rendering() {
+        let source = include_str!("markdown.rs");
+
+        assert!(source.contains("ListState::new(document.blocks.len()"));
+        assert!(source.contains("list(self.list_state.clone()"));
+        assert!(source.contains("live_demo_index_before"));
+    }
+
+    #[test]
     fn docs_shell_uses_native_container_and_menu() {
         let source = include_str!("markdown.rs");
 
         assert!(source.contains("Container::new()"));
         assert!(source.contains("Menu::new()"));
         assert!(source.contains(".aside_scroll()"));
-        assert!(source.contains(".main_scroll()"));
+        assert!(source.contains("list(self.list_state.clone()"));
+        assert!(source.contains("VirtualScrollbar::new"));
+        let docs_shell_render = &source[source
+            .find("impl Render for DocsShell")
+            .expect("DocsShell render should exist")
+            ..source
+                .find("struct DocsPageView")
+                .expect("DocsPageView should follow DocsShell")];
+        assert!(!docs_shell_render.contains(".main_scroll()"));
         assert!(source.contains("DocsPortalLayer"));
     }
 
