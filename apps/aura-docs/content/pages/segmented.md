@@ -1,16 +1,42 @@
 # Segmented
 
-展示多个选项并进行单选。
+`Segmented` 是分段控制器，用于在一组选项中选择单个值，适合视图模式、时间范围或筛选维度切换。
 
-## 完整示例
+## 基础用法
 
-此示例复用 Aura Gallery 中同名控件的原生 demo，确保文档效果与演示大屏保持一致。
+通过 `SegmentedOption` 定义选项，并用 `on_change` 监听选中值变化。
 
 ### 效果
 
-::AuraDemo{component="Segmented"}::
+::AuraDemo{component="SegmentedBasic"}::
 
 ### 代码
 
-```rust src="gallery/segmented_demo.rs"
+```rust src="segmented/basic.rs"
+```
+
+## 禁用选项
+
+单个选项可以设置为 disabled，用户无法选择该项。
+
+### 效果
+
+::AuraDemo{component="SegmentedDisabled"}::
+
+### 代码
+
+```rust src="segmented/disabled.rs"
+```
+
+## Block 模式
+
+开启 `block(true)` 后，分段控制器会撑满父容器宽度，各项均分空间。
+
+### 效果
+
+::AuraDemo{component="SegmentedBlock"}::
+
+### 代码
+
+```rust src="segmented/block.rs"
 ```

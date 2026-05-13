@@ -1,16 +1,29 @@
 # Tooltip
 
-简单的文字提示。
+`Tooltip` 用于在鼠标悬停时展示简短提示，帮助解释按钮、图标或其他紧凑元素的含义。
 
-## 完整示例
+## 基础方位
 
-此示例复用 Aura Gallery 中同名控件的原生 demo，确保文档效果与演示大屏保持一致。
+支持上、下、左、右四个基础方向。
 
 ### 效果
 
-::AuraDemo{component="Tooltip"}::
+::AuraDemo{component="TooltipBasic"}::
 
 ### 代码
 
-```rust src="gallery/tooltip_demo.rs"
+```rust src="tooltip/basic.rs"
+```
+
+## 更多方位
+
+通过 `Placement::*Start` 与 `Placement::*End` 可以控制提示内容与触发器的起止对齐方式。
+
+### 效果
+
+::AuraDemo{component="TooltipMore"}::
+
+### 代码
+
+```rust src="tooltip/more.rs"
 ```

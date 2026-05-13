@@ -155,6 +155,12 @@ mod rate_custom;
 mod result_statuses;
 #[path = "../../content/snippets/result/success.rs"]
 mod result_success;
+#[path = "../../content/snippets/segmented/basic.rs"]
+mod segmented_basic;
+#[path = "../../content/snippets/segmented/block.rs"]
+mod segmented_block;
+#[path = "../../content/snippets/segmented/disabled.rs"]
+mod segmented_disabled;
 #[path = "../../content/snippets/select/basic.rs"]
 mod select_basic;
 #[path = "../../content/snippets/skeleton/basic.rs"]
@@ -211,6 +217,10 @@ mod timeline_custom;
 mod timeline_placement;
 #[path = "../../content/snippets/timeline/reverse.rs"]
 mod timeline_reverse;
+#[path = "../../content/snippets/tooltip/basic.rs"]
+mod tooltip_basic;
+#[path = "../../content/snippets/tooltip/more.rs"]
+mod tooltip_more;
 #[path = "../../content/snippets/typography/paragraph.rs"]
 mod typography_paragraph;
 #[path = "../../content/snippets/virtualized_list/basic.rs"]

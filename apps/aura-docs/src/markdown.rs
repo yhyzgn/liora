@@ -975,6 +975,11 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "page_header/basic.rs" => Some(include_str!("../content/snippets/page_header/basic.rs")),
         "page_header/extra.rs" => Some(include_str!("../content/snippets/page_header/extra.rs")),
         "page_header/full.rs" => Some(include_str!("../content/snippets/page_header/full.rs")),
+        "segmented/basic.rs" => Some(include_str!("../content/snippets/segmented/basic.rs")),
+        "segmented/disabled.rs" => Some(include_str!("../content/snippets/segmented/disabled.rs")),
+        "segmented/block.rs" => Some(include_str!("../content/snippets/segmented/block.rs")),
+        "tooltip/basic.rs" => Some(include_str!("../content/snippets/tooltip/basic.rs")),
+        "tooltip/more.rs" => Some(include_str!("../content/snippets/tooltip/more.rs")),
         "markdown/state_machine.rs" => Some(include_str!(
             "../content/snippets/markdown/state_machine.rs"
         )),
@@ -1233,6 +1238,7 @@ struct LiveDemoContent {
     selects: Vec<Entity<Select>>,
     sliders: Vec<Entity<Slider>>,
     switches: Vec<Entity<Switch>>,
+    segmenteds: Vec<Entity<aura_components::Segmented>>,
 }
 
 impl LiveDemoContent {
@@ -1250,6 +1256,7 @@ impl LiveDemoContent {
         let mut selects = Vec::new();
         let mut sliders = Vec::new();
         let mut switches = Vec::new();
+        let mut segmenteds = Vec::new();
 
         match component.as_ref() {
             "AutocompleteBasic" => {
@@ -1410,6 +1417,44 @@ impl LiveDemoContent {
                     })
                 }));
             }
+            "SegmentedBasic" => {
+                segmenteds.push(cx.new(|_| {
+                    aura_components::Segmented::new(vec![
+                        aura_components::SegmentedOption::new("Daily", "daily"),
+                        aura_components::SegmentedOption::new("Weekly", "weekly"),
+                        aura_components::SegmentedOption::new("Monthly", "monthly"),
+                        aura_components::SegmentedOption::new("Quarterly", "quarterly"),
+                        aura_components::SegmentedOption::new("Yearly", "yearly"),
+                    ])
+                    .id("docs-segmented-basic")
+                    .on_change(|value, _, _| toast_info!("Selected: {}", value))
+                }));
+            }
+            "SegmentedDisabled" => {
+                segmenteds.push(cx.new(|_| {
+                    aura_components::Segmented::new(vec![
+                        aura_components::SegmentedOption::new("Map", "Map"),
+                        aura_components::SegmentedOption::new("Transit", "Transit"),
+                        aura_components::SegmentedOption::new("Satellite", "Satellite")
+                            .disabled(true),
+                    ])
+                    .id("docs-segmented-disabled")
+                    .value("Map")
+                    .on_change(|value, _, _| toast_info!("Selected: {}", value))
+                }));
+            }
+            "SegmentedBlock" => {
+                segmenteds.push(cx.new(|_| {
+                    aura_components::Segmented::new(vec![
+                        aura_components::SegmentedOption::new("123", "123"),
+                        aura_components::SegmentedOption::new("456", "456"),
+                        aura_components::SegmentedOption::new("long-text-option", "long"),
+                    ])
+                    .id("docs-segmented-block")
+                    .block(true)
+                    .on_change(|value, _, _| toast_info!("Selected: {}", value))
+                }));
+            }
             _ => {}
         }
 
@@ -1428,6 +1473,7 @@ impl LiveDemoContent {
             selects,
             sliders,
             switches,
+            segmenteds,
         }
     }
 }
@@ -2219,6 +2265,60 @@ impl Render for LiveDemoContent {
             )
             .no_shadow()
             .into_any_element(),
+            "SegmentedBasic" => self
+                .segmenteds
+                .first()
+                .cloned()
+                .map(Entity::into_any_element)
+                .unwrap_or_else(|| Paragraph::with_text("Missing Segmented demo").into_any_element()),
+            "SegmentedDisabled" => self
+                .segmenteds
+                .first()
+                .cloned()
+                .map(Entity::into_any_element)
+                .unwrap_or_else(|| Paragraph::with_text("Missing Segmented demo").into_any_element()),
+            "SegmentedBlock" => self
+                .segmenteds
+                .first()
+                .cloned()
+                .map(Entity::into_any_element)
+                .unwrap_or_else(|| Paragraph::with_text("Missing Segmented demo").into_any_element()),
+            "TooltipBasic" => demo_row(vec![
+                aura_components::Tooltip::new(Button::new("Top"))
+                    .content("Prompt info")
+                    .placement(aura_core::Placement::Top)
+                    .into_any_element(),
+                aura_components::Tooltip::new(Button::new("Bottom"))
+                    .content("Prompt info")
+                    .placement(aura_core::Placement::Bottom)
+                    .into_any_element(),
+                aura_components::Tooltip::new(Button::new("Left"))
+                    .content("Prompt info")
+                    .placement(aura_core::Placement::Left)
+                    .into_any_element(),
+                aura_components::Tooltip::new(Button::new("Right"))
+                    .content("Prompt info")
+                    .placement(aura_core::Placement::Right)
+                    .into_any_element(),
+            ]),
+            "TooltipMore" => demo_row(vec![
+                aura_components::Tooltip::new(Button::new("Top Start"))
+                    .content("Top Start")
+                    .placement(aura_core::Placement::TopStart)
+                    .into_any_element(),
+                aura_components::Tooltip::new(Button::new("Top End"))
+                    .content("Top End")
+                    .placement(aura_core::Placement::TopEnd)
+                    .into_any_element(),
+                aura_components::Tooltip::new(Button::new("Bottom Start"))
+                    .content("Bottom Start")
+                    .placement(aura_core::Placement::BottomStart)
+                    .into_any_element(),
+                aura_components::Tooltip::new(Button::new("Bottom End"))
+                    .content("Bottom End")
+                    .placement(aura_core::Placement::BottomEnd)
+                    .into_any_element(),
+            ]),
             _ => self.gallery_demo.clone().map_or_else(
                 || {
                     Paragraph::with_text(format!(
@@ -3340,6 +3440,20 @@ mod tests {
                     "page_header/extra.rs",
                     "page_header/full.rs",
                 ][..],
+            ),
+            (
+                include_str!("../content/pages/segmented.md"),
+                "SegmentedBasic",
+                &[
+                    "segmented/basic.rs",
+                    "segmented/disabled.rs",
+                    "segmented/block.rs",
+                ][..],
+            ),
+            (
+                include_str!("../content/pages/tooltip.md"),
+                "TooltipBasic",
+                &["tooltip/basic.rs", "tooltip/more.rs"][..],
             ),
         ] {
             assert!(!page.contains("## 完整示例"));
