@@ -947,6 +947,12 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "statistic/affix.rs" => Some(include_str!("../content/snippets/statistic/affix.rs")),
         "statistic/icons.rs" => Some(include_str!("../content/snippets/statistic/icons.rs")),
         "statistic/layout.rs" => Some(include_str!("../content/snippets/statistic/layout.rs")),
+        "card/basic.rs" => Some(include_str!("../content/snippets/card/basic.rs")),
+        "card/footer.rs" => Some(include_str!("../content/snippets/card/footer.rs")),
+        "empty/basic.rs" => Some(include_str!("../content/snippets/empty/basic.rs")),
+        "empty/description.rs" => Some(include_str!("../content/snippets/empty/description.rs")),
+        "empty/image.rs" => Some(include_str!("../content/snippets/empty/image.rs")),
+        "empty/extra.rs" => Some(include_str!("../content/snippets/empty/extra.rs")),
         "markdown/state_machine.rs" => Some(include_str!(
             "../content/snippets/markdown/state_machine.rs"
         )),
@@ -1934,6 +1940,47 @@ impl Render for LiveDemoContent {
                 .width_lg()
                 .into_any_element(),
             ]),
+            "CardBasic" => demo_row(vec![
+                Card::new("Standard card content goes here.")
+                    .title("Standard Card")
+                    .width_md()
+                    .into_any_element(),
+                Card::new("This card will change shadow on hover.")
+                    .title("Hoverable Card")
+                    .hoverable()
+                    .width_md()
+                    .into_any_element(),
+            ]),
+            "CardFooter" => Card::new("Card body with a custom footer.")
+                .title("Card with Footer")
+                .width_lg()
+                .footer(
+                    aura_components::Row::new()
+                        .justify(aura_components::RowJustify::End)
+                        .child(Button::new("Cancel").small())
+                        .child(Button::new("Save").primary().small()),
+                )
+                .into_any_element(),
+            "EmptyBasic" => Card::new(aura_components::Empty::new())
+                .width_md()
+                .into_any_element(),
+            "EmptyDescription" => Card::new(
+                aura_components::Empty::new().description("自定义描述文字"),
+            )
+            .width_md()
+            .into_any_element(),
+            "EmptyImage" => Card::new(
+                aura_components::Empty::new()
+                    .image(aura_icons::Icon::new(IconName::Search))
+                    .description("没有找到相关内容"),
+            )
+            .width_md()
+            .into_any_element(),
+            "EmptyExtra" => Card::new(aura_components::Empty::new().extra(|_, _| {
+                Button::new("去添加").primary().into_any_element()
+            }))
+            .width_md()
+            .into_any_element(),
             _ => self.gallery_demo.clone().map_or_else(
                 || {
                     Paragraph::with_text(format!(
@@ -2999,6 +3046,21 @@ mod tests {
                     "statistic/affix.rs",
                     "statistic/icons.rs",
                     "statistic/layout.rs",
+                ][..],
+            ),
+            (
+                include_str!("../content/pages/card.md"),
+                "CardBasic",
+                &["card/basic.rs", "card/footer.rs"][..],
+            ),
+            (
+                include_str!("../content/pages/empty.md"),
+                "EmptyBasic",
+                &[
+                    "empty/basic.rs",
+                    "empty/description.rs",
+                    "empty/image.rs",
+                    "empty/extra.rs",
                 ][..],
             ),
         ] {
