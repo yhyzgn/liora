@@ -1974,8 +1974,6 @@ impl Render for DocsShell {
 }
 
 struct DocsPageView {
-    document: MarkdownDocument,
-    live_demos: Vec<Entity<LiveDemoHost>>,
     virtual_list: Entity<VirtualizedList>,
 }
 
@@ -1984,43 +1982,33 @@ impl DocsPageView {
         let document = MarkdownDocument::parse(markdown);
         let mut demo_components = Vec::new();
         collect_live_demo_components(&document.blocks, &mut demo_components);
-        let live_demos = demo_components
+        let live_demos: Vec<Entity<LiveDemoHost>> = demo_components
             .into_iter()
             .map(|component| cx.new(|cx| LiveDemoHost::new(component, cx)))
             .collect();
 
+        let virtual_blocks = document.blocks.clone();
+        let virtual_live_demos = live_demos.clone();
         let virtual_list = cx.new(|cx| {
-            VirtualizedList::new(document.blocks.len(), cx, |_, _, _| {
-                div().into_any_element()
-            })
+            let mut list =
+                VirtualizedList::new(document.blocks.len(), cx, move |index, _window, cx| {
+                    let theme = cx.global::<Config>().theme.clone();
+                    let Some(block) = virtual_blocks.get(index) else {
+                        return div().into_any_element();
+                    };
+                    let mut demo_index = live_demo_index_before(&virtual_blocks, index);
+                    render_persistent_block(block, &theme, &virtual_live_demos, &mut demo_index)
+                });
+            list.set_item_spacing(px(20.0));
+            list
         });
 
-        Self {
-            document,
-            live_demos,
-            virtual_list,
-        }
+        Self { virtual_list }
     }
 }
 
 impl Render for DocsPageView {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let blocks = self.document.blocks.clone();
-        let live_demos = self.live_demos.clone();
-        let theme = cx.global::<Config>().theme.clone();
-
-        self.virtual_list.update(cx, |list, _cx| {
-            list.set_item_count(blocks.len());
-            list.set_item_spacing(px(20.0));
-            list.set_render_item(move |index, _window, _cx| {
-                let Some(block) = blocks.get(index) else {
-                    return div().into_any_element();
-                };
-                let mut demo_index = live_demo_index_before(&blocks, index);
-                render_persistent_block(block, &theme, &live_demos, &mut demo_index)
-            });
-        });
-
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         self.virtual_list.clone()
     }
 }
@@ -2523,11 +2511,17 @@ mod tests {
     #[test]
     fn docs_page_uses_gpui_virtual_list_for_visible_area_rendering() {
         let source = include_str!("markdown.rs");
+        let docs_page_view = &source[source
+            .find("struct DocsPageView")
+            .expect("DocsPageView should exist")
+            ..source
+                .find("fn live_demo_index_before")
+                .expect("live_demo_index_before should follow DocsPageView")];
 
-        assert!(source.contains("VirtualizedList::new(document.blocks.len()"));
-        assert!(source.contains("list.set_item_spacing(px(20.0))"));
-        assert!(source.contains("list.set_render_item"));
-        assert!(source.contains("live_demo_index_before"));
+        assert!(docs_page_view.contains("VirtualizedList::new(document.blocks.len()"));
+        assert!(docs_page_view.contains("list.set_item_spacing(px(20.0))"));
+        assert!(!docs_page_view.contains(".set_render_item"));
+        assert!(docs_page_view.contains("live_demo_index_before"));
     }
 
     #[test]
