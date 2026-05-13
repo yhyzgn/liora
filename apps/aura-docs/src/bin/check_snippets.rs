@@ -37,6 +37,16 @@ mod badge_basic;
 mod badge_dot;
 #[path = "../../content/snippets/badge/max.rs"]
 mod badge_max;
+#[path = "../../content/snippets/breadcrumb/basic.rs"]
+mod breadcrumb_basic;
+#[path = "../../content/snippets/breadcrumb/clickable.rs"]
+mod breadcrumb_clickable;
+#[path = "../../content/snippets/breadcrumb/icon.rs"]
+mod breadcrumb_icon;
+#[path = "../../content/snippets/breadcrumb/separator.rs"]
+mod breadcrumb_separator;
+#[path = "../../content/snippets/breadcrumb/separator_icon.rs"]
+mod breadcrumb_separator_icon;
 #[path = "../../content/snippets/button/rounded.rs"]
 mod button_rounded;
 #[path = "../../content/snippets/button/secondary.rs"]
@@ -109,6 +119,12 @@ mod markdown_state_machine;
 mod message_formatting;
 #[path = "../../content/snippets/message/types.rs"]
 mod message_types;
+#[path = "../../content/snippets/page_header/basic.rs"]
+mod page_header_basic;
+#[path = "../../content/snippets/page_header/extra.rs"]
+mod page_header_extra;
+#[path = "../../content/snippets/page_header/full.rs"]
+mod page_header_full;
 #[path = "../../content/snippets/progress/basic.rs"]
 mod progress_basic;
 #[path = "../../content/snippets/progress/color.rs"]

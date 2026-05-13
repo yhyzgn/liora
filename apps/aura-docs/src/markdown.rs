@@ -961,6 +961,20 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "timeline/custom.rs" => Some(include_str!("../content/snippets/timeline/custom.rs")),
         "timeline/placement.rs" => Some(include_str!("../content/snippets/timeline/placement.rs")),
         "timeline/reverse.rs" => Some(include_str!("../content/snippets/timeline/reverse.rs")),
+        "breadcrumb/basic.rs" => Some(include_str!("../content/snippets/breadcrumb/basic.rs")),
+        "breadcrumb/icon.rs" => Some(include_str!("../content/snippets/breadcrumb/icon.rs")),
+        "breadcrumb/separator.rs" => {
+            Some(include_str!("../content/snippets/breadcrumb/separator.rs"))
+        }
+        "breadcrumb/separator_icon.rs" => Some(include_str!(
+            "../content/snippets/breadcrumb/separator_icon.rs"
+        )),
+        "breadcrumb/clickable.rs" => {
+            Some(include_str!("../content/snippets/breadcrumb/clickable.rs"))
+        }
+        "page_header/basic.rs" => Some(include_str!("../content/snippets/page_header/basic.rs")),
+        "page_header/extra.rs" => Some(include_str!("../content/snippets/page_header/extra.rs")),
+        "page_header/full.rs" => Some(include_str!("../content/snippets/page_header/full.rs")),
         "markdown/state_machine.rs" => Some(include_str!(
             "../content/snippets/markdown/state_machine.rs"
         )),
@@ -2121,6 +2135,90 @@ impl Render for LiveDemoContent {
                     ),
             )
             .into_any_element(),
+            "BreadcrumbBasic" => aura_components::Breadcrumb::new()
+                .item(aura_components::BreadcrumbItem::new("首页"))
+                .item(aura_components::BreadcrumbItem::new("活动管理"))
+                .item(aura_components::BreadcrumbItem::new("活动列表"))
+                .item(aura_components::BreadcrumbItem::new("活动详情"))
+                .into_any_element(),
+            "BreadcrumbIcon" => aura_components::Breadcrumb::new()
+                .item(aura_components::BreadcrumbItem::new("首页").icon(IconName::House))
+                .item(aura_components::BreadcrumbItem::new("推广管理"))
+                .item(aura_components::BreadcrumbItem::new("推广列表"))
+                .item(aura_components::BreadcrumbItem::new("推广详情"))
+                .into_any_element(),
+            "BreadcrumbSeparator" => aura_components::Breadcrumb::new()
+                .separator(">")
+                .item(aura_components::BreadcrumbItem::new("首页"))
+                .item(aura_components::BreadcrumbItem::new("推广管理"))
+                .item(aura_components::BreadcrumbItem::new("推广列表"))
+                .item(aura_components::BreadcrumbItem::new("推广详情"))
+                .into_any_element(),
+            "BreadcrumbSeparatorIcon" => aura_components::Breadcrumb::new()
+                .separator_icon(IconName::ChevronRight)
+                .item(aura_components::BreadcrumbItem::new("首页"))
+                .item(aura_components::BreadcrumbItem::new("推广管理"))
+                .item(aura_components::BreadcrumbItem::new("推广列表"))
+                .item(aura_components::BreadcrumbItem::new("推广详情"))
+                .into_any_element(),
+            "BreadcrumbClickable" => aura_components::Breadcrumb::new()
+                .item(
+                    aura_components::BreadcrumbItem::new("首页")
+                        .on_click(|_, _| toast_info!("Home Clicked")),
+                )
+                .item(
+                    aura_components::BreadcrumbItem::new("推广管理")
+                        .on_click(|_, _| toast_info!("Management Clicked")),
+                )
+                .item(aura_components::BreadcrumbItem::new("推广列表"))
+                .into_any_element(),
+            "PageHeaderBasic" => aura_components::PageHeader::new("详情页面")
+                .on_back(|_, _| toast_info!("Back Clicked"))
+                .into_any_element(),
+            "PageHeaderExtra" => aura_components::PageHeader::new("详情页面")
+                .sub_title("子标题")
+                .on_back(|_, _| toast_info!("Back Clicked"))
+                .extra(|_, _| {
+                    Space::new()
+                        .gap_sm()
+                        .child(Button::new("编辑"))
+                        .child(Button::new("主要操作").primary())
+                        .into_any_element()
+                })
+                .into_any_element(),
+            "PageHeaderFull" => Card::new(
+                aura_components::PageHeader::new("详情页面")
+                    .sub_title("子标题")
+                    .on_back(|_, _| toast_info!("Back Clicked"))
+                    .extra(|_, _| {
+                        Space::new()
+                            .gap_sm()
+                            .child(Button::new("刷新"))
+                            .child(Button::new("提交").primary())
+                            .into_any_element()
+                    })
+                    .content(|_, _| {
+                        aura_components::Row::new()
+                            .child(
+                                Space::new()
+                                    .vertical()
+                                    .gap_xs()
+                                    .child(Text::new("创建人"))
+                                    .child(Text::new("张三").bold()),
+                            )
+                            .child(
+                                Space::new()
+                                    .vertical()
+                                    .gap_xs()
+                                    .child(Text::new("创建时间"))
+                                    .child(Text::new("2026-05-06").bold()),
+                            )
+                            .into_any_element()
+                    })
+                    .footer(|_, _| Text::new("页脚内容区域").into_any_element()),
+            )
+            .no_shadow()
+            .into_any_element(),
             _ => self.gallery_demo.clone().map_or_else(
                 || {
                     Paragraph::with_text(format!(
@@ -3221,6 +3319,26 @@ mod tests {
                     "timeline/custom.rs",
                     "timeline/placement.rs",
                     "timeline/reverse.rs",
+                ][..],
+            ),
+            (
+                include_str!("../content/pages/breadcrumb.md"),
+                "BreadcrumbBasic",
+                &[
+                    "breadcrumb/basic.rs",
+                    "breadcrumb/icon.rs",
+                    "breadcrumb/separator.rs",
+                    "breadcrumb/separator_icon.rs",
+                    "breadcrumb/clickable.rs",
+                ][..],
+            ),
+            (
+                include_str!("../content/pages/page_header.md"),
+                "PageHeaderBasic",
+                &[
+                    "page_header/basic.rs",
+                    "page_header/extra.rs",
+                    "page_header/full.rs",
                 ][..],
             ),
         ] {

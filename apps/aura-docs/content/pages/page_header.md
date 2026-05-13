@@ -1,16 +1,42 @@
 # PageHeader
 
-标识页面内容并提供操作。
+`PageHeader` 用于页面顶部，集中展示标题、返回入口、辅助说明和页面级操作。
 
-## 完整示例
+## 基础用法
 
-此示例复用 Aura Gallery 中同名控件的原生 demo，确保文档效果与演示大屏保持一致。
+最小配置只需要标题和返回事件。
 
 ### 效果
 
-::AuraDemo{component="PageHeader"}::
+::AuraDemo{component="PageHeaderBasic"}::
 
 ### 代码
 
-```rust src="gallery/page_header_demo.rs"
+```rust src="page_header/basic.rs"
+```
+
+## 副标题与操作区
+
+通过 `sub_title` 和 `extra` 可以在标题区补充说明和右侧操作按钮。
+
+### 效果
+
+::AuraDemo{component="PageHeaderExtra"}::
+
+### 代码
+
+```rust src="page_header/extra.rs"
+```
+
+## 完整案例
+
+`content` 与 `footer` 可以让页头承载更完整的上下文信息和页脚区域。
+
+### 效果
+
+::AuraDemo{component="PageHeaderFull"}::
+
+### 代码
+
+```rust src="page_header/full.rs"
 ```
