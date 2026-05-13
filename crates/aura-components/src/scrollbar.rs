@@ -70,8 +70,6 @@ pub struct VirtualScrollbarPrepaint {
 #[derive(Clone, Copy)]
 struct ScrollbarVisualState {
     width: Pixels,
-    top: Pixels,
-    height: Pixels,
     last_frame: Instant,
 }
 
@@ -126,7 +124,7 @@ impl Element for VirtualScrollbar {
             } else {
                 SCROLLBAR_THUMB_WIDTH
             };
-            smooth_scrollbar_bounds(
+            apply_scrollbar_hover_width(
                 ElementId::Name("virtual-scrollbar-visual".into()),
                 thumb,
                 target_width,
@@ -268,7 +266,7 @@ fn expand_scrollbar_hitbox(thumb: Bounds<Pixels>) -> Bounds<Pixels> {
     }
 }
 
-fn smooth_scrollbar_bounds(
+fn apply_scrollbar_hover_width(
     key: ElementId,
     target: Bounds<Pixels>,
     target_width: Pixels,
@@ -277,29 +275,23 @@ fn smooth_scrollbar_bounds(
 ) -> Bounds<Pixels> {
     let state = window.use_keyed_state(key, cx, |_, _| ScrollbarVisualState {
         width: target_width,
-        top: target.top(),
-        height: target.size.height,
         last_frame: Instant::now(),
     });
 
-    let (width, top, height, needs_frame) = state.update(cx, |state, cx| {
+    let (width, needs_frame) = state.update(cx, |state, cx| {
         let now = Instant::now();
         let elapsed = now.duration_since(state.last_frame).as_secs_f32();
         state.last_frame = now;
         let factor = (SCROLLBAR_SMOOTHING * (elapsed / (1.0 / 60.0)).max(0.5)).clamp(0.18, 0.75);
 
         state.width = lerp_pixels(state.width, target_width, factor);
-        state.top = lerp_pixels(state.top, target.top(), factor);
-        state.height = lerp_pixels(state.height, target.size.height, factor);
 
-        let needs_frame = (state.width - target_width).abs() > px(0.25)
-            || (state.top - target.top()).abs() > px(0.5)
-            || (state.height - target.size.height).abs() > px(0.5);
+        let needs_frame = (state.width - target_width).abs() > px(0.25);
         if needs_frame {
             cx.notify();
         }
 
-        (state.width, state.top, state.height, needs_frame)
+        (state.width, needs_frame)
     });
 
     if needs_frame {
@@ -307,8 +299,8 @@ fn smooth_scrollbar_bounds(
     }
 
     Bounds {
-        origin: point(target.right() - width, top),
-        size: size(width, height),
+        origin: point(target.right() - width, target.top()),
+        size: size(width, target.size.height),
     }
 }
 
@@ -427,7 +419,8 @@ impl gpui::Element for ScrollbarThumb {
             -offset.y / max_offset.y
         } else {
             0.0
-        };
+        }
+        .clamp(0.0, 1.0);
         let thumb_top = (viewport_h - thumb_h) * scroll_ratio;
 
         let raw_thumb_bounds = gpui::Bounds {
@@ -446,7 +439,7 @@ impl gpui::Element for ScrollbarThumb {
         } else {
             SCROLLBAR_THUMB_WIDTH
         };
-        let thumb_bounds = smooth_scrollbar_bounds(
+        let thumb_bounds = apply_scrollbar_hover_width(
             ElementId::NamedChild(
                 Arc::new(ElementId::Name("scrollbar-thumb-visual".into())),
                 format!("{:p}", self).into(),
@@ -486,12 +479,17 @@ mod tests {
 
     #[test]
     fn scrollbars_expand_on_hover_and_smooth_thumb_motion() {
-        let source = include_str!("scrollbar.rs");
+        let source = include_str!("scrollbar.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .expect("production source should precede tests");
 
         assert!(source.contains("SCROLLBAR_THUMB_HOVER_WIDTH"));
         assert!(source.contains("SCROLLBAR_HIT_WIDTH"));
-        assert!(source.contains("smooth_scrollbar_bounds"));
+        assert!(source.contains("apply_scrollbar_hover_width"));
         assert!(source.contains("lerp_pixels"));
         assert!(source.contains("window.request_animation_frame()"));
+        assert!(!source.contains("state.top = lerp_pixels"));
+        assert!(!source.contains("state.height = lerp_pixels"));
     }
 }
