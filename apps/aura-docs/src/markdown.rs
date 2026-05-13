@@ -980,6 +980,19 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "segmented/block.rs" => Some(include_str!("../content/snippets/segmented/block.rs")),
         "tooltip/basic.rs" => Some(include_str!("../content/snippets/tooltip/basic.rs")),
         "tooltip/more.rs" => Some(include_str!("../content/snippets/tooltip/more.rs")),
+        "pagination/basic.rs" => Some(include_str!("../content/snippets/pagination/basic.rs")),
+        "pagination/background.rs" => {
+            Some(include_str!("../content/snippets/pagination/background.rs"))
+        }
+        "pagination/advanced.rs" => {
+            Some(include_str!("../content/snippets/pagination/advanced.rs"))
+        }
+        "tabs/basic.rs" => Some(include_str!("../content/snippets/tabs/basic.rs")),
+        "tabs/stretch.rs" => Some(include_str!("../content/snippets/tabs/stretch.rs")),
+        "tabs/card.rs" => Some(include_str!("../content/snippets/tabs/card.rs")),
+        "tabs/border_card.rs" => Some(include_str!("../content/snippets/tabs/border_card.rs")),
+        "tabs/position.rs" => Some(include_str!("../content/snippets/tabs/position.rs")),
+        "tabs/editable.rs" => Some(include_str!("../content/snippets/tabs/editable.rs")),
         "markdown/state_machine.rs" => Some(include_str!(
             "../content/snippets/markdown/state_machine.rs"
         )),
@@ -1239,6 +1252,8 @@ struct LiveDemoContent {
     sliders: Vec<Entity<Slider>>,
     switches: Vec<Entity<Switch>>,
     segmenteds: Vec<Entity<aura_components::Segmented>>,
+    paginations: Vec<Entity<aura_components::Pagination>>,
+    tabs: Vec<Entity<aura_components::Tabs>>,
 }
 
 impl LiveDemoContent {
@@ -1257,6 +1272,8 @@ impl LiveDemoContent {
         let mut sliders = Vec::new();
         let mut switches = Vec::new();
         let mut segmenteds = Vec::new();
+        let mut paginations = Vec::new();
+        let mut tabs = Vec::new();
 
         match component.as_ref() {
             "AutocompleteBasic" => {
@@ -1455,6 +1472,70 @@ impl LiveDemoContent {
                     .on_change(|value, _, _| toast_info!("Selected: {}", value))
                 }));
             }
+            "PaginationBasic" => {
+                paginations.push(cx.new(|_| {
+                    aura_components::Pagination::new(50)
+                        .id("docs-pagination-basic")
+                        .on_change(|page, _, _| toast_info!("Page changed to: {}", page))
+                }));
+            }
+            "PaginationBackground" => {
+                paginations.push(cx.new(|_| {
+                    aura_components::Pagination::new(100)
+                        .id("docs-pagination-background")
+                        .background(true)
+                        .on_change(|page, _, _| toast_info!("Page changed to: {}", page))
+                }));
+            }
+            "PaginationAdvanced" => {
+                paginations.push(cx.new(|_| {
+                    aura_components::Pagination::new(400)
+                        .id("docs-pagination-advanced")
+                        .page_size(20)
+                        .page_sizes(vec![10, 20, 50, 100])
+                        .background(true)
+                        .layout("total, sizes, prev, pager, next, jumper")
+                        .on_change(|page, _, _| toast_info!("Page changed to: {}", page))
+                        .on_page_size_change(|size, _, _| {
+                            toast_info!("Page size changed to: {}", size)
+                        })
+                }));
+            }
+            "TabsBasic" => {
+                tabs.push(cx.new(|_| basic_tabs("docs-tabs-basic")));
+            }
+            "TabsStretch" => {
+                tabs.push(cx.new(|_| basic_tabs("docs-tabs-stretch").stretch(true)));
+            }
+            "TabsCard" => {
+                tabs.push(
+                    cx.new(|_| basic_tabs("docs-tabs-card").type_(aura_components::TabType::Card)),
+                );
+            }
+            "TabsBorderCard" => {
+                tabs.push(cx.new(|_| {
+                    basic_tabs("docs-tabs-border-card").type_(aura_components::TabType::BorderCard)
+                }));
+            }
+            "TabsPosition" => {
+                tabs.push(cx.new(|_| {
+                    short_tabs("docs-tabs-left").position(aura_components::TabPosition::Left)
+                }));
+                tabs.push(cx.new(|_| {
+                    short_tabs("docs-tabs-right").position(aura_components::TabPosition::Right)
+                }));
+            }
+            "TabsEditable" => {
+                tabs.push(cx.new(|_| {
+                    aura_components::Tabs::new("1")
+                        .id("docs-tabs-editable")
+                        .editable(true)
+                        .pane("1", "Tab 1", |_, _| Text::new("Content of Tab 1"))
+                        .pane("2", "Tab 2", |_, _| Text::new("Content of Tab 2"))
+                        .on_tab_add(|_, _| toast_info!("Add Tab Clicked"))
+                        .on_tab_remove(|name, _, _| toast_info!("Remove Tab: {}", name))
+                }));
+            }
             _ => {}
         }
 
@@ -1474,6 +1555,8 @@ impl LiveDemoContent {
             sliders,
             switches,
             segmenteds,
+            paginations,
+            tabs,
         }
     }
 }
@@ -2319,6 +2402,25 @@ impl Render for LiveDemoContent {
                     .placement(aura_core::Placement::BottomEnd)
                     .into_any_element(),
             ]),
+            "PaginationBasic" | "PaginationBackground" | "PaginationAdvanced" => self
+                .paginations
+                .first()
+                .cloned()
+                .map(|pagination| Card::new(pagination).into_any_element())
+                .unwrap_or_else(|| Paragraph::with_text("Missing Pagination demo").into_any_element()),
+            "TabsBasic" | "TabsStretch" | "TabsCard" | "TabsBorderCard" | "TabsEditable" => self
+                .tabs
+                .first()
+                .cloned()
+                .map(Entity::into_any_element)
+                .unwrap_or_else(|| Paragraph::with_text("Missing Tabs demo").into_any_element()),
+            "TabsPosition" => demo_row(
+                self.tabs
+                    .iter()
+                    .cloned()
+                    .map(Entity::into_any_element)
+                    .collect(),
+            ),
             _ => self.gallery_demo.clone().map_or_else(
                 || {
                     Paragraph::with_text(format!(
@@ -2339,6 +2441,22 @@ fn demo_row(children: Vec<AnyElement>) -> AnyElement {
         .gap_sm()
         .children(children)
         .into_any_element()
+}
+
+fn basic_tabs(id: &'static str) -> aura_components::Tabs {
+    aura_components::Tabs::new("first")
+        .id(id)
+        .pane("first", "用户管理", |_, _| Text::new("用户管理内容"))
+        .pane("second", "配置管理", |_, _| Text::new("配置管理内容"))
+        .pane("third", "角色管理", |_, _| Text::new("角色管理内容"))
+        .pane("fourth", "定时任务", |_, _| Text::new("定时任务内容"))
+}
+
+fn short_tabs(id: &'static str) -> aura_components::Tabs {
+    aura_components::Tabs::new("first")
+        .id(id)
+        .pane("first", "用户管理", |_, _| Text::new("用户管理内容"))
+        .pane("second", "配置管理", |_, _| Text::new("配置管理内容"))
 }
 
 fn basic_autocomplete_items() -> Vec<AutocompleteItem> {
@@ -3454,6 +3572,27 @@ mod tests {
                 include_str!("../content/pages/tooltip.md"),
                 "TooltipBasic",
                 &["tooltip/basic.rs", "tooltip/more.rs"][..],
+            ),
+            (
+                include_str!("../content/pages/pagination.md"),
+                "PaginationBasic",
+                &[
+                    "pagination/basic.rs",
+                    "pagination/background.rs",
+                    "pagination/advanced.rs",
+                ][..],
+            ),
+            (
+                include_str!("../content/pages/tabs.md"),
+                "TabsBasic",
+                &[
+                    "tabs/basic.rs",
+                    "tabs/stretch.rs",
+                    "tabs/card.rs",
+                    "tabs/border_card.rs",
+                    "tabs/position.rs",
+                    "tabs/editable.rs",
+                ][..],
             ),
         ] {
             assert!(!page.contains("## 完整示例"));

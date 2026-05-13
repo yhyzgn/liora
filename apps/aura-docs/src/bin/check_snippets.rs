@@ -125,6 +125,12 @@ mod page_header_basic;
 mod page_header_extra;
 #[path = "../../content/snippets/page_header/full.rs"]
 mod page_header_full;
+#[path = "../../content/snippets/pagination/advanced.rs"]
+mod pagination_advanced;
+#[path = "../../content/snippets/pagination/background.rs"]
+mod pagination_background;
+#[path = "../../content/snippets/pagination/basic.rs"]
+mod pagination_basic;
 #[path = "../../content/snippets/progress/basic.rs"]
 mod progress_basic;
 #[path = "../../content/snippets/progress/color.rs"]
@@ -195,6 +201,18 @@ mod switch_basic;
 mod switch_callback;
 #[path = "../../content/snippets/switch/disabled.rs"]
 mod switch_disabled;
+#[path = "../../content/snippets/tabs/basic.rs"]
+mod tabs_basic;
+#[path = "../../content/snippets/tabs/border_card.rs"]
+mod tabs_border_card;
+#[path = "../../content/snippets/tabs/card.rs"]
+mod tabs_card;
+#[path = "../../content/snippets/tabs/editable.rs"]
+mod tabs_editable;
+#[path = "../../content/snippets/tabs/position.rs"]
+mod tabs_position;
+#[path = "../../content/snippets/tabs/stretch.rs"]
+mod tabs_stretch;
 #[path = "../../content/snippets/tag/closable.rs"]
 mod tag_closable;
 #[path = "../../content/snippets/tag/round.rs"]

@@ -1,16 +1,42 @@
 # Pagination
 
-分页控制。
+`Pagination` 用于把大量数据拆分为多个页面，降低单页信息密度，并提供页码跳转能力。
 
-## 完整示例
+## 基础用法
 
-此示例复用 Aura Gallery 中同名控件的原生 demo，确保文档效果与演示大屏保持一致。
+默认布局包含上一页、页码和下一页，并可通过 `on_change` 监听页码变化。
 
 ### 效果
 
-::AuraDemo{component="Pagination"}::
+::AuraDemo{component="PaginationBasic"}::
 
 ### 代码
 
-```rust src="gallery/pagination_demo.rs"
+```rust src="pagination/basic.rs"
+```
+
+## 背景色分页
+
+开启 `background(true)` 后，页码按钮会带有背景色，更适合强调分页控制区域。
+
+### 效果
+
+::AuraDemo{component="PaginationBackground"}::
+
+### 代码
+
+```rust src="pagination/background.rs"
+```
+
+## 附加功能
+
+通过 `layout` 组合总数、页尺寸选择器、页码和跳转区域。
+
+### 效果
+
+::AuraDemo{component="PaginationAdvanced"}::
+
+### 代码
+
+```rust src="pagination/advanced.rs"
 ```
