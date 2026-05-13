@@ -13,6 +13,7 @@ use std::{
     hash::{Hash, Hasher},
     ops::Range,
     sync::{Arc, Mutex, OnceLock},
+    time::{Duration, Instant},
 };
 use syntect::{
     easy::HighlightLines,
@@ -436,6 +437,16 @@ fn render_block_code(
     let resolved_theme = resolve_code_theme(code_theme, theme);
     let copied_code = code.to_string();
     let scroll_id = format!("{id}-scroll");
+    let should_render_code = should_render_code_now(
+        id.clone(),
+        code.as_ref(),
+        language,
+        highlighter,
+        resolved_theme,
+        theme,
+        window,
+        cx,
+    );
 
     let mut header = div()
         .flex()
@@ -512,18 +523,123 @@ fn render_block_code(
                 .p_4()
                 .bg(code_surface(resolved_theme))
                 .cursor_text()
-                .child(render_code_content(
-                    id,
-                    code,
-                    language,
-                    highlighter,
-                    resolved_theme,
-                    selectable,
-                    theme,
-                    window,
-                    cx,
-                )),
+                .child(if should_render_code {
+                    render_code_content(
+                        id,
+                        code,
+                        language,
+                        highlighter,
+                        resolved_theme,
+                        selectable,
+                        theme,
+                        window,
+                        cx,
+                    )
+                } else {
+                    render_code_placeholder(code, resolved_theme, theme)
+                }),
         )
+        .into_any_element()
+}
+
+fn should_render_code_now(
+    id: ElementId,
+    code: &str,
+    language: CodeLanguage,
+    highlighter: CodeHighlighter,
+    code_theme: ResolvedCodeTheme,
+    theme: &aura_theme::Theme,
+    window: &mut Window,
+    cx: &mut App,
+) -> bool {
+    let cache_key = HighlightCacheKey::new(code, language, highlighter, code_theme, true, theme);
+    if highlight_cache()
+        .lock()
+        .expect("highlight cache lock poisoned")
+        .contains_key(&cache_key)
+    {
+        return true;
+    }
+
+    let state_key = ElementId::NamedChild(Arc::new(id), SharedString::from("deferred-code-ready"));
+    let ready = window.use_keyed_state(state_key, cx, |_, _| false);
+
+    if !*ready.read(cx) {
+        ready.update(cx, |ready, cx| {
+            *ready = true;
+            cx.notify();
+        });
+        return false;
+    }
+
+    if take_deferred_highlight_slot() {
+        true
+    } else {
+        ready.update(cx, |_, cx| {
+            cx.notify();
+        });
+        false
+    }
+}
+
+#[derive(Debug)]
+struct DeferredHighlightBudget {
+    window_start: Instant,
+    remaining: usize,
+}
+
+fn take_deferred_highlight_slot() -> bool {
+    static BUDGET: OnceLock<Mutex<DeferredHighlightBudget>> = OnceLock::new();
+    const FRAME_BUDGET: usize = 1;
+    const FRAME_WINDOW: Duration = Duration::from_millis(12);
+
+    let mut budget = BUDGET
+        .get_or_init(|| {
+            Mutex::new(DeferredHighlightBudget {
+                window_start: Instant::now(),
+                remaining: FRAME_BUDGET,
+            })
+        })
+        .lock()
+        .expect("deferred highlight budget lock poisoned");
+
+    let now = Instant::now();
+    if now.duration_since(budget.window_start) >= FRAME_WINDOW {
+        budget.window_start = now;
+        budget.remaining = FRAME_BUDGET;
+    }
+
+    if budget.remaining > 0 {
+        budget.remaining -= 1;
+        true
+    } else {
+        false
+    }
+}
+
+fn render_code_placeholder(
+    code: SharedString,
+    code_theme: ResolvedCodeTheme,
+    theme: &aura_theme::Theme,
+) -> gpui::AnyElement {
+    let line_count = code.as_ref().lines().count().max(1).min(6);
+    div()
+        .flex()
+        .flex_col()
+        .gap_2()
+        .children((0..line_count).map(|index| {
+            let width = match index % 4 {
+                0 => px(520.0),
+                1 => px(380.0),
+                2 => px(460.0),
+                _ => px(300.0),
+            };
+            div()
+                .h(px(theme.font_size.sm * 1.15))
+                .w(width)
+                .rounded(px(theme.radius.sm))
+                .bg(code_muted_text(code_theme).opacity(0.16))
+        }))
         .into_any_element()
 }
 
@@ -1599,6 +1715,18 @@ mod tests {
         );
 
         assert_eq!(first, second);
+    }
+
+    #[test]
+    fn block_code_defers_expensive_rendering_for_first_frame() {
+        let source = include_str!("code_block.rs");
+
+        assert!(source.contains("should_render_code_now"));
+        assert!(source.contains("deferred-code-ready"));
+        assert!(source.contains("take_deferred_highlight_slot"));
+        assert!(source.contains("FRAME_BUDGET"));
+        assert!(source.contains("render_code_placeholder"));
+        assert!(source.contains("cx.notify()"));
     }
 
     #[test]
