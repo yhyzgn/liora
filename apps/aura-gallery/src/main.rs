@@ -43,6 +43,7 @@ fn run_gallery() {
         TimePicker::register_key_bindings(cx);
         Text::register_key_bindings(cx);
         Paragraph::register_key_bindings(cx);
+        Title::register_key_bindings(cx);
 
         let _ = cx.open_window(
             WindowOptions {

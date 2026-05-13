@@ -3,7 +3,7 @@
 use aura_components::{
     Autocomplete, Cascader, Checkbox, CodeBlock, ColorPicker, DatePicker, DateTimePicker, Dialog,
     Drawer, Input, MessageManager, Paragraph, Popover, Preview, Radio, RadioGroup, Select, Switch,
-    Text, TimePicker,
+    Text, TimePicker, Title,
 };
 use aura_core::init_aura;
 use aura_theme::Theme;
@@ -47,6 +47,7 @@ fn main() {
         TimePicker::register_key_bindings(cx);
         Text::register_key_bindings(cx);
         Paragraph::register_key_bindings(cx);
+        Title::register_key_bindings(cx);
 
         // 4. Open the native window and mount a root GPUI View.
         let _ = cx.open_window(
