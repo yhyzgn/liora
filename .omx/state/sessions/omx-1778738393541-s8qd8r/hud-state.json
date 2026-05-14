@@ -1,6 +1,6 @@
 {
-  "last_turn_at": "2026-05-14T06:11:20.467Z",
-  "last_progress_at": "2026-05-14T06:11:20.467Z",
-  "turn_count": 1,
-  "last_agent_output": "继续完成并已推送。\n\n本轮完成：\n- 拆完剩余简略页面：\n  - Affix\n  - Anchor\n  - Backtop\n  - Form\n  - Preview\n- 为每个页面补了“效果 → 对应"
+  "last_turn_at": "2026-05-14T06:31:45.080Z",
+  "last_progress_at": "2026-05-14T06:31:45.080Z",
+  "turn_count": 2,
+  "last_agent_output": "原因找到了：不是 `Text/Paragraph/Title` 没做选中，而是 **docs Markdown 虚拟列表渲染时，Paragraph/Title 每次重绘都会生成新的 `unique_i"
 }

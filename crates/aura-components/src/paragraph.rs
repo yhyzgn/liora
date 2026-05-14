@@ -220,6 +220,8 @@ mod tests {
         assert!(selectable_source.contains("ClipboardItem::new_string"));
         assert!(selectable_source.contains(r#"KeyBinding::new("ctrl-c""#));
         assert!(selectable_source.contains("window.capture_pointer"));
+        assert!(selectable_source.contains("cx.on_blur(&self.focus_handle"));
+        assert!(selectable_source.contains("fn clear_selection"));
     }
 
     #[test]

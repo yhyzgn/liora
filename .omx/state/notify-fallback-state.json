@@ -15,9 +15,9 @@
   "dispatch_drain": {
     "enabled": true,
     "max_per_tick": 5,
-    "run_count": 5817,
+    "run_count": 7735,
     "leader_only": true,
-    "last_tick_at": "2026-05-14T06:27:32.951Z",
+    "last_tick_at": "2026-05-14T06:38:14.703Z",
     "last_result": {
       "processed": 0,
       "skipped": 0,
@@ -30,16 +30,16 @@
     "leader_only": true,
     "stale_threshold_ms": 180000,
     "precomputed_leader_stale": true,
-    "last_tick_at": "2026-05-14T06:27:32.951Z",
+    "last_tick_at": "2026-05-14T06:38:14.704Z",
     "last_error": null,
-    "run_count": 5817
+    "run_count": 7735
   },
   "ralph_continue_steer": {
     "enabled": true,
     "cadence_ms": 60000,
     "message": "Ralph loop active continue",
     "active": false,
-    "last_state_check_at": "2026-05-14T06:27:32.965Z",
+    "last_state_check_at": "2026-05-14T06:38:14.717Z",
     "last_sent_at": "",
     "cooldown_anchor_at": "",
     "last_reason": "blocked_by_current_session",
@@ -57,10 +57,10 @@
   "fallback_auto_nudge": {
     "enabled": true,
     "stall_ms": 5000,
-    "last_tick_at": "2026-05-14T06:27:32.952Z",
-    "last_turn_at": "2026-05-14T06:11:20.467Z",
-    "last_turn_count": 1,
-    "last_message": "继续完成并已推送。\n\n本轮完成：\n- 拆完剩余简略页面：\n  - Affix\n  - Anchor\n  - Backtop\n  - Form\n  - Preview\n- 为每个页面补了“效果 → 对应",
+    "last_tick_at": "2026-05-14T06:38:14.704Z",
+    "last_turn_at": "2026-05-14T06:31:45.080Z",
+    "last_turn_count": 2,
+    "last_message": "原因找到了：不是 `Text/Paragraph/Title` 没做选中，而是 **docs Markdown 虚拟列表渲染时，Paragraph/Title 每次重绘都会生成新的 `unique_i",
     "last_reason": "eligible_but_not_sent",
     "last_error": null,
     "last_nudged_signature": "",
@@ -80,8 +80,8 @@
     "max_ms": 1000,
     "current_ms": 250,
     "idle_streak": 0,
-    "last_tick_at": "2026-05-14T06:27:32.966Z",
-    "last_activity_at": "2026-05-14T06:27:32.966Z",
+    "last_tick_at": "2026-05-14T06:38:14.717Z",
+    "last_activity_at": "2026-05-14T06:38:14.717Z",
     "last_activity_reason": "leader_nudge"
   },
   "last_cycle_activity": "leader_nudge"

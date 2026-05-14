@@ -391,6 +391,19 @@ impl SelectableTextState {
         }
     }
 
+    fn clear_selection(&mut self, cx: &mut Context<Self>) {
+        let changed = with_selection_state(&self.id, |state| {
+            let changed = !state.selected_range.is_empty() || state.selecting;
+            state.selected_range = 0..0;
+            state.selection_reversed = false;
+            state.selecting = false;
+            changed
+        });
+        if changed {
+            cx.notify();
+        }
+    }
+
     fn copy(&mut self, _: &SelectableTextCopy, _: &mut Window, cx: &mut Context<Self>) {
         let selected_range = selected_range_snapshot(&self.id);
         if !selected_range.is_empty() {
@@ -457,7 +470,12 @@ impl Focusable for SelectableTextState {
 }
 
 impl Render for SelectableTextState {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        cx.on_blur(&self.focus_handle, window, |this, _, cx| {
+            this.clear_selection(cx);
+        })
+        .detach();
+
         div()
             .id(format!("{:?}-selectable", self.id))
             .key_context(self.key_context)
