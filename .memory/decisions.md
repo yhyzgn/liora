@@ -161,3 +161,22 @@ Theme/config: Theme, Config, ContextExt, ElementExt, ColorPalette, Spacing, Radi
 - Do not introduce a VitePress app, Web documentation runtime, or cross-runtime rendering path.
 
 **Edition note**: The new architecture can be understood as Rust 2021-compatible in language semantics, but the existing workspace remains edition 2024 unless a separate migration decision changes it.
+
+## ADR-014: P10 Charts Use Native GPUI Canvas and Path Pipeline
+
+**Decision**: Aura chart components must be implemented as native Rust/GPUI components using GPUI `canvas`, `PathBuilder`, `Window::paint_path`, `Window::paint_quad`, and Aura/GPUI text primitives. Web chart engines, WebView, DOM/SVG DOM, WASM, and remote image rendering are forbidden.
+
+**Rationale**:
+- Aura is a native GPUI component library; charts must validate the same rendering stack as the rest of the library.
+- Native charts can share Aura theme tokens, interaction patterns, docs snippets, and Gallery self-bootstrapping.
+- GPUI already exposes enough low-level drawing primitives for line/area/bar/pie/ring/sparkline MVPs.
+
+**Reference policy**:
+- GPUI official/local source is the primary reference.
+- `https://github.com/vicanso/zedis` may be used as a case study because its Metrics page draws Area/Line/Bar charts through GPUI `canvas` and separates scale, axis/grid, and shape layers.
+- Aura must not copy zedis' public API or depend on its component crate; implement Aura-owned chart primitives and tests.
+
+**Implementation constraints**:
+- First-class components: `LineChart`, `AreaChart`, `BarChart`, `PieChart`, `RingChart`, `Sparkline`.
+- Shared infrastructure should cover linear/band/point scales, axis/grid/ticks, legend, tooltip/hover hit testing, and theme palette selection.
+- Every chart gets Gallery demo, Docs page, external `.rs` snippets, and scale/shape/builder tests.

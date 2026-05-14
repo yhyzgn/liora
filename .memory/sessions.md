@@ -3029,3 +3029,20 @@
 - Docs authored content should not be embedded as large Rust string constants.
 - Component documentation uses one Markdown file per component.
 - Code examples are maintained separately from Markdown and included via `src` paths relative to `apps/aura-docs/content/snippets/`.
+
+## Session 53 — 2026-05-14 (P10 Charts Planning)
+
+### Actions
+- Started new P10 phase for native statistics/chart components.
+- Reviewed local GPUI drawing primitives: `canvas`, `PathBuilder`, `Window::paint_path`, `Window::paint_quad`, and text rendering support.
+- Cloned/reviewed `vicanso/zedis` as a secondary case study; its Metrics view draws area/line/bar charts with GPUI canvas and scale/axis/shape layering.
+- Added `.prompt/P10-charts.md`.
+- Updated `prompt.md`, `architecture-design.md`, and `.memory/*` to make P10 the active charts phase and preserve the native-only constraint.
+
+### Key Decisions
+- Charts are first-class Aura components, not external chart runtime wrappers.
+- GPUI official/local source is the primary reference; zedis is only a structural case study.
+- First delivery set: LineChart, AreaChart, BarChart, PieChart, RingChart, Sparkline plus shared scale/axis/grid/legend/tooltip infrastructure.
+
+### Verification
+- Documentation/planning update only; run `cargo fmt` / `cargo check` after implementation changes begin.

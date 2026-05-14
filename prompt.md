@@ -14,7 +14,7 @@
 | UI 框架 | GPUI 0.2.2 (git = "https://github.com/zed-industries/zed") |
 | 参考规范 | Element-Plus 2.x (https://element-plus.org/zh-CN/) |
 | 架构 | Cargo Workspace Monorepo |
-| 目标 | ~76 个企业级组件, 分阶段交付；P9 作为延后高级组件补全 backlog |
+| 目标 | ~76+ 个企业级组件, 分阶段交付；P9 作为延后高级组件补全 backlog；P10 启动原生统计图组件阶段 |
 
 ---
 
@@ -28,6 +28,7 @@
 | **记忆库** | `.memory/` | 当前状态、架构决策、组件清单、会话历史 |
 | **阶段提示词** | `.prompt/` | 各阶段开发指令，链式继承 |
 | **P9 延后高级组件** | `.prompt/P9-deferred-advanced.md` | P5 跳过/延后的高级组件 backlog，后续需要时补充 |
+| **P10 统计图组件** | `.prompt/P10-charts.md` | 原生 GPUI 统计图控件：Line/Area/Bar/Pie/Ring/Sparkline/Axis/Grid/Legend/Tooltip |
 
 ---
 
@@ -71,7 +72,8 @@ aura/
 │   ├── P6-builtin-id.md
 │   ├── P7-demo-self-contained.md
 │   ├── P8-engineering.md
-│   └── P9-deferred-advanced.md
+│   ├── P9-deferred-advanced.md
+│   └── P10-charts.md
 ├── prompt.md                         # 📌 本文件 (AI 入口)
 ├── architecture-design.md
 └── structure.txt
@@ -95,7 +97,8 @@ aura/
 
 - P5 当前请求范围已结束；Carousel、Calendar、TreeSelect、InputTag、Mention、Watermark、Tour、VirtualizedTable、VirtualizedTree 已移入 `.prompt/P9-deferred-advanced.md`。
 - P8 当前技术路线已调整为 **Aura Docs 主程序**：官方文档在 GPUI 原生窗口中渲染，且独立为 `aura-docs` 主程序；`aura-gallery` 保持组件看板，不再承担官方文档入口。
-- P9 是最新阶段，但属于 deferred backlog；只有用户明确要求补齐这些组件时才启动。
+- P9 是 deferred backlog；只有用户明确要求补齐这些组件时才启动。
+- P10 是当前新阶段：开发纯原生 GPUI 统计图控件，参考 GPUI 官方 canvas/path/paint API；`vicanso/zedis` 只能作为案例参考，不复制其依赖或实现结构。
 
 ### 4.2 每个组件/功能开发流程
 
@@ -252,6 +255,29 @@ Markdown 中的特殊语法：
 
 ---
 
+
+## 6.5 P10 统计图组件阶段规约
+
+P10 目标是在 `aura-components` 中新增企业级统计图控件，全部运行在 GPUI 原生渲染路径中。严禁引入 ECharts、Canvas/WebView、SVG DOM、HTML/CSS、WASM 或跨端图表运行时。
+
+技术路线：
+
+- 首选 GPUI 官方能力：`canvas(...)`、`PathBuilder`、`Window::paint_path`、`Window::paint_quad`、TextSystem/`Text`/`Paragraph`。
+- 图表绘制基础设施沉淀在组件库内，例如 `chart.rs` / `chart_scale.rs` / `chart_axis.rs` / `chart_shape.rs`。
+- `https://github.com/vicanso/zedis` 的 Metrics 页面可作为 GPUI 图表案例参考：它通过 `canvas` 绘制 Area/Line/Bar，并将 scale、axis、grid、shape 拆层；但 Aura 必须实现自己的 API、主题、测试与文档。
+- 主题颜色优先来自 `Theme` 的语义色，必要时新增 chart palette token。
+
+首批交付控件：
+
+1. `LineChart` — 折线图，支持多 series、平滑/直线、点标记、空数据。
+2. `AreaChart` — 面积图，支持填充透明度、堆叠后续扩展。
+3. `BarChart` — 柱状图，支持竖向柱、分组后续扩展。
+4. `PieChart` / `RingChart` — 饼图/环图，支持百分比、legend。
+5. `Sparkline` — 迷你趋势图，用于 Statistic/Card 中嵌入。
+6. 基础设施：linear/band/point scales、axis、grid、legend、tooltip/hover hit test。
+
+每个图表必须：新增组件文件、导出 API、Gallery demo、Docs 页面与 snippet、单元测试、`cargo check/test/run` 验证后提交推送。
+
 ## 7. Gallery Demo 规约
 
 ### 7.1 Demo 函数签名
@@ -382,7 +408,9 @@ Closes #P1-button-icons
 ├── P5 Advanced            ⬜ → .prompt/P5-advanced.md
 ├── P6 Built-in Unique ID  ⬜ → .prompt/P6-builtin-id.md
 ├── P7 Demo Self-Contained ⬜ → .prompt/P7-demo-self-contained.md
-└── P8 Native Docs App ⬜ → .prompt/P8-engineering.md
+├── P8 Native Docs App ✅ → .prompt/P8-engineering.md
+├── P9 Deferred Advanced ⏸️ → .prompt/P9-deferred-advanced.md
+└── P10 Charts 🔄 → .prompt/P10-charts.md
 ```
 
 ---

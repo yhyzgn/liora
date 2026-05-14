@@ -42,3 +42,17 @@
 - P9 Deferred Advanced created in `.prompt/P9-deferred-advanced.md`.
 - Components moved from P5 deferred/skipped scope: Carousel, Calendar, TreeSelect, InputTag, Mention, Watermark, Tour, VirtualizedTable, VirtualizedTree.
 - P9 is the latest phase and should be supplemented later only when explicitly requested.
+
+## Current New Phase — P10 Native Charts
+
+User has started a new phase to develop statistics/chart components. P10 is now the active implementation phase, while P9 remains deferred backlog.
+
+Initial technical direction:
+- Primary reference: local/current GPUI official source, especially `canvas(...)`, `PathBuilder`, `Window::paint_path`, `Window::paint_quad`, and text rendering primitives.
+- Secondary case study: `https://github.com/vicanso/zedis` Metrics implementation, which uses GPUI canvas and a scale/axis/shape split for Area/Line/Bar charts.
+- Strict native boundary remains: no HTML/CSS/DOM/WebView/WASM/Web chart runtime.
+
+Expected P10 deliverables:
+- Shared chart infrastructure: scale, axis/grid, shapes, legend, tooltip/hover.
+- Components: LineChart, AreaChart, BarChart, PieChart, RingChart, Sparkline.
+- Gallery demos and Aura Docs pages/snippets for each chart.

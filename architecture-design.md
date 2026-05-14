@@ -85,6 +85,7 @@ aura/
 | `aura-components` | `gpui`, `aura-core`, `aura-theme`, `aura-icons` | 全部业务组件（Button/Input/Dialog/Table 等） |
 | `aura-gallery` | `gpui`(default), `gpui_platform`, 全部 aura crates | 组件看板，展示已实现组件 Demo |
 | `aura-docs` | `gpui`(default), `gpui_platform`, 全部 aura crates；P8 增加 `pulldown-cmark` | 官方原生文档主程序，包含 Markdown 渲染与 Live Demo 注入 |
+| `aura-components::chart*` | `gpui` 原生 `canvas`/`PathBuilder`/paint API | P10 统计图控件基础设施与 Line/Area/Bar/Pie/Ring/Sparkline 组件 |
 
 ### 2.3 GPUI 依赖策略
 
@@ -215,6 +216,37 @@ pub fn render(theme: &Theme) -> AnyElement {
 
 ---
 
+
+### 2.6 P10 Native Charts 架构
+
+**定位**：P10 新增一组 Dashboard/监控/报表所需的统计图组件。它们属于 `aura-components`，由 `aura-gallery` 展示，由 `aura-docs` 文档化。
+
+**绝对边界**：统计图必须 100% 使用 GPUI 原生渲染路径。严禁 ECharts、Vega、Plotly、WebView、HTML/CSS、DOM、SVG DOM、WASM 或远程图片渲染。
+
+**参考优先级**：
+
+1. GPUI 官方/本地源码：`canvas(...)`、`PathBuilder`、`Window::paint_path`、`Window::paint_quad`、TextSystem。
+2. 当前 Aura 组件模式：`RenderOnce + IntoElement`、全局 Theme、内置唯一 ID、Gallery 自举、Docs 效果→代码。
+3. `https://github.com/vicanso/zedis` 仅作为案例参考：其 Metrics 页面使用 GPUI `canvas`，并将图表拆为 scale、axis/grid、shape 层。Aura 可吸收这种分层思想，但必须实现自己的 API、主题与测试。
+
+**建议模块分层**：
+
+```text
+crates/aura-components/src/
+├── chart.rs            # ChartSeries/Point/Theme/Frame/Legend/Tooltip 公共模型
+├── chart_scale.rs      # ScaleLinear / ScaleBand / ScalePoint
+├── chart_axis.rs       # Axis/Grid/Tick/Label 布局
+├── chart_shape.rs      # Line/Area/Bar/Pie/Ring/Sparkline 绘制 primitive
+├── line_chart.rs
+├── area_chart.rs
+├── bar_chart.rs
+├── pie_chart.rs
+└── sparkline.rs
+```
+
+**首批交付**：`LineChart`、`AreaChart`、`BarChart`、`PieChart`、`RingChart`、`Sparkline`，以及共享 `Scale`、`Axis`、`Grid`、`Legend`、`Tooltip/hover hit test` 基础设施。
+
+**渲染策略**：在 `canvas` 的 paint 回调中基于实际 `bounds` 计算 scale；使用 `PathBuilder` 生成折线/面积/扇区 path；使用 `paint_quad` 绘制柱体和必要背景；坐标轴文字、legend、tooltip 文案优先复用 Aura Typography 或 GPUI TextSystem。
 
 ### 2.5 P8 Aura Docs 主程序架构
 
@@ -397,7 +429,18 @@ Markdown 中的特殊语法：
 | Loading | `AuraLoading` | P3 | 加载状态（全屏/局部） |
 | MessageBox | `AuraMessageBox` | P4 | 消息弹窗（confirm/prompt） |
 
-### 3.7 Others 其他 (2)
+### 3.7 Charts 统计图 (6+)
+
+| 中文 | Public API | 阶段 | 说明 |
+|------|------------|------|------|
+| 折线图 | `LineChart` | P10 | 单/多 series、axis/grid、legend、点标记 |
+| 面积图 | `AreaChart` | P10 | 折线 + 填充，后续支持 stacked/gradient |
+| 柱状图 | `BarChart` | P10 | 分类轴柱体，后续支持 grouped/stacked/horizontal |
+| 饼图 | `PieChart` | P10 | 扇区、百分比、legend |
+| 环图 | `RingChart` | P10 | donut inner radius、中心文本 |
+| 迷你趋势图 | `Sparkline` | P10 | 卡片/Statistic 内嵌微型趋势图 |
+
+### 3.8 Others 其他 (2)
 
 | Element-Plus | Aura 组件 | 阶段 | 说明 |
 |-------------|----------|------|------|
@@ -419,7 +462,9 @@ P4 · Navigation + Data ░░░░░░░░░░  导航组件 + 数据展
 P5 · Advanced          ░░░░░░░░░░  重型组件（Table/DatePicker/Upload 等）
 P6 · Built-in Unique ID  ██░░░░░░░░  已完成 — 内建唯一 ID
 P7 · Demo Self-Contained ██░░░░░░░░  已完成 — Gallery Demo 自举
-P8 · Native Docs App ░░░░░░░░░░  原生文档大屏 + Markdown + Live Demo + 工程化
+P8 · Native Docs App ██░░░░░░░░  核心已完成 — 原生文档大屏 + Markdown + Live Demo
+P9 · Deferred Advanced ⏸️  延后高级组件 backlog
+P10 · Native Charts ░░░░░░░░░░  当前阶段 — GPUI 原生统计图组件
 ```
 
 ### P0 · Foundation（已完成）
@@ -569,6 +614,25 @@ Table 是企业级组件库中最复杂、工作量最大的组件。Aura Table 
 | **发布流程** | crates.io 发布策略、CHANGELOG 自动化 |
 
 ---
+
+
+### P10 · Native Charts（统计图组件）
+
+目标：补齐 Aura 在企业 Dashboard、监控、报表场景中的原生可视化能力。
+
+| 子任务 | 优先级 | 说明 |
+|--------|--------|------|
+| Chart scale 基础设施 | P0 | `ScaleLinear` / `ScaleBand` / `ScalePoint`，覆盖空值、单点、负值、手动 domain |
+| Axis/Grid 基础设施 | P0 | x/y axis、ticks、grid line、label format |
+| LineChart | P0 | 单/多 series、axis/grid、legend、点标记 |
+| AreaChart | P1 | 透明填充，复用 Line path 数据 |
+| BarChart | P1 | 分类轴 + 竖向柱体，复用 band scale |
+| PieChart/RingChart | P2 | 极坐标角度计算、扇区 path、legend |
+| Sparkline | P2 | 无坐标轴微型趋势图，可嵌入 Statistic/Card |
+| Hover/Tooltip | P2 | 命中测试、最近点定位、Aura Popover/Tooltip 风格 |
+| 性能优化 | P3 | 大 series 降采样、缓存、避免每帧重复分配 |
+
+验收：所有图表组件进入 `aura-components` 导出；Gallery 有自举 Demo；Docs 有按“效果 → 代码”组织的页面和完整 `.rs` snippets；相关 scale/shape/builder 测试通过。
 
 ## 五、组件 API 设计规范
 
@@ -793,7 +857,9 @@ pub struct FormRule {
 | P5 Advanced | 20 | 6-8 周 ⚠️ | Table/DatePicker/Upload/Carousel/Cascader+ |
 | P6 Built-in Unique ID | — | ✅ 已完成 | 内建唯一 ID |
 | P7 Demo Self-Contained | — | ✅ 已完成 | Gallery Demo 自举 |
-| P8 Native Docs App | — | 3-4 周 | 原生文档大屏/Markdown/Live Demo/Test/CI/Release |
+| P8 Native Docs App | — | ✅ 核心完成 | 原生文档大屏/Markdown/Live Demo/Test/CI/Release |
+| P9 Deferred Advanced | 9 | ⏸️ Deferred | Carousel/Calendar/TreeSelect/InputTag/Mention/Watermark/Tour/Virtualized* |
+| P10 Native Charts | 6+ | 🔄 当前阶段 | Line/Area/Bar/Pie/Ring/Sparkline + scale/axis/grid/legend/tooltip |
 | **合计** | **76+** | **约 6 个月** | 完整企业级组件库 |
 
 ---
