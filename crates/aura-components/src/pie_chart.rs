@@ -6,8 +6,6 @@ use gpui::{
     RenderOnce, SharedString, Styled, Window, canvas, div, point, px,
 };
 
-const PIE_STEPS_PER_SLICE: usize = 36;
-
 #[derive(Clone)]
 pub struct PieChart {
     slices: Vec<ChartSeries>,
@@ -253,53 +251,66 @@ fn pie_slice_path(
     start_deg: f32,
     end_deg: f32,
 ) -> Option<gpui::Path<Pixels>> {
-    let points = arc_points(center, radius, start_deg, end_deg, PIE_STEPS_PER_SLICE);
-    let first = *points.first()?;
+    if radius <= 0.0 || !radius.is_finite() || !start_deg.is_finite() || !end_deg.is_finite() {
+        return None;
+    }
+
+    let sweep_deg = end_deg - start_deg;
+    if sweep_deg.abs() >= 359.999 {
+        return circle_path(center, radius);
+    }
+
+    let start = polar_point(center, radius, start_deg);
     let mut builder = gpui::PathBuilder::fill();
     builder.move_to(center);
-    builder.line_to(first);
-    for point in points.iter().skip(1) {
-        builder.line_to(*point);
-    }
+    builder.line_to(start);
+    append_arc(&mut builder, center, radius, start_deg, end_deg);
+    builder.line_to(center);
     builder.close();
-    builder.build().ok()
+    Some(builder.build().ok()?)
 }
 
 fn circle_path(center: Point<Pixels>, radius: f32) -> Option<gpui::Path<Pixels>> {
-    let points = arc_points(center, radius, 0.0, 360.0, 64);
-    let first = *points.first()?;
-    let mut builder = gpui::PathBuilder::fill();
-    builder.move_to(first);
-    for point in points.iter().skip(1) {
-        builder.line_to(*point);
+    if radius <= 0.0 || !radius.is_finite() {
+        return None;
     }
+
+    let start = polar_point(center, radius, -90.0);
+    let mid = polar_point(center, radius, 90.0);
+    let mut builder = gpui::PathBuilder::fill();
+    builder.move_to(start);
+    builder.arc_to(point(px(radius), px(radius)), px(0.0), false, true, mid);
+    builder.arc_to(point(px(radius), px(radius)), px(0.0), false, true, start);
     builder.close();
     builder.build().ok()
 }
 
-fn arc_points(
+fn append_arc(
+    builder: &mut gpui::PathBuilder,
     center: Point<Pixels>,
     radius: f32,
     start_deg: f32,
     end_deg: f32,
-    steps: usize,
-) -> Vec<Point<Pixels>> {
-    let mut points = Vec::with_capacity(steps + 1);
-    let start = start_deg.to_radians();
-    let end = end_deg.to_radians();
-    let span = (end - start).abs().max(0.001);
-    let steps = ((span / std::f32::consts::TAU) * steps as f32)
-        .ceil()
-        .max(2.0) as usize;
-    for step in 0..=steps {
-        let t = step as f32 / steps as f32;
-        let angle = start + (end - start) * t;
-        points.push(point(
-            center.x + px(radius * angle.cos()),
-            center.y + px(radius * angle.sin()),
-        ));
-    }
-    points
+) {
+    let sweep_deg = end_deg - start_deg;
+    let large_arc = sweep_deg.abs() > 180.0;
+    let sweep = sweep_deg >= 0.0;
+    let end = polar_point(center, radius, end_deg);
+    builder.arc_to(
+        point(px(radius), px(radius)),
+        px(0.0),
+        large_arc,
+        sweep,
+        end,
+    );
+}
+
+fn polar_point(center: Point<Pixels>, radius: f32, deg: f32) -> Point<Pixels> {
+    let radians = deg.to_radians();
+    point(
+        center.x + px(radius * radians.cos()),
+        center.y + px(radius * radians.sin()),
+    )
 }
 
 #[cfg(test)]

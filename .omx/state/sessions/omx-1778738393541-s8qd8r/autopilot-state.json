@@ -1,12 +1,12 @@
 {
   "active": false,
-  "current_phase": "line_chart_geometry_fix",
+  "current_phase": "pie_ring_arc_smoothing",
   "lifecycle_outcome": "finished",
   "run_outcome": "finish",
-  "target": "Fix LineChart vertical gradient, smooth curve visibility, marker alignment, and area/line boundary alignment",
+  "target": "Smooth PieChart/RingChart jagged edges by using native GPUI arcs instead of polygon segments",
   "validation": [
     "cargo fmt",
-    "cargo test -p aura-components chart_shape -- --nocapture",
+    "cargo test -p aura-components pie_chart -- --nocapture",
     "cargo check -p aura-components",
     "cargo check -p aura-docs --bin check_snippets",
     "cargo check -p aura-docs",

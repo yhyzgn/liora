@@ -1,0 +1,1 @@
+{"timestamp":"2026-05-14T09:00:19.557Z","type":"tmux_hook","mode":null,"reason":"mode_not_allowed","turn_id":"019e25af-1ff6-7033-b3ac-b39a47e39682","thread_id":"019e15ab-a59f-7a20-a134-757da8881b86","target":{"type":"pane","value":"%0"},"dry_run":false,"sent":false,"event":"injection_skipped"}

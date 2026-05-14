@@ -1,6 +1,6 @@
 {
-  "last_turn_at": "2026-05-14T08:45:28.053Z",
-  "last_progress_at": "2026-05-14T08:45:28.053Z",
-  "turn_count": 8,
-  "last_agent_output": "已完成并推送。\n\n本次完成：\n- Demo / Docs 中统计图控件统一分组并放到末尾，方便查找。\n- Gallery 中统计图展示改成更大、更舒展的纵向展示，不再挤在一起。\n- `LineChar"
+  "last_turn_at": "2026-05-14T09:00:19.555Z",
+  "last_progress_at": "2026-05-14T09:00:19.555Z",
+  "turn_count": 9,
+  "last_agent_output": "已修正 LineChart：\n\n- 渐变改为垂直方向：曲线附近颜色更明显，向下逐渐透明。\n- 平滑曲线改为 Catmull-Rom → cubic Bézier，曲线会穿过数据点。\n- 面积填充新增 "
 }
