@@ -6,7 +6,7 @@
   "notify_script": "/home/neo/.bun/install/global/node_modules/oh-my-codex/dist/scripts/notify-hook.js",
   "authority_only": false,
   "poll_ms": 250,
-  "effective_poll_ms": 1000,
+  "effective_poll_ms": 250,
   "idle_max_poll_ms": 1000,
   "pid_file": "/home/neo/Projects/neo/lib/aura/.omx/state/notify-fallback.pid",
   "max_lifetime_ms": 21600000,
@@ -15,9 +15,9 @@
   "dispatch_drain": {
     "enabled": true,
     "max_per_tick": 5,
-    "run_count": 16228,
+    "run_count": 20185,
     "leader_only": true,
-    "last_tick_at": "2026-05-14T07:23:21.548Z",
+    "last_tick_at": "2026-05-14T07:43:11.483Z",
     "last_result": {
       "processed": 0,
       "skipped": 0,
@@ -29,17 +29,17 @@
     "enabled": true,
     "leader_only": true,
     "stale_threshold_ms": 180000,
-    "precomputed_leader_stale": false,
-    "last_tick_at": "2026-05-14T07:23:21.548Z",
+    "precomputed_leader_stale": true,
+    "last_tick_at": "2026-05-14T07:43:11.483Z",
     "last_error": null,
-    "run_count": 16228
+    "run_count": 20185
   },
   "ralph_continue_steer": {
     "enabled": true,
     "cadence_ms": 60000,
     "message": "Ralph loop active continue",
     "active": false,
-    "last_state_check_at": "2026-05-14T07:23:21.574Z",
+    "last_state_check_at": "2026-05-14T07:43:11.499Z",
     "last_sent_at": "",
     "cooldown_anchor_at": "",
     "last_reason": "blocked_by_current_session",
@@ -57,32 +57,32 @@
   "fallback_auto_nudge": {
     "enabled": true,
     "stall_ms": 5000,
-    "last_tick_at": "2026-05-14T07:23:21.560Z",
-    "last_turn_at": "2026-05-14T07:09:31.962Z",
-    "last_turn_count": 5,
-    "last_message": "已修复并推送。\n\n这次不是只依赖 GPUI action binding，而是在 `SelectableText` 的 focused key-down 层直接兜底处理：\n\n- `Ctrl+A`\n- ",
+    "last_tick_at": "2026-05-14T07:43:11.484Z",
+    "last_turn_at": "2026-05-14T07:23:50.859Z",
+    "last_turn_count": 6,
+    "last_message": "已把新阶段落到项目资料和记忆库，并已提交推送。\n\n更新内容：\n- 新增 `.prompt/P10-charts.md`\n- 更新 `prompt.md`\n- 更新 `architecture-desi",
     "last_reason": "eligible_but_not_sent",
     "last_error": null,
     "last_nudged_signature": "",
     "last_nudged_at": ""
   },
   "authority_backoff": {
-    "active": true,
-    "reason": "primary_watcher_healthy",
-    "primary_pid": 245853,
-    "primary_last_tick_at": "2026-05-14T07:23:21.574Z",
-    "freshness_ms": 7,
-    "threshold_ms": 1000
+    "active": false,
+    "reason": "",
+    "primary_pid": null,
+    "primary_last_tick_at": "",
+    "freshness_ms": null,
+    "threshold_ms": null
   },
   "adaptive_poll": {
     "enabled": true,
     "base_ms": 250,
     "max_ms": 1000,
-    "current_ms": 1000,
-    "idle_streak": 17,
-    "last_tick_at": "2026-05-14T07:23:21.574Z",
-    "last_activity_at": "2026-05-14T07:23:05.497Z",
-    "last_activity_reason": "eligible_but_not_sent"
+    "current_ms": 250,
+    "idle_streak": 0,
+    "last_tick_at": "2026-05-14T07:43:11.499Z",
+    "last_activity_at": "2026-05-14T07:43:11.499Z",
+    "last_activity_reason": "leader_nudge"
   },
-  "last_cycle_activity": "eligible_but_not_sent"
+  "last_cycle_activity": "leader_nudge"
 }

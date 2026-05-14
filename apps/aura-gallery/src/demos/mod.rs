@@ -25,6 +25,7 @@ pub mod form_demo;
 pub mod icon_demo;
 pub mod image_demo;
 pub mod layout_demo;
+pub mod line_chart_demo;
 pub mod link_demo;
 pub mod loading_demo;
 pub mod menu_demo;
@@ -328,6 +329,11 @@ pub fn registry() -> Vec<DemoEntry> {
             render: |cx| segmented_demo::render(cx).into(),
         },
         DemoEntry {
+            name: "LineChart 折线图",
+            description: "原生 GPUI 绘制的趋势折线图",
+            render: |cx| line_chart_demo::render(cx).into(),
+        },
+        DemoEntry {
             name: "Loading 加载",
             description: "加载数据时显示",
             render: |cx| loading_demo::render(cx).into(),
@@ -431,6 +437,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "InputNumber" => Some(form_controls_demo::render_input_number(cx)),
         "Layout" => Some(layout_demo::render(cx).into()),
         "Link" => Some(link_demo::render(cx).into()),
+        "LineChart" => Some(line_chart_demo::render(cx).into()),
         "Loading" => Some(loading_demo::render(cx).into()),
         "Menu" => Some(menu_demo::render(cx).into()),
         "Message" => Some(message_demo::render(cx).into()),

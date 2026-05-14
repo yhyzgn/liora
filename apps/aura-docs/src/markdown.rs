@@ -53,6 +53,7 @@ const INPUT_DOC: &str = include_str!("../content/pages/input.md");
 const INPUT_NUMBER_DOC: &str = include_str!("../content/pages/input_number.md");
 const LAYOUT_DOC: &str = include_str!("../content/pages/layout.md");
 const LINK_DOC: &str = include_str!("../content/pages/link.md");
+const LINE_CHART_DOC: &str = include_str!("../content/pages/line_chart.md");
 const LOADING_DOC: &str = include_str!("../content/pages/loading.md");
 const MENU_DOC: &str = include_str!("../content/pages/menu.md");
 const MESSAGE_DOC: &str = include_str!("../content/pages/message.md");
@@ -225,6 +226,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Layout",
         markdown: LAYOUT_DOC,
+    },
+    DocPage {
+        title: "LineChart",
+        markdown: LINE_CHART_DOC,
     },
     DocPage {
         title: "Link",
@@ -961,6 +966,9 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "link/underline.rs" => Some(include_str!("../content/snippets/link/underline.rs")),
         "link/states.rs" => Some(include_str!("../content/snippets/link/states.rs")),
         "link/icons.rs" => Some(include_str!("../content/snippets/link/icons.rs")),
+        "line_chart/empty.rs" => Some(include_str!("../content/snippets/line_chart/empty.rs")),
+        "line_chart/multi.rs" => Some(include_str!("../content/snippets/line_chart/multi.rs")),
+        "line_chart/basic.rs" => Some(include_str!("../content/snippets/line_chart/basic.rs")),
         "skeleton/basic.rs" => Some(include_str!("../content/snippets/skeleton/basic.rs")),
         "skeleton/variants.rs" => Some(include_str!("../content/snippets/skeleton/variants.rs")),
         "skeleton/template.rs" => Some(include_str!("../content/snippets/skeleton/template.rs")),
@@ -1235,6 +1243,9 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
             Some(include_str!("../../aura-gallery/src/demos/layout_demo.rs"))
         }
         "gallery/link_demo.rs" => Some(include_str!("../../aura-gallery/src/demos/link_demo.rs")),
+        "gallery/line_chart_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/line_chart_demo.rs"
+        )),
         "gallery/loading_demo.rs" => {
             Some(include_str!("../../aura-gallery/src/demos/loading_demo.rs"))
         }
@@ -2648,6 +2659,60 @@ impl Render for LiveDemoContent {
                 )
                 .width_lg()
                 .into_any_element(),
+            ]),
+            "LineChartBasic" => demo_row(vec![
+                aura_components::LineChart::new([aura_components::ChartSeries::new(
+                    "CPU Usage",
+                    [
+                        aura_components::ChartPoint::new("10:00", 24.0),
+                        aura_components::ChartPoint::new("10:05", 36.0),
+                        aura_components::ChartPoint::new("10:10", 32.0),
+                        aura_components::ChartPoint::new("10:15", 52.0),
+                        aura_components::ChartPoint::new("10:20", 46.0),
+                        aura_components::ChartPoint::new("10:25", 64.0),
+                    ],
+                )])
+                .id("docs-line-chart-basic")
+                .height(px(260.0))
+                .into_any_element(),
+            ]),
+            "LineChartMulti" => demo_row(vec![
+                aura_components::LineChart::new([
+                    aura_components::ChartSeries::new(
+                        "CPU",
+                        [
+                            aura_components::ChartPoint::new("Mon", 25.0),
+                            aura_components::ChartPoint::new("Tue", 38.0),
+                            aura_components::ChartPoint::new("Wed", 42.0),
+                            aura_components::ChartPoint::new("Thu", 58.0),
+                            aura_components::ChartPoint::new("Fri", 49.0),
+                            aura_components::ChartPoint::new("Sat", 72.0),
+                            aura_components::ChartPoint::new("Sun", 61.0),
+                        ],
+                    ),
+                    aura_components::ChartSeries::new(
+                        "Memory",
+                        [
+                            aura_components::ChartPoint::new("Mon", 48.0),
+                            aura_components::ChartPoint::new("Tue", 52.0),
+                            aura_components::ChartPoint::new("Wed", 57.0),
+                            aura_components::ChartPoint::new("Thu", 63.0),
+                            aura_components::ChartPoint::new("Fri", 66.0),
+                            aura_components::ChartPoint::new("Sat", 69.0),
+                            aura_components::ChartPoint::new("Sun", 74.0),
+                        ],
+                    ),
+                ])
+                .id("docs-line-chart-multi")
+                .height(px(300.0))
+                .y_domain(0.0, 100.0)
+                .into_any_element(),
+            ]),
+            "LineChartEmpty" => demo_row(vec![
+                aura_components::LineChart::new(Vec::<aura_components::ChartSeries>::new())
+                    .id("docs-line-chart-empty")
+                    .height(px(220.0))
+                    .into_any_element(),
             ]),
             "CardBasic" => demo_row(vec![
                 Card::new("Standard card content goes here.")

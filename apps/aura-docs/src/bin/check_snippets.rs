@@ -221,6 +221,12 @@ mod layout_divider;
 mod layout_grid;
 #[path = "../../content/snippets/layout/space.rs"]
 mod layout_space;
+#[path = "../../content/snippets/line_chart/basic.rs"]
+mod line_chart_basic;
+#[path = "../../content/snippets/line_chart/empty.rs"]
+mod line_chart_empty;
+#[path = "../../content/snippets/line_chart/multi.rs"]
+mod line_chart_multi;
 #[path = "../../content/snippets/link/icons.rs"]
 mod link_icons;
 #[path = "../../content/snippets/link/states.rs"]
