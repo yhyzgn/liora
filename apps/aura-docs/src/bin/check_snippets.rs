@@ -283,6 +283,8 @@ mod pagination_advanced;
 mod pagination_background;
 #[path = "../../content/snippets/pagination/basic.rs"]
 mod pagination_basic;
+#[path = "../../content/snippets/pie_chart/basic.rs"]
+mod pie_chart_basic;
 #[path = "../../content/snippets/popconfirm/basic.rs"]
 mod popconfirm_basic;
 #[path = "../../content/snippets/popconfirm/custom_text.rs"]
@@ -331,6 +333,8 @@ mod rate_custom;
 mod result_statuses;
 #[path = "../../content/snippets/result/success.rs"]
 mod result_success;
+#[path = "../../content/snippets/ring_chart/basic.rs"]
+mod ring_chart_basic;
 #[path = "../../content/snippets/scrollbar/basic.rs"]
 mod scrollbar_basic;
 #[path = "../../content/snippets/segmented/basic.rs"]

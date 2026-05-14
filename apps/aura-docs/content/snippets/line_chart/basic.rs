@@ -13,5 +13,7 @@ pub fn line_chart_basic() -> impl IntoElement {
             ChartPoint::new("10:25", 64.0),
         ],
     )])
-    .height(px(260.0))
+    .height(px(360.0))
+    .smooth(true)
+    .area_fill(true)
 }

@@ -28,6 +28,8 @@ pub fn line_chart_multi() -> impl IntoElement {
             ],
         ),
     ])
-    .height(px(300.0))
+    .height(px(400.0))
     .y_domain(0.0, 100.0)
+    .smooth(true)
+    .area_fill(true)
 }

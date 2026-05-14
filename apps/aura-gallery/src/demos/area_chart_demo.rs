@@ -1,5 +1,5 @@
-use aura_components::layout_helpers::{page, row, section};
-use aura_components::{AreaChart, ChartPoint, ChartSeries};
+use aura_components::layout_helpers::{page, section};
+use aura_components::{AreaChart, ChartPoint, ChartSeries, Space};
 use gpui::{AnyView, App, Context, Render, Window, prelude::*, px};
 
 pub fn render(cx: &mut App) -> AnyView {
@@ -13,34 +13,32 @@ impl Render for AreaChartDemo {
         page(
             "AreaChart 面积图",
             "使用填充路径展示趋势规模，支持叠加与堆叠面积。",
-            row(vec![
-                section(
+            Space::new()
+                .vertical()
+                .gap_xl()
+                .child(section(
                     "基础面积",
                     "突出趋势线下方的累计规模。",
                     AreaChart::new(visitor_series())
                         .id("area-chart-demo-basic")
-                        .height(px(260.0)),
-                )
-                .into_any_element(),
-                section(
+                        .height(px(380.0)),
+                ))
+                .child(section(
                     "多序列叠加",
                     "多条半透明面积用于对比趋势。",
                     AreaChart::new(multi_series())
                         .id("area-chart-demo-overlay")
-                        .height(px(300.0))
+                        .height(px(400.0))
                         .y_domain(0.0, 100.0),
-                )
-                .into_any_element(),
-                section(
+                ))
+                .child(section(
                     "堆叠面积",
                     "展示多个渠道共同组成的总量变化。",
                     AreaChart::new(multi_series())
                         .id("area-chart-demo-stacked")
-                        .height(px(300.0))
+                        .height(px(400.0))
                         .stacked(),
-                )
-                .into_any_element(),
-            ]),
+                )),
         )
     }
 }

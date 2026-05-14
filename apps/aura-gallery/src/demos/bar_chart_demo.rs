@@ -1,5 +1,5 @@
-use aura_components::layout_helpers::{page, row, section};
-use aura_components::{BarChart, ChartPoint, ChartSeries};
+use aura_components::layout_helpers::{page, section};
+use aura_components::{BarChart, ChartPoint, ChartSeries, Space};
 use gpui::{AnyView, App, Context, Render, Window, prelude::*, px};
 
 pub fn render(cx: &mut App) -> AnyView {
@@ -13,34 +13,32 @@ impl Render for BarChartDemo {
         page(
             "BarChart 柱状图",
             "使用 GPUI 原生矩形绘制分类统计，支持分组与堆叠。",
-            row(vec![
-                section(
+            Space::new()
+                .vertical()
+                .gap_xl()
+                .child(section(
                     "基础分组",
                     "比较不同分类下的单项指标。",
                     BarChart::new(revenue_series())
                         .id("bar-chart-demo-basic")
-                        .height(px(260.0)),
-                )
-                .into_any_element(),
-                section(
+                        .height(px(380.0)),
+                ))
+                .child(section(
                     "多序列分组",
                     "多组指标共享同一个分类坐标轴。",
                     BarChart::new(multi_series())
                         .id("bar-chart-demo-grouped")
-                        .height(px(300.0))
+                        .height(px(400.0))
                         .y_domain(0.0, 120.0),
-                )
-                .into_any_element(),
-                section(
+                ))
+                .child(section(
                     "堆叠柱状图",
                     "在同一个分类柱中展示构成占比。",
                     BarChart::new(multi_series())
                         .id("bar-chart-demo-stacked")
-                        .height(px(300.0))
+                        .height(px(400.0))
                         .stacked(),
-                )
-                .into_any_element(),
-            ]),
+                )),
         )
     }
 }

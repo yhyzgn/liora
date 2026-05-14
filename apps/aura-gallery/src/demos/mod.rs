@@ -36,11 +36,13 @@ pub mod message_demo;
 pub mod notification_demo;
 pub mod page_header_demo;
 pub mod pagination_demo;
+pub mod pie_chart_demo;
 pub mod popconfirm_demo;
 pub mod popover_demo;
 pub mod preview_demo;
 pub mod progress_demo;
 pub mod result_demo;
+pub mod ring_chart_demo;
 pub mod scrollbar_demo;
 pub mod segmented_demo;
 pub mod skeleton_demo;
@@ -331,21 +333,6 @@ pub fn registry() -> Vec<DemoEntry> {
             render: |cx| segmented_demo::render(cx).into(),
         },
         DemoEntry {
-            name: "AreaChart 面积图",
-            description: "原生 GPUI 绘制的趋势面积图",
-            render: |cx| area_chart_demo::render(cx).into(),
-        },
-        DemoEntry {
-            name: "BarChart 柱状图",
-            description: "原生 GPUI 绘制的分类柱状图",
-            render: |cx| bar_chart_demo::render(cx).into(),
-        },
-        DemoEntry {
-            name: "LineChart 折线图",
-            description: "原生 GPUI 绘制的趋势折线图",
-            render: |cx| line_chart_demo::render(cx).into(),
-        },
-        DemoEntry {
             name: "Loading 加载",
             description: "加载数据时显示",
             render: |cx| loading_demo::render(cx).into(),
@@ -410,9 +397,42 @@ pub fn registry() -> Vec<DemoEntry> {
             description: "基于 Lucide 的图标系统",
             render: |cx| icon_demo::render(cx).into(),
         },
+        DemoEntry {
+            name: "AreaChart 面积图",
+            description: "原生 GPUI 绘制的趋势面积图",
+            render: |cx| area_chart_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "BarChart 柱状图",
+            description: "原生 GPUI 绘制的分类柱状图",
+            render: |cx| bar_chart_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "LineChart 折线图",
+            description: "原生 GPUI 绘制的趋势折线图",
+            render: |cx| line_chart_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "PieChart 饼图",
+            description: "原生 GPUI 绘制的扇形统计图",
+            render: |cx| pie_chart_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "RingChart 圆环图",
+            description: "原生 GPUI 绘制的圆环统计图",
+            render: |cx| ring_chart_demo::render(cx).into(),
+        },
     ];
 
-    entries.sort_by(|a, b| a.name.cmp(b.name));
+    entries.sort_by(|a, b| {
+        let a_chart = a.name.contains("Chart");
+        let b_chart = b.name.contains("Chart");
+        match (a_chart, b_chart) {
+            (true, false) => std::cmp::Ordering::Greater,
+            (false, true) => std::cmp::Ordering::Less,
+            _ => a.name.cmp(b.name),
+        }
+    });
     entries
 }
 
@@ -462,6 +482,8 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Popconfirm" => Some(popconfirm_demo::render(cx).into()),
         "Popover" => Some(popover_demo::render(cx).into()),
         "Preview" => Some(preview_demo::render(cx).into()),
+        "PieChart" => Some(pie_chart_demo::render(cx).into()),
+        "RingChart" => Some(ring_chart_demo::render(cx).into()),
         "Progress" => Some(progress_demo::render(cx).into()),
         "Radio" => Some(form_controls_demo::render_radio(cx)),
         "Rate" => Some(form_controls_demo::render_rate(cx)),
@@ -496,13 +518,22 @@ mod tests {
     use super::*;
 
     #[test]
-    fn registry_entries_are_sorted_by_component_name() {
+    fn registry_entries_are_sorted_with_charts_grouped_last() {
         let entries = registry();
         let names = entries.iter().map(|entry| entry.name).collect::<Vec<_>>();
-        let mut sorted = names.clone();
-        sorted.sort();
+        let chart_start = names
+            .iter()
+            .position(|name| name.contains("Chart"))
+            .expect("chart demos should be present");
+        let (regular, charts) = names.split_at(chart_start);
+        let mut sorted_regular = regular.to_vec();
+        sorted_regular.sort();
+        let mut sorted_charts = charts.to_vec();
+        sorted_charts.sort();
 
-        assert_eq!(names, sorted);
+        assert_eq!(regular, sorted_regular);
+        assert_eq!(charts, sorted_charts);
+        assert!(charts.iter().all(|name| name.contains("Chart")));
     }
 
     #[test]

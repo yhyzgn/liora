@@ -67,6 +67,8 @@ const POPCONFIRM_DOC: &str = include_str!("../content/pages/popconfirm.md");
 const POPOVER_DOC: &str = include_str!("../content/pages/popover.md");
 const PREVIEW_DOC: &str = include_str!("../content/pages/preview.md");
 const PROGRESS_DOC: &str = include_str!("../content/pages/progress.md");
+const PIE_CHART_DOC: &str = include_str!("../content/pages/pie_chart.md");
+const RING_CHART_DOC: &str = include_str!("../content/pages/ring_chart.md");
 const RADIO_DOC: &str = include_str!("../content/pages/radio.md");
 const RATE_DOC: &str = include_str!("../content/pages/rate.md");
 const RESULT_DOC: &str = include_str!("../content/pages/result.md");
@@ -126,10 +128,6 @@ const DOC_PAGES: &[DocPage] = &[
         markdown: ANCHOR_DOC,
     },
     DocPage {
-        title: "AreaChart",
-        markdown: AREA_CHART_DOC,
-    },
-    DocPage {
         title: "Autocomplete",
         markdown: AUTOCOMPLETE_DOC,
     },
@@ -144,10 +142,6 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Badge",
         markdown: BADGE_DOC,
-    },
-    DocPage {
-        title: "BarChart",
-        markdown: BAR_CHART_DOC,
     },
     DocPage {
         title: "Breadcrumb",
@@ -236,10 +230,6 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Layout",
         markdown: LAYOUT_DOC,
-    },
-    DocPage {
-        title: "LineChart",
-        markdown: LINE_CHART_DOC,
     },
     DocPage {
         title: "Link",
@@ -384,6 +374,26 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "VirtualizedList",
         markdown: VIRTUALIZED_LIST_DOC,
+    },
+    DocPage {
+        title: "AreaChart",
+        markdown: AREA_CHART_DOC,
+    },
+    DocPage {
+        title: "BarChart",
+        markdown: BAR_CHART_DOC,
+    },
+    DocPage {
+        title: "LineChart",
+        markdown: LINE_CHART_DOC,
+    },
+    DocPage {
+        title: "PieChart",
+        markdown: PIE_CHART_DOC,
+    },
+    DocPage {
+        title: "RingChart",
+        markdown: RING_CHART_DOC,
     },
     DocPage {
         title: "Markdown",
@@ -985,6 +995,8 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "line_chart/empty.rs" => Some(include_str!("../content/snippets/line_chart/empty.rs")),
         "line_chart/multi.rs" => Some(include_str!("../content/snippets/line_chart/multi.rs")),
         "line_chart/basic.rs" => Some(include_str!("../content/snippets/line_chart/basic.rs")),
+        "pie_chart/basic.rs" => Some(include_str!("../content/snippets/pie_chart/basic.rs")),
+        "ring_chart/basic.rs" => Some(include_str!("../content/snippets/ring_chart/basic.rs")),
         "skeleton/basic.rs" => Some(include_str!("../content/snippets/skeleton/basic.rs")),
         "skeleton/variants.rs" => Some(include_str!("../content/snippets/skeleton/variants.rs")),
         "skeleton/template.rs" => Some(include_str!("../content/snippets/skeleton/template.rs")),
@@ -1267,6 +1279,12 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "gallery/link_demo.rs" => Some(include_str!("../../aura-gallery/src/demos/link_demo.rs")),
         "gallery/line_chart_demo.rs" => Some(include_str!(
             "../../aura-gallery/src/demos/line_chart_demo.rs"
+        )),
+        "gallery/pie_chart_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/pie_chart_demo.rs"
+        )),
+        "gallery/ring_chart_demo.rs" => Some(include_str!(
+            "../../aura-gallery/src/demos/ring_chart_demo.rs"
         )),
         "gallery/loading_demo.rs" => {
             Some(include_str!("../../aura-gallery/src/demos/loading_demo.rs"))
@@ -2823,6 +2841,46 @@ impl Render for LiveDemoContent {
                 .stacked()
                 .into_any_element(),
             ]),
+            "PieChart" => demo_row(vec![
+                aura_components::PieChart::new([
+                    aura_components::ChartSeries::new(
+                        "A",
+                        [aura_components::ChartPoint::new("A", 30.0)],
+                    ),
+                    aura_components::ChartSeries::new(
+                        "B",
+                        [aura_components::ChartPoint::new("B", 20.0)],
+                    ),
+                    aura_components::ChartSeries::new(
+                        "C",
+                        [aura_components::ChartPoint::new("C", 50.0)],
+                    ),
+                ])
+                .id("docs-pie-chart")
+                .height(px(340.0))
+                .into_any_element(),
+            ]),
+            "RingChart" => demo_row(vec![
+                aura_components::RingChart::new([
+                    aura_components::ChartSeries::new(
+                        "A",
+                        [aura_components::ChartPoint::new("A", 30.0)],
+                    ),
+                    aura_components::ChartSeries::new(
+                        "B",
+                        [aura_components::ChartPoint::new("B", 20.0)],
+                    ),
+                    aura_components::ChartSeries::new(
+                        "C",
+                        [aura_components::ChartPoint::new("C", 50.0)],
+                    ),
+                ])
+                .id("docs-ring-chart")
+                .height(px(340.0))
+                .inner_ratio(0.5)
+                .into_any_element(),
+            ]),
+
             "LineChartBasic" => demo_row(vec![
                 aura_components::LineChart::new([aura_components::ChartSeries::new(
                     "CPU Usage",

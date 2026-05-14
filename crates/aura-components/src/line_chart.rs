@@ -3,12 +3,12 @@ use crate::chart::{
 };
 use crate::chart_frame::paint_chart_frame;
 use crate::chart_scale::{ScaleLinear, ScalePoint};
-use crate::chart_shape::{finite_line_points, line_path};
+use crate::chart_shape::{finite_line_points, line_path, smooth_line_path};
 use crate::{Empty, Space, Text};
 use aura_core::{Config, unique_id};
 use gpui::{
-    App, Background, Component, ElementId, InteractiveElement, IntoElement, ParentElement, Pixels,
-    RenderOnce, SharedString, Styled, Window, canvas, div, fill, point, px, size,
+    App, Background, Component, ElementId, Hsla, InteractiveElement, IntoElement, ParentElement,
+    Pixels, RenderOnce, SharedString, Styled, Window, canvas, div, fill, point, px, size,
 };
 
 #[derive(Clone)]
@@ -16,6 +16,8 @@ pub struct LineChart {
     series: Vec<ChartSeries>,
     options: ChartOptions,
     point_markers: bool,
+    smooth: bool,
+    area_fill: bool,
 }
 
 impl LineChart {
@@ -27,6 +29,8 @@ impl LineChart {
                 ..ChartOptions::default()
             },
             point_markers: true,
+            smooth: true,
+            area_fill: true,
         }
     }
 
@@ -67,6 +71,16 @@ impl LineChart {
 
     pub fn point_markers(mut self, enabled: bool) -> Self {
         self.point_markers = enabled;
+        self
+    }
+
+    pub fn smooth(mut self, enabled: bool) -> Self {
+        self.smooth = enabled;
+        self
+    }
+
+    pub fn area_fill(mut self, enabled: bool) -> Self {
+        self.area_fill = enabled;
         self
     }
 
@@ -126,9 +140,19 @@ impl RenderOnce for LineChart {
                 self.options,
                 palette,
                 self.point_markers,
+                self.smooth,
+                self.area_fill,
             ))
             .into_any_element()
     }
+}
+
+fn gradient_for_series(color: Hsla) -> gpui::Background {
+    gpui::linear_gradient(
+        90.0,
+        gpui::linear_color_stop(color.opacity(0.28), 0.0),
+        gpui::linear_color_stop(color.opacity(0.0), 1.0),
+    )
 }
 
 fn render_legend(series: &[ChartSeries], palette: &ChartPalette) -> impl IntoElement {
@@ -150,6 +174,8 @@ fn render_line_canvas(
     options: ChartOptions,
     palette: ChartPalette,
     point_markers: bool,
+    smooth: bool,
+    area_fill: bool,
 ) -> impl IntoElement {
     let height = options.height;
     canvas(
@@ -201,7 +227,19 @@ fn render_line_canvas(
                         Some((left.as_f32() + x_pos, top.as_f32() + y.tick(point.value)))
                     });
                 let points = finite_line_points(points);
-                if let Some(path) = line_path(&points, px(2.0)) {
+                if area_fill {
+                    if let Some(path) =
+                        crate::chart_shape::area_path(&points, top + px(plot_height.as_f32()))
+                    {
+                        let gradient = gradient_for_series(color);
+                        window.paint_path(path, gradient);
+                    }
+                }
+                if let Some(path) = if smooth {
+                    smooth_line_path(&points, px(2.4))
+                } else {
+                    line_path(&points, px(2.0))
+                } {
                     window.paint_path(path, color);
                 }
                 if point_markers {

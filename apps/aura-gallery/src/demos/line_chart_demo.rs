@@ -1,5 +1,5 @@
-use aura_components::layout_helpers::{page, row, section};
-use aura_components::{ChartPoint, ChartSeries, LineChart};
+use aura_components::layout_helpers::{page, section};
+use aura_components::{ChartPoint, ChartSeries, LineChart, Space};
 use gpui::{AnyView, App, Context, Render, Window, prelude::*, px};
 
 pub fn render(cx: &mut App) -> AnyView {
@@ -12,34 +12,36 @@ impl Render for LineChartDemo {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         page(
             "LineChart 折线图",
-            "使用 GPUI canvas/path 原生绘制多序列趋势数据。",
-            row(vec![
-                section(
+            "使用 GPUI canvas/path 原生绘制多序列趋势数据，默认支持平滑曲线和线下渐变填充。",
+            Space::new()
+                .vertical()
+                .gap_xl()
+                .child(section(
                     "基础趋势",
                     "展示单条业务指标曲线。",
                     LineChart::new(cpu_series())
                         .id("line-chart-demo-basic")
-                        .height(px(260.0)),
-                )
-                .into_any_element(),
-                section(
+                        .height(px(380.0))
+                        .smooth(true)
+                        .area_fill(true),
+                ))
+                .child(section(
                     "多序列",
                     "多条曲线共享坐标系和图例。",
                     LineChart::new(multi_series())
                         .id("line-chart-demo-multi")
-                        .height(px(300.0))
-                        .y_domain(0.0, 100.0),
-                )
-                .into_any_element(),
-                section(
+                        .height(px(420.0))
+                        .y_domain(0.0, 100.0)
+                        .smooth(true)
+                        .area_fill(true),
+                ))
+                .child(section(
                     "无数据",
                     "空数据自动降级为空状态。",
                     LineChart::new(Vec::<ChartSeries>::new())
                         .id("line-chart-demo-empty")
-                        .height(px(220.0)),
-                )
-                .into_any_element(),
-            ]),
+                        .height(px(280.0)),
+                )),
         )
     }
 }
@@ -95,5 +97,7 @@ mod tests {
         assert!(source.contains("LineChart::new"));
         assert!(source.contains("ChartSeries::new"));
         assert!(source.contains("ChartPoint::new"));
+        assert!(source.contains("smooth(true)"));
+        assert!(source.contains("area_fill(true)"));
     }
 }
