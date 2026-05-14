@@ -21,7 +21,8 @@ impl Render for RingChartDemo {
                     "适合 KPI 占比展示。",
                     RingChart::new(slices())
                         .id("ring-chart-demo-basic")
-                        .height(px(420.0)),
+                        .height(px(420.0))
+                        .percentage_decimals(1),
                 ))
                 .child(section(
                     "更厚圆环",
@@ -29,7 +30,9 @@ impl Render for RingChartDemo {
                     RingChart::new(slices())
                         .id("ring-chart-demo-thick")
                         .height(px(420.0))
-                        .inner_ratio(0.44),
+                        .inner_ratio(0.44)
+                        .percentage_decimals(2)
+                        .outside_label_threshold_degrees(34),
                 )),
         )
     }
@@ -37,9 +40,10 @@ impl Render for RingChartDemo {
 
 fn slices() -> Vec<ChartSeries> {
     vec![
-        ChartSeries::new("A", [ChartPoint::new("A", 30.0)]),
-        ChartSeries::new("B", [ChartPoint::new("B", 20.0)]),
-        ChartSeries::new("C", [ChartPoint::new("C", 50.0)]),
+        ChartSeries::new("Desktop", [ChartPoint::new("Desktop", 62.0)]),
+        ChartSeries::new("Mobile", [ChartPoint::new("Mobile", 24.0)]),
+        ChartSeries::new("Tablet", [ChartPoint::new("Tablet", 9.0)]),
+        ChartSeries::new("Other", [ChartPoint::new("Other", 5.0)]),
     ]
 }
 

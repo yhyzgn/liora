@@ -15,9 +15,9 @@
   "dispatch_drain": {
     "enabled": true,
     "max_per_tick": 5,
-    "run_count": 41160,
+    "run_count": 44476,
     "leader_only": true,
-    "last_tick_at": "2026-05-14T09:29:43.069Z",
+    "last_tick_at": "2026-05-14T09:46:41.041Z",
     "last_result": {
       "processed": 0,
       "skipped": 0,
@@ -30,16 +30,16 @@
     "leader_only": true,
     "stale_threshold_ms": 180000,
     "precomputed_leader_stale": true,
-    "last_tick_at": "2026-05-14T09:29:43.069Z",
+    "last_tick_at": "2026-05-14T09:46:41.041Z",
     "last_error": null,
-    "run_count": 41160
+    "run_count": 44476
   },
   "ralph_continue_steer": {
     "enabled": true,
     "cadence_ms": 60000,
     "message": "Ralph loop active continue",
     "active": false,
-    "last_state_check_at": "2026-05-14T09:29:43.085Z",
+    "last_state_check_at": "2026-05-14T09:46:41.055Z",
     "last_sent_at": "",
     "cooldown_anchor_at": "",
     "last_reason": "blocked_by_current_session",
@@ -57,10 +57,10 @@
   "fallback_auto_nudge": {
     "enabled": true,
     "stall_ms": 5000,
-    "last_tick_at": "2026-05-14T09:29:43.070Z",
-    "last_turn_at": "2026-05-14T09:14:00.326Z",
-    "last_turn_count": 10,
-    "last_message": "已处理并推送。\n\n问题原因：PieChart / RingChart 之前是用固定数量短直线模拟圆弧，放大后边缘会有多边形锯齿。\n\n已改为：\n\n- 使用 GPUI 原生 `PathBuilder::a",
+    "last_tick_at": "2026-05-14T09:46:41.042Z",
+    "last_turn_at": "2026-05-14T09:30:15.160Z",
+    "last_turn_count": 11,
+    "last_message": "已加上统计图数值指示，并已推送。\n\n覆盖范围：\n\n- `LineChart`：数据点上方显示数值\n- `AreaChart`：面积图节点上方显示数值\n- `BarChart`：柱状图显示柱顶/堆叠段中",
     "last_reason": "eligible_but_not_sent",
     "last_error": null,
     "last_nudged_signature": "",
@@ -80,8 +80,8 @@
     "max_ms": 1000,
     "current_ms": 250,
     "idle_streak": 0,
-    "last_tick_at": "2026-05-14T09:29:43.085Z",
-    "last_activity_at": "2026-05-14T09:29:43.085Z",
+    "last_tick_at": "2026-05-14T09:46:41.055Z",
+    "last_activity_at": "2026-05-14T09:46:41.055Z",
     "last_activity_reason": "leader_nudge"
   },
   "last_cycle_activity": "leader_nudge"

@@ -7,6 +7,23 @@ use gpui::{
     RenderOnce, SharedString, Styled, Window, canvas, div, point, px,
 };
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PieChartLabelOptions {
+    pub show_percentage: bool,
+    pub percentage_decimals: usize,
+    pub outside_threshold_degrees: u16,
+}
+
+impl Default for PieChartLabelOptions {
+    fn default() -> Self {
+        Self {
+            show_percentage: true,
+            percentage_decimals: 1,
+            outside_threshold_degrees: 28,
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct PieChart {
     slices: Vec<ChartSeries>,
@@ -14,6 +31,7 @@ pub struct PieChart {
     height: Pixels,
     show_legend: bool,
     show_value_labels: bool,
+    label_options: PieChartLabelOptions,
 }
 
 #[derive(Clone)]
@@ -23,6 +41,7 @@ pub struct RingChart {
     height: Pixels,
     show_legend: bool,
     show_value_labels: bool,
+    label_options: PieChartLabelOptions,
     inner_ratio: f32,
 }
 
@@ -34,6 +53,7 @@ impl PieChart {
             height: px(280.0),
             show_legend: true,
             show_value_labels: true,
+            label_options: PieChartLabelOptions::default(),
         }
     }
 
@@ -57,6 +77,25 @@ impl PieChart {
         self
     }
 
+    pub fn show_percentage_labels(mut self, show: bool) -> Self {
+        self.label_options.show_percentage = show;
+        self
+    }
+
+    pub fn percentage_decimals(mut self, decimals: usize) -> Self {
+        self.label_options.percentage_decimals = decimals.min(4);
+        self
+    }
+
+    pub fn outside_label_threshold_degrees(mut self, degrees: u16) -> Self {
+        self.label_options.outside_threshold_degrees = degrees.min(120);
+        self
+    }
+
+    pub fn label_options(&self) -> &PieChartLabelOptions {
+        &self.label_options
+    }
+
     pub fn slices(&self) -> &[ChartSeries] {
         &self.slices
     }
@@ -70,6 +109,7 @@ impl RingChart {
             height: px(280.0),
             show_legend: true,
             show_value_labels: true,
+            label_options: PieChartLabelOptions::default(),
             inner_ratio: 0.62,
         }
     }
@@ -92,6 +132,25 @@ impl RingChart {
     pub fn show_value_labels(mut self, show: bool) -> Self {
         self.show_value_labels = show;
         self
+    }
+
+    pub fn show_percentage_labels(mut self, show: bool) -> Self {
+        self.label_options.show_percentage = show;
+        self
+    }
+
+    pub fn percentage_decimals(mut self, decimals: usize) -> Self {
+        self.label_options.percentage_decimals = decimals.min(4);
+        self
+    }
+
+    pub fn outside_label_threshold_degrees(mut self, degrees: u16) -> Self {
+        self.label_options.outside_threshold_degrees = degrees.min(120);
+        self
+    }
+
+    pub fn label_options(&self) -> &PieChartLabelOptions {
+        &self.label_options
     }
 
     pub fn inner_ratio(mut self, ratio: f32) -> Self {
@@ -128,6 +187,7 @@ impl RenderOnce for PieChart {
             self.height,
             self.show_legend,
             self.show_value_labels,
+            self.label_options,
             0.0,
             cx,
         )
@@ -142,6 +202,7 @@ impl RenderOnce for RingChart {
             self.height,
             self.show_legend,
             self.show_value_labels,
+            self.label_options,
             self.inner_ratio,
             cx,
         )
@@ -154,6 +215,7 @@ fn render_shell(
     height: Pixels,
     show_legend: bool,
     show_value_labels: bool,
+    label_options: PieChartLabelOptions,
     inner_ratio: f32,
     cx: &mut App,
 ) -> impl IntoElement {
@@ -193,6 +255,7 @@ fn render_shell(
             theme.neutral.card,
             inner_ratio,
             show_value_labels,
+            label_options,
             height,
         ))
         .into_any_element()
@@ -218,12 +281,17 @@ fn render_canvas(
     hole_color: Hsla,
     inner_ratio: f32,
     show_value_labels: bool,
+    label_options: PieChartLabelOptions,
     height: Pixels,
 ) -> impl IntoElement {
     canvas(
         |_, _, _| (),
         move |bounds, _, window, cx| {
-            let inset = px(18.0);
+            let inset = if show_value_labels {
+                px(56.0)
+            } else {
+                px(18.0)
+            };
             let width = (bounds.right() - bounds.left() - inset * 2.0).max(px(1.0));
             let height = (bounds.bottom() - bounds.top() - inset * 2.0).max(px(1.0));
             let radius = (width.min(height).as_f32() / 2.0).max(1.0);
@@ -247,6 +315,7 @@ fn render_canvas(
                 return;
             }
 
+            let mut slice_labels = Vec::new();
             let mut start = -90.0_f32;
             for (index, (series, value)) in slices.iter().zip(values).enumerate() {
                 if value <= 0.0 {
@@ -258,19 +327,13 @@ fn render_canvas(
                 if let Some(path) = pie_slice_path(center, radius, start, end) {
                     window.paint_path(path, color);
                 }
-                if show_value_labels {
-                    paint_slice_value_label(
-                        center,
-                        radius,
-                        inner_ratio,
-                        start,
-                        end,
-                        value,
-                        total,
-                        window,
-                        cx,
-                    );
-                }
+                slice_labels.push(SliceLabel {
+                    start_deg: start,
+                    end_deg: end,
+                    value,
+                    total,
+                    color,
+                });
                 start = end;
             }
 
@@ -280,50 +343,152 @@ fn render_canvas(
                     window.paint_path(path, hole_color);
                 }
             }
+
+            if show_value_labels {
+                for label in slice_labels {
+                    paint_slice_value_label(
+                        center,
+                        radius,
+                        inner_ratio,
+                        label,
+                        &label_options,
+                        &palette,
+                        window,
+                        cx,
+                    );
+                }
+            }
         },
     )
     .w_full()
     .h(height)
 }
 
-fn paint_slice_value_label(
-    center: Point<Pixels>,
-    radius: f32,
-    inner_ratio: f32,
+#[derive(Clone, Copy)]
+struct SliceLabel {
     start_deg: f32,
     end_deg: f32,
     value: f64,
     total: f64,
+    color: Hsla,
+}
+
+fn paint_slice_value_label(
+    center: Point<Pixels>,
+    radius: f32,
+    inner_ratio: f32,
+    label: SliceLabel,
+    options: &PieChartLabelOptions,
+    palette: &ChartPalette,
     window: &mut Window,
     cx: &mut App,
 ) {
-    let sweep = (end_deg - start_deg).abs();
-    if sweep < 12.0 {
+    let sweep = (label.end_deg - label.start_deg).abs();
+    if sweep <= f32::EPSILON {
         return;
     }
 
-    let mid_deg = (start_deg + end_deg) * 0.5;
+    let mid_deg = (label.start_deg + label.end_deg) * 0.5;
+    let text = format_slice_label(label.value, label.total, options);
+    if sweep < options.outside_threshold_degrees as f32 {
+        paint_outside_slice_label(
+            center,
+            radius,
+            mid_deg,
+            text,
+            label.color,
+            palette,
+            window,
+            cx,
+        );
+        return;
+    }
+
     let label_radius = if inner_ratio > 0.0 {
         radius * (inner_ratio + 1.0) * 0.5
     } else {
         radius * 0.62
     };
     let position = polar_point(center, label_radius, mid_deg);
-    let percent = if total > f64::EPSILON {
-        value / total * 100.0
-    } else {
-        0.0
-    };
-    let text = format!("{} / {:.0}%", default_y_format(value), percent).into();
     paint_chart_label_aligned(
         text,
-        point(position.x - px(28.0), position.y - px(7.0)),
+        point(position.x - px(36.0), position.y - px(7.0)),
         gpui::white(),
         gpui::TextAlign::Center,
-        Some(px(56.0)),
+        Some(px(72.0)),
         window,
         cx,
     );
+}
+
+fn paint_outside_slice_label(
+    center: Point<Pixels>,
+    radius: f32,
+    mid_deg: f32,
+    text: SharedString,
+    color: Hsla,
+    palette: &ChartPalette,
+    window: &mut Window,
+    cx: &mut App,
+) {
+    let edge = polar_point(center, radius, mid_deg);
+    let elbow = polar_point(center, radius + 14.0, mid_deg);
+    let right_side = mid_deg.to_radians().cos() >= 0.0;
+    let label_anchor = point(
+        elbow.x + if right_side { px(34.0) } else { px(-34.0) },
+        elbow.y,
+    );
+
+    if let Some(path) = leader_line_path(edge, elbow, label_anchor) {
+        window.paint_path(path, color.opacity(0.82));
+    }
+
+    let (origin, align) = if right_side {
+        (
+            point(label_anchor.x + px(4.0), label_anchor.y - px(7.0)),
+            gpui::TextAlign::Left,
+        )
+    } else {
+        (
+            point(label_anchor.x - px(76.0), label_anchor.y - px(7.0)),
+            gpui::TextAlign::Right,
+        )
+    };
+    paint_chart_label_aligned(
+        text,
+        origin,
+        palette.label,
+        align,
+        Some(px(72.0)),
+        window,
+        cx,
+    );
+}
+
+fn leader_line_path(
+    edge: Point<Pixels>,
+    elbow: Point<Pixels>,
+    label_anchor: Point<Pixels>,
+) -> Option<gpui::Path<Pixels>> {
+    let mut builder = gpui::PathBuilder::stroke(px(1.2));
+    builder.move_to(edge);
+    builder.line_to(elbow);
+    builder.line_to(label_anchor);
+    builder.build().ok()
+}
+
+fn format_slice_label(value: f64, total: f64, options: &PieChartLabelOptions) -> SharedString {
+    let base = format!("{} / {}", default_y_format(value), default_y_format(total));
+    if options.show_percentage {
+        let percentage = if total > f64::EPSILON {
+            value / total * 100.0
+        } else {
+            0.0
+        };
+        format!("{} ({:.*}%)", base, options.percentage_decimals, percentage).into()
+    } else {
+        base.into()
+    }
 }
 
 fn pie_slice_path(
@@ -413,18 +578,47 @@ mod tests {
             .id("pie")
             .height(px(240.0))
             .show_legend(false)
-            .show_value_labels(false);
+            .show_value_labels(false)
+            .show_percentage_labels(false)
+            .percentage_decimals(2)
+            .outside_label_threshold_degrees(36);
         assert_eq!(chart.slices().len(), 3);
         assert!(!chart.show_value_labels);
+        assert!(!chart.label_options().show_percentage);
+        assert_eq!(chart.label_options().percentage_decimals, 2);
+        assert_eq!(chart.label_options().outside_threshold_degrees, 36);
     }
 
     #[test]
     fn ring_chart_tracks_inner_ratio() {
         let chart = RingChart::new(slices())
             .inner_ratio(0.5)
-            .show_value_labels(false);
+            .show_value_labels(false)
+            .percentage_decimals(3);
         assert_eq!(chart.slices().len(), 3);
         assert!(chart.inner_ratio >= 0.2 && chart.inner_ratio <= 0.9);
         assert!(!chart.show_value_labels);
+        assert_eq!(chart.label_options().percentage_decimals, 3);
+    }
+
+    #[test]
+    fn slice_labels_use_value_total_and_configurable_percentage_precision() {
+        let options = PieChartLabelOptions {
+            percentage_decimals: 2,
+            ..PieChartLabelOptions::default()
+        };
+        assert_eq!(
+            format_slice_label(1.0, 3.0, &options),
+            SharedString::from("1 / 3 (33.33%)")
+        );
+
+        let options = PieChartLabelOptions {
+            show_percentage: false,
+            ..PieChartLabelOptions::default()
+        };
+        assert_eq!(
+            format_slice_label(1.0, 3.0, &options),
+            SharedString::from("1 / 3")
+        );
     }
 }

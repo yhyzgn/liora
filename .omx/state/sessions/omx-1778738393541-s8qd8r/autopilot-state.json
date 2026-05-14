@@ -1,11 +1,12 @@
 {
   "active": false,
-  "current_phase": "chart_value_indicators",
+  "current_phase": "pie_ring_label_semantics",
   "lifecycle_outcome": "finished",
   "run_outcome": "finish",
-  "target": "Add numeric value indicators to chart controls",
+  "target": "Correct Pie/Ring labels to value/total, configurable percentage decimals, and external callouts for small sectors",
   "validation": [
     "cargo fmt",
+    "cargo test -p aura-components pie_chart -- --nocapture",
     "cargo check -p aura-components",
     "cargo check -p aura-docs --bin check_snippets",
     "cargo check -p aura-docs",

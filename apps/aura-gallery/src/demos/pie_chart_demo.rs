@@ -21,7 +21,8 @@ impl Render for PieChartDemo {
                     "展示分类占比。",
                     PieChart::new(slices())
                         .id("pie-chart-demo-basic")
-                        .height(px(420.0)),
+                        .height(px(420.0))
+                        .percentage_decimals(1),
                 ))
                 .child(section(
                     "隐藏图例",
@@ -29,7 +30,8 @@ impl Render for PieChartDemo {
                     PieChart::new(slices())
                         .id("pie-chart-demo-no-legend")
                         .height(px(420.0))
-                        .show_legend(false),
+                        .show_legend(false)
+                        .show_percentage_labels(false),
                 )),
         )
     }
@@ -37,9 +39,10 @@ impl Render for PieChartDemo {
 
 fn slices() -> Vec<ChartSeries> {
     vec![
-        ChartSeries::new("A", [ChartPoint::new("A", 30.0)]),
-        ChartSeries::new("B", [ChartPoint::new("B", 20.0)]),
-        ChartSeries::new("C", [ChartPoint::new("C", 50.0)]),
+        ChartSeries::new("Desktop", [ChartPoint::new("Desktop", 62.0)]),
+        ChartSeries::new("Mobile", [ChartPoint::new("Mobile", 24.0)]),
+        ChartSeries::new("Tablet", [ChartPoint::new("Tablet", 9.0)]),
+        ChartSeries::new("Other", [ChartPoint::new("Other", 5.0)]),
     ]
 }
 
