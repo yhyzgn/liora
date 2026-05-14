@@ -15,5 +15,9 @@ pub fn color_progress(cx: &mut App) -> impl IntoElement {
             theme.danger.base,
             theme.primary.base,
         ]),
+        Progress::new(64.0)
+            .color(theme.info.base)
+            .track_color(theme.neutral.hover)
+            .animated(false),
     ])
 }

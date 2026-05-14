@@ -1,5 +1,5 @@
 use aura_components::{Progress, ProgressStatus, Space};
-use gpui::{AnyView, App, Context, Render, Window, prelude::*};
+use gpui::{AnyView, App, Context, FontWeight, Render, Window, prelude::*};
 
 use aura_components::layout_helpers::{page, section};
 
@@ -15,13 +15,13 @@ impl Render for ProgressDemo {
 
         page(
             "Progress 进度条",
-            "展示操作进度，告知用户当前状态。",
+            "展示操作进度，支持条状、环状、动画、状态、渐变和中心文本自定义。",
             Space::new()
                 .vertical()
                 .gap_lg()
                 .child(section(
                     "基础用法",
-                    "展示不同百分比的基础进度。",
+                    "条状进度默认带进入动画，用于展示任务完成度。",
                     progress_stack(vec![
                         Progress::new(0.0),
                         Progress::new(30.0),
@@ -31,7 +31,7 @@ impl Render for ProgressDemo {
                 ))
                 .child(section(
                     "百分比内显",
-                    "在进度条内部展示百分比。",
+                    "可将百分比放入进度条内部，也可以居中显示。",
                     progress_stack(vec![
                         Progress::new(15.0).thick().text_inside(true),
                         Progress::new(70.0).thick().text_inside(true),
@@ -54,7 +54,7 @@ impl Render for ProgressDemo {
                 ))
                 .child(section(
                     "自定义颜色",
-                    "支持单色和多色渐变。",
+                    "支持单色和多色渐变，也可以关闭动画用于静态指标。",
                     progress_stack(vec![
                         Progress::new(50.0).primary(),
                         Progress::new(75.0).gradient(vec![
@@ -63,6 +63,51 @@ impl Render for ProgressDemo {
                             theme.danger.base,
                             theme.primary.base,
                         ]),
+                        Progress::new(64.0)
+                            .color(theme.info.base)
+                            .track_color(theme.neutral.hover)
+                            .animated(false),
+                    ]),
+                ))
+                .child(section(
+                    "环状进度条",
+                    "环状进度条使用原生 GPUI Path 绘制，支持状态色和进入动画。",
+                    Space::new().gap_lg().wrap().children(vec![
+                        Progress::new(32.0).circle(),
+                        Progress::new(58.0).circle().status(ProgressStatus::Warning),
+                        Progress::new(76.0).circle().status(ProgressStatus::Exception),
+                        Progress::new(100.0).circle().status(ProgressStatus::Success),
+                    ]),
+                ))
+                .child(section(
+                    "自定义中心文本与样式",
+                    "中心进度显示可以替换为业务文案，并独立配置尺寸、颜色、字重、圆环尺寸和轨道颜色。",
+                    Space::new().gap_lg().wrap().children(vec![
+                        Progress::new(86.0)
+                            .circle()
+                            .circle_size(148.0)
+                            .stroke_width(12.0)
+                            .center_text("Deploy")
+                            .text_size(22.0)
+                            .text_color(theme.primary.base)
+                            .track_color(theme.neutral.hover),
+                        Progress::new(42.0)
+                            .circle()
+                            .circle_size(132.0)
+                            .stroke_width(10.0)
+                            .center_text("42 / 100")
+                            .text_size(16.0)
+                            .text_weight(FontWeight::NORMAL)
+                            .color(theme.success.base),
+                        Progress::new(68.0)
+                            .circle()
+                            .circle_size(132.0)
+                            .stroke_width(14.0)
+                            .center_text("CPU")
+                            .text_size(18.0)
+                            .text_color(theme.warning.base)
+                            .color(theme.warning.base)
+                            .animated(false),
                     ]),
                 )),
         )

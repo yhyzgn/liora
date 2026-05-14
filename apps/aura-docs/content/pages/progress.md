@@ -1,6 +1,7 @@
 # Progress
 
-`Progress` 用于展示操作进度，可通过状态、内显文本和颜色表达任务阶段。
+`Progress` 用于展示操作进度，可通过状态、内显文本、颜色、环状形态与动画反馈任务阶段。
+条状与环状进度均为 GPUI 原生元素/Path 渲染，不依赖 Web 排版或 Canvas 兼容层。
 
 ## 基础用法
 
@@ -44,4 +45,26 @@
 ### 代码
 
 ```rust src="progress/color.rs"
+```
+
+## 环状进度条
+
+### 效果
+
+::AuraDemo{component="ProgressCircle"}::
+
+### 代码
+
+```rust src="progress/circle.rs"
+```
+
+## 动画与自定义中心文本
+
+### 效果
+
+::AuraDemo{component="ProgressCustom"}::
+
+### 代码
+
+```rust src="progress/custom.rs"
 ```

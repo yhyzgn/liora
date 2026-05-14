@@ -13,8 +13,8 @@ use aura_core::{Config, PassivePortal, Placement, Portal, clear_popover};
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
 use gpui::{
-    AnyElement, AnyView, App, Component, Context, Entity, IntoElement, Render, RenderOnce,
-    ScrollHandle, SharedString, WeakEntity, Window, div, prelude::*, px,
+    AnyElement, AnyView, App, Component, Context, Entity, FontWeight, IntoElement, Render,
+    RenderOnce, ScrollHandle, SharedString, WeakEntity, Window, div, prelude::*, px,
 };
 use pulldown_cmark::{CodeBlockKind, Event, HeadingLevel, Options, Parser, Tag, TagEnd};
 
@@ -986,6 +986,8 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "progress/inside.rs" => Some(include_str!("../content/snippets/progress/inside.rs")),
         "progress/status.rs" => Some(include_str!("../content/snippets/progress/status.rs")),
         "progress/color.rs" => Some(include_str!("../content/snippets/progress/color.rs")),
+        "progress/circle.rs" => Some(include_str!("../content/snippets/progress/circle.rs")),
+        "progress/custom.rs" => Some(include_str!("../content/snippets/progress/custom.rs")),
         "loading/basic.rs" => Some(include_str!("../content/snippets/loading/basic.rs")),
         "loading/fullscreen.rs" => Some(include_str!("../content/snippets/loading/fullscreen.rs")),
         "link/variants.rs" => Some(include_str!("../content/snippets/link/variants.rs")),
@@ -2652,6 +2654,60 @@ impl Render for LiveDemoContent {
                             theme.danger.base,
                             theme.primary.base,
                         ])
+                        .into_any_element(),
+                    Progress::new(64.0)
+                        .color(theme.info.base)
+                        .track_color(theme.neutral.hover)
+                        .animated(false)
+                        .into_any_element(),
+                ])
+            }
+            "ProgressCircle" => demo_row(vec![
+                Progress::new(32.0).circle().into_any_element(),
+                Progress::new(58.0)
+                    .circle()
+                    .status(ProgressStatus::Warning)
+                    .into_any_element(),
+                Progress::new(76.0)
+                    .circle()
+                    .status(ProgressStatus::Exception)
+                    .into_any_element(),
+                Progress::new(100.0)
+                    .circle()
+                    .circle_size(px(132.0))
+                    .status(ProgressStatus::Success)
+                    .into_any_element(),
+            ]),
+            "ProgressCustom" => {
+                let theme = _cx.global::<Config>().theme.clone();
+                demo_row(vec![
+                    Progress::new(86.0)
+                        .circle()
+                        .circle_size(px(148.0))
+                        .stroke_width(px(12.0))
+                        .center_text("Deploy")
+                        .text_size(px(22.0))
+                        .text_color(theme.primary.base)
+                        .track_color(theme.neutral.hover)
+                        .into_any_element(),
+                    Progress::new(42.0)
+                        .circle()
+                        .circle_size(px(132.0))
+                        .stroke_width(px(10.0))
+                        .center_text("42 / 100")
+                        .text_size(px(16.0))
+                        .text_weight(FontWeight::NORMAL)
+                        .color(theme.success.base)
+                        .into_any_element(),
+                    Progress::new(68.0)
+                        .circle()
+                        .circle_size(px(132.0))
+                        .stroke_width(px(14.0))
+                        .center_text("CPU")
+                        .text_size(px(18.0))
+                        .text_color(theme.warning.base)
+                        .color(theme.warning.base)
+                        .animated(false)
                         .into_any_element(),
                 ])
             }
@@ -6309,6 +6365,8 @@ mod tests {
                     "progress/inside.rs",
                     "progress/status.rs",
                     "progress/color.rs",
+                    "progress/circle.rs",
+                    "progress/custom.rs",
                 ][..],
             ),
             (

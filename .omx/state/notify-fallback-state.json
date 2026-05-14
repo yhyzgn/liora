@@ -15,9 +15,9 @@
   "dispatch_drain": {
     "enabled": true,
     "max_per_tick": 5,
-    "run_count": 50529,
+    "run_count": 63684,
     "leader_only": true,
-    "last_tick_at": "2026-05-14T10:20:14.543Z",
+    "last_tick_at": "2026-05-14T11:21:05.518Z",
     "last_result": {
       "processed": 0,
       "skipped": 0,
@@ -30,16 +30,16 @@
     "leader_only": true,
     "stale_threshold_ms": 180000,
     "precomputed_leader_stale": true,
-    "last_tick_at": "2026-05-14T10:20:14.543Z",
+    "last_tick_at": "2026-05-14T11:21:05.518Z",
     "last_error": null,
-    "run_count": 50529
+    "run_count": 63684
   },
   "ralph_continue_steer": {
     "enabled": true,
     "cadence_ms": 60000,
     "message": "Ralph loop active continue",
     "active": false,
-    "last_state_check_at": "2026-05-14T10:20:14.559Z",
+    "last_state_check_at": "2026-05-14T11:21:05.533Z",
     "last_sent_at": "",
     "cooldown_anchor_at": "",
     "last_reason": "blocked_by_current_session",
@@ -57,10 +57,10 @@
   "fallback_auto_nudge": {
     "enabled": true,
     "stall_ms": 5000,
-    "last_tick_at": "2026-05-14T10:20:14.544Z",
-    "last_turn_at": "2026-05-14T10:08:10.308Z",
-    "last_turn_count": 13,
-    "last_message": "已完成并本地提交，push 因 GitHub 连接超时未成功。\n\n实现内容：\n\n- 新增统一标签配置：\n  - `ChartValueLabelContent`\n    - `Value`\n    -",
+    "last_tick_at": "2026-05-14T11:21:05.519Z",
+    "last_turn_at": "2026-05-14T10:20:49.599Z",
+    "last_turn_count": 14,
+    "last_message": "已补齐并推送。\n\n这次把自定义能力分别体现在：\n\n- Gallery demo：\n  - `LineChart`：颜色、线宽、平滑/非平滑、百分比标签\n  - `AreaChart`：自定义填充色、描",
     "last_reason": "eligible_but_not_sent",
     "last_error": null,
     "last_nudged_signature": "",
@@ -80,8 +80,8 @@
     "max_ms": 1000,
     "current_ms": 250,
     "idle_streak": 0,
-    "last_tick_at": "2026-05-14T10:20:14.559Z",
-    "last_activity_at": "2026-05-14T10:20:14.559Z",
+    "last_tick_at": "2026-05-14T11:21:05.533Z",
+    "last_activity_at": "2026-05-14T11:21:05.533Z",
     "last_activity_reason": "leader_nudge"
   },
   "last_cycle_activity": "leader_nudge"
