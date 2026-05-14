@@ -7,6 +7,7 @@ use gpui::{
     RenderOnce, SharedString, Styled, Window, canvas, div, linear_color_stop, linear_gradient,
     point, prelude::*, px,
 };
+use std::f32::consts::TAU;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ProgressType {
@@ -35,6 +36,7 @@ pub struct Progress {
     animated: bool,
     circle_size: Pixels,
     track_color: Option<Hsla>,
+    circle_inner_color: Option<Hsla>,
     text: Option<SharedString>,
     text_color: Option<Hsla>,
     text_size: Option<Pixels>,
@@ -56,6 +58,7 @@ impl Progress {
             animated: true,
             circle_size: px(120.0),
             track_color: None,
+            circle_inner_color: None,
             text: None,
             text_color: None,
             text_size: None,
@@ -82,6 +85,10 @@ impl Progress {
     pub fn stroke_width(mut self, w: impl Into<Pixels>) -> Self {
         self.stroke_width = w.into();
         self
+    }
+
+    pub fn ring_width(self, width: impl Into<Pixels>) -> Self {
+        self.stroke_width(width)
     }
 
     pub fn thick(self) -> Self {
@@ -152,6 +159,23 @@ impl Progress {
         self
     }
 
+    pub fn ring_color(self, color: Hsla) -> Self {
+        self.track_color(color)
+    }
+
+    pub fn progress_color(self, color: Hsla) -> Self {
+        self.color(color)
+    }
+
+    pub fn circle_inner_color(mut self, color: Hsla) -> Self {
+        self.circle_inner_color = Some(color);
+        self
+    }
+
+    pub fn inner_color(self, color: Hsla) -> Self {
+        self.circle_inner_color(color)
+    }
+
     pub fn text(mut self, text: impl Into<SharedString>) -> Self {
         self.text = Some(text.into());
         self
@@ -214,7 +238,7 @@ impl RenderOnce for Progress {
             .unwrap_or_else(|| format!("{}%", self.percentage.round() as i32).into());
         let id = stable_unique_id(
             format!(
-                "aura-progress:{:?}:{:.3}:{:.3}:{:?}:{:?}:{}:{}:{}:{:?}:{:?}:{:?}",
+                "aura-progress:{:?}:{:.3}:{:.3}:{:?}:{:?}:{}:{}:{}:{:?}:{:?}:{:?}:{:?}",
                 self.type_,
                 self.percentage,
                 self.stroke_width.as_f32(),
@@ -226,6 +250,7 @@ impl RenderOnce for Progress {
                 self.text,
                 self.text_size,
                 self.text_color,
+                self.circle_inner_color,
             ),
             "aura-progress",
             window,
@@ -342,6 +367,7 @@ impl RenderOnce for Progress {
         } else {
             let target = self.percentage / 100.0;
             let track_color = self.track_color.unwrap_or(theme.neutral.hover);
+            let inner_color = self.circle_inner_color.unwrap_or(theme.neutral.card);
             let text_color = self.text_color.unwrap_or(theme.neutral.text_1);
             let text_size = self.text_size.unwrap_or(px(theme.font_size.xl));
             let show_text = self.show_text;
@@ -369,6 +395,7 @@ impl RenderOnce for Progress {
                             stroke_width,
                             track_color,
                             progress_color,
+                            inner_color,
                         ));
                         if show_text {
                             base.child(render_circle_center_text(
@@ -390,6 +417,7 @@ impl RenderOnce for Progress {
                     self.stroke_width,
                     track_color,
                     status_color,
+                    inner_color,
                 ));
                 if show_text {
                     base = base.child(render_circle_center_text(
@@ -432,21 +460,43 @@ fn render_circle_canvas(
     stroke_width: Pixels,
     track_color: Hsla,
     progress_color: Hsla,
+    inner_color: Hsla,
 ) -> impl IntoElement {
     canvas(
         |_, _, _| (),
         move |bounds, _, window, _| {
             let width = bounds.right() - bounds.left();
             let height = bounds.bottom() - bounds.top();
-            let radius = ((width.min(height).as_f32() - stroke_width.as_f32()) / 2.0).max(1.0);
+            let outer_radius = (width.min(height).as_f32() / 2.0).max(1.0);
+            let ring_width = stroke_width.as_f32().clamp(1.0, outer_radius);
+            let inner_radius = (outer_radius - ring_width).max(0.0);
             let center = point(bounds.left() + width / 2.0, bounds.top() + height / 2.0);
 
-            if let Some(path) = circle_stroke_path(center, radius, stroke_width) {
-                window.paint_path(path, track_color);
-            }
+            // Fill annular geometry instead of stroking an arc.  GPUI path strokes
+            // can expose hard pixel stair-steps on circular caps; polygonal ring
+            // fills with sub-pixel feather layers produce noticeably smoother edges
+            // while staying fully native to the GPUI renderer.
+            paint_smooth_annular_sector(
+                window,
+                center,
+                outer_radius,
+                inner_radius,
+                0.0,
+                1.0,
+                track_color,
+            );
+            paint_smooth_annular_sector(
+                window,
+                center,
+                outer_radius,
+                inner_radius,
+                0.0,
+                progress,
+                progress_color,
+            );
 
-            if let Some(path) = progress_arc_path(center, radius, stroke_width, progress) {
-                window.paint_path(path, progress_color);
+            if inner_radius > 0.0 {
+                paint_smooth_circle(window, center, inner_radius, inner_color);
             }
         },
     )
@@ -457,56 +507,131 @@ fn render_circle_canvas(
     .h(size)
 }
 
-fn circle_stroke_path(
+fn paint_smooth_annular_sector(
+    window: &mut Window,
     center: Point<Pixels>,
-    radius: f32,
-    stroke_width: Pixels,
+    outer_radius: f32,
+    inner_radius: f32,
+    start_progress: f32,
+    end_progress: f32,
+    color: Hsla,
+) {
+    let start = start_progress.clamp(0.0, 1.0);
+    let end = end_progress.clamp(0.0, 1.0);
+    if end <= start || outer_radius <= 0.0 || outer_radius <= inner_radius {
+        return;
+    }
+
+    if let Some(path) = annular_sector_path(center, outer_radius, inner_radius, start, end) {
+        window.paint_path(path, color);
+    }
+
+    // Feather the outside/inside edges with translucent 1px bands to soften the
+    // native raster boundary without switching away from GPUI path rendering.
+    let feather = 0.75;
+    if let Some(path) = annular_sector_path(
+        center,
+        outer_radius + feather,
+        outer_radius.max(inner_radius + 0.1),
+        start,
+        end,
+    ) {
+        window.paint_path(path, color.opacity(0.18));
+    }
+    if inner_radius > feather {
+        if let Some(path) = annular_sector_path(
+            center,
+            inner_radius,
+            (inner_radius - feather).max(0.0),
+            start,
+            end,
+        ) {
+            window.paint_path(path, color.opacity(0.14));
+        }
+    }
+}
+
+fn paint_smooth_circle(window: &mut Window, center: Point<Pixels>, radius: f32, color: Hsla) {
+    if let Some(path) = circle_fill_path(center, radius) {
+        window.paint_path(path, color);
+    }
+    if let Some(path) = annular_sector_path(center, radius + 0.75, radius, 0.0, 1.0) {
+        window.paint_path(path, color.opacity(0.34));
+    }
+}
+
+fn annular_sector_path(
+    center: Point<Pixels>,
+    outer_radius: f32,
+    inner_radius: f32,
+    start_progress: f32,
+    end_progress: f32,
 ) -> Option<gpui::Path<Pixels>> {
+    if !outer_radius.is_finite()
+        || !inner_radius.is_finite()
+        || outer_radius <= 0.0
+        || inner_radius < 0.0
+        || outer_radius <= inner_radius
+    {
+        return None;
+    }
+
+    let start_angle = -std::f32::consts::FRAC_PI_2 + start_progress * TAU;
+    let end_angle = -std::f32::consts::FRAC_PI_2 + end_progress * TAU;
+    let sweep = (end_angle - start_angle).clamp(0.0, TAU);
+    if sweep <= f32::EPSILON {
+        return None;
+    }
+
+    let segments = ring_segments(outer_radius, sweep);
+    let mut outer_points = Vec::with_capacity(segments + 1);
+    let mut inner_points = Vec::with_capacity(segments + 1);
+
+    for index in 0..=segments {
+        let t = index as f32 / segments as f32;
+        let angle = start_angle + sweep * t;
+        outer_points.push(polar_radians(center, outer_radius, angle));
+        inner_points.push(polar_radians(center, inner_radius, angle));
+    }
+
+    let mut builder = PathBuilder::fill();
+    builder.move_to(*outer_points.first()?);
+    for point in outer_points.iter().skip(1) {
+        builder.line_to(*point);
+    }
+    for point in inner_points.iter().rev() {
+        builder.line_to(*point);
+    }
+    builder.close();
+    builder.build().ok()
+}
+
+fn circle_fill_path(center: Point<Pixels>, radius: f32) -> Option<gpui::Path<Pixels>> {
     if radius <= 0.0 || !radius.is_finite() {
         return None;
     }
 
-    let start = polar_point(center, radius, -90.0);
-    let mid = polar_point(center, radius, 90.0);
-    let mut builder = PathBuilder::stroke(stroke_width);
+    let segments = ring_segments(radius, TAU);
+    let start = polar_radians(center, radius, -std::f32::consts::FRAC_PI_2);
+    let mut builder = PathBuilder::fill();
     builder.move_to(start);
-    builder.arc_to(point(px(radius), px(radius)), px(0.0), false, true, mid);
-    builder.arc_to(point(px(radius), px(radius)), px(0.0), false, true, start);
+    for index in 1..=segments {
+        let angle = -std::f32::consts::FRAC_PI_2 + TAU * index as f32 / segments as f32;
+        builder.line_to(polar_radians(center, radius, angle));
+    }
+    builder.close();
     builder.build().ok()
 }
 
-fn progress_arc_path(
-    center: Point<Pixels>,
-    radius: f32,
-    stroke_width: Pixels,
-    progress: f32,
-) -> Option<gpui::Path<Pixels>> {
-    let progress = progress.clamp(0.0, 1.0);
-    if progress <= 0.0 || radius <= 0.0 || !radius.is_finite() {
-        return None;
-    }
-    if progress >= 0.9999 {
-        return circle_stroke_path(center, radius, stroke_width);
-    }
-
-    let start_deg = -90.0;
-    let end_deg = start_deg + progress * 360.0;
-    let start = polar_point(center, radius, start_deg);
-    let end = polar_point(center, radius, end_deg);
-    let mut builder = PathBuilder::stroke(stroke_width);
-    builder.move_to(start);
-    builder.arc_to(
-        point(px(radius), px(radius)),
-        px(0.0),
-        progress > 0.5,
-        true,
-        end,
-    );
-    builder.build().ok()
+fn ring_segments(radius: f32, sweep_radians: f32) -> usize {
+    // Roughly one segment per 0.55px of arc length, bounded to avoid oversized
+    // paths on large charts while keeping small progress rings smooth.
+    ((radius * sweep_radians.abs()) / 0.55)
+        .ceil()
+        .clamp(64.0, 960.0) as usize
 }
 
-fn polar_point(center: Point<Pixels>, radius: f32, deg: f32) -> Point<Pixels> {
-    let radians = deg.to_radians();
+fn polar_radians(center: Point<Pixels>, radius: f32, radians: f32) -> Point<Pixels> {
     point(
         center.x + px(radius * radians.cos()),
         center.y + px(radius * radians.sin()),
@@ -530,11 +655,23 @@ mod tests {
     }
 
     #[test]
-    fn progress_circle_builder_tracks_shape_and_size() {
-        let progress = Progress::new(42.0).circle().circle_size(px(144.0));
+    fn progress_circle_builder_tracks_shape_size_and_ring_styles() {
+        let progress = Progress::new(42.0)
+            .circle()
+            .circle_size(px(144.0))
+            .ring_width(px(12.0))
+            .ring_color(gpui::black())
+            .progress_color(gpui::white())
+            .inner_color(gpui::white().opacity(0.5));
         assert_eq!(progress.type_, ProgressType::Circle);
         assert_eq!(progress.circle_size, px(144.0));
-        assert_eq!(progress.stroke_width, px(8.0));
+        assert_eq!(progress.stroke_width, px(12.0));
+        assert_eq!(progress.track_color, Some(gpui::black()));
+        assert_eq!(progress.color, Some(gpui::white()));
+        assert_eq!(
+            progress.circle_inner_color,
+            Some(gpui::white().opacity(0.5))
+        );
     }
 
     #[test]
@@ -559,7 +696,8 @@ mod tests {
     #[test]
     fn progress_uses_native_paths_and_animation() {
         let source = include_str!("progress.rs");
-        assert!(source.contains("PathBuilder::stroke"));
+        assert!(source.contains("PathBuilder::fill"));
+        assert!(source.contains("paint_smooth_annular_sector"));
         assert!(source.contains("with_animation("));
         assert!(source.contains("render_circle_canvas"));
     }
