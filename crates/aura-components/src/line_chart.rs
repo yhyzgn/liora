@@ -3,7 +3,9 @@ use crate::chart::{
 };
 use crate::chart_frame::paint_chart_frame;
 use crate::chart_scale::{ScaleLinear, ScalePoint};
-use crate::chart_shape::{finite_line_points, line_path, smooth_line_path};
+use crate::chart_shape::{
+    area_path, finite_line_points, line_path, smooth_area_path, smooth_line_path,
+};
 use crate::{Empty, Space, Text};
 use aura_core::{Config, unique_id};
 use gpui::{
@@ -148,8 +150,10 @@ impl RenderOnce for LineChart {
 }
 
 fn gradient_for_series(color: Hsla) -> gpui::Background {
+    // GPUI uses CSS-like linear gradient angles. 180deg keeps the strongest
+    // color on the curve edge and fades vertically toward the chart baseline.
     gpui::linear_gradient(
-        90.0,
+        180.0,
         gpui::linear_color_stop(color.opacity(0.28), 0.0),
         gpui::linear_color_stop(color.opacity(0.0), 1.0),
     )
@@ -228,9 +232,13 @@ fn render_line_canvas(
                     });
                 let points = finite_line_points(points);
                 if area_fill {
-                    if let Some(path) =
-                        crate::chart_shape::area_path(&points, top + px(plot_height.as_f32()))
-                    {
+                    let baseline_y = top + px(plot_height.as_f32());
+                    let area = if smooth {
+                        smooth_area_path(&points, baseline_y)
+                    } else {
+                        area_path(&points, baseline_y)
+                    };
+                    if let Some(path) = area {
                         let gradient = gradient_for_series(color);
                         window.paint_path(path, gradient);
                     }

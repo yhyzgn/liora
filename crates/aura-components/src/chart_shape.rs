@@ -22,6 +22,21 @@ pub fn area_path(points: &[Point<Pixels>], baseline_y: Pixels) -> Option<gpui::P
     builder.build().ok()
 }
 
+pub fn smooth_area_path(
+    points: &[Point<Pixels>],
+    baseline_y: Pixels,
+) -> Option<gpui::Path<Pixels>> {
+    let first = *points.first()?;
+    let last = *points.last()?;
+    let mut builder = PathBuilder::fill();
+    builder.move_to(point(first.x, baseline_y));
+    builder.line_to(first);
+    append_smooth_segments(&mut builder, points);
+    builder.line_to(point(last.x, baseline_y));
+    builder.close();
+    builder.build().ok()
+}
+
 pub fn smooth_line_path(
     points: &[Point<Pixels>],
     stroke_width: Pixels,
@@ -34,22 +49,52 @@ pub fn smooth_line_path(
         return builder.build().ok();
     }
 
-    for index in 1..points.len() {
-        let current = points[index];
-        let prev = points[index.saturating_sub(1)];
-        let next = points.get(index + 1).copied().unwrap_or(current);
-        let ctrl1 = point(
-            prev.x + (current.x - prev.x) * 0.5,
-            prev.y + (current.y - prev.y) * 0.5,
-        );
-        let ctrl2 = point(
-            current.x + (next.x - current.x) * 0.5,
-            current.y + (next.y - current.y) * 0.5,
-        );
-        builder.curve_to(ctrl1, current);
-        builder.curve_to(ctrl2, current);
-    }
+    append_smooth_segments(&mut builder, points);
     builder.build().ok()
+}
+
+fn append_smooth_segments(builder: &mut PathBuilder, points: &[Point<Pixels>]) {
+    if points.len() < 2 {
+        return;
+    }
+
+    if points.len() == 2 {
+        builder.line_to(points[1]);
+        return;
+    }
+
+    for index in 0..points.len() - 1 {
+        let p0 = if index == 0 {
+            points[index]
+        } else {
+            points[index - 1]
+        };
+        let p1 = points[index];
+        let p2 = points[index + 1];
+        let p3 = points.get(index + 2).copied().unwrap_or(p2);
+        let (control_a, control_b) = catmull_rom_controls(p0, p1, p2, p3);
+        builder.cubic_bezier_to(p2, control_a, control_b);
+    }
+}
+
+fn catmull_rom_controls(
+    p0: Point<Pixels>,
+    p1: Point<Pixels>,
+    p2: Point<Pixels>,
+    p3: Point<Pixels>,
+) -> (Point<Pixels>, Point<Pixels>) {
+    const TENSION: f32 = 1.0;
+    let scale = TENSION / 6.0;
+    (
+        point(
+            px(p1.x.as_f32() + (p2.x.as_f32() - p0.x.as_f32()) * scale),
+            px(p1.y.as_f32() + (p2.y.as_f32() - p0.y.as_f32()) * scale),
+        ),
+        point(
+            px(p2.x.as_f32() - (p3.x.as_f32() - p1.x.as_f32()) * scale),
+            px(p2.y.as_f32() - (p3.y.as_f32() - p1.y.as_f32()) * scale),
+        ),
+    )
 }
 
 pub fn line_path(points: &[Point<Pixels>], stroke_width: Pixels) -> Option<gpui::Path<Pixels>> {
@@ -79,6 +124,22 @@ mod tests {
         assert!(
             area_path(
                 &[point(px(0.0), px(1.0)), point(px(2.0), px(3.0))],
+                px(10.0)
+            )
+            .is_some()
+        );
+    }
+
+    #[test]
+    fn smooth_area_path_requires_at_least_one_point() {
+        assert!(smooth_area_path(&[], px(10.0)).is_none());
+        assert!(
+            smooth_area_path(
+                &[
+                    point(px(0.0), px(1.0)),
+                    point(px(2.0), px(3.0)),
+                    point(px(4.0), px(2.0))
+                ],
                 px(10.0)
             )
             .is_some()
