@@ -1,0 +1,6 @@
+{
+  "last_turn_at": "2026-05-15T08:17:32.885Z",
+  "last_progress_at": "2026-05-15T08:17:32.885Z",
+  "turn_count": 6,
+  "last_agent_output": "你说得对，问题不是只初始化 GTK，还需要持续泵 GTK/AppIndicator 事件循环。已修复并推送：\n\n- 新提交：`2ad607a Pump GTK tray events for gall"
+}

@@ -453,6 +453,8 @@ mod tray_checkbox;
 mod tray_dynamic_icon;
 #[path = "../../content/snippets/tray/nested_menu.rs"]
 mod tray_nested_menu;
+#[path = "../../content/snippets/tray/residency.rs"]
+mod tray_residency;
 #[path = "../../content/snippets/tree/basic.rs"]
 mod tree_basic;
 #[path = "../../content/snippets/tree/checkable.rs"]

@@ -7,6 +7,8 @@ use aura_components::layout_helpers::{page, section};
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|_| TrayDemo {
         active_icon: "default",
+        resident_enabled: true,
+        tray_visible: true,
         auto_show: true,
     })
     .into()
@@ -14,6 +16,8 @@ pub fn render(cx: &mut App) -> AnyView {
 
 struct TrayDemo {
     active_icon: &'static str,
+    resident_enabled: bool,
+    tray_visible: bool,
     auto_show: bool,
 }
 
@@ -29,7 +33,7 @@ impl Render for TrayDemo {
                 .gap_xl()
                 .child(section(
                     "托盘状态预览",
-                    "Demo 不直接创建系统托盘，避免干扰普通组件预览；这里展示同一份配置 DSL 的交互效果。",
+                    "Gallery 和 Docs 启动时都会创建各自独立的演示托盘图标；这里展示页面内如何配置状态栏驻留、显隐与动态图标。",
                     Space::new()
                         .vertical()
                         .gap_lg()
@@ -49,8 +53,10 @@ impl Render for TrayDemo {
                                                     .gap_xs()
                                                     .child(Text::new("Aura Gallery 正在后台运行").bold())
                                                     .child(Text::new(format!(
-                                                        "当前图标：{} · 自动显示：{}",
+                                                        "当前图标：{} · 状态栏驻留：{} · 托盘可见：{} · 自动显示：{}",
                                                         self.active_icon,
+                                                        if self.resident_enabled { "开启" } else { "关闭" },
+                                                        if self.tray_visible { "显示" } else { "隐藏" },
                                                         if self.auto_show { "开启" } else { "关闭" }
                                                     ))),
                                             ),
@@ -62,6 +68,14 @@ impl Render for TrayDemo {
                                             .child(icon_button("默认", "default", entity.clone()))
                                             .child(icon_button("同步中", "syncing", entity.clone()))
                                             .child(icon_button("错误", "error", entity.clone()))
+                                            .child(toggle_resident_button(
+                                                self.resident_enabled,
+                                                entity.clone(),
+                                            ))
+                                            .child(toggle_tray_visible_button(
+                                                self.tray_visible,
+                                                entity.clone(),
+                                            ))
                                             .child(toggle_auto_show_button(self.auto_show, entity.clone())),
                                     ),
                             )
@@ -76,6 +90,11 @@ impl Render for TrayDemo {
                                 .child(Tag::new("CheckMenuItem").info())
                                 .child(Tag::new("N-level Submenu").info()),
                         ),
+                ))
+                .child(section(
+                    "状态栏驻留开关",
+                    "实际应用中可通过页面配置决定是否启用驻留：开启时使用 QuitMode::Explicit 并保持托盘可见；关闭时隐藏托盘并恢复 LastWindowClosed。",
+                    residency_preview(self.resident_enabled, self.tray_visible),
                 ))
                 .child(section(
                     "丰富菜单配置",
@@ -120,6 +139,68 @@ fn toggle_auto_show_button(auto_show: bool, entity: Entity<TrayDemo>) -> Button 
             cx.notify();
         });
     })
+}
+
+fn toggle_resident_button(resident_enabled: bool, entity: Entity<TrayDemo>) -> Button {
+    Button::new(if resident_enabled {
+        "关闭状态栏驻留"
+    } else {
+        "开启状态栏驻留"
+    })
+    .warning()
+    .on_click(move |_, _, cx| {
+        let _ = entity.update(cx, |demo, cx| {
+            demo.resident_enabled = !demo.resident_enabled;
+            if !demo.resident_enabled {
+                demo.tray_visible = false;
+            } else {
+                demo.tray_visible = true;
+            }
+            cx.notify();
+        });
+    })
+}
+
+fn toggle_tray_visible_button(tray_visible: bool, entity: Entity<TrayDemo>) -> Button {
+    Button::new(if tray_visible {
+        "隐藏托盘图标"
+    } else {
+        "显示托盘图标"
+    })
+    .on_click(move |_, _, cx| {
+        let _ = entity.update(cx, |demo, cx| {
+            demo.tray_visible = !demo.tray_visible;
+            if demo.tray_visible {
+                demo.resident_enabled = true;
+            }
+            cx.notify();
+        });
+    })
+}
+
+fn residency_preview(resident_enabled: bool, tray_visible: bool) -> impl IntoElement {
+    Space::new().vertical().gap_sm().child(Card::new(
+        Space::new()
+            .vertical()
+            .gap_xs()
+            .child(Text::new(format!(
+                "with_quit_mode({})",
+                if resident_enabled {
+                    "QuitMode::Explicit"
+                } else {
+                    "QuitMode::LastWindowClosed"
+                }
+            )))
+            .child(Text::new(format!(
+                "tray.set_visible({})",
+                if tray_visible { "true" } else { "false" }
+            )))
+            .child(Text::new(if resident_enabled {
+                "关闭窗口后进程继续驻留，可从状态栏恢复。"
+            } else {
+                "最后一个窗口关闭后进程退出，不保留状态栏入口。"
+            })),
+    ))
 }
 
 fn menu_preview(specs: &[TrayMenuItemSpec], depth: usize) -> impl IntoElement {

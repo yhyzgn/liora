@@ -6,7 +6,7 @@
 
 ## Gallery 预览
 
-`cargo run -p aura-gallery` 会在应用启动时创建真实系统托盘图标；本页和 Gallery 内部的 Tray 页面则额外展示同一套菜单配置的可视化预览，避免在文档内容区重复创建 OS 托盘。
+`cargo run -p aura-gallery` 与 `cargo run -p aura-docs` 会在应用启动时分别创建独立的演示系统托盘图标：Gallery 使用蓝色图标，Docs 使用紫色图标。本页和 Gallery 内部的 Tray 页面额外展示同一套菜单配置的可视化预览。
 
 ### 效果
 
@@ -15,6 +15,15 @@
 ### 代码
 
 ```rust src="tray/basic.rs"
+```
+
+## 状态栏驻留开关
+
+应用可以在页面/设置中暴露「是否开启状态栏驻留」。开启时使用 `QuitMode::Explicit` 并保持托盘入口；关闭时隐藏托盘并恢复 `LastWindowClosed`，避免用户关闭窗口后留下不可见进程。
+
+### 代码
+
+```rust src="tray/residency.rs"
 ```
 
 ## 基础安装

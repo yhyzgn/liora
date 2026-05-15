@@ -27,6 +27,7 @@ struct GalleryTrayState {
     tray: AuraTray,
     window: Option<gpui::AnyWindowHandle>,
     window_visible: bool,
+    resident_enabled: bool,
     auto_show: bool,
 }
 
@@ -139,6 +140,7 @@ fn install_gallery_tray(cx: &mut App) {
                 tray,
                 window: None,
                 window_visible: true,
+                resident_enabled: true,
                 auto_show: true,
             });
         }
@@ -189,6 +191,25 @@ fn handle_gallery_tray_command(command: TrayCommand, cx: &mut App) {
                 let _ = state
                     .tray
                     .set_check_state(&TrayCommand::Custom("auto-show".into()), state.auto_show);
+            }
+        }
+        TrayCommand::Custom(name) if name == "resident-enabled" => {
+            if cx.has_global::<GalleryTrayState>() {
+                let resident_enabled = {
+                    let state = cx.global_mut::<GalleryTrayState>();
+                    state.resident_enabled = !state.resident_enabled;
+                    let _ = state.tray.set_check_state(
+                        &TrayCommand::Custom("resident-enabled".into()),
+                        state.resident_enabled,
+                    );
+                    let _ = state.tray.set_visible(state.resident_enabled);
+                    state.resident_enabled
+                };
+                cx.set_quit_mode(if resident_enabled {
+                    gpui::QuitMode::Explicit
+                } else {
+                    gpui::QuitMode::LastWindowClosed
+                });
             }
         }
         TrayCommand::Custom(name) => {

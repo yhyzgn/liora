@@ -1,0 +1,9 @@
+{
+  "notes": [
+    {
+      "category": "architecture",
+      "content": "P11 Tray phase: introduce crates/aura-tray as Aura facade over tray-icon + tray_icon::menu/muda. It exposes TrayConfig, TrayMenuItemSpec, TrayCommand, AuraTray; supports dynamic icon updates, tooltip/visibility, checkbox state, recursive submenus, and stable command IDs. Tray-enabled GPUI apps must use QuitMode::Explicit and retain AuraTray for process lifetime; Gallery/Docs should preview config without creating real OS tray side effects.",
+      "timestamp": "2026-05-15T07:43:47.706Z"
+    }
+  ]
+}

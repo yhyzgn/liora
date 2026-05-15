@@ -317,6 +317,11 @@ pub fn default_aura_tray_menu() -> Vec<TrayMenuItemSpec> {
         TrayMenuItemSpec::action("显示窗口", TrayCommand::Show),
         TrayMenuItemSpec::action("隐藏窗口", TrayCommand::Hide),
         TrayMenuItemSpec::check(
+            "状态栏驻留",
+            TrayCommand::Custom("resident-enabled".into()),
+            true,
+        ),
+        TrayMenuItemSpec::check(
             "启动时自动显示",
             TrayCommand::Custom("auto-show".into()),
             true,
@@ -496,6 +501,7 @@ mod tests {
     fn default_menu_covers_check_dynamic_icon_and_deep_submenus() {
         let menu = default_aura_tray_menu();
         assert!(matches!(menu[2], TrayMenuItemSpec::Check { .. }));
+        assert!(matches!(menu[3], TrayMenuItemSpec::Check { .. }));
         assert!(menu.iter().any(
             |item| matches!(item, TrayMenuItemSpec::Submenu { label, .. } if label == "切换图标")
         ));
