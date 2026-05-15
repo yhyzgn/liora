@@ -12,11 +12,11 @@
     },
     "019e15ab-a59f-7a20-a134-757da8881b86": {
       "ordinary_no_progress_guard": {
-        "fingerprint": "ordinary|已继续完成并推送两步： 1. **补齐 package manifest / checksums** - 非 dry-run 打包后自动扫描产物。 - 生成： - `target/packages/package-manifest.json` - `target/packages/checksums.txt` 2. **接入 rpm supplemental backend** - `rpm` 不再只是 pending。 - 现在会生成： - `target/aura-packager/generaterpm.gallery.toml` - `target/aura-packager/generaterpm.docs.toml` - 并路由到： - `cargo generate-rpm --metadata-overwrite ...` 验证通过： - `cargo check -p aura-packager -p xtask` - `cargo test -p aura-packager` - `cargo run -p xtask -- package --all-apps --format platform-defaults --dry-run --skip-build` 已推送： - `68d342a generate package manifests after builds` - `5d3a8e7 route rpm packaging through generate-rpm` 当前仅剩 `.omx` 通知状态文件在 push 后又被 hook 刷新，代码已干净并在远端。",
-        "first_seen_at": "2026-05-15T12:55:11.983Z",
-        "last_seen_at": "2026-05-15T12:55:11.983Z",
+        "fingerprint": "ordinary|打包器当前还剩这些主要工作： 1. **真实产物 smoke 验证** - 在本机或 ci 安装： - `cargo-packager` - `cargo-generate-rpm` - 去掉 `--dry-run` 跑一次： - linux：appimage / deb / rpm / pacman tar.gz - macos：app / dmg - windows：nsis / msi - 验证安装包能启动 `aura-gallery` / `aura-docs`。 2. **linux 依赖完善** - `.deb` / `.rpm` 依赖现在还比较基础。 - 需要明确 gpui + tray 所需运行库： - vulkan - gtk3 - appindicator / ayatana - x11 / wayland - fontconfig / freetype 等 - 然后写入 deb / rpm metadata。 3. **便携 archive** - 当前 `tar.gz` 暂映射为 cargo-packager 的 `pacman`。 - 如果想要真正的 portable `.tar.gz`，还需要单独实现归档后端： - binary - icons - desktop files - readme / launch script - checksum 4. **签名与 notarization 预留落地** - macos： - codesign - notarytool - stapler - windows： - signtool - timestamp server - 当前只是方案预留，还没接 ci secrets 和命令。 5. **release 自动发布** - 现在 ci 只上传 artifacts。 - 还没自动创建 github release。 - 需要补： - tag 触发后创建 release - 上传 installers - 使用生成的 `release-notes.md` - 上传 `checksums.txt` / `package-manifest.json` 6. **安装/卸载 smoke 脚本** - deb：`dpkg -i` / `apt remove` - rpm：`rpm -i` / `rpm -e` - appimage：执行 smoke - windows/macos 需要 runner 上做有限验证。 7. **版本号与产物命名** - 现在版本来自 crate 版本。 - 还需要统一发布命名： - `aura-gallery-<version>-linux-x86_64.deb` - `aura-docs-<version>-windows-x86_64-setup.exe` - 以及 manifest 中最好记录 target triple / git sha。 8. **许可证与元数据** - 当前 rpm license 用的是 `licenseref-aura`。 - 仓库没有明确 `license` 文件。 - 需要补正式 license 或明确私有 license 策略。 - appstream metainfo / desktop metadata 也可继续完善。 9. **ci 真实运行验证** - workflow 已写，但还没在 github runner 上跑过完整成功记录。 - 尤其是： - linux appimage 依赖 - windows wix/nsis 工具链 - macos dmg 工具链 - 需要根据实际 ci 报错迭代。 建议下一步优先级： 1. 先补 **真实 portable tar.gz 后端**。 2. 然后补 **github release 自动发布**。 3. 再跑 ci 真实打包，根据报错修 linux/macos/windows 平台细节。",
+        "first_seen_at": "2026-05-15T13:03:42.658Z",
+        "last_seen_at": "2026-05-15T13:03:42.658Z",
         "repeat_count": 1,
-        "last_turn_id": "019e2baf-0257-7781-ab5e-993053035d07",
+        "last_turn_id": "019e2bbc-015e-7610-8486-a6efe5844964",
         "last_thread_id": null
       }
     }

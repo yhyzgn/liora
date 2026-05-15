@@ -1,6 +1,6 @@
 {
-  "last_turn_at": "2026-05-15T12:55:12.079Z",
-  "last_progress_at": "2026-05-15T12:55:12.079Z",
-  "turn_count": 23,
-  "last_agent_output": "已继续完成并推送两步：\n\n1. **补齐 package manifest / checksums**\n   - 非 dry-run 打包后自动扫描产物。\n   - 生成：\n     - `targe"
+  "last_turn_at": "2026-05-15T13:03:42.753Z",
+  "last_progress_at": "2026-05-15T13:03:42.753Z",
+  "turn_count": 25,
+  "last_agent_output": "打包器当前还剩这些主要工作：\n\n1. **真实产物 smoke 验证**\n   - 在本机或 CI 安装：\n     - `cargo-packager`\n     - `cargo-generate"
 }
