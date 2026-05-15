@@ -12,6 +12,8 @@ path = "src/main.rs"
 name = "check_snippets"
 path = "src/bin/check_snippets.rs"
 
+[package.metadata.generate-rpm]
+
 [dependencies]
 gpui.workspace = true
 gpui_platform.workspace = true

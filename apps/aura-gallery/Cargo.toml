@@ -7,6 +7,8 @@ edition = "2024"
 name = "aura-gallery"
 path = "src/main.rs"
 
+[package.metadata.generate-rpm]
+
 [dependencies]
 gpui.workspace = true
 gpui_platform.workspace = true

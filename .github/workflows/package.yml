@@ -134,7 +134,13 @@ jobs:
           set -euo pipefail
           APP_INPUT="${{ github.event.inputs.app || 'all' }}"
           DRY_INPUT="${{ github.event.inputs.dry_run || 'false' }}"
-          args=(cargo run -p xtask -- package ci --format platform-defaults)
+          format="platform-defaults"
+          if [[ "${{ matrix.platform }}" == "windows" && "${{ steps.package-channel.outputs.channel }}" == "preview" && "$DRY_INPUT" != "true" ]]; then
+            # MSI requires a numeric-only Windows Installer version. Keep push previews real by
+            # building the NSIS package; tagged release builds still use the full Windows default set.
+            format="nsis"
+          fi
+          args=(cargo run -p xtask -- package ci --format "$format")
           if [[ "$APP_INPUT" == "all" ]]; then
             args+=(--all-apps)
           else
