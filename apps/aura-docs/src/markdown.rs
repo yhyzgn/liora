@@ -1147,6 +1147,7 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "tray/checkbox.rs" => Some(include_str!("../content/snippets/tray/checkbox.rs")),
         "tray/nested_menu.rs" => Some(include_str!("../content/snippets/tray/nested_menu.rs")),
         "tray/residency.rs" => Some(include_str!("../content/snippets/tray/residency.rs")),
+        "tray/close_confirm.rs" => Some(include_str!("../content/snippets/tray/close_confirm.rs")),
         "icon/lucide.rs" => Some(include_str!("../content/snippets/icon/lucide.rs")),
         "icon/colors.rs" => Some(include_str!("../content/snippets/icon/colors.rs")),
         "icon/sizes.rs" => Some(include_str!("../content/snippets/icon/sizes.rs")),

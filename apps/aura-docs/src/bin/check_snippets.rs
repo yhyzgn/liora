@@ -449,6 +449,8 @@ mod transfer_filterable;
 mod tray_basic;
 #[path = "../../content/snippets/tray/checkbox.rs"]
 mod tray_checkbox;
+#[path = "../../content/snippets/tray/close_confirm.rs"]
+mod tray_close_confirm;
 #[path = "../../content/snippets/tray/dynamic_icon.rs"]
 mod tray_dynamic_icon;
 #[path = "../../content/snippets/tray/nested_menu.rs"]

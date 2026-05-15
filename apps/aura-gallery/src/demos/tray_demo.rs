@@ -1,5 +1,7 @@
 use aura_components::{Button, Card, Space, Tag, Text};
-use aura_tray::{TrayCommand, TrayControlCenter, TrayMenuItemSpec, default_aura_tray_menu};
+use aura_tray::{
+    TrayCloseAction, TrayCommand, TrayControlCenter, TrayMenuItemSpec, default_aura_tray_menu,
+};
 use gpui::{AnyView, App, Context, Entity, Render, Window, prelude::*};
 
 use aura_components::layout_helpers::{page, section};
@@ -10,6 +12,7 @@ pub fn render(cx: &mut App) -> AnyView {
         resident_enabled: true,
         tray_visible: true,
         auto_show: true,
+        remembered_close_action: TrayCloseAction::Ask,
     })
     .into()
 }
@@ -19,6 +22,7 @@ struct TrayDemo {
     resident_enabled: bool,
     tray_visible: bool,
     auto_show: bool,
+    remembered_close_action: TrayCloseAction,
 }
 
 impl Render for TrayDemo {
@@ -38,6 +42,7 @@ impl Render for TrayDemo {
             self.resident_enabled = state.resident_enabled;
             self.tray_visible = state.tray_visible;
             self.auto_show = state.auto_show;
+            self.remembered_close_action = state.remembered_close_action;
         }
 
         page(
@@ -120,6 +125,11 @@ impl Render for TrayDemo {
                     "状态栏驻留开关",
                     "实际应用中可通过页面配置决定是否启用驻留：开启时使用 QuitMode::Explicit 并保持托盘可见；关闭时隐藏托盘并恢复 LastWindowClosed。",
                     residency_preview(self.resident_enabled, self.tray_visible),
+                ))
+                .child(section(
+                    "关闭窗口确认",
+                    "点击窗口关闭按钮时先确认：关闭进程，或仅隐藏窗口并驻留在 tray；勾选「记住本次选择」后后续关闭会直接执行该选择。",
+                    close_confirm_preview(self.remembered_close_action, entity.clone()),
                 ))
                 .child(section(
                     "丰富菜单配置",
@@ -255,6 +265,65 @@ fn residency_preview(resident_enabled: bool, tray_visible: bool) -> impl IntoEle
                 "最后一个窗口关闭后进程退出，不保留状态栏入口。"
             })),
     ))
+}
+
+fn close_confirm_preview(
+    remembered_close_action: TrayCloseAction,
+    entity: Entity<TrayDemo>,
+) -> impl IntoElement {
+    let remembered = match remembered_close_action {
+        TrayCloseAction::Ask => "每次询问",
+        TrayCloseAction::ExitProcess => "已记住：关闭进程",
+        TrayCloseAction::HideToTray => "已记住：隐藏到托盘",
+    };
+
+    Space::new()
+        .vertical()
+        .gap_sm()
+        .child(Card::new(
+            Space::new()
+                .vertical()
+                .gap_xs()
+                .child(Text::new("窗口关闭时：退出进程 / 隐藏到托盘"))
+                .child(Text::new(format!("当前策略：{remembered}"))),
+        ))
+        .child(
+            Space::new()
+                .gap_md()
+                .wrap()
+                .child(close_action_button(
+                    "恢复每次询问",
+                    TrayCloseAction::Ask,
+                    entity.clone(),
+                ))
+                .child(close_action_button(
+                    "记住关闭进程",
+                    TrayCloseAction::ExitProcess,
+                    entity.clone(),
+                ))
+                .child(close_action_button(
+                    "记住隐藏到托盘",
+                    TrayCloseAction::HideToTray,
+                    entity,
+                )),
+        )
+}
+
+fn close_action_button(
+    label: &'static str,
+    action: TrayCloseAction,
+    entity: Entity<TrayDemo>,
+) -> Button {
+    Button::new(label).on_click(move |_, _, cx| {
+        if cx.has_global::<TrayControlCenter>() {
+            cx.global_mut::<TrayControlCenter>()
+                .set_remembered_close_action(action);
+        }
+        let _ = entity.update(cx, |demo, cx| {
+            demo.remembered_close_action = action;
+            cx.notify();
+        });
+    })
 }
 
 fn menu_preview(specs: &[TrayMenuItemSpec], depth: usize) -> impl IntoElement {

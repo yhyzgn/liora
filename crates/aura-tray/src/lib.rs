@@ -48,6 +48,13 @@ pub enum BundledTrayIconState {
     Error,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TrayCloseAction {
+    Ask,
+    ExitProcess,
+    HideToTray,
+}
+
 impl BundledTrayIconState {
     pub fn from_name(name: &str) -> Self {
         match name {
@@ -97,6 +104,7 @@ pub struct TrayControlState {
     pub resident_enabled: bool,
     pub tray_visible: bool,
     pub auto_show: bool,
+    pub remembered_close_action: TrayCloseAction,
 }
 
 impl Default for TrayControlState {
@@ -106,6 +114,7 @@ impl Default for TrayControlState {
             resident_enabled: true,
             tray_visible: true,
             auto_show: true,
+            remembered_close_action: TrayCloseAction::Ask,
         }
     }
 }
@@ -149,6 +158,10 @@ impl TrayControlCenter {
 
     pub fn set_auto_show(&mut self, enabled: bool) {
         self.state.auto_show = enabled;
+    }
+
+    pub fn set_remembered_close_action(&mut self, action: TrayCloseAction) {
+        self.state.remembered_close_action = action;
     }
 }
 
