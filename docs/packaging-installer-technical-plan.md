@@ -427,7 +427,7 @@ release-notes.md
 
 - [ ] AppImage（cargo-packager 后端命令已接入，待安装本机后端工具后产物 smoke）。
 - [ ] deb（cargo-packager 后端命令已接入，待安装本机后端工具后产物 smoke）。
-- [ ] rpm（仍按补充后端实现）。
+- [x] rpm（`cargo-generate-rpm` supplemental backend 配置生成和命令路由已接入，待安装本机后端工具后产物 smoke）。
 - [ ] portable tar.gz / pacman（cargo-packager pacman 映射已预留，portable archive 待补）。
 - [ ] 安装/卸载 smoke test 脚本。
 
@@ -508,7 +508,7 @@ release-notes.md
 - `cargo xtask package --app <gallery|docs> --format <fmt> --dry-run --skip-build` 会生成 `target/aura-packager/Packager.<app>.toml`，并打印实际 `cargo packager ...` 调用。
 - 非 dry-run 打包完成后会扫描 `target/packages/<app>/<platform>/` 下的安装包文件，生成 `target/packages/package-manifest.json` 和 `target/packages/checksums.txt`。
 - `appimage`、`deb`、`app`、`dmg`、`nsis`、`msi` 走 cargo-packager 主后端；其中 `msi` 映射为 cargo-packager 的 `wix` 格式，`tar.gz` 暂映射为 `pacman`。
-- `rpm` 仍归类为 supplemental backend，后续接入 `cargo-generate-rpm` 或 `nfpm`。
+- `rpm` 仍归类为 supplemental backend，但已优先接入 `cargo-generate-rpm` 的 metadata overwrite 配置生成和 `cargo generate-rpm` 命令路由；`nfpm` 仅作为后备方案。
 - 当前环境未全局安装 `cargo-packager`，因此验证以配置生成、命令 dry-run、类型检查和单元测试为准；安装后可直接去掉 `--dry-run` 产出包。
 
 ## 15. 决策记录

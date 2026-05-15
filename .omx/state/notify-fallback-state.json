@@ -1,12 +1,12 @@
 {
-  "pid": 1059914,
+  "pid": 1065976,
   "parent_pid": 464849,
-  "started_at": "2026-05-15T12:51:21.637Z",
+  "started_at": "2026-05-15T12:54:45.646Z",
   "cwd": "/home/neo/Projects/neo/lib/aura",
   "notify_script": "/home/neo/.bun/install/global/node_modules/oh-my-codex/dist/scripts/notify-hook.js",
   "authority_only": true,
   "poll_ms": 75,
-  "effective_poll_ms": 1000,
+  "effective_poll_ms": 75,
   "idle_max_poll_ms": 1000,
   "pid_file": null,
   "max_lifetime_ms": 0,
@@ -17,7 +17,7 @@
     "max_per_tick": 5,
     "run_count": 1,
     "leader_only": true,
-    "last_tick_at": "2026-05-15T12:51:21.638Z",
+    "last_tick_at": "2026-05-15T12:54:45.648Z",
     "last_result": {
       "processed": 0,
       "skipped": 0,
@@ -29,8 +29,8 @@
     "enabled": true,
     "leader_only": true,
     "stale_threshold_ms": 180000,
-    "precomputed_leader_stale": false,
-    "last_tick_at": "2026-05-15T12:51:21.639Z",
+    "precomputed_leader_stale": true,
+    "last_tick_at": "2026-05-15T12:54:45.648Z",
     "last_error": null,
     "run_count": 1
   },
@@ -57,7 +57,7 @@
   "fallback_auto_nudge": {
     "enabled": true,
     "stall_ms": 5000,
-    "last_tick_at": "2026-05-15T12:51:21.652Z",
+    "last_tick_at": "2026-05-15T12:54:45.665Z",
     "last_turn_at": "2026-05-15T12:48:49.221Z",
     "last_turn_count": 22,
     "last_message": "已完成并推送。\n\n结果：\n- 已选择第 3 套 `ribbon` 作为主库 Aura logo，替换：\n  - `packaging/icons/aura.svg`\n  - `packaging/ic",
@@ -78,11 +78,11 @@
     "enabled": true,
     "base_ms": 75,
     "max_ms": 1000,
-    "current_ms": 1000,
-    "idle_streak": 209,
-    "last_tick_at": "2026-05-15T12:51:21.654Z",
-    "last_activity_at": "2026-05-15T12:47:52.645Z",
-    "last_activity_reason": "eligible_but_not_sent"
+    "current_ms": 75,
+    "idle_streak": 0,
+    "last_tick_at": "2026-05-15T12:54:45.667Z",
+    "last_activity_at": "2026-05-15T12:54:45.667Z",
+    "last_activity_reason": "leader_nudge"
   },
-  "last_cycle_activity": "eligible_but_not_sent"
+  "last_cycle_activity": "leader_nudge"
 }

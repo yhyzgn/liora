@@ -2,8 +2,9 @@ use std::{env, fs, path::PathBuf, process::Command};
 
 use aura_packager::{
     KnownApp, PackageFormat, PackageManifest, Platform, cargo_packager_formats,
-    collect_package_artifacts, generated_config_path, package_out_dir, release_binaries_dir,
-    render_cargo_packager_config, supplemental_formats, validate_packaging_layout,
+    collect_package_artifacts, generated_config_path, generated_rpm_config_path, package_out_dir,
+    release_binaries_dir, render_cargo_packager_config, render_generate_rpm_config,
+    supplemental_formats, validate_packaging_layout,
 };
 
 fn main() {
@@ -114,13 +115,36 @@ fn package_formats(command: PackageCommand) -> Result<(), String> {
         }
 
         for format in supplemental {
-            println!(
-                "supplemental package pending: app={} platform={} format={} output={}",
-                metadata.package,
-                platform.as_str(),
-                format.as_str(),
-                out_dir.display()
-            );
+            if format == PackageFormat::Rpm && platform == Platform::Linux {
+                let config_path = generated_rpm_config_path(&root, &metadata);
+                if let Some(parent) = config_path.parent() {
+                    fs::create_dir_all(parent).map_err(|error| {
+                        format!("failed to create {}: {error}", parent.display())
+                    })?;
+                }
+                fs::write(&config_path, render_generate_rpm_config(&root, &metadata)).map_err(
+                    |error| format!("failed to write {}: {error}", config_path.display()),
+                )?;
+                let args = generate_rpm_args(&metadata.package, &config_path, &out_dir);
+                println!(
+                    "generate-rpm config: app={} path={}",
+                    metadata.package,
+                    config_path.display()
+                );
+                if command.dry_run {
+                    println!("dry-run: cargo {}", args.join(" "));
+                } else {
+                    run_generate_rpm(&args)?;
+                }
+            } else {
+                println!(
+                    "supplemental package pending: app={} platform={} format={} output={}",
+                    metadata.package,
+                    platform.as_str(),
+                    format.as_str(),
+                    out_dir.display()
+                );
+            }
         }
 
         if !command.dry_run {
@@ -217,6 +241,39 @@ fn cargo_packager_args(
         "--formats".into(),
         format_arg,
     ]
+}
+
+fn generate_rpm_args(
+    package: &str,
+    config_path: &std::path::Path,
+    out_dir: &std::path::Path,
+) -> Vec<String> {
+    vec![
+        "generate-rpm".into(),
+        "--package".into(),
+        package.into(),
+        "--output".into(),
+        out_dir.display().to_string(),
+        "--metadata-overwrite".into(),
+        config_path.display().to_string(),
+        "--auto-req".into(),
+        "builtin".into(),
+    ]
+}
+
+fn run_generate_rpm(args: &[String]) -> Result<(), String> {
+    let status = Command::new("cargo")
+        .args(args)
+        .status()
+        .map_err(|error| format!("failed to spawn cargo generate-rpm: {error}"))?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(
+            "cargo generate-rpm failed; install backend with `cargo install cargo-generate-rpm --locked` and ensure rpm build prerequisites are available"
+                .into(),
+        )
+    }
 }
 
 fn run_cargo_packager(args: &[String]) -> Result<(), String> {
