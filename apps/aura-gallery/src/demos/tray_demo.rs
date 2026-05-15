@@ -128,7 +128,7 @@ impl Render for TrayDemo {
                 ))
                 .child(section(
                     "关闭窗口确认",
-                    "点击窗口关闭按钮时先确认：关闭进程，或仅隐藏窗口并驻留在 tray；勾选「记住本次选择」后后续关闭会直接执行该选择。",
+                    "点击窗口关闭按钮时先确认：关闭进程，或关闭主窗口并驻留在 tray；勾选「记住本次选择」后后续关闭会直接执行该选择。",
                     close_confirm_preview(self.remembered_close_action, entity.clone()),
                 ))
                 .child(section(
@@ -274,7 +274,7 @@ fn close_confirm_preview(
     let remembered = match remembered_close_action {
         TrayCloseAction::Ask => "每次询问",
         TrayCloseAction::ExitProcess => "已记住：关闭进程",
-        TrayCloseAction::HideToTray => "已记住：隐藏到托盘",
+        TrayCloseAction::HideToTray => "已记住：关闭窗口并驻留托盘",
     };
 
     Space::new()

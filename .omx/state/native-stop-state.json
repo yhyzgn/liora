@@ -2,11 +2,11 @@
   "sessions": {
     "omx-1778827259120-7n7na4": {
       "ordinary_no_progress_guard": {
-        "fingerprint": "ordinary|对，这次补全了。 已完成并推送：`5b797a2 add bundled tray icons and page controls` 新增内容： - 生成并提交了一套真实 tray icon png 资源： - `crates/aura-tray/assets/tray-icons/gallery-default.png` - `gallery-syncing.png` - `gallery-error.png` - `docs-default.png` - `docs-syncing.png` - `docs-error.png` - `aura-tray` 新增： - `bundled_tray_icon(...)` - `bundledtrayiconset::{gallery, docs}` - `bundledtrayiconstate::{default, syncing, error}` - `traycontrolcenter` gpui 全局控制器 - gallery / docs 现在都使用各自的 png icon，不再是临时纯色块。 - tray 主窗口页面按钮现在会控制真实托盘实例，不只是本地预览： - 切换默认 / 同步中 / 错误图标 - 显示主窗口 - 隐藏主窗口 - 开启 / 关闭状态栏驻留 - 显示 / 隐藏托盘图标 - 开启 / 关闭自动显示 - docs 更新： - 说明图标资源位置 - 增加页面配置状态栏驻留的示例 - snippet 已更新为使用 bundled icons 和 `traycontrolcenter` 验证通过： - `cargo check -p aura-gallery` - `cargo check -p aura-docs --bin check_snippets` - `cargo test -p aura-tray` - `cargo test -p aura-gallery` - `cargo test -p aura-docs` - dbus smoke：gallery 和 docs 两个 tray item 同时注册成功。",
-        "first_seen_at": "2026-05-15T08:49:45.667Z",
-        "last_seen_at": "2026-05-15T08:49:45.667Z",
+        "fingerprint": "ordinary|已完成并推送：`37623be add remembered tray close confirmation` 实现内容： - gallery / docs 窗口关闭时弹出确认： - 关闭进程 - 隐藏窗口并驻留 tray - 支持“记住本次选择” - tray 控制状态新增记忆策略： - 每次询问 - 记住关闭进程 - 记住隐藏到托盘 - demo 的 tray 页面补充了关闭策略控制用例。 - docs 补充了对应说明和 snippet。 - `.omx` 工作日志/状态也已纳入提交。 验证记录： - `cargo fmt` - `cargo check -p aura-gallery` - `cargo check -p aura-docs --bin check_snippets` - `cargo test -p aura-tray` - `cargo test -p aura-gallery` - `cargo test -p aura-docs` 备注：推送后 `.omx/state/*` 又出现了运行时 heartbeat 变更，这是 omx 后台状态的实时更新，不影响本次功能提交。",
+        "first_seen_at": "2026-05-15T09:00:52.557Z",
+        "last_seen_at": "2026-05-15T09:00:52.557Z",
         "repeat_count": 1,
-        "last_turn_id": "019e2acb-0119-7850-97aa-0e7b68cb71bf",
+        "last_turn_id": "019e2ad4-f22c-7683-acad-dc6d1f9018b5",
         "last_thread_id": null
       }
     }

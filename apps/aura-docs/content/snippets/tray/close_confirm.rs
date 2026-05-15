@@ -1,7 +1,7 @@
 //! Close confirmation policy for tray-resident apps.
 //!
 //! The window close hook should ask the user whether to quit the process or
-//! hide the window to tray. If the user checks "remember", save the chosen
+//! close the main window to tray. If the user checks "remember", save the chosen
 //! `TrayCloseAction` and skip the prompt on later close attempts.
 
 use aura_tray::{TrayCloseAction, TrayCommand, TrayControlCenter};

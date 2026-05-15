@@ -266,11 +266,16 @@ fn hide_docs_window(cx: &mut App) {
         return;
     }
 
+    cx.set_quit_mode(gpui::QuitMode::Explicit);
+    set_docs_tray_visible(cx, true);
+
     let existing = cx.global::<DocsTrayState>().window;
     if let Some(handle) = existing {
-        let _ = handle.update(cx, |_, window: &mut Window, _| window.minimize_window());
+        let _ = handle.update(cx, |_, window: &mut Window, _| window.remove_window());
     }
-    cx.global_mut::<DocsTrayState>().window_visible = false;
+    let state = cx.global_mut::<DocsTrayState>();
+    state.window_visible = false;
+    state.window = None;
 }
 
 fn set_docs_tray_visible(cx: &mut App, visible: bool) {
@@ -352,7 +357,7 @@ fn show_docs_close_confirm(cx: &mut App) {
                 .vertical()
                 .gap_lg()
                 .child(Paragraph::with_text(
-                    "你可以直接退出进程，或者仅隐藏窗口并让文档应用继续驻留在系统托盘。",
+                    "你可以直接退出进程，或者关闭主窗口并让文档应用继续驻留在系统托盘。",
                 ))
                 .child(checkbox)
                 .child(

@@ -287,11 +287,16 @@ fn hide_gallery_window(cx: &mut App) {
         return;
     }
 
+    cx.set_quit_mode(gpui::QuitMode::Explicit);
+    set_gallery_tray_visible(cx, true);
+
     let existing = cx.global::<GalleryTrayState>().window;
     if let Some(handle) = existing {
-        let _ = handle.update(cx, |_, window, _| window.minimize_window());
+        let _ = handle.update(cx, |_, window, _| window.remove_window());
     }
-    cx.global_mut::<GalleryTrayState>().window_visible = false;
+    let state = cx.global_mut::<GalleryTrayState>();
+    state.window_visible = false;
+    state.window = None;
 }
 
 fn set_gallery_tray_visible(cx: &mut App, visible: bool) {
@@ -373,7 +378,7 @@ fn show_gallery_close_confirm(cx: &mut App) {
                 .vertical()
                 .gap_lg()
                 .child(Paragraph::with_text(
-                    "你可以直接退出进程，或者仅隐藏窗口并让应用继续驻留在系统托盘。",
+                    "你可以直接退出进程，或者关闭主窗口并让应用继续驻留在系统托盘。",
                 ))
                 .child(checkbox)
                 .child(
