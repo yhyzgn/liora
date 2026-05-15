@@ -6,6 +6,9 @@
 
 use std::{collections::HashMap, path::Path, sync::mpsc};
 
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
+use std::sync::Once;
+
 use gpui::Global;
 pub use tray_icon::menu::{CheckMenuItem, MenuEvent, MenuId};
 use tray_icon::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
@@ -402,7 +405,37 @@ pub fn pump_platform_events() {
 pub fn pump_platform_events() {}
 
 #[cfg(any(target_os = "linux", target_os = "freebsd"))]
+static AYATANA_LOG_HANDLER: Once = Once::new();
+
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
+fn install_ayatana_deprecation_filter() {
+    AYATANA_LOG_HANDLER.call_once(|| {
+        gtk::glib::log_set_handler(
+            Some("libayatana-appindicator"),
+            gtk::glib::LogLevels::LEVEL_WARNING,
+            false,
+            false,
+            |domain, _level, message| {
+                if message.contains("libayatana-appindicator is deprecated")
+                    && message.contains("libayatana-appindicator-glib")
+                {
+                    return;
+                }
+
+                eprintln!(
+                    "{}-WARNING **: {}",
+                    domain.unwrap_or("libayatana-appindicator"),
+                    message
+                );
+            },
+        );
+    });
+}
+
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
 fn init_platform_tray_runtime() -> Result<()> {
+    install_ayatana_deprecation_filter();
+
     if gtk::is_initialized() {
         return Ok(());
     }
