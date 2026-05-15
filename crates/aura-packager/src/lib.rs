@@ -18,5 +18,5 @@ pub use cargo_packager::{
 };
 pub use checksum::{Checksum, sha256_file};
 pub use format::{PackageFormat, Platform};
-pub use manifest::{PackageArtifact, PackageManifest};
+pub use manifest::{PackageArtifact, PackageManifest, collect_package_artifacts};
 pub use validate::{ValidationError, ValidationReport, validate_packaging_layout};

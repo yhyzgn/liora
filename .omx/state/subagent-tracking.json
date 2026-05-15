@@ -177,15 +177,15 @@
     "omx-1778827259120-7n7na4": {
       "session_id": "omx-1778827259120-7n7na4",
       "leader_thread_id": "019e15ab-a59f-7a20-a134-757da8881b86",
-      "updated_at": "2026-05-15T12:35:05.698Z",
+      "updated_at": "2026-05-15T12:48:49.205Z",
       "threads": {
         "019e15ab-a59f-7a20-a134-757da8881b86": {
           "thread_id": "019e15ab-a59f-7a20-a134-757da8881b86",
           "kind": "leader",
           "first_seen_at": "2026-05-15T07:02:45.555Z",
-          "last_seen_at": "2026-05-15T12:35:05.698Z",
-          "last_turn_id": "019e2b9e-7031-76c1-8f97-4ca0886d19a7",
-          "turn_count": 21
+          "last_seen_at": "2026-05-15T12:48:49.205Z",
+          "last_turn_id": "019e2ba5-4724-7871-8beb-776e4cd50eb0",
+          "turn_count": 22
         }
       }
     }

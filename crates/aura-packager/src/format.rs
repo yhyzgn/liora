@@ -73,6 +73,26 @@ impl PackageFormat {
             Self::Rpm | Self::PlatformDefaults => None,
         }
     }
+
+    pub fn from_artifact_path(path: &std::path::Path) -> Option<Self> {
+        let file_name = path.file_name()?.to_string_lossy().to_ascii_lowercase();
+        let extension = path.extension()?.to_string_lossy().to_ascii_lowercase();
+        if file_name.ends_with(".appimage") {
+            Some(Self::AppImage)
+        } else if file_name.ends_with(".tar.gz") || file_name.ends_with(".pkg.tar.zst") {
+            Some(Self::TarGz)
+        } else {
+            match extension.as_str() {
+                "deb" => Some(Self::Deb),
+                "rpm" => Some(Self::Rpm),
+                "app" => Some(Self::App),
+                "dmg" => Some(Self::Dmg),
+                "exe" => Some(Self::Nsis),
+                "msi" => Some(Self::Msi),
+                _ => None,
+            }
+        }
+    }
 }
 
 impl std::str::FromStr for PackageFormat {

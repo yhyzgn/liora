@@ -1,7 +1,7 @@
 {
-  "pid": 1054838,
+  "pid": 1059914,
   "parent_pid": 464849,
-  "started_at": "2026-05-15T12:48:27.624Z",
+  "started_at": "2026-05-15T12:51:21.637Z",
   "cwd": "/home/neo/Projects/neo/lib/aura",
   "notify_script": "/home/neo/.bun/install/global/node_modules/oh-my-codex/dist/scripts/notify-hook.js",
   "authority_only": true,
@@ -17,7 +17,7 @@
     "max_per_tick": 5,
     "run_count": 1,
     "leader_only": true,
-    "last_tick_at": "2026-05-15T12:48:27.626Z",
+    "last_tick_at": "2026-05-15T12:51:21.638Z",
     "last_result": {
       "processed": 0,
       "skipped": 0,
@@ -30,7 +30,7 @@
     "leader_only": true,
     "stale_threshold_ms": 180000,
     "precomputed_leader_stale": false,
-    "last_tick_at": "2026-05-15T12:48:27.626Z",
+    "last_tick_at": "2026-05-15T12:51:21.639Z",
     "last_error": null,
     "run_count": 1
   },
@@ -57,10 +57,10 @@
   "fallback_auto_nudge": {
     "enabled": true,
     "stall_ms": 5000,
-    "last_tick_at": "2026-05-15T12:48:27.642Z",
-    "last_turn_at": "2026-05-15T12:35:05.712Z",
-    "last_turn_count": 21,
-    "last_message": "已重新生成一批，并且**保留了上一版 `packaging/icons/aura.*` 不覆盖**。\n\n已推送：`cdeb8a7 Add alternate Aura logo candidates`",
+    "last_tick_at": "2026-05-15T12:51:21.652Z",
+    "last_turn_at": "2026-05-15T12:48:49.221Z",
+    "last_turn_count": 22,
+    "last_message": "已完成并推送。\n\n结果：\n- 已选择第 3 套 `ribbon` 作为主库 Aura logo，替换：\n  - `packaging/icons/aura.svg`\n  - `packaging/ic",
     "last_reason": "eligible_but_not_sent",
     "last_error": null,
     "last_nudged_signature": "",
@@ -79,8 +79,8 @@
     "base_ms": 75,
     "max_ms": 1000,
     "current_ms": 1000,
-    "idle_streak": 35,
-    "last_tick_at": "2026-05-15T12:48:27.644Z",
+    "idle_streak": 209,
+    "last_tick_at": "2026-05-15T12:51:21.654Z",
     "last_activity_at": "2026-05-15T12:47:52.645Z",
     "last_activity_reason": "eligible_but_not_sent"
   },

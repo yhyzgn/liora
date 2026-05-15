@@ -1,9 +1,9 @@
 use std::{env, fs, path::PathBuf, process::Command};
 
 use aura_packager::{
-    KnownApp, PackageFormat, Platform, cargo_packager_formats, generated_config_path,
-    package_out_dir, release_binaries_dir, render_cargo_packager_config, supplemental_formats,
-    validate_packaging_layout,
+    KnownApp, PackageFormat, PackageManifest, Platform, cargo_packager_formats,
+    collect_package_artifacts, generated_config_path, package_out_dir, release_binaries_dir,
+    render_cargo_packager_config, supplemental_formats, validate_packaging_layout,
 };
 
 fn main() {
@@ -75,6 +75,8 @@ fn package_formats(command: PackageCommand) -> Result<(), String> {
         vec![command.format]
     };
 
+    let mut manifest = PackageManifest::default();
+
     for app in command.apps {
         let metadata = app.metadata();
         let cargo_formats = cargo_packager_formats(&formats);
@@ -120,9 +122,77 @@ fn package_formats(command: PackageCommand) -> Result<(), String> {
                 out_dir.display()
             );
         }
+
+        if !command.dry_run {
+            let artifacts = collect_package_artifacts(
+                &metadata.package,
+                app_version(),
+                platform,
+                &out_dir,
+                &formats,
+            )
+            .map_err(|error| {
+                format!(
+                    "failed to collect package artifacts from {}: {error}",
+                    out_dir.display()
+                )
+            })?;
+            if artifacts.is_empty() {
+                println!(
+                    "no package artifacts discovered yet: app={} output={}",
+                    metadata.package,
+                    out_dir.display()
+                );
+            } else {
+                println!(
+                    "discovered {} package artifact(s): app={} output={}",
+                    artifacts.len(),
+                    metadata.package,
+                    out_dir.display()
+                );
+            }
+            manifest.extend(artifacts);
+        }
+    }
+
+    if !command.dry_run {
+        write_manifest_outputs(&root, &manifest)?;
     }
 
     Ok(())
+}
+
+fn write_manifest_outputs(
+    root: &std::path::Path,
+    manifest: &PackageManifest,
+) -> Result<(), String> {
+    let package_dir = root.join("target/packages");
+    fs::create_dir_all(&package_dir)
+        .map_err(|error| format!("failed to create {}: {error}", package_dir.display()))?;
+    let manifest_path = package_dir.join("package-manifest.json");
+    fs::write(&manifest_path, manifest.to_json_pretty())
+        .map_err(|error| format!("failed to write {}: {error}", manifest_path.display()))?;
+    let checksum_path = package_dir.join("checksums.txt");
+    fs::write(&checksum_path, manifest.checksums_txt())
+        .map_err(|error| format!("failed to write {}: {error}", checksum_path.display()))?;
+    if manifest.is_empty() {
+        println!(
+            "package manifest written with no artifacts yet: {}",
+            manifest_path.display()
+        );
+    } else {
+        println!(
+            "package manifest written: {} ({} artifact(s))",
+            manifest_path.display(),
+            manifest.artifacts.len()
+        );
+        println!("checksums written: {}", checksum_path.display());
+    }
+    Ok(())
+}
+
+fn app_version() -> &'static str {
+    env!("CARGO_PKG_VERSION")
 }
 
 fn cargo_packager_args(

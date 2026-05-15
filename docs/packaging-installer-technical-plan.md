@@ -416,7 +416,7 @@ release-notes.md
 - [x] 实现 release build。
 - [x] 实现格式路由与输出目录规范。
 - [x] 生成 cargo-packager 兼容配置并通过 `cargo xtask package --dry-run` 输出真实后端命令。
-- [ ] 自动生成 checksums 和 manifest。
+- [x] 自动生成 checksums 和 manifest（真实后端产物生成后自动扫描 `target/packages` 并写入 `package-manifest.json` / `checksums.txt`）。
 
 验收：
 
@@ -506,6 +506,7 @@ release-notes.md
 截至 2026-05-15：
 
 - `cargo xtask package --app <gallery|docs> --format <fmt> --dry-run --skip-build` 会生成 `target/aura-packager/Packager.<app>.toml`，并打印实际 `cargo packager ...` 调用。
+- 非 dry-run 打包完成后会扫描 `target/packages/<app>/<platform>/` 下的安装包文件，生成 `target/packages/package-manifest.json` 和 `target/packages/checksums.txt`。
 - `appimage`、`deb`、`app`、`dmg`、`nsis`、`msi` 走 cargo-packager 主后端；其中 `msi` 映射为 cargo-packager 的 `wix` 格式，`tar.gz` 暂映射为 `pacman`。
 - `rpm` 仍归类为 supplemental backend，后续接入 `cargo-generate-rpm` 或 `nfpm`。
 - 当前环境未全局安装 `cargo-packager`，因此验证以配置生成、命令 dry-run、类型检查和单元测试为准；安装后可直接去掉 `--dry-run` 产出包。
