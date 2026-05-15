@@ -150,7 +150,7 @@ fn package_formats(command: PackageCommand) -> Result<(), String> {
         if !command.dry_run {
             let artifacts = collect_package_artifacts(
                 &metadata.package,
-                app_version(),
+                &app_version(),
                 platform,
                 &out_dir,
                 &formats,
@@ -219,8 +219,8 @@ fn write_manifest_outputs(
     Ok(())
 }
 
-fn app_version() -> &'static str {
-    env!("CARGO_PKG_VERSION")
+fn app_version() -> String {
+    env::var("AURA_PACKAGE_VERSION").unwrap_or_else(|_| env!("CARGO_PKG_VERSION").to_string())
 }
 
 fn cargo_packager_args(

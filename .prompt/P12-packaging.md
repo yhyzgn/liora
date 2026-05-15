@@ -77,9 +77,10 @@ The internal packaging module is named `aura-packager`, not `aura-installer`.
 - CI
   - `.github/workflows/package.yml` 已添加 Linux/macOS/Windows packaging matrix。
   - `workflow_dispatch` 默认 dry-run。
-  - `v*` tag 触发真实打包路径。
-  - 上传 `target/packages/**` 和 `target/aura-packager/*.toml`。
-  - release job 下载各平台 artifacts，自动收集 git changelog，创建/更新 GitHub Release，并上传全部构建产物。
+  - `main` push 触发 preview 打包，包版本使用 `AURA_PACKAGE_VERSION=<base>-preview.<run_number>.<short_sha>`。
+  - `v*` tag 触发 release 打包，包版本使用 tag 去掉 `v` 后的版本。
+  - 上传 `target/packages/**` 和 `target/aura-packager/*.toml`，artifact 命名区分 `aura-preview-packages-*` / `aura-release-packages-*`。
+  - release job 下载各平台 release artifacts，按 `feat` / `fix` / `docs` / `ci` / `build` / `refactor` / `perf` / `test` / `style` / `chore` / `revert` / `Other` 分组收集 git changelog，创建/更新 GitHub Release，并上传全部构建产物。
 
 ### 已验证命令
 
@@ -148,7 +149,7 @@ cargo xtask package ci --all-apps --format platform-defaults
 
 ### 5. GitHub Release automation
 
-基础能力已接入：`v*` tag package matrix 完成后，release job 会下载 `aura-packages-*` artifacts，自动收集上一个 tag 以来的 git commit changelog，创建/更新 GitHub Release，并上传全部构建产物。
+基础能力已接入：`main` push 会生成 preview 包；`v*` tag package matrix 完成后，release job 会下载 `aura-release-packages-*` artifacts，自动收集上一个 tag 以来的 git commit changelog，并按 Conventional Commit 类型分组生成 release notes，随后创建/更新 GitHub Release 并上传全部构建产物。
 
 后续增强：
 

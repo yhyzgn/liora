@@ -21,6 +21,8 @@ on:
           - gallery
           - docs
   push:
+    branches:
+      - main
     tags:
       - "v*"
 
@@ -51,6 +53,32 @@ jobs:
 
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
+
+      - name: Configure package channel
+        id: package-channel
+        shell: bash
+        run: |
+          set -euo pipefail
+          base_version="$(sed -n 's/^version = "\(.*\)"/\1/p' crates/aura-packager/Cargo.toml | head -n 1)"
+          if [[ -z "${base_version}" ]]; then
+            echo "Failed to read base package version from crates/aura-packager/Cargo.toml" >&2
+            exit 1
+          fi
+
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            channel="release"
+            version="${GITHUB_REF_NAME#v}"
+          else
+            channel="preview"
+            short_sha="${GITHUB_SHA::7}"
+            version="${base_version}-preview.${GITHUB_RUN_NUMBER}.${short_sha}"
+          fi
+
+          echo "AURA_PACKAGE_CHANNEL=${channel}" >> "${GITHUB_ENV}"
+          echo "AURA_PACKAGE_VERSION=${version}" >> "${GITHUB_ENV}"
+          echo "channel=${channel}" >> "${GITHUB_OUTPUT}"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          echo "Packaging ${channel} build as version ${version}"
 
       - name: Install Linux packaging prerequisites
         if: matrix.platform == 'linux'
@@ -126,11 +154,12 @@ jobs:
         if: github.event.inputs.dry_run != 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: aura-packages-${{ matrix.platform }}
+          name: aura-${{ steps.package-channel.outputs.channel }}-packages-${{ matrix.platform }}
           path: |
             target/packages/**
             target/aura-packager/*.toml
           if-no-files-found: error
+          retention-days: ${{ startsWith(github.ref, 'refs/tags/v') && 90 || 14 }}
 
   release:
     name: Publish GitHub Release
@@ -149,7 +178,7 @@ jobs:
       - name: Download package artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: aura-packages-*
+          pattern: aura-release-packages-*
           path: dist
           merge-multiple: false
 
@@ -173,6 +202,83 @@ jobs:
           git fetch --tags --force
           previous_tag="$(git tag --sort=-v:refname | grep -v "^${tag}$" | head -n 1 || true)"
 
+          changelog_input="changelog.tsv"
+          if [[ -n "${previous_tag}" ]]; then
+            git log --pretty=format:'%s%x09%h' "${previous_tag}..${tag}" > "${changelog_input}" || true
+          else
+            git log --pretty=format:'%s%x09%h' "${tag}" --max-count=100 > "${changelog_input}" || true
+          fi
+
+          emit_grouped_changelog() {
+            local input="$1"
+            local found_any="false"
+            local wanted line subject sha type scope title
+            local conventional_commit_pattern='^([A-Za-z]+)(\(([^)]*)\))?(!)?:[[:space:]]*(.*)$'
+            local order=(feat fix docs ci build refactor perf test style chore revert other)
+            declare -A headings=(
+              [feat]="Features"
+              [fix]="Fixes"
+              [docs]="Documentation"
+              [ci]="CI"
+              [build]="Build"
+              [refactor]="Refactoring"
+              [perf]="Performance"
+              [test]="Tests"
+              [style]="Style"
+              [chore]="Chores"
+              [revert]="Reverts"
+              [other]="Other"
+            )
+
+            for wanted in "${order[@]}"; do
+              local lines=()
+              while IFS=$'\t' read -r subject sha; do
+                [[ -z "${subject}" ]] && continue
+                type="other"
+                scope=""
+                title="${subject}"
+
+                if [[ "${subject}" =~ ${conventional_commit_pattern} ]]; then
+                  type="${BASH_REMATCH[1],,}"
+                  scope="${BASH_REMATCH[3]}"
+                  title="${BASH_REMATCH[5]}"
+                fi
+
+                case "${type}" in
+                  feature|features) type="feat" ;;
+                  fixes) type="fix" ;;
+                  doc) type="docs" ;;
+                  tests) type="test" ;;
+                esac
+
+                case "${type}" in
+                  feat|fix|docs|ci|build|refactor|perf|test|style|chore|revert) ;;
+                  *) type="other" ;;
+                esac
+
+                if [[ "${type}" == "${wanted}" ]]; then
+                  if [[ -n "${scope}" ]]; then
+                    lines+=("- **${scope}:** ${title} (\`${sha}\`)")
+                  else
+                    lines+=("- ${title} (\`${sha}\`)")
+                  fi
+                fi
+              done < "${input}"
+
+              if [[ ${#lines[@]} -gt 0 ]]; then
+                found_any="true"
+                echo "### ${headings[$wanted]}"
+                printf '%s\n' "${lines[@]}"
+                echo
+              fi
+            done
+
+            if [[ "${found_any}" == "false" ]]; then
+              echo "_No commits found._"
+              echo
+            fi
+          }
+
           {
             echo "# Aura ${tag}"
             echo
@@ -180,16 +286,11 @@ jobs:
             echo
             if [[ -n "${previous_tag}" ]]; then
               echo "Changes since \`${previous_tag}\`:"
-              echo
-              git log --pretty=format:'- %s (`%h`)' "${previous_tag}..${tag}" || true
-              echo
             else
-              echo "No previous tag found. Listing commits reachable from this tag:"
-              echo
-              git log --pretty=format:'- %s (`%h`)' "${tag}" --max-count=100 || true
-              echo
+              echo "No previous tag found. Listing up to 100 commits reachable from this tag:"
             fi
             echo
+            emit_grouped_changelog "${changelog_input}"
             echo "## Package artifacts"
             echo
             if find release-assets -type f | grep -q .; then
