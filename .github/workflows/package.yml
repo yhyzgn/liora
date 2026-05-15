@@ -131,3 +131,105 @@ jobs:
             target/packages/**
             target/aura-packager/*.toml
           if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    needs: package
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download package artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: aura-packages-*
+          path: dist
+          merge-multiple: false
+
+      - name: Prepare release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf release-assets
+          mkdir -p release-assets
+          while IFS= read -r artifact; do
+            rel="${artifact#dist/}"
+            safe="${rel//\//__}"
+            cp "$artifact" "release-assets/$safe"
+          done < <(find dist -type f | sort)
+
+      - name: Build release notes and changelog
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          git fetch --tags --force
+          previous_tag="$(git tag --sort=-v:refname | grep -v "^${tag}$" | head -n 1 || true)"
+
+          {
+            echo "# Aura ${tag}"
+            echo
+            echo "## Changelog"
+            echo
+            if [[ -n "${previous_tag}" ]]; then
+              echo "Changes since \`${previous_tag}\`:"
+              echo
+              git log --pretty=format:'- %s (`%h`)' "${previous_tag}..${tag}" || true
+              echo
+            else
+              echo "No previous tag found. Listing commits reachable from this tag:"
+              echo
+              git log --pretty=format:'- %s (`%h`)' "${tag}" --max-count=100 || true
+              echo
+            fi
+            echo
+            echo "## Package artifacts"
+            echo
+            if find release-assets -type f | grep -q .; then
+              find release-assets -type f | sort | while read -r artifact; do
+                size="$(du -h "$artifact" | cut -f1)"
+                echo "- \`${artifact#release-assets/}\` (${size})"
+              done
+            else
+              echo "No package artifacts were downloaded."
+            fi
+            echo
+            echo "## Integrity"
+            echo
+            echo "Each platform artifact bundle includes generated \`checksums.txt\` and \`package-manifest.json\` files when package outputs were discovered."
+          } > release-notes.md
+
+          cat release-notes.md
+          cp release-notes.md release-assets/release-notes.md
+
+      - name: Publish release and upload artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          mapfile -t files < <(find release-assets -type f | sort)
+          if [[ ${#files[@]} -eq 0 ]]; then
+            echo "No files found under dist; refusing to publish an empty release." >&2
+            exit 1
+          fi
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release edit "$tag" \
+              --title "Aura ${tag}" \
+              --notes-file release-notes.md
+            gh release upload "$tag" "${files[@]}" --clobber
+          else
+            gh release create "$tag" "${files[@]}" \
+              --title "Aura ${tag}" \
+              --notes-file release-notes.md
+          fi
+

@@ -41,3 +41,5 @@
 {"timestamp":"2026-05-15T13:03:42.786Z","type":"auto_nudge_skipped","reason":"unmanaged_session"}
 {"timestamp":"2026-05-15T13:06:57.100Z","type":"tmux_hook","mode":null,"reason":"mode_not_allowed","turn_id":"019e2bbd-ff94-7912-adc6-ffcca3472b36","thread_id":"019e15ab-a59f-7a20-a134-757da8881b86","target":{"type":"pane","value":"%0"},"dry_run":false,"sent":false,"event":"injection_skipped"}
 {"timestamp":"2026-05-15T13:06:57.136Z","type":"auto_nudge_skipped","reason":"unmanaged_session"}
+{"timestamp":"2026-05-15T13:13:19.127Z","type":"tmux_hook","mode":null,"reason":"mode_not_allowed","turn_id":"019e2bc1-494b-7161-a1d4-fa05ad2e8447","thread_id":"019e15ab-a59f-7a20-a134-757da8881b86","target":{"type":"pane","value":"%0"},"dry_run":false,"sent":false,"event":"injection_skipped"}
+{"timestamp":"2026-05-15T13:13:19.163Z","type":"auto_nudge_skipped","reason":"unmanaged_session"}

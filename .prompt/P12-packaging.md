@@ -79,6 +79,7 @@ The internal packaging module is named `aura-packager`, not `aura-installer`.
   - `workflow_dispatch` 默认 dry-run。
   - `v*` tag 触发真实打包路径。
   - 上传 `target/packages/**` 和 `target/aura-packager/*.toml`。
+  - release job 下载各平台 artifacts，自动收集 git changelog，创建/更新 GitHub Release，并上传全部构建产物。
 
 ### 已验证命令
 
@@ -147,12 +148,14 @@ cargo xtask package ci --all-apps --format platform-defaults
 
 ### 5. GitHub Release automation
 
-当前 workflow 只上传 artifacts。还需要：
+基础能力已接入：`v*` tag package matrix 完成后，release job 会下载 `aura-packages-*` artifacts，自动收集上一个 tag 以来的 git commit changelog，创建/更新 GitHub Release，并上传全部构建产物。
 
-- tag 构建后创建 GitHub Release；
-- 上传 installers；
-- 上传 `checksums.txt` / `package-manifest.json`；
-- 使用生成的 `release-notes.md` 作为 release body。
+后续增强：
+
+- 增加 draft / prerelease 策略；
+- 对上传产物做最终命名清洗；
+- 汇总多平台 manifest/checksum 为顶层 release manifest；
+- 在真实 CI 包产物验证后补 release smoke gate。
 
 ### 6. Install / uninstall smoke scripts
 

@@ -1,7 +1,7 @@
 {
-  "pid": 1096832,
+  "pid": 1105278,
   "parent_pid": 464849,
-  "started_at": "2026-05-15T13:11:24.827Z",
+  "started_at": "2026-05-15T13:17:18.928Z",
   "cwd": "/home/neo/Projects/neo/lib/aura",
   "notify_script": "/home/neo/.bun/install/global/node_modules/oh-my-codex/dist/scripts/notify-hook.js",
   "authority_only": true,
@@ -17,7 +17,7 @@
     "max_per_tick": 5,
     "run_count": 1,
     "leader_only": true,
-    "last_tick_at": "2026-05-15T13:11:24.828Z",
+    "last_tick_at": "2026-05-15T13:17:18.929Z",
     "last_result": {
       "processed": 0,
       "skipped": 0,
@@ -30,7 +30,7 @@
     "leader_only": true,
     "stale_threshold_ms": 180000,
     "precomputed_leader_stale": true,
-    "last_tick_at": "2026-05-15T13:11:24.829Z",
+    "last_tick_at": "2026-05-15T13:17:18.929Z",
     "last_error": null,
     "run_count": 1
   },
@@ -57,10 +57,10 @@
   "fallback_auto_nudge": {
     "enabled": true,
     "stall_ms": 5000,
-    "last_tick_at": "2026-05-15T13:11:24.843Z",
-    "last_turn_at": "2026-05-15T13:06:57.098Z",
-    "last_turn_count": 26,
-    "last_message": "已保存并推送。\n\n保存位置：\n- `.omx/handoffs/packaging-2026-05-15.md`\n- `.omx/notepad.md`\n- `.omx/project-memory.",
+    "last_tick_at": "2026-05-15T13:17:18.943Z",
+    "last_turn_at": "2026-05-15T13:13:19.125Z",
+    "last_turn_count": 27,
+    "last_message": "已同步到主提示词和 P12，未新增 P13。\n\n变更：\n- 更新 `.prompt/P12-packaging.md`\n  - 追加完整 `Handoff Snapshot — 2026-05-15`",
     "last_reason": "eligible_but_not_sent",
     "last_error": null,
     "last_nudged_signature": "",
@@ -80,8 +80,8 @@
     "max_ms": 1000,
     "current_ms": 75,
     "idle_streak": 0,
-    "last_tick_at": "2026-05-15T13:11:24.845Z",
-    "last_activity_at": "2026-05-15T13:11:24.845Z",
+    "last_tick_at": "2026-05-15T13:17:18.945Z",
+    "last_activity_at": "2026-05-15T13:17:18.945Z",
     "last_activity_reason": "leader_nudge"
   },
   "last_cycle_activity": "leader_nudge"
