@@ -15,9 +15,9 @@
   "dispatch_drain": {
     "enabled": true,
     "max_per_tick": 5,
-    "run_count": 30002,
+    "run_count": 31946,
     "leader_only": true,
-    "last_tick_at": "2026-05-15T09:10:44.923Z",
+    "last_tick_at": "2026-05-15T09:21:11.236Z",
     "last_result": {
       "processed": 0,
       "skipped": 0,
@@ -30,16 +30,16 @@
     "leader_only": true,
     "stale_threshold_ms": 180000,
     "precomputed_leader_stale": true,
-    "last_tick_at": "2026-05-15T09:10:44.923Z",
+    "last_tick_at": "2026-05-15T09:21:11.236Z",
     "last_error": null,
-    "run_count": 30002
+    "run_count": 31946
   },
   "ralph_continue_steer": {
     "enabled": true,
     "cadence_ms": 60000,
     "message": "Ralph loop active continue",
     "active": false,
-    "last_state_check_at": "2026-05-15T09:10:44.924Z",
+    "last_state_check_at": "2026-05-15T09:21:11.237Z",
     "last_sent_at": "",
     "cooldown_anchor_at": "",
     "last_reason": "stale_current_session",
@@ -57,22 +57,22 @@
   "fallback_auto_nudge": {
     "enabled": true,
     "stall_ms": 5000,
-    "last_tick_at": "2026-05-15T09:10:44.923Z",
-    "last_turn_at": "2026-05-15T09:00:52.654Z",
-    "last_turn_count": 9,
-    "last_message": "已完成并推送：`37623be Add remembered tray close confirmation`\n\n实现内容：\n- Gallery / Docs 窗口关闭时弹出确认：\n  - 关闭进程\n",
+    "last_tick_at": "2026-05-15T09:21:11.237Z",
+    "last_turn_at": "2026-05-15T09:11:48.841Z",
+    "last_turn_count": 10,
+    "last_message": "已修正并推送：`304fefa Close tray windows instead of minimizing`\n\n调整点：\n- “隐藏到托盘”不再 `minimize_window()`。\n- 改",
     "last_reason": "eligible_but_not_sent",
     "last_error": null,
     "last_nudged_signature": "",
     "last_nudged_at": ""
   },
   "authority_backoff": {
-    "active": true,
-    "reason": "primary_watcher_healthy",
-    "primary_pid": 464829,
-    "primary_last_tick_at": "2026-05-15T09:10:44.924Z",
-    "freshness_ms": 116,
-    "threshold_ms": 1000
+    "active": false,
+    "reason": "",
+    "primary_pid": null,
+    "primary_last_tick_at": "",
+    "freshness_ms": null,
+    "threshold_ms": null
   },
   "adaptive_poll": {
     "enabled": true,
@@ -80,8 +80,8 @@
     "max_ms": 1000,
     "current_ms": 250,
     "idle_streak": 0,
-    "last_tick_at": "2026-05-15T09:10:44.924Z",
-    "last_activity_at": "2026-05-15T09:10:44.924Z",
+    "last_tick_at": "2026-05-15T09:21:11.237Z",
+    "last_activity_at": "2026-05-15T09:21:11.237Z",
     "last_activity_reason": "leader_nudge"
   },
   "last_cycle_activity": "leader_nudge"

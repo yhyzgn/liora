@@ -282,7 +282,7 @@ fn show_gallery_window(cx: &mut App) {
     }
 }
 
-fn hide_gallery_window(cx: &mut App) {
+fn prepare_gallery_hide_to_tray(cx: &mut App) {
     if !cx.has_global::<GalleryTrayState>() {
         return;
     }
@@ -290,13 +290,21 @@ fn hide_gallery_window(cx: &mut App) {
     cx.set_quit_mode(gpui::QuitMode::Explicit);
     set_gallery_tray_visible(cx, true);
 
-    let existing = cx.global::<GalleryTrayState>().window;
-    if let Some(handle) = existing {
-        let _ = handle.update(cx, |_, window, _| window.remove_window());
-    }
     let state = cx.global_mut::<GalleryTrayState>();
     state.window_visible = false;
     state.window = None;
+}
+
+fn hide_gallery_window(cx: &mut App) {
+    if !cx.has_global::<GalleryTrayState>() {
+        return;
+    }
+
+    let existing = cx.global::<GalleryTrayState>().window;
+    prepare_gallery_hide_to_tray(cx);
+    if let Some(handle) = existing {
+        let _ = handle.update(cx, |_, window, _| window.remove_window());
+    }
 }
 
 fn set_gallery_tray_visible(cx: &mut App, visible: bool) {
@@ -342,8 +350,8 @@ fn handle_gallery_window_should_close(_window: &mut Window, cx: &mut App) -> boo
             false
         }
         TrayCloseAction::HideToTray => {
-            hide_gallery_window(cx);
-            false
+            prepare_gallery_hide_to_tray(cx);
+            true
         }
         TrayCloseAction::Ask => {
             if !cx.global::<GalleryTrayState>().close_dialog_open {

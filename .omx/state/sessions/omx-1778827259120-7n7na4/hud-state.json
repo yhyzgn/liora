@@ -1,6 +1,6 @@
 {
-  "last_turn_at": "2026-05-15T09:00:52.654Z",
-  "last_progress_at": "2026-05-15T09:00:52.654Z",
-  "turn_count": 9,
-  "last_agent_output": "已完成并推送：`37623be Add remembered tray close confirmation`\n\n实现内容：\n- Gallery / Docs 窗口关闭时弹出确认：\n  - 关闭进程\n"
+  "last_turn_at": "2026-05-15T09:11:48.841Z",
+  "last_progress_at": "2026-05-15T09:11:48.841Z",
+  "turn_count": 10,
+  "last_agent_output": "已修正并推送：`304fefa Close tray windows instead of minimizing`\n\n调整点：\n- “隐藏到托盘”不再 `minimize_window()`。\n- 改"
 }

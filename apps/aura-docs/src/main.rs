@@ -261,7 +261,7 @@ fn show_docs_window(cx: &mut App) {
     }
 }
 
-fn hide_docs_window(cx: &mut App) {
+fn prepare_docs_hide_to_tray(cx: &mut App) {
     if !cx.has_global::<DocsTrayState>() {
         return;
     }
@@ -269,13 +269,21 @@ fn hide_docs_window(cx: &mut App) {
     cx.set_quit_mode(gpui::QuitMode::Explicit);
     set_docs_tray_visible(cx, true);
 
-    let existing = cx.global::<DocsTrayState>().window;
-    if let Some(handle) = existing {
-        let _ = handle.update(cx, |_, window: &mut Window, _| window.remove_window());
-    }
     let state = cx.global_mut::<DocsTrayState>();
     state.window_visible = false;
     state.window = None;
+}
+
+fn hide_docs_window(cx: &mut App) {
+    if !cx.has_global::<DocsTrayState>() {
+        return;
+    }
+
+    let existing = cx.global::<DocsTrayState>().window;
+    prepare_docs_hide_to_tray(cx);
+    if let Some(handle) = existing {
+        let _ = handle.update(cx, |_, window: &mut Window, _| window.remove_window());
+    }
 }
 
 fn set_docs_tray_visible(cx: &mut App, visible: bool) {
@@ -321,8 +329,8 @@ fn handle_docs_window_should_close(_window: &mut Window, cx: &mut App) -> bool {
             false
         }
         TrayCloseAction::HideToTray => {
-            hide_docs_window(cx);
-            false
+            prepare_docs_hide_to_tray(cx);
+            true
         }
         TrayCloseAction::Ask => {
             if !cx.global::<DocsTrayState>().close_dialog_open {
