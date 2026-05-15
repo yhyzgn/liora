@@ -71,7 +71,7 @@ The internal packaging module is named `aura-packager`, not `aura-installer`.
   - Gallery / Docs packager metadata skeleton。
   - Linux `.desktop` / metainfo。
   - macOS entitlements placeholder。
-  - Windows nsis/wix resource folders。
+  - Windows nsis/wix resource folders（用 `.gitkeep` 跟踪空目录，确保 GitHub runner validate 通过）。
   - app icon sets：`aura-gallery.*`、`aura-docs.*`。
   - main Aura brand icon 已选第 3 套 ribbon，落到 `packaging/icons/aura.*`。
 - CI
