@@ -338,3 +338,8 @@ Validation evidence:
 - `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
 - `cargo test -p aura-components virtualized_list` passed.
 - `cargo test -p aura-gallery virtualized_list_demo` passed.
+
+
+## 2026-05-18 Drag reorder handle correction
+
+Corrected HorizontalList and VirtualizedList drag UX after feedback that invisible whole-item dragging was not acceptable. Dragging now starts only from an explicit front-side `GripVertical` handle rendered before each draggable item/row, while hover/drop detection stays on the item shell. Gallery and docs wording now points users to the visible drag handle.

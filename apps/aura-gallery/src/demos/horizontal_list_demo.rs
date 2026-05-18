@@ -72,7 +72,7 @@ impl Render for HorizontalListDemo {
                 ))
                 .child(section(
                     "拖动排序",
-                    "开启 draggable 后，按住 item 拖到目标 item 上松开即可重排，并触发 on_reorder 回调。",
+                    "开启 draggable 后，item 前端会显示 Grip 拖拽把手；按住把手拖到目标 item 上松开即可重排，并触发 on_reorder 回调。",
                     self.draggable.clone(),
                 )),
         )

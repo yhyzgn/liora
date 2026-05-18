@@ -1,3 +1,5 @@
+use aura_icons::Icon;
+use aura_icons_lucide::IconName;
 use gpui::{
     AnyElement, App, Context, Entity, IntoElement, ListAlignment, ListState, MouseButton,
     MouseMoveEvent, Pixels, Render, Window, div, list, prelude::*, px,
@@ -229,6 +231,9 @@ impl Render for VirtualizedList {
                     let up_entity = entity.clone();
                     let out_entity = entity.clone();
                     let mut shell = div()
+                        .flex()
+                        .flex_row()
+                        .items_stretch()
                         .rounded_md()
                         .border_1()
                         .border_color(if is_over {
@@ -236,15 +241,9 @@ impl Render for VirtualizedList {
                         } else {
                             gpui::transparent_black()
                         })
-                        .opacity(if is_dragging { 0.72 } else { 1.0 })
-                        .child(item);
+                        .opacity(if is_dragging { 0.72 } else { 1.0 });
                     if draggable {
                         shell = shell
-                            .cursor_pointer()
-                            .on_mouse_down(MouseButton::Left, move |_, _, cx| {
-                                item_entity.update(cx, |list, cx| list.start_drag(index, cx));
-                                cx.stop_propagation();
-                            })
                             .on_mouse_move(move |event, _, cx| {
                                 move_entity
                                     .update(cx, |list, cx| list.hover_drag(index, event, cx));
@@ -256,7 +255,17 @@ impl Render for VirtualizedList {
                             })
                             .on_mouse_up_out(MouseButton::Left, move |_, _, cx| {
                                 out_entity.update(cx, |list, cx| list.cancel_drag(cx));
-                            });
+                            })
+                            .child(render_drag_handle(is_dragging).on_mouse_down(
+                                MouseButton::Left,
+                                move |_, _, cx| {
+                                    item_entity.update(cx, |list, cx| list.start_drag(index, cx));
+                                    cx.stop_propagation();
+                                },
+                            ))
+                            .child(item);
+                    } else {
+                        shell = shell.child(item);
                     }
                     if spacing > px(0.0) {
                         div().pb(spacing).child(shell).into_any_element()
@@ -268,6 +277,22 @@ impl Render for VirtualizedList {
             )
             .child(crate::VirtualScrollbar::new(self.list_state.clone()))
     }
+}
+
+fn render_drag_handle(active: bool) -> gpui::Div {
+    div()
+        .flex_none()
+        .w(px(32.0))
+        .items_center()
+        .justify_center()
+        .cursor_pointer()
+        .hover(|s| s.cursor_pointer().bg(gpui::black().opacity(0.04)))
+        .when(active, |s| s.bg(gpui::black().opacity(0.06)))
+        .child(
+            Icon::new(IconName::GripVertical)
+                .size(px(16.0))
+                .color(gpui::rgb(0x94a3b8).into()),
+        )
 }
 
 #[cfg(test)]
@@ -285,6 +310,8 @@ mod tests {
         assert!(source.contains("measure_all_items_for_scrollbar"));
         assert!(source.contains("set_draggable"));
         assert!(source.contains("set_on_reorder"));
+        assert!(source.contains("render_drag_handle"));
+        assert!(source.contains("IconName::GripVertical"));
     }
 
     #[test]

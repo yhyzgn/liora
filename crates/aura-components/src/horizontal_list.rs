@@ -1,4 +1,6 @@
 use aura_core::Config;
+use aura_icons::Icon;
+use aura_icons_lucide::IconName;
 use gpui::{
     AnyElement, App, Context, Entity, IntoElement, MouseButton, MouseMoveEvent, Pixels, Render,
     Window, div, prelude::*, px,
@@ -221,6 +223,9 @@ impl Render for HorizontalList {
             let item = (render_item)(item_index);
             let mut item_shell = div()
                 .flex_none()
+                .flex()
+                .flex_row()
+                .items_stretch()
                 .rounded_md()
                 .border_1()
                 .border_color(if is_over {
@@ -228,20 +233,10 @@ impl Render for HorizontalList {
                 } else {
                     gpui::transparent_black()
                 })
-                .opacity(if is_dragging { 0.72 } else { 1.0 })
-                .child(item);
+                .opacity(if is_dragging { 0.72 } else { 1.0 });
 
             if draggable {
                 item_shell = item_shell
-                    .cursor_pointer()
-                    .hover(|s| s.cursor_pointer())
-                    .on_mouse_down(
-                        MouseButton::Left,
-                        cx.listener(move |this, _, _, cx| {
-                            this.start_drag(position, cx);
-                            cx.stop_propagation();
-                        }),
-                    )
                     .on_mouse_move(cx.listener(move |this, event, _, cx| {
                         this.hover_drag(position, event, cx);
                     }))
@@ -257,7 +252,19 @@ impl Render for HorizontalList {
                         cx.listener(|this, _, _, cx| {
                             this.cancel_drag(cx);
                         }),
-                    );
+                    )
+                    .child(
+                        render_drag_handle(theme.neutral.text_3, is_dragging).on_mouse_down(
+                            MouseButton::Left,
+                            cx.listener(move |this, _, _, cx| {
+                                this.start_drag(position, cx);
+                                cx.stop_propagation();
+                            }),
+                        ),
+                    )
+                    .child(item);
+            } else {
+                item_shell = item_shell.child(item);
             }
 
             children.push(item_shell.into_any_element());
@@ -278,6 +285,22 @@ impl Render for HorizontalList {
                     .children(children),
             )
     }
+}
+
+fn render_drag_handle(color: gpui::Hsla, active: bool) -> gpui::Div {
+    div()
+        .flex_none()
+        .w(px(28.0))
+        .items_center()
+        .justify_center()
+        .cursor_pointer()
+        .hover(|s| s.cursor_pointer().bg(gpui::black().opacity(0.04)))
+        .when(active, |s| s.bg(gpui::black().opacity(0.06)))
+        .child(
+            Icon::new(IconName::GripVertical)
+                .size(px(16.0))
+                .color(color),
+        )
 }
 
 fn default_divider(color: gpui::Hsla) -> AnyElement {
@@ -330,5 +353,7 @@ mod tests {
         assert!(source.contains("on_mouse_down"));
         assert!(source.contains("on_mouse_move"));
         assert!(source.contains("on_mouse_up"));
+        assert!(source.contains("render_drag_handle"));
+        assert!(source.contains("IconName::GripVertical"));
     }
 }

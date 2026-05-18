@@ -47,7 +47,7 @@ impl Render for VirtualizedListDemo {
                 ))
                 .child(section(
                     "垂直拖动排序",
-                    "开启 set_draggable(true) 后，可在虚拟列表内部按住行项目拖动到目标行并触发 on_reorder。",
+                    "开启 set_draggable(true) 后，每行前端会显示 Grip 拖拽把手；按住把手拖到目标行并松开即可触发 on_reorder。",
                     self.draggable.clone(),
                 )),
         )
