@@ -161,39 +161,53 @@ impl HorizontalList {
     fn hover_drag(
         &mut self,
         index: usize,
-        _event: &MouseMoveEvent,
-        window: &mut Window,
+        event: &MouseMoveEvent,
+        _window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        self.drag_state.update_position(_event.position);
-        let Some(from) = self.drag_state.active_index() else {
+        self.drag_state.update_position(event.position);
+        let Some(active) = self.drag_state.active_index() else {
             return;
         };
-        if from == index || index >= self.order.len() {
+        if event.pressed_button != Some(MouseButton::Left) {
             return;
         }
-        if reorder_indices(&mut self.order, from, index) {
-            self.drag_state.move_active_to(index);
-            if let Some(callback) = self.on_reorder.clone() {
-                callback(from, index, window, cx);
-            }
-            cx.notify();
-        }
-    }
-
-    fn finish_drag(&mut self, index: usize, window: &mut Window, cx: &mut Context<Self>) {
-        let Some(from) = self.drag_state.finish() else {
+        if index >= self.order.len() || index == active {
             return;
-        };
-        let _ = (from, index, window);
+        }
+        self.drag_state.set_over(index);
         cx.notify();
     }
 
-    fn cancel_drag(&mut self, cx: &mut Context<Self>) {
-        if self.drag_state.active_index().is_some() || self.drag_state.over_index().is_some() {
-            self.drag_state.cancel();
-            cx.notify();
+    fn update_drag_position(
+        &mut self,
+        event: &MouseMoveEvent,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.drag_state.active_index().is_none() {
+            return;
         }
+        if event.pressed_button != Some(MouseButton::Left) {
+            self.finish_drag(0, window, cx);
+            return;
+        }
+        self.drag_state.update_position(event.position);
+        cx.notify();
+    }
+
+    fn finish_drag(&mut self, index: usize, window: &mut Window, cx: &mut Context<Self>) {
+        let Some((from, target)) = self.drag_state.finish() else {
+            return;
+        };
+        let to = target.min(self.order.len().saturating_sub(1));
+        if from != to && reorder_indices(&mut self.order, from, to) {
+            if let Some(callback) = self.on_reorder.clone() {
+                callback(from, to, window, cx);
+            }
+        }
+        let _ = index;
+        cx.notify();
     }
 }
 
@@ -255,8 +269,8 @@ impl Render for HorizontalList {
                     )
                     .on_mouse_up_out(
                         MouseButton::Left,
-                        cx.listener(|this, _, _, cx| {
-                            this.cancel_drag(cx);
+                        cx.listener(move |this, _, window, cx| {
+                            this.finish_drag(position, window, cx);
                         }),
                     )
                     .child(
@@ -281,6 +295,23 @@ impl Render for HorizontalList {
             .w_full()
             .when_some(self.height, |s, height| s.h(height))
             .overflow_x_scroll()
+            .when(draggable, |s| {
+                s.on_mouse_move(cx.listener(|this, event, window, cx| {
+                    this.update_drag_position(event, window, cx);
+                }))
+                .on_mouse_up(
+                    MouseButton::Left,
+                    cx.listener(|this, _, window, cx| {
+                        this.finish_drag(0, window, cx);
+                    }),
+                )
+                .on_mouse_up_out(
+                    MouseButton::Left,
+                    cx.listener(|this, _, window, cx| {
+                        this.finish_drag(0, window, cx);
+                    }),
+                )
+            })
             .child(
                 div()
                     .flex()

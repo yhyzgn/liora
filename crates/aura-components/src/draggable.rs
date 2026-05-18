@@ -49,12 +49,12 @@ impl DragState {
         self.over_index = Some(index);
     }
 
-    pub fn finish(&mut self) -> Option<usize> {
-        let active = self.active_index.take();
-        self.over_index = None;
+    pub fn finish(&mut self) -> Option<(usize, usize)> {
+        let active = self.active_index.take()?;
+        let target = self.over_index.take().unwrap_or(active);
         self.start_position = None;
         self.current_position = None;
-        active
+        Some((active, target))
     }
 
     pub fn cancel(&mut self) {
@@ -154,5 +154,15 @@ mod tests {
         assert_eq!(state.offset(DragAxis::Horizontal), (px(32.0), px(0.0)));
         assert_eq!(state.offset(DragAxis::Vertical), (px(0.0), px(-8.0)));
         assert_eq!(state.offset(DragAxis::Free), (px(32.0), px(-8.0)));
+    }
+
+    #[test]
+    fn drag_state_finishes_with_last_over_index() {
+        let mut state = DragState::default();
+        state.start(1, point(px(0.0), px(0.0)));
+        state.set_over(3);
+        assert_eq!(state.finish(), Some((1, 3)));
+        assert_eq!(state.active_index(), None);
+        assert_eq!(state.over_index(), None);
     }
 }

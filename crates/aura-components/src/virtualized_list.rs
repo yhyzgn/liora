@@ -134,39 +134,53 @@ impl VirtualizedList {
         &mut self,
         index: usize,
         event: &MouseMoveEvent,
-        window: &mut Window,
+        _window: &mut Window,
         cx: &mut Context<Self>,
     ) {
         self.drag_state.update_position(event.position);
-        let Some(from) = self.drag_state.active_index() else {
+        let Some(active) = self.drag_state.active_index() else {
             return;
         };
-        if from == index || index >= self.order.len() {
+        if event.pressed_button != Some(MouseButton::Left) {
             return;
         }
-        if reorder_indices(&mut self.order, from, index) {
-            self.drag_state.move_active_to(index);
-            self.list_state.remeasure();
-            if let Some(callback) = self.on_reorder.clone() {
-                callback(from, index, window, cx);
-            }
-            cx.notify();
-        }
-    }
-
-    fn finish_drag(&mut self, index: usize, window: &mut Window, cx: &mut Context<Self>) {
-        let Some(from) = self.drag_state.finish() else {
+        if index >= self.order.len() || index == active {
             return;
-        };
-        let _ = (from, index, window);
+        }
+        self.drag_state.set_over(index);
         cx.notify();
     }
 
-    fn cancel_drag(&mut self, cx: &mut Context<Self>) {
-        if self.drag_state.active_index().is_some() || self.drag_state.over_index().is_some() {
-            self.drag_state.cancel();
-            cx.notify();
+    fn update_drag_position(
+        &mut self,
+        event: &MouseMoveEvent,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.drag_state.active_index().is_none() {
+            return;
         }
+        if event.pressed_button != Some(MouseButton::Left) {
+            self.finish_drag(0, window, cx);
+            return;
+        }
+        self.drag_state.update_position(event.position);
+        cx.notify();
+    }
+
+    fn finish_drag(&mut self, index: usize, window: &mut Window, cx: &mut Context<Self>) {
+        let Some((from, target)) = self.drag_state.finish() else {
+            return;
+        };
+        let to = target.min(self.order.len().saturating_sub(1));
+        if from != to && reorder_indices(&mut self.order, from, to) {
+            self.list_state.remeasure();
+            if let Some(callback) = self.on_reorder.clone() {
+                callback(from, to, window, cx);
+            }
+        }
+        let _ = index;
+        cx.notify();
     }
 
     /// Measure every item once so GPUI's scrollbar math has a stable total height.
@@ -219,6 +233,20 @@ impl Render for VirtualizedList {
             .relative()
             .size_full()
             .when_some(self.height, |el, height| el.h(height))
+            .when(draggable, |el| {
+                let move_entity = entity.clone();
+                let up_entity = entity.clone();
+                let out_entity = entity.clone();
+                el.on_mouse_move(move |event, window, cx| {
+                    move_entity.update(cx, |list, cx| list.update_drag_position(event, window, cx));
+                })
+                .on_mouse_up(MouseButton::Left, move |_, window, cx| {
+                    up_entity.update(cx, |list, cx| list.finish_drag(0, window, cx));
+                })
+                .on_mouse_up_out(MouseButton::Left, move |_, window, cx| {
+                    out_entity.update(cx, |list, cx| list.finish_drag(0, window, cx));
+                })
+            })
             .child(
                 list(self.list_state.clone(), move |index, window, cx| {
                     let item_index = order.get(index).copied().unwrap_or(index);
@@ -261,8 +289,9 @@ impl Render for VirtualizedList {
                                     .update(cx, |list, cx| list.finish_drag(index, window, cx));
                                 cx.stop_propagation();
                             })
-                            .on_mouse_up_out(MouseButton::Left, move |_, _, cx| {
-                                out_entity.update(cx, |list, cx| list.cancel_drag(cx));
+                            .on_mouse_up_out(MouseButton::Left, move |_, window, cx| {
+                                out_entity
+                                    .update(cx, |list, cx| list.finish_drag(index, window, cx));
                             })
                             .child(
                                 drag_handle(gpui::rgb(0x94a3b8).into(), is_dragging, px(32.0))

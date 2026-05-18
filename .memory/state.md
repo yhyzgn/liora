@@ -372,3 +372,16 @@ Validation evidence:
 - `cargo test -p aura-components draggable` passed.
 - `cargo test -p aura-components horizontal_list` passed.
 - `cargo test -p aura-components virtualized_list` passed.
+
+
+## 2026-05-18 Drag reorder stability correction
+
+Fixed the follow-pointer drag instability where the dragged element jumped and then appeared to run away. Root cause: reordering during hover changed the dragged item layout slot while offsets were still computed from the original pointer anchor. Dragging now keeps the original order during movement, only updates the over/target index and pointer offset, and performs the actual reorder once on mouse-up/out using the last hovered target. This keeps the active element following the pointer from its original slot instead of recalculating against a moving slot.
+
+Validation evidence:
+- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
+- `cargo test -p aura-components draggable` passed.
+- `cargo test -p aura-components horizontal_list` passed.
+- `cargo test -p aura-components virtualized_list` passed.
+- Follow-up correction: root list containers now also track mouse movement while the left button is pressed, and active item hover no longer overwrites the drop target. This prevents the translated active item from stealing hover events and making the target/offset look random.
+- Additional validation: `cargo test -p aura-gallery horizontal_list_demo` passed; `cargo test -p aura-gallery virtualized_list_demo` passed.
