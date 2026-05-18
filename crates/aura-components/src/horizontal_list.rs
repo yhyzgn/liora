@@ -1,9 +1,8 @@
+use crate::draggable::{DragAxis, DragState, drag_handle, reorder_indices};
 use aura_core::Config;
-use aura_icons::Icon;
-use aura_icons_lucide::IconName;
 use gpui::{
-    AnyElement, App, Context, Entity, IntoElement, MouseButton, MouseMoveEvent, Pixels, Render,
-    Window, div, prelude::*, px,
+    AnyElement, App, Context, Entity, IntoElement, MouseButton, MouseDownEvent, MouseMoveEvent,
+    Pixels, Render, Window, div, prelude::*, px,
 };
 use std::sync::Arc;
 
@@ -27,8 +26,7 @@ pub struct HorizontalList {
     item_gap: Pixels,
     padding: Pixels,
     height: Option<Pixels>,
-    drag_from: Option<usize>,
-    drag_over: Option<usize>,
+    drag_state: DragState,
 }
 
 impl HorizontalList {
@@ -44,8 +42,7 @@ impl HorizontalList {
             item_gap: px(8.0),
             padding: px(4.0),
             height: None,
-            drag_from: None,
-            drag_over: None,
+            drag_state: DragState::default(),
         }
     }
 
@@ -63,8 +60,7 @@ impl HorizontalList {
         }
         self.item_count = item_count;
         self.order = (0..item_count).collect();
-        self.drag_from = None;
-        self.drag_over = None;
+        self.drag_state.cancel();
     }
 
     pub fn set_render_item(&mut self, render_item: impl Fn(usize) -> AnyElement + 'static) {
@@ -82,16 +78,14 @@ impl HorizontalList {
     pub fn set_draggable(&mut self, draggable: bool) {
         self.draggable = draggable;
         if !draggable {
-            self.drag_from = None;
-            self.drag_over = None;
+            self.drag_state.cancel();
         }
     }
 
     pub fn set_disabled(&mut self, disabled: bool) {
         self.disabled = disabled;
         if disabled {
-            self.drag_from = None;
-            self.drag_over = None;
+            self.drag_state.cancel();
         }
     }
 
@@ -156,12 +150,11 @@ impl HorizontalList {
         self
     }
 
-    fn start_drag(&mut self, index: usize, cx: &mut Context<Self>) {
+    fn start_drag(&mut self, index: usize, position: gpui::Point<Pixels>, cx: &mut Context<Self>) {
         if !self.draggable || self.disabled {
             return;
         }
-        self.drag_from = Some(index);
-        self.drag_over = Some(index);
+        self.drag_state.start(index, position);
         cx.notify();
     }
 
@@ -172,15 +165,15 @@ impl HorizontalList {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let Some(from) = self.drag_from else {
+        self.drag_state.update_position(_event.position);
+        let Some(from) = self.drag_state.active_index() else {
             return;
         };
         if from == index || index >= self.order.len() {
             return;
         }
         if reorder_indices(&mut self.order, from, index) {
-            self.drag_from = Some(index);
-            self.drag_over = Some(index);
+            self.drag_state.move_active_to(index);
             if let Some(callback) = self.on_reorder.clone() {
                 callback(from, index, window, cx);
             }
@@ -189,18 +182,16 @@ impl HorizontalList {
     }
 
     fn finish_drag(&mut self, index: usize, window: &mut Window, cx: &mut Context<Self>) {
-        let Some(from) = self.drag_from.take() else {
+        let Some(from) = self.drag_state.finish() else {
             return;
         };
-        self.drag_over = None;
         let _ = (from, index, window);
         cx.notify();
     }
 
     fn cancel_drag(&mut self, cx: &mut Context<Self>) {
-        if self.drag_from.is_some() || self.drag_over.is_some() {
-            self.drag_from = None;
-            self.drag_over = None;
+        if self.drag_state.active_index().is_some() || self.drag_state.over_index().is_some() {
+            self.drag_state.cancel();
             cx.notify();
         }
     }
@@ -212,8 +203,7 @@ impl Render for HorizontalList {
         let render_item = self.render_item.clone();
         let render_divider = self.render_divider.clone();
         let item_gap = self.item_gap;
-        let drag_from = self.drag_from;
-        let drag_over = self.drag_over;
+        let drag_state = self.drag_state.clone();
         let draggable = self.draggable && !self.disabled;
 
         let mut children = Vec::new();
@@ -226,8 +216,13 @@ impl Render for HorizontalList {
                 children.push(divider);
             }
 
-            let is_dragging = drag_from == Some(position);
-            let is_over = drag_over == Some(position) && drag_from != Some(position);
+            let is_dragging = drag_state.is_active(position);
+            let is_over = drag_state.is_over(position);
+            let (drag_dx, drag_dy) = if is_dragging {
+                drag_state.offset(DragAxis::Horizontal)
+            } else {
+                (px(0.0), px(0.0))
+            };
             let item = (render_item)(item_index);
             let mut item_shell = div()
                 .flex_none()
@@ -241,7 +236,8 @@ impl Render for HorizontalList {
                 } else {
                     gpui::transparent_black()
                 })
-                .opacity(if is_dragging { 0.72 } else { 1.0 });
+                .opacity(if is_dragging { 0.86 } else { 1.0 })
+                .when(is_dragging, move |s| s.ml(drag_dx).mt(drag_dy).shadow_lg());
 
             if draggable {
                 item_shell = item_shell
@@ -262,10 +258,10 @@ impl Render for HorizontalList {
                         }),
                     )
                     .child(
-                        render_drag_handle(theme.neutral.text_3, is_dragging).on_mouse_down(
+                        drag_handle(theme.neutral.text_3, is_dragging, px(28.0)).on_mouse_down(
                             MouseButton::Left,
-                            cx.listener(move |this, _, _, cx| {
-                                this.start_drag(position, cx);
+                            cx.listener(move |this, event: &MouseDownEvent, _, cx| {
+                                this.start_drag(position, event.position, cx);
                                 cx.stop_propagation();
                             }),
                         ),
@@ -295,24 +291,6 @@ impl Render for HorizontalList {
     }
 }
 
-fn render_drag_handle(color: gpui::Hsla, active: bool) -> gpui::Div {
-    div()
-        .flex()
-        .flex_none()
-        .w(px(28.0))
-        .h_full()
-        .items_center()
-        .justify_center()
-        .cursor_pointer()
-        .hover(|s| s.cursor_pointer().bg(gpui::black().opacity(0.04)))
-        .when(active, |s| s.bg(gpui::black().opacity(0.06)))
-        .child(
-            Icon::new(IconName::GripVertical)
-                .size(px(16.0))
-                .color(color),
-        )
-}
-
 fn default_divider(color: gpui::Hsla) -> AnyElement {
     div()
         .flex_none()
@@ -320,15 +298,6 @@ fn default_divider(color: gpui::Hsla) -> AnyElement {
         .h(px(32.0))
         .bg(color)
         .into_any_element()
-}
-
-pub fn reorder_indices<T>(items: &mut Vec<T>, from: usize, to: usize) -> bool {
-    if from >= items.len() || to >= items.len() || from == to {
-        return false;
-    }
-    let item = items.remove(from);
-    items.insert(to, item);
-    true
 }
 
 #[cfg(test)]
@@ -363,7 +332,7 @@ mod tests {
         assert!(source.contains("on_mouse_down"));
         assert!(source.contains("on_mouse_move"));
         assert!(source.contains("on_mouse_up"));
-        assert!(source.contains("render_drag_handle"));
-        assert!(source.contains("IconName::GripVertical"));
+        assert!(source.contains("drag_handle"));
+        assert!(source.contains("DragState"));
     }
 }

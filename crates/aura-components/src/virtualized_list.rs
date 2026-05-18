@@ -1,5 +1,4 @@
-use aura_icons::Icon;
-use aura_icons_lucide::IconName;
+use crate::draggable::{DragAxis, DragState, drag_handle, reorder_indices};
 use gpui::{
     AnyElement, App, Context, Entity, IntoElement, ListAlignment, ListState, MouseButton,
     MouseMoveEvent, Pixels, Render, Window, div, list, prelude::*, px,
@@ -24,8 +23,7 @@ pub struct VirtualizedList {
     measure_all_items: bool,
     order: Vec<usize>,
     draggable: bool,
-    drag_from: Option<usize>,
-    drag_over: Option<usize>,
+    drag_state: DragState,
     on_reorder: Option<Arc<ReorderCallback>>,
 }
 
@@ -46,8 +44,7 @@ impl VirtualizedList {
             measure_all_items: false,
             order: (0..item_count).collect(),
             draggable: false,
-            drag_from: None,
-            drag_over: None,
+            drag_state: DragState::default(),
             on_reorder: None,
         }
     }
@@ -70,8 +67,7 @@ impl VirtualizedList {
         }
         self.item_count = item_count;
         self.order = (0..item_count).collect();
-        self.drag_from = None;
-        self.drag_over = None;
+        self.drag_state.cancel();
         self.list_state = Self::new_list_state(item_count, self.overdraw, self.measure_all_items);
     }
 
@@ -111,8 +107,7 @@ impl VirtualizedList {
     pub fn set_draggable(&mut self, draggable: bool) {
         self.draggable = draggable;
         if !draggable {
-            self.drag_from = None;
-            self.drag_over = None;
+            self.drag_state.cancel();
         }
     }
 
@@ -127,31 +122,30 @@ impl VirtualizedList {
         &self.order
     }
 
-    fn start_drag(&mut self, index: usize, cx: &mut Context<Self>) {
+    fn start_drag(&mut self, index: usize, position: gpui::Point<Pixels>, cx: &mut Context<Self>) {
         if !self.draggable {
             return;
         }
-        self.drag_from = Some(index);
-        self.drag_over = Some(index);
+        self.drag_state.start(index, position);
         cx.notify();
     }
 
     fn hover_drag(
         &mut self,
         index: usize,
-        _event: &MouseMoveEvent,
+        event: &MouseMoveEvent,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let Some(from) = self.drag_from else {
+        self.drag_state.update_position(event.position);
+        let Some(from) = self.drag_state.active_index() else {
             return;
         };
         if from == index || index >= self.order.len() {
             return;
         }
-        if crate::horizontal_list::reorder_indices(&mut self.order, from, index) {
-            self.drag_from = Some(index);
-            self.drag_over = Some(index);
+        if reorder_indices(&mut self.order, from, index) {
+            self.drag_state.move_active_to(index);
             self.list_state.remeasure();
             if let Some(callback) = self.on_reorder.clone() {
                 callback(from, index, window, cx);
@@ -161,18 +155,16 @@ impl VirtualizedList {
     }
 
     fn finish_drag(&mut self, index: usize, window: &mut Window, cx: &mut Context<Self>) {
-        let Some(from) = self.drag_from.take() else {
+        let Some(from) = self.drag_state.finish() else {
             return;
         };
-        self.drag_over = None;
         let _ = (from, index, window);
         cx.notify();
     }
 
     fn cancel_drag(&mut self, cx: &mut Context<Self>) {
-        if self.drag_from.is_some() || self.drag_over.is_some() {
-            self.drag_from = None;
-            self.drag_over = None;
+        if self.drag_state.active_index().is_some() || self.drag_state.over_index().is_some() {
+            self.drag_state.cancel();
             cx.notify();
         }
     }
@@ -220,8 +212,7 @@ impl Render for VirtualizedList {
         let spacing = self.item_spacing;
         let order = self.order.clone();
         let draggable = self.draggable;
-        let drag_from = self.drag_from;
-        let drag_over = self.drag_over;
+        let drag_state = self.drag_state.clone();
         let entity = cx.entity().clone();
 
         div()
@@ -232,8 +223,13 @@ impl Render for VirtualizedList {
                 list(self.list_state.clone(), move |index, window, cx| {
                     let item_index = order.get(index).copied().unwrap_or(index);
                     let item = (render_item)(item_index, window, cx);
-                    let is_dragging = drag_from == Some(index);
-                    let is_over = drag_over == Some(index) && drag_from != Some(index);
+                    let is_dragging = drag_state.is_active(index);
+                    let is_over = drag_state.is_over(index);
+                    let (drag_dx, drag_dy) = if is_dragging {
+                        drag_state.offset(DragAxis::Vertical)
+                    } else {
+                        (px(0.0), px(0.0))
+                    };
                     let item_entity = entity.clone();
                     let move_entity = entity.clone();
                     let up_entity = entity.clone();
@@ -249,7 +245,8 @@ impl Render for VirtualizedList {
                         } else {
                             gpui::transparent_black()
                         })
-                        .opacity(if is_dragging { 0.72 } else { 1.0 });
+                        .opacity(if is_dragging { 0.86 } else { 1.0 })
+                        .when(is_dragging, move |s| s.ml(drag_dx).mt(drag_dy).shadow_lg());
                     if draggable {
                         shell = shell
                             .on_mouse_move(move |event, window, cx| {
@@ -265,13 +262,15 @@ impl Render for VirtualizedList {
                             .on_mouse_up_out(MouseButton::Left, move |_, _, cx| {
                                 out_entity.update(cx, |list, cx| list.cancel_drag(cx));
                             })
-                            .child(render_drag_handle(is_dragging).on_mouse_down(
-                                MouseButton::Left,
-                                move |_, _, cx| {
-                                    item_entity.update(cx, |list, cx| list.start_drag(index, cx));
-                                    cx.stop_propagation();
-                                },
-                            ))
+                            .child(
+                                drag_handle(gpui::rgb(0x94a3b8).into(), is_dragging, px(32.0))
+                                    .on_mouse_down(MouseButton::Left, move |event, _, cx| {
+                                        item_entity.update(cx, |list, cx| {
+                                            list.start_drag(index, event.position, cx)
+                                        });
+                                        cx.stop_propagation();
+                                    }),
+                            )
                             .child(item);
                     } else {
                         shell = shell.child(item);
@@ -286,24 +285,6 @@ impl Render for VirtualizedList {
             )
             .child(crate::VirtualScrollbar::new(self.list_state.clone()))
     }
-}
-
-fn render_drag_handle(active: bool) -> gpui::Div {
-    div()
-        .flex()
-        .flex_none()
-        .w(px(32.0))
-        .h_full()
-        .items_center()
-        .justify_center()
-        .cursor_pointer()
-        .hover(|s| s.cursor_pointer().bg(gpui::black().opacity(0.04)))
-        .when(active, |s| s.bg(gpui::black().opacity(0.06)))
-        .child(
-            Icon::new(IconName::GripVertical)
-                .size(px(16.0))
-                .color(gpui::rgb(0x94a3b8).into()),
-        )
 }
 
 #[cfg(test)]
@@ -321,8 +302,8 @@ mod tests {
         assert!(source.contains("measure_all_items_for_scrollbar"));
         assert!(source.contains("set_draggable"));
         assert!(source.contains("set_on_reorder"));
-        assert!(source.contains("render_drag_handle"));
-        assert!(source.contains("IconName::GripVertical"));
+        assert!(source.contains("drag_handle"));
+        assert!(source.contains("DragState"));
     }
 
     #[test]

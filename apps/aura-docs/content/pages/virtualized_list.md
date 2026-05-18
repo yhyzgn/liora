@@ -7,7 +7,7 @@
 - 可见区渲染：避免长列表一次性布局所有元素。
 - 动态 item 渲染：通过闭包按 index 创建原生 GPUI / Aura 节点。
 - 可配置高度、overdraw 与 item 间距。
-- 可选垂直拖动排序：开启后每行前端显示 Grip 拖拽把手，并通过 `on_reorder` 获取排序结果。
+- 可选垂直拖动排序：开启后每行前端显示 Grip 拖拽把手，拖动项会沿垂直方向跟随鼠标，并通过 `on_reorder` 获取即时排序结果。
 - 内置 `VirtualScrollbar`，滚动条坐标直接来自 `ListState`。
 - 适合 Aura Docs 这类 Markdown block 流，也适合业务数据长列表。
 

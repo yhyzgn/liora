@@ -348,3 +348,16 @@ Corrected HorizontalList and VirtualizedList drag UX after feedback that invisib
 ## 2026-05-18 Drag reorder live hover fix
 
 Fixed reorder interaction after testing feedback: drag handles are now full-height flex boxes so the Grip icon is centered, and dragging reorders immediately when the pointer moves over a target item/row instead of waiting for final mouse-up delivery. This avoids lost drops when GPUI mouse-up is delivered to the original drag handle instead of the hovered item.
+
+
+## 2026-05-18 Generic draggable helper and follow-pointer list motion
+
+Added reusable `draggable` module inspired by drag-rs' operation model (start point, current pointer, result/reorder callback) while staying pure GPUI/native. The module provides `DragState`, `DragAxis`, default `drag_handle`, and shared `reorder_indices` helpers so future controls can add handle-based dragging without duplicating pointer bookkeeping or storing rendered elements. HorizontalList and VirtualizedList now use this module and apply axis-specific margin offsets to the active item, producing a native follow-pointer drag motion plus live reorder-on-hover.
+
+Validation evidence:
+- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
+- `cargo test -p aura-components draggable` passed.
+- `cargo test -p aura-components horizontal_list` passed.
+- `cargo test -p aura-components virtualized_list` passed.
+- `cargo test -p aura-gallery horizontal_list_demo` passed.
+- `cargo test -p aura-gallery virtualized_list_demo` passed.
