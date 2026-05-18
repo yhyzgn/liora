@@ -193,7 +193,7 @@
 | 2 | CodeEditor | `crates/aura-components/src/code_editor.rs` | ⏳ | ⏳ | Planned |
 | 3 | SignalMeter | `crates/aura-components/src/signal_meter.rs` | ⏳ | ⏳ | Planned |
 | 4 | HeatBar | `crates/aura-components/src/heat_bar.rs` | ⏳ | ⏳ | Planned |
-| 5 | FlatBarMeter | `crates/aura-components/src/flat_bar_meter.rs` | ⏳ | ⏳ | Planned |
+| 5 | BarChart standalone mini mode | existing `bar_chart.rs` | ⏳ | ⏳ | Planned in-place enhancement; based on user screenshot, no separate FlatBarMeter |
 | 6 | SegmentRatioBar | `crates/aura-components/src/segment_ratio_bar.rs` | ⏳ | ⏳ | Planned |
 | 7 | HorizontalList | `crates/aura-components/src/horizontal_list.rs` | ⏳ | ⏳ | Planned |
 | 8 | Vertical list drag | existing `virtualized_list.rs` / list components | ⏳ | ⏳ | Planned in-place enhancement |

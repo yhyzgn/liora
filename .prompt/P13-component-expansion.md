@@ -8,7 +8,7 @@
 
 P13 聚焦两类工作：
 
-1. **新增控件**：只为当前组件库中不存在的能力新增文件/API，例如二维码、代码编辑器、信号图、热力图、独立柱状图、分段比例条、水平可拖动列表、计时器、Label、Operation 等。
+1. **新增控件**：只为当前组件库中不存在的能力新增文件/API，例如二维码、代码编辑器、信号图、热力图、分段比例条、水平可拖动列表、计时器、Label、Operation 等；“独立柱状图”按用户截图理解为 BarChart 的无坐标迷你柱样式，不新增平行控件。
 2. **既有控件增强**：凡是已经存在的控件，必须直接在原组件、原 Demo、原 Docs 页面上增强；例如 RingChart、LineChart、BarChart、Progress/RingProgress、Button、Tag、Radio、Checkbox、Vertical/List 类控件，禁止为了单个增强点另建平行新控件。
 
 所有组件必须保持 **Rust + GPUI 原生渲染**，遵守 Aura 组件 API 范式，不能引入 WebView/HTML/CSS/DOM/browser runtime。
@@ -21,7 +21,7 @@ P13 聚焦两类工作：
 - 代码编辑器第一阶段允许采用 `syntect` 高亮；语法检查必须设计成可插拔 diagnostics provider，不在 P13 MVP 中硬绑定 LSP。
 - 图表/进度增强必须复用 P10 chart primitive，避免每个控件重复绘制基础设施。
 - 交互组件拖动必须明确数据模型、拖动状态、drop 回调、无障碍 fallback，不能只做视觉移动。
-- **已有控件增强优先原则**：如果能力属于已有控件（如 `Tag` flow、`Progress` 环形渐变、`LineChart` 线型、`BarChart` 区间色、`RingChart` 外置文本、`Button` 自定义颜色、`Radio`/`Checkbox` option 自定义），必须修改已有组件文件、已有 demo 和已有 docs/snippets；不得新增 `TagFlow`、`RingProgress2`、`AdvancedButton` 等替代控件。
+- **已有控件增强优先原则**：如果能力属于已有控件（如 `Tag` flow、`Progress` 环形渐变、`LineChart` 线型、`BarChart` 区间色/独立迷你柱样式、`RingChart` 外置文本、`Button` 自定义颜色、`Radio`/`Checkbox` option 自定义），必须修改已有组件文件、已有 demo 和已有 docs/snippets；不得新增 `TagFlow`、`RingProgress2`、`AdvancedButton`、`FlatBarMeter` 等替代控件。
 
 ## 组件清单与需求拆解
 
@@ -31,7 +31,7 @@ P13 聚焦两类工作：
 | 2 | `CodeEditor` | 新增 | 行号、缩进、高亮、选择/复制、编辑、diagnostics 扩展点 | P0 |
 | 3 | `SignalMeter` | 新增 | 手机信号/WiFi 风格、等级、每级颜色、禁用/空状态 | P0 |
 | 4 | `HeatBar` / `HeatmapBar` | 新增 | 柱状热力图、渐变色、区间值、label/tooltip | P0 |
-| 5 | `FlatBarMeter` | 新增 | 无坐标扁平柱状图，类似信号图但用于指标值 | P0 |
+| 5 | `BarChart` standalone mini mode | 增强 | 按截图实现无坐标/无网格/无 legend 的独立迷你柱状样式：窄圆角竖柱、淡入/渐变配色、紧凑高度、可嵌入卡片；直接扩展现有 `BarChart`，不新增 `FlatBarMeter` | P0 |
 | 6 | `SegmentRatioBar` | 新增 | 分段颜色/文本 pattern、自定义 label 与比例两端对齐 | P0 |
 | 7 | `HorizontalList` | 新增 | 横向滚动、item 完全自定义、divider 自定义、item 拖动 | P1 |
 | 8 | Vertical list drag | 增强 | 既有列表/VirtualizedList 增加垂直 item 拖动 | P1 |
@@ -53,7 +53,7 @@ P13 聚焦两类工作：
 目标：先交付可快速复用、风险低的新增控件，并把已有 `Tag` 的 flow 能力合并进原 Tag 组件文档/Demo。
 
 - `SignalMeter`
-- `FlatBarMeter`
+- `BarChart` standalone mini mode（按截图：无坐标紧凑圆角竖柱，直接增强现有 BarChart）
 - `HeatBar`
 - `SegmentRatioBar`
 - `Label`
@@ -72,7 +72,7 @@ P13 聚焦两类工作：
 
 - `RingChart` 外置 legend/value pattern
 - `LineChart` per-series stroke style
-- `BarChart` value range color rules
+- `BarChart` standalone mini mode + value range color rules
 - `RingProgress` gradient + completion color
 
 验收：
@@ -162,6 +162,25 @@ SignalMeter::new(3, 5)
     .level_colors(vec![danger, warning, success])
     .bar_gap(px(3.0))
 ```
+
+### BarChart standalone mini mode
+
+```rust
+BarChart::new(series)
+    .standalone()
+    .show_axis(false)
+    .show_grid(false)
+    .show_legend(false)
+    .bar_radius(px(4.0))
+    .bar_width(px(5.0))
+    .bar_gap(px(8.0))
+    .value_color_ranges(vec![
+        BarValueColorRange::up_to(20.0, theme.success.soft),
+        BarValueColorRange::above(20.0, theme.success.base),
+    ])
+```
+
+用户截图语义：一组轻量迷你竖向圆角柱，没有横竖坐标、没有边框、没有 legend，视觉上可像信号/频谱，但本质仍是 BarChart 的一个展示模式。
 
 ### SegmentRatioBar
 

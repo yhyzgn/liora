@@ -31,7 +31,7 @@
 | **P10 统计图组件** | `.prompt/P10-charts.md` | 原生 GPUI 统计图控件：Line/Area/Bar/Pie/Ring/Sparkline/Axis/Grid/Legend/Tooltip |
 | **P11 托盘常驻** | `.prompt/P11-tray.md` | `aura-tray` 跨平台系统托盘、动态图标、CheckBox/N 级菜单与 GPUI 常驻进程桥接 |
 | **P12 原生打包** | `.prompt/P12-packaging.md` | `aura-packager` / `xtask package` / `packaging/` / CI installer pipeline，纯 Rust + GPUI 原生应用打包 |
-| **P13 高级控件扩展** | `.prompt/P13-component-expansion.md` | 二维码、代码编辑器、信号图、热力/比例/扁平柱、拖动列表、Timer，以及 Chart/Button/Tag/Radio/Checkbox 增强 |
+| **P13 高级控件扩展** | `.prompt/P13-component-expansion.md` | 二维码、代码编辑器、信号图、热力/比例条、拖动列表、Timer，以及 BarChart 独立迷你柱样式与 Chart/Button/Tag/Radio/Checkbox 增强 |
 
 ---
 
@@ -111,7 +111,7 @@ aura/
 - P10 是原生统计图阶段：开发纯原生 GPUI 统计图控件，参考 GPUI 官方 canvas/path/paint API；`vicanso/zedis` 只能作为案例参考，不复制其依赖或实现结构。
 - P11 是系统托盘/进程常驻阶段：开发 `aura-tray`，采用 `tray-icon` + `muda`，支持动态图标、CheckBox 菜单、二级/三级/N 级菜单，并在 Gallery/Docs 中提供丰富用例。
 - P12 是打包阶段：开发 `aura-packager` + `xtask package` + `packaging/` + CI workflow。应用必须保持纯 Rust + GPUI native，严禁转成 Tauri 或引入 WebView/HTML/CSS/DOM/browser runtime。
-- P13 是最新规划阶段：补充二维码、代码编辑器、信号图、热力/比例/扁平柱、横向/纵向拖动列表、Timer、Label、Operation，并增强 Chart/Button/Tag/Radio/Checkbox 等高自定义能力；详见 `.prompt/P13-component-expansion.md`。
+- P13 是最新规划阶段：补充二维码、代码编辑器、信号图、热力/比例条、横向/纵向拖动列表、Timer、Label、Operation，并增强 Chart/Button/Tag/Radio/Checkbox 等高自定义能力；详见 `.prompt/P13-component-expansion.md`。
 
 ### 4.2 每个组件/功能开发流程
 
@@ -366,14 +366,14 @@ P13 目标是补齐 Dashboard / 低代码配置 / 数据监控 / 内容编辑场
 
 首批规划范围：
 
-- 新增：`QrCode`、`CodeEditor`、`SignalMeter`、`HeatBar`、`FlatBarMeter`、`SegmentRatioBar`、`HorizontalList`、`Timer`、`Label`、`Operation`。
-- 增强：`RingChart` 外置 legend/value pattern、`LineChart` per-series 线型、`BarChart` value range colors、`RingProgress` gradient/completion color、`Button` gradient/custom color states、`Tag` flow layout、`Radio`/`Checkbox` option render customization、既有垂直列表 item drag。
+- 新增：`QrCode`、`CodeEditor`、`SignalMeter`、`HeatBar`、`SegmentRatioBar`、`HorizontalList`、`Timer`、`Label`、`Operation`。
+- 增强：`RingChart` 外置 legend/value pattern、`LineChart` per-series 线型、`BarChart` 独立迷你柱样式与 value range colors、`RingProgress` gradient/completion color、`Button` gradient/custom color states、`Tag` flow layout、`Radio`/`Checkbox` option render customization、既有垂直列表 item drag。
 - QR/CodeEditor 如需新增依赖，必须先做 dependency review；CodeEditor 第一阶段复用已有 `syntect` 高亮，语法检查只做 provider/diagnostics 扩展点，不硬绑定 LSP。
 - 所有新增/增强控件必须同步 Gallery demo、Docs 页面、外部 snippets 和核心状态/计算测试；已有控件增强必须落在原组件、原 demo、原 docs/snippets 上，不另建平行控件。
 
 完整计划见 `.prompt/P13-component-expansion.md`。
 
-执行原则：已有控件直接增强原实现（例如 Tag flow、Progress/RingProgress 渐变、LineChart 线型、BarChart 区间色、Button 自定义色、Radio/Checkbox option 自定义），不要新增替代控件或平行页面。
+执行原则：已有控件直接增强原实现（例如 Tag flow、Progress/RingProgress 渐变、LineChart 线型、BarChart 独立迷你柱样式/区间色、Button 自定义色、Radio/Checkbox option 自定义），不要新增替代控件或平行页面。
 
 ## 7. Gallery Demo 规约
 
