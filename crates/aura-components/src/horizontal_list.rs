@@ -4,8 +4,6 @@ use gpui::{
     AnyElement, App, Bounds, Context, Entity, IntoElement, MouseButton, MouseDownEvent,
     MouseMoveEvent, Pixels, Render, Window, deferred, div, prelude::*, px,
 };
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::sync::Arc;
 
 type RenderItem = dyn Fn(usize) -> AnyElement + 'static;
@@ -29,7 +27,7 @@ pub struct HorizontalList {
     padding: Pixels,
     height: Option<Pixels>,
     drag_state: DragState,
-    item_bounds: Rc<RefCell<Vec<Option<Bounds<Pixels>>>>>,
+    item_bounds: Vec<Option<Bounds<Pixels>>>,
 }
 
 impl HorizontalList {
@@ -46,7 +44,7 @@ impl HorizontalList {
             padding: px(4.0),
             height: None,
             drag_state: DragState::default(),
-            item_bounds: Rc::new(RefCell::new(vec![None; item_count])),
+            item_bounds: vec![None; item_count],
         }
     }
 
@@ -64,7 +62,7 @@ impl HorizontalList {
         }
         self.item_count = item_count;
         self.order = (0..item_count).collect();
-        *self.item_bounds.borrow_mut() = vec![None; item_count];
+        self.item_bounds = vec![None; item_count];
         self.drag_state.cancel();
     }
 
@@ -159,9 +157,16 @@ impl HorizontalList {
         if !self.draggable || self.disabled {
             return;
         }
-        let bounds = self.item_bounds.borrow().get(index).copied().flatten();
+        let bounds = self.item_bounds.get(index).copied().flatten();
         self.drag_state.start_at(index, position, bounds);
         cx.notify();
+    }
+
+    fn set_item_bounds(&mut self, index: usize, bounds: Bounds<Pixels>) {
+        if index >= self.item_bounds.len() {
+            self.item_bounds.resize(index + 1, None);
+        }
+        self.item_bounds[index] = Some(bounds);
     }
 
     fn hover_drag(
@@ -225,7 +230,6 @@ impl Render for HorizontalList {
         let render_divider = self.render_divider.clone();
         let item_gap = self.item_gap;
         let drag_state = self.drag_state.clone();
-        let item_bounds = self.item_bounds.clone();
         let draggable = self.draggable && !self.disabled;
 
         let mut children = Vec::new();
@@ -243,7 +247,7 @@ impl Render for HorizontalList {
             let (drag_dx, drag_dy) = if is_dragging {
                 drag_state.offset_from_bounds(
                     DragAxis::Horizontal,
-                    item_bounds.borrow().get(position).copied().flatten(),
+                    self.item_bounds.get(position).copied().flatten(),
                 )
             } else {
                 (px(0.0), px(0.0))
@@ -298,20 +302,17 @@ impl Render for HorizontalList {
                 item_shell = item_shell.child(item);
             }
 
+            let item_entity = cx.entity().clone();
             let item_element = if is_dragging {
                 deferred(item_shell).with_priority(1000).into_any_element()
             } else {
                 item_shell.into_any_element()
             };
-            let item_bounds_for_track = item_bounds.clone();
             children.push(
                 track_bounds(item_element, move |bounds, _, cx| {
-                    let _ = cx;
-                    let mut item_bounds = item_bounds_for_track.borrow_mut();
-                    if position >= item_bounds.len() {
-                        item_bounds.resize(position + 1, None);
-                    }
-                    item_bounds[position] = Some(bounds);
+                    item_entity.update(cx, |list, _| {
+                        list.set_item_bounds(position, bounds);
+                    });
                 })
                 .into_any_element(),
             );
