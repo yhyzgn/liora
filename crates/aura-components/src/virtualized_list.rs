@@ -1,6 +1,6 @@
-use crate::draggable::{DragAxis, DragState, drag_handle, reorder_indices};
+use crate::draggable::{DragAxis, DragState, drag_handle, reorder_indices, track_bounds};
 use gpui::{
-    AnyElement, App, Context, Entity, IntoElement, ListAlignment, ListState, MouseButton,
+    AnyElement, App, Bounds, Context, Entity, IntoElement, ListAlignment, ListState, MouseButton,
     MouseMoveEvent, Pixels, Render, Window, deferred, div, list, prelude::*, px,
 };
 use std::sync::Arc;
@@ -25,6 +25,7 @@ pub struct VirtualizedList {
     draggable: bool,
     drag_state: DragState,
     on_reorder: Option<Arc<ReorderCallback>>,
+    item_bounds: Vec<Option<Bounds<Pixels>>>,
 }
 
 impl VirtualizedList {
@@ -46,6 +47,7 @@ impl VirtualizedList {
             draggable: false,
             drag_state: DragState::default(),
             on_reorder: None,
+            item_bounds: vec![None; item_count],
         }
     }
 
@@ -67,6 +69,7 @@ impl VirtualizedList {
         }
         self.item_count = item_count;
         self.order = (0..item_count).collect();
+        self.item_bounds = vec![None; item_count];
         self.drag_state.cancel();
         self.list_state = Self::new_list_state(item_count, self.overdraw, self.measure_all_items);
     }
@@ -126,8 +129,16 @@ impl VirtualizedList {
         if !self.draggable {
             return;
         }
-        self.drag_state.start(index, position);
+        let bounds = self.item_bounds.get(index).copied().flatten();
+        self.drag_state.start_at(index, position, bounds);
         cx.notify();
+    }
+
+    fn set_item_bounds(&mut self, index: usize, bounds: Bounds<Pixels>) {
+        if index >= self.item_bounds.len() {
+            self.item_bounds.resize(index + 1, None);
+        }
+        self.item_bounds[index] = Some(bounds);
     }
 
     fn hover_drag(
@@ -228,6 +239,7 @@ impl Render for VirtualizedList {
         let order = self.order.clone();
         let draggable = self.draggable;
         let drag_state = self.drag_state.clone();
+        let item_bounds = self.item_bounds.clone();
         let entity = cx.entity().clone();
 
         div()
@@ -255,7 +267,10 @@ impl Render for VirtualizedList {
                     let is_dragging = drag_state.is_active(index);
                     let is_over = drag_state.is_over(index);
                     let (drag_dx, drag_dy) = if is_dragging {
-                        drag_state.offset(DragAxis::Vertical)
+                        drag_state.offset_from_bounds(
+                            DragAxis::Vertical,
+                            item_bounds.get(index).copied().flatten(),
+                        )
                     } else {
                         (px(0.0), px(0.0))
                     };
@@ -307,11 +322,18 @@ impl Render for VirtualizedList {
                     } else {
                         shell = shell.child(item);
                     }
+                    let bounds_entity = entity.clone();
                     let row = if is_dragging {
                         deferred(shell).with_priority(1000).into_any_element()
                     } else {
                         shell.into_any_element()
                     };
+                    let row = track_bounds(row, move |bounds, _, cx| {
+                        bounds_entity.update(cx, |list, _| {
+                            list.set_item_bounds(index, bounds);
+                        });
+                    })
+                    .into_any_element();
                     if spacing > px(0.0) {
                         div().pb(spacing).child(row).into_any_element()
                     } else {
