@@ -1,9 +1,6 @@
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
-use gpui::{
-    AnyElement, App, Bounds, Div, Element, ElementId, GlobalElementId, Hsla, InspectorElementId,
-    LayoutId, Pixels, Point, Window, div, point, prelude::*, px,
-};
+use gpui::{AnyElement, Div, Hsla, Pixels, Point, div, prelude::*, px};
 
 /// Axis used by Aura's native drag helpers.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -26,27 +23,15 @@ pub struct DragState {
     over_index: Option<usize>,
     start_position: Option<Point<Pixels>>,
     current_position: Option<Point<Pixels>>,
-    grab_offset: Option<Point<Pixels>>,
 }
 
 impl DragState {
     pub fn start(&mut self, index: usize, position: Point<Pixels>) {
-        self.start_at(index, position, None);
-    }
-
-    pub fn start_at(
-        &mut self,
-        index: usize,
-        position: Point<Pixels>,
-        bounds: Option<Bounds<Pixels>>,
-    ) {
         self.origin_index = Some(index);
         self.active_index = Some(index);
         self.over_index = Some(index);
         self.start_position = Some(position);
         self.current_position = Some(position);
-        self.grab_offset =
-            bounds.map(|bounds| point(position.x - bounds.origin.x, position.y - bounds.origin.y));
     }
 
     pub fn update_position(&mut self, position: Point<Pixels>) {
@@ -64,6 +49,7 @@ impl DragState {
     pub fn move_active_to(&mut self, index: usize) {
         self.active_index = Some(index);
         self.over_index = Some(index);
+        self.start_position = self.current_position;
     }
 
     pub fn finish(&mut self) -> Option<(usize, usize)> {
@@ -72,7 +58,6 @@ impl DragState {
         let target = self.over_index.take().unwrap_or(active);
         self.start_position = None;
         self.current_position = None;
-        self.grab_offset = None;
         Some((origin, target))
     }
 
@@ -82,7 +67,6 @@ impl DragState {
         self.over_index = None;
         self.start_position = None;
         self.current_position = None;
-        self.grab_offset = None;
     }
 
     pub fn active_index(&self) -> Option<usize> {
@@ -114,27 +98,6 @@ impl DragState {
         };
         let dx = current.x - start.x;
         let dy = current.y - start.y;
-        match axis {
-            DragAxis::Horizontal => (dx, px(0.0)),
-            DragAxis::Vertical => (px(0.0), dy),
-            DragAxis::Free => (dx, dy),
-        }
-    }
-
-    pub fn offset_from_bounds(
-        &self,
-        axis: DragAxis,
-        bounds: Option<Bounds<Pixels>>,
-    ) -> (Pixels, Pixels) {
-        let Some(bounds) = bounds else {
-            return self.offset(axis);
-        };
-        let Some(current) = self.current_position else {
-            return (px(0.0), px(0.0));
-        };
-        let grab_offset = self.grab_offset.unwrap_or_else(|| point(px(0.0), px(0.0)));
-        let dx = current.x - grab_offset.x - bounds.origin.x;
-        let dy = current.y - grab_offset.y - bounds.origin.y;
         match axis {
             DragAxis::Horizontal => (dx, px(0.0)),
             DragAxis::Vertical => (px(0.0), dy),
@@ -178,83 +141,10 @@ pub fn drag_handle_element(color: Hsla, active: bool, width: Pixels) -> AnyEleme
     drag_handle(color, active, width).into_any_element()
 }
 
-/// Wraps an element and reports its painted bounds to the caller.
-pub fn track_bounds(
-    child: impl IntoElement,
-    on_bounds: impl Fn(Bounds<Pixels>, &mut Window, &mut App) + 'static,
-) -> DragBoundsTracker {
-    DragBoundsTracker {
-        child: child.into_any_element(),
-        on_bounds: Box::new(on_bounds),
-    }
-}
-
-pub struct DragBoundsTracker {
-    child: AnyElement,
-    on_bounds: Box<dyn Fn(Bounds<Pixels>, &mut Window, &mut App)>,
-}
-
-impl IntoElement for DragBoundsTracker {
-    type Element = Self;
-
-    fn into_element(self) -> Self::Element {
-        self
-    }
-}
-
-impl Element for DragBoundsTracker {
-    type RequestLayoutState = ();
-    type PrepaintState = ();
-
-    fn id(&self) -> Option<ElementId> {
-        None
-    }
-
-    fn source_location(&self) -> Option<&'static std::panic::Location<'static>> {
-        None
-    }
-
-    fn request_layout(
-        &mut self,
-        _id: Option<&GlobalElementId>,
-        _inspector_id: Option<&InspectorElementId>,
-        window: &mut Window,
-        cx: &mut App,
-    ) -> (LayoutId, ()) {
-        (self.child.request_layout(window, cx), ())
-    }
-
-    fn prepaint(
-        &mut self,
-        _id: Option<&GlobalElementId>,
-        _inspector_id: Option<&InspectorElementId>,
-        bounds: Bounds<Pixels>,
-        _request_layout: &mut Self::RequestLayoutState,
-        window: &mut Window,
-        cx: &mut App,
-    ) {
-        self.child.prepaint_at(bounds.origin, window, cx);
-    }
-
-    fn paint(
-        &mut self,
-        _id: Option<&GlobalElementId>,
-        _inspector_id: Option<&InspectorElementId>,
-        bounds: Bounds<Pixels>,
-        _request_layout: &mut Self::RequestLayoutState,
-        _prepaint: &mut Self::PrepaintState,
-        window: &mut Window,
-        cx: &mut App,
-    ) {
-        (self.on_bounds)(bounds, window, cx);
-        self.child.paint(window, cx);
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use gpui::{Bounds, point, px, size};
+    use gpui::{point, px};
 
     #[test]
     fn reorder_indices_moves_items() {
@@ -285,31 +175,5 @@ mod tests {
         assert_eq!(state.origin_index(), None);
         assert_eq!(state.active_index(), None);
         assert_eq!(state.over_index(), None);
-    }
-
-    #[test]
-    fn drag_state_keeps_grab_offset_when_slot_moves_backward() {
-        let mut state = DragState::default();
-        state.start_at(
-            3,
-            point(px(310.0), px(10.0)),
-            Some(Bounds::new(
-                point(px(300.0), px(0.0)),
-                size(px(100.0), px(40.0)),
-            )),
-        );
-        state.update_position(point(px(250.0), px(10.0)));
-        state.move_active_to(2);
-
-        assert_eq!(
-            state.offset_from_bounds(
-                DragAxis::Horizontal,
-                Some(Bounds::new(
-                    point(px(200.0), px(0.0)),
-                    size(px(100.0), px(40.0)),
-                )),
-            ),
-            (px(40.0), px(0.0))
-        );
     }
 }
