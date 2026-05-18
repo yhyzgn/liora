@@ -369,9 +369,11 @@ P13 目标是补齐 Dashboard / 低代码配置 / 数据监控 / 内容编辑场
 - 新增：`QrCode`、`CodeEditor`、`SignalMeter`、`HeatBar`、`FlatBarMeter`、`SegmentRatioBar`、`HorizontalList`、`Timer`、`Label`、`Operation`。
 - 增强：`RingChart` 外置 legend/value pattern、`LineChart` per-series 线型、`BarChart` value range colors、`RingProgress` gradient/completion color、`Button` gradient/custom color states、`Tag` flow layout、`Radio`/`Checkbox` option render customization、既有垂直列表 item drag。
 - QR/CodeEditor 如需新增依赖，必须先做 dependency review；CodeEditor 第一阶段复用已有 `syntect` 高亮，语法检查只做 provider/diagnostics 扩展点，不硬绑定 LSP。
-- 所有新增/增强控件必须同步 Gallery demo、Docs 页面、外部 snippets 和核心状态/计算测试。
+- 所有新增/增强控件必须同步 Gallery demo、Docs 页面、外部 snippets 和核心状态/计算测试；已有控件增强必须落在原组件、原 demo、原 docs/snippets 上，不另建平行控件。
 
 完整计划见 `.prompt/P13-component-expansion.md`。
+
+执行原则：已有控件直接增强原实现（例如 Tag flow、Progress/RingProgress 渐变、LineChart 线型、BarChart 区间色、Button 自定义色、Radio/Checkbox option 自定义），不要新增替代控件或平行页面。
 
 ## 7. Gallery Demo 规约
 

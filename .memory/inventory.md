@@ -196,14 +196,14 @@
 | 5 | FlatBarMeter | `crates/aura-components/src/flat_bar_meter.rs` | ⏳ | ⏳ | Planned |
 | 6 | SegmentRatioBar | `crates/aura-components/src/segment_ratio_bar.rs` | ⏳ | ⏳ | Planned |
 | 7 | HorizontalList | `crates/aura-components/src/horizontal_list.rs` | ⏳ | ⏳ | Planned |
-| 8 | Vertical list drag | `virtualized_list.rs` / list components | ⏳ | ⏳ | Planned |
-| 9 | RingChart external labels | `ring_chart.rs` / chart modules | ⏳ | ⏳ | Planned |
-| 10 | LineChart per-series style | `line_chart.rs` | ⏳ | ⏳ | Planned |
-| 11 | BarChart range colors | `bar_chart.rs` | ⏳ | ⏳ | Planned |
-| 12 | RingProgress gradient | `progress.rs` | ⏳ | ⏳ | Planned |
+| 8 | Vertical list drag | existing `virtualized_list.rs` / list components | ⏳ | ⏳ | Planned in-place enhancement |
+| 9 | RingChart external labels | existing `ring_chart.rs` / chart modules | ⏳ | ⏳ | Planned in-place enhancement |
+| 10 | LineChart per-series style | existing `line_chart.rs` | ⏳ | ⏳ | Planned in-place enhancement |
+| 11 | BarChart range colors | existing `bar_chart.rs` | ⏳ | ⏳ | Planned in-place enhancement |
+| 12 | RingProgress gradient | existing `progress.rs` | ⏳ | ⏳ | Planned in-place enhancement |
 | 13 | Timer | `crates/aura-components/src/timer.rs` | ⏳ | ⏳ | Planned |
-| 14 | Button gradient/custom colors | `button.rs` | ⏳ | ⏳ | Planned |
-| 15 | Tag flow layout | `tag.rs` | ⏳ | ⏳ | Planned |
+| 14 | Button gradient/custom colors | existing `button.rs` | ⏳ | ⏳ | Planned in-place enhancement |
+| 15 | Tag flow layout | existing `tag.rs` | ⏳ | ⏳ | Planned in-place enhancement |
 | 16 | Label | `crates/aura-components/src/label.rs` | ⏳ | ⏳ | Planned |
 | 17 | Operation | `crates/aura-components/src/operation.rs` | ⏳ | ⏳ | Planned |
-| 18 | Radio/Checkbox option customization | `radio*.rs`, `checkbox*.rs` | ⏳ | ⏳ | Planned |
+| 18 | Radio/Checkbox option customization | existing `radio*.rs`, `checkbox*.rs` | ⏳ | ⏳ | Planned in-place enhancement |

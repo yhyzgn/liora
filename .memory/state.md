@@ -93,3 +93,4 @@ Scope highlights:
 - New widgets: QrCode generation/recognition, CodeEditor, SignalMeter, HeatBar, FlatBarMeter, SegmentRatioBar, HorizontalList, Timer, Label, Operation.
 - Enhancements: RingChart external labels, LineChart per-series stroke style, BarChart value range colors, RingProgress gradient/completion color, Button gradient/custom color derived states, Tag flow layout, Radio/Checkbox option customization, vertical list drag.
 - Execution is split into five waves: simple meters/bars/layout, chart/progress enhancements, draggable lists, QR/CodeEditor, and form-control deep customization.
+- Existing-widget enhancement rule: existing controls must be enhanced in-place in their current source/demo/docs; do not add parallel replacement components for Tag flow, RingProgress gradients, chart style options, Button custom colors, or Radio/Checkbox option customization.
