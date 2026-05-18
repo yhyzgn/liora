@@ -21,7 +21,9 @@ impl Render for TimerDemo {
                     "正向计时",
                     "count_up 用于展示已耗时，可选择显示单位。",
                     row_md(vec![
-                        Timer::count_up(Duration::from_secs(92))
+                        Timer::count_up(Duration::ZERO)
+                            .id("timer-demo-running-count-up")
+                            .start()
                             .title("Build elapsed")
                             .display_unit(TimerUnit::Seconds)
                             .into_any_element(),
@@ -37,6 +39,8 @@ impl Render for TimerDemo {
                     "count_down 接收总时长和已用时，remaining 会自动饱和到 0。",
                     row_md(vec![
                         Timer::count_down(Duration::from_secs(300), Duration::from_secs(84))
+                            .id("timer-demo-running-count-down")
+                            .start()
                             .title("Deploy window")
                             .display_unit(TimerUnit::Minutes)
                             .prefix("剩余")
@@ -52,6 +56,8 @@ impl Render for TimerDemo {
                     "支持 00:00:00 形式的 HH:MM:SS clock format。",
                     row_md(vec![
                         Timer::count_up(Duration::from_secs(3661))
+                            .id("timer-demo-running-clock")
+                            .start()
                             .title("Elapsed clock")
                             .clock_format()
                             .into_any_element(),
@@ -94,5 +100,6 @@ mod tests {
         assert!(source.contains("TimerUnit"));
         assert!(source.contains("clock_format"));
         assert!(source.contains("TimerFormat::Clock"));
+        assert!(source.contains(".start()"));
     }
 }

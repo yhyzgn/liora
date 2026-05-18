@@ -6,9 +6,10 @@ use aura_components::{
     MenuMode, NotificationType, Paragraph, Popconfirm, Popover, Preview, Progress, ProgressStatus,
     QrEcLevel, QrFinderStyle, QrGradientDirection, QrModuleStyle, Radio, RadioGroup,
     RadioOptionStyle, Rate, Result as AuraResult, ResultStatus, Select, Skeleton, SkeletonItem,
-    SkeletonVariant, Slider, Space, Statistic, Switch, Tag as AuraTag, Text, Textarea, Title,
-    Transfer, TransferItem, Tree, TreeNode, Upload, UploadFile, UploadStatus, VirtualizedList,
-    show_notification, toast_error, toast_info, toast_success, toast_warning,
+    SkeletonVariant, Slider, Space, Statistic, Switch, Tag as AuraTag, Text, Textarea, Timer,
+    TimerFormat, TimerUnit, Title, Transfer, TransferItem, Tree, TreeNode, Upload, UploadFile,
+    UploadStatus, VirtualizedList, show_notification, toast_error, toast_info, toast_success,
+    toast_warning,
 };
 use aura_core::{Config, PassivePortal, Placement, Portal, clear_popover};
 use aura_icons::Icon;
@@ -4212,6 +4213,54 @@ impl Render for LiveDemoContent {
             "PreviewImageTrigger" => docs_preview_image_trigger().into_any_element(),
             "PreviewCustomTrigger" => docs_preview_custom_trigger(_cx).into_any_element(),
             "PreviewEscape" => docs_preview_escape().into_any_element(),
+            "TimerCountUp" => Timer::count_up(std::time::Duration::ZERO)
+                .id("docs-live-timer-count-up")
+                .start()
+                .title("Build elapsed")
+                .display_unit(TimerUnit::Seconds)
+                .into_any_element(),
+            "TimerCountDown" => Timer::count_down(
+                std::time::Duration::from_secs(300),
+                std::time::Duration::from_secs(84),
+            )
+            .id("docs-live-timer-count-down")
+            .start()
+            .title("Deploy window")
+            .display_unit(TimerUnit::Minutes)
+            .prefix("剩余")
+            .into_any_element(),
+            "TimerUnits" => demo_row(vec![
+                Timer::count_up(std::time::Duration::from_millis(1532))
+                    .title("Latency")
+                    .display_unit(TimerUnit::Milliseconds)
+                    .compact()
+                    .into_any_element(),
+                Timer::count_up(std::time::Duration::from_secs(64))
+                    .display_unit(TimerUnit::Seconds)
+                    .show_unit(false)
+                    .prefix("T+")
+                    .suffix("seconds")
+                    .compact()
+                    .into_any_element(),
+            ]),
+            "TimerClock" => demo_row(vec![
+                Timer::count_up(std::time::Duration::from_secs(3661))
+                    .id("docs-live-timer-clock-up")
+                    .start()
+                    .title("Elapsed clock")
+                    .clock_format()
+                    .into_any_element(),
+                Timer::count_down(
+                    std::time::Duration::from_secs(7200),
+                    std::time::Duration::from_secs(139),
+                )
+                .id("docs-live-timer-clock-down")
+                .start()
+                .title("Remaining clock")
+                .format(TimerFormat::Clock)
+                .prefix("剩余")
+                .into_any_element(),
+            ]),
             _ => self.gallery_demo.clone().map_or_else(
                 || {
                     Paragraph::with_text(format!(

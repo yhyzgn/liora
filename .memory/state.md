@@ -314,3 +314,7 @@ Update: QrCode also gained generic logo(...) and corner_logo(...) builders accep
 ## 2026-05-18 P13 RingChart side legend spacing tightening
 - Tightened RingChart vertical external legend placement so text sits next to the chart instead of far away: reduced side-layout gap, narrowed vertical legend width, and slightly reduced side-layout canvas height to remove excessive empty horizontal/vertical space.
 - Validation: `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets`; `cargo test -p aura-components ring_chart`.
+
+## 2026-05-18 P13 Timer live ticking
+
+Enhanced `Timer` from a static controlled display into an optional live ticking component while preserving the controlled API. `Timer::start()` / `.running(true)` now registers a native GPUI refresh runtime, uses stable `id(...)` values to preserve each timer's start instant across renders, and supports count-up, count-down, and `00:00:00` clock displays that continue updating in Gallery and Docs. Docs live demos and checked snippets now use `.start()` for interactive timer examples.

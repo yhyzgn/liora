@@ -1,6 +1,13 @@
 use aura_core::Config;
-use gpui::{App, Component, IntoElement, RenderOnce, SharedString, Window, div, prelude::*, px};
-use std::time::Duration;
+use gpui::{
+    App, Component, ElementId, Global, IntoElement, RenderOnce, SharedString, Window, div,
+    prelude::*, px,
+};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::{Arc, Mutex},
+    time::{Duration, Instant},
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum TimerDirection {
@@ -49,6 +56,7 @@ impl TimerSnapshot {
 
 #[derive(Clone)]
 pub struct Timer {
+    id: SharedString,
     elapsed: Duration,
     duration: Option<Duration>,
     direction: TimerDirection,
@@ -59,6 +67,9 @@ pub struct Timer {
     prefix: Option<SharedString>,
     suffix: Option<SharedString>,
     compact: bool,
+    running: bool,
+    started_at: Option<Instant>,
+    tick_interval: Duration,
 }
 
 impl Timer {
@@ -72,6 +83,7 @@ impl Timer {
 
     pub fn new(direction: TimerDirection, elapsed: Duration, duration: Option<Duration>) -> Self {
         Self {
+            id: aura_core::unique_id("timer"),
             elapsed,
             duration,
             direction,
@@ -82,7 +94,15 @@ impl Timer {
             prefix: None,
             suffix: None,
             compact: false,
+            running: false,
+            started_at: None,
+            tick_interval: Duration::from_millis(250),
         }
+    }
+
+    pub fn id(mut self, id: impl Into<SharedString>) -> Self {
+        self.id = id.into();
+        self
     }
 
     pub fn elapsed(mut self, elapsed: Duration) -> Self {
@@ -151,12 +171,43 @@ impl Timer {
         self
     }
 
+    pub fn running(mut self, running: bool) -> Self {
+        self.running = running;
+        if running && self.started_at.is_none() {
+            self.started_at = Some(Instant::now());
+        }
+        self
+    }
+
+    pub fn start(self) -> Self {
+        self.running(true)
+    }
+
+    pub fn paused(self) -> Self {
+        self.running(false)
+    }
+
+    pub fn tick_interval(mut self, interval: Duration) -> Self {
+        self.tick_interval = interval.max(Duration::from_millis(16));
+        self
+    }
+
+    fn effective_elapsed(&self) -> Duration {
+        if self.running {
+            self.started_at
+                .map(|started_at| self.elapsed.saturating_add(started_at.elapsed()))
+                .unwrap_or(self.elapsed)
+        } else {
+            self.elapsed
+        }
+    }
+
     pub fn snapshot(&self) -> TimerSnapshot {
         let remaining = self
             .duration
-            .map(|duration| duration.saturating_sub(self.elapsed));
+            .map(|duration| duration.saturating_sub(self.effective_elapsed()));
         TimerSnapshot {
-            elapsed: self.elapsed,
+            elapsed: self.effective_elapsed(),
             remaining,
             finished: matches!(self.direction, TimerDirection::CountDown)
                 && remaining.is_some_and(|remaining| remaining.is_zero()),
@@ -173,10 +224,10 @@ impl Timer {
 
     fn display_duration(&self) -> Duration {
         match self.direction {
-            TimerDirection::CountUp => self.elapsed,
+            TimerDirection::CountUp => self.effective_elapsed(),
             TimerDirection::CountDown => self
                 .duration
-                .map(|duration| duration.saturating_sub(self.elapsed))
+                .map(|duration| duration.saturating_sub(self.effective_elapsed()))
                 .unwrap_or_default(),
         }
     }
@@ -192,21 +243,34 @@ impl Timer {
 }
 
 impl RenderOnce for Timer {
-    fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
-        let value = self.format_value();
+        let mut timer = self;
+        if timer.running {
+            ensure_timer_runtime(cx);
+            if let Some(runtime) = cx.try_global::<TimerRuntime>() {
+                timer.started_at = Some(runtime.started_at(timer.id.clone()));
+            }
+        }
+        if timer.running && !timer.snapshot().finished {
+            if let Some(runtime) = cx.try_global::<TimerRuntime>() {
+                runtime.register(window.window_handle(), timer.tick_interval);
+            }
+        }
+        let value = timer.format_value();
         div()
+            .id(ElementId::from(timer.id))
             .flex()
             .flex_col()
             .gap_1()
-            .when(!self.compact, |s| {
+            .when(!timer.compact, |s| {
                 s.p_3()
                     .rounded_md()
                     .border_1()
                     .border_color(theme.neutral.border)
                     .bg(theme.neutral.card)
             })
-            .when_some(self.title, |s, title| {
+            .when_some(timer.title, |s, title| {
                 s.child(
                     div()
                         .text_xs()
@@ -220,7 +284,7 @@ impl RenderOnce for Timer {
                     .items_baseline()
                     .gap_1()
                     .text_color(theme.neutral.text_1)
-                    .when_some(self.prefix, |s, prefix| {
+                    .when_some(timer.prefix, |s, prefix| {
                         s.child(
                             div()
                                 .text_sm()
@@ -234,7 +298,7 @@ impl RenderOnce for Timer {
                             .font_weight(gpui::FontWeight::BOLD)
                             .child(value),
                     )
-                    .when_some(self.suffix, |s, suffix| {
+                    .when_some(timer.suffix, |s, suffix| {
                         s.child(
                             div()
                                 .text_sm()
@@ -243,6 +307,63 @@ impl RenderOnce for Timer {
                         )
                     }),
             )
+    }
+}
+
+#[derive(Clone)]
+struct TimerRuntime {
+    windows: Arc<Mutex<HashSet<gpui::AnyWindowHandle>>>,
+    starts: Arc<Mutex<HashMap<SharedString, Instant>>>,
+}
+
+impl Global for TimerRuntime {}
+
+impl TimerRuntime {
+    fn new(cx: &mut App) -> Self {
+        let windows = Arc::new(Mutex::new(HashSet::new()));
+        let runtime = Self {
+            windows: windows.clone(),
+            starts: Arc::new(Mutex::new(HashMap::new())),
+        };
+        let executor = cx.background_executor().clone();
+        cx.spawn(async move |cx: &mut gpui::AsyncApp| {
+            loop {
+                executor.timer(Duration::from_millis(250)).await;
+                let handles = windows
+                    .lock()
+                    .expect("timer runtime window registry poisoned")
+                    .iter()
+                    .copied()
+                    .collect::<Vec<_>>();
+                for handle in handles {
+                    let _ = handle.update(cx, |_, window, _| window.refresh());
+                }
+            }
+        })
+        .detach();
+        runtime
+    }
+
+    fn started_at(&self, id: SharedString) -> Instant {
+        let mut starts = self
+            .starts
+            .lock()
+            .expect("timer runtime start registry poisoned");
+        *starts.entry(id).or_insert_with(Instant::now)
+    }
+
+    fn register(&self, window: gpui::AnyWindowHandle, _interval: Duration) {
+        self.windows
+            .lock()
+            .expect("timer runtime window registry poisoned")
+            .insert(window);
+    }
+}
+
+fn ensure_timer_runtime(cx: &mut App) {
+    if !cx.has_global::<TimerRuntime>() {
+        let runtime = TimerRuntime::new(cx);
+        cx.set_global(runtime);
     }
 }
 
@@ -306,6 +427,13 @@ mod tests {
         assert_eq!(snapshot.elapsed, Duration::from_secs(4));
         assert_eq!(snapshot.remaining, Some(Duration::from_secs(6)));
         assert!(!snapshot.finished);
+    }
+
+    #[test]
+    fn running_timer_includes_elapsed_since_start() {
+        let timer = Timer::count_up(Duration::from_secs(2)).start();
+        assert!(timer.effective_elapsed() >= Duration::from_secs(2));
+        assert!(timer.running);
     }
 
     #[test]

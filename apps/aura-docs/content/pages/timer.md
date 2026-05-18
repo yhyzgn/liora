@@ -1,6 +1,6 @@
 # Timer
 
-`Timer` 用于展示正向计时、倒计时和单位换算结果。当前控件是受控展示组件：调用方传入已耗时和总时长，组件负责格式化展示，并提供 `snapshot`、`elapsed_as`、`remaining_as` 等结果读取 API。
+`Timer` 用于展示正向计时、倒计时和单位换算结果。默认仍可作为受控展示组件使用；调用 `.start()` / `.running(true)` 后会自动刷新并动态计时，同时保留 `snapshot`、`elapsed_as`、`remaining_as` 等结果读取 API。
 
 ## 正向计时
 
