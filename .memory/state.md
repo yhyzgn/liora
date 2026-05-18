@@ -361,3 +361,14 @@ Validation evidence:
 - `cargo test -p aura-components virtualized_list` passed.
 - `cargo test -p aura-gallery horizontal_list_demo` passed.
 - `cargo test -p aura-gallery virtualized_list_demo` passed.
+
+
+## 2026-05-18 Drag follow-pointer positioning fix
+
+Corrected draggable follow-pointer rendering: the previous implementation used margin offsets (`ml`/`mt`), which changed layout and created empty space but did not visually move the dragged item as a floating object. HorizontalList and VirtualizedList now apply `relative().left(dx).top(dy)` with shadow while active, so the item is visually offset along the drag axis without using margin-based layout movement.
+
+Validation evidence:
+- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
+- `cargo test -p aura-components draggable` passed.
+- `cargo test -p aura-components horizontal_list` passed.
+- `cargo test -p aura-components virtualized_list` passed.

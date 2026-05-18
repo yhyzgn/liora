@@ -246,7 +246,9 @@ impl Render for VirtualizedList {
                             gpui::transparent_black()
                         })
                         .opacity(if is_dragging { 0.86 } else { 1.0 })
-                        .when(is_dragging, move |s| s.ml(drag_dx).mt(drag_dy).shadow_lg());
+                        .when(is_dragging, move |s| {
+                            s.relative().left(drag_dx).top(drag_dy).shadow_lg()
+                        });
                     if draggable {
                         shell = shell
                             .on_mouse_move(move |event, window, cx| {
