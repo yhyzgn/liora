@@ -318,3 +318,13 @@ Update: QrCode also gained generic logo(...) and corner_logo(...) builders accep
 ## 2026-05-18 P13 Timer live ticking
 
 Enhanced `Timer` from a static controlled display into an optional live ticking component while preserving the controlled API. `Timer::start()` / `.running(true)` now registers a native GPUI refresh runtime, uses stable `id(...)` values to preserve each timer's start instant across renders, and supports count-up, count-down, and `00:00:00` clock displays that continue updating in Gallery and Docs. Docs live demos and checked snippets now use `.start()` for interactive timer examples.
+
+
+## 2026-05-18 P13 HorizontalList component
+
+Implemented `HorizontalList` in `crates/aura-components/src/horizontal_list.rs` as a native horizontal scroll list with custom item renderer, custom divider renderer, internal order state, drag-to-reorder interaction, and `on_reorder(from_index, to_index, ...)` callback. Added Gallery demo sections for base horizontal cards, custom arrow divider, and draggable reorder with toast feedback. Added Docs page `horizontal_list.md` and compile-checked snippets for basic/divider/draggable usage.
+
+Validation evidence:
+- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
+- `cargo test -p aura-components horizontal_list` passed.
+- `cargo test -p aura-gallery horizontal_list_demo` passed.

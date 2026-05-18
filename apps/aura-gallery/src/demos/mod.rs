@@ -25,6 +25,7 @@ pub mod empty_demo;
 pub mod form_controls_demo;
 pub mod form_demo;
 pub mod heat_bar_demo;
+pub mod horizontal_list_demo;
 pub mod icon_demo;
 pub mod image_demo;
 pub mod label_operation_demo;
@@ -275,6 +276,11 @@ pub fn registry() -> Vec<DemoEntry> {
             render: |cx| image_demo::render(cx).into(),
         },
         DemoEntry {
+            name: "HorizontalList 水平列表",
+            description: "横向滚动、自定义分隔符和拖动排序",
+            render: |cx| horizontal_list_demo::render(cx).into(),
+        },
+        DemoEntry {
             name: "Preview 预览",
             description: "图片预览弹层",
             render: |cx| preview_demo::render(cx).into(),
@@ -425,7 +431,7 @@ pub fn registry() -> Vec<DemoEntry> {
             render: |cx| heat_bar_demo::render(cx).into(),
         },
         DemoEntry {
-            name: "Label / Operation 标签操作",
+            name: "LabelOperation 标签操作",
             description: "图标文本与左右操作布局",
             render: |cx| label_operation_demo::render(cx).into(),
         },
@@ -508,6 +514,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Empty" => Some(empty_demo::render(cx).into()),
         "Form" => Some(form_demo::render(cx).into()),
         "HeatBar" => Some(heat_bar_demo::render(cx).into()),
+        "HorizontalList" => Some(horizontal_list_demo::render(cx).into()),
         "LabelOperation" => Some(label_operation_demo::render(cx).into()),
         "SegmentRatioBar" => Some(segment_ratio_bar_demo::render(cx).into()),
         "SignalMeter" => Some(signal_meter_demo::render(cx).into()),

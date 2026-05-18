@@ -4,7 +4,7 @@ use aura_components::{
     CheckboxGroup, CheckboxOptionStyle, CodeBlock as AuraCodeBlock, Container, Dropdown, Flex,
     Form, FormItem, Image, Input, InputNumber, InputNumberControlsPosition, Link, Loading, Menu,
     MenuMode, NotificationType, Paragraph, Popconfirm, Popover, Preview, Progress, ProgressStatus,
-    QrEcLevel, QrFinderStyle, QrGradientDirection, QrModuleStyle, Radio, RadioGroup,
+    QrCode, QrEcLevel, QrFinderStyle, QrGradientDirection, QrModuleStyle, Radio, RadioGroup,
     RadioOptionStyle, Rate, Result as AuraResult, ResultStatus, Select, Skeleton, SkeletonItem,
     SkeletonVariant, Slider, Space, Statistic, Switch, Tag as AuraTag, Text, Textarea, Timer,
     TimerFormat, TimerUnit, Title, Transfer, TransferItem, Tree, TreeNode, Upload, UploadFile,
@@ -58,6 +58,7 @@ const SEGMENT_RATIO_BAR_DOC: &str = include_str!("../content/pages/segment_ratio
 const SIGNAL_METER_DOC: &str = include_str!("../content/pages/signal_meter.md");
 const ICON_DOC: &str = include_str!("../content/pages/icon.md");
 const IMAGE_DOC: &str = include_str!("../content/pages/image.md");
+const HORIZONTAL_LIST_DOC: &str = include_str!("../content/pages/horizontal_list.md");
 const INPUT_DOC: &str = include_str!("../content/pages/input.md");
 const INPUT_NUMBER_DOC: &str = include_str!("../content/pages/input_number.md");
 const LAYOUT_DOC: &str = include_str!("../content/pages/layout.md");
@@ -230,7 +231,7 @@ const DOC_PAGES: &[DocPage] = &[
         markdown: HEAT_BAR_DOC,
     },
     DocPage {
-        title: "Label / Operation",
+        title: "LabelOperation",
         markdown: LABEL_OPERATION_DOC,
     },
     DocPage {
@@ -248,6 +249,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Image",
         markdown: IMAGE_DOC,
+    },
+    DocPage {
+        title: "HorizontalList",
+        markdown: HORIZONTAL_LIST_DOC,
     },
     DocPage {
         title: "Input",
@@ -935,6 +940,15 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "virtualized_list/basic.rs" => Some(include_str!(
             "../content/snippets/virtualized_list/basic.rs"
         )),
+        "horizontal_list/draggable.rs" => Some(include_str!(
+            "../content/snippets/horizontal_list/draggable.rs"
+        )),
+        "horizontal_list/divider.rs" => Some(include_str!(
+            "../content/snippets/horizontal_list/divider.rs"
+        )),
+        "horizontal_list/basic.rs" => {
+            Some(include_str!("../content/snippets/horizontal_list/basic.rs"))
+        }
         "affix/top.rs" => Some(include_str!("../content/snippets/affix/top.rs")),
         "affix/bottom.rs" => Some(include_str!("../content/snippets/affix/bottom.rs")),
         "affix/container.rs" => Some(include_str!("../content/snippets/affix/container.rs")),

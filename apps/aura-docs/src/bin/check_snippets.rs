@@ -209,6 +209,12 @@ mod form_inline;
 mod form_validation;
 #[path = "../../content/snippets/heat_bar/events.rs"]
 mod heat_bar_events;
+#[path = "../../content/snippets/horizontal_list/basic.rs"]
+mod horizontal_list_basic;
+#[path = "../../content/snippets/horizontal_list/divider.rs"]
+mod horizontal_list_divider;
+#[path = "../../content/snippets/horizontal_list/draggable.rs"]
+mod horizontal_list_draggable;
 #[path = "../../content/snippets/icon/colors.rs"]
 mod icon_colors;
 #[path = "../../content/snippets/icon/lucide.rs"]
