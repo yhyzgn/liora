@@ -269,12 +269,14 @@ impl Render for VirtualizedList {
                         .items_center()
                         .rounded_md()
                         .border_1()
-                        .border_color(if is_over {
+                        .border_color(if is_dragging {
+                            gpui::rgb(0xcbd5e1).into()
+                        } else if is_over {
                             gpui::blue()
                         } else {
                             gpui::transparent_black()
                         })
-                        .opacity(if is_dragging { 0.86 } else { 1.0 })
+                        .opacity(1.0)
                         .when(is_dragging, move |s| {
                             s.relative().left(drag_dx).top(drag_dy).shadow_lg()
                         });
