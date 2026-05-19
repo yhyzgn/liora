@@ -2,7 +2,7 @@ use crate::draggable::{DragAxis, DragState, drag_handle, reorder_indices};
 use aura_core::Config;
 use gpui::{
     AnyElement, App, Bounds, Context, Entity, IntoElement, MouseButton, MouseDownEvent,
-    MouseMoveEvent, Pixels, Point, Render, Window, deferred, div, prelude::*, px,
+    MouseMoveEvent, Pixels, Point, Render, Size, Window, deferred, div, prelude::*, px,
 };
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -268,6 +268,7 @@ impl Render for HorizontalList {
         let item_gap = self.item_gap;
         let drag_state = self.drag_state.clone();
         let draggable = self.draggable && !self.disabled;
+        let drag_active = drag_state.active_index().is_some();
         let active_item = drag_state
             .origin_index()
             .and_then(|index| self.order.get(index).copied());
@@ -275,8 +276,12 @@ impl Render for HorizontalList {
         if let (Some(active), Some(over)) = (drag_state.active_index(), drag_state.over_index()) {
             reorder_indices(&mut display_order, active, over);
         }
-        let item_bounds_snapshot = self.item_bounds.borrow().clone();
+        let drag_reference_bounds = self.drag_reference_bounds.clone();
         let item_bounds_store = self.item_bounds.clone();
+        let active_size = drag_state
+            .origin_index()
+            .and_then(|index| drag_reference_bounds.get(index).copied().flatten())
+            .map(|bounds| bounds.size);
 
         let mut children = Vec::new();
         let mut child_positions = Vec::new();
@@ -292,14 +297,6 @@ impl Render for HorizontalList {
 
             let is_dragging = active_item == Some(item_index);
             let is_over = drag_state.over_index() == Some(position) && !is_dragging;
-            let (drag_dx, drag_dy) = if is_dragging {
-                drag_state.offset_from_bounds(
-                    DragAxis::Horizontal,
-                    item_bounds_snapshot.get(position).copied().flatten(),
-                )
-            } else {
-                (px(0.0), px(0.0))
-            };
             let item = (render_item)(item_index);
             let mut item_shell = div()
                 .flex_none()
@@ -313,12 +310,9 @@ impl Render for HorizontalList {
                 } else {
                     gpui::transparent_black()
                 })
-                .opacity(if is_dragging { 0.86 } else { 1.0 })
-                .when(is_dragging, move |s| {
-                    s.relative().left(drag_dx).top(drag_dy).shadow_lg()
-                });
+                .opacity(if is_dragging { 0.94 } else { 1.0 });
 
-            if draggable {
+            if draggable && !is_dragging {
                 item_shell = item_shell
                     .on_mouse_move(cx.listener(move |this, event, window, cx| {
                         this.hover_drag(position, event, window, cx);
@@ -337,7 +331,7 @@ impl Render for HorizontalList {
                         }),
                     )
                     .child(
-                        drag_handle(theme.neutral.text_3, is_dragging, px(28.0)).on_mouse_down(
+                        drag_handle(theme.neutral.text_3, false, px(28.0)).on_mouse_down(
                             MouseButton::Left,
                             cx.listener(move |this, event: &MouseDownEvent, _, cx| {
                                 this.start_drag(position, event.position, cx);
@@ -346,12 +340,46 @@ impl Render for HorizontalList {
                         ),
                     )
                     .child(item);
+            } else if draggable {
+                item_shell = item_shell
+                    .child(drag_handle(theme.neutral.text_3, true, px(28.0)))
+                    .child(item);
             } else {
                 item_shell = item_shell.child(item);
             }
 
             let item_element = if is_dragging {
-                deferred(item_shell).with_priority(1000).into_any_element()
+                let (drag_dx, drag_dy) = drag_state.offset_from_bounds(
+                    DragAxis::Horizontal,
+                    drag_reference_bounds.get(position).copied().flatten(),
+                );
+                let placeholder = drag_placeholder(active_size)
+                    .border_color(theme.primary.base)
+                    .child(
+                        deferred(
+                            item_shell
+                                .absolute()
+                                .left(drag_dx)
+                                .top(drag_dy)
+                                .shadow_lg()
+                                .on_mouse_up(
+                                    MouseButton::Left,
+                                    cx.listener(move |this, _, window, cx| {
+                                        this.finish_drag(position, window, cx);
+                                        cx.stop_propagation();
+                                    }),
+                                )
+                                .on_mouse_up_out(
+                                    MouseButton::Left,
+                                    cx.listener(move |this, _, window, cx| {
+                                        this.finish_drag(position, window, cx);
+                                    }),
+                                ),
+                        )
+                        .with_priority(1000),
+                    )
+                    .into_any_element();
+                placeholder
             } else {
                 item_shell.into_any_element()
             };
@@ -390,6 +418,9 @@ impl Render for HorizontalList {
                     .p(self.padding)
                     .children(children)
                     .on_children_prepainted(move |bounds, _, _| {
+                        if drag_active {
+                            return;
+                        }
                         let mut item_bounds = vec![None; display_order.len()];
                         for (child_index, bounds) in bounds.into_iter().enumerate() {
                             let Some(Some(position)) = child_positions.get(child_index) else {
@@ -412,6 +443,16 @@ fn default_divider(color: gpui::Hsla) -> AnyElement {
         .h(px(32.0))
         .bg(color)
         .into_any_element()
+}
+
+fn drag_placeholder(size: Option<Size<Pixels>>) -> gpui::Div {
+    div()
+        .relative()
+        .flex_none()
+        .when_some(size, |s, size| s.w(size.width).h(size.height))
+        .rounded_md()
+        .border_1()
+        .bg(gpui::black().opacity(0.018))
 }
 
 #[cfg(test)]
