@@ -1,6 +1,6 @@
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
-use gpui::{AnyElement, Div, Hsla, Pixels, Point, div, prelude::*, px};
+use gpui::{AnyElement, Bounds, Div, Hsla, Pixels, Point, div, point, prelude::*, px};
 
 /// Axis used by Aura's native drag helpers.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -23,15 +23,27 @@ pub struct DragState {
     over_index: Option<usize>,
     start_position: Option<Point<Pixels>>,
     current_position: Option<Point<Pixels>>,
+    grab_offset: Option<Point<Pixels>>,
 }
 
 impl DragState {
     pub fn start(&mut self, index: usize, position: Point<Pixels>) {
+        self.start_at(index, position, None);
+    }
+
+    pub fn start_at(
+        &mut self,
+        index: usize,
+        position: Point<Pixels>,
+        bounds: Option<Bounds<Pixels>>,
+    ) {
         self.origin_index = Some(index);
         self.active_index = Some(index);
         self.over_index = Some(index);
         self.start_position = Some(position);
         self.current_position = Some(position);
+        self.grab_offset =
+            bounds.map(|bounds| point(position.x - bounds.origin.x, position.y - bounds.origin.y));
     }
 
     pub fn update_position(&mut self, position: Point<Pixels>) {
@@ -58,6 +70,7 @@ impl DragState {
         let target = self.over_index.take().unwrap_or(active);
         self.start_position = None;
         self.current_position = None;
+        self.grab_offset = None;
         Some((origin, target))
     }
 
@@ -67,6 +80,7 @@ impl DragState {
         self.over_index = None;
         self.start_position = None;
         self.current_position = None;
+        self.grab_offset = None;
     }
 
     pub fn active_index(&self) -> Option<usize> {
@@ -98,6 +112,35 @@ impl DragState {
         };
         let dx = current.x - start.x;
         let dy = current.y - start.y;
+        match axis {
+            DragAxis::Horizontal => (dx, px(0.0)),
+            DragAxis::Vertical => (px(0.0), dy),
+            DragAxis::Free => (dx, dy),
+        }
+    }
+
+    /// Offset the active item from its current layout slot so the original
+    /// grabbed point remains under the pointer.
+    ///
+    /// Reorderable lists may move the active item to a new slot while the
+    /// pointer is still down. Using only `current - start` makes the item jump
+    /// when that layout slot changes. When the caller can provide the active
+    /// slot's latest bounds, this method compensates by anchoring the visual
+    /// preview to the grab offset captured on mouse down.
+    pub fn offset_from_bounds(
+        &self,
+        axis: DragAxis,
+        bounds: Option<Bounds<Pixels>>,
+    ) -> (Pixels, Pixels) {
+        let Some(bounds) = bounds else {
+            return self.offset(axis);
+        };
+        let Some(current) = self.current_position else {
+            return (px(0.0), px(0.0));
+        };
+        let grab_offset = self.grab_offset.unwrap_or_else(|| point(px(0.0), px(0.0)));
+        let dx = current.x - grab_offset.x - bounds.origin.x;
+        let dy = current.y - grab_offset.y - bounds.origin.y;
         match axis {
             DragAxis::Horizontal => (dx, px(0.0)),
             DragAxis::Vertical => (px(0.0), dy),
@@ -144,7 +187,7 @@ pub fn drag_handle_element(color: Hsla, active: bool, width: Pixels) -> AnyEleme
 #[cfg(test)]
 mod tests {
     use super::*;
-    use gpui::{point, px};
+    use gpui::{Bounds, point, px, size};
 
     #[test]
     fn reorder_indices_moves_items() {
@@ -175,5 +218,31 @@ mod tests {
         assert_eq!(state.origin_index(), None);
         assert_eq!(state.active_index(), None);
         assert_eq!(state.over_index(), None);
+    }
+
+    #[test]
+    fn drag_state_keeps_grab_offset_when_slot_moves_backward() {
+        let mut state = DragState::default();
+        state.start_at(
+            3,
+            point(px(310.0), px(10.0)),
+            Some(Bounds::new(
+                point(px(300.0), px(0.0)),
+                size(px(100.0), px(40.0)),
+            )),
+        );
+        state.update_position(point(px(250.0), px(10.0)));
+        state.move_active_to(2);
+
+        assert_eq!(
+            state.offset_from_bounds(
+                DragAxis::Horizontal,
+                Some(Bounds::new(
+                    point(px(200.0), px(0.0)),
+                    size(px(100.0), px(40.0)),
+                )),
+            ),
+            (px(40.0), px(0.0))
+        );
     }
 }
