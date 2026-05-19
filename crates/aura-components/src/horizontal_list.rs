@@ -30,6 +30,7 @@ pub struct HorizontalList {
     height: Option<Pixels>,
     drag_state: DragState,
     item_bounds: Rc<RefCell<Vec<Option<Bounds<Pixels>>>>>,
+    drag_reference_bounds: Vec<Option<Bounds<Pixels>>>,
 }
 
 impl HorizontalList {
@@ -47,6 +48,7 @@ impl HorizontalList {
             height: None,
             drag_state: DragState::default(),
             item_bounds: Rc::new(RefCell::new(vec![None; item_count])),
+            drag_reference_bounds: vec![None; item_count],
         }
     }
 
@@ -66,6 +68,7 @@ impl HorizontalList {
         self.order = (0..item_count).collect();
         self.drag_state.cancel();
         *self.item_bounds.borrow_mut() = vec![None; item_count];
+        self.drag_reference_bounds = vec![None; item_count];
     }
 
     pub fn set_render_item(&mut self, render_item: impl Fn(usize) -> AnyElement + 'static) {
@@ -84,6 +87,7 @@ impl HorizontalList {
         self.draggable = draggable;
         if !draggable {
             self.drag_state.cancel();
+            self.drag_reference_bounds.clear();
         }
     }
 
@@ -91,6 +95,7 @@ impl HorizontalList {
         self.disabled = disabled;
         if disabled {
             self.drag_state.cancel();
+            self.drag_reference_bounds.clear();
         }
     }
 
@@ -160,6 +165,7 @@ impl HorizontalList {
             return;
         }
         let bounds = self.item_bounds.borrow().get(index).copied().flatten();
+        self.drag_reference_bounds = self.item_bounds.borrow().clone();
         self.drag_state.start_at(index, position, bounds);
         cx.notify();
     }
@@ -172,14 +178,13 @@ impl HorizontalList {
         let Some(active) = self.drag_state.active_index() else {
             return;
         };
-        let bounds = self.item_bounds.borrow();
-        if bounds.is_empty() {
+        if self.drag_reference_bounds.is_empty() {
             return;
         }
 
-        let mut target = active.min(bounds.len().saturating_sub(1));
+        let mut target = active.min(self.drag_reference_bounds.len().saturating_sub(1));
         let mut nearest_distance = Pixels::MAX;
-        for (index, item_bounds) in bounds.iter().enumerate() {
+        for (index, item_bounds) in self.drag_reference_bounds.iter().enumerate() {
             let Some(item_bounds) = item_bounds else {
                 continue;
             };
@@ -243,6 +248,7 @@ impl HorizontalList {
         let Some((from, to)) = self.drag_state.finish() else {
             return;
         };
+        self.drag_reference_bounds.clear();
         if from != to {
             reorder_indices(&mut self.order, from, to);
             if let Some(callback) = self.on_reorder.clone() {

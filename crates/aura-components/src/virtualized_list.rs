@@ -266,7 +266,7 @@ impl Render for VirtualizedList {
                     let mut shell = div()
                         .flex()
                         .flex_row()
-                        .items_stretch()
+                        .items_center()
                         .rounded_md()
                         .border_1()
                         .border_color(if is_over {
