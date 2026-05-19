@@ -1,11 +1,9 @@
 use crate::draggable::{DragAxis, DragState, drag_handle, reorder_indices};
 use aura_core::Config;
 use gpui::{
-    AnyElement, App, Bounds, Context, Entity, IntoElement, MouseButton, MouseDownEvent,
-    MouseMoveEvent, Pixels, Render, Window, deferred, div, prelude::*, px,
+    AnyElement, App, Context, Entity, IntoElement, MouseButton, MouseDownEvent, MouseMoveEvent,
+    Pixels, Render, Window, deferred, div, prelude::*, px,
 };
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::sync::Arc;
 
 type RenderItem = dyn Fn(usize) -> AnyElement + 'static;
@@ -29,7 +27,6 @@ pub struct HorizontalList {
     padding: Pixels,
     height: Option<Pixels>,
     drag_state: DragState,
-    item_bounds: Rc<RefCell<Vec<Option<Bounds<Pixels>>>>>,
 }
 
 impl HorizontalList {
@@ -46,7 +43,6 @@ impl HorizontalList {
             padding: px(4.0),
             height: None,
             drag_state: DragState::default(),
-            item_bounds: Rc::new(RefCell::new(vec![None; item_count])),
         }
     }
 
@@ -65,7 +61,6 @@ impl HorizontalList {
         self.item_count = item_count;
         self.order = (0..item_count).collect();
         self.drag_state.cancel();
-        *self.item_bounds.borrow_mut() = vec![None; item_count];
     }
 
     pub fn set_render_item(&mut self, render_item: impl Fn(usize) -> AnyElement + 'static) {
@@ -159,8 +154,7 @@ impl HorizontalList {
         if !self.draggable || self.disabled {
             return;
         }
-        let bounds = self.item_bounds.borrow().get(index).copied().flatten();
-        self.drag_state.start_at(index, position, bounds);
+        self.drag_state.start(index, position);
         cx.notify();
     }
 
@@ -181,10 +175,8 @@ impl HorizontalList {
         if index >= self.order.len() || index == active {
             return;
         }
-        if reorder_indices(&mut self.order, active, index) {
-            self.drag_state.move_active_to(index);
-            cx.notify();
-        }
+        self.drag_state.set_over(index);
+        cx.notify();
     }
 
     fn update_drag_position(
@@ -209,6 +201,7 @@ impl HorizontalList {
             return;
         };
         if from != to {
+            reorder_indices(&mut self.order, from, to);
             if let Some(callback) = self.on_reorder.clone() {
                 callback(from, to, window, cx);
             }
@@ -224,14 +217,10 @@ impl Render for HorizontalList {
         let render_item = self.render_item.clone();
         let render_divider = self.render_divider.clone();
         let item_gap = self.item_gap;
-        let item_count = self.item_count;
         let drag_state = self.drag_state.clone();
         let draggable = self.draggable && !self.disabled;
-        let item_bounds_snapshot = self.item_bounds.borrow().clone();
-        let item_bounds_store = self.item_bounds.clone();
 
         let mut children = Vec::new();
-        let mut child_positions = Vec::new();
         for (position, item_index) in self.order.iter().copied().enumerate() {
             if position > 0 {
                 let divider = render_divider
@@ -239,16 +228,12 @@ impl Render for HorizontalList {
                     .map(|render| render(position - 1))
                     .unwrap_or_else(|| default_divider(theme.neutral.border));
                 children.push(divider);
-                child_positions.push(None);
             }
 
             let is_dragging = drag_state.is_active(position);
             let is_over = drag_state.is_over(position);
             let (drag_dx, drag_dy) = if is_dragging {
-                drag_state.offset_from_bounds(
-                    DragAxis::Horizontal,
-                    item_bounds_snapshot.get(position).copied().flatten(),
-                )
+                drag_state.offset(DragAxis::Horizontal)
             } else {
                 (px(0.0), px(0.0))
             };
@@ -308,7 +293,6 @@ impl Render for HorizontalList {
                 item_shell.into_any_element()
             };
             children.push(item_element);
-            child_positions.push(Some(position));
         }
 
         div()
@@ -340,19 +324,7 @@ impl Render for HorizontalList {
                     .items_center()
                     .gap(item_gap)
                     .p(self.padding)
-                    .children(children)
-                    .on_children_prepainted(move |bounds, _, _| {
-                        let mut item_bounds = vec![None; item_count];
-                        for (child_index, bounds) in bounds.into_iter().enumerate() {
-                            let Some(Some(position)) = child_positions.get(child_index) else {
-                                continue;
-                            };
-                            if *position < item_bounds.len() {
-                                item_bounds[*position] = Some(bounds);
-                            }
-                        }
-                        *item_bounds_store.borrow_mut() = item_bounds;
-                    }),
+                    .children(children),
             )
     }
 }
@@ -400,7 +372,6 @@ mod tests {
         assert!(source.contains("on_mouse_up"));
         assert!(source.contains("drag_handle"));
         assert!(source.contains("DragState"));
-        assert!(source.contains("on_children_prepainted"));
-        assert!(source.contains("offset_from_bounds"));
+        assert!(source.contains("set_over"));
     }
 }

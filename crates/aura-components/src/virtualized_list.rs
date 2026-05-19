@@ -147,11 +147,8 @@ impl VirtualizedList {
         if index >= self.order.len() || index == active {
             return;
         }
-        if reorder_indices(&mut self.order, active, index) {
-            self.drag_state.move_active_to(index);
-            self.list_state.remeasure();
-            cx.notify();
-        }
+        self.drag_state.set_over(index);
+        cx.notify();
     }
 
     fn update_drag_position(
@@ -176,6 +173,9 @@ impl VirtualizedList {
             return;
         };
         if from != to {
+            if reorder_indices(&mut self.order, from, to) {
+                self.list_state.remeasure();
+            }
             if let Some(callback) = self.on_reorder.clone() {
                 callback(from, to, window, cx);
             }
