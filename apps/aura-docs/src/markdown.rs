@@ -41,6 +41,7 @@ const CARD_DOC: &str = include_str!("../content/pages/card.md");
 const CASCADER_DOC: &str = include_str!("../content/pages/cascader.md");
 const CHECKBOX_DOC: &str = include_str!("../content/pages/checkbox.md");
 const CODE_BLOCK_DOC: &str = include_str!("../content/pages/code_block.md");
+const CODE_EDITOR_DOC: &str = include_str!("../content/pages/code_editor.md");
 const COLLAPSE_DOC: &str = include_str!("../content/pages/collapse.md");
 const COLOR_PICKER_DOC: &str = include_str!("../content/pages/color_picker.md");
 const CONTAINER_DOC: &str = include_str!("../content/pages/container.md");
@@ -181,6 +182,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "CodeBlock",
         markdown: CODE_BLOCK_DOC,
+    },
+    DocPage {
+        title: "CodeEditor",
+        markdown: CODE_EDITOR_DOC,
     },
     DocPage {
         title: "Collapse",
@@ -1056,6 +1061,10 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         }
         "code_block/theme.rs" => Some(include_str!("../content/snippets/code_block/theme.rs")),
         "code_block/inline.rs" => Some(include_str!("../content/snippets/code_block/inline.rs")),
+        "code_editor/basic.rs" => Some(include_str!("../content/snippets/code_editor/basic.rs")),
+        "code_editor/diagnostics.rs" => Some(include_str!(
+            "../content/snippets/code_editor/diagnostics.rs"
+        )),
         "input/basic.rs" => Some(include_str!("../content/snippets/input/basic.rs")),
         "input/password.rs" => Some(include_str!("../content/snippets/input/password.rs")),
         "input/affix.rs" => Some(include_str!("../content/snippets/input/affix.rs")),

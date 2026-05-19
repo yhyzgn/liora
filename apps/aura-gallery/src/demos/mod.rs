@@ -12,6 +12,7 @@ pub mod button_demo;
 pub mod card_demo;
 pub mod cascader_demo;
 pub mod code_block_demo;
+pub mod code_editor_demo;
 pub mod collapse_demo;
 pub mod color_picker_demo;
 pub mod container_demo;
@@ -94,6 +95,11 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "CodeBlock 代码块",
             description: "代码高亮显示、语言标签和复制",
             render: |cx| code_block_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "CodeEditor 代码编辑器",
+            description: "代码编辑、行号、缩进配置和诊断扩展点",
+            render: |cx| code_editor_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Tag 标签",
@@ -502,6 +508,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Cascader" => Some(cascader_demo::render(cx).into()),
         "Checkbox" => Some(form_controls_demo::render_checkbox(cx)),
         "CodeBlock" => Some(code_block_demo::render(cx).into()),
+        "CodeEditor" => Some(code_editor_demo::render(cx).into()),
         "Collapse" => Some(collapse_demo::render(cx).into()),
         "ColorPicker" => Some(color_picker_demo::render(cx).into()),
         "Container" => Some(container_demo::render(cx).into()),

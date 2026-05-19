@@ -125,6 +125,10 @@ mod code_block_inline;
 mod code_block_language;
 #[path = "../../content/snippets/code_block/theme.rs"]
 mod code_block_theme;
+#[path = "../../content/snippets/code_editor/basic.rs"]
+mod code_editor_basic;
+#[path = "../../content/snippets/code_editor/diagnostics.rs"]
+mod code_editor_diagnostics;
 #[path = "../../content/snippets/collapse/accordion.rs"]
 mod collapse_accordion;
 #[path = "../../content/snippets/collapse/basic.rs"]
