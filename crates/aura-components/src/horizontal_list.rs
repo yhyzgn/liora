@@ -1,9 +1,11 @@
 use crate::draggable::{DragAxis, DragState, drag_handle, reorder_indices};
 use aura_core::Config;
 use gpui::{
-    AnyElement, App, Context, Entity, IntoElement, MouseButton, MouseDownEvent, MouseMoveEvent,
-    Pixels, Render, Window, deferred, div, prelude::*, px,
+    AnyElement, App, Bounds, Context, Entity, IntoElement, MouseButton, MouseDownEvent,
+    MouseMoveEvent, Pixels, Point, Render, Window, deferred, div, prelude::*, px,
 };
+use std::cell::RefCell;
+use std::rc::Rc;
 use std::sync::Arc;
 
 type RenderItem = dyn Fn(usize) -> AnyElement + 'static;
@@ -27,6 +29,7 @@ pub struct HorizontalList {
     padding: Pixels,
     height: Option<Pixels>,
     drag_state: DragState,
+    item_bounds: Rc<RefCell<Vec<Option<Bounds<Pixels>>>>>,
 }
 
 impl HorizontalList {
@@ -43,6 +46,7 @@ impl HorizontalList {
             padding: px(4.0),
             height: None,
             drag_state: DragState::default(),
+            item_bounds: Rc::new(RefCell::new(vec![None; item_count])),
         }
     }
 
@@ -61,6 +65,7 @@ impl HorizontalList {
         self.item_count = item_count;
         self.order = (0..item_count).collect();
         self.drag_state.cancel();
+        *self.item_bounds.borrow_mut() = vec![None; item_count];
     }
 
     pub fn set_render_item(&mut self, render_item: impl Fn(usize) -> AnyElement + 'static) {
@@ -154,8 +159,46 @@ impl HorizontalList {
         if !self.draggable || self.disabled {
             return;
         }
-        self.drag_state.start(index, position);
+        let bounds = self.item_bounds.borrow().get(index).copied().flatten();
+        self.drag_state.start_at(index, position, bounds);
         cx.notify();
+    }
+
+    fn update_drag_target_from_position(
+        &mut self,
+        position: Point<Pixels>,
+        cx: &mut Context<Self>,
+    ) {
+        let Some(active) = self.drag_state.active_index() else {
+            return;
+        };
+        let bounds = self.item_bounds.borrow();
+        if bounds.is_empty() {
+            return;
+        }
+
+        let mut target = active.min(bounds.len().saturating_sub(1));
+        let mut nearest_distance = Pixels::MAX;
+        for (index, item_bounds) in bounds.iter().enumerate() {
+            let Some(item_bounds) = item_bounds else {
+                continue;
+            };
+            if item_bounds.contains(&position) {
+                target = index;
+                break;
+            }
+
+            let distance = (position.x - item_bounds.center().x).abs();
+            if distance < nearest_distance {
+                nearest_distance = distance;
+                target = index;
+            }
+        }
+
+        if self.drag_state.over_index() != Some(target) {
+            self.drag_state.set_over(target);
+            cx.notify();
+        }
     }
 
     fn hover_drag(
@@ -175,8 +218,7 @@ impl HorizontalList {
         if index >= self.order.len() || index == active {
             return;
         }
-        self.drag_state.set_over(index);
-        cx.notify();
+        self.update_drag_target_from_position(event.position, cx);
     }
 
     fn update_drag_position(
@@ -193,6 +235,7 @@ impl HorizontalList {
             return;
         }
         self.drag_state.update_position(event.position);
+        self.update_drag_target_from_position(event.position, cx);
         cx.notify();
     }
 
@@ -219,21 +262,35 @@ impl Render for HorizontalList {
         let item_gap = self.item_gap;
         let drag_state = self.drag_state.clone();
         let draggable = self.draggable && !self.disabled;
+        let active_item = drag_state
+            .origin_index()
+            .and_then(|index| self.order.get(index).copied());
+        let mut display_order = self.order.clone();
+        if let (Some(active), Some(over)) = (drag_state.active_index(), drag_state.over_index()) {
+            reorder_indices(&mut display_order, active, over);
+        }
+        let item_bounds_snapshot = self.item_bounds.borrow().clone();
+        let item_bounds_store = self.item_bounds.clone();
 
         let mut children = Vec::new();
-        for (position, item_index) in self.order.iter().copied().enumerate() {
+        let mut child_positions = Vec::new();
+        for (position, item_index) in display_order.iter().copied().enumerate() {
             if position > 0 {
                 let divider = render_divider
                     .as_ref()
                     .map(|render| render(position - 1))
                     .unwrap_or_else(|| default_divider(theme.neutral.border));
                 children.push(divider);
+                child_positions.push(None);
             }
 
-            let is_dragging = drag_state.is_active(position);
-            let is_over = drag_state.is_over(position);
+            let is_dragging = active_item == Some(item_index);
+            let is_over = drag_state.over_index() == Some(position) && !is_dragging;
             let (drag_dx, drag_dy) = if is_dragging {
-                drag_state.offset(DragAxis::Horizontal)
+                drag_state.offset_from_bounds(
+                    DragAxis::Horizontal,
+                    item_bounds_snapshot.get(position).copied().flatten(),
+                )
             } else {
                 (px(0.0), px(0.0))
             };
@@ -293,6 +350,7 @@ impl Render for HorizontalList {
                 item_shell.into_any_element()
             };
             children.push(item_element);
+            child_positions.push(Some(position));
         }
 
         div()
@@ -324,7 +382,19 @@ impl Render for HorizontalList {
                     .items_center()
                     .gap(item_gap)
                     .p(self.padding)
-                    .children(children),
+                    .children(children)
+                    .on_children_prepainted(move |bounds, _, _| {
+                        let mut item_bounds = vec![None; display_order.len()];
+                        for (child_index, bounds) in bounds.into_iter().enumerate() {
+                            let Some(Some(position)) = child_positions.get(child_index) else {
+                                continue;
+                            };
+                            if *position < item_bounds.len() {
+                                item_bounds[*position] = Some(bounds);
+                            }
+                        }
+                        *item_bounds_store.borrow_mut() = item_bounds;
+                    }),
             )
     }
 }
@@ -373,5 +443,7 @@ mod tests {
         assert!(source.contains("drag_handle"));
         assert!(source.contains("DragState"));
         assert!(source.contains("set_over"));
+        assert!(source.contains("display_order"));
+        assert!(source.contains("on_children_prepainted"));
     }
 }
