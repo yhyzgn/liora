@@ -1,8 +1,10 @@
 use crate::draggable::{DragAxis, DragState, drag_handle, reorder_indices};
 use gpui::{
-    AnyElement, App, Context, Entity, IntoElement, ListAlignment, ListState, MouseButton,
-    MouseMoveEvent, Pixels, Render, Window, deferred, div, list, prelude::*, px,
+    AnyElement, App, Bounds, Context, Entity, IntoElement, ListAlignment, ListState, MouseButton,
+    MouseMoveEvent, Pixels, Point, Render, Size, Window, deferred, div, list, prelude::*, px,
 };
+use std::cell::RefCell;
+use std::rc::Rc;
 use std::sync::Arc;
 
 type RenderItem = dyn Fn(usize, &mut Window, &mut App) -> AnyElement + 'static;
@@ -24,6 +26,8 @@ pub struct VirtualizedList {
     order: Vec<usize>,
     draggable: bool,
     drag_state: DragState,
+    item_bounds: Rc<RefCell<Vec<Option<Bounds<Pixels>>>>>,
+    drag_reference_bounds: Vec<Option<Bounds<Pixels>>>,
     on_reorder: Option<Arc<ReorderCallback>>,
 }
 
@@ -45,6 +49,8 @@ impl VirtualizedList {
             order: (0..item_count).collect(),
             draggable: false,
             drag_state: DragState::default(),
+            item_bounds: Rc::new(RefCell::new(vec![None; item_count])),
+            drag_reference_bounds: vec![None; item_count],
             on_reorder: None,
         }
     }
@@ -68,6 +74,8 @@ impl VirtualizedList {
         self.item_count = item_count;
         self.order = (0..item_count).collect();
         self.drag_state.cancel();
+        *self.item_bounds.borrow_mut() = vec![None; item_count];
+        self.drag_reference_bounds = vec![None; item_count];
         self.list_state = Self::new_list_state(item_count, self.overdraw, self.measure_all_items);
     }
 
@@ -108,6 +116,7 @@ impl VirtualizedList {
         self.draggable = draggable;
         if !draggable {
             self.drag_state.cancel();
+            self.drag_reference_bounds.clear();
         }
     }
 
@@ -126,8 +135,47 @@ impl VirtualizedList {
         if !self.draggable {
             return;
         }
-        self.drag_state.start(index, position);
+        let bounds = self.item_bounds.borrow().get(index).copied().flatten();
+        self.drag_reference_bounds = self.item_bounds.borrow().clone();
+        self.drag_state.start_at(index, position, bounds);
         cx.notify();
+    }
+
+    fn update_drag_target_from_position(
+        &mut self,
+        position: Point<Pixels>,
+        cx: &mut Context<Self>,
+    ) {
+        let Some(active) = self.drag_state.active_index() else {
+            return;
+        };
+        if self.drag_reference_bounds.is_empty() {
+            return;
+        }
+
+        let mut target = active.min(self.drag_reference_bounds.len().saturating_sub(1));
+        let mut nearest_distance = Pixels::MAX;
+        for (index, item_bounds) in self.drag_reference_bounds.iter().enumerate() {
+            let Some(item_bounds) = item_bounds else {
+                continue;
+            };
+            if item_bounds.contains(&position) {
+                target = index;
+                break;
+            }
+
+            let distance = (position.y - item_bounds.center().y).abs();
+            if distance < nearest_distance {
+                nearest_distance = distance;
+                target = index;
+            }
+        }
+
+        if self.drag_state.over_index() != Some(target) {
+            self.drag_state.set_over(target);
+            self.list_state.remeasure();
+            cx.notify();
+        }
     }
 
     fn hover_drag(
@@ -147,8 +195,7 @@ impl VirtualizedList {
         if index >= self.order.len() || index == active {
             return;
         }
-        self.drag_state.set_over(index);
-        cx.notify();
+        self.update_drag_target_from_position(event.position, cx);
     }
 
     fn update_drag_position(
@@ -165,6 +212,7 @@ impl VirtualizedList {
             return;
         }
         self.drag_state.update_position(event.position);
+        self.update_drag_target_from_position(event.position, cx);
         cx.notify();
     }
 
@@ -172,6 +220,7 @@ impl VirtualizedList {
         let Some((from, to)) = self.drag_state.finish() else {
             return;
         };
+        self.drag_reference_bounds.clear();
         if from != to {
             if reorder_indices(&mut self.order, from, to) {
                 self.list_state.remeasure();
@@ -225,9 +274,22 @@ impl Render for VirtualizedList {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let render_item = self.render_item.clone();
         let spacing = self.item_spacing;
-        let order = self.order.clone();
+        let mut display_order = self.order.clone();
         let draggable = self.draggable;
         let drag_state = self.drag_state.clone();
+        let drag_active = drag_state.active_index().is_some();
+        let active_item = drag_state
+            .origin_index()
+            .and_then(|index| self.order.get(index).copied());
+        if let (Some(active), Some(over)) = (drag_state.active_index(), drag_state.over_index()) {
+            reorder_indices(&mut display_order, active, over);
+        }
+        let drag_reference_bounds = self.drag_reference_bounds.clone();
+        let active_size = drag_state
+            .origin_index()
+            .and_then(|index| drag_reference_bounds.get(index).copied().flatten())
+            .map(|bounds| bounds.size);
+        let item_bounds_store = self.item_bounds.clone();
         let entity = cx.entity().clone();
 
         div()
@@ -250,15 +312,10 @@ impl Render for VirtualizedList {
             })
             .child(
                 list(self.list_state.clone(), move |index, window, cx| {
-                    let item_index = order.get(index).copied().unwrap_or(index);
+                    let item_index = display_order.get(index).copied().unwrap_or(index);
                     let item = (render_item)(item_index, window, cx);
-                    let is_dragging = drag_state.is_active(index);
+                    let is_dragging = active_item == Some(item_index);
                     let is_over = drag_state.is_over(index);
-                    let (drag_dx, drag_dy) = if is_dragging {
-                        drag_state.offset(DragAxis::Vertical)
-                    } else {
-                        (px(0.0), px(0.0))
-                    };
                     let item_entity = entity.clone();
                     let move_entity = entity.clone();
                     let up_entity = entity.clone();
@@ -277,10 +334,10 @@ impl Render for VirtualizedList {
                             gpui::transparent_black()
                         })
                         .opacity(1.0)
-                        .when(is_dragging, move |s| {
-                            s.relative().left(drag_dx).top(drag_dy).shadow_lg()
-                        });
-                    if draggable {
+                        .when(is_dragging, |s| s.shadow_lg());
+                    if draggable && !is_dragging {
+                        let up_entity = up_entity.clone();
+                        let out_entity = out_entity.clone();
                         shell = shell
                             .on_mouse_move(move |event, window, cx| {
                                 move_entity.update(cx, |list, cx| {
@@ -297,7 +354,7 @@ impl Render for VirtualizedList {
                                     .update(cx, |list, cx| list.finish_drag(index, window, cx));
                             })
                             .child(
-                                drag_handle(gpui::rgb(0x94a3b8).into(), is_dragging, px(32.0))
+                                drag_handle(gpui::rgb(0x94a3b8).into(), false, px(32.0))
                                     .on_mouse_down(MouseButton::Left, move |event, _, cx| {
                                         item_entity.update(cx, |list, cx| {
                                             list.start_drag(index, event.position, cx)
@@ -306,14 +363,68 @@ impl Render for VirtualizedList {
                                     }),
                             )
                             .child(item);
+                    } else if draggable {
+                        shell = shell
+                            .child(drag_handle(gpui::rgb(0x94a3b8).into(), true, px(32.0)))
+                            .child(item);
                     } else {
                         shell = shell.child(item);
                     }
-                    let row = if is_dragging {
-                        deferred(shell).with_priority(1000).into_any_element()
+
+                    let row_content = if is_dragging {
+                        let up_entity = up_entity.clone();
+                        let out_entity = out_entity.clone();
+                        let (drag_dx, drag_dy) = drag_state.offset_from_bounds(
+                            DragAxis::Vertical,
+                            drag_reference_bounds.get(index).copied().flatten(),
+                        );
+                        drag_placeholder(active_size)
+                            .child(
+                                deferred(
+                                    shell
+                                        .absolute()
+                                        .left(drag_dx)
+                                        .top(drag_dy)
+                                        .on_mouse_up(MouseButton::Left, move |_, window, cx| {
+                                            up_entity.update(cx, |list, cx| {
+                                                list.finish_drag(index, window, cx)
+                                            });
+                                            cx.stop_propagation();
+                                        })
+                                        .on_mouse_up_out(
+                                            MouseButton::Left,
+                                            move |_, window, cx| {
+                                                out_entity.update(cx, |list, cx| {
+                                                    list.finish_drag(index, window, cx)
+                                                });
+                                            },
+                                        ),
+                                )
+                                .with_priority(1000),
+                            )
+                            .into_any_element()
                     } else {
                         shell.into_any_element()
                     };
+
+                    let bounds_store = item_bounds_store.clone();
+                    let row = div()
+                        .child(row_content)
+                        .on_children_prepainted(move |bounds, _, _| {
+                            if drag_active {
+                                return;
+                            }
+                            let Some(bounds) = bounds.into_iter().next() else {
+                                return;
+                            };
+                            let mut item_bounds = bounds_store.borrow_mut();
+                            if item_bounds.len() <= index {
+                                item_bounds.resize(index + 1, None);
+                            }
+                            item_bounds[index] = Some(bounds);
+                        })
+                        .into_any_element();
+
                     if spacing > px(0.0) {
                         div().pb(spacing).child(row).into_any_element()
                     } else {
@@ -324,6 +435,17 @@ impl Render for VirtualizedList {
             )
             .child(crate::VirtualScrollbar::new(self.list_state.clone()))
     }
+}
+
+fn drag_placeholder(size: Option<Size<Pixels>>) -> gpui::Div {
+    div()
+        .relative()
+        .flex_none()
+        .when_some(size, |s, size| s.w(size.width).h(size.height))
+        .rounded_md()
+        .border_1()
+        .border_color(gpui::rgb(0xcbd5e1))
+        .bg(gpui::transparent_black())
 }
 
 #[cfg(test)]
@@ -343,6 +465,10 @@ mod tests {
         assert!(source.contains("set_on_reorder"));
         assert!(source.contains("drag_handle"));
         assert!(source.contains("DragState"));
+        assert!(source.contains("display_order"));
+        assert!(source.contains("drag_placeholder"));
+        assert!(source.contains("on_children_prepainted"));
+        assert!(source.contains("drag_reference_bounds"));
     }
 
     #[test]

@@ -170,7 +170,9 @@ pub fn drag_handle(color: Hsla, active: bool, width: Pixels) -> Div {
         .justify_center()
         .cursor_pointer()
         .rounded_md()
-        .hover(|s| s.cursor_pointer().bg(gpui::black().opacity(0.018)))
+        .when(!active, |s| {
+            s.hover(|s| s.cursor_pointer().bg(gpui::black().opacity(0.018)))
+        })
         .when(active, |s| s.cursor_pointer())
         .child(
             Icon::new(IconName::GripVertical)
