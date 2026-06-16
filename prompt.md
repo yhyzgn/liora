@@ -32,7 +32,7 @@
 | **P11 托盘常驻** | `.prompt/P11-tray.md` | `aura-tray` 跨平台系统托盘、动态图标、CheckBox/N 级菜单与 GPUI 常驻进程桥接 |
 | **P12 原生打包** | `.prompt/P12-packaging.md` | `aura-packager` / `xtask package` / `packaging/` / CI installer pipeline，纯 Rust + GPUI 原生应用打包 |
 | **P13 高级控件扩展** | `.prompt/P13-component-expansion.md` | 已实现：二维码、代码编辑器、信号图、热力/比例条、拖动列表、Timer、Label/Operation，以及 BarChart 独立迷你柱样式与 Chart/Button/Tag/Radio/Checkbox 增强 |
-| **P14 延后高级组件补全** | `.prompt/P14-deferred-advanced.md` | 正在实现 P9 deferred backlog；Wave 1 已完成 Carousel、Calendar、InputTag |
+| **P14 延后高级组件补全** | `.prompt/P14-deferred-advanced.md` | 正在实现 P9 deferred backlog；Wave 1 已完成 Carousel、Calendar、InputTag；Wave 2 已完成 Mention、Watermark |
 
 ---
 
@@ -113,7 +113,7 @@ aura/
 - P11 是系统托盘/进程常驻阶段：开发 `aura-tray`，采用 `tray-icon` + `muda`，支持动态图标、CheckBox 菜单、二级/三级/N 级菜单，并在 Gallery/Docs 中提供丰富用例。
 - P12 是打包阶段：开发 `aura-packager` + `xtask package` + `packaging/` + CI workflow。应用必须保持纯 Rust + GPUI native，严禁转成 Tauri 或引入 WebView/HTML/CSS/DOM/browser runtime。
 - P13 主体已实现并进入收尾维护：二维码、代码编辑器、信号图、热力/比例条、横向/纵向拖动列表、Timer、Label、Operation，以及 Chart/Button/Tag/Radio/Checkbox 等高自定义能力；详见 `.prompt/P13-component-expansion.md`。
-- P14 是延后高级组件补全阶段：从 P9 backlog 迁移而来，Wave 1 已完成 Carousel、Calendar、InputTag；后续继续 TreeSelect、Mention、Watermark、Tour、VirtualizedTable、VirtualizedTree。详见 `.prompt/P14-deferred-advanced.md`。
+- P14 是延后高级组件补全阶段：从 P9 backlog 迁移而来，Wave 1 已完成 Carousel、Calendar、InputTag；Wave 2 已完成 Mention、Watermark；后续继续 TreeSelect、Mention、Watermark、Tour、VirtualizedTable、VirtualizedTree。详见 `.prompt/P14-deferred-advanced.md`。
 
 ### 4.2 每个组件/功能开发流程
 

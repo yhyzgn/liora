@@ -71,6 +71,7 @@ const LAYOUT_DOC: &str = include_str!("../content/pages/layout.md");
 const LINK_DOC: &str = include_str!("../content/pages/link.md");
 const LINE_CHART_DOC: &str = include_str!("../content/pages/line_chart.md");
 const LOADING_DOC: &str = include_str!("../content/pages/loading.md");
+const MENTION_DOC: &str = include_str!("../content/pages/mention.md");
 const MENU_DOC: &str = include_str!("../content/pages/menu.md");
 const MESSAGE_DOC: &str = include_str!("../content/pages/message.md");
 const MESSAGE_BOX_DOC: &str = include_str!("../content/pages/message_box.md");
@@ -110,6 +111,7 @@ const TRANSFER_DOC: &str = include_str!("../content/pages/transfer.md");
 const TREE_DOC: &str = include_str!("../content/pages/tree.md");
 const TYPOGRAPHY_DOC: &str = include_str!("../content/pages/typography.md");
 const UPLOAD_DOC: &str = include_str!("../content/pages/upload.md");
+const WATERMARK_DOC: &str = include_str!("../content/pages/watermark.md");
 const VIRTUALIZED_LIST_DOC: &str = include_str!("../content/pages/virtualized_list.md");
 
 const MARKDOWN_DOC: &str = include_str!("../content/pages/markdown.md");
@@ -290,6 +292,10 @@ const DOC_PAGES: &[DocPage] = &[
         markdown: LOADING_DOC,
     },
     DocPage {
+        title: "Mention",
+        markdown: MENTION_DOC,
+    },
+    DocPage {
         title: "Menu",
         markdown: MENU_DOC,
     },
@@ -448,6 +454,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Upload",
         markdown: UPLOAD_DOC,
+    },
+    DocPage {
+        title: "Watermark",
+        markdown: WATERMARK_DOC,
     },
     DocPage {
         title: "VirtualizedList",

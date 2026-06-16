@@ -311,6 +311,12 @@ mod loading_basic;
 mod loading_fullscreen;
 #[path = "../../content/snippets/markdown/state_machine.rs"]
 mod markdown_state_machine;
+#[path = "../../content/snippets/mention/disabled.rs"]
+mod mention_disabled;
+#[path = "../../content/snippets/mention/issues.rs"]
+mod mention_issues;
+#[path = "../../content/snippets/mention/people.rs"]
+mod mention_people;
 #[path = "../../content/snippets/menu/collapsed.rs"]
 mod menu_collapsed;
 #[path = "../../content/snippets/menu/horizontal.rs"]
@@ -597,5 +603,11 @@ mod upload_picture_card;
 mod virtualized_list_basic;
 #[path = "../../content/snippets/virtualized_list/draggable.rs"]
 mod virtualized_list_draggable;
+#[path = "../../content/snippets/watermark/cover.rs"]
+mod watermark_cover;
+#[path = "../../content/snippets/watermark/custom.rs"]
+mod watermark_custom;
+#[path = "../../content/snippets/watermark/header.rs"]
+mod watermark_header;
 
 fn main() {}

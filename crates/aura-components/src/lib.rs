@@ -48,6 +48,7 @@ pub mod layout_helpers;
 pub mod line_chart;
 pub mod link;
 pub mod loading;
+pub mod mention;
 pub mod menu;
 pub mod message;
 pub mod message_box;
@@ -96,6 +97,7 @@ pub mod transfer;
 pub mod tree;
 pub mod upload;
 pub mod virtualized_list;
+pub mod watermark;
 
 pub use affix::*;
 pub use alert::*;
@@ -146,6 +148,7 @@ pub use label::*;
 pub use line_chart::*;
 pub use link::*;
 pub use loading::*;
+pub use mention::*;
 pub use menu::*;
 pub use message::*;
 pub use message_box::*;
@@ -194,6 +197,7 @@ pub use transfer::*;
 pub use tree::*;
 pub use upload::*;
 pub use virtualized_list::*;
+pub use watermark::*;
 
 #[cfg(test)]
 mod motion_coverage_tests {

@@ -37,6 +37,7 @@ pub mod layout_demo;
 pub mod line_chart_demo;
 pub mod link_demo;
 pub mod loading_demo;
+pub mod mention_demo;
 pub mod menu_demo;
 pub mod message_box_demo;
 pub mod message_demo;
@@ -74,6 +75,7 @@ pub mod tree_demo;
 pub mod typography_demo;
 pub mod upload_demo;
 pub mod virtualized_list_demo;
+pub mod watermark_demo;
 
 use gpui::{AnyView, App};
 
@@ -205,6 +207,16 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "Drawer 抽屉",
             description: "屏幕边缘滑出的浮层面板",
             render: |cx| drawer_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "Mention 提及",
+            description: "@成员、#事项与触发符候选",
+            render: |cx| mention_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "Watermark 水印",
+            description: "文字水印、密度与局部位置",
+            render: |cx| watermark_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Message 全局提示",
@@ -568,6 +580,8 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "LineChart" => Some(line_chart_demo::render(cx).into()),
         "Loading" => Some(loading_demo::render(cx).into()),
         "Menu" => Some(menu_demo::render(cx).into()),
+        "Mention" => Some(mention_demo::render(cx).into()),
+        "Watermark" => Some(watermark_demo::render(cx).into()),
         "Message" => Some(message_demo::render(cx).into()),
         "MessageBox" => Some(message_box_demo::render(cx).into()),
         "Notification" => Some(notification_demo::render(cx).into()),

@@ -451,3 +451,12 @@ Promoted the old P9 deferred backlog into the active P14 Deferred Advanced phase
 - `InputTag`: `Input` + `TagFlow` composition with Enter-to-add, closable tags, max tag limit, duplicate policy, and change callback.
 
 Added Gallery demos, Docs pages, external compile-checked snippets, and updated `.prompt/P14-deferred-advanced.md`. Remaining P14 backlog: TreeSelect, Mention, Watermark, Tour, VirtualizedTable, VirtualizedTree.
+
+
+## 2026-06-16 P14 Wave 2 mention and watermark
+
+Implemented two additional deferred advanced controls:
+- `Mention`: an Input-backed mention field with configurable trigger character, candidate filtering, max suggestions, disabled state, and select callback. It follows the existing Input/Autocomplete composition direction instead of reimplementing text input.
+- `Watermark`: a native wrapper for text watermarks over arbitrary GPUI content, with cover/header/footer placement, density, gap, opacity, color, and rotation configuration metadata.
+
+Added Gallery demos, Docs pages, and compile-checked snippets for both controls. Remaining P14 backlog: TreeSelect, Tour, VirtualizedTable, VirtualizedTree.
