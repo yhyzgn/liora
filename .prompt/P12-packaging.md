@@ -78,6 +78,7 @@ The internal packaging module is named `aura-packager`, not `aura-installer`.
   - `.github/workflows/package.yml` 已添加 Linux/macOS/Windows packaging matrix。
   - package artifact 上传前运行 `cargo run -p xtask -- package smoke ...`，对 portable `.tar.gz` 做结构校验，并对其他格式做 runner-safe 头部/非空检查。
   - CI 真实反馈修正：`cargo-generate-rpm --metadata-overwrite` 必须使用 `GenerateRpm.<app>.toml#package.metadata.generate-rpm` 分支加载，且生成 TOML 必须把 metadata 放在 `[package.metadata.generate-rpm]` 下、依赖放在 `[package.metadata.generate-rpm.requires]` 下。
+  - CI 真实反馈修正：artifact collection/smoke 必须忽略 `.cargo-packager` 等隐藏后端工作目录，避免把 deb 内部 `control.tar.gz` 误判为 Aura portable tar.gz。
   - `workflow_dispatch` 默认 dry-run。
   - `main` push 触发 preview 打包，包版本使用 `AURA_PACKAGE_VERSION=<base>-preview.<run_number>.<short_sha>`。
   - `v*` tag 触发 release 打包，包版本使用 tag 去掉 `v` 后的版本。

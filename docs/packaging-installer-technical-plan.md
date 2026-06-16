@@ -520,7 +520,7 @@ release-notes.md
 - `rpm` 仍归类为 supplemental backend，但已优先接入 `cargo-generate-rpm` 的 metadata overwrite 配置生成和 `cargo generate-rpm` 命令路由；`nfpm` 仅作为后备方案。
 - `.deb` / `.rpm` 生成配置已补 Linux runtime dependency metadata。
 - manifest 已扩充 `targetTriple` 与 `gitSha`，release notes 同步展示 version、target triple、git sha。
-- `xtask package smoke` 已接入 CI artifact 上传前检查；当前为非安装式 smoke，真正 install/uninstall smoke 仍待补。
+- `xtask package smoke` 已接入 CI artifact 上传前检查；当前为非安装式 smoke，真正 install/uninstall smoke 仍待补。Artifact 扫描会忽略 `.cargo-packager` 等隐藏后端工作目录，避免把 deb/rpm 内部归档误判为发布产物。
 - `cargo-generate-rpm --metadata-overwrite` 使用 `GenerateRpm.<app>.toml#package.metadata.generate-rpm` 分支加载生成配置；生成 TOML 将 metadata 放在 `[package.metadata.generate-rpm]` 下、依赖放在 `[package.metadata.generate-rpm.requires]` 下，避免真实 runner 从错误表读取而丢失 `assets`。
 - 当前环境未全局安装 `cargo-packager`，因此验证以配置生成、命令 dry-run、类型检查和单元测试为准；安装后可直接去掉 `--dry-run` 产出包。
 

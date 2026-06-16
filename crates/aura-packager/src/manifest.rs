@@ -152,6 +152,9 @@ fn collect_package_artifacts_in_dir(
         let path = entry.path();
         let file_type = entry.file_type()?;
         if file_type.is_dir() {
+            if entry.file_name().to_string_lossy().starts_with('.') {
+                continue;
+            }
             collect_package_artifacts_in_dir(
                 app,
                 version,
@@ -245,6 +248,12 @@ mod tests {
         let artifact = root.join("aura-gallery_0.1.0_amd64.deb");
         fs::write(&artifact, b"deb").unwrap();
         fs::write(root.join("ignore.txt"), b"ignore").unwrap();
+        fs::create_dir_all(root.join(".cargo-packager/deb/internal")).unwrap();
+        fs::write(
+            root.join(".cargo-packager/deb/internal/control.tar.gz"),
+            b"internal",
+        )
+        .unwrap();
 
         let artifacts = collect_package_artifacts(
             "aura-gallery",
@@ -257,6 +266,7 @@ mod tests {
         )
         .unwrap();
         assert_eq!(artifacts.len(), 1);
+        assert_eq!(artifacts[0].path, artifact);
         assert_eq!(artifacts[0].format, PackageFormat::Deb);
         assert_eq!(artifacts[0].target_triple, "x86_64-unknown-linux-gnu");
         assert_eq!(artifacts[0].git_sha, None);
