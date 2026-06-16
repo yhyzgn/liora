@@ -685,7 +685,7 @@ fn generate_rpm_args(
         "--output".into(),
         out_dir.display().to_string(),
         "--metadata-overwrite".into(),
-        config_path.display().to_string(),
+        format!("{}#package.metadata.generate-rpm", config_path.display()),
         "--auto-req".into(),
         "builtin".into(),
     ]
@@ -846,7 +846,7 @@ mod tests {
     }
 
     #[test]
-    fn generate_rpm_args_use_metadata_overwrite_file() {
+    fn generate_rpm_args_use_metadata_overwrite_branch() {
         let args = generate_rpm_args(
             Path::new("/repo/aura"),
             KnownApp::Gallery,
@@ -855,6 +855,9 @@ mod tests {
         );
         assert!(args.contains(&"generate-rpm".into()));
         assert!(args.contains(&"--metadata-overwrite".into()));
-        assert!(args.contains(&"/repo/aura/target/aura-packager/GenerateRpm.gallery.toml".into()));
+        assert!(args.contains(
+            &"/repo/aura/target/aura-packager/GenerateRpm.gallery.toml#package.metadata.generate-rpm"
+                .into()
+        ));
     }
 }
