@@ -441,3 +441,13 @@ Validation evidence:
 Implemented the first P10 performance review item for native chart rendering. Added shared min/max bucket downsampling in `chart.rs` and wired it into `LineChart`, `AreaChart` (overlay and stacked paths), and `Sparkline`. New public builders: `max_render_points(...)` and `disable_downsampling()` on LineChart/AreaChart/Sparkline. The strategy preserves first/last points plus local extrema so long monitoring series keep spikes while bounding GPUI path complexity. Gallery and Docs now include downsampling examples for LineChart, AreaChart, and Sparkline with compile-checked snippets.
 
 Remaining P10 maintenance work: hover/tooltip hit testing and any further large-data cache policy beyond draw-point downsampling.
+
+
+## 2026-06-16 P14 Wave 1 deferred advanced components
+
+Promoted the old P9 deferred backlog into the active P14 Deferred Advanced phase and implemented the first batch of high-value advanced controls:
+- `Carousel`: native carousel item model, indicator placement, arrow visibility, direction/autoplay configuration, and custom content slot.
+- `Calendar`: month grid, selected date, range highlighting, disabled dates, event labels, and selection callback.
+- `InputTag`: `Input` + `TagFlow` composition with Enter-to-add, closable tags, max tag limit, duplicate policy, and change callback.
+
+Added Gallery demos, Docs pages, external compile-checked snippets, and updated `.prompt/P14-deferred-advanced.md`. Remaining P14 backlog: TreeSelect, Mention, Watermark, Tour, VirtualizedTable, VirtualizedTree.

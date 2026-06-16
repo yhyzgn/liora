@@ -107,10 +107,20 @@ mod button_states;
 mod button_text;
 #[path = "../../content/snippets/button/types.rs"]
 mod button_types;
+#[path = "../../content/snippets/calendar/events.rs"]
+mod calendar_events;
+#[path = "../../content/snippets/calendar/range.rs"]
+mod calendar_range;
 #[path = "../../content/snippets/card/basic.rs"]
 mod card_basic;
 #[path = "../../content/snippets/card/footer.rs"]
 mod card_footer;
+#[path = "../../content/snippets/carousel/autoplay.rs"]
+mod carousel_autoplay;
+#[path = "../../content/snippets/carousel/basic.rs"]
+mod carousel_basic;
+#[path = "../../content/snippets/carousel/custom.rs"]
+mod carousel_custom;
 #[path = "../../content/snippets/cascader/basic.rs"]
 mod cascader_basic;
 #[path = "../../content/snippets/cascader/disabled.rs"]
@@ -259,6 +269,12 @@ mod input_number_vertical;
 mod input_password;
 #[path = "../../content/snippets/input/states.rs"]
 mod input_states;
+#[path = "../../content/snippets/input_tag/basic.rs"]
+mod input_tag_basic;
+#[path = "../../content/snippets/input_tag/duplicates.rs"]
+mod input_tag_duplicates;
+#[path = "../../content/snippets/input_tag/limited.rs"]
+mod input_tag_limited;
 #[path = "../../content/snippets/label/basic.rs"]
 mod label_basic;
 #[path = "../../content/snippets/layout/divider.rs"]

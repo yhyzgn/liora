@@ -37,7 +37,9 @@ const BACKTOP_DOC: &str = include_str!("../content/pages/backtop.md");
 const BADGE_DOC: &str = include_str!("../content/pages/badge.md");
 const BAR_CHART_DOC: &str = include_str!("../content/pages/bar_chart.md");
 const BREADCRUMB_DOC: &str = include_str!("../content/pages/breadcrumb.md");
+const CALENDAR_DOC: &str = include_str!("../content/pages/calendar.md");
 const BUTTON_DOC: &str = include_str!("../content/pages/button.md");
+const CAROUSEL_DOC: &str = include_str!("../content/pages/carousel.md");
 const CARD_DOC: &str = include_str!("../content/pages/card.md");
 const CASCADER_DOC: &str = include_str!("../content/pages/cascader.md");
 const CHECKBOX_DOC: &str = include_str!("../content/pages/checkbox.md");
@@ -63,6 +65,7 @@ const ICON_DOC: &str = include_str!("../content/pages/icon.md");
 const IMAGE_DOC: &str = include_str!("../content/pages/image.md");
 const HORIZONTAL_LIST_DOC: &str = include_str!("../content/pages/horizontal_list.md");
 const INPUT_DOC: &str = include_str!("../content/pages/input.md");
+const INPUT_TAG_DOC: &str = include_str!("../content/pages/input_tag.md");
 const INPUT_NUMBER_DOC: &str = include_str!("../content/pages/input_number.md");
 const LAYOUT_DOC: &str = include_str!("../content/pages/layout.md");
 const LINK_DOC: &str = include_str!("../content/pages/link.md");
@@ -167,8 +170,16 @@ const DOC_PAGES: &[DocPage] = &[
         markdown: BREADCRUMB_DOC,
     },
     DocPage {
+        title: "Calendar",
+        markdown: CALENDAR_DOC,
+    },
+    DocPage {
         title: "Button",
         markdown: BUTTON_DOC,
+    },
+    DocPage {
+        title: "Carousel",
+        markdown: CAROUSEL_DOC,
     },
     DocPage {
         title: "Card",
@@ -253,6 +264,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Input",
         markdown: INPUT_DOC,
+    },
+    DocPage {
+        title: "InputTag",
+        markdown: INPUT_TAG_DOC,
     },
     DocPage {
         title: "InputNumber",

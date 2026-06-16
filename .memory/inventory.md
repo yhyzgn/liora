@@ -148,14 +148,14 @@
 | Code block styling + document shell | Native Aura/GPUI two-column docs UI | ✅ Fenced code blocks + `Aura Docs` main window with `Container`/`Menu` shell |
 | Live Demo injection | `::AuraDemo{component="..."}::` → real Aura view nodes | ✅ Button demo marker maps to a real Aura `Button` node |
 
-## P9 Deferred Advanced ⏸️ (0/9 — backlog for later supplementation)
+## P9 Deferred Advanced ↗️ (migrated to P14)
 
 | # | Component | File | Demo | Status |
 |---|-----------|------|------|--------|
-| 1 | Carousel | — | — | ⏸️ Deferred from P5; implement later when requested |
-| 2 | Calendar | — | — | ⏸️ Deferred from P5; implement later when requested |
+| 1 | Carousel | `crates/aura-components/src/carousel.rs` | ✅ | ✅ Migrated to P14 Wave 1 and implemented |
+| 2 | Calendar | `crates/aura-components/src/calendar.rs` | ✅ | ✅ Migrated to P14 Wave 1 and implemented |
 | 3 | TreeSelect | — | — | ⏸️ Deferred from P5; implement later when requested |
-| 4 | InputTag | — | — | ⏸️ Deferred from P5; implement later when requested |
+| 4 | InputTag | `crates/aura-components/src/input_tag.rs` | ✅ | ✅ Migrated to P14 Wave 1 and implemented |
 | 5 | Mention | — | — | ⏸️ Deferred from P5; implement later when requested |
 | 6 | Watermark | — | — | ⏸️ Deferred from P5; implement later when requested |
 | 7 | Tour | — | — | ⏸️ Deferred from P5; implement later when requested |
@@ -185,7 +185,7 @@
 | 5 | Gallery/docs examples | `apps/aura-gallery/src/demos/tray_demo.rs`, `apps/aura-docs/content/pages/tray.md` | ✅ | ✅ | ✅ Rich non-intrusive config preview + compile-checked snippets |
 
 
-## P13 Component Expansion 🧭 Planned
+## P13 Component Expansion ✅ Implemented
 
 | # | Component / Enhancement | File Target | Demo | Docs | Status |
 |---|-------------------------|-------------|------|------|--------|
@@ -207,3 +207,17 @@
 | 16 | Label | `crates/aura-components/src/label.rs` | ✅ | ✅ | Implemented Wave 1 |
 | 17 | Operation | `crates/aura-components/src/operation.rs` | ✅ | ✅ | Implemented Wave 1 |
 | 18 | Radio/Checkbox option customization | existing `radio*.rs`, `checkbox*.rs` | ✅ | ✅ | Implemented in-place: option card/chip styling, selected/hover/border/text/padding/radius/indicator customization |
+
+## P14 Deferred Advanced 🧭 In Progress
+
+| # | Component | File | Demo | Docs | Status |
+|---|-----------|------|------|------|--------|
+| 1 | Carousel | `crates/aura-components/src/carousel.rs` | ✅ | ✅ | Implemented Wave 1 |
+| 2 | Calendar | `crates/aura-components/src/calendar.rs` | ✅ | ✅ | Implemented Wave 1 |
+| 3 | InputTag | `crates/aura-components/src/input_tag.rs` | ✅ | ✅ | Implemented Wave 1 |
+| 4 | TreeSelect | — | — | — | Pending |
+| 5 | Mention | — | — | — | Pending |
+| 6 | Watermark | — | — | — | Pending |
+| 7 | Tour | — | — | — | Pending |
+| 8 | VirtualizedTable | — | — | — | Pending |
+| 9 | VirtualizedTree | — | — | — | Pending |

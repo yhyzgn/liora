@@ -9,7 +9,9 @@ pub mod badge_demo;
 pub mod bar_chart_demo;
 pub mod breadcrumb_demo;
 pub mod button_demo;
+pub mod calendar_demo;
 pub mod card_demo;
+pub mod carousel_demo;
 pub mod cascader_demo;
 pub mod code_block_demo;
 pub mod code_editor_demo;
@@ -29,6 +31,7 @@ pub mod heat_bar_demo;
 pub mod horizontal_list_demo;
 pub mod icon_demo;
 pub mod image_demo;
+pub mod input_tag_demo;
 pub mod label_demo;
 pub mod layout_demo;
 pub mod line_chart_demo;
@@ -384,6 +387,21 @@ pub fn registry() -> Vec<DemoEntry> {
             render: |cx| message_box_demo::render(cx).into(),
         },
         DemoEntry {
+            name: "Calendar 日历",
+            description: "月视图、事件标记和范围展示",
+            render: |cx| calendar_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "Carousel 走马灯",
+            description: "轮播卡片、指示器和自动播放配置",
+            render: |cx| carousel_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "InputTag 标签输入",
+            description: "回车生成标签、删除和限制数量",
+            render: |cx| input_tag_demo::render(cx).into(),
+        },
+        DemoEntry {
             name: "Card 卡片",
             description: "内容聚合容器",
             render: |cx| card_demo::render(cx).into(),
@@ -516,6 +534,9 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Badge" => Some(badge_demo::render(cx).into()),
         "Breadcrumb" => Some(breadcrumb_demo::render(cx).into()),
         "Button" => Some(button_demo::render(cx).into()),
+        "Calendar" => Some(calendar_demo::render(cx).into()),
+        "Carousel" => Some(carousel_demo::render(cx).into()),
+        "InputTag" => Some(input_tag_demo::render(cx).into()),
         "Card" => Some(card_demo::render(cx).into()),
         "Cascader" => Some(cascader_demo::render(cx).into()),
         "Checkbox" => Some(form_controls_demo::render_checkbox(cx)),
