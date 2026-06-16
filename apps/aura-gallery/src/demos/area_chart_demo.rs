@@ -57,9 +57,7 @@ impl Render for AreaChartDemo {
                         .id("area-chart-demo-downsample")
                         .height(px(400.0))
                         .stacked()
-                        .max_render_points(160)
-                        .max_axis_labels(8)
-                        .max_value_labels(12),
+                        .max_render_points(160),
                 )),
         )
     }

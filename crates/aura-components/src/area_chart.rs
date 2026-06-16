@@ -1,7 +1,8 @@
 use crate::chart::{
     ChartOptions, ChartPalette, ChartSeries, ChartValueLabelContent, ChartValueLabelPlacement,
-    collect_axis_labels, downsample_points, format_value_label, has_chart_data, label_domain_len,
-    normalized_domain_with_baseline, series_total, sparse_indices, stacked_domain,
+    collect_axis_labels, downsample_index_range, downsample_indexed_values, format_value_label,
+    has_chart_data, label_domain_len, normalized_domain_with_baseline, series_total,
+    sparse_indices, stacked_domain,
 };
 use crate::chart_frame::{paint_chart_frame, paint_chart_label_aligned};
 use crate::chart_scale::{ScaleLinear, ScalePoint};
@@ -336,21 +337,21 @@ fn sampled_point_indices(
     series: &[ChartSeries],
     max_points: Option<usize>,
 ) -> Vec<usize> {
-    let points = (0..labels_len)
-        .map(|index| {
-            let total = series
+    downsample_index_range(
+        labels_len,
+        |index| {
+            series
                 .iter()
                 .filter_map(|series| series.points.get(index))
                 .filter(|point| point.is_finite())
                 .map(|point| point.value)
-                .sum::<f64>();
-            (index, total)
-        })
-        .collect::<Vec<_>>();
-    downsample_points(&points, max_points)
-        .into_iter()
-        .map(|(index, _)| index)
-        .collect()
+                .sum::<f64>()
+        },
+        max_points,
+    )
+    .into_iter()
+    .map(|(index, _)| index)
+    .collect()
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -376,14 +377,9 @@ fn paint_overlay_areas(
         let fill_color = current.resolved_fill_color(fallback);
         let current_smooth = current.smooth.unwrap_or(smooth);
         let current_stroke_width = current.stroke_width.unwrap_or(stroke_width);
-        let sampled_values = downsample_points(
-            &current
-                .points
-                .iter()
-                .enumerate()
-                .filter(|(_, chart_point)| chart_point.is_finite())
-                .map(|(index, chart_point)| (index, chart_point.value))
-                .collect::<Vec<_>>(),
+        let sampled_values = downsample_indexed_values(
+            &current.points,
+            |chart_point| chart_point.value,
             options.max_render_points,
         );
         let point_data = sampled_values

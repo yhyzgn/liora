@@ -1,4 +1,4 @@
-use crate::chart::{ChartLineStyle, ChartPoint, downsample_points};
+use crate::chart::{ChartLineStyle, ChartPoint, downsample_index_range};
 use crate::chart_shape::{
     area_path, line_path_with_style, smooth_area_path, smooth_line_path_with_style,
 };
@@ -191,7 +191,7 @@ impl Sparkline {
     }
 
     pub fn resolved_domain(&self) -> Option<(f64, f64)> {
-        sparkline_domain(self.y_domain, &finite_values(&self.values))
+        finite_stats(&self.values).and_then(|stats| sparkline_domain(self.y_domain, stats))
     }
 }
 
@@ -209,8 +209,8 @@ impl RenderOnce for Sparkline {
         let id = self.id.clone();
         let height = self.height;
         let width = self.width;
-        let finite = finite_values(&self.values);
-        if finite.is_empty() {
+        let stats = finite_stats(&self.values);
+        if stats.is_none() {
             return div()
                 .id(ElementId::from(id))
                 .h(height)
@@ -221,10 +221,11 @@ impl RenderOnce for Sparkline {
                 .into_any_element();
         }
 
-        let domain = sparkline_domain(self.y_domain, &finite).unwrap_or((0.0, 1.0));
+        let stats = stats.unwrap();
+        let domain = sparkline_domain(self.y_domain, stats).unwrap_or((0.0, 1.0));
         let positive = self.positive_color.unwrap_or(theme.success.base);
         let negative = self.negative_color.unwrap_or(theme.danger.base);
-        let trend_color = if self.trend_delta().unwrap_or(0.0) < 0.0 {
+        let trend_color = if stats.last - stats.first < 0.0 {
             negative
         } else {
             positive
@@ -254,7 +255,6 @@ impl RenderOnce for Sparkline {
                 let bottom = bounds.bottom() - padding;
                 let plot_width = (right - left).max(px(1.0));
                 let plot_height = (bottom - top).max(px(1.0));
-                let finite = finite_values(&values);
                 let points = sparkline_points(
                     &values,
                     domain,
@@ -323,8 +323,6 @@ impl RenderOnce for Sparkline {
                         ));
                     }
                 }
-
-                let _ = finite;
             },
         )
         .h(height)
@@ -338,34 +336,46 @@ impl RenderOnce for Sparkline {
     }
 }
 
-fn finite_values(values: &[f64]) -> Vec<f64> {
-    values
-        .iter()
-        .copied()
-        .filter(|value| value.is_finite())
-        .collect()
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct FiniteStats {
+    first: f64,
+    last: f64,
+    min: f64,
+    max: f64,
+}
+
+fn finite_stats(values: &[f64]) -> Option<FiniteStats> {
+    let mut first = None;
+    let mut last = 0.0;
+    let mut min = f64::INFINITY;
+    let mut max = f64::NEG_INFINITY;
+    for value in values.iter().copied().filter(|value| value.is_finite()) {
+        first.get_or_insert(value);
+        last = value;
+        min = min.min(value);
+        max = max.max(value);
+    }
+    Some(FiniteStats {
+        first: first?,
+        last,
+        min,
+        max,
+    })
 }
 
 fn trend_delta(values: &[f64]) -> Option<f64> {
-    let finite = finite_values(values);
-    Some(finite.last()? - finite.first()?)
+    let stats = finite_stats(values)?;
+    Some(stats.last - stats.first)
 }
 
-fn sparkline_domain(domain: Option<(f64, f64)>, values: &[f64]) -> Option<(f64, f64)> {
+fn sparkline_domain(domain: Option<(f64, f64)>, stats: FiniteStats) -> Option<(f64, f64)> {
     if let Some((min, max)) = domain.filter(|(min, max)| min.is_finite() && max.is_finite()) {
         if max > min {
             return Some((min, max));
         }
     }
-    let mut min = f64::INFINITY;
-    let mut max = f64::NEG_INFINITY;
-    for value in values.iter().copied().filter(|value| value.is_finite()) {
-        min = min.min(value);
-        max = max.max(value);
-    }
-    if !min.is_finite() || !max.is_finite() {
-        return None;
-    }
+    let mut min = stats.min;
+    let mut max = stats.max;
     if (max - min).abs() < f64::EPSILON {
         let pad = if max.abs() < f64::EPSILON {
             1.0
@@ -392,20 +402,14 @@ fn sparkline_points(
     plot_height: Pixels,
     max_render_points: Option<usize>,
 ) -> Vec<gpui::Point<Pixels>> {
-    let finite = finite_values(values);
-    let last_index = finite.len().saturating_sub(1).max(1) as f32;
-    let raw_points = finite
-        .iter()
-        .enumerate()
+    let last_index = values.len().saturating_sub(1).max(1) as f32;
+    downsample_index_range(values.len(), |index| values[index], max_render_points)
+        .into_iter()
         .map(|(index, value)| {
             let x = left + px(plot_width.as_f32() * (index as f32 / last_index));
-            let y = y_for_value(*value, domain, top, plot_height);
-            (point(x, y), *value)
+            let y = y_for_value(value, domain, top, plot_height);
+            point(x, y)
         })
-        .collect::<Vec<_>>();
-    downsample_points(&raw_points, max_render_points)
-        .into_iter()
-        .map(|(position, _)| position)
         .collect()
 }
 
@@ -449,8 +453,11 @@ mod tests {
 
     #[test]
     fn sparkline_domain_ignores_invalid_values_and_expands_flat_data() {
-        assert_eq!(sparkline_domain(None, &[f64::NAN]), None);
-        let domain = sparkline_domain(None, &[4.0, f64::NAN, 4.0]).unwrap();
+        assert_eq!(
+            finite_stats(&[f64::NAN]).and_then(|stats| sparkline_domain(None, stats)),
+            None
+        );
+        let domain = sparkline_domain(None, finite_stats(&[4.0, f64::NAN, 4.0]).unwrap()).unwrap();
         assert!(domain.0 < 4.0);
         assert!(domain.1 > 4.0);
     }

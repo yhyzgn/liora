@@ -1,7 +1,7 @@
 use crate::chart::{
     ChartOptions, ChartPalette, ChartSeries, ChartValueLabelContent, ChartValueLabelPlacement,
-    collect_axis_labels, downsample_points, format_value_label, has_chart_data, label_domain_len,
-    normalized_domain, series_total, sparse_indices,
+    collect_axis_labels, downsample_indexed_values, format_value_label, has_chart_data,
+    label_domain_len, normalized_domain, series_total, sparse_indices,
 };
 use crate::chart_frame::{paint_chart_frame, paint_chart_label_aligned};
 use crate::chart_scale::{ScaleLinear, ScalePoint};
@@ -280,14 +280,9 @@ fn render_line_canvas(
                     .line_style
                     .unwrap_or(crate::chart::ChartLineStyle::Solid);
                 let current_dash_pattern = current.dash_pattern.as_deref();
-                let sampled_values = downsample_points(
-                    &current
-                        .points
-                        .iter()
-                        .enumerate()
-                        .filter(|(_, chart_point)| chart_point.is_finite())
-                        .map(|(index, chart_point)| (index, chart_point.value))
-                        .collect::<Vec<_>>(),
+                let sampled_values = downsample_indexed_values(
+                    &current.points,
+                    |chart_point| chart_point.value,
                     options.max_render_points,
                 );
                 let point_data = sampled_values

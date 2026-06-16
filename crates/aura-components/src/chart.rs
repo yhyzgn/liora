@@ -472,6 +472,135 @@ pub fn has_chart_data(series: &[ChartSeries]) -> bool {
     series.iter().any(|series| !series.is_empty())
 }
 
+/// Downsample an indexed value slice without first allocating every finite
+/// `(index, value)` pair. It makes one cheap count pass and one bucket pass,
+/// returning only the bounded render set while preserving first/last finite
+/// values and local min/max extrema.
+pub fn downsample_index_range<F>(
+    len: usize,
+    value_at: F,
+    max_points: Option<usize>,
+) -> Vec<(usize, f64)>
+where
+    F: Fn(usize) -> f64,
+{
+    let collect_finite = || {
+        (0..len)
+            .filter_map(|index| {
+                let value = value_at(index);
+                value.is_finite().then_some((index, value))
+            })
+            .collect::<Vec<_>>()
+    };
+
+    let Some(max_points) = max_points.filter(|max| *max >= 3) else {
+        return collect_finite();
+    };
+
+    let finite_count = (0..len)
+        .map(&value_at)
+        .filter(|value| value.is_finite())
+        .count();
+    if finite_count == 0 {
+        return Vec::new();
+    }
+    if finite_count <= max_points {
+        return collect_finite();
+    }
+
+    let bucket_count = ((max_points.saturating_sub(2)) / 2).max(1);
+    let middle_len = finite_count.saturating_sub(2);
+    let bucket_size = (middle_len as f64 / bucket_count as f64).ceil() as usize;
+    let mut sampled = Vec::with_capacity(max_points.min(finite_count));
+    let mut finite_ordinal = 0usize;
+    let mut first = None;
+    let mut last = None;
+    let mut bucket_start = 1usize;
+    let mut bucket_end = (bucket_start + bucket_size).min(finite_count - 1);
+    let mut bucket_min: Option<(usize, f64, usize)> = None;
+    let mut bucket_max: Option<(usize, f64, usize)> = None;
+
+    let flush_bucket = |sampled: &mut Vec<(usize, f64)>,
+                        bucket_min: &mut Option<(usize, f64, usize)>,
+                        bucket_max: &mut Option<(usize, f64, usize)>| {
+        let (Some(min), Some(max)) = (*bucket_min, *bucket_max) else {
+            return;
+        };
+        if min.2 <= max.2 {
+            sampled.push((min.0, min.1));
+            if min.2 != max.2 && sampled.len() + 1 < max_points {
+                sampled.push((max.0, max.1));
+            }
+        } else {
+            sampled.push((max.0, max.1));
+            if sampled.len() + 1 < max_points {
+                sampled.push((min.0, min.1));
+            }
+        }
+        *bucket_min = None;
+        *bucket_max = None;
+    };
+
+    for index in 0..len {
+        let current_value = value_at(index);
+        if !current_value.is_finite() {
+            continue;
+        }
+
+        if finite_ordinal == 0 {
+            first = Some((index, current_value));
+        }
+        if finite_ordinal == finite_count - 1 {
+            last = Some((index, current_value));
+        } else if finite_ordinal >= bucket_start && finite_ordinal < finite_count - 1 {
+            while finite_ordinal >= bucket_end && sampled.len() + 1 < max_points {
+                flush_bucket(&mut sampled, &mut bucket_min, &mut bucket_max);
+                bucket_start = bucket_end;
+                bucket_end = (bucket_start + bucket_size).min(finite_count - 1);
+            }
+            let candidate = (index, current_value, finite_ordinal);
+            if bucket_min
+                .as_ref()
+                .is_none_or(|(_, min_value, _)| current_value < *min_value)
+            {
+                bucket_min = Some(candidate);
+            }
+            if bucket_max
+                .as_ref()
+                .is_none_or(|(_, max_value, _)| current_value > *max_value)
+            {
+                bucket_max = Some(candidate);
+            }
+        }
+        finite_ordinal += 1;
+    }
+
+    if let Some(first) = first {
+        sampled.insert(0, first);
+    }
+    if sampled.len() + 1 < max_points {
+        flush_bucket(&mut sampled, &mut bucket_min, &mut bucket_max);
+    }
+    if sampled.len() >= max_points {
+        sampled.pop();
+    }
+    if let Some(last) = last {
+        sampled.push(last);
+    }
+    sampled
+}
+
+pub fn downsample_indexed_values<T, F>(
+    items: &[T],
+    value: F,
+    max_points: Option<usize>,
+) -> Vec<(usize, f64)>
+where
+    F: Fn(&T) -> f64,
+{
+    downsample_index_range(items.len(), |index| value(&items[index]), max_points)
+}
+
 /// Downsample a finite point stream while preserving first/last points and
 /// local min/max extrema in each bucket. This keeps long native path rendering
 /// bounded without hiding short spikes in monitoring-style charts.
@@ -643,6 +772,54 @@ mod tests {
         assert_eq!(labels.first().map(|label| label.index), Some(0));
         assert_eq!(labels.last().map(|label| label.index), Some(99));
         assert_eq!(label_domain_len(&series), 100);
+    }
+
+    #[test]
+    fn downsample_index_range_preserves_edges_and_extrema_without_dense_output() {
+        let sampled = downsample_index_range(
+            10_000,
+            |index| {
+                if index == 5_432 {
+                    999_999.0
+                } else {
+                    index as f64
+                }
+            },
+            Some(101),
+        );
+
+        assert!(sampled.len() <= 101);
+        assert_eq!(sampled.first(), Some(&(0, 0.0)));
+        assert_eq!(sampled.last(), Some(&(9_999, 9_999.0)));
+        assert!(sampled.contains(&(5_432, 999_999.0)));
+    }
+
+    #[test]
+    fn downsample_indexed_values_preserves_edges_and_extrema_without_dense_output() {
+        let values = (0..10_000)
+            .map(|index| {
+                if index == 5_432 {
+                    999_999.0
+                } else {
+                    index as f64
+                }
+            })
+            .collect::<Vec<_>>();
+        let sampled = downsample_indexed_values(&values, |value| *value, Some(101));
+
+        assert!(sampled.len() <= 101);
+        assert_eq!(sampled.first(), Some(&(0, 0.0)));
+        assert_eq!(sampled.last(), Some(&(9_999, 9_999.0)));
+        assert!(sampled.contains(&(5_432, 999_999.0)));
+    }
+
+    #[test]
+    fn downsample_indexed_values_filters_non_finite_values() {
+        let values = [0.0, f64::NAN, 2.0, f64::INFINITY, 4.0];
+        assert_eq!(
+            downsample_indexed_values(&values, |value| *value, Some(10)),
+            vec![(0, 0.0), (2, 2.0), (4, 4.0)]
+        );
     }
 
     #[test]

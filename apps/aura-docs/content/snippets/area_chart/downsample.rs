@@ -20,6 +20,4 @@ pub fn area_chart_downsample() -> impl IntoElement {
     .height(px(320.0))
     .stacked()
     .max_render_points(160)
-    .max_axis_labels(8)
-    .max_value_labels(12)
 }

@@ -55,7 +55,7 @@ Initial technical direction:
 Expected P10 deliverables:
 - Shared chart infrastructure: scale, axis/grid, shapes, legend, tooltip/hover.
 - Completed so far: LineChart, AreaChart, BarChart MVPs with Gallery demos, Docs pages, external snippets, and tests.
-- Dense chart performance second pass (2026-06-16): LineChart/AreaChart now avoid full-label point scales, cap axis/value labels, and downsample before GPUI point construction. Public knobs: `max_render_points(...)`, `max_axis_labels(...)`, `max_value_labels(...)`, `disable_downsampling()`.
+- Dense chart performance follow-up (2026-06-16): LineChart/AreaChart now avoid full-label point scales and cap axis/value labels by default. The later correction moved sampling into shared core helpers (`downsample_index_range`, `downsample_indexed_values`) so LineChart/AreaChart/Sparkline no longer allocate full dense intermediate point vectors before sampling. Public knobs remain `max_render_points(...)`, `max_axis_labels(...)`, `max_value_labels(...)`, `disable_downsampling()`.
 - Remaining P10 components: PieChart, RingChart, Sparkline, plus tooltip/hover and larger-data performance work.
 
 ## Current New Phase — P11 Native Tray / Process Resident
