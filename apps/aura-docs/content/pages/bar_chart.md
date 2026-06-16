@@ -24,6 +24,28 @@
 ```rust src="bar_chart/grouped.rs"
 ```
 
+## 渐变柱体
+
+### 效果
+
+::AuraDemo{component="BarChartGradient"}::
+
+### 代码
+
+```rust src="bar_chart/gradient.rs"
+```
+
+## 逐根柱渐变
+
+### 效果
+
+::AuraDemo{component="BarChartPerBarGradient"}::
+
+### 代码
+
+```rust src="bar_chart/per_bar_gradient.rs"
+```
+
 ## 堆叠柱状图
 
 ### 效果
@@ -48,6 +70,8 @@
 
 ## 独立柱状图 / 迷你指标
 
+固定柱宽/间距时会按内容宽度紧凑展示，不再把少量柱子强行铺满整行。
+
 ### 效果
 
 ::AuraDemo{component="BarChartStandalone"}::
@@ -55,4 +79,15 @@
 ### 代码
 
 ```rust src="bar_chart/standalone.rs"
+```
+
+## 迷你指标多风格
+
+### 效果
+
+::AuraDemo{component="BarChartStandaloneStyles"}::
+
+### 代码
+
+```rust src="bar_chart/standalone_styles.rs"
 ```

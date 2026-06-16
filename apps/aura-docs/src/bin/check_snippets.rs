@@ -65,12 +65,18 @@ mod badge_dot;
 mod badge_max;
 #[path = "../../content/snippets/bar_chart/basic.rs"]
 mod bar_chart_basic;
+#[path = "../../content/snippets/bar_chart/gradient.rs"]
+mod bar_chart_gradient;
 #[path = "../../content/snippets/bar_chart/grouped.rs"]
 mod bar_chart_grouped;
+#[path = "../../content/snippets/bar_chart/per_bar_gradient.rs"]
+mod bar_chart_per_bar_gradient;
 #[path = "../../content/snippets/bar_chart/stacked.rs"]
 mod bar_chart_stacked;
 #[path = "../../content/snippets/bar_chart/standalone.rs"]
 mod bar_chart_standalone;
+#[path = "../../content/snippets/bar_chart/standalone_styles.rs"]
+mod bar_chart_standalone_styles;
 #[path = "../../content/snippets/breadcrumb/basic.rs"]
 mod breadcrumb_basic;
 #[path = "../../content/snippets/breadcrumb/clickable.rs"]

@@ -1,6 +1,7 @@
-use aura_components::layout_helpers::{page, section};
+use aura_components::layout_helpers::{page, row_md, section};
 use aura_components::{
-    BarChart, BarChartValueColorRange, ChartPoint, ChartSeries, ChartValueLabelContent, Space,
+    BarChart, BarChartFill, BarChartValueColorRange, BarChartValueFillRange, ChartPoint,
+    ChartSeries, ChartValueLabelContent, Space,
 };
 use gpui::{AnyView, App, Context, Render, Window, blue, green, prelude::*, px, rgb};
 
@@ -45,6 +46,41 @@ impl Render for BarChartDemo {
                         .percentage_decimals(1),
                 ))
                 .child(section(
+                    "渐变柱体",
+                    "普通柱状图也可以配置全局渐变、逐根柱渐变，以及按值区间切换渐变。",
+                    BarChart::new(revenue_series())
+                        .id("bar-chart-demo-gradient")
+                        .height(px(360.0))
+                        .bar_radius(px(6.0))
+                        .bar_vertical_gradient(rgb(0x60a5fa).into(), rgb(0x2563eb).into())
+                        .value_fill_ranges([
+                            BarChartValueFillRange::new(
+                                0.0,
+                                60.0,
+                                BarChartFill::vertical_gradient(rgb(0xbfdbfe).into(), rgb(0x3b82f6).into()),
+                            ),
+                            BarChartValueFillRange::new(
+                                60.0,
+                                100.0,
+                                BarChartFill::vertical_gradient(rgb(0xfef08a).into(), rgb(0xf97316).into()),
+                            ),
+                        ]),
+                ))
+                .child(section(
+                    "逐根柱渐变",
+                    "每一根柱都可以指定不同的渐变填充，普通柱状图和迷你指标共用同一套填充能力。",
+                    BarChart::new(revenue_series())
+                        .id("bar-chart-demo-per-bar-gradient")
+                        .height(px(340.0))
+                        .bar_radius(px(8.0))
+                        .bar_fills([
+                            BarChartFill::vertical_gradient(rgb(0xdbeafe).into(), rgb(0x2563eb).into()),
+                            BarChartFill::vertical_gradient(rgb(0xdcfce7).into(), rgb(0x16a34a).into()),
+                            BarChartFill::vertical_gradient(rgb(0xffedd5).into(), rgb(0xea580c).into()),
+                            BarChartFill::vertical_gradient(rgb(0xfce7f3).into(), rgb(0xdb2777).into()),
+                        ]),
+                ))
+                .child(section(
                     "堆叠柱状图",
                     "在同一个分类柱中展示构成占比。",
                     BarChart::new(multi_series())
@@ -54,19 +90,42 @@ impl Render for BarChartDemo {
                 ))
                 .child(section(
                     "独立柱状图 / 迷你指标",
-                    "隐藏坐标轴、网格和图例，适合在卡片或看板中展示一组扁平化指标。",
-                    BarChart::new(standalone_series())
-                        .id("bar-chart-demo-standalone")
-                        .standalone()
-                        .height(px(132.0))
-                        .bar_width(px(8.0))
-                        .bar_gap(px(7.0))
-                        .bar_radius(px(5.0))
-                        .value_color_ranges([
-                            BarChartValueColorRange::new(0.0, 35.0, rgb(0x86efac).into()),
-                            BarChartValueColorRange::new(35.0, 70.0, rgb(0x22c55e).into()),
-                            BarChartValueColorRange::new(70.0, 100.0, rgb(0x16a34a).into()),
-                        ]),
+                    "隐藏坐标轴、网格和图例，适合在卡片或看板中展示一组扁平化指标；固定柱宽时按内容宽度紧凑布局。",
+                    row_md(vec![
+                        BarChart::new(standalone_series())
+                            .id("bar-chart-demo-standalone-compact")
+                            .standalone()
+                            .bar_width(px(8.0))
+                            .bar_gap(px(4.0))
+                            .bar_radius(px(5.0))
+                            .value_color_ranges([
+                                BarChartValueColorRange::new(0.0, 35.0, rgb(0x86efac).into()),
+                                BarChartValueColorRange::new(35.0, 70.0, rgb(0x22c55e).into()),
+                                BarChartValueColorRange::new(70.0, 100.0, rgb(0x16a34a).into()),
+                            ])
+                            .into_any_element(),
+                        BarChart::new(standalone_series())
+                            .id("bar-chart-demo-standalone-gradient")
+                            .standalone()
+                            .bar_width(px(10.0))
+                            .bar_gap(px(5.0))
+                            .bar_radius(px(8.0))
+                            .bar_fills([
+                                BarChartFill::vertical_gradient(rgb(0xc4b5fd).into(), rgb(0x7c3aed).into()),
+                                BarChartFill::vertical_gradient(rgb(0xbae6fd).into(), rgb(0x0284c7).into()),
+                                BarChartFill::vertical_gradient(rgb(0xfde68a).into(), rgb(0xd97706).into()),
+                            ])
+                            .into_any_element(),
+                        BarChart::new(standalone_series())
+                            .id("bar-chart-demo-standalone-wide")
+                            .standalone()
+                            .height(px(96.0))
+                            .bar_width(px(14.0))
+                            .bar_gap(px(8.0))
+                            .bar_radius(px(3.0))
+                            .bar_vertical_gradient(rgb(0xfda4af).into(), rgb(0xe11d48).into())
+                            .into_any_element(),
+                    ]),
                 )),
         )
     }
@@ -159,5 +218,10 @@ mod tests {
         assert!(source.contains("value_label_content"));
         assert!(source.contains("standalone()"));
         assert!(source.contains("value_color_ranges"));
+        assert!(source.contains("bar_vertical_gradient"));
+        assert!(source.contains("BarChartFill::vertical_gradient"));
+        assert!(source.contains("value_fill_ranges"));
+        assert!(source.contains("row_md"));
+        assert!(source.contains("bar-chart-demo-standalone-gradient"));
     }
 }

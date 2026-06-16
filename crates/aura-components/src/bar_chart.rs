@@ -10,13 +10,106 @@ use aura_core::{Config, unique_id};
 use gpui::{
     App, Background, BorderStyle, Bounds, Component, Corners, Edges, ElementId, Hsla,
     InteractiveElement, IntoElement, ParentElement, Pixels, RenderOnce, SharedString, Styled,
-    Window, canvas, div, fill, point, prelude::*, px, quad, size,
+    Window, canvas, div, fill, linear_color_stop, linear_gradient, point, prelude::*, px, quad,
+    size,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BarChartMode {
     Grouped,
     Stacked,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum BarChartFill {
+    Solid(Hsla),
+    Gradient(BarChartGradient),
+}
+
+impl BarChartFill {
+    pub fn solid(color: Hsla) -> Self {
+        Self::Solid(color)
+    }
+
+    pub fn vertical_gradient(from: Hsla, to: Hsla) -> Self {
+        Self::Gradient(BarChartGradient::vertical(from, to))
+    }
+
+    pub fn horizontal_gradient(from: Hsla, to: Hsla) -> Self {
+        Self::Gradient(BarChartGradient::horizontal(from, to))
+    }
+
+    fn into_background(self) -> Background {
+        match self {
+            Self::Solid(color) => Background::from(color),
+            Self::Gradient(gradient) => gradient.into_background(),
+        }
+    }
+}
+
+impl From<Hsla> for BarChartFill {
+    fn from(color: Hsla) -> Self {
+        Self::Solid(color)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct BarChartGradient {
+    pub angle: f32,
+    pub stops: Vec<(Hsla, f32)>,
+}
+
+impl BarChartGradient {
+    pub fn new(angle: f32, stops: impl IntoIterator<Item = (Hsla, f32)>) -> Self {
+        let mut stops = stops
+            .into_iter()
+            .map(|(color, offset)| (color, offset.clamp(0.0, 1.0)))
+            .collect::<Vec<_>>();
+        if stops.is_empty() {
+            stops.push((gpui::blue(), 0.0));
+        }
+        Self { angle, stops }
+    }
+
+    pub fn vertical(from: Hsla, to: Hsla) -> Self {
+        Self::new(180.0, [(from, 0.0), (to, 1.0)])
+    }
+
+    pub fn horizontal(from: Hsla, to: Hsla) -> Self {
+        Self::new(90.0, [(from, 0.0), (to, 1.0)])
+    }
+
+    fn into_background(self) -> Background {
+        let mut stops = self.stops.into_iter();
+        let (first_color, first_offset) = stops.next().unwrap_or((gpui::blue(), 0.0));
+        let (second_color, second_offset) = stops.next().unwrap_or((first_color, 1.0));
+        linear_gradient(
+            self.angle,
+            linear_color_stop(first_color, first_offset),
+            linear_color_stop(second_color, second_offset),
+        )
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct BarChartValueFillRange {
+    pub min: f64,
+    pub max: f64,
+    pub fill: BarChartFill,
+}
+
+impl BarChartValueFillRange {
+    pub fn new(min: f64, max: f64, fill: impl Into<BarChartFill>) -> Self {
+        Self {
+            min,
+            max,
+            fill: fill.into(),
+        }
+    }
+
+    fn contains(&self, value: f64) -> bool {
+        value >= self.min && value <= self.max
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -31,8 +124,8 @@ impl BarChartValueColorRange {
         Self { min, max, color }
     }
 
-    fn contains(self, value: f64) -> bool {
-        value >= self.min && value <= self.max
+    fn into_fill_range(self) -> BarChartValueFillRange {
+        BarChartValueFillRange::new(self.min, self.max, self.color)
     }
 }
 
@@ -46,7 +139,8 @@ pub struct BarChart {
     bar_radius: Pixels,
     bar_width: Option<Pixels>,
     bar_gap: Option<Pixels>,
-    value_color_ranges: Vec<BarChartValueColorRange>,
+    value_fill_ranges: Vec<BarChartValueFillRange>,
+    bar_fills: Vec<BarChartFill>,
 }
 
 impl BarChart {
@@ -63,7 +157,8 @@ impl BarChart {
             bar_radius: px(0.0),
             bar_width: None,
             bar_gap: None,
-            value_color_ranges: Vec::new(),
+            value_fill_ranges: Vec::new(),
+            bar_fills: Vec::new(),
         }
     }
 
@@ -149,7 +244,7 @@ impl BarChart {
             bottom: px(6.0),
             left: px(6.0),
         };
-        self.options.height = px(112.0);
+        self.options.height = px(86.0);
         self.bar_radius = px(4.0);
         self
     }
@@ -173,7 +268,28 @@ impl BarChart {
         mut self,
         ranges: impl IntoIterator<Item = BarChartValueColorRange>,
     ) -> Self {
-        self.value_color_ranges = ranges.into_iter().collect();
+        self.value_fill_ranges = ranges
+            .into_iter()
+            .map(BarChartValueColorRange::into_fill_range)
+            .collect();
+        self
+    }
+
+    pub fn value_fill_ranges(
+        mut self,
+        ranges: impl IntoIterator<Item = BarChartValueFillRange>,
+    ) -> Self {
+        self.value_fill_ranges = ranges.into_iter().collect();
+        self
+    }
+
+    pub fn bar_fills(mut self, fills: impl IntoIterator<Item = impl Into<BarChartFill>>) -> Self {
+        self.bar_fills = fills.into_iter().map(Into::into).collect();
+        self
+    }
+
+    pub fn bar_vertical_gradient(mut self, from: Hsla, to: Hsla) -> Self {
+        self.bar_fills = vec![BarChartFill::vertical_gradient(from, to)];
         self
     }
 
@@ -211,6 +327,14 @@ impl BarChart {
     pub fn bar_radius_value(&self) -> Pixels {
         self.bar_radius
     }
+
+    pub fn value_fill_ranges_config(&self) -> &[BarChartValueFillRange] {
+        &self.value_fill_ranges
+    }
+
+    pub fn bar_fills_config(&self) -> &[BarChartFill] {
+        &self.bar_fills
+    }
 }
 
 #[derive(Clone)]
@@ -218,32 +342,69 @@ struct BarPaintOptions {
     radius: Pixels,
     width: Option<Pixels>,
     gap: Option<Pixels>,
-    value_color_ranges: Vec<BarChartValueColorRange>,
+    value_fill_ranges: Vec<BarChartValueFillRange>,
+    bar_fills: Vec<BarChartFill>,
+    compact_width: bool,
 }
 
 impl BarPaintOptions {
-    fn resolve_color(&self, value: f64, fallback: Hsla) -> Hsla {
-        self.value_color_ranges
+    fn resolve_fill(&self, value: f64, fallback: Hsla, point_index: usize) -> BarChartFill {
+        self.value_fill_ranges
             .iter()
-            .copied()
             .find(|range| range.contains(value))
-            .map(|range| range.color)
-            .unwrap_or(fallback)
+            .map(|range| range.fill.clone())
+            .or_else(|| {
+                (!self.bar_fills.is_empty())
+                    .then(|| self.bar_fills[point_index % self.bar_fills.len()].clone())
+            })
+            .unwrap_or(BarChartFill::Solid(fallback))
+    }
+
+    fn preferred_width(
+        &self,
+        series: &[ChartSeries],
+        mode: BarChartMode,
+        padding: crate::chart::ChartPadding,
+    ) -> Option<Pixels> {
+        if !self.compact_width {
+            return None;
+        }
+        let labels_len = series.iter().map(|series| series.points.len()).max()?;
+        let bar_width = self.width?;
+        let gap = self.gap.unwrap_or(px(4.0));
+        let series_count = match mode {
+            BarChartMode::Grouped => series.len().max(1),
+            BarChartMode::Stacked => 1,
+        };
+        let group_width =
+            bar_width * series_count as f32 + gap * series_count.saturating_sub(1) as f32;
+        Some(
+            padding.left
+                + padding.right
+                + group_width * labels_len as f32
+                + gap * labels_len.saturating_sub(1) as f32,
+        )
     }
 }
 
-fn paint_bar(window: &mut Window, bounds: Bounds<Pixels>, color: Hsla, radius: Pixels) {
+fn paint_bar(
+    window: &mut Window,
+    bounds: Bounds<Pixels>,
+    fill_style: BarChartFill,
+    radius: Pixels,
+) {
+    let background = fill_style.into_background();
     if radius > px(0.0) {
         window.paint_quad(quad(
             bounds,
             Corners::all(radius).clamp_radii_for_quad_size(bounds.size),
-            Background::from(color),
+            background,
             Edges::all(px(0.0)),
             gpui::transparent_black(),
             BorderStyle::Solid,
         ));
     } else {
-        window.paint_quad(fill(bounds, Background::from(color)));
+        window.paint_quad(fill(bounds, background));
     }
 }
 
@@ -268,7 +429,7 @@ impl RenderOnce for BarChart {
             .flex()
             .flex_col()
             .gap_2()
-            .w_full()
+            .when(!self.standalone, |s| s.w_full())
             .when(!self.standalone, |s| {
                 s.p_3()
                     .rounded_md()
@@ -301,7 +462,9 @@ impl RenderOnce for BarChart {
                     radius: self.bar_radius,
                     width: self.bar_width,
                     gap: self.bar_gap,
-                    value_color_ranges: self.value_color_ranges,
+                    value_fill_ranges: self.value_fill_ranges,
+                    bar_fills: self.bar_fills,
+                    compact_width: self.standalone,
                 },
             ))
             .into_any_element()
@@ -331,6 +494,7 @@ fn render_bar_canvas(
     paint_options: BarPaintOptions,
 ) -> impl IntoElement {
     let height = options.height;
+    let preferred_width = paint_options.preferred_width(&series, mode, options.padding);
     canvas(
         |_, _, _| (),
         move |bounds, _, window, cx| {
@@ -407,7 +571,8 @@ fn render_bar_canvas(
             }
         },
     )
-    .w_full()
+    .when_some(preferred_width, |style, width| style.w(width))
+    .when(preferred_width.is_none(), |style| style.w_full())
     .h(height)
 }
 
@@ -445,9 +610,10 @@ fn paint_grouped_bars(
             let Some(group_x) = band.tick_index(point_index) else {
                 continue;
             };
-            let color = paint_options.resolve_color(
+            let fill = paint_options.resolve_fill(
                 chart_point.value,
                 current.resolved_fill_color(palette.series_color(series_index)),
+                point_index,
             );
             let value_y = y.tick(chart_point.value).clamp(0.0, plot_height.as_f32());
             let top_y = baseline.min(value_y);
@@ -459,7 +625,7 @@ fn paint_grouped_bars(
                     point(left + px(x), top + px(top_y)),
                     size(px(bar_width), px(height)),
                 ),
-                color,
+                fill,
                 paint_options.radius,
             );
             if options.show_value_labels {
@@ -519,9 +685,10 @@ fn paint_stacked_bars(
             if !chart_point.is_finite() {
                 continue;
             }
-            let color = paint_options.resolve_color(
+            let fill = paint_options.resolve_fill(
                 chart_point.value,
                 current.resolved_fill_color(palette.series_color(series_index)),
+                point_index,
             );
             let (from, to) = if chart_point.value >= 0.0 {
                 let from = positive_base;
@@ -547,7 +714,7 @@ fn paint_stacked_bars(
                     point(left + px(x), top + px(top_y)),
                     size(px(width), px(height)),
                 ),
-                color,
+                fill,
                 paint_options.radius,
             );
             if options.show_value_labels {
@@ -631,7 +798,7 @@ mod tests {
         assert_eq!(chart.bar_radius_value(), px(3.0));
         assert_eq!(chart.bar_width, Some(px(8.0)));
         assert_eq!(chart.bar_gap, Some(px(4.0)));
-        assert_eq!(chart.value_color_ranges.len(), 1);
+        assert_eq!(chart.value_fill_ranges.len(), 1);
         assert_eq!(chart.bar_mode(), BarChartMode::Stacked);
     }
 
@@ -643,6 +810,20 @@ mod tests {
     }
 
     #[test]
+    fn bar_chart_tracks_gradient_fill_options() {
+        let chart = BarChart::new(sample_series())
+            .bar_fills([BarChartFill::vertical_gradient(gpui::blue(), gpui::green())])
+            .value_fill_ranges([BarChartValueFillRange::new(
+                0.0,
+                20.0,
+                BarChartFill::horizontal_gradient(gpui::red(), gpui::blue()),
+            )]);
+
+        assert_eq!(chart.bar_fills_config().len(), 1);
+        assert_eq!(chart.value_fill_ranges_config().len(), 1);
+    }
+
+    #[test]
     fn standalone_mode_disables_chart_chrome() {
         let chart = BarChart::new(sample_series()).standalone();
         assert!(chart.is_standalone());
@@ -651,5 +832,26 @@ mod tests {
         assert!(!chart.options().show_legend);
         assert!(!chart.options().show_value_labels);
         assert_eq!(chart.bar_radius_value(), px(4.0));
+    }
+
+    #[test]
+    fn standalone_fixed_width_uses_compact_content_width() {
+        let chart = BarChart::new(sample_series())
+            .standalone()
+            .bar_width(px(8.0))
+            .bar_gap(px(4.0));
+        let options = BarPaintOptions {
+            radius: chart.bar_radius,
+            width: chart.bar_width,
+            gap: chart.bar_gap,
+            value_fill_ranges: chart.value_fill_ranges.clone(),
+            bar_fills: chart.bar_fills.clone(),
+            compact_width: chart.standalone,
+        };
+
+        assert_eq!(
+            options.preferred_width(chart.series(), chart.bar_mode(), chart.options().padding),
+            Some(px(56.0))
+        );
     }
 }

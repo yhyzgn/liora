@@ -1029,6 +1029,10 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "input_number/basic.rs" => Some(include_str!("../content/snippets/input_number/basic.rs")),
         "bar_chart/basic.rs" => Some(include_str!("../content/snippets/bar_chart/basic.rs")),
         "bar_chart/grouped.rs" => Some(include_str!("../content/snippets/bar_chart/grouped.rs")),
+        "bar_chart/gradient.rs" => Some(include_str!("../content/snippets/bar_chart/gradient.rs")),
+        "bar_chart/per_bar_gradient.rs" => Some(include_str!(
+            "../content/snippets/bar_chart/per_bar_gradient.rs",
+        )),
         "bar_chart/stacked.rs" => Some(include_str!("../content/snippets/bar_chart/stacked.rs")),
         "bar_chart/custom.rs" => Some(include_str!("../content/snippets/bar_chart/custom.rs")),
         "label/basic.rs" => Some(include_str!("../content/snippets/label/basic.rs")),
@@ -1066,6 +1070,9 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "bar_chart/standalone.rs" => {
             Some(include_str!("../content/snippets/bar_chart/standalone.rs"))
         }
+        "bar_chart/standalone_styles.rs" => Some(include_str!(
+            "../content/snippets/bar_chart/standalone_styles.rs"
+        )),
         "input_number/vertical.rs" => {
             Some(include_str!("../content/snippets/input_number/vertical.rs"))
         }
@@ -3221,6 +3228,61 @@ impl Render for LiveDemoContent {
                 .y_domain(0.0, 120.0)
                 .into_any_element(),
             ]),
+            "BarChartGradient" => demo_row(vec![
+                aura_components::BarChart::new([aura_components::ChartSeries::new(
+                    "Revenue",
+                    [
+                        aura_components::ChartPoint::new("Q1", 42.0),
+                        aura_components::ChartPoint::new("Q2", 58.0),
+                        aura_components::ChartPoint::new("Q3", 73.0),
+                        aura_components::ChartPoint::new("Q4", 96.0),
+                    ],
+                )])
+                .id("docs-bar-chart-gradient")
+                .height(px(300.0))
+                .bar_radius(px(6.0))
+                .bar_vertical_gradient(gpui::rgb(0x60a5fa).into(), gpui::rgb(0x2563eb).into())
+                .value_fill_ranges([
+                    aura_components::BarChartValueFillRange::new(
+                        0.0,
+                        60.0,
+                        aura_components::BarChartFill::vertical_gradient(
+                            gpui::rgb(0xbfdbfe).into(),
+                            gpui::rgb(0x3b82f6).into(),
+                        ),
+                    ),
+                    aura_components::BarChartValueFillRange::new(
+                        60.0,
+                        100.0,
+                        aura_components::BarChartFill::vertical_gradient(
+                            gpui::rgb(0xfef08a).into(),
+                            gpui::rgb(0xf97316).into(),
+                        ),
+                    ),
+                ])
+                .into_any_element(),
+            ]),
+            "BarChartPerBarGradient" => demo_row(vec![
+                aura_components::BarChart::new([aura_components::ChartSeries::new(
+                    "Revenue",
+                    [
+                        aura_components::ChartPoint::new("Q1", 42.0),
+                        aura_components::ChartPoint::new("Q2", 58.0),
+                        aura_components::ChartPoint::new("Q3", 73.0),
+                        aura_components::ChartPoint::new("Q4", 96.0),
+                    ],
+                )])
+                .id("docs-bar-chart-per-bar-gradient")
+                .height(px(300.0))
+                .bar_radius(px(8.0))
+                .bar_fills([
+                    aura_components::BarChartFill::vertical_gradient(gpui::rgb(0xdbeafe).into(), gpui::rgb(0x2563eb).into()),
+                    aura_components::BarChartFill::vertical_gradient(gpui::rgb(0xdcfce7).into(), gpui::rgb(0x16a34a).into()),
+                    aura_components::BarChartFill::vertical_gradient(gpui::rgb(0xffedd5).into(), gpui::rgb(0xea580c).into()),
+                    aura_components::BarChartFill::vertical_gradient(gpui::rgb(0xfce7f3).into(), gpui::rgb(0xdb2777).into()),
+                ])
+                .into_any_element(),
+            ]),
             "BarChartStacked" => demo_row(vec![
                 aura_components::BarChart::new([
                     aura_components::ChartSeries::new(
@@ -3300,6 +3362,81 @@ impl Render for LiveDemoContent {
                     aura_components::BarChartValueColorRange::new(70.0, 100.0, gpui::rgb(0x16a34a).into()),
                 ])
                 .into_any_element(),
+            ]),
+            "BarChartStandaloneStyles" => demo_row(vec![
+                aura_components::Space::new()
+                    .wrap()
+                    .gap_lg()
+                    .child(
+                        aura_components::BarChart::new([aura_components::ChartSeries::new(
+                            "Active",
+                            [
+                                aura_components::ChartPoint::new("Mon", 18.0),
+                                aura_components::ChartPoint::new("Tue", 42.0),
+                                aura_components::ChartPoint::new("Wed", 33.0),
+                                aura_components::ChartPoint::new("Thu", 76.0),
+                                aura_components::ChartPoint::new("Fri", 61.0),
+                                aura_components::ChartPoint::new("Sat", 88.0),
+                                aura_components::ChartPoint::new("Sun", 54.0),
+                            ],
+                        )])
+                        .id("docs-bar-chart-standalone-compact")
+                        .standalone()
+                        .bar_width(px(8.0))
+                        .bar_gap(px(4.0))
+                        .bar_radius(px(5.0))
+                        .value_color_ranges([
+                            aura_components::BarChartValueColorRange::new(0.0, 35.0, gpui::rgb(0x86efac).into()),
+                            aura_components::BarChartValueColorRange::new(35.0, 70.0, gpui::rgb(0x22c55e).into()),
+                            aura_components::BarChartValueColorRange::new(70.0, 100.0, gpui::rgb(0x16a34a).into()),
+                        ]),
+                    )
+                    .child(
+                        aura_components::BarChart::new([aura_components::ChartSeries::new(
+                            "Active",
+                            [
+                                aura_components::ChartPoint::new("Mon", 18.0),
+                                aura_components::ChartPoint::new("Tue", 42.0),
+                                aura_components::ChartPoint::new("Wed", 33.0),
+                                aura_components::ChartPoint::new("Thu", 76.0),
+                                aura_components::ChartPoint::new("Fri", 61.0),
+                                aura_components::ChartPoint::new("Sat", 88.0),
+                                aura_components::ChartPoint::new("Sun", 54.0),
+                            ],
+                        )])
+                        .id("docs-bar-chart-standalone-gradient")
+                        .standalone()
+                        .bar_width(px(10.0))
+                        .bar_gap(px(5.0))
+                        .bar_radius(px(8.0))
+                        .bar_fills([
+                            aura_components::BarChartFill::vertical_gradient(gpui::rgb(0xc4b5fd).into(), gpui::rgb(0x7c3aed).into()),
+                            aura_components::BarChartFill::vertical_gradient(gpui::rgb(0xbae6fd).into(), gpui::rgb(0x0284c7).into()),
+                            aura_components::BarChartFill::vertical_gradient(gpui::rgb(0xfde68a).into(), gpui::rgb(0xd97706).into()),
+                        ]),
+                    )
+                    .child(
+                        aura_components::BarChart::new([aura_components::ChartSeries::new(
+                            "Active",
+                            [
+                                aura_components::ChartPoint::new("Mon", 18.0),
+                                aura_components::ChartPoint::new("Tue", 42.0),
+                                aura_components::ChartPoint::new("Wed", 33.0),
+                                aura_components::ChartPoint::new("Thu", 76.0),
+                                aura_components::ChartPoint::new("Fri", 61.0),
+                                aura_components::ChartPoint::new("Sat", 88.0),
+                                aura_components::ChartPoint::new("Sun", 54.0),
+                            ],
+                        )])
+                        .id("docs-bar-chart-standalone-wide")
+                        .standalone()
+                        .height(px(96.0))
+                        .bar_width(px(14.0))
+                        .bar_gap(px(8.0))
+                        .bar_radius(px(3.0))
+                        .bar_vertical_gradient(gpui::rgb(0xfda4af).into(), gpui::rgb(0xe11d48).into()),
+                    )
+                    .into_any_element(),
             ]),
             "TagFlow" => demo_row(vec![
                 aura_components::TagFlow::new([
