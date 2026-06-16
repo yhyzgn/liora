@@ -256,6 +256,29 @@ impl Input {
         self.value.clone()
     }
 
+    pub fn selected_range(&self) -> Range<usize> {
+        self.selected_range.clone()
+    }
+
+    pub fn insert_text(&mut self, text: &str, cx: &mut Context<Self>) {
+        self.internal_replace(text, cx);
+    }
+
+    pub fn indent_selection(&mut self, indent: &str, cx: &mut Context<Self>) {
+        if indent.is_empty() {
+            return;
+        }
+        if self.selected_range.is_empty() {
+            self.internal_replace(indent, cx);
+            return;
+        }
+        self.reindent_selected_lines(indent, true, cx);
+    }
+
+    pub fn outdent_selection(&mut self, indent: &str, cx: &mut Context<Self>) {
+        self.reindent_selected_lines(indent, false, cx);
+    }
+
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([
             KeyBinding::new("backspace", Backspace, None),
@@ -645,6 +668,86 @@ impl Input {
         self.reset_blink(cx);
     }
 
+    fn apply_value_with_selection(
+        &mut self,
+        next_value: String,
+        next_selection: Range<usize>,
+        cx: &mut Context<Self>,
+    ) {
+        if let Some(ref filter) = self.filter {
+            if !filter(&next_value) {
+                return;
+            }
+        }
+        if let Some(max) = self.max_length {
+            if next_value.chars().count() > max {
+                return;
+            }
+        }
+        self.value = SharedString::from(next_value);
+        self.selected_range =
+            next_selection.start.min(self.value.len())..next_selection.end.min(self.value.len());
+        self.selection_reversed = false;
+        self.emit_change(cx);
+        self.reset_blink(cx);
+    }
+
+    fn reindent_selected_lines(&mut self, indent: &str, indenting: bool, cx: &mut Context<Self>) {
+        let value = self.value.to_string();
+        let selection = self.selected_range.clone();
+        let line_start = line_start_at(&value, selection.start);
+        let line_end = selected_line_end(&value, selection.clone());
+        let mut changed = false;
+        let mut next = String::with_capacity(value.len() + indent.len() * 4);
+        next.push_str(&value[..line_start]);
+
+        let mut selection_start_delta = 0isize;
+        let mut selection_end_delta = 0isize;
+        let mut cursor = line_start;
+
+        for line in value[line_start..line_end].split_inclusive('\n') {
+            let line_abs_start = cursor;
+            let (line_body, line_ending) = line
+                .strip_suffix('\n')
+                .map_or((line, ""), |body| (body, "\n"));
+            if indenting {
+                next.push_str(indent);
+                next.push_str(line_body);
+                next.push_str(line_ending);
+                changed = true;
+                if line_abs_start <= selection.start {
+                    selection_start_delta += indent.len() as isize;
+                }
+                if line_abs_start < selection.end || selection.is_empty() {
+                    selection_end_delta += indent.len() as isize;
+                }
+            } else if let Some(remove_len) = removable_indent_len(line_body, indent) {
+                next.push_str(&line_body[remove_len..]);
+                next.push_str(line_ending);
+                changed = true;
+                if line_abs_start < selection.start {
+                    selection_start_delta -= remove_len as isize;
+                }
+                if line_abs_start < selection.end {
+                    selection_end_delta -= remove_len as isize;
+                }
+            } else {
+                next.push_str(line_body);
+                next.push_str(line_ending);
+            }
+            cursor += line.len();
+        }
+
+        if !changed {
+            return;
+        }
+
+        next.push_str(&value[line_end..]);
+        let start = apply_signed_delta(selection.start, selection_start_delta);
+        let end = apply_signed_delta(selection.end, selection_end_delta).max(start);
+        self.apply_value_with_selection(next, start..end, cx);
+    }
+
     fn is_password(&self) -> bool {
         self.input_type == InputType::Password && !self.password_visible
     }
@@ -923,6 +1026,55 @@ impl Input {
             count += 1;
         }
         count * self.mask_char.len_utf8()
+    }
+}
+
+fn line_start_at(value: &str, offset: usize) -> usize {
+    value[..offset.min(value.len())]
+        .rfind('\n')
+        .map_or(0, |index| index + 1)
+}
+
+fn selected_line_end(value: &str, selection: Range<usize>) -> usize {
+    if value.is_empty() {
+        return 0;
+    }
+    let mut end = selection.end.min(value.len());
+    if end > selection.start && end > 0 && value.as_bytes().get(end - 1) == Some(&b'\n') {
+        end -= 1;
+    }
+    value[end..]
+        .find('\n')
+        .map_or(value.len(), |relative| end + relative + 1)
+}
+
+fn removable_indent_len(line: &str, indent: &str) -> Option<usize> {
+    if line.starts_with(indent) {
+        return Some(indent.len());
+    }
+    if indent.chars().all(|ch| ch == ' ') {
+        let max_spaces = indent.len();
+        let spaces = line
+            .as_bytes()
+            .iter()
+            .take_while(|byte| **byte == b' ')
+            .take(max_spaces)
+            .count();
+        if spaces > 0 {
+            return Some(spaces);
+        }
+    }
+    if indent == "\t" && line.starts_with('\t') {
+        return Some(1);
+    }
+    None
+}
+
+fn apply_signed_delta(value: usize, delta: isize) -> usize {
+    if delta.is_negative() {
+        value.saturating_sub(delta.unsigned_abs())
+    } else {
+        value.saturating_add(delta as usize)
     }
 }
 
@@ -1389,5 +1541,28 @@ mod width_tests {
         assert!(source.contains("pub fn prepend_text"));
         assert!(source.contains("pub fn append_text"));
         assert!(source.contains("pub fn prepend_icon"));
+    }
+
+    #[test]
+    fn input_exposes_code_editor_indentation_hooks() {
+        let source = include_str!("input.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(source.contains("pub fn indent_selection"));
+        assert!(source.contains("pub fn outdent_selection"));
+        assert!(source.contains("fn reindent_selected_lines"));
+    }
+
+    #[test]
+    fn removable_indent_supports_partial_soft_tabs() {
+        assert_eq!(
+            super::removable_indent_len("    let x = 1;", "    "),
+            Some(4)
+        );
+        assert_eq!(super::removable_indent_len("  let x = 1;", "    "), Some(2));
+        assert_eq!(super::removable_indent_len("\tlet x = 1;", "\t"), Some(1));
+        assert_eq!(super::removable_indent_len("let x = 1;", "    "), None);
     }
 }

@@ -3,12 +3,15 @@ use aura_core::Config;
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
 use gpui::{
-    App, Context, Entity, FocusHandle, Focusable, Hsla, IntoElement, Pixels, Render, SharedString,
-    Window, div, prelude::*, px, rgb,
+    App, Context, Entity, FocusHandle, Focusable, Hsla, IntoElement, KeyBinding, Pixels, Render,
+    SharedString, Window, actions, div, prelude::*, px, rgb,
 };
 use std::sync::Arc;
 
 pub type CodeEditorChangeCallback = dyn Fn(&str, &mut Context<CodeEditor>) + 'static;
+pub type CodeDiagnosticsProvider = dyn Fn(&str) -> Vec<CodeDiagnostic> + 'static;
+
+actions!(code_editor, [CodeIndent, CodeOutdent]);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CodeDiagnosticSeverity {
@@ -89,6 +92,7 @@ pub struct CodeEditor {
     height: Option<Pixels>,
     preview: bool,
     diagnostics: Vec<CodeDiagnostic>,
+    diagnostics_provider: Option<Arc<CodeDiagnosticsProvider>>,
     on_change: Option<Arc<CodeEditorChangeCallback>>,
 }
 
@@ -117,6 +121,7 @@ impl CodeEditor {
             height: None,
             preview: true,
             diagnostics: Vec::new(),
+            diagnostics_provider: None,
             on_change: None,
         }
     }
@@ -198,6 +203,29 @@ impl CodeEditor {
         cx.notify();
     }
 
+    pub fn diagnostics_provider(
+        mut self,
+        provider: impl Fn(&str) -> Vec<CodeDiagnostic> + 'static,
+    ) -> Self {
+        self.diagnostics_provider = Some(Arc::new(provider));
+        self
+    }
+
+    pub fn set_diagnostics_provider(
+        &mut self,
+        provider: impl Fn(&str) -> Vec<CodeDiagnostic> + 'static,
+        cx: &mut Context<Self>,
+    ) {
+        self.diagnostics_provider = Some(Arc::new(provider));
+        self.refresh_diagnostics(cx);
+        cx.notify();
+    }
+
+    pub fn clear_diagnostics_provider(&mut self, cx: &mut Context<Self>) {
+        self.diagnostics_provider = None;
+        cx.notify();
+    }
+
     pub fn on_change(
         mut self,
         callback: impl Fn(&str, &mut Context<CodeEditor>) + 'static,
@@ -223,7 +251,36 @@ impl CodeEditor {
         }
     }
 
+    pub fn register_key_bindings(cx: &mut App) {
+        cx.bind_keys([
+            KeyBinding::new("tab", CodeIndent, None),
+            KeyBinding::new("shift-tab", CodeOutdent, None),
+        ]);
+    }
+
+    fn indent(&mut self, _: &CodeIndent, _: &mut Window, cx: &mut Context<Self>) {
+        let indent = self.indent_unit();
+        self.input
+            .update(cx, |input, cx| input.indent_selection(&indent, cx));
+    }
+
+    fn outdent(&mut self, _: &CodeOutdent, _: &mut Window, cx: &mut Context<Self>) {
+        let indent = self.indent_unit();
+        self.input
+            .update(cx, |input, cx| input.outdent_selection(&indent, cx));
+    }
+
+    fn refresh_diagnostics(&mut self, cx: &mut Context<Self>) {
+        if let Some(provider) = self.diagnostics_provider.clone() {
+            let value = self.value(cx);
+            self.diagnostics = provider(value.as_ref());
+        }
+    }
+
     fn handle_input_change(&mut self, value: &str, cx: &mut Context<Self>) {
+        if let Some(provider) = self.diagnostics_provider.clone() {
+            self.diagnostics = provider(value);
+        }
         if let Some(callback) = self.on_change.clone() {
             callback(value, cx);
         }
@@ -265,6 +322,8 @@ impl Render for CodeEditor {
             .bg(theme.neutral.card)
             .overflow_hidden()
             .when_some(self.height, |s, height| s.h(height))
+            .on_action(cx.listener(Self::indent))
+            .on_action(cx.listener(Self::outdent))
             .child(
                 div()
                     .flex()
@@ -446,6 +505,9 @@ mod tests {
         assert!(source.contains("tab_size"));
         assert!(source.contains("soft_tabs"));
         assert!(source.contains("diagnostics"));
+        assert!(source.contains("diagnostics_provider"));
+        assert!(source.contains("CodeIndent"));
+        assert!(source.contains("CodeOutdent"));
         assert!(source.contains("CodeBlock::new"));
         assert!(source.contains("on_change"));
     }

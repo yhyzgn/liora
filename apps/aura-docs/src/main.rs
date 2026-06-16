@@ -1,9 +1,9 @@
 mod markdown;
 
 use aura_components::{
-    Autocomplete, Button, Cascader, Checkbox, CodeBlock, ColorPicker, DatePicker, DateTimePicker,
-    Dialog, Drawer, Input, MessageManager, Paragraph, Popover, Preview, Radio, RadioGroup, Select,
-    Space, Switch, Text, TimePicker, Title,
+    Autocomplete, Button, Cascader, Checkbox, CodeBlock, CodeEditor, ColorPicker, DatePicker,
+    DateTimePicker, Dialog, Drawer, Input, MessageManager, Paragraph, Popover, Preview, Radio,
+    RadioGroup, Select, Space, Switch, Text, TimePicker, Title,
 };
 use aura_core::init_aura;
 use aura_theme::Theme;
@@ -42,6 +42,7 @@ fn run_docs() {
             MessageManager::init(cx);
             Input::register_key_bindings(cx);
             CodeBlock::register_key_bindings(cx);
+            CodeEditor::register_key_bindings(cx);
             Checkbox::register_key_bindings(cx);
             Radio::register_key_bindings(cx);
             RadioGroup::register_key_bindings(cx);

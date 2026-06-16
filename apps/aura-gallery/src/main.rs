@@ -1,7 +1,7 @@
 use aura_components::{
-    Autocomplete, Button, Card, Cascader, Checkbox, CodeBlock, ColorPicker, Container, DatePicker,
-    DateTimePicker, Dialog, Drawer, Input, Menu, MenuMode, MessageManager, Paragraph, Popover,
-    Preview, Radio, RadioGroup, Select, Space, Switch, Text, TimePicker, Title,
+    Autocomplete, Button, Card, Cascader, Checkbox, CodeBlock, CodeEditor, ColorPicker, Container,
+    DatePicker, DateTimePicker, Dialog, Drawer, Input, Menu, MenuMode, MessageManager, Paragraph,
+    Popover, Preview, Radio, RadioGroup, Select, Space, Switch, Text, TimePicker, Title,
 };
 use aura_core::{PassivePortal, Portal, init_aura};
 use aura_gallery::demos;
@@ -53,6 +53,7 @@ fn run_gallery() {
             // Register all key bindings
             Input::register_key_bindings(cx);
             CodeBlock::register_key_bindings(cx);
+            CodeEditor::register_key_bindings(cx);
             Checkbox::register_key_bindings(cx);
             Radio::register_key_bindings(cx);
             RadioGroup::register_key_bindings(cx);
