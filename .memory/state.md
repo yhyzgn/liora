@@ -405,3 +405,12 @@ Split the combined `LabelOperation` docs surface into separate `Label` and `Oper
 Validation evidence:
 - `cargo check -p aura-docs --bin check_snippets` passed.
 - `cargo check -p aura-docs` passed.
+
+## 2026-06-16 P13 gallery navigation cleanup
+
+Split the combined Gallery `LabelOperation` demo into independent `Label` and `Operation` demo entries to match the docs split. `Label` now demonstrates basic icons, semantic colors, spacing, sizing, and custom icon elements. `Operation` now demonstrates Switch/Button actions, status labels/colors, disabled rows, and compact no-padding rows. The old combined gallery module was removed so P13 components are independently searchable in both Gallery and Docs.
+
+Validation evidence:
+- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
+- `cargo test -p aura-gallery label_demo` passed.
+- `cargo test -p aura-gallery operation_demo` passed.

@@ -29,7 +29,7 @@ pub mod heat_bar_demo;
 pub mod horizontal_list_demo;
 pub mod icon_demo;
 pub mod image_demo;
-pub mod label_operation_demo;
+pub mod label_demo;
 pub mod layout_demo;
 pub mod line_chart_demo;
 pub mod link_demo;
@@ -38,6 +38,7 @@ pub mod menu_demo;
 pub mod message_box_demo;
 pub mod message_demo;
 pub mod notification_demo;
+pub mod operation_demo;
 pub mod page_header_demo;
 pub mod pagination_demo;
 pub mod pie_chart_demo;
@@ -437,9 +438,14 @@ pub fn registry() -> Vec<DemoEntry> {
             render: |cx| heat_bar_demo::render(cx).into(),
         },
         DemoEntry {
-            name: "LabelOperation 标签操作",
-            description: "图标文本与左右操作布局",
-            render: |cx| label_operation_demo::render(cx).into(),
+            name: "Label 标签组合",
+            description: "Icon + Text 轻量组合",
+            render: |cx| label_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "Operation 操作行",
+            description: "左侧说明与右侧操作布局",
+            render: |cx| operation_demo::render(cx).into(),
         },
         DemoEntry {
             name: "SegmentRatioBar 分段比例条",
@@ -522,7 +528,8 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Form" => Some(form_demo::render(cx).into()),
         "HeatBar" => Some(heat_bar_demo::render(cx).into()),
         "HorizontalList" => Some(horizontal_list_demo::render(cx).into()),
-        "LabelOperation" => Some(label_operation_demo::render(cx).into()),
+        "Label" => Some(label_demo::render(cx).into()),
+        "Operation" => Some(operation_demo::render(cx).into()),
         "SegmentRatioBar" => Some(segment_ratio_bar_demo::render(cx).into()),
         "SignalMeter" => Some(signal_meter_demo::render(cx).into()),
         "Icon" => Some(icon_demo::render(cx).into()),
