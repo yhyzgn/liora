@@ -1,4 +1,4 @@
-use crate::chart::{ChartOptions, ChartPalette, default_y_format};
+use crate::chart::{ChartAxisLabel, ChartOptions, ChartPalette, default_y_format};
 use crate::chart_scale::{ScaleLinear, ScalePoint};
 use gpui::{
     App, Background, Hsla, Pixels, SharedString, TextAlign, TextRun, Window, fill, point, px, size,
@@ -10,7 +10,7 @@ pub fn paint_chart_frame(
     top: Pixels,
     width: Pixels,
     height: Pixels,
-    labels: &[SharedString],
+    labels: &[ChartAxisLabel],
     x: &ScalePoint,
     y: &ScaleLinear,
     palette: &ChartPalette,
@@ -48,14 +48,10 @@ pub fn paint_chart_frame(
             Background::from(palette.axis),
         ));
 
-        let last = labels.len().saturating_sub(1);
-        for (index, label) in labels.iter().enumerate() {
-            if labels.len() > 6 && index != 0 && index != last && index % 2 != 0 {
-                continue;
-            }
-            if let Some(x_pos) = x.tick_index(index) {
+        for label in labels {
+            if let Some(x_pos) = x.tick_index(label.index) {
                 paint_chart_label(
-                    label.clone(),
+                    label.label.clone(),
                     point(left + px(x_pos) - px(14.0), top + height + px(8.0)),
                     palette.label,
                     window,

@@ -1,7 +1,7 @@
 use crate::chart::{
     ChartOptions, ChartPalette, ChartSeries, ChartValueLabelContent, ChartValueLabelPlacement,
-    collect_labels, downsample_points, format_value_label, has_chart_data, normalized_domain,
-    series_total,
+    collect_axis_labels, downsample_points, format_value_label, has_chart_data, label_domain_len,
+    normalized_domain, series_total, sparse_indices,
 };
 use crate::chart_frame::{paint_chart_frame, paint_chart_label_aligned};
 use crate::chart_scale::{ScaleLinear, ScalePoint};
@@ -121,6 +121,16 @@ impl LineChart {
         self
     }
 
+    pub fn max_axis_labels(mut self, max_labels: usize) -> Self {
+        self.options.max_axis_labels = max_labels.max(2);
+        self
+    }
+
+    pub fn max_value_labels(mut self, max_labels: usize) -> Self {
+        self.options.max_value_labels = max_labels.max(2);
+        self
+    }
+
     pub fn disable_downsampling(mut self) -> Self {
         self.options.max_render_points = None;
         self
@@ -227,10 +237,11 @@ fn render_line_canvas(
     canvas(
         |_, _, _| (),
         move |bounds, _, window, cx| {
-            let labels = collect_labels(&series);
-            if labels.is_empty() {
+            let domain_len = label_domain_len(&series);
+            if domain_len == 0 {
                 return;
             }
+            let axis_labels = collect_axis_labels(&series, options.max_axis_labels);
 
             let padding = options.padding;
             let left = bounds.left() + padding.left;
@@ -240,7 +251,7 @@ fn render_line_canvas(
             let width = (right - left).max(px(1.0));
             let plot_height = (bottom - top).max(px(1.0));
 
-            let x = ScalePoint::new(labels.clone(), (0.0, width.as_f32()));
+            let x = ScalePoint::from_len(domain_len, (0.0, width.as_f32()));
             let domain = normalized_domain(options.y_domain, &series);
             let y = ScaleLinear::new(domain, (plot_height.as_f32(), 0.0));
             if options.show_grid || options.show_axis {
@@ -249,7 +260,7 @@ fn render_line_canvas(
                     top,
                     width,
                     plot_height,
-                    &labels,
+                    &axis_labels,
                     &x,
                     &y,
                     &palette,
@@ -269,21 +280,27 @@ fn render_line_canvas(
                     .line_style
                     .unwrap_or(crate::chart::ChartLineStyle::Solid);
                 let current_dash_pattern = current.dash_pattern.as_deref();
-                let raw_point_data = current
-                    .points
-                    .iter()
-                    .enumerate()
-                    .filter(|(_, chart_point)| chart_point.is_finite())
-                    .filter_map(|(index, chart_point)| {
+                let sampled_values = downsample_points(
+                    &current
+                        .points
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, chart_point)| chart_point.is_finite())
+                        .map(|(index, chart_point)| (index, chart_point.value))
+                        .collect::<Vec<_>>(),
+                    options.max_render_points,
+                );
+                let point_data = sampled_values
+                    .into_iter()
+                    .filter_map(|(index, value)| {
                         let x_pos = x.tick_index(index)?;
                         let position = point(
                             left + px(x_pos),
-                            top + px(y.tick(chart_point.value).clamp(0.0, plot_height.as_f32())),
+                            top + px(y.tick(value).clamp(0.0, plot_height.as_f32())),
                         );
-                        Some((position, chart_point.value))
+                        Some((position, value))
                     })
                     .collect::<Vec<_>>();
-                let point_data = downsample_points(&raw_point_data, options.max_render_points);
                 let points = point_data
                     .iter()
                     .map(|(position, _)| *position)
@@ -338,7 +355,12 @@ fn render_line_canvas(
                     }
                 }
                 if options.show_value_labels {
-                    for (point_pos, value) in &point_data {
+                    let value_label_indices =
+                        sparse_indices(point_data.len(), options.max_value_labels);
+                    for (point_pos, value) in value_label_indices
+                        .into_iter()
+                        .filter_map(|index| point_data.get(index))
+                    {
                         paint_chart_label_aligned(
                             format_value_label(
                                 *value,
@@ -394,7 +416,9 @@ mod tests {
             .value_label_placement(ChartValueLabelPlacement::OutsideFree)
             .percentage_decimals(2)
             .stroke_width(px(3.0))
-            .max_render_points(1200);
+            .max_render_points(1200)
+            .max_axis_labels(6)
+            .max_value_labels(10);
 
         assert_eq!(chart.options().id, SharedString::from("cpu-line"));
         assert_eq!(chart.options().height, px(320.0));
@@ -415,6 +439,8 @@ mod tests {
         assert_eq!(chart.options().value_label_options.percentage_decimals, 2);
         assert_eq!(chart.stroke_width, px(3.0));
         assert_eq!(chart.options().max_render_points, Some(1200));
+        assert_eq!(chart.options().max_axis_labels, 6);
+        assert_eq!(chart.options().max_value_labels, 10);
     }
 
     #[test]

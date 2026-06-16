@@ -1,7 +1,7 @@
 use crate::chart::{
     ChartOptions, ChartPalette, ChartSeries, ChartValueLabelContent, ChartValueLabelPlacement,
-    collect_labels, format_value_label, has_chart_data, normalized_domain, series_total,
-    stacked_domain,
+    collect_axis_labels, collect_labels, format_value_label, has_chart_data, normalized_domain,
+    series_total, stacked_domain,
 };
 use crate::chart_frame::{paint_chart_frame, paint_chart_label_aligned};
 use crate::chart_scale::{ScaleBand, ScaleLinear, ScalePoint};
@@ -124,6 +124,16 @@ impl BarChart {
 
     pub fn bar_gap_ratio(mut self, ratio: f32) -> Self {
         self.bar_gap_ratio = ratio.clamp(0.0, 0.8);
+        self
+    }
+
+    pub fn max_axis_labels(mut self, max_labels: usize) -> Self {
+        self.options.max_axis_labels = max_labels.max(2);
+        self
+    }
+
+    pub fn max_value_labels(mut self, max_labels: usize) -> Self {
+        self.options.max_value_labels = max_labels.max(2);
         self
     }
 
@@ -357,7 +367,7 @@ fn render_bar_canvas(
                     top,
                     width,
                     plot_height,
-                    &labels,
+                    &collect_axis_labels(&series, options.max_axis_labels),
                     &frame_x,
                     &y,
                     &palette,

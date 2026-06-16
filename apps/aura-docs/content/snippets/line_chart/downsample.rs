@@ -16,4 +16,6 @@ pub fn line_chart_downsample() -> impl IntoElement {
         .point_markers(false)
         .area_fill(true)
         .max_render_points(180)
+        .max_axis_labels(8)
+        .max_value_labels(12)
 }

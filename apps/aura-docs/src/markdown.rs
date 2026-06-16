@@ -2797,6 +2797,8 @@ impl Render for LiveDemoContent {
                 .height(px(320.0))
                 .stacked()
                 .max_render_points(160)
+                .max_axis_labels(8)
+                .max_value_labels(12)
                 .into_any_element(),
             ]),
             "AvatarShapes" => demo_row(vec![
@@ -3809,6 +3811,8 @@ impl Render for LiveDemoContent {
                 .point_markers(false)
                 .area_fill(true)
                 .max_render_points(180)
+                .max_axis_labels(8)
+                .max_value_labels(12)
                 .into_any_element(),
             ]),
             "CardBasic" => demo_row(vec![

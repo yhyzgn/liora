@@ -1,7 +1,7 @@
 use crate::chart::{
     ChartOptions, ChartPalette, ChartSeries, ChartValueLabelContent, ChartValueLabelPlacement,
-    collect_labels, downsample_points, format_value_label, has_chart_data,
-    normalized_domain_with_baseline, series_total, stacked_domain,
+    collect_axis_labels, downsample_points, format_value_label, has_chart_data, label_domain_len,
+    normalized_domain_with_baseline, series_total, sparse_indices, stacked_domain,
 };
 use crate::chart_frame::{paint_chart_frame, paint_chart_label_aligned};
 use crate::chart_scale::{ScaleLinear, ScalePoint};
@@ -114,6 +114,16 @@ impl AreaChart {
 
     pub fn max_render_points(mut self, max_points: usize) -> Self {
         self.options.max_render_points = Some(max_points.max(3));
+        self
+    }
+
+    pub fn max_axis_labels(mut self, max_labels: usize) -> Self {
+        self.options.max_axis_labels = max_labels.max(2);
+        self
+    }
+
+    pub fn max_value_labels(mut self, max_labels: usize) -> Self {
+        self.options.max_value_labels = max_labels.max(2);
         self
     }
 
@@ -243,10 +253,11 @@ fn render_area_canvas(
     canvas(
         |_, _, _| (),
         move |bounds, _, window, cx| {
-            let labels = collect_labels(&series);
-            if labels.is_empty() {
+            let domain_len = label_domain_len(&series);
+            if domain_len == 0 {
                 return;
             }
+            let axis_labels = collect_axis_labels(&series, options.max_axis_labels);
 
             let padding = options.padding;
             let left = bounds.left() + padding.left;
@@ -256,7 +267,7 @@ fn render_area_canvas(
             let width = (right - left).max(px(1.0));
             let plot_height = (bottom - top).max(px(1.0));
 
-            let x = ScalePoint::new(labels.clone(), (0.0, width.as_f32()));
+            let x = ScalePoint::from_len(domain_len, (0.0, width.as_f32()));
             let domain = if mode == AreaChartMode::Stacked {
                 options
                     .y_domain
@@ -273,7 +284,7 @@ fn render_area_canvas(
                     top,
                     width,
                     plot_height,
-                    &labels,
+                    &axis_labels,
                     &x,
                     &y,
                     &palette,
@@ -365,20 +376,26 @@ fn paint_overlay_areas(
         let fill_color = current.resolved_fill_color(fallback);
         let current_smooth = current.smooth.unwrap_or(smooth);
         let current_stroke_width = current.stroke_width.unwrap_or(stroke_width);
-        let raw_point_data = current
-            .points
-            .iter()
-            .enumerate()
-            .filter(|(_, chart_point)| chart_point.is_finite())
-            .filter_map(|(index, chart_point)| {
+        let sampled_values = downsample_points(
+            &current
+                .points
+                .iter()
+                .enumerate()
+                .filter(|(_, chart_point)| chart_point.is_finite())
+                .map(|(index, chart_point)| (index, chart_point.value))
+                .collect::<Vec<_>>(),
+            options.max_render_points,
+        );
+        let point_data = sampled_values
+            .into_iter()
+            .filter_map(|(index, value)| {
                 let x_pos = x.tick_index(index)?;
                 Some((
-                    gpui::point(left + px(x_pos), top + px(y.tick(chart_point.value))),
-                    chart_point.value,
+                    gpui::point(left + px(x_pos), top + px(y.tick(value))),
+                    value,
                 ))
             })
             .collect::<Vec<_>>();
-        let point_data = downsample_points(&raw_point_data, options.max_render_points);
         let points = point_data
             .iter()
             .map(|(position, _)| *position)
@@ -405,7 +422,11 @@ fn paint_overlay_areas(
             }
         }
         if options.show_value_labels {
-            for (position, value) in &point_data {
+            let value_label_indices = sparse_indices(point_data.len(), options.max_value_labels);
+            for (position, value) in value_label_indices
+                .into_iter()
+                .filter_map(|index| point_data.get(index))
+            {
                 paint_chart_label_aligned(
                     format_value_label(
                         *value,
@@ -483,7 +504,14 @@ fn paint_stacked_areas(
             }
         }
         if options.show_value_labels {
-            for (point_index, position) in upper.iter().enumerate() {
+            let value_label_indices = sparse_indices(upper.len(), options.max_value_labels);
+            for sample_index in value_label_indices {
+                let Some(position) = upper.get(sample_index) else {
+                    continue;
+                };
+                let Some(&point_index) = sampled_indices.get(sample_index) else {
+                    continue;
+                };
                 let value = current
                     .points
                     .get(point_index)
@@ -558,6 +586,8 @@ mod tests {
             .smooth(true)
             .stroke_width(px(3.0))
             .max_render_points(600)
+            .max_axis_labels(6)
+            .max_value_labels(10)
             .stacked();
 
         assert_eq!(chart.options().id, SharedString::from("traffic-area"));
@@ -581,6 +611,8 @@ mod tests {
         assert!(chart.smooth);
         assert_eq!(chart.stroke_width, px(3.0));
         assert_eq!(chart.options().max_render_points, Some(600));
+        assert_eq!(chart.options().max_axis_labels, 6);
+        assert_eq!(chart.options().max_value_labels, 10);
     }
 
     #[test]

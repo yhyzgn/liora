@@ -35,22 +35,40 @@ impl ScaleLinear {
 #[derive(Clone, Debug, PartialEq)]
 pub struct ScalePoint {
     domain: Vec<SharedString>,
+    domain_len: usize,
     range: (f32, f32),
 }
 
 impl ScalePoint {
     pub fn new(domain: Vec<SharedString>, range: (f32, f32)) -> Self {
-        Self { domain, range }
+        let domain_len = domain.len();
+        Self {
+            domain,
+            domain_len,
+            range,
+        }
+    }
+
+    /// Build an index-based point scale without cloning/storing every label.
+    /// This is useful for dense native charts where label text is painted from
+    /// a separate sparse axis-label list, while data points still need stable
+    /// original-index positioning.
+    pub fn from_len(domain_len: usize, range: (f32, f32)) -> Self {
+        Self {
+            domain: Vec::new(),
+            domain_len,
+            range,
+        }
     }
 
     pub fn tick_index(&self, index: usize) -> Option<f32> {
-        if self.domain.is_empty() || index >= self.domain.len() {
+        if self.domain_len == 0 || index >= self.domain_len {
             return None;
         }
-        if self.domain.len() == 1 {
+        if self.domain_len == 1 {
             return Some((self.range.0 + self.range.1) / 2.0);
         }
-        let step = (self.range.1 - self.range.0) / (self.domain.len() - 1) as f32;
+        let step = (self.range.1 - self.range.0) / (self.domain_len - 1) as f32;
         Some(self.range.0 + step * index as f32)
     }
 
@@ -134,6 +152,10 @@ mod tests {
         let many = ScalePoint::new(vec!["A".into(), "B".into(), "C".into()], (0.0, 100.0));
         assert_eq!(many.tick_index(1), Some(50.0));
         assert_eq!(many.tick(&"C".into()), Some(100.0));
+
+        let index_only = ScalePoint::from_len(3, (0.0, 100.0));
+        assert_eq!(index_only.tick_index(2), Some(100.0));
+        assert_eq!(index_only.tick(&"C".into()), None);
     }
 
     #[test]

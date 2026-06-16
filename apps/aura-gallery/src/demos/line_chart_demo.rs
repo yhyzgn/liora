@@ -67,7 +67,9 @@ impl Render for LineChartDemo {
                         .y_domain(0.0, 100.0)
                         .point_markers(false)
                         .area_fill(true)
-                        .max_render_points(180),
+                        .max_render_points(180)
+                        .max_axis_labels(8)
+                        .max_value_labels(12),
                 ))
                 .child(section(
                     "无数据",

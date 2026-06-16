@@ -233,6 +233,8 @@ pub struct ChartOptions {
     pub show_value_labels: bool,
     pub value_label_options: ChartValueLabelOptions,
     pub max_render_points: Option<usize>,
+    pub max_axis_labels: usize,
+    pub max_value_labels: usize,
 }
 
 impl Default for ChartOptions {
@@ -250,6 +252,8 @@ impl Default for ChartOptions {
             show_value_labels: true,
             value_label_options: ChartValueLabelOptions::default(),
             max_render_points: Some(800),
+            max_axis_labels: 8,
+            max_value_labels: 32,
         }
     }
 }
@@ -351,15 +355,15 @@ pub fn normalized_domain_with_baseline(
 }
 
 pub fn stacked_domain(series: &[ChartSeries]) -> Option<(f64, f64)> {
-    let labels = collect_labels(series);
-    if labels.is_empty() {
+    let labels_len = label_domain_len(series);
+    if labels_len == 0 {
         return finite_domain(series);
     }
 
     let mut max_total = 0.0_f64;
     let mut min_total = 0.0_f64;
     let mut seen = false;
-    for index in 0..labels.len() {
+    for index in 0..labels_len {
         let mut positive = 0.0_f64;
         let mut negative = 0.0_f64;
         for point in series.iter().filter_map(|series| series.points.get(index)) {
@@ -384,6 +388,21 @@ pub fn stacked_domain(series: &[ChartSeries]) -> Option<(f64, f64)> {
     }
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct ChartAxisLabel {
+    pub index: usize,
+    pub label: SharedString,
+}
+
+impl ChartAxisLabel {
+    pub fn new(index: usize, label: impl Into<SharedString>) -> Self {
+        Self {
+            index,
+            label: label.into(),
+        }
+    }
+}
+
 pub fn collect_labels(series: &[ChartSeries]) -> Vec<SharedString> {
     series
         .iter()
@@ -396,6 +415,57 @@ pub fn collect_labels(series: &[ChartSeries]) -> Vec<SharedString> {
                 .collect::<Vec<_>>()
         })
         .unwrap_or_default()
+}
+
+pub fn label_domain_len(series: &[ChartSeries]) -> usize {
+    series
+        .iter()
+        .map(|series| series.points.len())
+        .max()
+        .unwrap_or(0)
+}
+
+pub fn collect_axis_labels(series: &[ChartSeries], max_labels: usize) -> Vec<ChartAxisLabel> {
+    let Some(longest) = series.iter().max_by_key(|series| series.points.len()) else {
+        return Vec::new();
+    };
+    sparse_axis_labels(&longest.points, max_labels)
+}
+
+pub fn sparse_indices(len: usize, max_count: usize) -> Vec<usize> {
+    if len == 0 {
+        return Vec::new();
+    }
+    let max_count = max_count.max(2);
+    if len <= max_count {
+        return (0..len).collect();
+    }
+
+    let last = len - 1;
+    let intervals = max_count - 1;
+    let mut indices = Vec::with_capacity(max_count);
+    let mut previous = None;
+    for slot in 0..=intervals {
+        let mut index = ((slot * last) + intervals / 2) / intervals;
+        if slot == 0 {
+            index = 0;
+        } else if slot == intervals {
+            index = last;
+        }
+        if previous == Some(index) {
+            continue;
+        }
+        indices.push(index);
+        previous = Some(index);
+    }
+    indices
+}
+
+pub fn sparse_axis_labels(points: &[ChartPoint], max_labels: usize) -> Vec<ChartAxisLabel> {
+    sparse_indices(points.len(), max_labels)
+        .into_iter()
+        .map(|index| ChartAxisLabel::new(index, points[index].label.clone()))
+        .collect()
 }
 
 pub fn has_chart_data(series: &[ChartSeries]) -> bool {
@@ -551,6 +621,28 @@ mod tests {
             labels,
             vec![SharedString::from("Q1"), SharedString::from("Q2")]
         );
+    }
+
+    #[test]
+    fn sparse_indices_preserve_edges_and_cap_count() {
+        let indices = sparse_indices(100, 8);
+        assert_eq!(indices.len(), 8);
+        assert_eq!(indices.first(), Some(&0));
+        assert_eq!(indices.last(), Some(&99));
+    }
+
+    #[test]
+    fn collect_axis_labels_caps_dense_domains() {
+        let series = [ChartSeries::new(
+            "dense",
+            (0..100).map(|index| ChartPoint::new(format!("T{index}"), index as f64)),
+        )];
+        let labels = collect_axis_labels(&series, 8);
+
+        assert_eq!(labels.len(), 8);
+        assert_eq!(labels.first().map(|label| label.index), Some(0));
+        assert_eq!(labels.last().map(|label| label.index), Some(99));
+        assert_eq!(label_domain_len(&series), 100);
     }
 
     #[test]

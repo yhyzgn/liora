@@ -49,6 +49,8 @@
 
 ## 大数据降采样
 
+长序列默认使用 min/max bucket 采样保留首尾与局部峰谷；同时可以分别限制渲染点、x 轴标签和数值标签数量，避免 dense 页面因全量文本/点位准备产生卡顿。
+
 ### 效果
 
 ::AuraDemo{component="AreaChartDownsample"}::
