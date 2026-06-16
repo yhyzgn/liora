@@ -144,7 +144,7 @@ The smoke command validates package headers for distro/installer formats where p
 
 ### 8. Preview artifacts
 
-Every push to `main` produces preview artifacts for Linux, macOS, and Windows. These artifacts are retained for a shorter period and are intended for quick QA rather than public distribution.
+Every push to `main` produces preview artifacts for Linux, macOS, and Windows. These artifacts are retained for a shorter period and are intended for quick QA rather than public distribution. The preview matrix was runner-verified on GitHub Actions run `27613242837` for Linux, macOS, and Windows package generation, artifact smoke, raw binary upload, and package artifact upload.
 
 ### 9. GitHub Release assets
 

@@ -94,6 +94,13 @@ cargo run -p xtask -- package validate
 cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build
 ```
 
+### GitHub preview runner 验证
+
+- `27613242837` / commit `5a3615d`：`Package native Aura apps` workflow 成功。
+- Linux/macOS/Windows matrix 均完成：release binary build、package generation、artifact smoke、raw binary upload、package artifact upload。
+- Linux 真实生成路径已覆盖 AppImage、deb、rpm、portable tar.gz；macOS 覆盖 app/dmg；Windows preview 覆盖 NSIS。
+- 修复过的 CI 反馈：RPM metadata-overwrite 分支、RPM TOML 嵌套结构、artifact smoke 忽略 `.cargo-packager` 内部工作目录。
+
 Dry-run 预期生成：
 
 ```text
