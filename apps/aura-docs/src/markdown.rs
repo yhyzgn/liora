@@ -87,6 +87,7 @@ const SCROLLBAR_DOC: &str = include_str!("../content/pages/scrollbar.md");
 const SEGMENTED_DOC: &str = include_str!("../content/pages/segmented.md");
 const SELECT_DOC: &str = include_str!("../content/pages/select.md");
 const SKELETON_DOC: &str = include_str!("../content/pages/skeleton.md");
+const SPARKLINE_DOC: &str = include_str!("../content/pages/sparkline.md");
 const SLIDER_DOC: &str = include_str!("../content/pages/slider.md");
 const SPLITTER_DOC: &str = include_str!("../content/pages/splitter.md");
 const STATISTIC_DOC: &str = include_str!("../content/pages/statistic.md");
@@ -451,6 +452,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "RingChart",
         markdown: RING_CHART_DOC,
+    },
+    DocPage {
+        title: "Sparkline",
+        markdown: SPARKLINE_DOC,
     },
     DocPage {
         title: "Markdown",
@@ -1096,8 +1101,20 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "line_chart/empty.rs" => Some(include_str!("../content/snippets/line_chart/empty.rs")),
         "line_chart/multi.rs" => Some(include_str!("../content/snippets/line_chart/multi.rs")),
         "line_chart/basic.rs" => Some(include_str!("../content/snippets/line_chart/basic.rs")),
+        "line_chart/custom.rs" => Some(include_str!("../content/snippets/line_chart/custom.rs")),
+        "line_chart/line_styles.rs" => Some(include_str!(
+            "../content/snippets/line_chart/line_styles.rs"
+        )),
         "pie_chart/basic.rs" => Some(include_str!("../content/snippets/pie_chart/basic.rs")),
         "ring_chart/basic.rs" => Some(include_str!("../content/snippets/ring_chart/basic.rs")),
+        "ring_chart/custom.rs" => Some(include_str!("../content/snippets/ring_chart/custom.rs")),
+        "ring_chart/external.rs" => {
+            Some(include_str!("../content/snippets/ring_chart/external.rs"))
+        }
+        "sparkline/basic.rs" => Some(include_str!("../content/snippets/sparkline/basic.rs")),
+        "sparkline/cards.rs" => Some(include_str!("../content/snippets/sparkline/cards.rs")),
+        "sparkline/area.rs" => Some(include_str!("../content/snippets/sparkline/area.rs")),
+        "sparkline/styles.rs" => Some(include_str!("../content/snippets/sparkline/styles.rs")),
         "skeleton/basic.rs" => Some(include_str!("../content/snippets/skeleton/basic.rs")),
         "skeleton/variants.rs" => Some(include_str!("../content/snippets/skeleton/variants.rs")),
         "skeleton/template.rs" => Some(include_str!("../content/snippets/skeleton/template.rs")),
@@ -3415,6 +3432,63 @@ impl Render for LiveDemoContent {
                 .description("左侧可带说明文本，右侧操作区域保持末端对齐。")
                 .status("手动")
                 .into_any_element(),
+            ]),
+            "SparklineBasic" => demo_row(vec![
+                aura_components::Sparkline::new([12.0, 15.0, 14.0, 18.0, 21.0, 19.0, 24.0, 28.0])
+                    .id("docs-sparkline-basic")
+                    .width(px(220.0))
+                    .height(px(64.0))
+                    .color(gpui::rgb(0x2563eb).into())
+                    .stroke_width(px(2.4))
+                    .into_any_element(),
+            ]),
+            "SparklineCards" => demo_row(vec![
+                aura_components::Card::new(
+                    Space::new()
+                        .vertical()
+                        .gap_sm()
+                        .child(Text::new("Revenue").size(px(12.0)).text_color(gpui::rgb(0x64748b).into()))
+                        .child(Text::new("$42.8k").size(px(24.0)).bold())
+                        .child(
+                            aura_components::Sparkline::new([12.0, 15.0, 14.0, 18.0, 21.0, 19.0, 24.0, 28.0])
+                                .id("docs-sparkline-card")
+                                .height(px(64.0))
+                                .area_fill(true),
+                        ),
+                )
+                .width(px(240.0))
+                .into_any_element(),
+            ]),
+            "SparklineArea" => demo_row(vec![
+                aura_components::Sparkline::new([-4.0, -1.0, 3.0, 7.0, 5.0, -2.0, 4.0, 10.0, 8.0])
+                    .id("docs-sparkline-area")
+                    .width(px(280.0))
+                    .height(px(96.0))
+                    .area_fill(true)
+                    .show_baseline(true)
+                    .trend_colors(gpui::rgb(0x14b8a6).into(), gpui::rgb(0xf43f5e).into())
+                    .fill_color(gpui::Hsla::from(gpui::rgb(0x14b8a6)).opacity(0.18))
+                    .y_domain(-8.0, 12.0)
+                    .into_any_element(),
+            ]),
+            "SparklineStyles" => demo_row(vec![
+                aura_components::Sparkline::new([12.0, 15.0, 14.0, 18.0, 21.0, 19.0, 24.0, 28.0])
+                    .id("docs-sparkline-style-dashed")
+                    .width(px(220.0))
+                    .height(px(56.0))
+                    .color(gpui::rgb(0x2563eb).into())
+                    .line_style(aura_components::ChartLineStyle::Dashed)
+                    .smooth(false)
+                    .show_last_point(false)
+                    .into_any_element(),
+                aura_components::Sparkline::new([28.0, 24.0, 25.0, 22.0, 18.0, 17.0, 15.0, 12.0])
+                    .id("docs-sparkline-style-dotted")
+                    .width(px(220.0))
+                    .height(px(56.0))
+                    .color(gpui::rgb(0xdc2626).into())
+                    .dotted()
+                    .show_last_point(false)
+                    .into_any_element(),
             ]),
             "PieChart" => demo_row(vec![
                 aura_components::PieChart::new([

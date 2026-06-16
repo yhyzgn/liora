@@ -54,6 +54,7 @@ pub mod segment_ratio_bar_demo;
 pub mod segmented_demo;
 pub mod signal_meter_demo;
 pub mod skeleton_demo;
+pub mod sparkline_demo;
 pub mod splitter_demo;
 pub mod statistic_demo;
 pub mod steps_demo;
@@ -560,6 +561,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Segmented" => Some(segmented_demo::render(cx).into()),
         "Select" => Some(form_controls_demo::render_select(cx)),
         "Skeleton" => Some(skeleton_demo::render(cx).into()),
+        "Sparkline" => Some(sparkline_demo::render(cx).into()),
         "Slider" => Some(form_controls_demo::render_slider(cx)),
         "Splitter" => Some(splitter_demo::render(cx).into()),
         "Statistic" => Some(statistic_demo::render(cx).into()),

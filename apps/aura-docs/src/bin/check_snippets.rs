@@ -415,6 +415,14 @@ mod skeleton_variants;
 mod slider_basic;
 #[path = "../../content/snippets/slider/step.rs"]
 mod slider_step;
+#[path = "../../content/snippets/sparkline/area.rs"]
+mod sparkline_area;
+#[path = "../../content/snippets/sparkline/basic.rs"]
+mod sparkline_basic;
+#[path = "../../content/snippets/sparkline/cards.rs"]
+mod sparkline_cards;
+#[path = "../../content/snippets/sparkline/styles.rs"]
+mod sparkline_styles;
 #[path = "../../content/snippets/splitter/basic.rs"]
 mod splitter_basic;
 #[path = "../../content/snippets/statistic/affix.rs"]

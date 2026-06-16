@@ -421,3 +421,16 @@ Updated `.prompt/P13-component-expansion.md` from planned/waiting status to impl
 
 Validation evidence:
 - `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed before the status-only documentation update.
+
+## 2026-06-16 P10 Sparkline completion
+
+Audited recent work logs after the user recalled unfinished component supplementation. Found P13 was implemented, but P10 chart inventory still had a real missing `Sparkline` component while PieChart/RingChart were implemented but marked planned. Added native `Sparkline` to `aura-components`, Gallery, Docs, and compile-checked snippets. Updated P10 inventory to reflect PieChart/RingChart/Sparkline status.
+
+Sparkline capabilities:
+- Compact native GPUI canvas/path rendering for metric cards, table cells, and dashboards.
+- Trend-aware positive/negative colors, custom color, area fill, 0 baseline, fixed y-domain, smooth/straight lines, solid/dashed/dotted style, custom dash pattern, and optional last-point marker.
+
+Validation evidence:
+- `cargo test -p aura-components sparkline` passed.
+- `cargo test -p aura-gallery sparkline_demo` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.

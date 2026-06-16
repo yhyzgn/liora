@@ -162,17 +162,17 @@
 | 8 | VirtualizedTable | — | — | ⏸️ Deferred from P5; implement later when requested |
 | 9 | VirtualizedTree | — | — | ⏸️ Deferred from P5; implement later when requested |
 
-## P10 Native Charts 🔄 (3/6+ — current phase)
+## P10 Native Charts ✅ (7/7 — implemented; tooltip polish remains optional)
 
 | # | Component | File | Demo | Docs | Status |
 |---|-----------|------|------|------|--------|
-| 1 | Chart infrastructure | `crates/aura-components/src/chart*.rs` | — | — | ✅ Scale/domain/shape/frame/legend foundation; tooltip pending |
+| 1 | Chart infrastructure | `crates/aura-components/src/chart*.rs` | — | — | ✅ Scale/domain/shape/frame/legend foundation; tooltip remains optional polish |
 | 2 | LineChart | `crates/aura-components/src/line_chart.rs` | ✅ | ✅ | ✅ MVP: multi-series, axis/grid, legend, point markers, empty state |
 | 3 | AreaChart | `crates/aura-components/src/area_chart.rs` | ✅ | ✅ | ✅ MVP: overlay/stacked area, axis/grid, legend |
 | 4 | BarChart | `crates/aura-components/src/bar_chart.rs` | ✅ | ✅ | ✅ MVP: grouped/stacked vertical bars, axis/grid, legend |
-| 5 | PieChart | `crates/aura-components/src/pie_chart.rs` | ⏳ | ⏳ | 🔄 Planned |
-| 6 | RingChart | `crates/aura-components/src/pie_chart.rs` or `ring_chart.rs` | ⏳ | ⏳ | 🔄 Planned |
-| 7 | Sparkline | `crates/aura-components/src/sparkline.rs` | ⏳ | ⏳ | 🔄 Planned |
+| 5 | PieChart | `crates/aura-components/src/pie_chart.rs` | ✅ | ✅ | ✅ Implemented with value labels, outside labels, percentage/value patterns |
+| 6 | RingChart | `crates/aura-components/src/pie_chart.rs` | ✅ | ✅ | ✅ Implemented with donut mode and external legends |
+| 7 | Sparkline | `crates/aura-components/src/sparkline.rs` | ✅ | ✅ | ✅ Implemented: compact trend chart with trend colors, fill, baseline, line styles |
 
 ## P11 Native Tray / Process Resident 🔄
 
