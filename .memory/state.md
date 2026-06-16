@@ -414,3 +414,10 @@ Validation evidence:
 - `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
 - `cargo test -p aura-gallery label_demo` passed.
 - `cargo test -p aura-gallery operation_demo` passed.
+
+## 2026-06-16 P13 plan status refresh
+
+Updated `.prompt/P13-component-expansion.md` from planned/waiting status to implemented/maintenance status, checked off all five implementation waves, and added a current implementation snapshot. Updated `prompt.md` so the top-level project prompt no longer describes P13 as merely planned.
+
+Validation evidence:
+- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed before the status-only documentation update.
