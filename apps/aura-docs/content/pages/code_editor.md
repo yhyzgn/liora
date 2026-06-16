@@ -4,12 +4,22 @@
 
 ## 基础编辑器
 
+### 效果
+
 :::AuraDemo{component="CodeEditor"}::
+
+### 代码
 
 ```rust src="code_editor/basic.rs"
 ```
 
 ## Diagnostics 扩展点
+
+### 效果
+
+:::AuraDemo{component="CodeEditor"}::
+
+### 代码
 
 ```rust src="code_editor/diagnostics.rs"
 ```

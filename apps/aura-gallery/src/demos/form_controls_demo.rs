@@ -4,7 +4,7 @@ use aura_components::{
 };
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
-use gpui::{AnyView, App, Context, Entity, IntoElement, Render, Window, prelude::*, px, rgb};
+use gpui::{AnyView, App, Context, Entity, IntoElement, Render, Window, prelude::*, rgb};
 
 fn section(title: &'static str, content: impl IntoElement) -> impl IntoElement {
     Space::new()
@@ -147,8 +147,8 @@ impl CheckboxUsage {
                             .selected_text_color(rgb(0x1d4ed8).into())
                             .selected_border_color(rgb(0x3b82f6).into())
                             .hover_bg(rgb(0xeff6ff).into())
-                            .radius(px(12.0))
-                            .padding(px(14.0), px(10.0)),
+                            .radius_units(12.0)
+                            .padding_units(14.0, 10.0),
                     )
             }),
             styled_chips: cx.new(|cx| {
@@ -160,8 +160,8 @@ impl CheckboxUsage {
                             .selected_bg(rgb(0x111827).into())
                             .selected_text_color(gpui::white())
                             .selected_border_color(rgb(0x111827).into())
-                            .radius(px(999.0))
-                            .padding(px(16.0), px(8.0))
+                            .radius_units(999.0)
+                            .padding_units(16.0, 8.0)
                             .show_indicator(false),
                     )
             }),
@@ -174,9 +174,9 @@ impl CheckboxUsage {
                             .selected_text_color(rgb(0x166534).into())
                             .selected_border_color(rgb(0x22c55e).into())
                             .hover_bg(rgb(0xf8fafc).into())
-                            .radius(px(14.0))
-                            .padding(px(14.0), px(12.0))
-                            .gap(px(10.0)),
+                            .radius_units(14.0)
+                            .padding_units(14.0, 12.0)
+                            .gap_units(10.0),
                     )
                     .option_renderer(|option| {
                         let description = match option.index {
@@ -184,21 +184,19 @@ impl CheckboxUsage {
                             1 => "阈值触发与通知策略",
                             _ => "CSV / JSON 批量导出",
                         };
-                        gpui::div()
-                            .flex()
-                            .flex_col()
-                            .gap_1()
-                            .child(
-                                gpui::div()
-                                    .flex()
-                                    .items_center()
-                                    .gap_1()
-                                    .child(option.label.clone())
-                                    .when(option.selected, |s| {
-                                        s.child(Icon::new(IconName::BadgeCheck).size_xs())
-                                    }),
-                            )
-                            .child(gpui::div().text_xs().child(description))
+                        let label = Space::new()
+                            .gap_sm()
+                            .align_center()
+                            .child(Text::new(option.label.clone()).nowrap())
+                            .when(option.selected, |s| {
+                                s.child(Icon::new(IconName::BadgeCheck).size_xs())
+                            });
+
+                        Space::new()
+                            .vertical()
+                            .gap_xs()
+                            .child(label)
+                            .child(Text::new(description).xs().nowrap())
                             .into_any_element()
                     })
             }),
@@ -288,8 +286,8 @@ impl RadioUsage {
                             .selected_text_color(rgb(0x0e7490).into())
                             .selected_border_color(rgb(0x06b6d4).into())
                             .hover_bg(rgb(0xf0fdfa).into())
-                            .radius(px(12.0))
-                            .padding(px(14.0), px(10.0)),
+                            .radius_units(12.0)
+                            .padding_units(14.0, 10.0),
                     )
             }),
             styled_chips: cx.new(|cx| {
@@ -301,8 +299,8 @@ impl RadioUsage {
                             .selected_bg(rgb(0x7c3aed).into())
                             .selected_text_color(gpui::white())
                             .selected_border_color(rgb(0x7c3aed).into())
-                            .radius(px(999.0))
-                            .padding(px(16.0), px(8.0))
+                            .radius_units(999.0)
+                            .padding_units(16.0, 8.0)
                             .show_indicator(false),
                     )
             }),
@@ -315,9 +313,9 @@ impl RadioUsage {
                             .selected_text_color(rgb(0x92400e).into())
                             .selected_border_color(rgb(0xf59e0b).into())
                             .hover_bg(rgb(0xfffbeb).into())
-                            .radius(px(14.0))
-                            .padding(px(14.0), px(12.0))
-                            .gap(px(10.0)),
+                            .radius_units(14.0)
+                            .padding_units(14.0, 12.0)
+                            .gap_units(10.0),
                     )
                     .option_renderer(|option| {
                         let (icon, description) = match option.index {
@@ -325,27 +323,24 @@ impl RadioUsage {
                             1 => (IconName::Users, "团队协作与权限控制"),
                             _ => (IconName::Building2, "审计、SLA 和专属支持"),
                         };
-                        gpui::div()
-                            .flex()
-                            .items_start()
-                            .gap_2()
+                        let label = Space::new()
+                            .gap_sm()
+                            .align_center()
+                            .child(Text::new(option.label.clone()).nowrap())
+                            .when(option.selected, |s| {
+                                s.child(Icon::new(IconName::CircleCheck).size_xs())
+                            });
+
+                        Space::new()
+                            .gap_sm()
+                            .align_start()
                             .child(Icon::new(icon).size_md())
                             .child(
-                                gpui::div()
-                                    .flex()
-                                    .flex_col()
-                                    .gap_1()
-                                    .child(
-                                        gpui::div()
-                                            .flex()
-                                            .items_center()
-                                            .gap_1()
-                                            .child(option.label.clone())
-                                            .when(option.selected, |s| {
-                                                s.child(Icon::new(IconName::CircleCheck).size_xs())
-                                            }),
-                                    )
-                                    .child(gpui::div().text_xs().child(description)),
+                                Space::new()
+                                    .vertical()
+                                    .gap_xs()
+                                    .child(label)
+                                    .child(Text::new(description).xs().nowrap()),
                             )
                             .into_any_element()
                     })

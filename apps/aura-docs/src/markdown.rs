@@ -238,20 +238,8 @@ const DOC_PAGES: &[DocPage] = &[
         markdown: HEAT_BAR_DOC,
     },
     DocPage {
-        title: "Label",
-        markdown: LABEL_DOC,
-    },
-    DocPage {
-        title: "Operation",
-        markdown: OPERATION_DOC,
-    },
-    DocPage {
-        title: "SegmentRatioBar",
-        markdown: SEGMENT_RATIO_BAR_DOC,
-    },
-    DocPage {
-        title: "SignalMeter",
-        markdown: SIGNAL_METER_DOC,
+        title: "HorizontalList",
+        markdown: HORIZONTAL_LIST_DOC,
     },
     DocPage {
         title: "Icon",
@@ -262,16 +250,16 @@ const DOC_PAGES: &[DocPage] = &[
         markdown: IMAGE_DOC,
     },
     DocPage {
-        title: "HorizontalList",
-        markdown: HORIZONTAL_LIST_DOC,
-    },
-    DocPage {
         title: "Input",
         markdown: INPUT_DOC,
     },
     DocPage {
         title: "InputNumber",
         markdown: INPUT_NUMBER_DOC,
+    },
+    DocPage {
+        title: "Label",
+        markdown: LABEL_DOC,
     },
     DocPage {
         title: "Layout",
@@ -300,6 +288,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Notification",
         markdown: NOTIFICATION_DOC,
+    },
+    DocPage {
+        title: "Operation",
+        markdown: OPERATION_DOC,
     },
     DocPage {
         title: "PageHeader",
@@ -346,6 +338,10 @@ const DOC_PAGES: &[DocPage] = &[
         markdown: SCROLLBAR_DOC,
     },
     DocPage {
+        title: "SegmentRatioBar",
+        markdown: SEGMENT_RATIO_BAR_DOC,
+    },
+    DocPage {
         title: "Segmented",
         markdown: SEGMENTED_DOC,
     },
@@ -354,12 +350,20 @@ const DOC_PAGES: &[DocPage] = &[
         markdown: SELECT_DOC,
     },
     DocPage {
+        title: "SignalMeter",
+        markdown: SIGNAL_METER_DOC,
+    },
+    DocPage {
         title: "Skeleton",
         markdown: SKELETON_DOC,
     },
     DocPage {
         title: "Slider",
         markdown: SLIDER_DOC,
+    },
+    DocPage {
+        title: "Sparkline",
+        markdown: SPARKLINE_DOC,
     },
     DocPage {
         title: "Splitter",
@@ -398,12 +402,12 @@ const DOC_PAGES: &[DocPage] = &[
         markdown: TIME_PICKER_DOC,
     },
     DocPage {
-        title: "Timer",
-        markdown: TIMER_DOC,
-    },
-    DocPage {
         title: "Timeline",
         markdown: TIMELINE_DOC,
+    },
+    DocPage {
+        title: "Timer",
+        markdown: TIMER_DOC,
     },
     DocPage {
         title: "Tooltip",
@@ -452,10 +456,6 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "RingChart",
         markdown: RING_CHART_DOC,
-    },
-    DocPage {
-        title: "Sparkline",
-        markdown: SPARKLINE_DOC,
     },
     DocPage {
         title: "Markdown",
@@ -992,6 +992,10 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "button/sizes.rs" => Some(include_str!("../content/snippets/button/sizes.rs")),
         "button/states.rs" => Some(include_str!("../content/snippets/button/states.rs")),
         "button/rounded.rs" => Some(include_str!("../content/snippets/button/rounded.rs")),
+        "button/custom_colors.rs" => {
+            Some(include_str!("../content/snippets/button/custom_colors.rs"))
+        }
+        "button/gradient.rs" => Some(include_str!("../content/snippets/button/gradient.rs")),
         "alert/types.rs" => Some(include_str!("../content/snippets/alert/types.rs")),
         "alert/description.rs" => Some(include_str!("../content/snippets/alert/description.rs")),
         "tag/types.rs" => Some(include_str!("../content/snippets/tag/types.rs")),
@@ -1015,6 +1019,7 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "area_chart/basic.rs" => Some(include_str!("../content/snippets/area_chart/basic.rs")),
         "area_chart/overlay.rs" => Some(include_str!("../content/snippets/area_chart/overlay.rs")),
         "area_chart/stacked.rs" => Some(include_str!("../content/snippets/area_chart/stacked.rs")),
+        "area_chart/custom.rs" => Some(include_str!("../content/snippets/area_chart/custom.rs")),
         "badge/basic.rs" => Some(include_str!("../content/snippets/badge/basic.rs")),
         "badge/max.rs" => Some(include_str!("../content/snippets/badge/max.rs")),
         "badge/dot.rs" => Some(include_str!("../content/snippets/badge/dot.rs")),
@@ -1022,6 +1027,7 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "bar_chart/basic.rs" => Some(include_str!("../content/snippets/bar_chart/basic.rs")),
         "bar_chart/grouped.rs" => Some(include_str!("../content/snippets/bar_chart/grouped.rs")),
         "bar_chart/stacked.rs" => Some(include_str!("../content/snippets/bar_chart/stacked.rs")),
+        "bar_chart/custom.rs" => Some(include_str!("../content/snippets/bar_chart/custom.rs")),
         "label/basic.rs" => Some(include_str!("../content/snippets/label/basic.rs")),
         "operation/basic.rs" => Some(include_str!("../content/snippets/operation/basic.rs")),
         "segment_ratio_bar/top.rs" => {
@@ -1030,11 +1036,26 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "segment_ratio_bar/bottom.rs" => Some(include_str!(
             "../content/snippets/segment_ratio_bar/bottom.rs"
         )),
+        "segment_ratio_bar/both.rs" => Some(include_str!(
+            "../content/snippets/segment_ratio_bar/both.rs"
+        )),
+        "segment_ratio_bar/hidden.rs" => Some(include_str!(
+            "../content/snippets/segment_ratio_bar/hidden.rs"
+        )),
+        "segment_ratio_bar/pattern.rs" => Some(include_str!(
+            "../content/snippets/segment_ratio_bar/pattern.rs"
+        )),
+        "segment_ratio_bar/compact.rs" => Some(include_str!(
+            "../content/snippets/segment_ratio_bar/compact.rs"
+        )),
         "heat_bar/events.rs" => Some(include_str!("../content/snippets/heat_bar/events.rs")),
         "signal_meter/wifi.rs" => Some(include_str!("../content/snippets/signal_meter/wifi.rs")),
         "signal_meter/levels.rs" => {
             Some(include_str!("../content/snippets/signal_meter/levels.rs"))
         }
+        "signal_meter/threshold_colors.rs" => Some(include_str!(
+            "../content/snippets/signal_meter/threshold_colors.rs"
+        )),
         "signal_meter/mobile.rs" => {
             Some(include_str!("../content/snippets/signal_meter/mobile.rs"))
         }
@@ -1053,9 +1074,11 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "checkbox/basic.rs" => Some(include_str!("../content/snippets/checkbox/basic.rs")),
         "checkbox/group.rs" => Some(include_str!("../content/snippets/checkbox/group.rs")),
         "checkbox/buttons.rs" => Some(include_str!("../content/snippets/checkbox/buttons.rs")),
+        "checkbox/custom.rs" => Some(include_str!("../content/snippets/checkbox/custom.rs")),
         "radio/basic.rs" => Some(include_str!("../content/snippets/radio/basic.rs")),
         "radio/group.rs" => Some(include_str!("../content/snippets/radio/group.rs")),
         "radio/buttons.rs" => Some(include_str!("../content/snippets/radio/buttons.rs")),
+        "radio/custom.rs" => Some(include_str!("../content/snippets/radio/custom.rs")),
         "select/basic.rs" => Some(include_str!("../content/snippets/select/basic.rs")),
         "slider/basic.rs" => Some(include_str!("../content/snippets/slider/basic.rs")),
         "slider/step.rs" => Some(include_str!("../content/snippets/slider/step.rs")),
@@ -1106,6 +1129,7 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
             "../content/snippets/line_chart/line_styles.rs"
         )),
         "pie_chart/basic.rs" => Some(include_str!("../content/snippets/pie_chart/basic.rs")),
+        "pie_chart/custom.rs" => Some(include_str!("../content/snippets/pie_chart/custom.rs")),
         "ring_chart/basic.rs" => Some(include_str!("../content/snippets/ring_chart/basic.rs")),
         "ring_chart/custom.rs" => Some(include_str!("../content/snippets/ring_chart/custom.rs")),
         "ring_chart/external.rs" => {

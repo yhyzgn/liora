@@ -229,6 +229,11 @@ pub fn registry() -> Vec<DemoEntry> {
             render: |cx| skeleton_demo::render(cx).into(),
         },
         DemoEntry {
+            name: "Sparkline 迷你趋势图",
+            description: "紧凑指标趋势图",
+            render: |cx| sparkline_demo::render(cx).into(),
+        },
+        DemoEntry {
             name: "Result 结果页",
             description: "反馈操作结果",
             render: |cx| result_demo::render(cx).into(),

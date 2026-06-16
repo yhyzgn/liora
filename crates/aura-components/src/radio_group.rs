@@ -120,15 +120,39 @@ impl RadioOptionStyle {
         self
     }
 
+    pub fn radius_px(self, radius: f32) -> Self {
+        self.radius(px(radius))
+    }
+
+    pub fn radius_units(self, radius: f32) -> Self {
+        self.radius_px(radius)
+    }
+
     pub fn padding(mut self, x: impl Into<Pixels>, y: impl Into<Pixels>) -> Self {
         self.padding_x = Some(x.into());
         self.padding_y = Some(y.into());
         self
     }
 
+    pub fn padding_px(self, x: f32, y: f32) -> Self {
+        self.padding(px(x), px(y))
+    }
+
+    pub fn padding_units(self, x: f32, y: f32) -> Self {
+        self.padding_px(x, y)
+    }
+
     pub fn gap(mut self, gap: impl Into<Pixels>) -> Self {
         self.gap = Some(gap.into());
         self
+    }
+
+    pub fn gap_px(self, gap: f32) -> Self {
+        self.gap(px(gap))
+    }
+
+    pub fn gap_units(self, gap: f32) -> Self {
+        self.gap_px(gap)
     }
 
     pub fn show_indicator(mut self, show: bool) -> Self {

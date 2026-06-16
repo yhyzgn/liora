@@ -57,6 +57,14 @@ impl Text {
         self
     }
 
+    pub fn xs(self) -> Self {
+        self.size(px(12.0))
+    }
+
+    pub fn sm(self) -> Self {
+        self.size(px(14.0))
+    }
+
     pub fn weight(mut self, weight: FontWeight) -> Self {
         self.weight = Some(weight);
         self
