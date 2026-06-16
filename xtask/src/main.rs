@@ -35,6 +35,7 @@ fn package(args: Vec<String>) -> Result<(), String> {
     match command.action {
         PackageAction::Validate => validate(),
         PackageAction::Build => build(command.apps),
+        PackageAction::Smoke => smoke(command.apps, command.format),
         PackageAction::Package | PackageAction::Ci => package_formats(command),
     }
 }
@@ -51,6 +52,184 @@ fn validate() -> Result<(), String> {
         eprintln!("- {error}");
     }
     Err("packaging layout validation failed".into())
+}
+
+fn smoke(apps: Vec<KnownApp>, format: PackageFormat) -> Result<(), String> {
+    let root = workspace_root()?;
+    let platform = Platform::current();
+    let formats: Vec<_> = if format == PackageFormat::PlatformDefaults {
+        PackageFormat::defaults_for(platform).to_vec()
+    } else {
+        vec![format]
+    };
+
+    let mut checked = 0usize;
+    for app in apps {
+        let metadata = app.metadata();
+        let out_dir = package_out_dir(&root, &metadata, platform);
+        let artifacts = collect_package_artifacts(
+            &metadata.package,
+            &app_version(),
+            platform,
+            &target_triple(),
+            git_short_sha(&root).as_deref(),
+            &out_dir,
+            &formats,
+        )
+        .map_err(|error| {
+            format!(
+                "failed to inspect package artifacts from {}: {error}",
+                out_dir.display()
+            )
+        })?;
+
+        if artifacts.is_empty() {
+            return Err(format!(
+                "no package artifacts found for smoke: app={} output={} formats={}",
+                metadata.package,
+                out_dir.display(),
+                formats
+                    .iter()
+                    .map(|format| format.as_str())
+                    .collect::<Vec<_>>()
+                    .join(",")
+            ));
+        }
+
+        for artifact in artifacts {
+            smoke_artifact(&root, &metadata, platform, artifact.format, &artifact.path)?;
+            checked += 1;
+        }
+    }
+
+    println!("package smoke OK: checked {checked} artifact(s)");
+    Ok(())
+}
+
+fn smoke_artifact(
+    _root: &Path,
+    app: &aura_packager::AppMetadata,
+    platform: Platform,
+    format: PackageFormat,
+    path: &Path,
+) -> Result<(), String> {
+    match format {
+        PackageFormat::TarGz => smoke_portable_tar_gz(app, platform, path),
+        PackageFormat::Deb => require_magic(path, b"!<arch>\n", "deb ar archive"),
+        PackageFormat::Rpm => require_magic(path, &[0xed, 0xab, 0xee, 0xdb], "rpm lead"),
+        PackageFormat::Nsis => require_magic(path, b"MZ", "Windows executable"),
+        PackageFormat::Msi => require_magic(
+            path,
+            &[0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1],
+            "MSI compound document",
+        ),
+        PackageFormat::AppImage | PackageFormat::Dmg | PackageFormat::App => {
+            let len = fs::metadata(path)
+                .map_err(|error| format!("failed to stat {}: {error}", path.display()))?
+                .len();
+            if len == 0 {
+                Err(format!("package artifact is empty: {}", path.display()))
+            } else {
+                println!(
+                    "package smoke OK: app={} format={} path={} bytes={}",
+                    app.package,
+                    format.as_str(),
+                    path.display(),
+                    len
+                );
+                Ok(())
+            }
+        }
+        PackageFormat::PlatformDefaults => Ok(()),
+    }
+}
+
+fn smoke_portable_tar_gz(
+    app: &aura_packager::AppMetadata,
+    platform: Platform,
+    path: &Path,
+) -> Result<(), String> {
+    let output = Command::new("tar")
+        .arg("-tzf")
+        .arg(path)
+        .output()
+        .map_err(|error| format!("failed to spawn tar for {}: {error}", path.display()))?;
+    if !output.status.success() {
+        return Err(format!(
+            "portable tar.gz listing failed for {}: {}",
+            path.display(),
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+
+    let entries = String::from_utf8_lossy(&output.stdout);
+    let top = entries
+        .lines()
+        .find_map(|entry| entry.split('/').next())
+        .filter(|entry| !entry.is_empty())
+        .ok_or_else(|| format!("portable tar.gz is empty: {}", path.display()))?;
+
+    let required = [
+        format!("{top}/bin/{}", app.binary),
+        format!("{top}/icons/{}.png", app.icon_stem),
+        format!("{top}/icons/{}.svg", app.icon_stem),
+        format!("{top}/{}", app.binary),
+        format!("{top}/README.md"),
+    ];
+    for required_entry in required {
+        if !tar_listing_contains(&entries, &required_entry) {
+            return Err(format!(
+                "portable tar.gz missing required entry `{required_entry}` in {}",
+                path.display()
+            ));
+        }
+    }
+
+    if platform == Platform::Linux {
+        for required_entry in [
+            format!("{top}/share/applications/{}.desktop", app.binary),
+            format!("{top}/share/metainfo/{}.metainfo.xml", app.binary),
+        ] {
+            if !tar_listing_contains(&entries, &required_entry) {
+                return Err(format!(
+                    "portable tar.gz missing Linux metadata entry `{required_entry}` in {}",
+                    path.display()
+                ));
+            }
+        }
+    }
+
+    println!(
+        "package smoke OK: app={} format=tar.gz path={}",
+        app.package,
+        path.display()
+    );
+    Ok(())
+}
+
+fn tar_listing_contains(entries: &str, required_entry: &str) -> bool {
+    entries
+        .lines()
+        .any(|entry| entry.trim_end_matches('/') == required_entry)
+}
+
+fn require_magic(path: &Path, magic: &[u8], label: &str) -> Result<(), String> {
+    let bytes =
+        fs::read(path).map_err(|error| format!("failed to read {}: {error}", path.display()))?;
+    if bytes.starts_with(magic) {
+        println!(
+            "package smoke OK: {} path={} bytes={}",
+            label,
+            path.display(),
+            bytes.len()
+        );
+        Ok(())
+    } else {
+        Err(format!(
+            "package artifact has unexpected header for {label}: {}",
+            path.display()
+        ))
+    }
 }
 
 fn build(apps: Vec<KnownApp>) -> Result<(), String> {
@@ -555,6 +734,7 @@ struct PackageCommand {
 enum PackageAction {
     Validate,
     Build,
+    Smoke,
     Package,
     Ci,
 }
@@ -573,6 +753,7 @@ impl PackageCommand {
             match arg.as_str() {
                 "validate" => action = PackageAction::Validate,
                 "build" => action = PackageAction::Build,
+                "smoke" => action = PackageAction::Smoke,
                 "ci" => action = PackageAction::Ci,
                 "--all-apps" => all_apps = true,
                 "--dry-run" => dry_run = true,
@@ -615,7 +796,7 @@ fn workspace_root() -> Result<PathBuf, String> {
 
 fn print_help() {
     println!(
-        "Aura xtask\n\n  cargo run -p xtask -- package validate\n  cargo run -p xtask -- package build --app gallery\n  cargo run -p xtask -- package --app docs --format appimage\n  cargo run -p xtask -- package --app docs --format deb --dry-run --skip-build\n  cargo run -p xtask -- package ci --all-apps --format platform-defaults\n\nOptions:\n  --app <gallery|docs>\n  --all-apps\n  --format <appimage|deb|rpm|tar.gz|app|dmg|nsis|msi|platform-defaults>\n  --dry-run      generate backend config and print cargo-packager invocation\n  --skip-build   reuse target/release binaries instead of building first"
+        "Aura xtask\n\n  cargo run -p xtask -- package validate\n  cargo run -p xtask -- package build --app gallery\n  cargo run -p xtask -- package --app docs --format appimage\n  cargo run -p xtask -- package --app docs --format deb --dry-run --skip-build\n  cargo run -p xtask -- package ci --all-apps --format platform-defaults\n  cargo run -p xtask -- package smoke --all-apps --format platform-defaults\n\nOptions:\n  --app <gallery|docs>\n  --all-apps\n  --format <appimage|deb|rpm|tar.gz|app|dmg|nsis|msi|platform-defaults>\n  --dry-run      generate backend config and print cargo-packager invocation\n  --skip-build   reuse target/release binaries instead of building first"
     );
 }
 
@@ -651,6 +832,17 @@ mod tests {
             Path::new("out")
                 .join("aura-gallery-1.2.3-preview.4.abcdef0-linux-x86_64-unknown-linux-gnu.tar.gz")
         );
+    }
+
+    #[test]
+    fn portable_tar_listing_checks_required_entries() {
+        let entries = "aura-gallery/\naura-gallery/bin/aura-gallery\naura-gallery/README.md\n";
+        assert!(tar_listing_contains(
+            entries,
+            "aura-gallery/bin/aura-gallery"
+        ));
+        assert!(tar_listing_contains(entries, "aura-gallery/README.md"));
+        assert!(!tar_listing_contains(entries, "aura-gallery/missing"));
     }
 
     #[test]

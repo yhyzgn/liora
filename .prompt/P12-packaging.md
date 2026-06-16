@@ -76,6 +76,7 @@ The internal packaging module is named `aura-packager`, not `aura-installer`.
   - main Aura brand icon 已选第 3 套 ribbon，落到 `packaging/icons/aura.*`。
 - CI
   - `.github/workflows/package.yml` 已添加 Linux/macOS/Windows packaging matrix。
+  - package artifact 上传前运行 `cargo run -p xtask -- package smoke ...`，对 portable `.tar.gz` 做结构校验，并对其他格式做 runner-safe 头部/非空检查。
   - `workflow_dispatch` 默认 dry-run。
   - `main` push 触发 preview 打包，包版本使用 `AURA_PACKAGE_VERSION=<base>-preview.<run_number>.<short_sha>`。
   - `v*` tag 触发 release 打包，包版本使用 tag 去掉 `v` 后的版本。

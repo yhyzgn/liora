@@ -434,6 +434,7 @@ release-notes.md
 - [x] rpm（`cargo-generate-rpm` supplemental backend 配置生成和命令路由已接入，待安装本机后端工具后产物 smoke）。
 - [x] portable tar.gz（Aura supplemental backend 已接入，不再映射为 cargo-packager pacman）。
 - [ ] Pacman / PKGBUILD（如需 Arch 原生包再补）。
+- [x] artifact smoke：`xtask package smoke` 验证 portable tar.gz 结构，并对其他格式做 runner-safe 头部/非空检查。
 - [ ] 安装/卸载 smoke test 脚本。
 
 验收：
@@ -519,6 +520,7 @@ release-notes.md
 - `rpm` 仍归类为 supplemental backend，但已优先接入 `cargo-generate-rpm` 的 metadata overwrite 配置生成和 `cargo generate-rpm` 命令路由；`nfpm` 仅作为后备方案。
 - `.deb` / `.rpm` 生成配置已补 Linux runtime dependency metadata。
 - manifest 已扩充 `targetTriple` 与 `gitSha`，release notes 同步展示 version、target triple、git sha。
+- `xtask package smoke` 已接入 CI artifact 上传前检查；当前为非安装式 smoke，真正 install/uninstall smoke 仍待补。
 - 当前环境未全局安装 `cargo-packager`，因此验证以配置生成、命令 dry-run、类型检查和单元测试为准；安装后可直接去掉 `--dry-run` 产出包。
 
 ## 15. 决策记录
