@@ -1,5 +1,5 @@
 use aura_components::{Button, Card, Input, Space, Tag, TagFlow};
-use gpui::{AnyView, App, Context, Entity, Render, Window, prelude::*};
+use gpui::{AnyView, App, Context, Entity, Pixels, Render, Window, prelude::*};
 
 use aura_components::layout_helpers::{page, row_md, section};
 
@@ -174,7 +174,10 @@ impl Render for TagDemo {
                             Tag::new("Installer").warning().round(true),
                             Tag::new("Tray").round(true),
                         ])
-                        .gap(gpui::px(10.0)),
+                        .gap(Pixels::from(10.0_f32))
+                        .max_rows(2)
+                        .estimated_items_per_row(4)
+                        .overflow_indicator("更多"),
                     ),
                 )),
         )

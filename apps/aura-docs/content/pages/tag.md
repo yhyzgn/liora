@@ -57,13 +57,15 @@
 ```rust src="tag/round.rs"
 ```
 
-## 流式布局
+## 流式布局与折叠
 
 ### 效果
 
 ::AuraDemo{component="TagFlow"}::
 
 ### 代码
+
+`TagFlow` 仍复用原 `Tag`，只负责 wrap、gap、align 与轻量折叠策略。`max_rows` 会根据 `estimated_items_per_row` 计算展示数量，并自动追加 overflow indicator。
 
 ```rust src="tag/flow.rs"
 ```

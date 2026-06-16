@@ -3233,7 +3233,15 @@ impl Render for LiveDemoContent {
                     aura_components::Tag::new("Animation").warning().round(true),
                     aura_components::Tag::new("Native Rust").danger().round(true),
                     aura_components::Tag::new("Charts").round(true),
-                ]).gap(px(10.0)).into_any_element(),
+                    aura_components::Tag::new("Docs").success().round(true),
+                    aura_components::Tag::new("Installer").warning().round(true),
+                    aura_components::Tag::new("Tray").round(true),
+                ])
+                .gap(px(10.0))
+                .max_rows(2)
+                .estimated_items_per_row(3)
+                .overflow_indicator("更多")
+                .into_any_element(),
             ]),
             "SignalMeterMobile" => demo_row(vec![
                 aura_components::SignalMeter::new(3).height(px(36.0)).into_any_element(),

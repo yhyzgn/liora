@@ -221,6 +221,10 @@ pub struct TagFlow {
     tags: Vec<AnyElement>,
     gap: Pixels,
     align: TagFlowAlign,
+    max_rows: Option<usize>,
+    estimated_items_per_row: usize,
+    collapsed: bool,
+    overflow_indicator: Option<SharedString>,
 }
 
 impl TagFlow {
@@ -229,6 +233,10 @@ impl TagFlow {
             tags: tags.into_iter().map(|tag| tag.into_any_element()).collect(),
             gap: px(8.0),
             align: TagFlowAlign::Start,
+            max_rows: None,
+            estimated_items_per_row: 4,
+            collapsed: false,
+            overflow_indicator: None,
         }
     }
 
@@ -237,6 +245,10 @@ impl TagFlow {
             tags: tags.into_iter().map(|tag| tag.into_any_element()).collect(),
             gap: px(8.0),
             align: TagFlowAlign::Start,
+            max_rows: None,
+            estimated_items_per_row: 4,
+            collapsed: false,
+            overflow_indicator: None,
         }
     }
 
@@ -257,17 +269,69 @@ impl TagFlow {
     pub fn end(self) -> Self {
         self.align(TagFlowAlign::End)
     }
+
+    pub fn max_rows(mut self, rows: usize) -> Self {
+        self.max_rows = Some(rows.max(1));
+        self.collapsed = true;
+        self
+    }
+
+    pub fn estimated_items_per_row(mut self, count: usize) -> Self {
+        self.estimated_items_per_row = count.max(1);
+        self
+    }
+
+    pub fn collapsed(mut self, collapsed: bool) -> Self {
+        self.collapsed = collapsed;
+        self
+    }
+
+    pub fn expanded(self) -> Self {
+        self.collapsed(false)
+    }
+
+    pub fn overflow_indicator(mut self, label: impl Into<SharedString>) -> Self {
+        self.overflow_indicator = Some(label.into());
+        self
+    }
+
+    fn visible_count(&self) -> usize {
+        if !self.collapsed {
+            return self.tags.len();
+        }
+        self.max_rows
+            .map(|rows| rows.saturating_mul(self.estimated_items_per_row))
+            .unwrap_or(self.tags.len())
+            .min(self.tags.len())
+    }
 }
 
 impl RenderOnce for TagFlow {
     fn render(self, _window: &mut Window, _cx: &mut App) -> impl IntoElement {
+        let visible_count = self.visible_count();
+        let hidden_count = self.tags.len().saturating_sub(visible_count);
+        let overflow_label = self
+            .overflow_indicator
+            .clone()
+            .unwrap_or_else(|| format!("+{hidden_count}").into());
+        let tags = self
+            .tags
+            .into_iter()
+            .take(visible_count)
+            .chain((hidden_count > 0).then(|| {
+                Tag::new(overflow_label)
+                    .plain()
+                    .round(true)
+                    .into_any_element()
+            }));
+
         div()
             .flex()
             .flex_wrap()
             .gap(self.gap)
             .when(self.align == TagFlowAlign::Center, |s| s.justify_center())
             .when(self.align == TagFlowAlign::End, |s| s.justify_end())
-            .children(self.tags)
+            .children(tags)
     }
 }
 
@@ -292,5 +356,24 @@ mod tests {
         assert_eq!(flow.gap, px(12.0));
         assert_eq!(flow.align, TagFlowAlign::Center);
         assert_eq!(flow.tags.len(), 2);
+    }
+
+    #[test]
+    fn tag_flow_tracks_collapse_options() {
+        let flow = TagFlow::new([
+            Tag::new("A"),
+            Tag::new("B"),
+            Tag::new("C"),
+            Tag::new("D"),
+            Tag::new("E"),
+        ])
+        .max_rows(2)
+        .estimated_items_per_row(2)
+        .overflow_indicator("more");
+
+        assert_eq!(flow.visible_count(), 4);
+        assert_eq!(flow.max_rows, Some(2));
+        assert_eq!(flow.estimated_items_per_row, 2);
+        assert!(flow.collapsed);
     }
 }
