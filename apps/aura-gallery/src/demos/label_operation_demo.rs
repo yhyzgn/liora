@@ -46,11 +46,28 @@ impl Render for LabelOperationDemo {
                     Space::new()
                         .vertical()
                         .gap_md()
-                        .child(Operation::new(
-                            Label::new("开启状态栏驻留").icon(IconName::Bell),
-                            self.switch.clone(),
-                        ))
-                        .child(Operation::with_text("执行操作", Button::new("Run").small())),
+                        .child(
+                            Operation::new(
+                                Label::new("开启状态栏驻留").icon(IconName::Bell),
+                                self.switch.clone(),
+                            )
+                            .description("关闭主窗口后仍保留托盘入口。")
+                            .success(),
+                        )
+                        .child(
+                            Operation::with_text("执行操作", Button::new("Run").small())
+                                .description("用于控制面板里的右侧操作布局。")
+                                .status("手动"),
+                        )
+                        .child(
+                            Operation::new(
+                                Label::new("危险操作").icon(IconName::TriangleAlert),
+                                Button::new("Delete").danger().small(),
+                            )
+                            .description("支持状态标签、说明文本和禁用态。")
+                            .danger()
+                            .disabled(true),
+                        ),
                 )),
         )
     }

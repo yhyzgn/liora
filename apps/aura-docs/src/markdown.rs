@@ -3410,7 +3410,10 @@ impl Render for LiveDemoContent {
                 aura_components::Operation::new(
                     aura_components::Label::new("执行操作").icon(IconName::Play),
                     aura_components::Button::new("Run").small(),
-                ).into_any_element(),
+                )
+                .description("左侧可带说明文本，右侧操作区域保持末端对齐。")
+                .status("手动")
+                .into_any_element(),
             ]),
             "PieChart" => demo_row(vec![
                 aura_components::PieChart::new([
