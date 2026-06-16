@@ -247,10 +247,8 @@ mod input_number_vertical;
 mod input_password;
 #[path = "../../content/snippets/input/states.rs"]
 mod input_states;
-#[path = "../../content/snippets/label_operation/label.rs"]
-mod label_operation_label;
-#[path = "../../content/snippets/label_operation/operation.rs"]
-mod label_operation_operation;
+#[path = "../../content/snippets/label/basic.rs"]
+mod label_basic;
 #[path = "../../content/snippets/layout/divider.rs"]
 mod layout_divider;
 #[path = "../../content/snippets/layout/grid.rs"]
@@ -297,6 +295,8 @@ mod message_formatting;
 mod message_types;
 #[path = "../../content/snippets/notification/types.rs"]
 mod notification_types;
+#[path = "../../content/snippets/operation/basic.rs"]
+mod operation_basic;
 #[path = "../../content/snippets/page_header/basic.rs"]
 mod page_header_basic;
 #[path = "../../content/snippets/page_header/extra.rs"]

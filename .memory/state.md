@@ -397,3 +397,11 @@ Validation evidence:
 - `cargo test -p aura-components virtualized_list` passed.
 - `cargo test -p aura-gallery horizontal_list_demo` passed.
 - `cargo test -p aura-gallery virtualized_list_demo` passed.
+
+## 2026-06-16 P13 docs navigation cleanup
+
+Split the combined `LabelOperation` docs surface into separate `Label` and `Operation` pages so each P13 component is independently discoverable in aura-docs. Added dedicated compile-checked snippets under `content/snippets/label/basic.rs` and `content/snippets/operation/basic.rs`, wired both snippets into `check_snippets`, and updated the docs page registry. Also refreshed `.memory/inventory.md` to mark CodeEditor, RingChart external labels, and BarChart value range colors as implemented based on current source/docs coverage.
+
+Validation evidence:
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check -p aura-docs` passed.

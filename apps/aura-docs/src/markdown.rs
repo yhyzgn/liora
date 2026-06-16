@@ -54,7 +54,8 @@ const DROPDOWN_DOC: &str = include_str!("../content/pages/dropdown.md");
 const EMPTY_DOC: &str = include_str!("../content/pages/empty.md");
 const FORM_DOC: &str = include_str!("../content/pages/form.md");
 const HEAT_BAR_DOC: &str = include_str!("../content/pages/heat_bar.md");
-const LABEL_OPERATION_DOC: &str = include_str!("../content/pages/label_operation.md");
+const LABEL_DOC: &str = include_str!("../content/pages/label.md");
+const OPERATION_DOC: &str = include_str!("../content/pages/operation.md");
 const SEGMENT_RATIO_BAR_DOC: &str = include_str!("../content/pages/segment_ratio_bar.md");
 const SIGNAL_METER_DOC: &str = include_str!("../content/pages/signal_meter.md");
 const ICON_DOC: &str = include_str!("../content/pages/icon.md");
@@ -236,8 +237,12 @@ const DOC_PAGES: &[DocPage] = &[
         markdown: HEAT_BAR_DOC,
     },
     DocPage {
-        title: "LabelOperation",
-        markdown: LABEL_OPERATION_DOC,
+        title: "Label",
+        markdown: LABEL_DOC,
+    },
+    DocPage {
+        title: "Operation",
+        markdown: OPERATION_DOC,
     },
     DocPage {
         title: "SegmentRatioBar",
@@ -1012,12 +1017,8 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "bar_chart/basic.rs" => Some(include_str!("../content/snippets/bar_chart/basic.rs")),
         "bar_chart/grouped.rs" => Some(include_str!("../content/snippets/bar_chart/grouped.rs")),
         "bar_chart/stacked.rs" => Some(include_str!("../content/snippets/bar_chart/stacked.rs")),
-        "label_operation/operation.rs" => Some(include_str!(
-            "../content/snippets/label_operation/operation.rs"
-        )),
-        "label_operation/label.rs" => {
-            Some(include_str!("../content/snippets/label_operation/label.rs"))
-        }
+        "label/basic.rs" => Some(include_str!("../content/snippets/label/basic.rs")),
+        "operation/basic.rs" => Some(include_str!("../content/snippets/operation/basic.rs")),
         "segment_ratio_bar/top.rs" => {
             Some(include_str!("../content/snippets/segment_ratio_bar/top.rs"))
         }
