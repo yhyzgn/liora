@@ -5,6 +5,32 @@ use std::{
 
 use crate::{AppMetadata, PackageFormat, Platform};
 
+pub const LINUX_DEB_RUNTIME_DEPENDENCIES: &[&str] = &[
+    "libgtk-3-0",
+    "libayatana-appindicator3-1",
+    "libx11-6",
+    "libwayland-client0",
+    "libxkbcommon0",
+    "libfontconfig1",
+    "libfreetype6",
+    "libvulkan1",
+    "libasound2",
+    "xdg-utils",
+];
+
+pub const LINUX_RPM_RUNTIME_DEPENDENCIES: &[(&str, &str)] = &[
+    ("gtk3", "*"),
+    ("libayatana-appindicator-gtk3", "*"),
+    ("libX11", "*"),
+    ("wayland", "*"),
+    ("libxkbcommon", "*"),
+    ("fontconfig", "*"),
+    ("freetype", "*"),
+    ("vulkan-loader", "*"),
+    ("alsa-lib", "*"),
+    ("xdg-utils", "*"),
+];
+
 /// A generated cargo-packager invocation plan for one Aura app.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CargoPackagerPlan {
@@ -99,6 +125,13 @@ pub fn render_generate_rpm_config(root: &Path, app: &AppMetadata) -> String {
     kv(&mut out, "auto-req", "builtin");
     line(&mut out, "require-sh = false");
 
+    line(&mut out, "");
+    line(&mut out, "[requires]");
+    for (package, version) in LINUX_RPM_RUNTIME_DEPENDENCIES {
+        kv(&mut out, package, version);
+    }
+
+    line(&mut out, "");
     line(&mut out, "assets = [");
     rpm_asset(
         &mut out,
@@ -209,6 +242,7 @@ pub fn render_cargo_packager_config(
     kv(&mut out, "section", "devel");
     kv(&mut out, "priority", "optional");
     kv(&mut out, "packageName", &app.package);
+    arr(&mut out, "depends", LINUX_DEB_RUNTIME_DEPENDENCIES);
 
     line(&mut out, "");
     line(&mut out, "[macos]");
@@ -301,6 +335,9 @@ mod tests {
         );
         assert!(text.contains("productName = \"Aura Gallery\""));
         assert!(text.contains("formats = [\"deb\", \"appimage\"]"));
+        assert!(text.contains("depends = [\"libgtk-3-0\""));
+        assert!(text.contains("\"libayatana-appindicator3-1\""));
+        assert!(text.contains("\"libvulkan1\""));
         assert!(text.contains("[[binaries]]"));
         assert!(text.contains("path = \"aura-gallery\""));
         assert!(text.contains("installerIcon"));
@@ -313,7 +350,25 @@ mod tests {
         let text = render_generate_rpm_config(root, &app);
         assert!(text.contains("name = \"aura-docs\""));
         assert!(text.contains("/usr/bin/aura-docs"));
+        assert!(text.contains("[requires]"));
+        assert!(text.contains("gtk3 = \"*\""));
+        assert!(text.contains("vulkan-loader = \"*\""));
         assert!(text.contains("/usr/share/applications/aura-docs.desktop"));
         assert!(text.contains("/usr/share/icons/hicolor/scalable/apps/aura-docs.svg"));
+    }
+}
+
+#[cfg(test)]
+mod format_tests {
+    use super::*;
+
+    #[test]
+    fn tar_gz_is_aura_supplemental_not_cargo_packager_pacman() {
+        assert_eq!(PackageFormat::TarGz.cargo_packager_format(), None);
+        assert_eq!(cargo_packager_formats(&[PackageFormat::TarGz]), Vec::new());
+        assert_eq!(
+            supplemental_formats(&[PackageFormat::TarGz]),
+            vec![PackageFormat::TarGz]
+        );
     }
 }

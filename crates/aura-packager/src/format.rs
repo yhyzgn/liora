@@ -65,7 +65,7 @@ impl PackageFormat {
         match self {
             Self::AppImage => Some("appimage"),
             Self::Deb => Some("deb"),
-            Self::TarGz => Some("pacman"),
+            Self::TarGz => None,
             Self::App => Some("app"),
             Self::Dmg => Some("dmg"),
             Self::Nsis => Some("nsis"),

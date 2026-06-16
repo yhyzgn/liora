@@ -1,7 +1,7 @@
 # Aura 程序安装器构建打包技术方案
 
 日期：2026-05-15  
-状态：实施中 / cargo-packager 后端已接入 dry-run  
+状态：实施中 / cargo-packager 后端已接入 dry-run；portable tar.gz backend 已接入
 适用范围：`aura-gallery`、`aura-docs` 以及后续所有纯 GPUI Aura 主程序
 
 ## 1. 目标
@@ -142,7 +142,8 @@ Tauri 的 bundler 覆盖面完整，包括：
 
 | 平台 | 格式 | 说明 |
 |---|---|---|
-| Linux | Pacman `.tar.gz` / `PKGBUILD` | Arch 系用户 |
+| Linux | Pacman `.tar.gz` / `PKGBUILD` | Arch 系用户，后续可选 |
+| Linux | portable `.tar.gz` | 中立解压运行包，Aura supplemental backend 已接入 |
 | Linux | Flatpak | 后续如需 sandbox / Flathub 分发再补 |
 | Linux | Snap | 非首选，按用户需求再补 |
 | All | `.tar.gz` / `.zip` portable archive | CI smoke、开发者下载、回滚备用 |
@@ -431,7 +432,8 @@ release-notes.md
 - [ ] AppImage（cargo-packager 后端命令已接入，待安装本机后端工具后产物 smoke）。
 - [ ] deb（cargo-packager 后端命令已接入，待安装本机后端工具后产物 smoke）。
 - [x] rpm（`cargo-generate-rpm` supplemental backend 配置生成和命令路由已接入，待安装本机后端工具后产物 smoke）。
-- [ ] portable tar.gz / pacman（cargo-packager pacman 映射已预留，portable archive 待补）。
+- [x] portable tar.gz（Aura supplemental backend 已接入，不再映射为 cargo-packager pacman）。
+- [ ] Pacman / PKGBUILD（如需 Arch 原生包再补）。
 - [ ] 安装/卸载 smoke test 脚本。
 
 验收：
@@ -512,8 +514,11 @@ release-notes.md
 - `cargo xtask package --app <gallery|docs> --format <fmt> --dry-run --skip-build` 会生成 `target/aura-packager/Packager.<app>.toml`，并打印实际 `cargo packager ...` 调用。
 - `cargo xtask package ci ...` 已作为 CI 入口别名接入，`.github/workflows/package.yml` 在 Linux/macOS/Windows 矩阵中调用该入口。
 - 非 dry-run 打包完成后会扫描 `target/packages/<app>/<platform>/` 下的安装包文件，生成 `target/packages/package-manifest.json`、`target/packages/checksums.txt` 和 `target/packages/release-notes.md`。
-- `appimage`、`deb`、`app`、`dmg`、`nsis`、`msi` 走 cargo-packager 主后端；其中 `msi` 映射为 cargo-packager 的 `wix` 格式，`tar.gz` 暂映射为 `pacman`。
+- `appimage`、`deb`、`app`、`dmg`、`nsis`、`msi` 走 cargo-packager 主后端；其中 `msi` 映射为 cargo-packager 的 `wix` 格式。
+- `tar.gz` 走 Aura supplemental backend：收集 release binary、icons、Linux desktop/metainfo、README 和启动脚本，输出 `<package>-<version>-<platform>-<target-triple>.tar.gz`。
 - `rpm` 仍归类为 supplemental backend，但已优先接入 `cargo-generate-rpm` 的 metadata overwrite 配置生成和 `cargo generate-rpm` 命令路由；`nfpm` 仅作为后备方案。
+- `.deb` / `.rpm` 生成配置已补 Linux runtime dependency metadata。
+- manifest 已扩充 `targetTriple` 与 `gitSha`，release notes 同步展示 version、target triple、git sha。
 - 当前环境未全局安装 `cargo-packager`，因此验证以配置生成、命令 dry-run、类型检查和单元测试为准；安装后可直接去掉 `--dry-run` 产出包。
 
 ## 15. 决策记录

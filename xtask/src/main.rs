@@ -1,4 +1,8 @@
-use std::{env, fs, path::PathBuf, process::Command};
+use std::{
+    env, fs,
+    path::{Path, PathBuf},
+    process::Command,
+};
 
 use aura_packager::{
     KnownApp, PackageFormat, PackageManifest, Platform, cargo_packager_formats,
@@ -84,6 +88,8 @@ fn package_formats(command: PackageCommand) -> Result<(), String> {
         let supplemental = supplemental_formats(&formats);
         let out_dir = package_out_dir(&root, &metadata, platform);
         let binaries_dir = release_binaries_dir(&root);
+        let target_triple = target_triple();
+        let git_sha = git_short_sha(&root);
 
         if !cargo_formats.is_empty() {
             let config_path = generated_config_path(&root, &metadata);
@@ -115,7 +121,36 @@ fn package_formats(command: PackageCommand) -> Result<(), String> {
         }
 
         for format in supplemental {
-            if format == PackageFormat::Rpm && platform == Platform::Linux {
+            if format == PackageFormat::TarGz {
+                let archive_path = portable_tar_gz_path(
+                    &out_dir,
+                    &metadata.package,
+                    &app_version(),
+                    platform,
+                    &target_triple,
+                );
+                println!(
+                    "portable tar.gz package: app={} path={}",
+                    metadata.package,
+                    archive_path.display()
+                );
+                if command.dry_run {
+                    println!(
+                        "dry-run: stage release binary, icons, metadata, README and launcher; tar -czf {} -C <staging-parent> <staging-dir>",
+                        archive_path.display()
+                    );
+                } else {
+                    build_portable_tar_gz(
+                        &root,
+                        &metadata,
+                        platform,
+                        &target_triple,
+                        git_sha.as_deref(),
+                        &out_dir,
+                        &archive_path,
+                    )?;
+                }
+            } else if format == PackageFormat::Rpm && platform == Platform::Linux {
                 let config_path = generated_rpm_config_path(&root, &metadata);
                 if let Some(parent) = config_path.parent() {
                     fs::create_dir_all(parent).map_err(|error| {
@@ -152,6 +187,8 @@ fn package_formats(command: PackageCommand) -> Result<(), String> {
                 &metadata.package,
                 &app_version(),
                 platform,
+                &target_triple,
+                git_sha.as_deref(),
                 &out_dir,
                 &formats,
             )
@@ -184,6 +221,214 @@ fn package_formats(command: PackageCommand) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+fn portable_tar_gz_path(
+    out_dir: &Path,
+    package: &str,
+    version: &str,
+    platform: Platform,
+    target_triple: &str,
+) -> PathBuf {
+    out_dir.join(format!(
+        "{package}-{version}-{}-{target_triple}.tar.gz",
+        platform.as_str()
+    ))
+}
+
+fn build_portable_tar_gz(
+    root: &Path,
+    app: &aura_packager::AppMetadata,
+    platform: Platform,
+    target_triple: &str,
+    git_sha: Option<&str>,
+    out_dir: &Path,
+    archive_path: &Path,
+) -> Result<(), String> {
+    let binary_path = root.join("target/release").join(&app.binary);
+    if !binary_path.is_file() {
+        return Err(format!(
+            "release binary not found for portable tar.gz: {}; run `cargo run -p xtask -- package build --app {}` first or omit --skip-build",
+            binary_path.display(),
+            app.app.key()
+        ));
+    }
+
+    fs::create_dir_all(out_dir)
+        .map_err(|error| format!("failed to create {}: {error}", out_dir.display()))?;
+
+    let stage_name = format!(
+        "{}-{}-{}-{target_triple}",
+        app.package,
+        app_version(),
+        platform.as_str()
+    );
+    let stage_root = out_dir.join("portable-staging").join(&stage_name);
+    if stage_root.exists() {
+        fs::remove_dir_all(&stage_root)
+            .map_err(|error| format!("failed to reset {}: {error}", stage_root.display()))?;
+    }
+
+    fs::create_dir_all(stage_root.join("bin"))
+        .map_err(|error| format!("failed to create staging bin directory: {error}"))?;
+    fs::create_dir_all(stage_root.join("icons"))
+        .map_err(|error| format!("failed to create staging icons directory: {error}"))?;
+    fs::create_dir_all(stage_root.join("share/applications"))
+        .map_err(|error| format!("failed to create staging desktop directory: {error}"))?;
+    fs::create_dir_all(stage_root.join("share/metainfo"))
+        .map_err(|error| format!("failed to create staging metainfo directory: {error}"))?;
+
+    copy_file(&binary_path, &stage_root.join("bin").join(&app.binary))?;
+    copy_file(
+        &root
+            .join("packaging/icons")
+            .join(format!("{}.png", app.icon_stem)),
+        &stage_root
+            .join("icons")
+            .join(format!("{}.png", app.icon_stem)),
+    )?;
+    copy_file(
+        &root
+            .join("packaging/icons")
+            .join(format!("{}.svg", app.icon_stem)),
+        &stage_root
+            .join("icons")
+            .join(format!("{}.svg", app.icon_stem)),
+    )?;
+
+    if platform == Platform::Linux {
+        copy_file(
+            &app.linux_desktop_path(root),
+            &stage_root
+                .join("share/applications")
+                .join(format!("{}.desktop", app.binary)),
+        )?;
+        copy_file(
+            &app.linux_metainfo_path(root),
+            &stage_root
+                .join("share/metainfo")
+                .join(format!("{}.metainfo.xml", app.binary)),
+        )?;
+    }
+
+    write_portable_launcher(&stage_root.join(app.binary.as_str()), &app.binary)?;
+    write_portable_readme(
+        &stage_root.join("README.md"),
+        app,
+        platform,
+        target_triple,
+        git_sha,
+    )?;
+
+    if archive_path.exists() {
+        fs::remove_file(archive_path)
+            .map_err(|error| format!("failed to replace {}: {error}", archive_path.display()))?;
+    }
+    let parent = stage_root
+        .parent()
+        .ok_or_else(|| format!("staging path has no parent: {}", stage_root.display()))?;
+    let status = Command::new("tar")
+        .arg("-czf")
+        .arg(archive_path)
+        .arg("-C")
+        .arg(parent)
+        .arg(&stage_name)
+        .status()
+        .map_err(|error| format!("failed to spawn tar: {error}"))?;
+    if !status.success() {
+        return Err("portable tar.gz backend failed; ensure system `tar` is available".into());
+    }
+    println!("portable tar.gz written: {}", archive_path.display());
+    Ok(())
+}
+
+fn copy_file(source: &Path, dest: &Path) -> Result<(), String> {
+    if let Some(parent) = dest.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|error| format!("failed to create {}: {error}", parent.display()))?;
+    }
+    fs::copy(source, dest).map_err(|error| {
+        format!(
+            "failed to copy {} to {}: {error}",
+            source.display(),
+            dest.display()
+        )
+    })?;
+    Ok(())
+}
+
+fn write_portable_launcher(path: &Path, binary: &str) -> Result<(), String> {
+    let script = format!(
+        "#!/usr/bin/env sh\nset -eu\nDIR=\"$(CDPATH= cd -- \"$(dirname -- \"$0\")\" && pwd)\"\nexec \"$DIR/bin/{binary}\" \"$@\"\n"
+    );
+    fs::write(path, script)
+        .map_err(|error| format!("failed to write {}: {error}", path.display()))?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut permissions = fs::metadata(path)
+            .map_err(|error| format!("failed to stat {}: {error}", path.display()))?
+            .permissions();
+        permissions.set_mode(0o755);
+        fs::set_permissions(path, permissions)
+            .map_err(|error| format!("failed to chmod {}: {error}", path.display()))?;
+    }
+    Ok(())
+}
+
+fn write_portable_readme(
+    path: &Path,
+    app: &aura_packager::AppMetadata,
+    platform: Platform,
+    target_triple: &str,
+    git_sha: Option<&str>,
+) -> Result<(), String> {
+    let git_line = git_sha
+        .map(|sha| format!("- Git SHA: `{sha}`\n"))
+        .unwrap_or_default();
+    let text = format!(
+        "# {name} portable archive\n\nThis archive contains a pure Rust + GPUI native Aura application. It does not bundle or require Tauri, WebView, HTML/CSS, or browser runtime architecture.\n\n## Metadata\n\n- Package: `{package}`\n- Version: `{version}`\n- Platform: `{platform}`\n- Target triple: `{target_triple}`\n{git_line}\n## Run\n\n```bash\n./{binary}\n# or\n./bin/{binary}\n```\n\nLinux desktop metadata is included under `share/` when the archive is built on Linux.\n",
+        name = app.name,
+        package = app.package,
+        version = app_version(),
+        platform = platform.as_str(),
+        binary = app.binary,
+    );
+    fs::write(path, text).map_err(|error| format!("failed to write {}: {error}", path.display()))
+}
+
+fn target_triple() -> String {
+    env::var("CARGO_BUILD_TARGET")
+        .or_else(|_| env::var("TARGET"))
+        .ok()
+        .filter(|value| !value.trim().is_empty())
+        .unwrap_or_else(|| {
+            rustc_host_triple()
+                .unwrap_or_else(|| format!("{}-{}", env::consts::ARCH, env::consts::OS))
+        })
+}
+
+fn rustc_host_triple() -> Option<String> {
+    let output = Command::new("rustc").arg("-vV").output().ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .find_map(|line| line.strip_prefix("host: ").map(str::to_string))
+}
+
+fn git_short_sha(root: &Path) -> Option<String> {
+    let output = Command::new("git")
+        .args(["rev-parse", "--short=12", "HEAD"])
+        .current_dir(root)
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let sha = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    (!sha.is_empty()).then_some(sha)
 }
 
 fn write_manifest_outputs(
@@ -372,4 +617,52 @@ fn print_help() {
     println!(
         "Aura xtask\n\n  cargo run -p xtask -- package validate\n  cargo run -p xtask -- package build --app gallery\n  cargo run -p xtask -- package --app docs --format appimage\n  cargo run -p xtask -- package --app docs --format deb --dry-run --skip-build\n  cargo run -p xtask -- package ci --all-apps --format platform-defaults\n\nOptions:\n  --app <gallery|docs>\n  --all-apps\n  --format <appimage|deb|rpm|tar.gz|app|dmg|nsis|msi|platform-defaults>\n  --dry-run      generate backend config and print cargo-packager invocation\n  --skip-build   reuse target/release binaries instead of building first"
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn target_triple_prefers_explicit_env() {
+        // SAFETY: This unit test mutates process environment and does not spawn
+        // threads. It restores the variables before returning.
+        unsafe {
+            env::set_var("CARGO_BUILD_TARGET", "aarch64-apple-darwin");
+            env::remove_var("TARGET");
+        }
+        assert_eq!(target_triple(), "aarch64-apple-darwin");
+        unsafe {
+            env::remove_var("CARGO_BUILD_TARGET");
+        }
+    }
+
+    #[test]
+    fn portable_tar_gz_name_contains_package_version_platform_and_target() {
+        let path = portable_tar_gz_path(
+            Path::new("out"),
+            "aura-gallery",
+            "1.2.3-preview.4.abcdef0",
+            Platform::Linux,
+            "x86_64-unknown-linux-gnu",
+        );
+        assert_eq!(
+            path,
+            Path::new("out")
+                .join("aura-gallery-1.2.3-preview.4.abcdef0-linux-x86_64-unknown-linux-gnu.tar.gz")
+        );
+    }
+
+    #[test]
+    fn generate_rpm_args_use_metadata_overwrite_file() {
+        let args = generate_rpm_args(
+            Path::new("/repo/aura"),
+            KnownApp::Gallery,
+            Path::new("/repo/aura/target/aura-packager/GenerateRpm.gallery.toml"),
+            Path::new("/repo/aura/target/packages/aura-gallery/linux"),
+        );
+        assert!(args.contains(&"generate-rpm".into()));
+        assert!(args.contains(&"--metadata-overwrite".into()));
+        assert!(args.contains(&"/repo/aura/target/aura-packager/GenerateRpm.gallery.toml".into()));
+    }
 }

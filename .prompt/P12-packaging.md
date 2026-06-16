@@ -118,26 +118,26 @@ cargo run -p xtask -- package ci --all-apps --format platform-defaults
 - macOS：`.app`、`.dmg`。
 - Windows：NSIS `.exe`、WiX MSI `.msi`。
 
-### 2. Linux runtime dependency metadata
+### 2. Linux runtime dependency metadata（已补）
 
-补齐 `.deb` / `.rpm` 运行依赖，至少覆盖：
+已在生成配置中补齐 Linux 运行依赖：
 
-- Vulkan / GPU driver expectations。
-- GTK3。
-- AppIndicator / Ayatana。
-- X11 / Wayland。
-- fontconfig / freetype。
-- xdg desktop integration。
+- `.deb`：`[deb].depends` 包含 GTK3、Ayatana AppIndicator、X11、Wayland、xkbcommon、fontconfig/freetype、Vulkan、ALSA、xdg-utils。
+- `.rpm`：`GenerateRpm.<app>.toml` 的 `[requires]` 包含对应 RPM 依赖，并继续保留 `auto-req = "builtin"` 和 `require-sh = false`。
 
-### 3. 真正的 portable `.tar.gz` backend
+后续只需在真实 Linux 发行版安装 smoke 后微调包名兼容性。
 
-当前 `tar.gz` 暂映射为 cargo-packager 的 `pacman`。如果需要中立 portable archive，需要新增专用 backend，收集：
+### 3. 真正的 portable `.tar.gz` backend（已补）
 
-- release binary；
-- icons；
-- desktop/metainfo；
-- README / launch script；
-- checksum / manifest entry。
+`tar.gz` 不再映射为 cargo-packager `pacman`，而是 Aura supplemental backend：
+
+- 收集 `target/release/<binary>`；
+- 收集 PNG/SVG app icons；
+- Linux 下收集 `.desktop` 与 metainfo；
+- 生成顶层启动脚本 `./<binary>`；
+- 生成 portable `README.md`；
+- 使用系统 `tar -czf` 输出 `<package>-<version>-<platform>-<target-triple>.tar.gz`；
+- 非 dry-run 会被 manifest/checksum/release-notes 扫描记录。
 
 ### 4. Signing / notarization
 
@@ -167,21 +167,16 @@ cargo run -p xtask -- package ci --all-apps --format platform-defaults
 - AppImage：可执行 smoke。
 - macOS / Windows：runner-safe 的有限 install/open checks。
 
-### 7. Artifact naming and metadata normalization
+### 7. Artifact naming and metadata normalization（部分已补）
 
-最终产物命名需要统一并扩充 manifest 字段：
+已完成：
 
-- version；
-- platform；
-- target triple；
-- git sha。
+- portable `.tar.gz` 命名为 `<package>-<version>-<platform>-<target-triple>.tar.gz`；
+- `package-manifest.json` 增加 `targetTriple` 与 `gitSha`；
+- `release-notes.md` 展示 version、target triple、git sha；
+- checksum 继续覆盖全部已发现产物。
 
-示例：
-
-```text
-aura-gallery-<version>-linux-x86_64.deb
-aura-docs-<version>-windows-x86_64-setup.exe
-```
+待真实 cargo-packager 后端 smoke 后再对 `.deb` / `.rpm` / `.dmg` / `.exe` / `.msi` 做最终重命名清洗。
 
 ### 8. License / metadata cleanup
 

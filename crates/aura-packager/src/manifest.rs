@@ -11,6 +11,8 @@ pub struct PackageArtifact {
     pub app: String,
     pub version: String,
     pub platform: Platform,
+    pub target_triple: String,
+    pub git_sha: Option<String>,
     pub format: PackageFormat,
     pub path: PathBuf,
     pub checksum: Checksum,
@@ -64,11 +66,17 @@ impl PackageManifest {
             }
             writeln!(
                 out,
-                "- `{}` `{}` `{}`  \n  SHA256: `{}`",
+                "- `{}` `{}` `{}` `{}`  \n  SHA256: `{}`{}",
                 artifact.app,
+                artifact.version,
+                artifact.target_triple,
                 artifact.format.as_str(),
-                artifact.path.display(),
-                artifact.checksum.hex
+                artifact.checksum.hex,
+                artifact
+                    .git_sha
+                    .as_ref()
+                    .map(|sha| format!("  \n  Git: `{sha}`"))
+                    .unwrap_or_default()
             )
             .expect("write to string");
         }
@@ -83,10 +91,12 @@ impl PackageManifest {
             }
             write!(
                 out,
-                "\n    {{\n      \"app\": \"{}\",\n      \"version\": \"{}\",\n      \"platform\": \"{}\",\n      \"format\": \"{}\",\n      \"path\": \"{}\",\n      \"checksum\": {{ \"algorithm\": \"{}\", \"hex\": \"{}\" }},\n      \"signed\": {}\n    }}",
+                "\n    {{\n      \"app\": \"{}\",\n      \"version\": \"{}\",\n      \"platform\": \"{}\",\n      \"targetTriple\": \"{}\",\n      \"gitSha\": {},\n      \"format\": \"{}\",\n      \"path\": \"{}\",\n      \"checksum\": {{ \"algorithm\": \"{}\", \"hex\": \"{}\" }},\n      \"signed\": {}\n    }}",
                 escape(&artifact.app),
                 escape(&artifact.version),
                 artifact.platform.as_str(),
+                escape(&artifact.target_triple),
+                json_option_string(artifact.git_sha.as_deref()),
                 artifact.format.as_str(),
                 escape(&artifact.path.display().to_string()),
                 artifact.checksum.algorithm,
@@ -104,6 +114,8 @@ pub fn collect_package_artifacts(
     app: &str,
     version: &str,
     platform: Platform,
+    target_triple: &str,
+    git_sha: Option<&str>,
     out_dir: &Path,
     formats: &[PackageFormat],
 ) -> io::Result<Vec<PackageArtifact>> {
@@ -111,7 +123,16 @@ pub fn collect_package_artifacts(
     if !out_dir.exists() {
         return Ok(artifacts);
     }
-    collect_package_artifacts_in_dir(app, version, platform, out_dir, formats, &mut artifacts)?;
+    collect_package_artifacts_in_dir(
+        app,
+        version,
+        platform,
+        target_triple,
+        git_sha,
+        out_dir,
+        formats,
+        &mut artifacts,
+    )?;
     artifacts.sort_by(|a, b| a.path.cmp(&b.path));
     Ok(artifacts)
 }
@@ -120,6 +141,8 @@ fn collect_package_artifacts_in_dir(
     app: &str,
     version: &str,
     platform: Platform,
+    target_triple: &str,
+    git_sha: Option<&str>,
     dir: &Path,
     formats: &[PackageFormat],
     artifacts: &mut Vec<PackageArtifact>,
@@ -129,7 +152,16 @@ fn collect_package_artifacts_in_dir(
         let path = entry.path();
         let file_type = entry.file_type()?;
         if file_type.is_dir() {
-            collect_package_artifacts_in_dir(app, version, platform, &path, formats, artifacts)?;
+            collect_package_artifacts_in_dir(
+                app,
+                version,
+                platform,
+                target_triple,
+                git_sha,
+                &path,
+                formats,
+                artifacts,
+            )?;
             continue;
         }
         if !file_type.is_file() {
@@ -145,6 +177,8 @@ fn collect_package_artifacts_in_dir(
             app: app.to_string(),
             version: version.to_string(),
             platform,
+            target_triple: target_triple.to_string(),
+            git_sha: git_sha.map(ToOwned::to_owned),
             format,
             checksum: sha256_file(&path)?,
             path,
@@ -152,6 +186,12 @@ fn collect_package_artifacts_in_dir(
         });
     }
     Ok(())
+}
+
+fn json_option_string(value: Option<&str>) -> String {
+    value
+        .map(|value| format!("\"{}\"", escape(value)))
+        .unwrap_or_else(|| "null".to_string())
 }
 
 fn escape(value: &str) -> String {
@@ -169,6 +209,8 @@ mod tests {
             app: "aura-gallery".into(),
             version: "0.1.0".into(),
             platform: Platform::Linux,
+            target_triple: "x86_64-unknown-linux-gnu".into(),
+            git_sha: Some("abc1234".into()),
             format: PackageFormat::AppImage,
             path: "target/packages/aura-gallery.AppImage".into(),
             checksum: Checksum {
@@ -179,6 +221,8 @@ mod tests {
         });
         let json = manifest.to_json_pretty();
         assert!(json.contains("\"app\": \"aura-gallery\""));
+        assert!(json.contains("\"targetTriple\": \"x86_64-unknown-linux-gnu\""));
+        assert!(json.contains("\"gitSha\": \"abc1234\""));
         assert!(json.contains("\"format\": \"appimage\""));
         assert!(json.contains("\"signed\": false"));
         assert!(
@@ -189,6 +233,8 @@ mod tests {
         let notes = manifest.release_notes_markdown();
         assert!(notes.contains("# Aura native package release"));
         assert!(notes.contains("SHA256: `abc`"));
+        assert!(notes.contains("Git: `abc1234`"));
+        assert!(!notes.contains("\\n  Git"));
     }
 
     #[test]
@@ -204,12 +250,16 @@ mod tests {
             "aura-gallery",
             "0.1.0",
             Platform::Linux,
+            "x86_64-unknown-linux-gnu",
+            None,
             &root,
             &[PackageFormat::Deb],
         )
         .unwrap();
         assert_eq!(artifacts.len(), 1);
         assert_eq!(artifacts[0].format, PackageFormat::Deb);
+        assert_eq!(artifacts[0].target_triple, "x86_64-unknown-linux-gnu");
+        assert_eq!(artifacts[0].git_sha, None);
         assert_eq!(artifacts[0].checksum.algorithm, "sha256");
 
         let _ = fs::remove_dir_all(&root);
