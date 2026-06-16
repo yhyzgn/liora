@@ -47,6 +47,19 @@
 ```rust src="progress/color.rs"
 ```
 
+## 完成态渐变
+
+`gradient` 可用于条状和环状进度；当进度达到 100% 时，`complete_color` 会覆盖最终颜色。未显式设置时默认使用渐变色数组的最后一种颜色。
+
+### 效果
+
+::AuraDemo{component="ProgressGradientComplete"}::
+
+### 代码
+
+```rust src="progress/gradient_complete.rs"
+```
+
 ## 环状进度条
 
 ### 效果

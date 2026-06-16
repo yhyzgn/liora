@@ -341,10 +341,16 @@ mod preview_escape;
 mod preview_image_trigger;
 #[path = "../../content/snippets/progress/basic.rs"]
 mod progress_basic;
+#[path = "../../content/snippets/progress/circle.rs"]
+mod progress_circle;
 #[path = "../../content/snippets/progress/circle_gradient.rs"]
 mod progress_circle_gradient;
 #[path = "../../content/snippets/progress/color.rs"]
 mod progress_color;
+#[path = "../../content/snippets/progress/custom.rs"]
+mod progress_custom;
+#[path = "../../content/snippets/progress/gradient_complete.rs"]
+mod progress_gradient_complete;
 #[path = "../../content/snippets/progress/inside.rs"]
 mod progress_inside;
 #[path = "../../content/snippets/progress/status.rs"]

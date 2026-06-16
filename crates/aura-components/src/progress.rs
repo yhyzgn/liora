@@ -209,7 +209,23 @@ impl Progress {
     }
 }
 
-fn render_gradient_segments(mut bar: gpui::Div, colors: Vec<Hsla>) -> gpui::Div {
+fn render_gradient_segments(
+    mut bar: gpui::Div,
+    colors: Vec<Hsla>,
+    complete_color: Option<Hsla>,
+    progress: f32,
+) -> gpui::Div {
+    let mut colors = colors;
+    if progress >= 0.999 {
+        if let Some(color) = complete_color.or_else(|| colors.last().copied()) {
+            if let Some(last) = colors.last_mut() {
+                *last = color;
+            } else {
+                colors.push(color);
+            }
+        }
+    }
+
     if colors.len() == 1 {
         return bar.bg(colors[0]);
     }
@@ -246,18 +262,23 @@ impl RenderOnce for Progress {
             .unwrap_or_else(|| format!("{}%", self.percentage.round() as i32).into());
         let id = stable_unique_id(
             format!(
-                "aura-progress:{:?}:{:.3}:{:.3}:{:?}:{:?}:{}:{}:{}:{:?}:{:?}:{:?}:{:?}:{:?}",
+                "aura-progress:{:?}:{:.3}:{:.3}:{:.3}:{:?}:{:?}:{:?}:{}:{}:{}:{}:{:?}:{:?}:{:?}:{:?}:{:?}:{:?}:{:?}",
                 self.type_,
                 self.percentage,
                 self.stroke_width.as_f32(),
+                self.circle_size.as_f32(),
                 self.status,
                 self.color,
+                self.gradient,
                 self.show_text,
                 self.text_inside,
                 self.text_inside_center,
+                self.animated,
                 self.text,
                 self.text_size,
                 self.text_color,
+                self.text_weight,
+                self.track_color,
                 self.circle_inner_color,
                 self.complete_color,
             ),
@@ -279,7 +300,9 @@ impl RenderOnce for Progress {
                 .rounded_full()
                 .overflow_hidden()
                 .when(gradient.is_none(), |s| s.bg(status_color))
-                .when_some(gradient, |s, colors| render_gradient_segments(s, colors))
+                .when_some(gradient, |s, colors| {
+                    render_gradient_segments(s, colors, self.complete_color, target)
+                })
                 .when(
                     self.show_text
                         && self.text_inside
@@ -849,6 +872,30 @@ mod tests {
     }
 
     #[test]
+    fn progress_clamps_percentage_to_valid_range() {
+        assert_eq!(Progress::new(-12.0).percentage, 0.0);
+        assert_eq!(Progress::new(128.0).percentage, 100.0);
+    }
+
+    #[test]
+    fn progress_gradient_complete_color_resolution_matches_completion_state() {
+        let fallback = gpui::black();
+        let colors = [gpui::blue(), gpui::green()];
+        assert_eq!(
+            resolved_progress_color(fallback, Some(&colors), Some(gpui::red()), 1.0),
+            gpui::red()
+        );
+        assert_eq!(
+            resolved_progress_color(fallback, Some(&colors), None, 1.0),
+            gpui::green()
+        );
+        assert_eq!(
+            resolved_progress_color(fallback, Some(&colors), Some(gpui::red()), 0.5),
+            gpui::blue()
+        );
+    }
+
+    #[test]
     fn progress_custom_text_tracks_style() {
         let progress = Progress::new(86.0)
             .circle()
@@ -872,5 +919,8 @@ mod tests {
         assert!(source.contains("render_circle_canvas"));
         assert!(source.contains("paint_gradient_annular_sector"));
         assert!(source.contains("complete_color"));
+        assert!(
+            source.contains("render_gradient_segments(s, colors, self.complete_color, target)")
+        );
     }
 }

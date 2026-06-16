@@ -67,6 +67,10 @@ impl Render for ProgressDemo {
                             .color(theme.info.base)
                             .track_color(theme.neutral.hover)
                             .animated(false),
+                        Progress::new(100.0)
+                            .gradient(vec![theme.primary.base, theme.success.base])
+                            .complete_color(theme.success.base)
+                            .text("Complete"),
                     ]),
                 ))
                 .child(section(

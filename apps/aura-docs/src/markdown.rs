@@ -2955,6 +2955,27 @@ impl Render for LiveDemoContent {
                         .track_color(theme.neutral.hover)
                         .animated(false)
                         .into_any_element(),
+                    Progress::new(100.0)
+                        .gradient(vec![theme.primary.base, theme.success.base])
+                        .complete_color(theme.success.base)
+                        .text("Complete")
+                        .into_any_element(),
+                ])
+            }
+            "ProgressGradientComplete" => {
+                let theme = _cx.global::<Config>().theme.clone();
+                demo_stack(vec![
+                    Progress::new(88.0)
+                        .gradient(vec![theme.info.base, theme.primary.base, theme.success.base])
+                        .track_color(theme.neutral.hover)
+                        .text("88%")
+                        .into_any_element(),
+                    Progress::new(100.0)
+                        .gradient(vec![theme.info.base, theme.primary.base, theme.success.base])
+                        .complete_color(theme.success.base)
+                        .track_color(theme.neutral.hover)
+                        .text("Completed")
+                        .into_any_element(),
                 ])
             }
             "ProgressCircle" => demo_row(vec![
