@@ -2,6 +2,8 @@ use aura_components::{
     Checkbox, CheckboxGroup, CheckboxOptionStyle, Input, InputNumber, Radio, RadioGroup,
     RadioOptionStyle, Rate, Select, Slider, Space, Switch, Text, Textarea,
 };
+use aura_icons::Icon;
+use aura_icons_lucide::IconName;
 use gpui::{AnyView, App, Context, Entity, IntoElement, Render, Window, prelude::*, px, rgb};
 
 fn section(title: &'static str, content: impl IntoElement) -> impl IntoElement {
@@ -117,6 +119,7 @@ struct CheckboxUsage {
     buttons_stretch: Entity<CheckboxGroup>,
     styled_cards: Entity<CheckboxGroup>,
     styled_chips: Entity<CheckboxGroup>,
+    rich_options: Entity<CheckboxGroup>,
 }
 
 impl CheckboxUsage {
@@ -162,6 +165,43 @@ impl CheckboxUsage {
                             .show_indicator(false),
                     )
             }),
+            rich_options: cx.new(|cx| {
+                CheckboxGroup::new(vec!["Analytics", "Alerts", "Exports"], vec![0, 1], cx)
+                    .horizontal()
+                    .option_style(
+                        CheckboxOptionStyle::new()
+                            .selected_bg(rgb(0xf0fdf4).into())
+                            .selected_text_color(rgb(0x166534).into())
+                            .selected_border_color(rgb(0x22c55e).into())
+                            .hover_bg(rgb(0xf8fafc).into())
+                            .radius(px(14.0))
+                            .padding(px(14.0), px(12.0))
+                            .gap(px(10.0)),
+                    )
+                    .option_renderer(|option| {
+                        let description = match option.index {
+                            0 => "趋势、漏斗和指标面板",
+                            1 => "阈值触发与通知策略",
+                            _ => "CSV / JSON 批量导出",
+                        };
+                        gpui::div()
+                            .flex()
+                            .flex_col()
+                            .gap_1()
+                            .child(
+                                gpui::div()
+                                    .flex()
+                                    .items_center()
+                                    .gap_1()
+                                    .child(option.label.clone())
+                                    .when(option.selected, |s| {
+                                        s.child(Icon::new(IconName::BadgeCheck).size_xs())
+                                    }),
+                            )
+                            .child(gpui::div().text_xs().child(description))
+                            .into_any_element()
+                    })
+            }),
         }
     }
 }
@@ -192,10 +232,11 @@ impl Render for CheckboxUsage {
                 ]),
             ))
             .child(section(
-                "Custom option style",
+                "Custom option style / layout",
                 control_stack(vec![
                     self.styled_cards.clone().into_any_element(),
                     self.styled_chips.clone().into_any_element(),
+                    self.rich_options.clone().into_any_element(),
                 ]),
             ))
     }
@@ -219,6 +260,7 @@ struct RadioUsage {
     group_disabled: Entity<RadioGroup>,
     styled_cards: Entity<RadioGroup>,
     styled_chips: Entity<RadioGroup>,
+    rich_options: Entity<RadioGroup>,
 }
 
 impl RadioUsage {
@@ -264,6 +306,50 @@ impl RadioUsage {
                             .show_indicator(false),
                     )
             }),
+            rich_options: cx.new(|cx| {
+                RadioGroup::new(vec!["Starter", "Team", "Enterprise"], 1, cx)
+                    .horizontal()
+                    .option_style(
+                        RadioOptionStyle::new()
+                            .selected_bg(rgb(0xfffbeb).into())
+                            .selected_text_color(rgb(0x92400e).into())
+                            .selected_border_color(rgb(0xf59e0b).into())
+                            .hover_bg(rgb(0xfffbeb).into())
+                            .radius(px(14.0))
+                            .padding(px(14.0), px(12.0))
+                            .gap(px(10.0)),
+                    )
+                    .option_renderer(|option| {
+                        let (icon, description) = match option.index {
+                            0 => (IconName::Rocket, "个人试用与轻量项目"),
+                            1 => (IconName::Users, "团队协作与权限控制"),
+                            _ => (IconName::Building2, "审计、SLA 和专属支持"),
+                        };
+                        gpui::div()
+                            .flex()
+                            .items_start()
+                            .gap_2()
+                            .child(Icon::new(icon).size_md())
+                            .child(
+                                gpui::div()
+                                    .flex()
+                                    .flex_col()
+                                    .gap_1()
+                                    .child(
+                                        gpui::div()
+                                            .flex()
+                                            .items_center()
+                                            .gap_1()
+                                            .child(option.label.clone())
+                                            .when(option.selected, |s| {
+                                                s.child(Icon::new(IconName::CircleCheck).size_xs())
+                                            }),
+                                    )
+                                    .child(gpui::div().text_xs().child(description)),
+                            )
+                            .into_any_element()
+                    })
+            }),
         }
     }
 }
@@ -295,10 +381,11 @@ impl Render for RadioUsage {
                 ]),
             ))
             .child(section(
-                "Custom option style",
+                "Custom option style / layout",
                 control_stack(vec![
                     self.styled_cards.clone().into_any_element(),
                     self.styled_chips.clone().into_any_element(),
+                    self.rich_options.clone().into_any_element(),
                 ]),
             ))
     }

@@ -1,7 +1,10 @@
 //! CheckboxGroup custom option layout and selected styles.
 
 use aura_components::{CheckboxGroup, CheckboxOptionStyle, Space};
-use gpui::{AppContext, Context, Render, Window, px, rgb};
+use aura_icons::Icon;
+use aura_icons_lucide::IconName;
+use gpui::prelude::FluentBuilder;
+use gpui::{AppContext, Context, IntoElement, ParentElement, Render, Styled, Window, px, rgb};
 
 fn styled_cards(cx: &mut Context<CheckboxGroup>) -> CheckboxGroup {
     CheckboxGroup::new(vec!["CPU", "Memory", "Network"], vec![0, 2], cx)
@@ -33,9 +36,47 @@ fn styled_chips(cx: &mut Context<CheckboxGroup>) -> CheckboxGroup {
         )
 }
 
+fn rich_options(cx: &mut Context<CheckboxGroup>) -> CheckboxGroup {
+    CheckboxGroup::new(vec!["Analytics", "Alerts", "Exports"], vec![0, 1], cx)
+        .horizontal()
+        .option_style(
+            CheckboxOptionStyle::new()
+                .selected_bg(rgb(0xf0fdf4).into())
+                .selected_text_color(rgb(0x166534).into())
+                .selected_border_color(rgb(0x22c55e).into())
+                .hover_bg(rgb(0xf8fafc).into())
+                .radius(px(14.0))
+                .padding(px(14.0), px(12.0)),
+        )
+        .option_renderer(|option| {
+            let description = match option.index {
+                0 => "趋势、漏斗和指标面板",
+                1 => "阈值触发与通知策略",
+                _ => "CSV / JSON 批量导出",
+            };
+            gpui::div()
+                .flex()
+                .flex_col()
+                .gap_1()
+                .child(
+                    gpui::div()
+                        .flex()
+                        .items_center()
+                        .gap_1()
+                        .child(option.label.clone())
+                        .when(option.selected, |s| {
+                            s.child(Icon::new(IconName::BadgeCheck).size_xs())
+                        }),
+                )
+                .child(gpui::div().text_xs().child(description))
+                .into_any_element()
+        })
+}
+
 struct CheckboxCustomDemo {
     cards: gpui::Entity<CheckboxGroup>,
     chips: gpui::Entity<CheckboxGroup>,
+    rich: gpui::Entity<CheckboxGroup>,
 }
 
 impl CheckboxCustomDemo {
@@ -43,6 +84,7 @@ impl CheckboxCustomDemo {
         Self {
             cards: cx.new(styled_cards),
             chips: cx.new(styled_chips),
+            rich: cx.new(rich_options),
         }
     }
 }
@@ -54,6 +96,7 @@ impl Render for CheckboxCustomDemo {
             .gap_md()
             .child(self.cards.clone())
             .child(self.chips.clone())
+            .child(self.rich.clone())
     }
 }
 

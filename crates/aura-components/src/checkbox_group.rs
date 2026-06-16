@@ -3,8 +3,8 @@ use aura_core::Config;
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
 use gpui::{
-    App, Context, Entity, FocusHandle, Focusable, Hsla, MouseButton, MouseUpEvent, Pixels, Render,
-    Rgba, SharedString, Window, prelude::*, px,
+    AnyElement, App, Context, Entity, FocusHandle, Focusable, Hsla, MouseButton, MouseUpEvent,
+    Pixels, Render, Rgba, SharedString, Window, prelude::*, px,
 };
 
 fn rgba(r: u8, g: u8, b: u8, a: f32) -> Hsla {
@@ -153,7 +153,16 @@ pub struct CheckboxGroup {
     size: CheckboxGroupSize,
     stretch: bool,
     option_style: Option<CheckboxOptionStyle>,
+    option_renderer: Option<Box<dyn Fn(CheckboxOptionRenderContext) -> AnyElement + 'static>>,
     on_change: Option<Box<dyn Fn(Vec<usize>, &mut Window, &mut App) + 'static>>,
+}
+
+#[derive(Clone, Debug)]
+pub struct CheckboxOptionRenderContext {
+    pub index: usize,
+    pub label: SharedString,
+    pub selected: bool,
+    pub disabled: bool,
 }
 
 impl CheckboxGroup {
@@ -191,6 +200,7 @@ impl CheckboxGroup {
             size: CheckboxGroupSize::Default,
             stretch: false,
             option_style: None,
+            option_renderer: None,
             on_change: None,
         }
     }
@@ -256,6 +266,14 @@ impl CheckboxGroup {
 
     pub fn option_style(mut self, style: CheckboxOptionStyle) -> Self {
         self.option_style = Some(style);
+        self
+    }
+
+    pub fn option_renderer(
+        mut self,
+        renderer: impl Fn(CheckboxOptionRenderContext) -> AnyElement + 'static,
+    ) -> Self {
+        self.option_renderer = Some(Box::new(renderer));
         self
     }
 
@@ -328,6 +346,19 @@ impl CheckboxGroup {
         }
 
         indicator
+    }
+
+    fn render_option_content(&self, idx: usize, label: SharedString, checked: bool) -> AnyElement {
+        if let Some(renderer) = &self.option_renderer {
+            renderer(CheckboxOptionRenderContext {
+                index: idx,
+                label,
+                selected: checked,
+                disabled: self.disabled,
+            })
+        } else {
+            gpui::div().child(label).into_any_element()
+        }
     }
 
     fn render_styled_option(
@@ -416,7 +447,7 @@ impl CheckboxGroup {
             ));
         }
 
-        item.child(label)
+        item.child(self.render_option_content(idx, label, checked))
     }
 
     fn render_button_group(&mut self, cx: &mut Context<Self>) -> impl IntoElement {
@@ -474,7 +505,7 @@ impl CheckboxGroup {
             if checked && style.show_selected_icon.unwrap_or(true) {
                 item = item.child(Icon::new(IconName::Check).size(px(12.0)).color(text_color));
             }
-            item = item.child(label);
+            item = item.child(self.render_option_content(idx, label, checked));
 
             if !is_first {
                 item = item
@@ -548,6 +579,17 @@ impl Render for CheckboxGroup {
                     cx,
                 ));
             }
+        } else if self.option_renderer.is_some() {
+            for (idx, label) in self.options.iter().enumerate() {
+                let checked = self.selected.contains(&idx);
+                col = col.child(self.render_styled_option(
+                    idx,
+                    label.clone(),
+                    checked,
+                    CheckboxOptionStyle::default(),
+                    cx,
+                ));
+            }
         } else {
             for cb_entity in &self.checkboxes {
                 col = col.child(cb_entity.clone());
@@ -574,5 +616,12 @@ mod tests {
         assert_eq!(style.selected_bg, Some(gpui::blue()));
         assert_eq!(style.padding_x, Some(px(14.0)));
         assert_eq!(style.show_indicator, Some(false));
+    }
+
+    #[test]
+    fn checkbox_group_accepts_custom_option_renderer() {
+        let source = include_str!("checkbox_group.rs");
+        assert!(source.contains("pub struct CheckboxOptionRenderContext"));
+        assert!(source.contains("pub fn option_renderer"));
     }
 }

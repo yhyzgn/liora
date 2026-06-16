@@ -36,13 +36,15 @@
 ```
 
 
-## 自定义选项样式
+## 自定义选项样式与布局
 
 ### 效果
 
 ::AuraDemo{component="CheckboxCustom"}::
 
 ### 代码
+
+`option_style` 负责容器、颜色、间距和选中态样式；`option_renderer` 可以按 `selected` / `index` 渲染完全自定义的选项内容，例如多行说明、图标和状态徽标。
 
 ```rust src="checkbox/custom.rs"
 ```

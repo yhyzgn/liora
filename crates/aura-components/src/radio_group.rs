@@ -1,7 +1,7 @@
 use aura_core::Config;
 use gpui::{
-    App, Context, FocusHandle, Focusable, Hsla, KeyBinding, MouseButton, MouseUpEvent, Pixels,
-    Render, Rgba, SharedString, Window, prelude::*, px,
+    AnyElement, App, Context, FocusHandle, Focusable, Hsla, KeyBinding, MouseButton, MouseUpEvent,
+    Pixels, Render, Rgba, SharedString, Window, prelude::*, px,
 };
 
 fn rgba(r: u8, g: u8, b: u8, a: f32) -> Hsla {
@@ -150,8 +150,18 @@ pub struct RadioGroup {
     size: RadioGroupSize,
     stretch: bool,
     option_style: Option<RadioOptionStyle>,
+    option_renderer: Option<Box<dyn Fn(RadioOptionRenderContext) -> AnyElement + 'static>>,
     focus_handle: FocusHandle,
     on_change: Option<Box<dyn Fn(usize, &mut Window, &mut App) + 'static>>,
+}
+
+#[derive(Clone, Debug)]
+pub struct RadioOptionRenderContext {
+    pub index: usize,
+    pub label: SharedString,
+    pub selected: bool,
+    pub disabled: bool,
+    pub focused: bool,
 }
 
 impl RadioGroup {
@@ -168,6 +178,7 @@ impl RadioGroup {
             size: RadioGroupSize::Default,
             stretch: false,
             option_style: None,
+            option_renderer: None,
             focus_handle: cx.focus_handle(),
             on_change: None,
         }
@@ -224,6 +235,14 @@ impl RadioGroup {
 
     pub fn option_style(mut self, style: RadioOptionStyle) -> Self {
         self.option_style = Some(style);
+        self
+    }
+
+    pub fn option_renderer(
+        mut self,
+        renderer: impl Fn(RadioOptionRenderContext) -> AnyElement + 'static,
+    ) -> Self {
+        self.option_renderer = Some(Box::new(renderer));
         self
     }
 
@@ -315,6 +334,26 @@ impl RadioGroup {
         circle
     }
 
+    fn render_option_content(
+        &self,
+        idx: usize,
+        label: SharedString,
+        checked: bool,
+        focused: bool,
+    ) -> AnyElement {
+        if let Some(renderer) = &self.option_renderer {
+            renderer(RadioOptionRenderContext {
+                index: idx,
+                label,
+                selected: checked,
+                disabled: self.disabled,
+                focused,
+            })
+        } else {
+            gpui::div().child(label).into_any_element()
+        }
+    }
+
     fn render_styled_option(
         &self,
         idx: usize,
@@ -396,7 +435,7 @@ impl RadioGroup {
             ));
         }
 
-        item.child(label)
+        item.child(self.render_option_content(idx, label, checked, focused))
     }
 
     fn render_button_group(&mut self, cx: &mut Context<Self>) -> impl IntoElement {
@@ -462,7 +501,7 @@ impl RadioGroup {
                         .bg(text_color),
                 );
             }
-            item = item.child(label);
+            item = item.child(self.render_option_content(idx, label, checked, false));
 
             if !is_first {
                 item = item
@@ -547,6 +586,18 @@ impl Render for RadioGroup {
                     checked,
                     focused,
                     style,
+                    cx,
+                ));
+                continue;
+            }
+
+            if self.option_renderer.is_some() {
+                col = col.child(self.render_styled_option(
+                    idx,
+                    label.clone(),
+                    checked,
+                    focused,
+                    RadioOptionStyle::default(),
                     cx,
                 ));
                 continue;
@@ -639,5 +690,12 @@ mod tests {
         assert_eq!(style.selected_bg, Some(gpui::blue()));
         assert_eq!(style.padding_x, Some(px(14.0)));
         assert_eq!(style.show_indicator, Some(false));
+    }
+
+    #[test]
+    fn radio_group_accepts_custom_option_renderer() {
+        let source = include_str!("radio_group.rs");
+        assert!(source.contains("pub struct RadioOptionRenderContext"));
+        assert!(source.contains("pub fn option_renderer"));
     }
 }

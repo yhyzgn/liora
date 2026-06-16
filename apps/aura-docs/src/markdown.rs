@@ -1747,6 +1747,7 @@ impl LiveDemoContent {
             "CheckboxCustom" => {
                 checkbox_groups.push(cx.new(|cx| styled_checkbox_cards(cx)));
                 checkbox_groups.push(cx.new(|cx| styled_checkbox_chips(cx)));
+                checkbox_groups.push(cx.new(|cx| rich_checkbox_options(cx)));
             }
             "RadioBasic" => {
                 radios.push(cx.new(|cx| Radio::new(true, cx)));
@@ -1772,6 +1773,7 @@ impl LiveDemoContent {
             "RadioCustom" => {
                 radio_groups.push(cx.new(|cx| styled_radio_cards(cx)));
                 radio_groups.push(cx.new(|cx| styled_radio_chips(cx)));
+                radio_groups.push(cx.new(|cx| rich_radio_options(cx)));
             }
             "SelectBasic" => {
                 selects.push(cx.new(|cx| {
@@ -5910,6 +5912,44 @@ fn styled_checkbox_chips(cx: &mut Context<CheckboxGroup>) -> CheckboxGroup {
         )
 }
 
+fn rich_checkbox_options(cx: &mut Context<CheckboxGroup>) -> CheckboxGroup {
+    CheckboxGroup::new(vec!["Analytics", "Alerts", "Exports"], vec![0, 1], cx)
+        .horizontal()
+        .option_style(
+            CheckboxOptionStyle::new()
+                .selected_bg(rgb(0xf0fdf4).into())
+                .selected_text_color(rgb(0x166534).into())
+                .selected_border_color(rgb(0x22c55e).into())
+                .hover_bg(rgb(0xf8fafc).into())
+                .radius(px(14.0))
+                .padding(px(14.0), px(12.0))
+                .gap(px(10.0)),
+        )
+        .option_renderer(|option| {
+            let description = match option.index {
+                0 => "趋势、漏斗和指标面板",
+                1 => "阈值触发与通知策略",
+                _ => "CSV / JSON 批量导出",
+            };
+            div()
+                .flex()
+                .flex_col()
+                .gap_1()
+                .child(
+                    div()
+                        .flex()
+                        .items_center()
+                        .gap_1()
+                        .child(option.label.clone())
+                        .when(option.selected, |s| {
+                            s.child(Icon::new(IconName::BadgeCheck).size_xs())
+                        }),
+                )
+                .child(div().text_xs().child(description))
+                .into_any_element()
+        })
+}
+
 fn styled_radio_cards(cx: &mut Context<RadioGroup>) -> RadioGroup {
     RadioGroup::new(vec!["Daily", "Weekly", "Monthly"], 1, cx)
         .horizontal()
@@ -5923,6 +5963,51 @@ fn styled_radio_cards(cx: &mut Context<RadioGroup>) -> RadioGroup {
                 .radius(px(12.0))
                 .padding(px(14.0), px(10.0)),
         )
+}
+
+fn rich_radio_options(cx: &mut Context<RadioGroup>) -> RadioGroup {
+    RadioGroup::new(vec!["Starter", "Team", "Enterprise"], 1, cx)
+        .horizontal()
+        .option_style(
+            RadioOptionStyle::new()
+                .selected_bg(rgb(0xfffbeb).into())
+                .selected_text_color(rgb(0x92400e).into())
+                .selected_border_color(rgb(0xf59e0b).into())
+                .hover_bg(rgb(0xfffbeb).into())
+                .radius(px(14.0))
+                .padding(px(14.0), px(12.0))
+                .gap(px(10.0)),
+        )
+        .option_renderer(|option| {
+            let (icon, description) = match option.index {
+                0 => (IconName::Rocket, "个人试用与轻量项目"),
+                1 => (IconName::Users, "团队协作与权限控制"),
+                _ => (IconName::Building2, "审计、SLA 和专属支持"),
+            };
+            div()
+                .flex()
+                .items_start()
+                .gap_2()
+                .child(Icon::new(icon).size_md())
+                .child(
+                    div()
+                        .flex()
+                        .flex_col()
+                        .gap_1()
+                        .child(
+                            div()
+                                .flex()
+                                .items_center()
+                                .gap_1()
+                                .child(option.label.clone())
+                                .when(option.selected, |s| {
+                                    s.child(Icon::new(IconName::CircleCheck).size_xs())
+                                }),
+                        )
+                        .child(div().text_xs().child(description)),
+                )
+                .into_any_element()
+        })
 }
 
 fn styled_radio_chips(cx: &mut Context<RadioGroup>) -> RadioGroup {
