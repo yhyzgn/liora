@@ -86,6 +86,17 @@ impl Render for SparklineDemo {
                             .show_last_point(false)
                             .into_any_element(),
                     ]),
+                ))
+                .child(section(
+                    "长趋势降采样",
+                    "长趋势默认限制绘制点数，适合在表格或列表中批量展示。",
+                    Sparkline::new(dense_values())
+                        .id("sparkline-demo-downsample")
+                        .width(px(280.0))
+                        .height(px(72.0))
+                        .color(rgb(0x7c3aed).into())
+                        .area_fill(true)
+                        .max_render_points(96),
                 )),
         )
     }
@@ -119,6 +130,16 @@ fn mixed_values() -> [f64; 9] {
     [-4.0, -1.0, 3.0, 7.0, 5.0, -2.0, 4.0, 10.0, 8.0]
 }
 
+fn dense_values() -> Vec<f64> {
+    (0..1_200)
+        .map(|index| {
+            let wave = ((index as f64) / 18.0).sin() * 8.0;
+            let spike = if index % 180 == 0 { 16.0 } else { 0.0 };
+            40.0 + wave + spike
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
@@ -131,5 +152,7 @@ mod tests {
         assert!(source.contains(".trend_colors("));
         assert!(source.contains("ChartLineStyle::Dashed"));
         assert!(source.contains(".dotted()"));
+        assert!(source.contains("max_render_points"));
+        assert!(source.contains("dense_values"));
     }
 }

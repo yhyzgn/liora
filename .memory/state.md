@@ -434,3 +434,9 @@ Validation evidence:
 - `cargo test -p aura-components sparkline` passed.
 - `cargo test -p aura-gallery sparkline_demo` passed.
 - `cargo check -p aura-docs --bin check_snippets` passed.
+
+## 2026-06-16 P10 chart downsampling performance pass
+
+Implemented the first P10 performance review item for native chart rendering. Added shared min/max bucket downsampling in `chart.rs` and wired it into `LineChart`, `AreaChart` (overlay and stacked paths), and `Sparkline`. New public builders: `max_render_points(...)` and `disable_downsampling()` on LineChart/AreaChart/Sparkline. The strategy preserves first/last points plus local extrema so long monitoring series keep spikes while bounding GPUI path complexity. Gallery and Docs now include downsampling examples for LineChart, AreaChart, and Sparkline with compile-checked snippets.
+
+Remaining P10 maintenance work: hover/tooltip hit testing and any further large-data cache policy beyond draw-point downsampling.

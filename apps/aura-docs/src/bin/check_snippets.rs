@@ -29,6 +29,8 @@ mod anchor_targets;
 mod architecture_render_pipeline;
 #[path = "../../content/snippets/area_chart/basic.rs"]
 mod area_chart_basic;
+#[path = "../../content/snippets/area_chart/downsample.rs"]
+mod area_chart_downsample;
 #[path = "../../content/snippets/area_chart/overlay.rs"]
 mod area_chart_overlay;
 #[path = "../../content/snippets/area_chart/stacked.rs"]
@@ -257,6 +259,8 @@ mod layout_grid;
 mod layout_space;
 #[path = "../../content/snippets/line_chart/basic.rs"]
 mod line_chart_basic;
+#[path = "../../content/snippets/line_chart/downsample.rs"]
+mod line_chart_downsample;
 #[path = "../../content/snippets/line_chart/empty.rs"]
 mod line_chart_empty;
 #[path = "../../content/snippets/line_chart/line_styles.rs"]
@@ -421,6 +425,8 @@ mod sparkline_area;
 mod sparkline_basic;
 #[path = "../../content/snippets/sparkline/cards.rs"]
 mod sparkline_cards;
+#[path = "../../content/snippets/sparkline/downsample.rs"]
+mod sparkline_downsample;
 #[path = "../../content/snippets/sparkline/styles.rs"]
 mod sparkline_styles;
 #[path = "../../content/snippets/splitter/basic.rs"]

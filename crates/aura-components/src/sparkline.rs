@@ -1,4 +1,4 @@
-use crate::chart::{ChartLineStyle, ChartPoint};
+use crate::chart::{ChartLineStyle, ChartPoint, downsample_points};
 use crate::chart_shape::{
     area_path, line_path_with_style, smooth_area_path, smooth_line_path_with_style,
 };
@@ -28,6 +28,7 @@ pub struct Sparkline {
     y_domain: Option<(f64, f64)>,
     line_style: ChartLineStyle,
     dash_pattern: Option<Vec<Pixels>>,
+    max_render_points: Option<usize>,
 }
 
 impl Sparkline {
@@ -51,6 +52,7 @@ impl Sparkline {
             y_domain: None,
             line_style: ChartLineStyle::Solid,
             dash_pattern: None,
+            max_render_points: Some(240),
         }
     }
 
@@ -170,6 +172,16 @@ impl Sparkline {
         self
     }
 
+    pub fn max_render_points(mut self, max_points: usize) -> Self {
+        self.max_render_points = Some(max_points.max(3));
+        self
+    }
+
+    pub fn disable_downsampling(mut self) -> Self {
+        self.max_render_points = None;
+        self
+    }
+
     pub fn values(&self) -> &[f64] {
         &self.values
     }
@@ -231,6 +243,7 @@ impl RenderOnce for Sparkline {
         let line_style = self.line_style;
         let dash_pattern = self.dash_pattern.clone();
         let values = self.values.clone();
+        let max_render_points = self.max_render_points;
 
         let chart = canvas(
             |_, _, _| (),
@@ -242,7 +255,15 @@ impl RenderOnce for Sparkline {
                 let plot_width = (right - left).max(px(1.0));
                 let plot_height = (bottom - top).max(px(1.0));
                 let finite = finite_values(&values);
-                let points = sparkline_points(&values, domain, left, top, plot_width, plot_height);
+                let points = sparkline_points(
+                    &values,
+                    domain,
+                    left,
+                    top,
+                    plot_width,
+                    plot_height,
+                    max_render_points,
+                );
                 if points.is_empty() {
                     return;
                 }
@@ -369,17 +390,22 @@ fn sparkline_points(
     top: Pixels,
     plot_width: Pixels,
     plot_height: Pixels,
+    max_render_points: Option<usize>,
 ) -> Vec<gpui::Point<Pixels>> {
     let finite = finite_values(values);
     let last_index = finite.len().saturating_sub(1).max(1) as f32;
-    finite
+    let raw_points = finite
         .iter()
         .enumerate()
         .map(|(index, value)| {
             let x = left + px(plot_width.as_f32() * (index as f32 / last_index));
             let y = y_for_value(*value, domain, top, plot_height);
-            point(x, y)
+            (point(x, y), *value)
         })
+        .collect::<Vec<_>>();
+    downsample_points(&raw_points, max_render_points)
+        .into_iter()
+        .map(|(position, _)| position)
         .collect()
 }
 
@@ -404,7 +430,8 @@ mod tests {
             .show_last_point(false)
             .show_baseline(true)
             .y_domain(0.0, 10.0)
-            .dashed();
+            .dashed()
+            .max_render_points(120);
 
         assert_eq!(chart.id, SharedString::from("revenue-spark"));
         assert_eq!(chart.height, px(72.0));
@@ -417,6 +444,7 @@ mod tests {
         assert!(chart.show_baseline);
         assert_eq!(chart.y_domain, Some((0.0, 10.0)));
         assert_eq!(chart.line_style, ChartLineStyle::Dashed);
+        assert_eq!(chart.max_render_points, Some(120));
     }
 
     #[test]
@@ -435,8 +463,31 @@ mod tests {
 
     #[test]
     fn sparkline_points_keep_single_value_visible() {
-        let points = sparkline_points(&[5.0], (0.0, 10.0), px(0.0), px(0.0), px(100.0), px(50.0));
+        let points = sparkline_points(
+            &[5.0],
+            (0.0, 10.0),
+            px(0.0),
+            px(0.0),
+            px(100.0),
+            px(50.0),
+            Some(240),
+        );
         assert_eq!(points.len(), 1);
         assert_eq!(points[0].x, px(0.0));
+    }
+
+    #[test]
+    fn sparkline_downsamples_dense_values() {
+        let values = (0..1000).map(|index| index as f64).collect::<Vec<_>>();
+        let points = sparkline_points(
+            &values,
+            (0.0, 1000.0),
+            px(0.0),
+            px(0.0),
+            px(100.0),
+            px(50.0),
+            Some(80),
+        );
+        assert!(points.len() <= 80);
     }
 }

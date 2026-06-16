@@ -1017,6 +1017,9 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "avatar/sizes.rs" => Some(include_str!("../content/snippets/avatar/sizes.rs")),
         "avatar/content.rs" => Some(include_str!("../content/snippets/avatar/content.rs")),
         "area_chart/basic.rs" => Some(include_str!("../content/snippets/area_chart/basic.rs")),
+        "area_chart/downsample.rs" => {
+            Some(include_str!("../content/snippets/area_chart/downsample.rs"))
+        }
         "area_chart/overlay.rs" => Some(include_str!("../content/snippets/area_chart/overlay.rs")),
         "area_chart/stacked.rs" => Some(include_str!("../content/snippets/area_chart/stacked.rs")),
         "area_chart/custom.rs" => Some(include_str!("../content/snippets/area_chart/custom.rs")),
@@ -1124,6 +1127,9 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "line_chart/empty.rs" => Some(include_str!("../content/snippets/line_chart/empty.rs")),
         "line_chart/multi.rs" => Some(include_str!("../content/snippets/line_chart/multi.rs")),
         "line_chart/basic.rs" => Some(include_str!("../content/snippets/line_chart/basic.rs")),
+        "line_chart/downsample.rs" => {
+            Some(include_str!("../content/snippets/line_chart/downsample.rs"))
+        }
         "line_chart/custom.rs" => Some(include_str!("../content/snippets/line_chart/custom.rs")),
         "line_chart/line_styles.rs" => Some(include_str!(
             "../content/snippets/line_chart/line_styles.rs"
@@ -1137,6 +1143,9 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         }
         "sparkline/basic.rs" => Some(include_str!("../content/snippets/sparkline/basic.rs")),
         "sparkline/cards.rs" => Some(include_str!("../content/snippets/sparkline/cards.rs")),
+        "sparkline/downsample.rs" => {
+            Some(include_str!("../content/snippets/sparkline/downsample.rs"))
+        }
         "sparkline/area.rs" => Some(include_str!("../content/snippets/sparkline/area.rs")),
         "sparkline/styles.rs" => Some(include_str!("../content/snippets/sparkline/styles.rs")),
         "skeleton/basic.rs" => Some(include_str!("../content/snippets/skeleton/basic.rs")),
@@ -2766,6 +2775,30 @@ impl Render for LiveDemoContent {
                 .percentage_decimals(1)
                 .into_any_element(),
             ]),
+            "AreaChartDownsample" => demo_row(vec![
+                aura_components::AreaChart::new([
+                    aura_components::ChartSeries::new(
+                        "Desktop",
+                        (0..1_800).map(|index| {
+                            let wave = ((index as f64) / 32.0).sin() * 14.0;
+                            aura_components::ChartPoint::new(format!("T{index}"), 42.0 + wave)
+                        }),
+                    ),
+                    aura_components::ChartSeries::new(
+                        "Mobile",
+                        (0..1_800).map(|index| {
+                            let wave = ((index as f64) / 27.0).cos() * 10.0;
+                            let spike = if index % 360 == 0 { 24.0 } else { 0.0 };
+                            aura_components::ChartPoint::new(format!("T{index}"), 28.0 + wave + spike)
+                        }),
+                    ),
+                ])
+                .id("docs-area-chart-downsample")
+                .height(px(320.0))
+                .stacked()
+                .max_render_points(160)
+                .into_any_element(),
+            ]),
             "AvatarShapes" => demo_row(vec![
                 Avatar::new().into_any_element(),
                 Avatar::new().square().into_any_element(),
@@ -3514,6 +3547,20 @@ impl Render for LiveDemoContent {
                     .show_last_point(false)
                     .into_any_element(),
             ]),
+            "SparklineDownsample" => demo_row(vec![
+                aura_components::Sparkline::new((0..1_200).map(|index| {
+                    let wave = ((index as f64) / 18.0).sin() * 8.0;
+                    let spike = if index % 180 == 0 { 16.0 } else { 0.0 };
+                    40.0 + wave + spike
+                }))
+                .id("docs-sparkline-downsample")
+                .width(px(280.0))
+                .height(px(72.0))
+                .color(gpui::rgb(0x7c3aed).into())
+                .area_fill(true)
+                .max_render_points(96)
+                .into_any_element(),
+            ]),
             "PieChart" => demo_row(vec![
                 aura_components::PieChart::new([
                     aura_components::ChartSeries::new("Desktop", [aura_components::ChartPoint::new("Desktop", 62.0)]),
@@ -3746,6 +3793,23 @@ impl Render for LiveDemoContent {
                     .id("docs-line-chart-empty")
                     .height(px(220.0))
                     .into_any_element(),
+            ]),
+            "LineChartDownsample" => demo_row(vec![
+                aura_components::LineChart::new([aura_components::ChartSeries::new(
+                    "Latency",
+                    (0..2_000).map(|index| {
+                        let wave = ((index as f64) / 24.0).sin() * 18.0;
+                        let spike = if index % 240 == 0 { 32.0 } else { 0.0 };
+                        aura_components::ChartPoint::new(format!("T{index}"), 48.0 + wave + spike)
+                    }),
+                )])
+                .id("docs-line-chart-downsample")
+                .height(px(320.0))
+                .y_domain(0.0, 100.0)
+                .point_markers(false)
+                .area_fill(true)
+                .max_render_points(180)
+                .into_any_element(),
             ]),
             "CardBasic" => demo_row(vec![
                 Card::new("Standard card content goes here.")

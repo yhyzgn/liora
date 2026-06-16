@@ -232,6 +232,7 @@ pub struct ChartOptions {
     pub y_format: Option<fn(f64) -> SharedString>,
     pub show_value_labels: bool,
     pub value_label_options: ChartValueLabelOptions,
+    pub max_render_points: Option<usize>,
 }
 
 impl Default for ChartOptions {
@@ -248,6 +249,7 @@ impl Default for ChartOptions {
             y_format: None,
             show_value_labels: true,
             value_label_options: ChartValueLabelOptions::default(),
+            max_render_points: Some(800),
         }
     }
 }
@@ -400,6 +402,69 @@ pub fn has_chart_data(series: &[ChartSeries]) -> bool {
     series.iter().any(|series| !series.is_empty())
 }
 
+/// Downsample a finite point stream while preserving first/last points and
+/// local min/max extrema in each bucket. This keeps long native path rendering
+/// bounded without hiding short spikes in monitoring-style charts.
+pub fn downsample_points<T>(points: &[(T, f64)], max_points: Option<usize>) -> Vec<(T, f64)>
+where
+    T: Copy,
+{
+    let finite = points
+        .iter()
+        .copied()
+        .filter(|(_, value)| value.is_finite())
+        .collect::<Vec<_>>();
+    let Some(max_points) = max_points.filter(|max| *max >= 3) else {
+        return finite;
+    };
+    if finite.len() <= max_points {
+        return finite;
+    }
+
+    let bucket_count = ((max_points.saturating_sub(2)) / 2).max(1);
+    let middle_len = finite.len().saturating_sub(2);
+    let bucket_size = (middle_len as f64 / bucket_count as f64).ceil() as usize;
+    let mut sampled = Vec::with_capacity(max_points.min(finite.len()));
+    sampled.push(finite[0]);
+
+    let mut start = 1;
+    while start < finite.len() - 1 && sampled.len() + 1 < max_points {
+        let end = (start + bucket_size).min(finite.len() - 1);
+        let bucket = &finite[start..end];
+        if !bucket.is_empty() {
+            let (min_offset, _) = bucket
+                .iter()
+                .enumerate()
+                .min_by(|(_, a), (_, b)| a.1.total_cmp(&b.1))
+                .unwrap();
+            let (max_offset, _) = bucket
+                .iter()
+                .enumerate()
+                .max_by(|(_, a), (_, b)| a.1.total_cmp(&b.1))
+                .unwrap();
+            if min_offset <= max_offset {
+                sampled.push(bucket[min_offset]);
+                if min_offset != max_offset && sampled.len() + 1 < max_points {
+                    sampled.push(bucket[max_offset]);
+                }
+            } else {
+                sampled.push(bucket[max_offset]);
+                if sampled.len() + 1 < max_points {
+                    sampled.push(bucket[min_offset]);
+                }
+            }
+        }
+        start = end;
+    }
+
+    let last = *finite.last().unwrap();
+    if sampled.len() >= max_points {
+        sampled.pop();
+    }
+    sampled.push(last);
+    sampled
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -486,5 +551,30 @@ mod tests {
             labels,
             vec![SharedString::from("Q1"), SharedString::from("Q2")]
         );
+    }
+
+    #[test]
+    fn downsample_points_preserves_edges_and_extrema() {
+        let points = (0..100)
+            .map(|index| {
+                let value = if index == 42 { 1000.0 } else { index as f64 };
+                (index, value)
+            })
+            .collect::<Vec<_>>();
+        let sampled = downsample_points(&points, Some(21));
+
+        assert!(sampled.len() <= 21);
+        assert_eq!(sampled.first(), Some(&(0, 0.0)));
+        assert_eq!(sampled.last(), Some(&(99, 99.0)));
+        assert!(sampled.contains(&(42, 1000.0)));
+    }
+
+    #[test]
+    fn downsample_points_can_be_disabled() {
+        let points = (0..10)
+            .map(|index| (index, index as f64))
+            .collect::<Vec<_>>();
+        assert_eq!(downsample_points(&points, None), points);
+        assert_eq!(downsample_points(&points, Some(2)), points);
     }
 }

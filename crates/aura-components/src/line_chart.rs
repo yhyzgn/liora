@@ -1,6 +1,7 @@
 use crate::chart::{
     ChartOptions, ChartPalette, ChartSeries, ChartValueLabelContent, ChartValueLabelPlacement,
-    collect_labels, format_value_label, has_chart_data, normalized_domain, series_total,
+    collect_labels, downsample_points, format_value_label, has_chart_data, normalized_domain,
+    series_total,
 };
 use crate::chart_frame::{paint_chart_frame, paint_chart_label_aligned};
 use crate::chart_scale::{ScaleLinear, ScalePoint};
@@ -112,6 +113,16 @@ impl LineChart {
 
     pub fn stroke_width(mut self, width: Pixels) -> Self {
         self.stroke_width = width;
+        self
+    }
+
+    pub fn max_render_points(mut self, max_points: usize) -> Self {
+        self.options.max_render_points = Some(max_points.max(3));
+        self
+    }
+
+    pub fn disable_downsampling(mut self) -> Self {
+        self.options.max_render_points = None;
         self
     }
 
@@ -258,7 +269,7 @@ fn render_line_canvas(
                     .line_style
                     .unwrap_or(crate::chart::ChartLineStyle::Solid);
                 let current_dash_pattern = current.dash_pattern.as_deref();
-                let point_data = current
+                let raw_point_data = current
                     .points
                     .iter()
                     .enumerate()
@@ -272,6 +283,7 @@ fn render_line_canvas(
                         Some((position, chart_point.value))
                     })
                     .collect::<Vec<_>>();
+                let point_data = downsample_points(&raw_point_data, options.max_render_points);
                 let points = point_data
                     .iter()
                     .map(|(position, _)| *position)
@@ -381,7 +393,8 @@ mod tests {
             .value_label_content(ChartValueLabelContent::ValueAndPercentage)
             .value_label_placement(ChartValueLabelPlacement::OutsideFree)
             .percentage_decimals(2)
-            .stroke_width(px(3.0));
+            .stroke_width(px(3.0))
+            .max_render_points(1200);
 
         assert_eq!(chart.options().id, SharedString::from("cpu-line"));
         assert_eq!(chart.options().height, px(320.0));
@@ -401,6 +414,7 @@ mod tests {
         );
         assert_eq!(chart.options().value_label_options.percentage_decimals, 2);
         assert_eq!(chart.stroke_width, px(3.0));
+        assert_eq!(chart.options().max_render_points, Some(1200));
     }
 
     #[test]

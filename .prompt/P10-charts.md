@@ -139,3 +139,11 @@ LineChart::new(series)
 - [ ] `cargo fmt`、`cargo check -p aura-components`、`cargo check -p aura-docs`、`cargo check -p aura-gallery`、`cargo test --workspace` 通过。
 - [ ] `timeout 8s cargo run -p aura-docs`、`timeout 8s cargo run -p aura-gallery` 可启动无即时崩溃。
 - [ ] `.memory/*` 与 `architecture-design.md` 更新。
+
+
+## 2026-06-16 Performance maintenance update
+
+- 首批 6 类图表组件已实现：`LineChart`、`AreaChart`、`BarChart`、`PieChart`、`RingChart`、`Sparkline`。
+- 已完成第一轮大数据性能增强：`LineChart`、`AreaChart`、`Sparkline` 支持共享 min/max bucket 降采样，通过 `max_render_points(...)` 限制绘制点数，并可用 `disable_downsampling()` 关闭。
+- 降采样策略保留首尾点和局部峰谷，避免长序列在 GPUI native path 中产生过量绘制，同时不隐藏监控尖峰。
+- 剩余维护项：hover tooltip / hit testing 边界、进一步缓存策略。

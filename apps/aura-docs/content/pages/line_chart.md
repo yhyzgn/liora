@@ -56,3 +56,15 @@
 
 ```rust src="line_chart/line_styles.rs"
 ```
+
+
+## 大数据降采样
+
+### 效果
+
+::AuraDemo{component="LineChartDownsample"}::
+
+### 代码
+
+```rust src="line_chart/downsample.rs"
+```

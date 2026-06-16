@@ -45,3 +45,15 @@
 
 ```rust src="sparkline/styles.rs"
 ```
+
+
+## 长趋势降采样
+
+### 效果
+
+::AuraDemo{component="SparklineDownsample"}::
+
+### 代码
+
+```rust src="sparkline/downsample.rs"
+```

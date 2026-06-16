@@ -59,6 +59,17 @@ impl Render for LineChartDemo {
                         .point_markers(false),
                 ))
                 .child(section(
+                    "大数据降采样",
+                    "长序列默认使用 min/max bucket 降采样，保留首尾和局部峰谷，避免原生路径绘制过重。",
+                    LineChart::new(dense_series())
+                        .id("line-chart-demo-downsample")
+                        .height(px(420.0))
+                        .y_domain(0.0, 100.0)
+                        .point_markers(false)
+                        .area_fill(true)
+                        .max_render_points(180),
+                ))
+                .child(section(
                     "无数据",
                     "空数据自动降级为空状态。",
                     LineChart::new(Vec::<ChartSeries>::new())
@@ -163,6 +174,17 @@ pub fn styled_series() -> Vec<ChartSeries> {
     ]
 }
 
+pub fn dense_series() -> Vec<ChartSeries> {
+    vec![ChartSeries::new(
+        "Latency",
+        (0..2_000).map(|index| {
+            let wave = ((index as f64) / 24.0).sin() * 18.0;
+            let spike = if index % 240 == 0 { 32.0 } else { 0.0 };
+            ChartPoint::new(format!("T{index}"), 48.0 + wave + spike)
+        }),
+    )]
+}
+
 pub fn multi_series() -> Vec<ChartSeries> {
     vec![
         ChartSeries::new(
@@ -207,5 +229,7 @@ mod tests {
         assert!(source.contains("dashed()"));
         assert!(source.contains("dotted()"));
         assert!(source.contains("ChartLineStyle"));
+        assert!(source.contains("max_render_points"));
+        assert!(source.contains("dense_series"));
     }
 }

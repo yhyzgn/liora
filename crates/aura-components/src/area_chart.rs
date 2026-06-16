@@ -1,7 +1,7 @@
 use crate::chart::{
     ChartOptions, ChartPalette, ChartSeries, ChartValueLabelContent, ChartValueLabelPlacement,
-    collect_labels, format_value_label, has_chart_data, normalized_domain_with_baseline,
-    series_total, stacked_domain,
+    collect_labels, downsample_points, format_value_label, has_chart_data,
+    normalized_domain_with_baseline, series_total, stacked_domain,
 };
 use crate::chart_frame::{paint_chart_frame, paint_chart_label_aligned};
 use crate::chart_scale::{ScaleLinear, ScalePoint};
@@ -109,6 +109,16 @@ impl AreaChart {
 
     pub fn stroke_width(mut self, width: Pixels) -> Self {
         self.stroke_width = width;
+        self
+    }
+
+    pub fn max_render_points(mut self, max_points: usize) -> Self {
+        self.options.max_render_points = Some(max_points.max(3));
+        self
+    }
+
+    pub fn disable_downsampling(mut self) -> Self {
+        self.options.max_render_points = None;
         self
     }
 
@@ -310,6 +320,28 @@ fn render_area_canvas(
     .h(height)
 }
 
+fn sampled_point_indices(
+    labels_len: usize,
+    series: &[ChartSeries],
+    max_points: Option<usize>,
+) -> Vec<usize> {
+    let points = (0..labels_len)
+        .map(|index| {
+            let total = series
+                .iter()
+                .filter_map(|series| series.points.get(index))
+                .filter(|point| point.is_finite())
+                .map(|point| point.value)
+                .sum::<f64>();
+            (index, total)
+        })
+        .collect::<Vec<_>>();
+    downsample_points(&points, max_points)
+        .into_iter()
+        .map(|(index, _)| index)
+        .collect()
+}
+
 #[allow(clippy::too_many_arguments)]
 fn paint_overlay_areas(
     left: Pixels,
@@ -333,7 +365,7 @@ fn paint_overlay_areas(
         let fill_color = current.resolved_fill_color(fallback);
         let current_smooth = current.smooth.unwrap_or(smooth);
         let current_stroke_width = current.stroke_width.unwrap_or(stroke_width);
-        let point_data = current
+        let raw_point_data = current
             .points
             .iter()
             .enumerate()
@@ -346,6 +378,7 @@ fn paint_overlay_areas(
                 ))
             })
             .collect::<Vec<_>>();
+        let point_data = downsample_points(&raw_point_data, options.max_render_points);
         let points = point_data
             .iter()
             .map(|(position, _)| *position)
@@ -412,6 +445,7 @@ fn paint_stacked_areas(
         .map(|series| series.points.len())
         .max()
         .unwrap_or(0);
+    let sampled_indices = sampled_point_indices(labels_len, series, options.max_render_points);
     let mut previous = vec![0.0_f64; labels_len];
     for (series_index, current) in series.iter().enumerate() {
         let fallback = palette.series_color(series_index);
@@ -420,7 +454,7 @@ fn paint_stacked_areas(
         let current_stroke_width = current.stroke_width.unwrap_or(stroke_width);
         let mut lower = Vec::new();
         let mut upper = Vec::new();
-        for point_index in 0..labels_len {
+        for &point_index in &sampled_indices {
             let value = current
                 .points
                 .get(point_index)
@@ -523,6 +557,7 @@ mod tests {
             .percentage_decimals(2)
             .smooth(true)
             .stroke_width(px(3.0))
+            .max_render_points(600)
             .stacked();
 
         assert_eq!(chart.options().id, SharedString::from("traffic-area"));
@@ -545,6 +580,7 @@ mod tests {
         assert!(!chart.line_stroke);
         assert!(chart.smooth);
         assert_eq!(chart.stroke_width, px(3.0));
+        assert_eq!(chart.options().max_render_points, Some(600));
     }
 
     #[test]
@@ -552,5 +588,28 @@ mod tests {
         let chart = AreaChart::new(sample_series());
         assert_eq!(chart.series().len(), 1);
         assert_eq!(chart.series()[0].name, SharedString::from("Visitors"));
+    }
+
+    #[test]
+    fn stacked_area_samples_indices_from_total_series_shape() {
+        let series = [
+            ChartSeries::new(
+                "a",
+                (0..1_000).map(|index| ChartPoint::new(format!("T{index}"), index as f64)),
+            ),
+            ChartSeries::new(
+                "b",
+                (0..1_000).map(|index| {
+                    let value = if index == 500 { 10_000.0 } else { 1.0 };
+                    ChartPoint::new(format!("T{index}"), value)
+                }),
+            ),
+        ];
+        let indices = sampled_point_indices(1_000, &series, Some(80));
+
+        assert!(indices.len() <= 80);
+        assert_eq!(indices.first(), Some(&0));
+        assert_eq!(indices.last(), Some(&999));
+        assert!(indices.contains(&500));
     }
 }

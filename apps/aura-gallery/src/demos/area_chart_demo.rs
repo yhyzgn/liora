@@ -49,6 +49,15 @@ impl Render for AreaChartDemo {
                         .id("area-chart-demo-stacked")
                         .height(px(400.0))
                         .stacked(),
+                ))
+                .child(section(
+                    "大数据降采样",
+                    "长序列面积图可限制绘制点数；堆叠模式按总量形状保留尖峰。",
+                    AreaChart::new(dense_series())
+                        .id("area-chart-demo-downsample")
+                        .height(px(400.0))
+                        .stacked()
+                        .max_render_points(160),
                 )),
         )
     }
@@ -102,6 +111,26 @@ pub fn custom_series() -> Vec<ChartSeries> {
     ]
 }
 
+pub fn dense_series() -> Vec<ChartSeries> {
+    vec![
+        ChartSeries::new(
+            "Desktop",
+            (0..1_800).map(|index| {
+                let wave = ((index as f64) / 32.0).sin() * 14.0;
+                ChartPoint::new(format!("T{index}"), 42.0 + wave)
+            }),
+        ),
+        ChartSeries::new(
+            "Mobile",
+            (0..1_800).map(|index| {
+                let wave = ((index as f64) / 27.0).cos() * 10.0;
+                let spike = if index % 360 == 0 { 24.0 } else { 0.0 };
+                ChartPoint::new(format!("T{index}"), 28.0 + wave + spike)
+            }),
+        ),
+    ]
+}
+
 pub fn multi_series() -> Vec<ChartSeries> {
     vec![
         ChartSeries::new(
@@ -137,5 +166,7 @@ mod tests {
         assert!(source.contains("stacked()"));
         assert!(source.contains("stroke_color"));
         assert!(source.contains("value_label_content"));
+        assert!(source.contains("max_render_points"));
+        assert!(source.contains("dense_series"));
     }
 }

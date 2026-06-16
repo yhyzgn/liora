@@ -45,3 +45,15 @@
 
 ```rust src="area_chart/custom.rs"
 ```
+
+
+## 大数据降采样
+
+### 效果
+
+::AuraDemo{component="AreaChartDownsample"}::
+
+### 代码
+
+```rust src="area_chart/downsample.rs"
+```
