@@ -3295,12 +3295,16 @@ impl Render for LiveDemoContent {
             "HeatBarEvents" => demo_row(vec![
                 aura_components::HeatBar::new((0..48).map(|index| {
                     let value = ((index * 7 + 3) % 11) as f64;
-                    let color = if value > 7.0 { gpui::rgb(0xef4444).into() } else if value > 3.0 { gpui::rgb(0xf59e0b).into() } else { gpui::rgb(0x93c5fd).into() };
-                    aura_components::HeatBarItem::new(format!("t{index}"), value, color)
+                    aura_components::HeatBarItem::new(format!("t{index}"), value, gpui::rgb(0x93c5fd).into())
                 }))
                 .legends([
                     aura_components::HeatBarLegend::new("错误", 3, gpui::rgb(0xef4444).into()),
                     aura_components::HeatBarLegend::new("警告", 24, gpui::rgb(0xf59e0b).into()),
+                ])
+                .color_ranges([
+                    aura_components::HeatBarColorRange::new(0.0, 3.0, gpui::rgb(0x93c5fd).into()),
+                    aura_components::HeatBarColorRange::new(3.0, 7.0, gpui::rgb(0xf59e0b).into()),
+                    aura_components::HeatBarColorRange::above(7.0, gpui::rgb(0xef4444).into()),
                 ])
                 .max_value(10.0)
                 .x_labels(["00:00", "06:00", "12:00", "18:00", "24:00"])

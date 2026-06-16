@@ -37,10 +37,36 @@ impl HeatBarLegend {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct HeatBarColorRange {
+    pub min: f64,
+    pub max: f64,
+    pub color: Hsla,
+}
+
+impl HeatBarColorRange {
+    pub fn new(min: f64, max: f64, color: Hsla) -> Self {
+        Self { min, max, color }
+    }
+
+    pub fn up_to(max: f64, color: Hsla) -> Self {
+        Self::new(f64::NEG_INFINITY, max, color)
+    }
+
+    pub fn above(min: f64, color: Hsla) -> Self {
+        Self::new(min, f64::INFINITY, color)
+    }
+
+    fn contains(&self, value: f64) -> bool {
+        value >= self.min && value <= self.max
+    }
+}
+
 #[derive(Clone)]
 pub struct HeatBar {
     items: Vec<HeatBarItem>,
     legends: Vec<HeatBarLegend>,
+    color_ranges: Vec<HeatBarColorRange>,
     height: Pixels,
     bar_width: Pixels,
     gap: Pixels,
@@ -54,6 +80,7 @@ impl HeatBar {
         Self {
             items: items.into_iter().collect(),
             legends: Vec::new(),
+            color_ranges: Vec::new(),
             height: px(180.0),
             bar_width: px(4.0),
             gap: px(3.0),
@@ -64,6 +91,10 @@ impl HeatBar {
     }
     pub fn legends(mut self, legends: impl IntoIterator<Item = HeatBarLegend>) -> Self {
         self.legends = legends.into_iter().collect();
+        self
+    }
+    pub fn color_ranges(mut self, ranges: impl IntoIterator<Item = HeatBarColorRange>) -> Self {
+        self.color_ranges = ranges.into_iter().collect();
         self
     }
     pub fn height(mut self, height: Pixels) -> Self {
@@ -108,6 +139,7 @@ impl RenderOnce for HeatBar {
         });
         let bar_width = self.bar_width;
         let gap = self.gap;
+        let color_ranges = self.color_ranges.clone();
         let show_axis = self.show_axis;
         let axis_color = theme.neutral.text_3;
         let grid = theme.neutral.divider.opacity(0.55);
@@ -163,10 +195,14 @@ impl RenderOnce for HeatBar {
                             let x = bounds.left() + left_pad + (bar_width + gap) * index as f32;
                             let rect =
                                 Bounds::new(point(x, bottom - px(h)), size(bar_width, px(h)));
+                            let color = color_ranges
+                                .iter()
+                                .find(|range| range.contains(item.value))
+                                .map_or(item.color, |range| range.color);
                             window.paint_quad(quad(
                                 rect,
                                 Corners::all(bar_width / 2.0).clamp_radii_for_quad_size(rect.size),
-                                Background::from(item.color),
+                                Background::from(color),
                                 Edges::all(px(0.0)),
                                 gpui::transparent_black(),
                                 BorderStyle::Solid,
@@ -206,9 +242,20 @@ mod tests {
         let heat = HeatBar::new([HeatBarItem::new("10:00", 3.0, gpui::red())])
             .max_value(10.0)
             .bar_width(px(5.0))
-            .show_axis(false);
+            .show_axis(false)
+            .color_ranges([HeatBarColorRange::new(0.0, 5.0, gpui::blue())]);
         assert_eq!(heat.max_value, Some(10.0));
         assert_eq!(heat.bar_width, px(5.0));
         assert!(!heat.show_axis);
+        assert_eq!(heat.color_ranges.len(), 1);
+    }
+
+    #[test]
+    fn heat_bar_color_ranges_match_inclusive_bounds() {
+        let range = HeatBarColorRange::new(3.0, 7.0, gpui::yellow());
+        assert!(!range.contains(2.9));
+        assert!(range.contains(3.0));
+        assert!(range.contains(7.0));
+        assert!(!range.contains(7.1));
     }
 }

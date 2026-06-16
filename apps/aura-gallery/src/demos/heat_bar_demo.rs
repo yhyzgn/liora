@@ -1,5 +1,5 @@
 use aura_components::layout_helpers::{page, section};
-use aura_components::{HeatBar, HeatBarItem, HeatBarLegend, Space};
+use aura_components::{HeatBar, HeatBarColorRange, HeatBarItem, HeatBarLegend, Space};
 use gpui::{AnyView, App, Context, Render, Window, prelude::*, rgb};
 
 pub fn render(cx: &mut App) -> AnyView {
@@ -19,6 +19,11 @@ impl Render for HeatBarDemo {
                         HeatBarLegend::new("错误", 3, rgb(0xef4444).into()),
                         HeatBarLegend::new("警告", 24, rgb(0xf59e0b).into()),
                     ])
+                    .color_ranges([
+                        HeatBarColorRange::new(0.0, 3.0, rgb(0x93c5fd).into()),
+                        HeatBarColorRange::new(3.0, 7.0, rgb(0xf59e0b).into()),
+                        HeatBarColorRange::above(7.0, rgb(0xef4444).into()),
+                    ])
                     .max_value(10.0)
                     .x_labels(["00:00", "06:00", "12:00", "18:00", "24:00"]),
             )),
@@ -29,14 +34,8 @@ fn sample_items() -> Vec<HeatBarItem> {
     (0..72)
         .map(|i| {
             let value = ((i * 7 + 3) % 11) as f64;
-            let color = if value > 7.0 {
-                rgb(0xef4444).into()
-            } else if value > 3.0 {
-                rgb(0xf59e0b).into()
-            } else {
-                rgb(0x93c5fd).into()
-            };
-            HeatBarItem::new(format!("t{i}"), value, color)
+            // Item color remains a fallback; color_ranges drives final severity mapping.
+            HeatBarItem::new(format!("t{i}"), value, rgb(0x93c5fd).into())
         })
         .collect()
 }
