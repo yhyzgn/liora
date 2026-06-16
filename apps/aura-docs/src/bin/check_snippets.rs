@@ -29,6 +29,8 @@ mod anchor_targets;
 mod architecture_render_pipeline;
 #[path = "../../content/snippets/area_chart/basic.rs"]
 mod area_chart_basic;
+#[path = "../../content/snippets/area_chart/custom.rs"]
+mod area_chart_custom;
 #[path = "../../content/snippets/area_chart/downsample.rs"]
 mod area_chart_downsample;
 #[path = "../../content/snippets/area_chart/overlay.rs"]
@@ -65,6 +67,8 @@ mod badge_dot;
 mod badge_max;
 #[path = "../../content/snippets/bar_chart/basic.rs"]
 mod bar_chart_basic;
+#[path = "../../content/snippets/bar_chart/custom.rs"]
+mod bar_chart_custom;
 #[path = "../../content/snippets/bar_chart/gradient.rs"]
 mod bar_chart_gradient;
 #[path = "../../content/snippets/bar_chart/grouped.rs"]
@@ -265,6 +269,8 @@ mod layout_grid;
 mod layout_space;
 #[path = "../../content/snippets/line_chart/basic.rs"]
 mod line_chart_basic;
+#[path = "../../content/snippets/line_chart/custom.rs"]
+mod line_chart_custom;
 #[path = "../../content/snippets/line_chart/downsample.rs"]
 mod line_chart_downsample;
 #[path = "../../content/snippets/line_chart/empty.rs"]
@@ -321,6 +327,8 @@ mod pagination_background;
 mod pagination_basic;
 #[path = "../../content/snippets/pie_chart/basic.rs"]
 mod pie_chart_basic;
+#[path = "../../content/snippets/pie_chart/custom.rs"]
+mod pie_chart_custom;
 #[path = "../../content/snippets/popconfirm/basic.rs"]
 mod popconfirm_basic;
 #[path = "../../content/snippets/popconfirm/custom_text.rs"]

@@ -1,5 +1,7 @@
-use aura_components::{ChartPoint, ChartSeries, ChartValueLabelContent, ChartValueLabelPlacement, PieChart};
-use gpui::{IntoElement, blue, green, red, yellow, px};
+use aura_components::{
+    ChartPoint, ChartSeries, ChartValueLabelContent, ChartValueLabelPlacement, PieChart,
+};
+use gpui::{IntoElement, blue, green, px, red, yellow};
 
 pub fn pie_chart_custom() -> impl IntoElement {
     PieChart::new([

@@ -7137,11 +7137,49 @@ mod tests {
             "message/types.rs",
             "typography/paragraph.rs",
             "virtualized_list/basic.rs",
+            "line_chart/custom.rs",
+            "bar_chart/custom.rs",
+            "area_chart/custom.rs",
+            "pie_chart/custom.rs",
         ] {
             assert!(harness.contains(&format!("../../content/snippets/{snippet}")));
             assert!(load_code_snippet(snippet).is_some());
         }
         assert!(!harness.contains("quick_start/run.sh"));
+    }
+
+    #[test]
+    fn docs_rust_code_block_sources_are_compile_checked() {
+        let harness = include_str!("bin/check_snippets.rs");
+        let docs = [
+            BUTTON_DOC,
+            INPUT_DOC,
+            SWITCH_DOC,
+            MESSAGE_DOC,
+            TYPOGRAPHY_DOC,
+            VIRTUALIZED_LIST_DOC,
+            LINE_CHART_DOC,
+            BAR_CHART_DOC,
+            AREA_CHART_DOC,
+            PIE_CHART_DOC,
+            PROGRESS_DOC,
+        ];
+
+        for doc in docs {
+            let mut remaining = doc;
+            while let Some(index) = remaining.find("```rust src=\"") {
+                let after_marker = &remaining[index + "```rust src=\"".len()..];
+                let Some(end_index) = after_marker.find('\"') else {
+                    break;
+                };
+                let snippet = &after_marker[..end_index];
+                assert!(
+                    harness.contains(&format!("../../content/snippets/{snippet}")),
+                    "{snippet} is referenced by docs but missing from check_snippets.rs"
+                );
+                remaining = &after_marker[end_index + 1..];
+            }
+        }
     }
 
     #[test]
