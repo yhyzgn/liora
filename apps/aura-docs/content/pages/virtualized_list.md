@@ -13,7 +13,7 @@
 
 ## 基础用法
 
-::AuraDemo{component="VirtualizedList"}::
+::AuraDemo{component="VirtualizedListBasic"}::
 
 ### 代码
 
@@ -22,7 +22,7 @@
 
 ## 垂直拖动排序
 
-::AuraDemo{component="VirtualizedList"}::
+::AuraDemo{component="VirtualizedListDraggable"}::
 
 ### 代码
 

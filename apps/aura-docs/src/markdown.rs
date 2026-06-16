@@ -1,10 +1,11 @@
 use aura_components::{
     Affix, AffixPosition, Alert, AlertType, Anchor, AnchorLink, AnchorTarget, Autocomplete,
     AutocompleteItem, Avatar, Backtop, Badge, BadgeType, Button, ButtonColors, Card, Checkbox,
-    CheckboxGroup, CheckboxOptionStyle, CodeBlock as AuraCodeBlock, Container, Dropdown, Flex,
-    Form, FormItem, Image, Input, InputNumber, InputNumberControlsPosition, Link, Loading, Menu,
-    MenuMode, NotificationType, Paragraph, Popconfirm, Popover, Preview, Progress, ProgressStatus,
-    QrCode, QrEcLevel, QrFinderStyle, QrGradientDirection, QrModuleStyle, Radio, RadioGroup,
+    CheckboxGroup, CheckboxOptionStyle, CodeBlock as AuraCodeBlock, CodeDiagnostic, CodeEditor,
+    CodeLanguage, CodeTheme, Container, Dropdown, Flex, Form, FormItem, HorizontalList, Image,
+    Input, InputNumber, InputNumberControlsPosition, Link, Loading, Menu, MenuMode,
+    NotificationType, Paragraph, Popconfirm, Popover, Preview, Progress, ProgressStatus, QrCode,
+    QrEcLevel, QrFinderStyle, QrGradientDirection, QrModuleStyle, Radio, RadioGroup,
     RadioOptionStyle, Rate, Result as AuraResult, ResultStatus, Select, Skeleton, SkeletonItem,
     SkeletonVariant, Slider, Space, Statistic, Switch, Tag as AuraTag, Text, Textarea, Timer,
     TimerFormat, TimerUnit, Title, Transfer, TransferItem, Tree, TreeNode, Upload, UploadFile,
@@ -1632,6 +1633,9 @@ struct LiveDemoContent {
     textareas: Vec<Entity<Textarea>>,
     checkboxes: Vec<Entity<Checkbox>>,
     checkbox_groups: Vec<Entity<CheckboxGroup>>,
+    code_editors: Vec<Entity<CodeEditor>>,
+    horizontal_lists: Vec<Entity<HorizontalList>>,
+    virtualized_lists: Vec<Entity<VirtualizedList>>,
     inputs: Vec<Entity<Input>>,
     radios: Vec<Entity<Radio>>,
     radio_groups: Vec<Entity<RadioGroup>>,
@@ -1673,6 +1677,9 @@ impl LiveDemoContent {
         let mut textareas = Vec::new();
         let mut checkboxes = Vec::new();
         let mut checkbox_groups = Vec::new();
+        let mut code_editors = Vec::new();
+        let mut horizontal_lists = Vec::new();
+        let mut virtualized_lists = Vec::new();
         let mut inputs = Vec::new();
         let mut radios = Vec::new();
         let mut radio_groups = Vec::new();
@@ -1744,6 +1751,83 @@ impl LiveDemoContent {
             "InputBasic" => {
                 inputs.push(cx.new(|cx| Input::new("", cx)));
                 inputs.push(cx.new(|cx| Input::new("", cx).placeholder("Type something...")));
+            }
+
+            "CodeEditorBasic" => {
+                code_editors.push(cx.new(|cx| {
+                    CodeEditor::new(DOCS_CODE_EDITOR_RUST_SAMPLE, cx)
+                        .language(CodeLanguage::Rust)
+                        .theme(CodeTheme::OneDark)
+                        .line_numbers(true)
+                        .tab_size(4)
+                        .soft_tabs(true)
+                }));
+            }
+            "CodeEditorDiagnostics" => {
+                code_editors.push(cx.new(|cx| {
+                    CodeEditor::new(DOCS_CODE_EDITOR_TS_SAMPLE, cx)
+                        .language(CodeLanguage::TypeScript)
+                        .tab_size(2)
+                        .diagnostics_provider(|source| {
+                            source
+                                .lines()
+                                .enumerate()
+                                .filter(|(_, line)| {
+                                    line.trim_start().starts_with("return")
+                                        && !line.trim_end().ends_with(';')
+                                })
+                                .map(|(index, _)| {
+                                    CodeDiagnostic::warning(
+                                        index + 1,
+                                        1,
+                                        "Return line should end with a semicolon.",
+                                    )
+                                })
+                                .collect()
+                        })
+                        .diagnostics([
+                            CodeDiagnostic::warning(2, 3, "Prefer an explicit return type."),
+                            CodeDiagnostic::error(
+                                2,
+                                25,
+                                "Missing semicolon according to project style.",
+                            ),
+                        ])
+                }));
+            }
+            "HorizontalListBasic" => {
+                horizontal_lists.push(cx.new(|_| {
+                    HorizontalList::new(DOCS_HORIZONTAL_STEPS.len(), docs_horizontal_step_card)
+                        .height(px(92.0))
+                }));
+            }
+            "HorizontalListDivider" => {
+                horizontal_lists.push(cx.new(|_| {
+                    HorizontalList::new(DOCS_HORIZONTAL_FLOW.len(), docs_horizontal_flow_card)
+                        .height(px(92.0))
+                        .divider(|_| {
+                            Icon::new(IconName::ChevronRight)
+                                .size(px(18.0))
+                                .color(rgb(0x94a3b8).into())
+                                .into_any_element()
+                        })
+                }));
+            }
+            "HorizontalListDraggable" => {
+                horizontal_lists.push(cx.new(|_| {
+                    HorizontalList::new(DOCS_HORIZONTAL_LANES.len(), docs_horizontal_lane_card)
+                        .height(px(112.0))
+                        .draggable(true)
+                        .on_reorder(|from, to, _, _| {
+                            toast_success!("HorizontalList reordered: {} -> {}", from + 1, to + 1);
+                        })
+                }));
+            }
+            "VirtualizedListBasic" => {
+                virtualized_lists.push(cx.new(|cx| docs_virtualized_list(cx, false)));
+            }
+            "VirtualizedListDraggable" => {
+                virtualized_lists.push(cx.new(|cx| docs_virtualized_list(cx, true)));
             }
 
             "InputNumberBasic" => {
@@ -2315,6 +2399,9 @@ impl LiveDemoContent {
             textareas,
             checkboxes,
             checkbox_groups,
+            code_editors,
+            horizontal_lists,
+            virtualized_lists,
             inputs,
             radios,
             radio_groups,
@@ -2629,6 +2716,29 @@ impl Render for LiveDemoContent {
             ),
             "CheckboxGroup" | "CheckboxButtons" | "CheckboxCustom" => demo_stack(
                 self.checkbox_groups
+                    .iter()
+                    .cloned()
+                    .map(Entity::into_any_element)
+                    .collect(),
+            ),
+            "CodeEditorBasic" | "CodeEditorDiagnostics" => demo_stack(
+                self.code_editors
+                    .iter()
+                    .cloned()
+                    .map(Entity::into_any_element)
+                    .collect(),
+            ),
+            "HorizontalListBasic" | "HorizontalListDivider" | "HorizontalListDraggable" => {
+                demo_stack(
+                    self.horizontal_lists
+                        .iter()
+                        .cloned()
+                        .map(Entity::into_any_element)
+                        .collect(),
+                )
+            }
+            "VirtualizedListBasic" | "VirtualizedListDraggable" => demo_stack(
+                self.virtualized_lists
                     .iter()
                     .cloned()
                     .map(Entity::into_any_element)
@@ -5298,6 +5408,128 @@ fn table_status_tag(status: &'static str) -> aura_components::Tag {
     }
 }
 
+const DOCS_CODE_EDITOR_RUST_SAMPLE: &str = r#"fn main() {
+    println!("Hello Aura");
+}
+"#;
+
+const DOCS_CODE_EDITOR_TS_SAMPLE: &str = r#"export function run(value: number) {
+  return value.toString()
+}
+"#;
+
+const DOCS_HORIZONTAL_STEPS: &[(&str, &str)] =
+    &[("01", "Discover"), ("02", "Design"), ("03", "Build")];
+const DOCS_HORIZONTAL_FLOW: &[&str] = &["Input", "Validate", "Transform", "Export"];
+const DOCS_HORIZONTAL_LANES: &[(&str, &str)] = &[
+    ("Inbox", "8 tasks"),
+    ("Ready", "5 tasks"),
+    ("Doing", "3 tasks"),
+    ("Done", "12 tasks"),
+];
+
+fn docs_horizontal_step_card(index: usize) -> AnyElement {
+    let (number, label) = DOCS_HORIZONTAL_STEPS[index];
+    div()
+        .w(px(132.0))
+        .h(px(72.0))
+        .rounded_lg()
+        .border_1()
+        .border_color(rgb(0xdbeafe))
+        .bg(rgb(0xeff6ff))
+        .p_3()
+        .flex()
+        .flex_col()
+        .justify_between()
+        .child(
+            Text::new(number)
+                .size(px(12.0))
+                .text_color(rgb(0x2563eb).into()),
+        )
+        .child(Text::new(label).bold().text_color(rgb(0x1e3a8a).into()))
+        .into_any_element()
+}
+
+fn docs_horizontal_flow_card(index: usize) -> AnyElement {
+    div()
+        .w(px(144.0))
+        .h(px(68.0))
+        .rounded_lg()
+        .border_1()
+        .border_color(rgb(0xe2e8f0))
+        .bg(rgb(0xffffff))
+        .p_3()
+        .child(Text::new(DOCS_HORIZONTAL_FLOW[index]).bold())
+        .into_any_element()
+}
+
+fn docs_horizontal_lane_card(index: usize) -> AnyElement {
+    let (label, desc) = DOCS_HORIZONTAL_LANES[index];
+    div()
+        .w(px(156.0))
+        .h(px(92.0))
+        .rounded_lg()
+        .border_1()
+        .border_color(rgb(0xe2e8f0))
+        .bg(rgb(0xffffff))
+        .p_3()
+        .flex()
+        .flex_col()
+        .gap_2()
+        .child(Text::new(label).bold())
+        .child(
+            Text::new(desc)
+                .size(px(12.0))
+                .text_color(rgb(0x64748b).into()),
+        )
+        .into_any_element()
+}
+
+fn docs_virtualized_list(cx: &mut Context<VirtualizedList>, draggable: bool) -> VirtualizedList {
+    let count = if draggable { 48 } else { 1_000 };
+    let mut list = VirtualizedList::new(count, cx, move |index, _window, _cx| {
+        div()
+            .flex()
+            .items_center()
+            .justify_between()
+            .p_3()
+            .rounded(px(8.0))
+            .border_1()
+            .border_color(rgb(0xe5e7eb))
+            .child(
+                Space::new()
+                    .vertical()
+                    .gap_xs()
+                    .child(
+                        Text::new(format!(
+                            "{} #{:04}",
+                            if draggable { "Task" } else { "Row" },
+                            index + 1
+                        ))
+                        .bold(),
+                    )
+                    .child(Text::new(if draggable {
+                        "Drag this row to reorder visible data."
+                    } else {
+                        "Rendered inside the native virtual viewport."
+                    })),
+            )
+            .child(AuraTag::new(if index % 2 == 0 { "even" } else { "odd" }).info())
+            .into_any_element()
+    });
+
+    list.set_height(Some(px(320.0)));
+    list.set_item_spacing(px(12.0));
+    list.measure_all_items_for_scrollbar();
+    if draggable {
+        list.set_draggable(true);
+        list.set_on_reorder(|from, to, _, _| {
+            toast_success!("VirtualizedList reordered: {} -> {}", from + 1, to + 1);
+        });
+    }
+    list
+}
+
 fn demo_row(children: Vec<AnyElement>) -> AnyElement {
     Space::new()
         .wrap()
@@ -7146,6 +7378,31 @@ mod tests {
             assert!(load_code_snippet(snippet).is_some());
         }
         assert!(!harness.contains("quick_start/run.sh"));
+    }
+
+    #[test]
+    fn p13_docs_live_demo_markers_have_precise_renderers() {
+        let renderer = include_str!("markdown.rs");
+        for (page_name, page) in [
+            ("qr_code", QR_CODE_DOC),
+            ("code_editor", CODE_EDITOR_DOC),
+            ("horizontal_list", HORIZONTAL_LIST_DOC),
+            ("virtualized_list", VIRTUALIZED_LIST_DOC),
+        ] {
+            assert!(
+                !page.contains("::::AuraDemo"),
+                "{page_name} contains malformed live demo marker"
+            );
+            let document = MarkdownDocument::parse(page);
+            let mut components = Vec::new();
+            collect_live_demo_components(document.blocks(), &mut components);
+            for component in components {
+                assert!(
+                    renderer.contains(&format!("\"{}\" =>", component.as_ref())),
+                    "{page_name} live demo {component} should have a precise renderer"
+                );
+            }
+        }
     }
 
     #[test]

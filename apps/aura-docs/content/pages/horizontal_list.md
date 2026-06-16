@@ -6,7 +6,7 @@
 
 ### 效果
 
-::AuraDemo{component="HorizontalList"}::
+::AuraDemo{component="HorizontalListBasic"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::AuraDemo{component="HorizontalList"}::
+::AuraDemo{component="HorizontalListDivider"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::AuraDemo{component="HorizontalList"}::
+::AuraDemo{component="HorizontalListDraggable"}::
 
 ### 代码
 

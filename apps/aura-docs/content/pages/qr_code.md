@@ -6,7 +6,7 @@
 
 ### 效果
 
-::AuraDemo{component="QrCode"}::
+::AuraDemo{component="QrCodeBasic"}::
 
 ### 代码
 

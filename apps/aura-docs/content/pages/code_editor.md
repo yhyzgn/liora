@@ -6,7 +6,7 @@
 
 ### 效果
 
-:::AuraDemo{component="CodeEditor"}::
+:::AuraDemo{component="CodeEditorBasic"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-:::AuraDemo{component="CodeEditor"}::
+:::AuraDemo{component="CodeEditorDiagnostics"}::
 
 ### 代码
 
