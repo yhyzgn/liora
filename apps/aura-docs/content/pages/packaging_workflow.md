@@ -140,7 +140,15 @@ When package files exist, CI runs a runner-safe smoke gate before upload:
 cargo run -p xtask -- package smoke --all-apps --format platform-defaults
 ```
 
-The smoke command validates package headers for distro/installer formats where possible and fully inspects portable `.tar.gz` archives for the expected binary, launcher, icons, README, and Linux desktop metadata. It intentionally does not install packages unless a later platform-specific install/uninstall smoke script is added.
+The smoke command validates package headers for distro/installer formats where possible and fully inspects portable `.tar.gz` archives for the expected binary, launcher, icons, README, and Linux desktop metadata.
+
+CI then generates a runner-safe install/uninstall smoke plan:
+
+```bash
+cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults
+```
+
+`install-smoke` defaults to plan-only mode: it validates the discovered artifacts, writes `target/packages/install-smoke-plan.md`, and prints the exact install, launch-smoke, and uninstall commands that should be used for each format. It does not mutate the runner or install system packages unless a developer explicitly passes `--execute-install`. The only executable path currently allowed by `--execute-install` is portable `.tar.gz`, which extracts to `target/install-smoke/`, verifies the launcher and binary layout, then deletes the directory.
 
 ### 8. Preview artifacts
 

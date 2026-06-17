@@ -211,3 +211,13 @@ cargo run -p xtask -- package ci --all-apps --format platform-defaults
 - 保持应用为纯 Rust + GPUI native。
 - packaging tools 可以使用，但 WebView / HTML / CSS / browser runtime 不能进入 app architecture。
 - `xtask` 继续作为唯一公开打包入口。
+
+
+## Install/uninstall smoke plan — 2026-06-17
+
+已新增 `cargo run -p xtask -- package install-smoke ...`：
+
+- 默认 plan-only，复用 artifact discovery + `package smoke`，输出每个产物的 install / launch-smoke / uninstall 命令。
+- 写入 `target/packages/install-smoke-plan.md`，便于 CI artifact 审计。
+- `--execute-install` 仅允许 portable `.tar.gz` 做安全解压/验证/删除；系统级 deb/rpm/AppImage/macOS/Windows 安装仍保持计划输出，等待真实 runner policy、签名和人工 QA 后再放开。
+- GitHub Actions `package.yml` 已在 artifact smoke 后加入 plan-only install/uninstall smoke gate。

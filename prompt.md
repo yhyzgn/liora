@@ -30,7 +30,7 @@
 | **P9 延后高级组件** | `.prompt/P9-deferred-advanced.md` | P5 跳过/延后的高级组件 backlog，后续需要时补充 |
 | **P10 统计图组件** | `.prompt/P10-charts.md` | 原生 GPUI 统计图控件：Line/Area/Bar/Pie/Ring/Sparkline/Axis/Grid/Legend/Tooltip |
 | **P11 托盘常驻** | `.prompt/P11-tray.md` | `aura-tray` 跨平台系统托盘、动态图标、CheckBox/N 级菜单与 GPUI 常驻进程桥接 |
-| **P12 原生打包** | `.prompt/P12-packaging.md` | `aura-packager` / `xtask package` / `packaging/` / CI installer pipeline，纯 Rust + GPUI 原生应用打包 |
+| **P12 原生打包** | `.prompt/P12-packaging.md` | `aura-packager` / `xtask package` / `packaging/` / CI installer pipeline，含 install-smoke plan，纯 Rust + GPUI 原生应用打包 |
 | **P13 高级控件扩展** | `.prompt/P13-component-expansion.md` | 已实现：二维码、代码编辑器、信号图、热力/比例条、拖动列表、Timer、Label/Operation，以及 BarChart 独立迷你柱样式与 Chart/Button/Tag/Radio/Checkbox 增强 |
 | **P14 延后高级组件补全** | `.prompt/P14-deferred-advanced.md` | 正在实现 P9 deferred backlog；Wave 1 已完成 Carousel、Calendar、InputTag；Wave 2 已完成 Mention、Watermark；Wave 3 已完成 TreeSelect；Wave 4 已完成 Tour；Wave 5 已完成 VirtualizedTable；Wave 6 已完成 VirtualizedTree |
 

@@ -257,6 +257,24 @@ jobs:
           fi
           "${args[@]}"
 
+      - name: Plan install and uninstall smoke
+        if: github.event.inputs.dry_run != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP_INPUT="${{ github.event.inputs.app || 'all' }}"
+          format="platform-defaults"
+          if [[ "${{ matrix.platform }}" == "windows" && "${{ steps.package-channel.outputs.channel }}" == "preview" ]]; then
+            format="nsis"
+          fi
+          args=(cargo run -p xtask -- package install-smoke --format "$format")
+          if [[ "$APP_INPUT" == "all" ]]; then
+            args+=(--all-apps)
+          else
+            args+=(--app "$APP_INPUT")
+          fi
+          "${args[@]}"
+
       - name: Upload raw runnable binaries
         if: github.event.inputs.dry_run != 'true'
         uses: actions/upload-artifact@v7

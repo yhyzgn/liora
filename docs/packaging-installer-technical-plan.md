@@ -435,7 +435,7 @@ release-notes.md
 - [x] portable tar.gz（Aura supplemental backend 已接入，不再映射为 cargo-packager pacman）。
 - [ ] Pacman / PKGBUILD（如需 Arch 原生包再补）。
 - [x] artifact smoke：`xtask package smoke` 验证 portable tar.gz 结构，并对其他格式做 runner-safe 头部/非空检查。
-- [ ] 安装/卸载 smoke test 脚本。
+- [x] 安装/卸载 smoke plan：`xtask package install-smoke` 默认生成 runner-safe plan-only 安装/启动/卸载命令，并可对 portable `.tar.gz` 显式 `--execute-install` 做安全解压/删除验证。
 
 验收：
 
@@ -460,7 +460,7 @@ release-notes.md
 - [ ] NSIS `.exe`。
 - [ ] MSI `.msi`。
 - [ ] Start Menu shortcut。
-- [ ] uninstall smoke。
+- [x] uninstall smoke plan：`xtask package install-smoke` 生成 NSIS/MSI 静默安装/卸载计划；真实执行仍需 Windows runner policy / signing 后再打开。
 - [ ] signing 配置预留。
 
 验收：
@@ -534,3 +534,10 @@ release-notes.md
 - Flatpak/Snap 不作为第一批必须目标。
 - 不采用完整 Tauri，不改变 GPUI 原生运行时。
 - 不全量复制 Zed 打包脚本，只借鉴其平台经验和 smoke 思路。
+
+
+### 2026-06-17 update: install/uninstall smoke plan
+
+- `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults` 已新增。默认是 plan-only，不会安装系统包；它会复用 artifact discovery 与 `xtask package smoke`，校验产物后写出 `target/packages/install-smoke-plan.md`。
+- `--execute-install` 目前只允许 portable `.tar.gz` 走安全执行路径：解压到 `target/install-smoke/<package>`，验证 launcher 与 `bin/<binary>`，再删除目录。deb/rpm/AppImage/macOS/Windows 安装路径仍保持计划输出，避免 CI runner 或开发机被误安装/污染。
+- GitHub Actions package workflow 在 artifact smoke 后新增 plan-only install/uninstall smoke gate，保证每次 preview/release 包都有明确可审计的安装、启动 smoke、卸载命令。

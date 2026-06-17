@@ -480,3 +480,8 @@ Implemented `VirtualizedTable` as a fixed-header large-data table that reuses `T
 ## 2026-06-17 P14 Wave 6 VirtualizedTree
 
 Implemented `VirtualizedTree` as the final P14 deferred advanced control. It virtualizes large hierarchical datasets by flattening the currently expanded tree into lightweight visible-node metadata and rendering visible rows via GPUI `ListState`, with Aura scrollbar, expand/collapse, single/multiple selection, checkbox mode, default expanded/selected keys, callbacks, Gallery demos, Docs page, compile-checked snippets, and focused tests. P14 backlog is complete.
+
+
+## 2026-06-17 P12 install/uninstall smoke plan
+
+Added `cargo run -p xtask -- package install-smoke ...` as a runner-safe install/uninstall readiness gate. The command defaults to plan-only mode: it reuses package artifact discovery and smoke validation, prints per-format install / launch-smoke / uninstall commands, and writes `target/packages/install-smoke-plan.md` for CI artifacts. `--execute-install` is intentionally restricted to portable `.tar.gz`, where it extracts to `target/install-smoke/<package>`, verifies launcher + `bin/<binary>`, then removes the directory. CI now runs the plan-only install/uninstall smoke gate after artifact smoke and before artifact upload. Remaining P12 blockers are external/policy-heavy: signing/notarization, real system package install/uninstall execution on dedicated runners, release tag validation, and license policy finalization.

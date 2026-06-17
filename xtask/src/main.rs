@@ -36,6 +36,9 @@ fn package(args: Vec<String>) -> Result<(), String> {
         PackageAction::Validate => validate(),
         PackageAction::Build => build(command.apps),
         PackageAction::Smoke => smoke(command.apps, command.format),
+        PackageAction::InstallSmoke => {
+            install_smoke(command.apps, command.format, command.execute_install)
+        }
         PackageAction::Package | PackageAction::Ci => package_formats(command),
     }
 }
@@ -103,6 +106,226 @@ fn smoke(apps: Vec<KnownApp>, format: PackageFormat) -> Result<(), String> {
     }
 
     println!("package smoke OK: checked {checked} artifact(s)");
+    Ok(())
+}
+
+fn install_smoke(
+    apps: Vec<KnownApp>,
+    format: PackageFormat,
+    execute_install: bool,
+) -> Result<(), String> {
+    let root = workspace_root()?;
+    let platform = Platform::current();
+    let formats: Vec<_> = if format == PackageFormat::PlatformDefaults {
+        PackageFormat::defaults_for(platform).to_vec()
+    } else {
+        vec![format]
+    };
+
+    let mut plans = Vec::new();
+    let mut checked = 0usize;
+    for app in apps {
+        let metadata = app.metadata();
+        let out_dir = package_out_dir(&root, &metadata, platform);
+        let artifacts = collect_package_artifacts(
+            &metadata.package,
+            &app_version(),
+            platform,
+            &target_triple(),
+            git_short_sha(&root).as_deref(),
+            &out_dir,
+            &formats,
+        )
+        .map_err(|error| {
+            format!(
+                "failed to inspect package artifacts from {}: {error}",
+                out_dir.display()
+            )
+        })?;
+
+        if artifacts.is_empty() {
+            return Err(format!(
+                "no package artifacts found for install-smoke: app={} output={} formats={}",
+                metadata.package,
+                out_dir.display(),
+                formats
+                    .iter()
+                    .map(|format| format.as_str())
+                    .collect::<Vec<_>>()
+                    .join(",")
+            ));
+        }
+
+        for artifact in artifacts {
+            smoke_artifact(&root, &metadata, platform, artifact.format, &artifact.path)?;
+            let plan = install_smoke_plan(&metadata, platform, artifact.format, &artifact.path);
+            println!("{plan}");
+            if execute_install {
+                execute_install_smoke(&root, &metadata, platform, artifact.format, &artifact.path)?;
+            }
+            plans.push(plan);
+            checked += 1;
+        }
+    }
+
+    write_install_smoke_plan(&root, &plans, execute_install)?;
+    println!(
+        "install-smoke {} OK: checked {checked} artifact(s)",
+        if execute_install { "execute" } else { "plan" }
+    );
+    Ok(())
+}
+
+fn install_smoke_plan(
+    app: &aura_packager::AppMetadata,
+    platform: Platform,
+    format: PackageFormat,
+    path: &Path,
+) -> String {
+    let path = path.display();
+    match (platform, format) {
+        (Platform::Linux, PackageFormat::Deb) => format!(
+            "install-smoke plan: app={} format=deb\n  install: sudo dpkg -i {path} || sudo apt-get -f install -y\n  smoke: timeout 15s {} || true  # GUI app may stay open until timeout\n  uninstall: sudo apt-get remove -y {}",
+            app.package, app.binary, app.package
+        ),
+        (Platform::Linux, PackageFormat::Rpm) => format!(
+            "install-smoke plan: app={} format=rpm\n  install: sudo rpm -Uvh {path}\n  smoke: timeout 15s {} || true  # GUI app may stay open until timeout\n  uninstall: sudo rpm -e {}",
+            app.package, app.binary, app.package
+        ),
+        (Platform::Linux, PackageFormat::AppImage) => format!(
+            "install-smoke plan: app={} format=appimage\n  install: chmod +x {path}\n  smoke: timeout 15s {path} || true  # GUI app may stay open until timeout\n  uninstall: rm -f <copied-appimage-if-installed>",
+            app.package
+        ),
+        (_, PackageFormat::TarGz) => format!(
+            "install-smoke plan: app={} format=tar.gz\n  install: mkdir -p target/install-smoke && tar -xzf {path} -C target/install-smoke\n  smoke: verify launcher, bin/{}, icons and README exist\n  uninstall: rm -rf target/install-smoke/{}-*",
+            app.package, app.binary, app.package
+        ),
+        (Platform::Macos, PackageFormat::App) => format!(
+            "install-smoke plan: app={} format=app\n  install: cp -R {path} /tmp/aura-install-smoke/\n  smoke: open -W -n /tmp/aura-install-smoke/*.app --args --smoke if supported\n  uninstall: rm -rf /tmp/aura-install-smoke",
+            app.package
+        ),
+        (Platform::Macos, PackageFormat::Dmg) => format!(
+            "install-smoke plan: app={} format=dmg\n  install: hdiutil attach {path}; copy .app to /tmp/aura-install-smoke\n  smoke: open copied .app if runner policy allows\n  uninstall: hdiutil detach <mount>; rm -rf /tmp/aura-install-smoke",
+            app.package
+        ),
+        (Platform::Windows, PackageFormat::Nsis) => format!(
+            "install-smoke plan: app={} format=nsis\n  install: {path} /S /D=%TEMP%\\AuraInstallSmoke\\{}\n  smoke: run installed {}.exe with timeout if runner policy allows\n  uninstall: invoke generated uninstaller silently, then remove temp directory",
+            app.package, app.binary, app.binary
+        ),
+        (Platform::Windows, PackageFormat::Msi) => format!(
+            "install-smoke plan: app={} format=msi\n  install: msiexec /i {path} /qn TARGETDIR=%TEMP%\\AuraInstallSmoke\\{}\n  smoke: run installed {}.exe with timeout if runner policy allows\n  uninstall: msiexec /x {path} /qn",
+            app.package, app.binary, app.binary
+        ),
+        (_, other) => format!(
+            "install-smoke plan: app={} format={}\n  artifact: {path}\n  install/uninstall smoke is platform-specific and currently plan-only",
+            app.package,
+            other.as_str()
+        ),
+    }
+}
+
+fn execute_install_smoke(
+    root: &Path,
+    app: &aura_packager::AppMetadata,
+    platform: Platform,
+    format: PackageFormat,
+    path: &Path,
+) -> Result<(), String> {
+    match format {
+        PackageFormat::TarGz => execute_portable_install_smoke(root, app, platform, path),
+        _ => Err(format!(
+            "refusing to execute install-smoke for format={} without a dedicated safe executor; rerun without --execute-install to generate the plan",
+            format.as_str()
+        )),
+    }
+}
+
+fn execute_portable_install_smoke(
+    root: &Path,
+    app: &aura_packager::AppMetadata,
+    platform: Platform,
+    path: &Path,
+) -> Result<(), String> {
+    smoke_portable_tar_gz(app, platform, path)?;
+    let install_root = root.join("target").join("install-smoke").join(&app.package);
+    if install_root.exists() {
+        fs::remove_dir_all(&install_root)
+            .map_err(|error| format!("failed to reset {}: {error}", install_root.display()))?;
+    }
+    fs::create_dir_all(&install_root)
+        .map_err(|error| format!("failed to create {}: {error}", install_root.display()))?;
+
+    let status = Command::new("tar")
+        .arg("-xzf")
+        .arg(path)
+        .arg("-C")
+        .arg(&install_root)
+        .status()
+        .map_err(|error| format!("failed to spawn tar for install-smoke: {error}"))?;
+    if !status.success() {
+        return Err(format!(
+            "portable install-smoke extraction failed: {}",
+            path.display()
+        ));
+    }
+
+    let mut found_launcher = false;
+    for entry in fs::read_dir(&install_root)
+        .map_err(|error| format!("failed to list {}: {error}", install_root.display()))?
+    {
+        let entry =
+            entry.map_err(|error| format!("failed to read install-smoke entry: {error}"))?;
+        let candidate = entry.path().join(&app.binary);
+        let bin_candidate = entry.path().join("bin").join(&app.binary);
+        if candidate.is_file() && bin_candidate.is_file() {
+            found_launcher = true;
+            break;
+        }
+    }
+    if !found_launcher {
+        return Err(format!(
+            "portable install-smoke did not find launcher and bin binary under {}",
+            install_root.display()
+        ));
+    }
+
+    fs::remove_dir_all(&install_root).map_err(|error| {
+        format!(
+            "failed to uninstall portable smoke dir {}: {error}",
+            install_root.display()
+        )
+    })?;
+    println!(
+        "install-smoke execute OK: app={} format=tar.gz install-root={}",
+        app.package,
+        install_root.display()
+    );
+    Ok(())
+}
+
+fn write_install_smoke_plan(
+    root: &Path,
+    plans: &[String],
+    execute_install: bool,
+) -> Result<(), String> {
+    let package_dir = root.join("target").join("packages");
+    fs::create_dir_all(&package_dir)
+        .map_err(|error| format!("failed to create {}: {error}", package_dir.display()))?;
+    let path = package_dir.join("install-smoke-plan.md");
+    let mut text = String::from("# Aura package install/uninstall smoke plan\n\n");
+    text.push_str(if execute_install {
+        "Mode: execute selected safe install smoke paths.\n\n"
+    } else {
+        "Mode: plan-only. No system package installation was performed.\n\n"
+    });
+    for plan in plans {
+        text.push_str("```text\n");
+        text.push_str(plan);
+        text.push_str("\n```\n\n");
+    }
+    fs::write(&path, text)
+        .map_err(|error| format!("failed to write {}: {error}", path.display()))?;
+    println!("install-smoke plan written: {}", path.display());
     Ok(())
 }
 
@@ -728,6 +951,7 @@ struct PackageCommand {
     format: PackageFormat,
     dry_run: bool,
     skip_build: bool,
+    execute_install: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -735,6 +959,7 @@ enum PackageAction {
     Validate,
     Build,
     Smoke,
+    InstallSmoke,
     Package,
     Ci,
 }
@@ -747,6 +972,7 @@ impl PackageCommand {
         let mut format = PackageFormat::PlatformDefaults;
         let mut dry_run = false;
         let mut skip_build = false;
+        let mut execute_install = false;
         let mut iter = args.into_iter();
 
         while let Some(arg) = iter.next() {
@@ -754,10 +980,12 @@ impl PackageCommand {
                 "validate" => action = PackageAction::Validate,
                 "build" => action = PackageAction::Build,
                 "smoke" => action = PackageAction::Smoke,
+                "install-smoke" => action = PackageAction::InstallSmoke,
                 "ci" => action = PackageAction::Ci,
                 "--all-apps" => all_apps = true,
                 "--dry-run" => dry_run = true,
                 "--skip-build" => skip_build = true,
+                "--execute-install" => execute_install = true,
                 "--app" => {
                     let value = iter.next().ok_or("--app requires a value")?;
                     app = Some(value.parse()?);
@@ -786,6 +1014,7 @@ impl PackageCommand {
             format,
             dry_run,
             skip_build,
+            execute_install,
         })
     }
 }
@@ -859,5 +1088,49 @@ mod tests {
             &"/repo/aura/target/aura-packager/GenerateRpm.gallery.toml#package.metadata.generate-rpm"
                 .into()
         ));
+    }
+
+    #[test]
+    fn install_smoke_plan_contains_install_and_uninstall_steps() {
+        let app = KnownApp::Gallery.metadata();
+        let plan = install_smoke_plan(
+            &app,
+            Platform::Linux,
+            PackageFormat::Deb,
+            Path::new("target/packages/aura-gallery/linux/aura-gallery.deb"),
+        );
+
+        assert!(plan.contains("sudo dpkg -i"));
+        assert!(plan.contains("sudo apt-get remove"));
+        assert!(plan.contains("aura-gallery"));
+    }
+
+    #[test]
+    fn install_smoke_command_parse_defaults_to_plan_only() {
+        let command = PackageCommand::parse(vec![
+            "install-smoke".into(),
+            "--all-apps".into(),
+            "--format".into(),
+            "tar.gz".into(),
+        ])
+        .unwrap();
+
+        assert_eq!(command.action, PackageAction::InstallSmoke);
+        assert_eq!(command.format, PackageFormat::TarGz);
+        assert!(!command.execute_install);
+        assert_eq!(command.apps.len(), aura_packager::known_apps().len());
+    }
+
+    #[test]
+    fn install_smoke_execute_flag_is_explicit() {
+        let command = PackageCommand::parse(vec![
+            "install-smoke".into(),
+            "--format".into(),
+            "tar.gz".into(),
+            "--execute-install".into(),
+        ])
+        .unwrap();
+
+        assert!(command.execute_install);
     }
 }
