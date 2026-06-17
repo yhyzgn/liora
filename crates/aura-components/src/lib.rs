@@ -489,6 +489,8 @@ mod visual_theme_consistency_tests {
         for (name, source) in [
             ("tag", include_str!("tag.rs")),
             ("progress", include_str!("progress.rs")),
+            ("bar_chart", include_str!("bar_chart.rs")),
+            ("pie_chart", include_str!("pie_chart.rs")),
         ] {
             let production = source.split("#[cfg(test)]").next().unwrap_or(source);
             assert!(

@@ -125,3 +125,15 @@ Validation evidence for this slice:
 - `cargo test -p aura-components -- --nocapture` passed: 197 unit tests plus package integration tests.
 - Full P15 gate suite passed: fmt, workspace check/test, docs snippet check, package validate, packaging dry-run, install-smoke dry-run, and `git diff --check`.
 - GUI smoke passed: `timeout 10s cargo run -p aura-gallery` and `timeout 10s cargo run -p aura-docs` both started successfully and exited via expected timeout.
+
+### 2026-06-17 — Track C chart label theme-token slice
+
+- Replaced hard-coded production `gpui::white()` value labels inside stacked BarChart fills and Pie/Ring slices with `theme.neutral.inverted` passed through render helpers.
+- Extended visual/theme audit coverage so chart value labels stay covered alongside Tag and Progress colored surfaces.
+
+Validation evidence for this slice:
+- `cargo fmt --all --check` passed.
+- `cargo test -p aura-components -- --nocapture` passed: 197 unit tests plus package integration tests.
+- `cargo check --workspace --all-targets` passed.
+- `git diff --check` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.

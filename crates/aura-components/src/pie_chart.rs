@@ -589,6 +589,7 @@ fn render_shell(
         slices.clone(),
         palette.clone(),
         theme.neutral.card,
+        theme.neutral.inverted,
         inner_ratio,
         show_value_labels,
         label_options,
@@ -713,6 +714,7 @@ fn render_canvas(
     slices: Vec<ChartSeries>,
     palette: ChartPalette,
     hole_color: Hsla,
+    label_on_fill: Hsla,
     inner_ratio: f32,
     show_value_labels: bool,
     label_options: PieChartLabelOptions,
@@ -788,6 +790,7 @@ fn render_canvas(
                         label,
                         &label_options,
                         &palette,
+                        label_on_fill,
                         window,
                         cx,
                     );
@@ -882,6 +885,7 @@ fn paint_slice_value_label(
     label: SliceLabel,
     options: &PieChartLabelOptions,
     palette: &ChartPalette,
+    label_on_fill: Hsla,
     window: &mut Window,
     cx: &mut App,
 ) {
@@ -920,7 +924,7 @@ fn paint_slice_value_label(
     paint_chart_label_aligned(
         text,
         point(position.x - px(36.0), position.y - px(7.0)),
-        gpui::white(),
+        label_on_fill,
         gpui::TextAlign::Center,
         Some(px(72.0)),
         window,

@@ -3126,3 +3126,17 @@
 - `cargo test -p aura-components -- --nocapture` passed: 197 unit tests plus package integration tests.
 - Full P15 gate suite passed: fmt, workspace check/test, docs snippet check, package validate, packaging dry-run, install-smoke dry-run, and `git diff --check`.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+## Session 2026-06-17 — P15 Track C Chart Label Theme Tokens
+
+### Actions
+- Continued Track C visual/theme consistency with chart internal value labels.
+- Replaced hard-coded white labels on stacked BarChart fills and Pie/Ring slices with `theme.neutral.inverted` passed into paint helpers.
+- Extended visual consistency source regression coverage to BarChart and PieChart.
+
+### Verification
+- `cargo fmt --all --check` passed.
+- `cargo test -p aura-components -- --nocapture` passed: 197 unit tests plus package integration tests.
+- `cargo check --workspace --all-targets` passed.
+- `git diff --check` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
