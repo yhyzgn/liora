@@ -2,7 +2,17 @@
 
 ## Current Phase
 
-**P8 - Native Gallery Documentation** (4 个核心子阶段已完成；后续可进入保留工程化任务：主题切换、搜索、窗口标题、CI/发布文档等；P9 deferred backlog 保持等待明确请求)
+**Phase readiness / external-policy boundary — 2026-06-17**
+
+Local implementation phases are currently complete through P14:
+
+- P10 Native Charts: complete, including downsampling plus Line/Area/Bar/Pie/Ring hover hit testing.
+- P11 Native Tray: complete, including `aura-tray`, dynamic icons, nested/check menus, Gallery/Docs controls, and close-to-tray behavior.
+- P12 Native Packaging: runner-safe readiness complete; remaining work is external-policy/credential/runner gated (signing/notarization, real system install/uninstall, formal license policy, real `v*` release run).
+- P13 Component Expansion: implemented and documented.
+- P14 Deferred Advanced: complete; the P9 backlog has been migrated and delivered.
+
+Next work should either resolve P12 external-policy items with owner-provided credentials/approvals, or start a new explicitly scoped phase. Do not mark P12 fully complete until those external requirements are satisfied or formally declared out of scope.
 
 ## Completed in P4
 
@@ -29,23 +39,28 @@
 | P6 Built-in Unique ID | ✅ Done | 1/1 | 1 |
 | P7 Demo Self-Contained | ✅ Done | 1/1 | 1 |
 | P8 Native Docs App | ✅ Core Done | 4/4 | 4 |
-| P9 Deferred Advanced | ⏸️ Deferred backlog | 0/9 | 9 |
+| P9 Deferred Advanced | ✅ Migrated to P14 | 9/9 | 9 |
+| P10 Native Charts | ✅ Done | 7/7 | 7 |
+| P11 Native Tray | ✅ Done | 1/1 | 1 |
+| P12 Native Packaging | 🔶 Readiness | local gates done | external-policy items remain |
+| P13 Component Expansion | ✅ Done | 18/18 | 18 |
+| P14 Deferred Advanced | ✅ Done | 9/9 | 9 |
 
 ## Git Status
 
 - Branch: main
-- Remote: https://github.com/yhyzgn/aura.git
+- Remote: git@github.com:yhyzgn/aura.git
 
 
 ## Deferred Backlog
 
-- P9 Deferred Advanced created in `.prompt/P9-deferred-advanced.md`.
-- Components moved from P5 deferred/skipped scope: Carousel, Calendar, TreeSelect, InputTag, Mention, Watermark, Tour, VirtualizedTable, VirtualizedTree.
-- P9 is the latest phase and should be supplemented later only when explicitly requested.
+- P9 Deferred Advanced was migrated into P14 and is complete.
+- Delivered components: Carousel, Calendar, TreeSelect, InputTag, Mention, Watermark, Tour, VirtualizedTable, VirtualizedTree.
+- Do not reopen these as deferred backlog unless a new user request changes their requirements.
 
-## Current New Phase — P10 Native Charts
+## Historical Phase — P10 Native Charts
 
-User has started a new phase to develop statistics/chart components. P10 is now the active implementation phase, while P9 remains deferred backlog.
+P10 native statistics/chart components are complete. P9 deferred backlog was later migrated and completed by P14.
 
 Initial technical direction:
 - Primary reference: local/current GPUI official source, especially `canvas(...)`, `PathBuilder`, `Window::paint_path`, `Window::paint_quad`, and text rendering primitives.
@@ -56,11 +71,11 @@ Expected P10 deliverables:
 - Shared chart infrastructure: scale, axis/grid, shapes, legend, tooltip/hover.
 - Completed so far: LineChart, AreaChart, BarChart MVPs with Gallery demos, Docs pages, external snippets, and tests.
 - Dense chart performance follow-up (2026-06-16): LineChart/AreaChart now avoid full-label point scales and cap axis/value labels by default. The later correction moved sampling into shared core helpers (`downsample_index_range`, `downsample_indexed_values`) so LineChart/AreaChart/Sparkline no longer allocate full dense intermediate point vectors before sampling. Public knobs remain `max_render_points(...)`, `max_axis_labels(...)`, `max_value_labels(...)`, `disable_downsampling()`.
-- Remaining P10 components: PieChart, RingChart, Sparkline, plus tooltip/hover and larger-data performance work.
+- Final P10 status: LineChart, AreaChart, BarChart, PieChart, RingChart, Sparkline, downsampling, and Line/Area/Bar/Pie/Ring hover hit testing are complete. Future cache work requires fresh profiling evidence.
 
-## Current New Phase — P11 Native Tray / Process Resident
+## Historical Phase — P11 Native Tray / Process Resident
 
-P11 is active after P10 chart rendering work. The project now needs a native system tray facade for GPUI apps.
+P11 native system tray / process resident support is complete for GPUI apps.
 
 Technical direction:
 - New crate: `crates/aura-tray`.
@@ -86,9 +101,9 @@ Both `aura-gallery` and `aura-docs` now create independent demonstration tray ic
 Gallery and Docs now intercept window close through GPUI `on_window_should_close`. If `TrayControlCenter.state.remembered_close_action` is `Ask`, a native Dialog asks whether to `关闭进程` or `隐藏到托盘`, with a `记住本次选择` checkbox. Remembered choices are stored in runtime tray control state as `TrayCloseAction::{ExitProcess, HideToTray}`; the Tray demo page can reset to Ask or preselect either behavior.
 
 
-## Current New Phase — P13 Component Expansion
+## Historical Phase — P13 Component Expansion
 
-User requested a new planning phase for additional widgets and customization enhancements. P13 is now planned in `.prompt/P13-component-expansion.md`; implementation has not started yet.
+User requested a new planning phase for additional widgets and customization enhancements. P13 is implemented; `.prompt/P13-component-expansion.md` is now the maintenance contract for those components.
 
 Scope highlights:
 - New widgets: QrCode generation/recognition, CodeEditor, SignalMeter, HeatBar, SegmentRatioBar, HorizontalList, Timer, Label, Operation. The user-provided “standalone bar chart” screenshot is interpreted as an in-place BarChart standalone mini mode, not a new FlatBarMeter component.
@@ -115,7 +130,7 @@ Validation evidence:
 - `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
 - `cargo test -p aura-components` passed: 117 lib tests + integration tests all green.
 
-Remaining P13 scope includes QR generation/recognition, CodeEditor, HorizontalList/item drag, Vertical list drag, RingChart external-label refinements, LineChart per-series style, BarChart interval color docs expansion if needed, RingProgress gradient completion color, Timer, Button gradient/custom derived states, and Radio/Checkbox option customization.
+Final P13 status is implemented; see `.memory/inventory.md` for the completed component matrix and `.prompt/P13-component-expansion.md` for the maintenance contract.
 
 ### P13 Wave 2 partial progress — 2026-05-18
 
@@ -509,3 +524,7 @@ Synchronized architecture and inventory records with current evidence: P10 nativ
 ## 2026-06-17 P12 release tag validation
 
 Added GitHub Actions release tag validation in the package workflow. `v*` release builds now require `vX.Y.Z` and the tag version must match `crates/aura-packager/Cargo.toml`; this prevents prerelease/mismatched tags from reaching package backends such as Windows MSI that require numeric versions. Updated P12 technical plan and prompt handoff docs to distinguish completed preview packaging from remaining real `v*` release-runner/signing/system-install policy work.
+
+## 2026-06-17 phase handoff stale-state cleanup
+
+Updated the handoff state so new sessions no longer start from the obsolete P8/P9-era “current phase” text. Current source-of-truth summary: P10/P11/P13/P14 are complete; P12 has local runner-safe packaging readiness implemented and only external-policy items remain. Repository remote is SSH (`git@github.com:yhyzgn/aura.git`).

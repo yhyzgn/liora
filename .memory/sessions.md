@@ -3068,3 +3068,14 @@
 - `cargo test --workspace`
 - `timeout 8s cargo run -p aura-docs` (124 expected GUI timeout)
 - `timeout 8s cargo run -p aura-gallery` (124 expected GUI timeout)
+
+
+## Session 2026-06-17 — Phase Handoff Stale-State Cleanup
+
+### Actions
+- Audited the current phase documents against the repository state after P10/P12/P13/P14 work.
+- Updated `prompt.md`, `.prompt/P12-packaging.md`, and `.memory/state.md` so the entrypoint no longer describes P8/P9 or early P12 scaffolding as current work.
+- Preserved P12 as readiness rather than complete because signing/notarization, real system install/uninstall, license policy, and real `v*` release execution remain external-policy gated.
+
+### Verification
+- Documentation sync only; run markdown/search checks plus package dry-run and core cargo checks before commit.

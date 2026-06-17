@@ -30,21 +30,23 @@ The internal packaging module is named `aura-packager`, not `aura-installer`.
 - macOS: app, dmg.
 - Windows: NSIS exe, MSI.
 
-## Current Implementation Baseline
+## Current Readiness Baseline
 
 - `docs/packaging-installer-technical-plan.md` is the source technical plan.
-- Initial `crates/aura-packager` crate exists.
-- Initial `xtask package validate/build/package` command exists.
-- `packaging/` contains initial app metadata and platform integration skeletons.
+- `crates/aura-packager` contains the packaging domain model: known apps, platform formats, checksums, manifests, release notes, cargo-packager config generation, and RPM metadata generation.
+- `xtask package` is the public entrypoint for validate/build/package/ci/smoke/install-smoke flows.
+- `packaging/` contains real Aura/Gallery/Docs icons plus Linux desktop/metainfo, macOS entitlements, and Windows installer resource directories.
+- `.github/workflows/package.yml` runs Linux/macOS/Windows package preview builds, uploads raw binaries and packages, performs artifact smoke, generates install-smoke plans, groups changelog entries by commit type, and validates `vX.Y.Z` release tags against `crates/aura-packager/Cargo.toml`.
 
-## Next Work
+## Remaining Work
 
-1. Replace placeholder app icons with real PNG/ICNS/ICO assets.
-2. Integrate `cargo-packager` backend invocation from `xtask`.
-3. Add RPM generation backend.
-4. Generate checksums and `package-manifest.json` for produced artifacts.
-5. Add Linux AppImage/deb/rpm smoke checks.
-6. Add CI matrix for Linux/macOS/Windows packaging.
+Local runner-safe readiness is implemented. The remaining P12 items require external policy, credentials, or real release infrastructure rather than more local code scaffolding:
+
+1. Signing / notarization: macOS `codesign` + `notarytool` + `stapler`, Windows `signtool`, timestamp server, and CI secrets.
+2. Real system-level install/uninstall execution for deb/rpm/AppImage/macOS/Windows on approved dedicated runners.
+3. Formal license policy: add an OSS/proprietary `LICENSE` and align package metadata, or keep `LicenseRef-Aura` intentionally.
+4. Real `v*` tag release run to validate GitHub Release asset upload, Windows MSI behavior, and any signing/notarization gates.
+5. Optional artifact naming normalization for cargo-packager-produced non-tar outputs after real backend smoke evidence.
 
 ---
 
