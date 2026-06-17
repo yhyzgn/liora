@@ -69,6 +69,7 @@ pub mod time_picker_demo;
 pub mod timeline_demo;
 pub mod timer_demo;
 pub mod tooltip_demo;
+pub mod tour_demo;
 pub mod transfer_demo;
 pub mod tray_demo;
 pub mod tree_demo;
@@ -178,6 +179,11 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "Form 表单",
             description: "输入框、单选、多选、开关",
             render: |cx| form_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "Tour 漫游引导",
+            description: "步骤式界面引导",
+            render: |cx| tour_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Tooltip 文字提示",
@@ -620,6 +626,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "TimePicker" => Some(time_picker_demo::render(cx).into()),
         "Timer" => Some(timer_demo::render(cx).into()),
         "Timeline" => Some(timeline_demo::render(cx).into()),
+        "Tour" => Some(tour_demo::render(cx).into()),
         "Tooltip" => Some(tooltip_demo::render(cx).into()),
         "Tray" => Some(tray_demo::render(cx).into()),
         "Transfer" => Some(transfer_demo::render(cx).into()),

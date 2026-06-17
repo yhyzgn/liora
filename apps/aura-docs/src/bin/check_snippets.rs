@@ -567,6 +567,12 @@ mod timer_units;
 mod tooltip_basic;
 #[path = "../../content/snippets/tooltip/more.rs"]
 mod tooltip_more;
+#[path = "../../content/snippets/tour/basic.rs"]
+mod tour_basic;
+#[path = "../../content/snippets/tour/middle.rs"]
+mod tour_middle;
+#[path = "../../content/snippets/tour/no_mask.rs"]
+mod tour_no_mask;
 #[path = "../../content/snippets/transfer/basic.rs"]
 mod transfer_basic;
 #[path = "../../content/snippets/transfer/disabled.rs"]

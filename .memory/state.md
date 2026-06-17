@@ -465,3 +465,8 @@ Added Gallery demos, Docs pages, and compile-checked snippets for both controls.
 ## 2026-06-16 P14 Wave 3 TreeSelect
 
 Implemented `TreeSelect` as the next deferred advanced control. It supports hierarchical nodes, single and multiple selection, default selected keys, disabled keys, filterable search, selected label flattening, and selection callbacks. Added Gallery demo, Docs page, compile-checked snippets, and focused tests for tree filtering/flattening helpers. Remaining P14 backlog: Tour, VirtualizedTable, VirtualizedTree.
+
+
+## 2026-06-17 P14 Wave 4 Tour
+
+Implemented `Tour` as a controlled native step-guide component with step list, active index, target labels, placement metadata, progress/mask switches, previous/next/finish/close callbacks, Gallery demo, Docs page, compile-checked snippets, and focused navigation tests. Remaining P14 backlog: VirtualizedTable and VirtualizedTree.

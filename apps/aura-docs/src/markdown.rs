@@ -105,6 +105,7 @@ const TEXTAREA_DOC: &str = include_str!("../content/pages/textarea.md");
 const TIME_PICKER_DOC: &str = include_str!("../content/pages/time_picker.md");
 const TIMER_DOC: &str = include_str!("../content/pages/timer.md");
 const TIMELINE_DOC: &str = include_str!("../content/pages/timeline.md");
+const TOUR_DOC: &str = include_str!("../content/pages/tour.md");
 const TOOLTIP_DOC: &str = include_str!("../content/pages/tooltip.md");
 const TRAY_DOC: &str = include_str!("../content/pages/tray.md");
 const TRANSFER_DOC: &str = include_str!("../content/pages/transfer.md");
@@ -431,6 +432,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Timer",
         markdown: TIMER_DOC,
+    },
+    DocPage {
+        title: "Tour",
+        markdown: TOUR_DOC,
     },
     DocPage {
         title: "Tooltip",

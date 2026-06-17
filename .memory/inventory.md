@@ -158,7 +158,7 @@
 | 4 | InputTag | `crates/aura-components/src/input_tag.rs` | ✅ | ✅ Migrated to P14 Wave 1 and implemented |
 | 5 | Mention | `crates/aura-components/src/mention.rs` | ✅ | ✅ Migrated to P14 Wave 2 and implemented |
 | 6 | Watermark | `crates/aura-components/src/watermark.rs` | ✅ | ✅ Migrated to P14 Wave 2 and implemented |
-| 7 | Tour | — | — | ⏸️ Deferred from P5; implement later when requested |
+| 7 | Tour | `crates/aura-components/src/tour.rs` | ✅ | ✅ Migrated to P14 Wave 4 and implemented |
 | 8 | VirtualizedTable | — | — | ⏸️ Deferred from P5; implement later when requested |
 | 9 | VirtualizedTree | — | — | ⏸️ Deferred from P5; implement later when requested |
 
@@ -218,6 +218,6 @@
 | 4 | TreeSelect | `crates/aura-components/src/tree_select.rs` | ✅ | ✅ | Implemented Wave 3 |
 | 5 | Mention | `crates/aura-components/src/mention.rs` | ✅ | ✅ | Implemented Wave 2 |
 | 6 | Watermark | `crates/aura-components/src/watermark.rs` | ✅ | ✅ | Implemented Wave 2 |
-| 7 | Tour | — | — | — | Pending |
+| 7 | Tour | `crates/aura-components/src/tour.rs` | ✅ | ✅ | Implemented Wave 4 |
 | 8 | VirtualizedTable | — | — | — | Pending |
 | 9 | VirtualizedTree | — | — | — | Pending |
