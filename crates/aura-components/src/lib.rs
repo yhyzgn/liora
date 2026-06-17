@@ -99,6 +99,7 @@ pub mod tree;
 pub mod tree_select;
 pub mod upload;
 pub mod virtualized_list;
+pub mod virtualized_table;
 pub mod watermark;
 
 pub use affix::*;
@@ -201,6 +202,7 @@ pub use tree::*;
 pub use tree_select::*;
 pub use upload::*;
 pub use virtualized_list::*;
+pub use virtualized_table::*;
 pub use watermark::*;
 
 #[cfg(test)]

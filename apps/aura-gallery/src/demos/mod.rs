@@ -77,6 +77,7 @@ pub mod tree_select_demo;
 pub mod typography_demo;
 pub mod upload_demo;
 pub mod virtualized_list_demo;
+pub mod virtualized_table_demo;
 pub mod watermark_demo;
 
 use gpui::{AnyView, App};
@@ -466,6 +467,11 @@ pub fn registry() -> Vec<DemoEntry> {
             render: |cx| virtualized_list_demo::render(cx).into(),
         },
         DemoEntry {
+            name: "VirtualizedTable 虚拟表格",
+            description: "固定表头大数据表格",
+            render: |cx| virtualized_table_demo::render(cx).into(),
+        },
+        DemoEntry {
             name: "Scrollbar 滚动条",
             description: "原生滚动容器",
             render: |cx| scrollbar_demo::render(cx).into(),
@@ -635,6 +641,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Typography" => Some(typography_demo::render(cx).into()),
         "Upload" => Some(upload_demo::render(cx).into()),
         "VirtualizedList" => Some(virtualized_list_demo::render(cx).into()),
+        "VirtualizedTable" => Some(virtualized_table_demo::render(cx).into()),
         _ => None,
     }
 }

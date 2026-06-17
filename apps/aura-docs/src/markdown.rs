@@ -9,8 +9,8 @@ use aura_components::{
     RadioOptionStyle, Rate, Result as AuraResult, ResultStatus, Select, Skeleton, SkeletonItem,
     SkeletonVariant, Slider, Space, Statistic, Switch, Tag as AuraTag, Text, Textarea, Timer,
     TimerFormat, TimerUnit, Title, Transfer, TransferItem, Tree, TreeNode, Upload, UploadFile,
-    UploadStatus, VirtualizedList, show_notification, toast_error, toast_info, toast_success,
-    toast_warning,
+    UploadStatus, VirtualizedList, VirtualizedTable, show_notification, toast_error, toast_info,
+    toast_success, toast_warning,
 };
 use aura_core::{Config, PassivePortal, Placement, Portal, clear_popover};
 use aura_icons::Icon;
@@ -115,6 +115,7 @@ const TYPOGRAPHY_DOC: &str = include_str!("../content/pages/typography.md");
 const UPLOAD_DOC: &str = include_str!("../content/pages/upload.md");
 const WATERMARK_DOC: &str = include_str!("../content/pages/watermark.md");
 const VIRTUALIZED_LIST_DOC: &str = include_str!("../content/pages/virtualized_list.md");
+const VIRTUALIZED_TABLE_DOC: &str = include_str!("../content/pages/virtualized_table.md");
 
 const MARKDOWN_DOC: &str = include_str!("../content/pages/markdown.md");
 const LIVE_DEMO_DOC: &str = include_str!("../content/pages/live_demo.md");
@@ -472,6 +473,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "VirtualizedList",
         markdown: VIRTUALIZED_LIST_DOC,
+    },
+    DocPage {
+        title: "VirtualizedTable",
+        markdown: VIRTUALIZED_TABLE_DOC,
     },
     DocPage {
         title: "AreaChart",
@@ -2779,6 +2784,8 @@ impl Render for LiveDemoContent {
                     .map(Entity::into_any_element)
                     .collect(),
             ),
+            "VirtualizedTableBasic" => virtualized_table_demo(false, None, None).into_any_element(),
+            "VirtualizedTableSortable" => self.virtualized_table_sortable_demo(_cx),
             "RadioBasic" => demo_row(
                 self.radios
                     .iter()
@@ -4977,6 +4984,25 @@ impl LiveDemoContent {
         table.into_any_element()
     }
 
+    fn virtualized_table_sortable_demo(&self, cx: &mut Context<Self>) -> AnyElement {
+        let view = cx.entity().clone();
+        let sort_key = self.table_sort_key.clone();
+        let sort_order = self.table_sort_order;
+        let mut table = virtualized_table_demo(true, sort_key.clone(), sort_order).on_sort_change(
+            move |state, _, cx| {
+                view.update(cx, |this, cx| {
+                    this.table_sort_key = state.order.map(|_| state.key.clone());
+                    this.table_sort_order = state.order;
+                    cx.notify();
+                });
+            },
+        );
+        if let Some(key) = sort_key {
+            table = table.sort(key, sort_order);
+        }
+        table.into_any_element()
+    }
+
     fn color_picker_element(&self) -> AnyElement {
         self.color_pickers
             .first()
@@ -5440,6 +5466,73 @@ fn table_status_tag(status: &'static str) -> aura_components::Tag {
         "已完成" => tag.success(),
         "进行中" => tag.info(),
         _ => tag.warning(),
+    }
+}
+
+fn virtualized_table_demo(
+    sortable: bool,
+    sort_key: Option<SharedString>,
+    sort_order: Option<aura_components::TableSortOrder>,
+) -> VirtualizedTable {
+    let reverse = sort_order == Some(aura_components::TableSortOrder::Descending);
+    let mut table = VirtualizedTable::new(
+        virtualized_table_columns(sortable),
+        10_000,
+        move |row, key, _window, _cx| virtualized_table_cell(row, key, reverse),
+    )
+    .height(px(360.0))
+    .row_height(px(52.0))
+    .stripe(true)
+    .border(true);
+
+    if let Some(key) = sort_key {
+        table = table.sort(key, sort_order);
+    }
+
+    table
+}
+
+fn virtualized_table_columns(sortable: bool) -> Vec<aura_components::TableColumn> {
+    let columns = vec![
+        aura_components::TableColumn::new("date", "日期").width_sm(),
+        aura_components::TableColumn::new("name", "客户").width_sm(),
+        aura_components::TableColumn::new("region", "区域").width_sm(),
+        aura_components::TableColumn::new("amount", "金额")
+            .width_sm()
+            .align(aura_components::TableAlign::Right),
+        aura_components::TableColumn::new("status", "状态")
+            .width_sm()
+            .align(aura_components::TableAlign::Center),
+        aura_components::TableColumn::new("action", "操作")
+            .width_sm()
+            .align(aura_components::TableAlign::Right),
+    ];
+    if sortable {
+        columns
+            .into_iter()
+            .map(|column| column.sortable())
+            .collect()
+    } else {
+        columns
+    }
+}
+
+fn virtualized_table_cell(row: usize, key: &SharedString, reverse: bool) -> gpui::AnyElement {
+    let index = if reverse { 9_999 - row } else { row };
+    match key.as_ref() {
+        "date" => Text::new(format!("2026-06-{:02}", index % 28 + 1)).into_any_element(),
+        "name" => Text::new(format!("客户 #{:04}", index + 1))
+            .bold()
+            .into_any_element(),
+        "region" => Text::new(["华东", "华南", "华北", "西南"][index % 4]).into_any_element(),
+        "amount" => Text::new(format!(
+            "¥{:>6.2}",
+            (1_000 + index * 17 % 90_000) as f32 / 10.0
+        ))
+        .into_any_element(),
+        "status" => table_status_tag(["已完成", "进行中", "待处理"][index % 3]).into_any_element(),
+        "action" => Button::new("查看").primary().small().into_any_element(),
+        _ => Text::new("-").into_any_element(),
     }
 }
 

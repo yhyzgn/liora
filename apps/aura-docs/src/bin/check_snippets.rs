@@ -615,6 +615,10 @@ mod upload_picture_card;
 mod virtualized_list_basic;
 #[path = "../../content/snippets/virtualized_list/draggable.rs"]
 mod virtualized_list_draggable;
+#[path = "../../content/snippets/virtualized_table/basic.rs"]
+mod virtualized_table_basic;
+#[path = "../../content/snippets/virtualized_table/sortable.rs"]
+mod virtualized_table_sortable;
 #[path = "../../content/snippets/watermark/cover.rs"]
 mod watermark_cover;
 #[path = "../../content/snippets/watermark/custom.rs"]

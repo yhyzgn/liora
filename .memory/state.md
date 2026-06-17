@@ -470,3 +470,8 @@ Implemented `TreeSelect` as the next deferred advanced control. It supports hier
 ## 2026-06-17 P14 Wave 4 Tour
 
 Implemented `Tour` as a controlled native step-guide component with step list, active index, target labels, placement metadata, progress/mask switches, previous/next/finish/close callbacks, Gallery demo, Docs page, compile-checked snippets, and focused navigation tests. Remaining P14 backlog: VirtualizedTable and VirtualizedTree.
+
+
+## 2026-06-17 P14 Wave 5 VirtualizedTable
+
+Implemented `VirtualizedTable` as a fixed-header large-data table that reuses `TableColumn` definitions and GPUI `ListState` to render visible rows only. Cells are generated from row index + column key each frame to avoid stale GPUI element caching. Added Aura scrollbar, height/row-height/overdraw configuration, stripe/border/loading/empty states, sorting callback, Gallery demos, Docs page, compile-checked snippets, and focused tests. Remaining P14 backlog: VirtualizedTree.
