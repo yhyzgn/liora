@@ -150,11 +150,12 @@ LineChart::new(series)
 - 降采样策略保留首尾点和局部峰谷，避免长序列在 GPUI native path 中产生过量绘制，同时不隐藏监控尖峰。
 - 已完成 Cartesian hover tooltip / hit testing：`LineChart` 与 `AreaChart` Overlay 模式支持原生最近点 tooltip，底层提供可测试的 `nearest_cartesian_hit_point`。
 - 已完成 BarChart 矩形 hover tooltip / hit testing：Grouped 命中单根柱，Stacked 命中具体堆叠分段。
-- 剩余维护项：Pie/Ring 极坐标扇区 hit testing、进一步缓存策略。
+- 已完成 PieChart/RingChart 极坐标扇区 hover tooltip / hit testing：Pie 命中扇区，Ring 命中圆环分段并排除内圆空洞。
+- 剩余维护项：进一步缓存策略。
 
 
 ## 2026-06-17 Cartesian tooltip maintenance
 
 - Completed LineChart and AreaChart Overlay nearest-point hover tooltip support using shared pure hit-testing helpers.
 - Completed BarChart rectangular hover hit testing for grouped bars and stacked bar segments.
-- Remaining tooltip polish: Pie/Ring polar sector hit testing and any further cache policy.
+- Completed PieChart/RingChart polar-sector hover hit testing. Remaining tooltip/cache polish: any further cache policy.

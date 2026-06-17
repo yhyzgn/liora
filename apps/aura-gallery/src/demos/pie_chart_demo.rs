@@ -14,7 +14,7 @@ impl Render for PieChartDemo {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         page(
             "PieChart 饼图",
-            "使用原生扇区 path 绘制分类占比。",
+            "使用原生扇区 path 绘制分类占比，支持极坐标扇区 hover tooltip。",
             Space::new()
                 .vertical()
                 .gap_xl()
@@ -25,7 +25,8 @@ impl Render for PieChartDemo {
                         .id("pie-chart-demo-basic")
                         .height(px(420.0))
                         .percentage_decimals(1)
-                        .value_label_placement(ChartValueLabelPlacement::OutsideAligned),
+                        .value_label_placement(ChartValueLabelPlacement::OutsideAligned)
+                        .tooltip_hit_radius(px(10.0)),
                 ))
                 .child(section(
                     "外部自由标注 + 百分比",
@@ -45,7 +46,8 @@ impl Render for PieChartDemo {
                         .id("pie-chart-demo-no-legend")
                         .height(px(420.0))
                         .show_legend(false)
-                        .show_percentage_labels(false),
+                        .show_percentage_labels(false)
+                        .show_tooltip(false),
                 )),
         )
     }
@@ -77,5 +79,7 @@ mod tests {
         assert!(source.contains("PieChart::new"));
         assert!(source.contains("OutsideFree"));
         assert!(source.contains("ChartValueLabelContent::Percentage"));
+        assert!(source.contains("tooltip_hit_radius"));
+        assert!(source.contains("show_tooltip(false)"));
     }
 }

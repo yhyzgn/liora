@@ -14,7 +14,7 @@ impl Render for RingChartDemo {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         page(
             "RingChart 圆环图",
-            "使用中心留空的扇形 path 展示圆环占比。",
+            "使用中心留空的扇形 path 展示圆环占比，hover 命中圆环分段并排除内圆空洞。",
             Space::new()
                 .vertical()
                 .gap_xl()
@@ -25,7 +25,8 @@ impl Render for RingChartDemo {
                         .id("ring-chart-demo-basic")
                         .height(px(420.0))
                         .percentage_decimals(1)
-                        .value_label_placement(ChartValueLabelPlacement::OutsideAligned),
+                        .value_label_placement(ChartValueLabelPlacement::OutsideAligned)
+                        .tooltip_hit_radius(px(10.0)),
                 ))
                 .child(section(
                     "两侧对齐外部标注",
@@ -76,7 +77,8 @@ impl Render for RingChartDemo {
                                 .external_legend_content(
                                     ChartValueLabelContent::ValueOverTotalAndPercentage,
                                 )
-                                .external_legend_percentage_decimals(1),
+                                .external_legend_percentage_decimals(1)
+                                .show_tooltip(false),
                         ),
                 )),
         )
@@ -109,5 +111,7 @@ mod tests {
         assert!(source.contains("RingChart::new"));
         assert!(source.contains("OutsideAligned"));
         assert!(source.contains("fill_color"));
+        assert!(source.contains("tooltip_hit_radius"));
+        assert!(source.contains("show_tooltip(false)"));
     }
 }

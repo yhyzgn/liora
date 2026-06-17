@@ -12,4 +12,6 @@ pub fn ring_chart_basic() -> impl IntoElement {
     .percentage_decimals(1)
     .outside_label_threshold_degrees(30)
     .value_label_placement(ChartValueLabelPlacement::OutsideAligned)
+    // RingChart 的 tooltip 只命中圆环分段，不命中中间空洞。
+    .tooltip_hit_radius(px(10.0))
 }

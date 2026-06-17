@@ -15,4 +15,5 @@ pub fn pie_chart_custom() -> impl IntoElement {
     .value_label_placement(ChartValueLabelPlacement::OutsideFree)
     .percentage_decimals(2)
     .outside_label_threshold_degrees(120)
+    .show_tooltip(false)
 }

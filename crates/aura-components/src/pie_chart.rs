@@ -1,14 +1,17 @@
 use crate::chart::{
-    ChartPalette, ChartSeries, ChartValueLabelContent, ChartValueLabelOptions,
-    ChartValueLabelPlacement, format_value_label, has_chart_data,
+    ChartBoundsTracker, ChartHitPoint, ChartPalette, ChartSeries, ChartValueLabelContent,
+    ChartValueLabelOptions, ChartValueLabelPlacement, format_hit_tooltip, format_value_label,
+    has_chart_data,
 };
 use crate::chart_frame::paint_chart_label_aligned;
 use crate::{Empty, Space, Text};
-use aura_core::{Config, unique_id};
+use aura_core::{Config, Placement, TooltipData, clear_tooltip, set_active_tooltip, unique_id};
 use gpui::{
-    App, Component, ElementId, Hsla, InteractiveElement, IntoElement, ParentElement, Pixels, Point,
-    RenderOnce, SharedString, Styled, Window, canvas, div, point, px,
+    App, Bounds, Component, ElementId, Hsla, InteractiveElement, IntoElement, ParentElement,
+    Pixels, Point, RenderOnce, SharedString, Styled, Window, canvas, div, point, px, size,
 };
+use std::cell::Cell;
+use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PieChartLabelOptions {
@@ -36,6 +39,8 @@ pub struct PieChart {
     show_legend: bool,
     show_value_labels: bool,
     label_options: PieChartLabelOptions,
+    show_tooltip: bool,
+    tooltip_hit_radius: Pixels,
 }
 
 #[derive(Clone)]
@@ -46,6 +51,8 @@ pub struct RingChart {
     show_legend: bool,
     show_value_labels: bool,
     label_options: PieChartLabelOptions,
+    show_tooltip: bool,
+    tooltip_hit_radius: Pixels,
     inner_ratio: f32,
     external_legend: Option<RingExternalLegendOptions>,
 }
@@ -60,6 +67,131 @@ pub enum RingExternalLegendLayout {
 pub enum RingExternalLegendSide {
     Left,
     Right,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct PieSliceHitRegion {
+    pub series_index: usize,
+    pub series_name: SharedString,
+    pub label: SharedString,
+    pub value: f64,
+    pub start_deg: f32,
+    pub end_deg: f32,
+    pub inner_radius: f32,
+    pub outer_radius: f32,
+}
+
+pub fn pie_slice_hit_regions(
+    slices: &[ChartSeries],
+    inner_ratio: f32,
+    outer_radius: f32,
+) -> Vec<PieSliceHitRegion> {
+    if slices.is_empty() || !outer_radius.is_finite() || outer_radius <= 0.0 {
+        return Vec::new();
+    }
+    let total = series_total(slices);
+    if total <= f64::EPSILON {
+        return Vec::new();
+    }
+
+    let inner_radius = (outer_radius * inner_ratio.clamp(0.0, 0.95)).max(0.0);
+    let mut start = -90.0_f32;
+    let mut regions = Vec::new();
+    for (series_index, series) in slices.iter().enumerate() {
+        let value = series_value(series).max(0.0);
+        if value <= 0.0 {
+            continue;
+        }
+        let sweep = (value / total) as f32 * 360.0;
+        let end = start + sweep;
+        let label = series
+            .finite_points()
+            .next()
+            .map(|point| point.label.clone())
+            .unwrap_or_else(|| series.name.clone());
+        regions.push(PieSliceHitRegion {
+            series_index,
+            series_name: series.name.clone(),
+            label,
+            value,
+            start_deg: start,
+            end_deg: end,
+            inner_radius,
+            outer_radius,
+        });
+        start = end;
+    }
+    regions
+}
+
+pub fn nearest_pie_slice_hit_point(
+    slices: &[ChartSeries],
+    inner_ratio: f32,
+    outer_radius: f32,
+    center_x: f32,
+    center_y: f32,
+    pointer_x: f32,
+    pointer_y: f32,
+    hit_radius: f32,
+) -> Option<ChartHitPoint> {
+    if !center_x.is_finite()
+        || !center_y.is_finite()
+        || !pointer_x.is_finite()
+        || !pointer_y.is_finite()
+        || !hit_radius.is_finite()
+        || hit_radius < 0.0
+    {
+        return None;
+    }
+
+    let dx = pointer_x - center_x;
+    let dy = pointer_y - center_y;
+    let radius = (dx * dx + dy * dy).sqrt();
+    let mut angle = dy.atan2(dx).to_degrees();
+    while angle < -90.0 {
+        angle += 360.0;
+    }
+    while angle >= 270.0 {
+        angle -= 360.0;
+    }
+
+    let mut best: Option<(PieSliceHitRegion, f32)> = None;
+    for region in pie_slice_hit_regions(slices, inner_ratio, outer_radius) {
+        if angle < region.start_deg || angle > region.end_deg {
+            continue;
+        }
+        let inner_distance = region.inner_radius - radius;
+        let outer_distance = radius - region.outer_radius;
+        let distance = if radius < region.inner_radius {
+            inner_distance
+        } else if radius > region.outer_radius {
+            outer_distance
+        } else {
+            0.0
+        };
+        if distance <= hit_radius
+            && best
+                .as_ref()
+                .is_none_or(|(_, best_distance)| distance < *best_distance)
+        {
+            best = Some((region, distance));
+        }
+    }
+
+    best.map(|(region, distance)| {
+        let mid_deg = (region.start_deg + region.end_deg) * 0.5;
+        let hit_radius = (region.inner_radius + region.outer_radius) * 0.5;
+        ChartHitPoint {
+            series_index: region.series_index,
+            point_index: 0,
+            series_name: region.series_name.clone(),
+            label: region.label.clone(),
+            value: region.value,
+            x: center_x + hit_radius * mid_deg.to_radians().cos(),
+            y: center_y + hit_radius * mid_deg.to_radians().sin(),
+            distance,
+        }
+    })
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -92,6 +224,8 @@ impl PieChart {
             show_legend: true,
             show_value_labels: true,
             label_options: PieChartLabelOptions::default(),
+            show_tooltip: true,
+            tooltip_hit_radius: px(0.0),
         }
     }
 
@@ -112,6 +246,16 @@ impl PieChart {
 
     pub fn show_value_labels(mut self, show: bool) -> Self {
         self.show_value_labels = show;
+        self
+    }
+
+    pub fn show_tooltip(mut self, show: bool) -> Self {
+        self.show_tooltip = show;
+        self
+    }
+
+    pub fn tooltip_hit_radius(mut self, radius: Pixels) -> Self {
+        self.tooltip_hit_radius = radius.max(px(0.0));
         self
     }
 
@@ -162,6 +306,8 @@ impl RingChart {
             show_legend: true,
             show_value_labels: true,
             label_options: PieChartLabelOptions::default(),
+            show_tooltip: true,
+            tooltip_hit_radius: px(0.0),
             inner_ratio: 0.62,
             external_legend: None,
         }
@@ -184,6 +330,16 @@ impl RingChart {
 
     pub fn show_value_labels(mut self, show: bool) -> Self {
         self.show_value_labels = show;
+        self
+    }
+
+    pub fn show_tooltip(mut self, show: bool) -> Self {
+        self.show_tooltip = show;
+        self
+    }
+
+    pub fn tooltip_hit_radius(mut self, radius: Pixels) -> Self {
+        self.tooltip_hit_radius = radius.max(px(0.0));
         self
     }
 
@@ -355,6 +511,8 @@ impl RenderOnce for PieChart {
             self.show_legend,
             self.show_value_labels,
             self.label_options,
+            self.show_tooltip,
+            self.tooltip_hit_radius,
             0.0,
             None,
             cx,
@@ -371,6 +529,8 @@ impl RenderOnce for RingChart {
             self.show_legend,
             self.show_value_labels,
             self.label_options,
+            self.show_tooltip,
+            self.tooltip_hit_radius,
             self.inner_ratio,
             self.external_legend,
             cx,
@@ -385,6 +545,8 @@ fn render_shell(
     show_legend: bool,
     show_value_labels: bool,
     label_options: PieChartLabelOptions,
+    show_tooltip: bool,
+    tooltip_hit_radius: Pixels,
     inner_ratio: f32,
     external_legend: Option<RingExternalLegendOptions>,
     cx: &mut App,
@@ -392,6 +554,7 @@ fn render_shell(
     let theme = cx.global::<Config>().theme.clone();
     let palette = ChartPalette::from_config(cx.global::<Config>());
     let has_data = has_chart_data(&slices);
+    let tooltip_id: SharedString = format!("{}-tooltip", id).into();
 
     let mut shell = div()
         .id(ElementId::from(id))
@@ -429,6 +592,9 @@ fn render_shell(
         inner_ratio,
         show_value_labels,
         label_options,
+        tooltip_id,
+        show_tooltip,
+        tooltip_hit_radius,
         canvas_height,
     );
 
@@ -550,9 +716,16 @@ fn render_canvas(
     inner_ratio: f32,
     show_value_labels: bool,
     label_options: PieChartLabelOptions,
+    tooltip_id: SharedString,
+    show_tooltip: bool,
+    tooltip_hit_radius: Pixels,
     height: Pixels,
 ) -> impl IntoElement {
-    canvas(
+    let bounds_cell: Rc<Cell<Bounds<Pixels>>> = Rc::new(Cell::new(Bounds::default()));
+    let tooltip_bounds = bounds_cell.clone();
+    let tooltip_slices = slices.clone();
+    let move_id = tooltip_id.clone();
+    let chart = canvas(
         |_, _, _| (),
         move |bounds, _, window, cx| {
             let inset = if show_value_labels {
@@ -623,7 +796,62 @@ fn render_canvas(
         },
     )
     .w_full()
-    .h(height)
+    .h(height);
+
+    div()
+        .relative()
+        .w_full()
+        .h(height)
+        .on_mouse_move(move |event, _, cx| {
+            if !show_tooltip {
+                clear_tooltip(&move_id, cx);
+                return;
+            }
+            let bounds = tooltip_bounds.get();
+            if bounds.size.width <= px(0.0) || bounds.size.height <= px(0.0) {
+                clear_tooltip(&move_id, cx);
+                return;
+            }
+            let inset = if show_value_labels {
+                px(56.0)
+            } else {
+                px(18.0)
+            };
+            let width = (bounds.right() - bounds.left() - inset * 2.0).max(px(1.0));
+            let chart_height = (bounds.bottom() - bounds.top() - inset * 2.0).max(px(1.0));
+            let radius = (width.min(chart_height).as_f32() / 2.0).max(1.0);
+            let center = point(
+                bounds.left() + width / 2.0 + inset,
+                bounds.top() + chart_height / 2.0 + inset,
+            );
+            let Some(hit) = nearest_pie_slice_hit_point(
+                &tooltip_slices,
+                inner_ratio,
+                radius,
+                center.x.as_f32(),
+                center.y.as_f32(),
+                event.position.x.as_f32(),
+                event.position.y.as_f32(),
+                tooltip_hit_radius.as_f32(),
+            ) else {
+                clear_tooltip(&move_id, cx);
+                return;
+            };
+            set_active_tooltip(
+                TooltipData {
+                    id: move_id.clone(),
+                    content: format_hit_tooltip(&hit, None),
+                    anchor_bounds: Bounds::new(
+                        point(event.position.x - px(1.0), event.position.y - px(1.0)),
+                        size(px(2.0), px(2.0)),
+                    ),
+                    placement: Placement::Top,
+                    offset: px(8.0),
+                },
+                cx,
+            );
+        })
+        .child(ChartBoundsTracker::new(chart, bounds_cell))
 }
 
 fn series_value(series: &ChartSeries) -> f64 {
@@ -861,11 +1089,15 @@ mod tests {
             .height(px(240.0))
             .show_legend(false)
             .show_value_labels(false)
+            .show_tooltip(false)
+            .tooltip_hit_radius(px(6.0))
             .show_percentage_labels(false)
             .percentage_decimals(2)
             .outside_label_threshold_degrees(36);
         assert_eq!(chart.slices().len(), 3);
         assert!(!chart.show_value_labels);
+        assert!(!chart.show_tooltip);
+        assert_eq!(chart.tooltip_hit_radius, px(6.0));
         assert!(!matches!(
             chart.label_options().value.content,
             ChartValueLabelContent::ValueOverTotalAndPercentage
@@ -879,10 +1111,14 @@ mod tests {
         let chart = RingChart::new(slices())
             .inner_ratio(0.5)
             .show_value_labels(false)
+            .show_tooltip(false)
+            .tooltip_hit_radius(px(8.0))
             .percentage_decimals(3);
         assert_eq!(chart.slices().len(), 3);
         assert!(chart.inner_ratio >= 0.2 && chart.inner_ratio <= 0.9);
         assert!(!chart.show_value_labels);
+        assert!(!chart.show_tooltip);
+        assert_eq!(chart.tooltip_hit_radius, px(8.0));
         assert_eq!(chart.label_options().value.percentage_decimals, 3);
     }
 
@@ -936,5 +1172,33 @@ mod tests {
             format_slice_label(1.0, 3.0, &options),
             SharedString::from("1 / 3")
         );
+    }
+
+    #[test]
+    fn pie_slice_hit_testing_returns_slice_under_pointer() {
+        let regions = pie_slice_hit_regions(&slices(), 0.0, 100.0);
+        assert_eq!(regions.len(), 3);
+        assert_eq!(regions[0].series_name, SharedString::from("A"));
+        assert_eq!(regions[0].start_deg, -90.0);
+        assert!((regions[0].end_deg - 18.0).abs() < 0.001);
+
+        let hit = nearest_pie_slice_hit_point(&slices(), 0.0, 100.0, 0.0, 0.0, 70.0, -70.0, 0.0)
+            .expect("pointer inside first slice should hit");
+        assert_eq!(hit.series_index, 0);
+        assert_eq!(hit.series_name, SharedString::from("A"));
+        assert_eq!(hit.label, SharedString::from("A"));
+        assert_eq!(hit.value, 30.0);
+    }
+
+    #[test]
+    fn ring_slice_hit_testing_excludes_inner_hole_and_hits_ring_segment() {
+        assert_eq!(
+            nearest_pie_slice_hit_point(&slices(), 0.62, 100.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+            None
+        );
+
+        let hit = nearest_pie_slice_hit_point(&slices(), 0.62, 100.0, 0.0, 0.0, 70.0, -70.0, 0.0)
+            .expect("pointer inside ring segment should hit");
+        assert_eq!(hit.series_index, 0);
     }
 }

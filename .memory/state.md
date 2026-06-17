@@ -493,3 +493,7 @@ Completed a concrete P10 maintenance slice for chart hover behavior. Added share
 ## 2026-06-17 P10 BarChart hover hit testing
 
 Completed the next chart tooltip polish slice for `BarChart`. Added tested grouped and stacked rectangular hit-box geometry (`BarChartHitBox`, `bar_chart_hit_boxes`, `nearest_bar_chart_hit_point`) and wired it into the native hover tooltip portal. Grouped mode hits individual side-by-side bars; stacked mode hits the concrete segment inside a stacked column. Gallery and Docs/snippets now show tooltip radius and disabled-tooltip examples. Remaining optional P10 tooltip polish: PieChart/RingChart polar sector hit testing and any further large-data cache policy.
+
+## 2026-06-17 P10 Pie/Ring polar chart hover hit testing
+
+Completed the remaining chart tooltip slice for `PieChart` and `RingChart`. Added pure polar-sector hit-testing helpers and wired native hover tooltip support into both charts. `PieChart` hits rendered sectors; `RingChart` hits only donut segments and excludes the inner hole. Public builders `show_tooltip(...)` and `tooltip_hit_radius(...)` are now documented in Gallery, Docs live demos, and compile-checked snippets. Remaining P10 maintenance item: any further cache policy beyond existing downsampling.

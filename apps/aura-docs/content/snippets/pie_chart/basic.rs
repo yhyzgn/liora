@@ -12,4 +12,6 @@ pub fn pie_chart_basic() -> impl IntoElement {
     .percentage_decimals(1)
     .outside_label_threshold_degrees(30)
     .value_label_placement(ChartValueLabelPlacement::OutsideAligned)
+    // 默认开启扇区 hover tooltip；命中半径用于更容易触达边界。
+    .tooltip_hit_radius(px(10.0))
 }

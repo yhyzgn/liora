@@ -109,7 +109,7 @@ aura/
 - P5 当前请求范围已结束；Carousel、Calendar、TreeSelect、InputTag、Mention、Watermark、Tour、VirtualizedTable、VirtualizedTree 已移入 `.prompt/P9-deferred-advanced.md`。
 - P8 当前技术路线已调整为 **Aura Docs 主程序**：官方文档在 GPUI 原生窗口中渲染，且独立为 `aura-docs` 主程序；`aura-gallery` 保持组件看板，不再承担官方文档入口。
 - P9 是 deferred backlog；只有用户明确要求补齐这些组件时才启动。
-- P10 是原生统计图阶段：开发纯原生 GPUI 统计图控件，参考 GPUI 官方 canvas/path/paint API；`vicanso/zedis` 只能作为案例参考，不复制其依赖或实现结构。当前 LineChart、AreaChart Overlay 与 BarChart 已支持原生 hover tooltip / hit testing。
+- P10 是原生统计图阶段：开发纯原生 GPUI 统计图控件，参考 GPUI 官方 canvas/path/paint API；`vicanso/zedis` 只能作为案例参考，不复制其依赖或实现结构。当前 LineChart、AreaChart Overlay、BarChart、PieChart 与 RingChart 已支持原生 hover tooltip / hit testing。
 - P11 是系统托盘/进程常驻阶段：开发 `aura-tray`，采用 `tray-icon` + `muda`，支持动态图标、CheckBox 菜单、二级/三级/N 级菜单，并在 Gallery/Docs 中提供丰富用例。
 - P12 是打包阶段：开发 `aura-packager` + `xtask package` + `packaging/` + CI workflow。应用必须保持纯 Rust + GPUI native，严禁转成 Tauri 或引入 WebView/HTML/CSS/DOM/browser runtime。
 - P13 主体已实现并进入收尾维护：二维码、代码编辑器、信号图、热力/比例条、横向/纵向拖动列表、Timer、Label、Operation，以及 Chart/Button/Tag/Radio/Checkbox 等高自定义能力；详见 `.prompt/P13-component-expansion.md`。

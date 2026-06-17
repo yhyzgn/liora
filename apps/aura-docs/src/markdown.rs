@@ -3908,6 +3908,7 @@ impl Render for LiveDemoContent {
                 .percentage_decimals(1)
                 .outside_label_threshold_degrees(30)
                 .value_label_placement(aura_components::ChartValueLabelPlacement::OutsideAligned)
+                .tooltip_hit_radius(px(10.0))
                 .into_any_element(),
             ]),
             "PieChartCustom" => demo_row(vec![
@@ -3923,6 +3924,7 @@ impl Render for LiveDemoContent {
                 .value_label_placement(aura_components::ChartValueLabelPlacement::OutsideFree)
                 .percentage_decimals(2)
                 .outside_label_threshold_degrees(120)
+                .show_tooltip(false)
                 .into_any_element(),
             ]),
             "RingChart" => demo_row(vec![
@@ -3938,6 +3940,7 @@ impl Render for LiveDemoContent {
                 .percentage_decimals(1)
                 .outside_label_threshold_degrees(30)
                 .value_label_placement(aura_components::ChartValueLabelPlacement::OutsideAligned)
+                .tooltip_hit_radius(px(10.0))
                 .into_any_element(),
             ]),
             "RingChartCustom" => demo_row(vec![
@@ -3984,6 +3987,7 @@ impl Render for LiveDemoContent {
                 .external_horizontal_legend()
                 .external_legend_content(aura_components::ChartValueLabelContent::ValueOverTotalAndPercentage)
                 .external_legend_percentage_decimals(1)
+                .show_tooltip(false)
                 .into_any_element(),
             ]),
 

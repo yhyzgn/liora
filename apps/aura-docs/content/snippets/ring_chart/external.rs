@@ -20,4 +20,5 @@ pub fn ring_chart_external() -> impl IntoElement {
             .content(ChartValueLabelContent::ValueOverTotalAndPercentage)
             .percentage_decimals(1),
     )
+    .show_tooltip(false)
 }
