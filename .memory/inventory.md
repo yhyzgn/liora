@@ -162,16 +162,16 @@
 | 8 | VirtualizedTable | `crates/aura-components/src/virtualized_table.rs` | ✅ | ✅ Migrated to P14 Wave 5 and implemented |
 | 9 | VirtualizedTree | `crates/aura-components/src/virtualized_tree.rs` | ✅ | ✅ Migrated to P14 Wave 6 and implemented |
 
-## P10 Native Charts ✅ (7/7 — implemented; tooltip polish remains optional)
+## P10 Native Charts ✅ (7/7 — implemented, hover tooltips complete)
 
 | # | Component | File | Demo | Docs | Status |
 |---|-----------|------|------|------|--------|
-| 1 | Chart infrastructure | `crates/aura-components/src/chart*.rs` | — | — | ✅ Scale/domain/shape/frame/legend foundation; tooltip remains optional polish |
-| 2 | LineChart | `crates/aura-components/src/line_chart.rs` | ✅ | ✅ | ✅ MVP: multi-series, axis/grid, legend, point markers, empty state |
-| 3 | AreaChart | `crates/aura-components/src/area_chart.rs` | ✅ | ✅ | ✅ MVP: overlay/stacked area, axis/grid, legend |
-| 4 | BarChart | `crates/aura-components/src/bar_chart.rs` | ✅ | ✅ | ✅ MVP: grouped/stacked vertical bars, axis/grid, legend |
-| 5 | PieChart | `crates/aura-components/src/pie_chart.rs` | ✅ | ✅ | ✅ Implemented with value labels, outside labels, percentage/value patterns |
-| 6 | RingChart | `crates/aura-components/src/pie_chart.rs` | ✅ | ✅ | ✅ Implemented with donut mode and external legends |
+| 1 | Chart infrastructure | `crates/aura-components/src/chart*.rs` | — | — | ✅ Scale/domain/shape/frame/legend foundation; native tooltip/hit-test helpers |
+| 2 | LineChart | `crates/aura-components/src/line_chart.rs` | ✅ | ✅ | ✅ Multi-series, axis/grid, legend, point markers, empty state, downsampling, hover tooltip |
+| 3 | AreaChart | `crates/aura-components/src/area_chart.rs` | ✅ | ✅ | ✅ Overlay/stacked area, axis/grid, legend, downsampling, overlay hover tooltip |
+| 4 | BarChart | `crates/aura-components/src/bar_chart.rs` | ✅ | ✅ | ✅ Grouped/stacked vertical bars, axis/grid, legend, standalone mini/range color, hover tooltip |
+| 5 | PieChart | `crates/aura-components/src/pie_chart.rs` | ✅ | ✅ | ✅ Implemented with value labels, outside labels, percentage/value patterns, polar hover tooltip |
+| 6 | RingChart | `crates/aura-components/src/pie_chart.rs` | ✅ | ✅ | ✅ Implemented with donut mode, external legends, ring-segment hover tooltip excluding inner hole |
 | 7 | Sparkline | `crates/aura-components/src/sparkline.rs` | ✅ | ✅ | ✅ Implemented: compact trend chart with trend colors, fill, baseline, line styles |
 
 ## P11 Native Tray / Process Resident 🔄
@@ -208,7 +208,7 @@
 | 17 | Operation | `crates/aura-components/src/operation.rs` | ✅ | ✅ | Implemented Wave 1 |
 | 18 | Radio/Checkbox option customization | existing `radio*.rs`, `checkbox*.rs` | ✅ | ✅ | Implemented in-place: option card/chip styling, selected/hover/border/text/padding/radius/indicator customization |
 
-## P14 Deferred Advanced 🧭 In Progress
+## P14 Deferred Advanced ✅ Complete
 
 | # | Component | File | Demo | Docs | Status |
 |---|-----------|------|------|------|--------|

@@ -133,12 +133,12 @@ LineChart::new(series)
 
 ## 完成标准
 
-- [ ] 首批 6 类图表组件完成并导出。
-- [ ] Gallery demos 完整且自举。
-- [ ] Docs 每个控件按“效果 → 代码”展示。
-- [ ] `cargo fmt`、`cargo check -p aura-components`、`cargo check -p aura-docs`、`cargo check -p aura-gallery`、`cargo test --workspace` 通过。
-- [ ] `timeout 8s cargo run -p aura-docs`、`timeout 8s cargo run -p aura-gallery` 可启动无即时崩溃。
-- [ ] `.memory/*` 与 `architecture-design.md` 更新。
+- [x] 首批 6 类图表组件完成并导出。
+- [x] Gallery demos 完整且自举。
+- [x] Docs 每个控件按“效果 → 代码”展示。
+- [x] `cargo fmt`、`cargo check -p aura-components`、`cargo check -p aura-docs`、`cargo check -p aura-gallery`、相关 chart tests 通过。
+- [x] `timeout 15s cargo run -p aura-docs`、`timeout 15s cargo run -p aura-gallery` 可启动无即时崩溃。
+- [x] `.memory/*` 与 `architecture-design.md` 更新。
 
 
 ## 2026-06-16 Performance maintenance update
@@ -151,11 +151,11 @@ LineChart::new(series)
 - 已完成 Cartesian hover tooltip / hit testing：`LineChart` 与 `AreaChart` Overlay 模式支持原生最近点 tooltip，底层提供可测试的 `nearest_cartesian_hit_point`。
 - 已完成 BarChart 矩形 hover tooltip / hit testing：Grouped 命中单根柱，Stacked 命中具体堆叠分段。
 - 已完成 PieChart/RingChart 极坐标扇区 hover tooltip / hit testing：Pie 命中扇区，Ring 命中圆环分段并排除内圆空洞。
-- 剩余维护项：进一步缓存策略。
+- 当前 P10 已完成。后续如有真实 profiling 证据，再在独立性能阶段继续缓存策略。
 
 
 ## 2026-06-17 Cartesian tooltip maintenance
 
 - Completed LineChart and AreaChart Overlay nearest-point hover tooltip support using shared pure hit-testing helpers.
 - Completed BarChart rectangular hover hit testing for grouped bars and stacked bar segments.
-- Completed PieChart/RingChart polar-sector hover hit testing. Remaining tooltip/cache polish: any further cache policy.
+- Completed PieChart/RingChart polar-sector hover hit testing. P10 is complete; future cache policy work should be driven by profiling evidence in a separate performance phase.

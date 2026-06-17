@@ -501,3 +501,7 @@ Completed the remaining chart tooltip slice for `PieChart` and `RingChart`. Adde
 ## 2026-06-17 P12 install-smoke dry-run readiness
 
 Fixed `xtask package install-smoke --dry-run` so plan-only mode no longer requires real backend artifacts or scans stale `target/packages` files. Dry-run now derives expected artifact paths per app/platform/format and writes install/uninstall plans; non-dry-run still discovers and smokes real artifacts, while `--execute-install` remains restricted to portable `.tar.gz`. Validation passed: `cargo check -p xtask -p aura-packager`, `cargo test -p aura-packager`, `cargo test -p xtask install_smoke -- --nocapture`, `cargo run -p xtask -- package validate`, `cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build`, `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run`, `cargo fmt --all --check`, and `git diff --check`.
+
+## 2026-06-17 phase readiness documentation sync
+
+Synchronized architecture and inventory records with current evidence: P10 native charts are complete with downsampling and Line/Area/Bar/Pie/Ring hover hit testing; P14 deferred advanced backlog is complete; P12 remains in readiness with local runner-safe packaging gates and external-policy work for signing/notarization/real system installs/license.

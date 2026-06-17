@@ -53,9 +53,11 @@ aura/
 │   │   └── src/
 │   │       ├── lib.rs
 │   │       ├── button.rs
-│   │       ├── input.rs          # Phase 2
-│   │       ├── dialog.rs         # Phase 4
+│   │       ├── input.rs
+│   │       ├── chart*.rs         # P10 原生统计图基础设施
 │   │       └── ...
+│   ├── aura-tray/                # P11 系统托盘 facade
+│   ├── aura-packager/            # P12 打包领域逻辑
 │   └── aura-icons/               # 图标库
 │       └── src/lib.rs
 ├── apps/
@@ -86,7 +88,9 @@ aura/
 | `aura-gallery` | `gpui`(default), `gpui_platform`, 全部 aura crates | 组件看板，展示已实现组件 Demo |
 | `aura-docs` | `gpui`(default), `gpui_platform`, 全部 aura crates；P8 增加 `pulldown-cmark` | 官方原生文档主程序，包含 Markdown 渲染与 Live Demo 注入 |
 | `aura-tray` | `tray-icon`, `muda`(via tray-icon re-export), `image` | P11 系统托盘/进程常驻 facade：动态图标、CheckBox、递归子菜单、稳定命令桥接 |
-| `aura-components::chart*` | `gpui` 原生 `canvas`/`PathBuilder`/paint API | P10 统计图控件基础设施与 Line/Area/Bar/Pie/Ring/Sparkline 组件 |
+| `aura-components::chart*` | `gpui` 原生 `canvas`/`PathBuilder`/paint API | P10 统计图控件基础设施与 Line/Area/Bar/Pie/Ring/Sparkline，含降采样与 hover hit testing |
+| `aura-packager` | `serde`, `sha2`, `toml` | P12 打包领域逻辑：app metadata、format model、checksum、manifest、backend config |
+| `xtask` | `aura-packager` | P12 统一打包入口：validate/build/package/ci/smoke/install-smoke |
 
 ### 2.3 GPUI 依赖策略
 
@@ -114,6 +118,16 @@ aura-gallery/Cargo.toml:
 - 菜单事件映射为稳定 command id，主程序负责将 `Show/Hide/Toggle/Quit/SetIcon/Custom` 应用到 GPUI 窗口和业务状态。
 - 启用托盘的 GPUI app 必须使用 `QuitMode::Explicit` 并持有 `AuraTray` 全生命周期。
 - Linux 需要 GTK/AppIndicator 系统库；macOS 创建要求主线程；普通文档/demo 仅展示配置预览，避免创建真实 OS 托盘副作用。
+
+### 2.6 原生打包架构（P12）
+
+`aura-packager` 与 `xtask package` 共同承担安装器/包产物流程，应用本体仍然是纯 Rust + GPUI native。
+
+- `aura-packager` 负责 app metadata、package format、backend config、SHA-256 checksum、manifest/release-notes 生成。
+- `xtask package` 是唯一公开工程入口，覆盖 `validate`、`build`、`package`、`ci`、`smoke`、`install-smoke`。
+- `packaging/` 存放 Gallery/Docs 图标、Linux desktop/metainfo、macOS entitlements、Windows installer resource skeleton。
+- GitHub Actions package workflow 覆盖 preview/release matrix，并上传原始 release binary 与 package artifacts。
+- `install-smoke --dry-run` 是 runner-safe plan-only gate；真实系统安装、签名、公证、许可策略仍属于外部 policy / dedicated runner 事项。
 
 ### 2.4 Gallery 组件看板规约（P7 已自举）
 
@@ -231,7 +245,7 @@ pub fn render(theme: &Theme) -> AnyElement {
 
 ### 2.6 P10 Native Charts 架构
 
-**定位**：P10 新增一组 Dashboard/监控/报表所需的统计图组件。它们属于 `aura-components`，由 `aura-gallery` 展示，由 `aura-docs` 文档化。
+**定位**：P10 已交付 Dashboard/监控/报表所需的统计图组件。它们属于 `aura-components`，由 `aura-gallery` 展示，由 `aura-docs` 文档化。
 
 **绝对边界**：统计图必须 100% 使用 GPUI 原生渲染路径。严禁 ECharts、Vega、Plotly、WebView、HTML/CSS、DOM、SVG DOM、WASM 或远程图片渲染。
 
@@ -256,7 +270,7 @@ crates/aura-components/src/
 └── sparkline.rs
 ```
 
-**首批交付**：`LineChart`、`AreaChart`、`BarChart`、`PieChart`、`RingChart`、`Sparkline`，以及共享 `Scale`、`Axis`、`Grid`、`Legend`、`Tooltip/hover hit test` 基础设施。
+**已交付**：`LineChart`、`AreaChart`、`BarChart`、`PieChart`、`RingChart`、`Sparkline`，以及共享 `Scale`、`Axis`、`Grid`、`Legend`、`Tooltip/hover hit test` 基础设施。Line/Area/Sparkline 支持大数据降采样；Line/Area/Bar/Pie/Ring 支持原生 hover hit testing。
 
 **渲染策略**：在 `canvas` 的 paint 回调中基于实际 `bounds` 计算 scale；使用 `PathBuilder` 生成折线/面积/扇区 path；使用 `paint_quad` 绘制柱体和必要背景；坐标轴文字、legend、tooltip 文案优先复用 Aura Typography 或 GPUI TextSystem。
 
@@ -445,12 +459,12 @@ Markdown 中的特殊语法：
 
 | 中文 | Public API | 阶段 | 说明 |
 |------|------------|------|------|
-| 折线图 | `LineChart` | P10 | 单/多 series、axis/grid、legend、点标记 |
-| 面积图 | `AreaChart` | P10 | 折线 + 填充，后续支持 stacked/gradient |
-| 柱状图 | `BarChart` | P10 | 分类轴柱体，后续支持 grouped/stacked/horizontal |
-| 饼图 | `PieChart` | P10 | 扇区、百分比、legend |
-| 环图 | `RingChart` | P10 | donut inner radius、中心文本 |
-| 迷你趋势图 | `Sparkline` | P10 | 卡片/Statistic 内嵌微型趋势图 |
+| 折线图 | `LineChart` | P10 | 单/多 series、axis/grid、legend、点标记、降采样、hover tooltip |
+| 面积图 | `AreaChart` | P10 | overlay/stacked area、渐变填充、降采样、overlay hover tooltip |
+| 柱状图 | `BarChart` | P10 | grouped/stacked、range color、standalone mini、hover tooltip |
+| 饼图 | `PieChart` | P10 | 扇区、百分比、外部标注、极坐标 hover tooltip |
+| 环图 | `RingChart` | P10 | donut、外置 legend/value、内圆排除 hover tooltip |
+| 迷你趋势图 | `Sparkline` | P10 | 卡片/Statistic 内嵌微型趋势图、降采样、趋势样式 |
 
 ### 3.8 Others 其他 (2)
 
@@ -475,8 +489,12 @@ P5 · Advanced          ░░░░░░░░░░  重型组件（Table/Dat
 P6 · Built-in Unique ID  ██░░░░░░░░  已完成 — 内建唯一 ID
 P7 · Demo Self-Contained ██░░░░░░░░  已完成 — Gallery Demo 自举
 P8 · Native Docs App ██░░░░░░░░  核心已完成 — 原生文档大屏 + Markdown + Live Demo
-P9 · Deferred Advanced ⏸️  延后高级组件 backlog
-P10 · Native Charts ░░░░░░░░░░  当前阶段 — GPUI 原生统计图组件
+P9 · Deferred Advanced ✅  已迁移并由 P14 完成
+P10 · Native Charts ✅  已完成 — GPUI 原生统计图组件 + tooltip/性能维护
+P11 · Native Tray ✅  已完成 — 系统托盘 facade + Gallery/Docs 用例
+P12 · Native Packaging 🔶  Readiness — 打包流水线已可用，签名/真实系统安装需外部策略
+P13 · Component Expansion ✅  已完成 — 业务控件与既有控件增强
+P14 · Deferred Advanced ✅  已完成 — P9 backlog 全部补齐
 ```
 
 ### P0 · Foundation（已完成）
@@ -628,23 +646,23 @@ Table 是企业级组件库中最复杂、工作量最大的组件。Aura Table 
 ---
 
 
-### P10 · Native Charts（统计图组件）
+### P10 · Native Charts（统计图组件，已完成）
 
 目标：补齐 Aura 在企业 Dashboard、监控、报表场景中的原生可视化能力。
 
 | 子任务 | 优先级 | 说明 |
 |--------|--------|------|
-| Chart scale 基础设施 | P0 | `ScaleLinear` / `ScaleBand` / `ScalePoint`，覆盖空值、单点、负值、手动 domain |
-| Axis/Grid 基础设施 | P0 | x/y axis、ticks、grid line、label format |
-| LineChart | P0 | 单/多 series、axis/grid、legend、点标记 |
-| AreaChart | P1 | 透明填充，复用 Line path 数据 |
-| BarChart | P1 | 分类轴 + 竖向柱体，复用 band scale |
-| PieChart/RingChart | P2 | 极坐标角度计算、扇区 path、legend |
-| Sparkline | P2 | 无坐标轴微型趋势图，可嵌入 Statistic/Card |
-| Hover/Tooltip | P2 | 命中测试、最近点定位、Aura Popover/Tooltip 风格 |
-| 性能优化 | P3 | 大 series 降采样、缓存、避免每帧重复分配 |
+| Chart scale 基础设施 | ✅ | `ScaleLinear` / `ScaleBand` / `ScalePoint`，覆盖空值、单点、负值、手动 domain |
+| Axis/Grid 基础设施 | ✅ | x/y axis、ticks、grid line、label format |
+| LineChart | ✅ | 单/多 series、axis/grid、legend、点标记、降采样、hover tooltip |
+| AreaChart | ✅ | overlay/stacked、透明/渐变填充、降采样、overlay hover tooltip |
+| BarChart | ✅ | 分类轴、grouped/stacked、standalone mini、range color、hover tooltip |
+| PieChart/RingChart | ✅ | 极坐标扇区/圆环、外部标注、polar hover tooltip |
+| Sparkline | ✅ | 无坐标轴微型趋势图，可嵌入 Statistic/Card，支持降采样与线型 |
+| Hover/Tooltip | ✅ | Line/Area/Bar/Pie/Ring 原生命中测试与 Aura Tooltip portal |
+| 性能优化 | ✅ | Line/Area/Sparkline min/max bucket 降采样、稀疏 axis/value labels、避免全量中间 Vec |
 
-验收：所有图表组件进入 `aura-components` 导出；Gallery 有自举 Demo；Docs 有按“效果 → 代码”组织的页面和完整 `.rs` snippets；相关 scale/shape/builder 测试通过。
+验收：所有图表组件已进入 `aura-components` 导出；Gallery 有自举 Demo；Docs 有按“效果 → 代码”组织的页面和完整 `.rs` snippets；相关 scale/shape/builder/hit-test 测试通过。
 
 ## 五、组件 API 设计规范
 
@@ -870,8 +888,12 @@ pub struct FormRule {
 | P6 Built-in Unique ID | — | ✅ 已完成 | 内建唯一 ID |
 | P7 Demo Self-Contained | — | ✅ 已完成 | Gallery Demo 自举 |
 | P8 Native Docs App | — | ✅ 核心完成 | 原生文档大屏/Markdown/Live Demo/Test/CI/Release |
-| P9 Deferred Advanced | 9 | ⏸️ Deferred | Carousel/Calendar/TreeSelect/InputTag/Mention/Watermark/Tour/Virtualized* |
-| P10 Native Charts | 6+ | 🔄 当前阶段 | Line/Area/Bar/Pie/Ring/Sparkline + scale/axis/grid/legend/tooltip |
+| P9 Deferred Advanced | 9 | ✅ 已迁移 | 由 P14 完成 Carousel/Calendar/TreeSelect/InputTag/Mention/Watermark/Tour/Virtualized* |
+| P10 Native Charts | 6+ | ✅ 已完成 | Line/Area/Bar/Pie/Ring/Sparkline + scale/axis/grid/legend/tooltip/降采样 |
+| P11 Native Tray | — | ✅ 已完成 | aura-tray facade + Gallery/Docs tray control examples |
+| P12 Native Packaging | — | 🔶 Readiness | aura-packager + xtask + CI；签名/真实安装需外部策略 |
+| P13 Component Expansion | 18 | ✅ 已完成 | QR/CodeEditor/Signal/Heat/Segment/Timer/Label/Operation 等与既有控件增强 |
+| P14 Deferred Advanced | 9 | ✅ 已完成 | P9 backlog 全部补齐 |
 | **合计** | **76+** | **约 6 个月** | 完整企业级组件库 |
 
 ---
