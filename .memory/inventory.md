@@ -160,7 +160,7 @@
 | 6 | Watermark | `crates/aura-components/src/watermark.rs` | ✅ | ✅ Migrated to P14 Wave 2 and implemented |
 | 7 | Tour | `crates/aura-components/src/tour.rs` | ✅ | ✅ Migrated to P14 Wave 4 and implemented |
 | 8 | VirtualizedTable | `crates/aura-components/src/virtualized_table.rs` | ✅ | ✅ Migrated to P14 Wave 5 and implemented |
-| 9 | VirtualizedTree | — | — | ⏸️ Deferred from P5; implement later when requested |
+| 9 | VirtualizedTree | `crates/aura-components/src/virtualized_tree.rs` | ✅ | ✅ Migrated to P14 Wave 6 and implemented |
 
 ## P10 Native Charts ✅ (7/7 — implemented; tooltip polish remains optional)
 
@@ -220,4 +220,4 @@
 | 6 | Watermark | `crates/aura-components/src/watermark.rs` | ✅ | ✅ | Implemented Wave 2 |
 | 7 | Tour | `crates/aura-components/src/tour.rs` | ✅ | ✅ | Implemented Wave 4 |
 | 8 | VirtualizedTable | `crates/aura-components/src/virtualized_table.rs` | ✅ | ✅ | Implemented Wave 5 |
-| 9 | VirtualizedTree | — | — | — | Pending |
+| 9 | VirtualizedTree | `crates/aura-components/src/virtualized_tree.rs` | ✅ | ✅ | Implemented Wave 6 |

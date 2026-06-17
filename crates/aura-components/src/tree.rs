@@ -8,6 +8,7 @@ use gpui::{
 };
 use std::collections::HashSet;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TreeNode {
     pub id: SharedString,
     pub label: SharedString,

@@ -619,6 +619,10 @@ mod virtualized_list_draggable;
 mod virtualized_table_basic;
 #[path = "../../content/snippets/virtualized_table/sortable.rs"]
 mod virtualized_table_sortable;
+#[path = "../../content/snippets/virtualized_tree/basic.rs"]
+mod virtualized_tree_basic;
+#[path = "../../content/snippets/virtualized_tree/checkable.rs"]
+mod virtualized_tree_checkable;
 #[path = "../../content/snippets/watermark/cover.rs"]
 mod watermark_cover;
 #[path = "../../content/snippets/watermark/custom.rs"]

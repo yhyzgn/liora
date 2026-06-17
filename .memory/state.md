@@ -475,3 +475,8 @@ Implemented `Tour` as a controlled native step-guide component with step list, a
 ## 2026-06-17 P14 Wave 5 VirtualizedTable
 
 Implemented `VirtualizedTable` as a fixed-header large-data table that reuses `TableColumn` definitions and GPUI `ListState` to render visible rows only. Cells are generated from row index + column key each frame to avoid stale GPUI element caching. Added Aura scrollbar, height/row-height/overdraw configuration, stripe/border/loading/empty states, sorting callback, Gallery demos, Docs page, compile-checked snippets, and focused tests. Remaining P14 backlog: VirtualizedTree.
+
+
+## 2026-06-17 P14 Wave 6 VirtualizedTree
+
+Implemented `VirtualizedTree` as the final P14 deferred advanced control. It virtualizes large hierarchical datasets by flattening the currently expanded tree into lightweight visible-node metadata and rendering visible rows via GPUI `ListState`, with Aura scrollbar, expand/collapse, single/multiple selection, checkbox mode, default expanded/selected keys, callbacks, Gallery demos, Docs page, compile-checked snippets, and focused tests. P14 backlog is complete.

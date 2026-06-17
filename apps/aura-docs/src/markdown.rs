@@ -9,8 +9,8 @@ use aura_components::{
     RadioOptionStyle, Rate, Result as AuraResult, ResultStatus, Select, Skeleton, SkeletonItem,
     SkeletonVariant, Slider, Space, Statistic, Switch, Tag as AuraTag, Text, Textarea, Timer,
     TimerFormat, TimerUnit, Title, Transfer, TransferItem, Tree, TreeNode, Upload, UploadFile,
-    UploadStatus, VirtualizedList, VirtualizedTable, show_notification, toast_error, toast_info,
-    toast_success, toast_warning,
+    UploadStatus, VirtualizedList, VirtualizedTable, VirtualizedTree, show_notification,
+    toast_error, toast_info, toast_success, toast_warning,
 };
 use aura_core::{Config, PassivePortal, Placement, Portal, clear_popover};
 use aura_icons::Icon;
@@ -116,6 +116,7 @@ const UPLOAD_DOC: &str = include_str!("../content/pages/upload.md");
 const WATERMARK_DOC: &str = include_str!("../content/pages/watermark.md");
 const VIRTUALIZED_LIST_DOC: &str = include_str!("../content/pages/virtualized_list.md");
 const VIRTUALIZED_TABLE_DOC: &str = include_str!("../content/pages/virtualized_table.md");
+const VIRTUALIZED_TREE_DOC: &str = include_str!("../content/pages/virtualized_tree.md");
 
 const MARKDOWN_DOC: &str = include_str!("../content/pages/markdown.md");
 const LIVE_DEMO_DOC: &str = include_str!("../content/pages/live_demo.md");
@@ -477,6 +478,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "VirtualizedTable",
         markdown: VIRTUALIZED_TABLE_DOC,
+    },
+    DocPage {
+        title: "VirtualizedTree",
+        markdown: VIRTUALIZED_TREE_DOC,
     },
     DocPage {
         title: "AreaChart",
@@ -1676,6 +1681,7 @@ struct LiveDemoContent {
     code_editors: Vec<Entity<CodeEditor>>,
     horizontal_lists: Vec<Entity<HorizontalList>>,
     virtualized_lists: Vec<Entity<VirtualizedList>>,
+    virtualized_trees: Vec<Entity<VirtualizedTree>>,
     inputs: Vec<Entity<Input>>,
     radios: Vec<Entity<Radio>>,
     radio_groups: Vec<Entity<RadioGroup>>,
@@ -1720,6 +1726,7 @@ impl LiveDemoContent {
         let mut code_editors = Vec::new();
         let mut horizontal_lists = Vec::new();
         let mut virtualized_lists = Vec::new();
+        let mut virtualized_trees = Vec::new();
         let mut inputs = Vec::new();
         let mut radios = Vec::new();
         let mut radio_groups = Vec::new();
@@ -1868,6 +1875,12 @@ impl LiveDemoContent {
             }
             "VirtualizedListDraggable" => {
                 virtualized_lists.push(cx.new(|cx| docs_virtualized_list(cx, true)));
+            }
+            "VirtualizedTreeBasic" => {
+                virtualized_trees.push(cx.new(|cx| docs_virtualized_tree(cx, false)));
+            }
+            "VirtualizedTreeCheckable" => {
+                virtualized_trees.push(cx.new(|cx| docs_virtualized_tree(cx, true)));
             }
 
             "InputNumberBasic" => {
@@ -2442,6 +2455,7 @@ impl LiveDemoContent {
             code_editors,
             horizontal_lists,
             virtualized_lists,
+            virtualized_trees,
             inputs,
             radios,
             radio_groups,
@@ -2786,6 +2800,13 @@ impl Render for LiveDemoContent {
             ),
             "VirtualizedTableBasic" => virtualized_table_demo(false, None, None).into_any_element(),
             "VirtualizedTableSortable" => self.virtualized_table_sortable_demo(_cx),
+            "VirtualizedTreeBasic" | "VirtualizedTreeCheckable" => demo_stack(
+                self.virtualized_trees
+                    .iter()
+                    .cloned()
+                    .map(Entity::into_any_element)
+                    .collect(),
+            ),
             "RadioBasic" => demo_row(
                 self.radios
                     .iter()
@@ -5656,6 +5677,54 @@ fn docs_virtualized_list(cx: &mut Context<VirtualizedList>, draggable: bool) -> 
         });
     }
     list
+}
+
+fn docs_virtualized_tree(cx: &mut Context<VirtualizedTree>, checkable: bool) -> VirtualizedTree {
+    let mut tree = VirtualizedTree::new(docs_virtualized_tree_data(), cx)
+        .height(px(360.0))
+        .row_height(px(36.0))
+        .default_expanded_keys(if checkable {
+            vec!["dept-1".into(), "dept-1-team-1".into()]
+        } else {
+            vec!["dept-0".into(), "dept-0-team-0".into()]
+        });
+
+    if checkable {
+        tree = tree
+            .show_checkbox(true)
+            .multiple(true)
+            .default_selected_keys(vec!["dept-1-team-1-member-3".into()])
+            .on_node_click(|id, _, _| {
+                toast_success!("VirtualizedTree selected: {}", id);
+            });
+    }
+
+    tree
+}
+
+fn docs_virtualized_tree_data() -> Vec<TreeNode> {
+    (0..24)
+        .map(|dept| {
+            let mut node = TreeNode::new(
+                format!("dept-{dept}"),
+                format!("Department {:02}", dept + 1),
+            );
+            for team in 0..8 {
+                let mut team_node = TreeNode::new(
+                    format!("dept-{dept}-team-{team}"),
+                    format!("Team {:02}-{:02}", dept + 1, team + 1),
+                );
+                for member in 0..16 {
+                    team_node = team_node.child(TreeNode::new(
+                        format!("dept-{dept}-team-{team}-member-{member}"),
+                        format!("Member {:02}-{:02}-{:02}", dept + 1, team + 1, member + 1),
+                    ));
+                }
+                node = node.child(team_node);
+            }
+            node
+        })
+        .collect()
 }
 
 fn demo_row(children: Vec<AnyElement>) -> AnyElement {
