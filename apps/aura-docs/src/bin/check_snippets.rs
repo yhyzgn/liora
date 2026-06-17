@@ -589,6 +589,12 @@ mod tray_residency;
 mod tree_basic;
 #[path = "../../content/snippets/tree/checkable.rs"]
 mod tree_checkable;
+#[path = "../../content/snippets/tree_select/filterable.rs"]
+mod tree_select_filterable;
+#[path = "../../content/snippets/tree_select/multiple.rs"]
+mod tree_select_multiple;
+#[path = "../../content/snippets/tree_select/single.rs"]
+mod tree_select_single;
 #[path = "../../content/snippets/typography/paragraph.rs"]
 mod typography_paragraph;
 #[path = "../../content/snippets/upload/basic.rs"]

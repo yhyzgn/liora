@@ -154,7 +154,7 @@
 |---|-----------|------|------|--------|
 | 1 | Carousel | `crates/aura-components/src/carousel.rs` | ✅ | ✅ Migrated to P14 Wave 1 and implemented |
 | 2 | Calendar | `crates/aura-components/src/calendar.rs` | ✅ | ✅ Migrated to P14 Wave 1 and implemented |
-| 3 | TreeSelect | — | — | ⏸️ Deferred from P5; implement later when requested |
+| 3 | TreeSelect | `crates/aura-components/src/tree_select.rs` | ✅ | ✅ Migrated to P14 Wave 3 and implemented |
 | 4 | InputTag | `crates/aura-components/src/input_tag.rs` | ✅ | ✅ Migrated to P14 Wave 1 and implemented |
 | 5 | Mention | `crates/aura-components/src/mention.rs` | ✅ | ✅ Migrated to P14 Wave 2 and implemented |
 | 6 | Watermark | `crates/aura-components/src/watermark.rs` | ✅ | ✅ Migrated to P14 Wave 2 and implemented |
@@ -215,7 +215,7 @@
 | 1 | Carousel | `crates/aura-components/src/carousel.rs` | ✅ | ✅ | Implemented Wave 1 |
 | 2 | Calendar | `crates/aura-components/src/calendar.rs` | ✅ | ✅ | Implemented Wave 1 |
 | 3 | InputTag | `crates/aura-components/src/input_tag.rs` | ✅ | ✅ | Implemented Wave 1 |
-| 4 | TreeSelect | — | — | — | Pending |
+| 4 | TreeSelect | `crates/aura-components/src/tree_select.rs` | ✅ | ✅ | Implemented Wave 3 |
 | 5 | Mention | `crates/aura-components/src/mention.rs` | ✅ | ✅ | Implemented Wave 2 |
 | 6 | Watermark | `crates/aura-components/src/watermark.rs` | ✅ | ✅ | Implemented Wave 2 |
 | 7 | Tour | — | — | — | Pending |

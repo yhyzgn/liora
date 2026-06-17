@@ -460,3 +460,8 @@ Implemented two additional deferred advanced controls:
 - `Watermark`: a native wrapper for text watermarks over arbitrary GPUI content, with cover/header/footer placement, density, gap, opacity, color, and rotation configuration metadata.
 
 Added Gallery demos, Docs pages, and compile-checked snippets for both controls. Remaining P14 backlog: TreeSelect, Tour, VirtualizedTable, VirtualizedTree.
+
+
+## 2026-06-16 P14 Wave 3 TreeSelect
+
+Implemented `TreeSelect` as the next deferred advanced control. It supports hierarchical nodes, single and multiple selection, default selected keys, disabled keys, filterable search, selected label flattening, and selection callbacks. Added Gallery demo, Docs page, compile-checked snippets, and focused tests for tree filtering/flattening helpers. Remaining P14 backlog: Tour, VirtualizedTable, VirtualizedTree.

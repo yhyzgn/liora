@@ -72,6 +72,7 @@ pub mod tooltip_demo;
 pub mod transfer_demo;
 pub mod tray_demo;
 pub mod tree_demo;
+pub mod tree_select_demo;
 pub mod typography_demo;
 pub mod upload_demo;
 pub mod virtualized_list_demo;
@@ -322,6 +323,11 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "Timeline 时间线",
             description: "垂直展示一系列信息",
             render: |cx| timeline_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "TreeSelect 树形选择",
+            description: "树形层级选择、搜索和多选",
+            render: |cx| tree_select_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Tree 树形控件",
@@ -617,6 +623,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Tooltip" => Some(tooltip_demo::render(cx).into()),
         "Tray" => Some(tray_demo::render(cx).into()),
         "Transfer" => Some(transfer_demo::render(cx).into()),
+        "TreeSelect" => Some(tree_select_demo::render(cx).into()),
         "Tree" => Some(tree_demo::render(cx).into()),
         "Typography" => Some(typography_demo::render(cx).into()),
         "Upload" => Some(upload_demo::render(cx).into()),

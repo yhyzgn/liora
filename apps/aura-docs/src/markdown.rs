@@ -108,6 +108,7 @@ const TIMELINE_DOC: &str = include_str!("../content/pages/timeline.md");
 const TOOLTIP_DOC: &str = include_str!("../content/pages/tooltip.md");
 const TRAY_DOC: &str = include_str!("../content/pages/tray.md");
 const TRANSFER_DOC: &str = include_str!("../content/pages/transfer.md");
+const TREE_SELECT_DOC: &str = include_str!("../content/pages/tree_select.md");
 const TREE_DOC: &str = include_str!("../content/pages/tree.md");
 const TYPOGRAPHY_DOC: &str = include_str!("../content/pages/typography.md");
 const UPLOAD_DOC: &str = include_str!("../content/pages/upload.md");
@@ -442,6 +443,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Tray",
         markdown: TRAY_DOC,
+    },
+    DocPage {
+        title: "TreeSelect",
+        markdown: TREE_SELECT_DOC,
     },
     DocPage {
         title: "Tree",
