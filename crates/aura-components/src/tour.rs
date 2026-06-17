@@ -4,8 +4,8 @@ use aura_core::Config;
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
 use gpui::{
-    App, Component, Context, IntoElement, KeyBinding, MouseButton, Pixels, Render, RenderOnce,
-    SharedString, Window, actions, div, prelude::*, px,
+    App, Context, KeyBinding, MouseButton, Pixels, Render, SharedString, Window, actions, div,
+    prelude::*, px,
 };
 use std::sync::Arc;
 
@@ -435,46 +435,6 @@ impl Render for TourView {
     }
 }
 
-/// Compatibility element rendering. Prefer [`Tour::show`] for real use.
-impl RenderOnce for Tour {
-    fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let theme = cx.global::<Config>().theme.clone();
-        div()
-            .relative()
-            .w_full()
-            .min_h(px(220.0))
-            .rounded(px(theme.radius.md))
-            .border_1()
-            .border_color(theme.neutral.border)
-            .bg(theme.neutral.hover.opacity(0.35))
-            .child(
-                div()
-                    .absolute()
-                    .top_0()
-                    .left_0()
-                    .size_full()
-                    .flex()
-                    .items_center()
-                    .justify_center()
-                    .child(
-                        div()
-                            .text_sm()
-                            .text_color(theme.neutral.text_2)
-                            .child("Use Tour::show(cx) to render Tour as a top-level overlay."),
-                    ),
-            )
-            .into_any_element()
-    }
-}
-
-impl IntoElement for Tour {
-    type Element = Component<Self>;
-
-    fn into_element(self) -> Self::Element {
-        Component::new(self)
-    }
-}
-
 fn place_overlay_card(mut overlay: gpui::Div, placement: TourPlacement) -> gpui::Div {
     overlay = overlay.p_8();
     match placement {
@@ -522,5 +482,9 @@ mod tests {
         assert!(source.contains("size_full()"));
         assert!(source.contains("close_on_escape"));
         assert!(source.contains("Tour::show(cx)"));
+        let render_once_impl = ["impl RenderOnce", " for Tour"].concat();
+        let into_element_impl = ["impl IntoElement", " for Tour"].concat();
+        assert!(!source.contains(&render_once_impl));
+        assert!(!source.contains(&into_element_impl));
     }
 }

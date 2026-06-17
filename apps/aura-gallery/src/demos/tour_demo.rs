@@ -31,7 +31,7 @@ impl Render for TourDemo {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         page(
             "Tour 漫游引导",
-            "Tour 是顶层浮层引导，不占据页面布局空间；通过 Tour::show(cx) 启动，步骤卡片在 modal overlay 中前进、后退、关闭或完成。",
+            "Tour 是顶层浮层引导，不是可嵌入页面的内容块；通过 Tour::show(cx) 启动，步骤卡片在 modal overlay 中前进、后退、关闭或完成。",
             Space::new()
                 .vertical()
                 .gap_lg()
