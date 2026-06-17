@@ -12,7 +12,7 @@ impl Render for AreaChartDemo {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         page(
             "AreaChart 面积图",
-            "使用填充路径展示趋势规模，支持叠加与堆叠面积。",
+            "使用填充路径展示趋势规模，支持叠加、堆叠面积，以及叠加模式下的 hover tooltip。",
             Space::new()
                 .vertical()
                 .gap_xl()
@@ -24,12 +24,13 @@ impl Render for AreaChartDemo {
                         .height(px(380.0)),
                 ))
                 .child(section(
-                    "多序列叠加",
-                    "多条半透明面积用于对比趋势。",
+                    "多序列叠加 + hover tooltip",
+                    "多条半透明面积用于对比趋势；叠加模式下鼠标靠近点位会显示最近点。",
                     AreaChart::new(multi_series())
                         .id("area-chart-demo-overlay")
                         .height(px(400.0))
-                        .y_domain(0.0, 100.0),
+                        .y_domain(0.0, 100.0)
+                        .tooltip_hit_radius(px(18.0)),
                 ))
                 .child(section(
                     "平滑、颜色与百分比标签",

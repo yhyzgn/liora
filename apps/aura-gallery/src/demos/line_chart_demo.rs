@@ -14,18 +14,19 @@ impl Render for LineChartDemo {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         page(
             "LineChart 折线图",
-            "使用 GPUI canvas/path 原生绘制多序列趋势数据，默认支持平滑曲线和线下渐变填充。",
+            "使用 GPUI canvas/path 原生绘制多序列趋势数据，默认支持平滑曲线、线下渐变填充和点位 hover tooltip。",
             Space::new()
                 .vertical()
                 .gap_xl()
                 .child(section(
-                    "基础趋势",
-                    "展示单条业务指标曲线。",
+                    "基础趋势 + hover tooltip",
+                    "展示单条业务指标曲线；鼠标悬停在点位附近会显示最近点 tooltip。",
                     LineChart::new(cpu_series())
                         .id("line-chart-demo-basic")
                         .height(px(380.0))
                         .smooth(true)
-                        .area_fill(true),
+                        .area_fill(true)
+                        .tooltip_hit_radius(px(16.0)),
                 ))
                 .child(section(
                     "多序列",
@@ -50,13 +51,14 @@ impl Render for LineChartDemo {
                 ))
                 .child(section(
                     "每条线独立样式",
-                    "每个序列可以分别配置实线、虚线、点线、颜色、粗细和平滑效果。",
+                    "每个序列可以分别配置实线、虚线、点线、颜色、粗细和平滑效果；也可关闭 tooltip。",
                     LineChart::new(styled_series())
                         .id("line-chart-demo-styled-lines")
                         .height(px(420.0))
                         .y_domain(0.0, 100.0)
                         .area_fill(false)
-                        .point_markers(false),
+                        .point_markers(false)
+                        .show_tooltip(false),
                 ))
                 .child(section(
                     "大数据降采样",

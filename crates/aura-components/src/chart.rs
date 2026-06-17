@@ -1,5 +1,81 @@
 use aura_core::{Config, unique_id};
-use gpui::{Hsla, Pixels, SharedString, px};
+use gpui::{
+    AnyElement, App, Bounds, Element, ElementId, GlobalElementId, Hsla, InspectorElementId,
+    IntoElement, LayoutId, Pixels, SharedString, Window, px,
+};
+use std::cell::Cell;
+use std::rc::Rc;
+
+pub struct ChartBoundsTracker {
+    pub child: AnyElement,
+    pub bounds: Rc<Cell<Bounds<Pixels>>>,
+}
+
+impl ChartBoundsTracker {
+    pub fn new(child: impl IntoElement, bounds: Rc<Cell<Bounds<Pixels>>>) -> Self {
+        Self {
+            child: child.into_any_element(),
+            bounds,
+        }
+    }
+}
+
+impl IntoElement for ChartBoundsTracker {
+    type Element = Self;
+
+    fn into_element(self) -> Self::Element {
+        self
+    }
+}
+
+impl Element for ChartBoundsTracker {
+    type RequestLayoutState = ();
+    type PrepaintState = ();
+
+    fn id(&self) -> Option<ElementId> {
+        None
+    }
+
+    fn source_location(&self) -> Option<&'static std::panic::Location<'static>> {
+        None
+    }
+
+    fn request_layout(
+        &mut self,
+        _id: Option<&GlobalElementId>,
+        _inspector_id: Option<&InspectorElementId>,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> (LayoutId, Self::RequestLayoutState) {
+        (self.child.request_layout(window, cx), ())
+    }
+
+    fn prepaint(
+        &mut self,
+        _id: Option<&GlobalElementId>,
+        _inspector_id: Option<&InspectorElementId>,
+        _bounds: Bounds<Pixels>,
+        _request_layout: &mut Self::RequestLayoutState,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Self::PrepaintState {
+        self.child.prepaint(window, cx);
+    }
+
+    fn paint(
+        &mut self,
+        _id: Option<&GlobalElementId>,
+        _inspector_id: Option<&InspectorElementId>,
+        bounds: Bounds<Pixels>,
+        _request_layout: &mut Self::RequestLayoutState,
+        _prepaint: &mut Self::PrepaintState,
+        window: &mut Window,
+        cx: &mut App,
+    ) {
+        self.bounds.set(bounds);
+        self.child.paint(window, cx);
+    }
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ChartPoint {
@@ -235,6 +311,8 @@ pub struct ChartOptions {
     pub max_render_points: Option<usize>,
     pub max_axis_labels: usize,
     pub max_value_labels: usize,
+    pub show_tooltip: bool,
+    pub tooltip_hit_radius: Pixels,
 }
 
 impl Default for ChartOptions {
@@ -254,8 +332,126 @@ impl Default for ChartOptions {
             max_render_points: Some(800),
             max_axis_labels: 8,
             max_value_labels: 32,
+            show_tooltip: true,
+            tooltip_hit_radius: px(12.0),
         }
     }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ChartHitPoint {
+    pub series_index: usize,
+    pub point_index: usize,
+    pub series_name: SharedString,
+    pub label: SharedString,
+    pub value: f64,
+    pub x: f32,
+    pub y: f32,
+    pub distance: f32,
+}
+
+pub fn nearest_cartesian_hit_point(
+    series: &[ChartSeries],
+    domain: (f64, f64),
+    plot_width: f32,
+    plot_height: f32,
+    pointer_x: f32,
+    pointer_y: f32,
+    max_distance: f32,
+) -> Option<ChartHitPoint> {
+    if series.is_empty()
+        || !plot_width.is_finite()
+        || !plot_height.is_finite()
+        || plot_width <= 0.0
+        || plot_height <= 0.0
+        || !pointer_x.is_finite()
+        || !pointer_y.is_finite()
+        || !max_distance.is_finite()
+        || max_distance < 0.0
+        || pointer_x < 0.0
+        || pointer_y < 0.0
+        || pointer_x > plot_width
+        || pointer_y > plot_height
+    {
+        return None;
+    }
+
+    let domain_len = label_domain_len(series);
+    if domain_len == 0 {
+        return None;
+    }
+
+    let span = domain.1 - domain.0;
+    if !domain.0.is_finite() || !domain.1.is_finite() || span.abs() < f64::EPSILON {
+        return None;
+    }
+
+    let x_for_index = |index: usize| -> Option<f32> {
+        if index >= domain_len {
+            return None;
+        }
+        if domain_len == 1 {
+            Some(plot_width / 2.0)
+        } else {
+            Some(plot_width * index as f32 / (domain_len - 1) as f32)
+        }
+    };
+    let y_for_value = |value: f64| -> Option<f32> {
+        if !value.is_finite() {
+            return None;
+        }
+        let t = ((value - domain.0) / span) as f32;
+        Some((plot_height - plot_height * t).clamp(0.0, plot_height))
+    };
+
+    let mut best: Option<ChartHitPoint> = None;
+    let mut best_distance_sq = max_distance * max_distance;
+
+    for (series_index, current) in series.iter().enumerate() {
+        for (point_index, point) in current.points.iter().enumerate() {
+            if !point.is_finite() {
+                continue;
+            }
+            let Some(x) = x_for_index(point_index) else {
+                continue;
+            };
+            let Some(y) = y_for_value(point.value) else {
+                continue;
+            };
+            let dx = x - pointer_x;
+            let dy = y - pointer_y;
+            let distance_sq = dx * dx + dy * dy;
+            if distance_sq <= best_distance_sq {
+                best_distance_sq = distance_sq;
+                best = Some(ChartHitPoint {
+                    series_index,
+                    point_index,
+                    series_name: current.name.clone(),
+                    label: point.label.clone(),
+                    value: point.value,
+                    x,
+                    y,
+                    distance: distance_sq.sqrt(),
+                });
+            }
+        }
+    }
+
+    best
+}
+
+pub fn format_hit_tooltip(
+    hit: &ChartHitPoint,
+    formatter: Option<fn(f64) -> SharedString>,
+) -> SharedString {
+    let format_value = formatter.unwrap_or(default_y_format);
+    format!(
+        "{} · {}: {}",
+        hit.series_name,
+        hit.label,
+        format_value(hit.value)
+    )
+    .into()
 }
 
 pub fn default_y_format(value: f64) -> SharedString {
@@ -695,6 +891,32 @@ mod tests {
     }
 
     #[test]
+    fn chart_options_enable_tooltip_by_default() {
+        let options = ChartOptions::default();
+        assert!(options.show_tooltip);
+        assert_eq!(options.tooltip_hit_radius, px(12.0));
+    }
+
+    #[test]
+    fn hit_tooltip_uses_series_label_and_formatter() {
+        let hit = ChartHitPoint {
+            series_index: 0,
+            point_index: 1,
+            series_name: "CPU".into(),
+            label: "10:05".into(),
+            value: 42.25,
+            x: 10.0,
+            y: 20.0,
+            distance: 2.0,
+        };
+
+        assert_eq!(
+            format_hit_tooltip(&hit, Some(|value| format!("{value:.1}%").into())),
+            SharedString::from("CPU · 10:05: 42.2%")
+        );
+    }
+
+    #[test]
     fn chart_series_filters_non_finite_points() {
         let series = ChartSeries::new(
             "metrics",
@@ -845,5 +1067,54 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(downsample_points(&points, None), points);
         assert_eq!(downsample_points(&points, Some(2)), points);
+    }
+
+    #[test]
+    fn nearest_cartesian_hit_point_returns_closest_finite_point() {
+        let series = [
+            ChartSeries::new(
+                "cpu",
+                [
+                    ChartPoint::new("t0", 0.0),
+                    ChartPoint::new("t1", 50.0),
+                    ChartPoint::new("t2", f64::NAN),
+                ],
+            ),
+            ChartSeries::new(
+                "mem",
+                [
+                    ChartPoint::new("t0", 10.0),
+                    ChartPoint::new("t1", 80.0),
+                    ChartPoint::new("t2", 100.0),
+                ],
+            ),
+        ];
+
+        let hit = nearest_cartesian_hit_point(&series, (0.0, 100.0), 200.0, 100.0, 198.0, 2.0, 8.0)
+            .expect("pointer near last mem point should hit");
+
+        assert_eq!(hit.series_index, 1);
+        assert_eq!(hit.point_index, 2);
+        assert_eq!(hit.series_name, SharedString::from("mem"));
+        assert_eq!(hit.label, SharedString::from("t2"));
+        assert_eq!(hit.value, 100.0);
+        assert!(hit.distance <= 8.0);
+    }
+
+    #[test]
+    fn nearest_cartesian_hit_point_respects_threshold_and_bounds() {
+        let series = [ChartSeries::new(
+            "cpu",
+            [ChartPoint::new("t0", 0.0), ChartPoint::new("t1", 100.0)],
+        )];
+
+        assert_eq!(
+            nearest_cartesian_hit_point(&series, (0.0, 100.0), 100.0, 100.0, 50.0, 50.0, 10.0),
+            None
+        );
+        assert_eq!(
+            nearest_cartesian_hit_point(&series, (0.0, 100.0), 100.0, 100.0, -1.0, 0.0, 10.0),
+            None
+        );
     }
 }

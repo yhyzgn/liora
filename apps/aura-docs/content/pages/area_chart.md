@@ -1,6 +1,6 @@
 # AreaChart
 
-`AreaChart` 使用 GPUI 原生 `PathBuilder` 填充路径绘制面积趋势图，适合展示趋势规模、累计流量和多渠道构成。它不是 Web 图表封装，所有绘制都发生在 GPUI 的原生绘制管线中。
+`AreaChart` 使用 GPUI 原生 `PathBuilder` 填充路径绘制面积趋势图，适合展示趋势规模、累计流量和多渠道构成。它不是 Web 图表封装，所有绘制都发生在 GPUI 的原生绘制管线中；Overlay 模式支持最近点 hover tooltip。
 
 ## 基础面积
 
@@ -13,7 +13,7 @@
 ```rust src="area_chart/basic.rs"
 ```
 
-## 多序列叠加
+## 多序列叠加 + hover tooltip
 
 ### 效果
 

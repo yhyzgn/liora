@@ -149,3 +149,9 @@ LineChart::new(series)
 - 已完成第三轮大数据性能修正：核心采样新增 `downsample_index_range`/`downsample_indexed_values`，LineChart/AreaChart/Sparkline 不再先构建全量 `(index,value)`/GPUI Point 中间 Vec 再采样；demo/snippet 不再靠显式稀疏标签参数掩盖卡顿。
 - 降采样策略保留首尾点和局部峰谷，避免长序列在 GPUI native path 中产生过量绘制，同时不隐藏监控尖峰。
 - 剩余维护项：hover tooltip / hit testing 边界、进一步缓存策略。
+
+
+## 2026-06-17 Cartesian tooltip maintenance
+
+- Completed LineChart and AreaChart Overlay nearest-point hover tooltip support using shared pure hit-testing helpers.
+- Remaining tooltip polish: BarChart rectangular hit testing and Pie/Ring polar sector hit testing.

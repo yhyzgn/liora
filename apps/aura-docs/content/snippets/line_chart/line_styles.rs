@@ -48,4 +48,6 @@ pub fn line_chart_line_styles() -> impl IntoElement {
     .y_domain(0.0, 100.0)
     .area_fill(false)
     .point_markers(false)
+    // 纯展示型小图也可以关闭 hover tooltip。
+    .show_tooltip(false)
 }

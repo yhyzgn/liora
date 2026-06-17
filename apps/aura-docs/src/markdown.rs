@@ -2886,6 +2886,7 @@ impl Render for LiveDemoContent {
                 .id("docs-area-chart-overlay")
                 .height(px(300.0))
                 .y_domain(0.0, 100.0)
+                .tooltip_hit_radius(px(18.0))
                 .into_any_element(),
             ]),
             "AreaChartStacked" => demo_row(vec![
@@ -3997,6 +3998,7 @@ impl Render for LiveDemoContent {
                 )])
                 .id("docs-line-chart-basic")
                 .height(px(260.0))
+                .tooltip_hit_radius(px(16.0))
                 .into_any_element(),
             ]),
             "LineChartMulti" => demo_row(vec![
@@ -4117,6 +4119,7 @@ impl Render for LiveDemoContent {
                 .y_domain(0.0, 100.0)
                 .area_fill(false)
                 .point_markers(false)
+                .show_tooltip(false)
                 .into_any_element(),
             ]),
             "LineChartEmpty" => demo_row(vec![

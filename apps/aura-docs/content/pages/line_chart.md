@@ -1,8 +1,8 @@
 # LineChart
 
-`LineChart` 是 P10 统计图阶段的第一个原生图表控件，使用 GPUI `canvas`、`PathBuilder` 与 `paint_path` 绘制趋势线，并复用 Aura 的主题、图例和空状态。
+`LineChart` 是 P10 统计图阶段的第一个原生图表控件，使用 GPUI `canvas`、`PathBuilder` 与 `paint_path` 绘制趋势线，并复用 Aura 的主题、图例、空状态和原生 hover tooltip。
 
-## 基础趋势
+## 基础趋势 + hover tooltip
 
 ### 效果
 
@@ -46,7 +46,7 @@
 ```rust src="line_chart/custom.rs"
 ```
 
-## 每条线独立样式
+## 每条线独立样式（关闭 tooltip）
 
 ### 效果
 

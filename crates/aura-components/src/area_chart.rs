@@ -1,7 +1,8 @@
 use crate::chart::{
-    ChartOptions, ChartPalette, ChartSeries, ChartValueLabelContent, ChartValueLabelPlacement,
-    collect_axis_labels, downsample_index_range, downsample_indexed_values, format_value_label,
-    has_chart_data, label_domain_len, normalized_domain_with_baseline, series_total,
+    ChartBoundsTracker, ChartOptions, ChartPalette, ChartSeries, ChartValueLabelContent,
+    ChartValueLabelPlacement, collect_axis_labels, downsample_index_range,
+    downsample_indexed_values, format_hit_tooltip, format_value_label, has_chart_data,
+    label_domain_len, nearest_cartesian_hit_point, normalized_domain_with_baseline, series_total,
     sparse_indices, stacked_domain,
 };
 use crate::chart_frame::{paint_chart_frame, paint_chart_label_aligned};
@@ -11,11 +12,13 @@ use crate::chart_shape::{
     smooth_line_path,
 };
 use crate::{Empty, Space, Text};
-use aura_core::{Config, unique_id};
+use aura_core::{Config, Placement, TooltipData, clear_tooltip, set_active_tooltip, unique_id};
 use gpui::{
-    App, Component, ElementId, InteractiveElement, IntoElement, ParentElement, Pixels, RenderOnce,
-    SharedString, Styled, Window, canvas, div, px,
+    App, Bounds, Component, ElementId, InteractiveElement, IntoElement, ParentElement, Pixels,
+    RenderOnce, SharedString, Styled, Window, canvas, div, point, px, size,
 };
+use std::cell::Cell;
+use std::rc::Rc;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AreaChartMode {
@@ -85,6 +88,16 @@ impl AreaChart {
 
     pub fn show_value_labels(mut self, show: bool) -> Self {
         self.options.show_value_labels = show;
+        self
+    }
+
+    pub fn show_tooltip(mut self, show: bool) -> Self {
+        self.options.show_tooltip = show;
+        self
+    }
+
+    pub fn tooltip_hit_radius(mut self, radius: Pixels) -> Self {
+        self.options.tooltip_hit_radius = radius.max(px(0.0));
         self
     }
 
@@ -251,7 +264,14 @@ fn render_area_canvas(
     stroke_width: Pixels,
 ) -> impl IntoElement {
     let height = options.height;
-    canvas(
+    let bounds_cell: Rc<Cell<Bounds<Pixels>>> = Rc::new(Cell::new(Bounds::default()));
+    let tooltip_bounds = bounds_cell.clone();
+    let tooltip_series = series.clone();
+    let tooltip_options = options.clone();
+    let tooltip_mode = mode;
+    let tooltip_id: SharedString = format!("{}-tooltip", options.id).into();
+    let move_id = tooltip_id.clone();
+    let chart = canvas(
         |_, _, _| (),
         move |bounds, _, window, cx| {
             let domain_len = label_domain_len(&series);
@@ -329,7 +349,60 @@ fn render_area_canvas(
         },
     )
     .w_full()
-    .h(height)
+    .h(height);
+
+    div()
+        .relative()
+        .w_full()
+        .h(height)
+        .on_mouse_move(move |event, _, cx| {
+            if !tooltip_options.show_tooltip || tooltip_mode != AreaChartMode::Overlay {
+                clear_tooltip(&move_id, cx);
+                return;
+            }
+            let bounds = tooltip_bounds.get();
+            if bounds.size.width <= px(0.0) || bounds.size.height <= px(0.0) {
+                clear_tooltip(&move_id, cx);
+                return;
+            }
+            let padding = tooltip_options.padding;
+            let plot_width =
+                (bounds.size.width.as_f32() - padding.left.as_f32() - padding.right.as_f32())
+                    .max(1.0);
+            let plot_height =
+                (bounds.size.height.as_f32() - padding.top.as_f32() - padding.bottom.as_f32())
+                    .max(1.0);
+            let local_x = (event.position.x - bounds.left() - padding.left).as_f32();
+            let local_y = (event.position.y - bounds.top() - padding.top).as_f32();
+            let domain =
+                normalized_domain_with_baseline(tooltip_options.y_domain, &tooltip_series, true);
+            let Some(hit) = nearest_cartesian_hit_point(
+                &tooltip_series,
+                domain,
+                plot_width,
+                plot_height,
+                local_x,
+                local_y,
+                tooltip_options.tooltip_hit_radius.as_f32(),
+            ) else {
+                clear_tooltip(&move_id, cx);
+                return;
+            };
+            set_active_tooltip(
+                TooltipData {
+                    id: move_id.clone(),
+                    content: format_hit_tooltip(&hit, tooltip_options.y_format),
+                    anchor_bounds: Bounds::new(
+                        point(event.position.x - px(1.0), event.position.y - px(1.0)),
+                        size(px(2.0), px(2.0)),
+                    ),
+                    placement: Placement::Top,
+                    offset: px(8.0),
+                },
+                cx,
+            );
+        })
+        .child(ChartBoundsTracker::new(chart, bounds_cell))
 }
 
 fn sampled_point_indices(
@@ -576,6 +649,8 @@ mod tests {
             .y_domain(0.0, 500.0)
             .line_stroke(false)
             .show_value_labels(false)
+            .show_tooltip(false)
+            .tooltip_hit_radius(px(20.0))
             .value_label_content(ChartValueLabelContent::Percentage)
             .value_label_placement(ChartValueLabelPlacement::OutsideFree)
             .percentage_decimals(2)
@@ -593,6 +668,8 @@ mod tests {
         assert!(!chart.options().show_legend);
         assert_eq!(chart.options().y_domain, Some((0.0, 500.0)));
         assert!(!chart.options().show_value_labels);
+        assert!(!chart.options().show_tooltip);
+        assert_eq!(chart.options().tooltip_hit_radius, px(20.0));
         assert_eq!(
             chart.options().value_label_options.content,
             ChartValueLabelContent::Percentage

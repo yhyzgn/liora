@@ -20,6 +20,8 @@ pub fn line_chart_basic() -> impl IntoElement {
     .height(px(360.0))
     .smooth(true)
     .area_fill(true)
+    // 默认开启 hover tooltip；可通过 tooltip_hit_radius 调整命中距离。
+    .tooltip_hit_radius(px(16.0))
     .value_label_content(ChartValueLabelContent::ValueAndPercentage)
     .percentage_decimals(1)
 }
