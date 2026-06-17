@@ -200,7 +200,7 @@ cargo run -p xtask -- package ci --all-apps --format platform-defaults
 
 ### 9. CI real-run iteration
 
-`.github/workflows/package.yml` 已通过本地结构检查，但还未证明完整 GitHub runner 成功。预期会需要修：
+`.github/workflows/package.yml` 的 preview runner 已通过；release tag path 已补 `vX.Y.Z` + Cargo.toml version match validation。后续还需要真实 `v*` tag runner 验证 GitHub Release asset 上传、Windows MSI、签名/公证相关行为。预期会需要修：
 
 - Linux AppImage dependencies/tools；
 - Windows WiX/NSIS availability；

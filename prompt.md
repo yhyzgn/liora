@@ -358,7 +358,7 @@ GitHub preview runner `27613242837` / commit `5a3615d` 已通过 Linux/macOS/Win
 2. **GitHub Release automation 后续增强**：基础自动 Release、push preview 构建、按提交类型分组 changelog 已接入；后续可补 release draft/prerelease 策略、非 tar 后端 artifact 命名清洗、按平台聚合 manifest。
 3. **Install / uninstall smoke**：已补 artifact smoke 与 `xtask package install-smoke --dry-run` plan-only gate；portable `.tar.gz` 支持显式 `--execute-install` 安全解压/删除验证。仍待在 dedicated runners 和明确 policy 下放开真正系统级 deb/rpm/AppImage/macOS/Windows 安装/卸载执行 gate。
 4. **License / metadata cleanup**：当前无明确 `LICENSE`，RPM 暂用 `LicenseRef-Aura`。
-5. **CI release-tag iteration**：preview runner 已通过；仍需在 `v*` tag 上验证 release job、GitHub Release asset 上传与 Windows MSI。
+5. **CI release-tag iteration**：preview runner 已通过；release tag 已校验为 `vX.Y.Z` 且匹配 packager version；仍需在真实 `v*` tag 上验证 release job、GitHub Release asset 上传与 Windows MSI。
 
 完整细节见 `.prompt/P12-packaging.md`。
 

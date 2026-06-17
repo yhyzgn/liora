@@ -505,3 +505,7 @@ Fixed `xtask package install-smoke --dry-run` so plan-only mode no longer requir
 ## 2026-06-17 phase readiness documentation sync
 
 Synchronized architecture and inventory records with current evidence: P10 native charts are complete with downsampling and Line/Area/Bar/Pie/Ring hover hit testing; P14 deferred advanced backlog is complete; P12 remains in readiness with local runner-safe packaging gates and external-policy work for signing/notarization/real system installs/license.
+
+## 2026-06-17 P12 release tag validation
+
+Added GitHub Actions release tag validation in the package workflow. `v*` release builds now require `vX.Y.Z` and the tag version must match `crates/aura-packager/Cargo.toml`; this prevents prerelease/mismatched tags from reaching package backends such as Windows MSI that require numeric versions. Updated P12 technical plan and prompt handoff docs to distinguish completed preview packaging from remaining real `v*` release-runner/signing/system-install policy work.

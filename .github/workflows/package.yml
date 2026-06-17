@@ -74,6 +74,14 @@ jobs:
           if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
             channel="release"
             version="${GITHUB_REF_NAME#v}"
+            if [[ ! "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "Release tags must use vX.Y.Z so every backend, including Windows MSI, receives a numeric package version. Got: ${GITHUB_REF_NAME}" >&2
+              exit 1
+            fi
+            if [[ "${version}" != "${base_version}" ]]; then
+              echo "Release tag ${GITHUB_REF_NAME} does not match crates/aura-packager version ${base_version}. Bump the package version or retag before releasing." >&2
+              exit 1
+            fi
           else
             channel="preview"
             short_sha="${GITHUB_SHA::7}"

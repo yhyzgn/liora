@@ -1,7 +1,7 @@
 # Aura 程序安装器构建打包技术方案
 
 日期：2026-05-15  
-状态：实施中 / preview CI 全平台打包已通过；install-smoke plan 已补；签名、公证、真实系统安装/卸载执行待外部策略
+状态：Readiness / preview CI 全平台打包已通过；install-smoke plan 与 release tag validation 已补；签名、公证、真实系统安装/卸载执行待外部策略
 适用范围：`aura-gallery`、`aura-docs` 以及后续所有纯 GPUI Aura 主程序
 
 ## 1. 目标
@@ -362,18 +362,15 @@ GitHub Actions matrix：
 ```text
 linux-x86_64:
   - cargo test
-  - cargo xtask package --all-apps --format appimage
-  - cargo xtask package --all-apps --format deb
-  - cargo xtask package --all-apps --format rpm
+  - cargo run -p xtask -- package ci --all-apps --format platform-defaults
+  - cargo run -p xtask -- package smoke --all-apps --format platform-defaults
+  - cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults
 
-macos-aarch64 / macos-x86_64:
+macos / windows:
   - cargo test
-  - cargo xtask package --all-apps --format dmg
-
-windows-x86_64:
-  - cargo test
-  - cargo xtask package --all-apps --format nsis
-  - cargo xtask package --all-apps --format msi
+  - cargo run -p xtask -- package ci --all-apps --format platform-defaults
+  - cargo run -p xtask -- package smoke --all-apps --format platform-defaults
+  - cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults
 ```
 
 发布产物命名：
@@ -429,9 +426,9 @@ release-notes.md
 
 ### Phase 3：Linux 包
 
-- [ ] AppImage（cargo-packager 后端命令已接入，待安装本机后端工具后产物 smoke）。
-- [ ] deb（cargo-packager 后端命令已接入，待安装本机后端工具后产物 smoke）。
-- [x] rpm（`cargo-generate-rpm` supplemental backend 配置生成和命令路由已接入，待安装本机后端工具后产物 smoke）。
+- [x] AppImage（cargo-packager 后端命令已接入，preview CI 已产出并 smoke）。
+- [x] deb（cargo-packager 后端命令已接入，preview CI 已产出并 smoke）。
+- [x] rpm（`cargo-generate-rpm` supplemental backend 配置生成和命令路由已接入，preview CI 已产出并 smoke）。
 - [x] portable tar.gz（Aura supplemental backend 已接入，不再映射为 cargo-packager pacman）。
 - [ ] Pacman / PKGBUILD（如需 Arch 原生包再补）。
 - [x] artifact smoke：`xtask package smoke` 验证 portable tar.gz 结构，并对其他格式做 runner-safe 头部/非空检查。
@@ -471,7 +468,7 @@ release-notes.md
 ### Phase 6：CI 发布流水线
 
 - [x] 添加 GitHub Actions packaging workflow（`.github/workflows/package.yml`）。
-- [x] tag push 触发 release build（`v*` tags）。
+- [x] tag push 触发 release build（`v*` tags），并校验 tag 为 `vX.Y.Z` 且匹配 `crates/aura-packager` version。
 - [x] 上传 artifacts（`target/packages/**` 与生成的后端配置）。
 - [x] 生成 checksums。
 - [x] 生成 release manifest。
@@ -479,7 +476,7 @@ release-notes.md
 
 验收：
 
-- tag 构建能产生 Gallery / Docs 全部目标平台安装包。
+- preview 构建已产生 Gallery / Docs 目标平台安装包；tag release 构建路径已配置并校验 tag/version，仍需真实 `v*` runner 验证 release asset 上传和 Windows MSI。
 
 ## 12. 风险与对策
 
@@ -523,7 +520,8 @@ release-notes.md
 - `xtask package smoke` 已接入 CI artifact 上传前检查；`xtask package install-smoke` 已新增 plan-only 安装/启动/卸载命令审计，并允许 portable `.tar.gz` 显式 `--execute-install` 安全解压/删除验证。真正系统级 deb/rpm/AppImage/macOS/Windows install/uninstall 执行 gate 仍待签名、runner policy 和专用环境后再放开。Artifact 扫描会忽略 `.cargo-packager` 等隐藏后端工作目录，避免把 deb/rpm 内部归档误判为发布产物。
 - `cargo-generate-rpm --metadata-overwrite` 使用 `GenerateRpm.<app>.toml#package.metadata.generate-rpm` 分支加载生成配置；生成 TOML 将 metadata 放在 `[package.metadata.generate-rpm]` 下、依赖放在 `[package.metadata.generate-rpm.requires]` 下，避免真实 runner 从错误表读取而丢失 `assets`。
 - GitHub preview runner `27613242837` / commit `5a3615d` 已通过 Linux/macOS/Windows packaging matrix：真实 package generation、artifact smoke、raw binary upload、package artifact upload 均成功。
-- 后续仍需在 `v*` tag 上验证 release job、GitHub Release asset 上传、Windows MSI，以及签名/公证和真正安装/卸载 smoke。
+- Release tag validation 已补：`v*` tag 必须是 `vX.Y.Z` 且匹配 `crates/aura-packager` version，防止 MSI/Release 使用非法或错配版本。
+- 后续仍需在真实 `v*` tag 上验证 release job、GitHub Release asset 上传、Windows MSI，以及签名/公证和真正安装/卸载 smoke。
 
 ## 15. 决策记录
 
