@@ -1,7 +1,7 @@
 # Aura 程序安装器构建打包技术方案
 
 日期：2026-05-15  
-状态：实施中 / preview CI 全平台打包已通过；签名、公证、安装/卸载 smoke 待补
+状态：实施中 / preview CI 全平台打包已通过；install-smoke plan 已补；签名、公证、真实系统安装/卸载执行待外部策略
 适用范围：`aura-gallery`、`aura-docs` 以及后续所有纯 GPUI Aura 主程序
 
 ## 1. 目标
@@ -520,7 +520,7 @@ release-notes.md
 - `rpm` 仍归类为 supplemental backend，但已优先接入 `cargo-generate-rpm` 的 metadata overwrite 配置生成和 `cargo generate-rpm` 命令路由；`nfpm` 仅作为后备方案。
 - `.deb` / `.rpm` 生成配置已补 Linux runtime dependency metadata。
 - manifest 已扩充 `targetTriple` 与 `gitSha`，release notes 同步展示 version、target triple、git sha。
-- `xtask package smoke` 已接入 CI artifact 上传前检查；当前为非安装式 smoke，真正 install/uninstall smoke 仍待补。Artifact 扫描会忽略 `.cargo-packager` 等隐藏后端工作目录，避免把 deb/rpm 内部归档误判为发布产物。
+- `xtask package smoke` 已接入 CI artifact 上传前检查；`xtask package install-smoke` 已新增 plan-only 安装/启动/卸载命令审计，并允许 portable `.tar.gz` 显式 `--execute-install` 安全解压/删除验证。真正系统级 deb/rpm/AppImage/macOS/Windows install/uninstall 执行 gate 仍待签名、runner policy 和专用环境后再放开。Artifact 扫描会忽略 `.cargo-packager` 等隐藏后端工作目录，避免把 deb/rpm 内部归档误判为发布产物。
 - `cargo-generate-rpm --metadata-overwrite` 使用 `GenerateRpm.<app>.toml#package.metadata.generate-rpm` 分支加载生成配置；生成 TOML 将 metadata 放在 `[package.metadata.generate-rpm]` 下、依赖放在 `[package.metadata.generate-rpm.requires]` 下，避免真实 runner 从错误表读取而丢失 `assets`。
 - GitHub preview runner `27613242837` / commit `5a3615d` 已通过 Linux/macOS/Windows packaging matrix：真实 package generation、artifact smoke、raw binary upload、package artifact upload 均成功。
 - 后续仍需在 `v*` tag 上验证 release job、GitHub Release asset 上传、Windows MSI，以及签名/公证和真正安装/卸载 smoke。
