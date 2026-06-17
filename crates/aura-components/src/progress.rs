@@ -291,7 +291,7 @@ impl RenderOnce for Progress {
             let target = self.percentage / 100.0;
             let inside_center = self.show_text && self.text_inside && self.text_inside_center;
             let center_text_color = if self.percentage >= 50.0 {
-                gpui::white()
+                theme.neutral.inverted
             } else {
                 theme.neutral.text_2
             };
@@ -317,7 +317,7 @@ impl RenderOnce for Progress {
                             .child(
                                 div()
                                     .text_xs()
-                                    .text_color(gpui::white())
+                                    .text_color(theme.neutral.inverted)
                                     .whitespace_nowrap()
                                     .child(percent_text.clone()),
                             )

@@ -115,3 +115,13 @@ Validation evidence for this slice:
 - `cargo test -p aura-components -- --nocapture` passed: 195 unit tests plus package integration tests.
 - Full P15 gate suite passed after whitespace cleanup: fmt, workspace check/test, docs snippet check, package validate, packaging dry-run, install-smoke dry-run, and `git diff --check`.
 - GUI smoke passed: `timeout 10s cargo run -p aura-gallery` and `timeout 10s cargo run -p aura-docs` both started successfully and exited via expected timeout.
+
+### 2026-06-17 — Track C visual/theme consistency slice
+
+- Replaced hard-coded production `gpui::white()` text on colored/dark Tag and line Progress surfaces with `theme.neutral.inverted`, preserving contrast intent while honoring light/dark theme tokens.
+- Added visual/theme audit tests for hardened colored surfaces and representative Virtualized* surface/border/radius token usage.
+
+Validation evidence for this slice:
+- `cargo test -p aura-components -- --nocapture` passed: 197 unit tests plus package integration tests.
+- Full P15 gate suite passed: fmt, workspace check/test, docs snippet check, package validate, packaging dry-run, install-smoke dry-run, and `git diff --check`.
+- GUI smoke passed: `timeout 10s cargo run -p aura-gallery` and `timeout 10s cargo run -p aura-docs` both started successfully and exited via expected timeout.

@@ -143,10 +143,8 @@ impl RenderOnce for Tag {
             TagEffect::Plain => (theme.neutral.body, color.opacity(0.4), color),
         };
 
-        // If it's dark effect, we might want a different text color if theme text primary is too dark.
-        // But for simplicity, let's assume the user wants light text on dark backgrounds.
         let actual_text_color = if self.effect == TagEffect::Dark {
-            gpui::white()
+            theme.neutral.inverted
         } else {
             text_color
         };

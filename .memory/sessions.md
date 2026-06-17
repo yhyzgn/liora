@@ -3114,3 +3114,15 @@
 - `cargo test -p aura-components api_consistency_audit_tests -- --nocapture` passed.
 - Full P15 gate suite passed after whitespace cleanup: fmt, workspace check/test, docs snippet check, package validate, packaging dry-run, install-smoke dry-run, and `git diff --check`.
 - GUI smoke passed: `timeout 10s cargo run -p aura-gallery` and `timeout 10s cargo run -p aura-docs` both started successfully and exited via expected timeout.
+
+## Session 2026-06-17 — P15 Track C Visual Theme Consistency
+
+### Actions
+- Started Track C visual/theme consistency with a focused token-hardening slice.
+- Replaced hard-coded production `gpui::white()` text on dark/colored Tag and line Progress surfaces with `theme.neutral.inverted`.
+- Added source-level visual consistency regression tests for colored surface text tokens and representative Virtualized* surface/border/radius token usage.
+
+### Verification
+- `cargo test -p aura-components -- --nocapture` passed: 197 unit tests plus package integration tests.
+- Full P15 gate suite passed: fmt, workspace check/test, docs snippet check, package validate, packaging dry-run, install-smoke dry-run, and `git diff --check`.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.

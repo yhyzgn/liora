@@ -481,3 +481,45 @@ mod api_consistency_audit_tests {
         );
     }
 }
+
+#[cfg(test)]
+mod visual_theme_consistency_tests {
+    #[test]
+    fn hardened_colored_surfaces_use_theme_inverted_text_token() {
+        for (name, source) in [
+            ("tag", include_str!("tag.rs")),
+            ("progress", include_str!("progress.rs")),
+        ] {
+            let production = source.split("#[cfg(test)]").next().unwrap_or(source);
+            assert!(
+                production.contains("theme.neutral.inverted"),
+                "{name} should use theme.neutral.inverted for text on colored/dark surfaces"
+            );
+            assert!(
+                !production.contains("gpui::white()"),
+                "{name} production rendering should not hard-code white text"
+            );
+        }
+    }
+
+    #[test]
+    fn virtualized_components_use_theme_surface_border_and_radius_tokens() {
+        for (name, source) in [
+            ("virtualized_table", include_str!("virtualized_table.rs")),
+            ("virtualized_tree", include_str!("virtualized_tree.rs")),
+        ] {
+            assert!(
+                source.contains("theme.neutral.card"),
+                "{name} should use the themed card surface"
+            );
+            assert!(
+                source.contains("theme.neutral.border"),
+                "{name} should use themed borders"
+            );
+            assert!(
+                source.contains("theme.radius.md"),
+                "{name} should use themed radius tokens"
+            );
+        }
+    }
+}
