@@ -209,8 +209,7 @@ impl RenderOnce for Sparkline {
         let id = self.id.clone();
         let height = self.height;
         let width = self.width;
-        let stats = finite_stats(&self.values);
-        if stats.is_none() {
+        let Some(stats) = finite_stats(&self.values) else {
             return div()
                 .id(ElementId::from(id))
                 .h(height)
@@ -219,9 +218,8 @@ impl RenderOnce for Sparkline {
                 .rounded_sm()
                 .bg(theme.neutral.hover.opacity(0.28))
                 .into_any_element();
-        }
+        };
 
-        let stats = stats.unwrap();
         let domain = sparkline_domain(self.y_domain, stats).unwrap_or((0.0, 1.0));
         let positive = self.positive_color.unwrap_or(theme.success.base);
         let negative = self.negative_color.unwrap_or(theme.danger.base);

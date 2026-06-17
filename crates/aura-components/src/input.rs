@@ -534,7 +534,10 @@ impl Input {
                     if byte_idx >= original_line.len() {
                         break;
                     }
-                    byte_idx += original_line[byte_idx..].chars().next().unwrap().len_utf8();
+                    let Some(ch) = original_line[byte_idx..].chars().next() else {
+                        break;
+                    };
+                    byte_idx += ch.len_utf8();
                 }
                 final_original_byte_offset + byte_idx
             } else {
@@ -589,7 +592,9 @@ impl Input {
         let mut start = idx;
         while start > 0 {
             let prev = self.prev_char(start);
-            let c = text[prev..start].chars().next().unwrap();
+            let Some(c) = text[prev..start].chars().next() else {
+                break;
+            };
             if !c.is_alphanumeric() && c != '_' {
                 break;
             }
@@ -598,7 +603,9 @@ impl Input {
         let mut end = idx;
         while end < text.len() {
             let next = self.next_char(end);
-            let c = text[end..next].chars().next().unwrap();
+            let Some(c) = text[end..next].chars().next() else {
+                break;
+            };
             if !c.is_alphanumeric() && c != '_' {
                 break;
             }
@@ -1301,15 +1308,14 @@ impl Element for InputElement {
         }
         let text_align = prepaint.text_align;
         for (line, y) in &prepaint.lines {
-            line.paint(
+            let _ = line.paint(
                 point(bounds.left(), *y),
                 window.line_height(),
                 text_align,
                 None,
                 window,
                 cx,
-            )
-            .unwrap();
+            );
         }
         if focus_handle.is_focused(window) {
             if let Some(c) = prepaint.cursor.take() {

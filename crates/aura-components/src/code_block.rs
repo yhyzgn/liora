@@ -1191,16 +1191,14 @@ impl Element for ReadOnlyCodeElement {
     ) {
         let line_height = self.input.read(cx).line_height();
         for line in &prepaint.layout.lines {
-            line.shaped
-                .paint(
-                    point(bounds.left(), bounds.top() + line.y),
-                    line_height,
-                    gpui::TextAlign::Left,
-                    None,
-                    window,
-                    cx,
-                )
-                .unwrap();
+            let _ = line.shaped.paint(
+                point(bounds.left(), bounds.top() + line.y),
+                line_height,
+                gpui::TextAlign::Left,
+                None,
+                window,
+                cx,
+            );
         }
     }
 }
@@ -1717,16 +1715,14 @@ impl Element for SelectableCodeElement {
         }
 
         for line in &prepaint.layout.lines {
-            line.shaped
-                .paint(
-                    point(bounds.left(), bounds.top() + line.y),
-                    self.input.read(cx).line_height(),
-                    gpui::TextAlign::Left,
-                    None,
-                    window,
-                    cx,
-                )
-                .unwrap();
+            let _ = line.shaped.paint(
+                point(bounds.left(), bounds.top() + line.y),
+                self.input.read(cx).line_height(),
+                gpui::TextAlign::Left,
+                None,
+                window,
+                cx,
+            );
         }
     }
 }

@@ -311,3 +311,173 @@ mod overlay_escape_coverage_tests {
         }
     }
 }
+
+#[cfg(test)]
+mod api_consistency_audit_tests {
+    #[test]
+    fn public_callbacks_keep_value_window_app_shape_except_entity_local_controls() {
+        let value_callbacks = [
+            (
+                "affix",
+                include_str!("affix.rs"),
+                "Fn(bool, &mut Window, &mut App)",
+            ),
+            (
+                "autocomplete",
+                include_str!("autocomplete.rs"),
+                "Fn(AutocompleteItem, &mut Window, &mut App)",
+            ),
+            (
+                "calendar",
+                include_str!("calendar.rs"),
+                "Fn(CalendarDate, &mut Window, &mut App)",
+            ),
+            (
+                "checkbox",
+                include_str!("checkbox.rs"),
+                "Fn(bool, &mut Window, &mut App)",
+            ),
+            (
+                "checkbox_group",
+                include_str!("checkbox_group.rs"),
+                "Fn(Vec<usize>, &mut Window, &mut App)",
+            ),
+            (
+                "color_picker",
+                include_str!("color_picker.rs"),
+                "Fn(SharedString, &mut Window, &mut App)",
+            ),
+            (
+                "input_number",
+                include_str!("input_number.rs"),
+                "Fn(f64, &mut Window, &mut App)",
+            ),
+            (
+                "input_tag",
+                include_str!("input_tag.rs"),
+                "Fn(Vec<SharedString>, &mut Window, &mut App)",
+            ),
+            (
+                "pagination",
+                include_str!("pagination.rs"),
+                "Fn(usize, &mut Window, &mut App)",
+            ),
+            (
+                "radio_group",
+                include_str!("radio_group.rs"),
+                "Fn(usize, &mut Window, &mut App)",
+            ),
+            (
+                "switch",
+                include_str!("switch.rs"),
+                "Fn(bool, &mut Window, &mut App)",
+            ),
+            (
+                "tour",
+                include_str!("tour.rs"),
+                "Fn(usize, &mut Window, &mut App)",
+            ),
+        ];
+
+        for (name, source, signature) in value_callbacks {
+            assert!(
+                source.contains(signature),
+                "{name} should keep callback signature `{signature}`"
+            );
+        }
+
+        let entity_local_callbacks = [
+            (
+                "input",
+                include_str!("input.rs"),
+                "Fn(&str, &mut Context<Self>)",
+            ),
+            (
+                "code_editor",
+                include_str!("code_editor.rs"),
+                "Fn(&str, &mut Context<CodeEditor>)",
+            ),
+            (
+                "horizontal_list",
+                include_str!("horizontal_list.rs"),
+                "Fn(usize, usize, &mut Window, &mut Context<HorizontalList>)",
+            ),
+        ];
+
+        for (name, source, signature) in entity_local_callbacks {
+            assert!(
+                source.contains(signature),
+                "{name} should document its entity-local callback context with `{signature}`"
+            );
+        }
+    }
+
+    #[test]
+    fn state_builders_keep_consistent_boolean_builder_names() {
+        let disabled_sources = [
+            ("button", include_str!("button.rs")),
+            ("checkbox", include_str!("checkbox.rs")),
+            ("radio", include_str!("radio.rs")),
+            ("switch", include_str!("switch.rs")),
+            ("segmented", include_str!("segmented.rs")),
+            ("upload", include_str!("upload.rs")),
+            ("transfer", include_str!("transfer.rs")),
+            ("horizontal_list", include_str!("horizontal_list.rs")),
+        ];
+        for (name, source) in disabled_sources {
+            assert!(
+                source.contains("pub fn disabled("),
+                "{name} should expose disabled(...) as its public boolean state builder"
+            );
+        }
+
+        for (name, source) in [
+            ("dialog", include_str!("dialog.rs")),
+            ("drawer", include_str!("drawer.rs")),
+            ("popover", include_str!("popover.rs")),
+            ("tour", include_str!("tour.rs")),
+            ("select", include_str!("select.rs")),
+            ("date_picker", include_str!("date_picker.rs")),
+            ("time_picker", include_str!("time_picker.rs")),
+        ] {
+            assert!(
+                source.contains("pub fn close_on_escape("),
+                "{name} should expose close_on_escape(...) for overlay keyboard behavior"
+            );
+        }
+    }
+
+    #[test]
+    fn avoidable_runtime_panics_stay_out_of_hardened_paths() {
+        let hardened_sources = [
+            ("button", include_str!("button.rs")),
+            ("chart", include_str!("chart.rs")),
+            ("date_time_picker", include_str!("date_time_picker.rs")),
+            ("input", include_str!("input.rs")),
+            ("input_number", include_str!("input_number.rs")),
+            ("sparkline", include_str!("sparkline.rs")),
+        ];
+
+        for (name, source) in hardened_sources {
+            let production = source.split("#[cfg(test)]").next().unwrap_or(source);
+            assert!(
+                !production.contains(".unwrap()"),
+                "{name} production path should not use avoidable bare unwrap()"
+            );
+            assert!(
+                !production.contains("expect(\"valid default"),
+                "{name} production path should not panic on constant default values"
+            );
+        }
+
+        let code_block_production = include_str!("code_block.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap_or(include_str!("code_block.rs"));
+        assert!(
+            !code_block_production.contains(".paint(\n")
+                || !code_block_production.contains(".unwrap();"),
+            "CodeBlock paint paths should not panic on shaped text paint results"
+        );
+    }
+}

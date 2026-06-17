@@ -32,10 +32,11 @@ impl InputNumber {
                 if text.is_empty() {
                     return true;
                 }
-                let mut chars = text.chars();
-                let first = chars.next().unwrap();
+                let Some(first) = text.chars().next() else {
+                    return true;
+                };
                 if first == '+' || first == '-' {
-                    let rest: String = chars.collect();
+                    let rest: String = text.chars().skip(1).collect();
                     if rest.is_empty() {
                         return true;
                     }

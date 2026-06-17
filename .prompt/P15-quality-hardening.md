@@ -103,3 +103,15 @@ Validation evidence for this slice:
 - `cargo test -p aura-components -- --nocapture` passed: 192 unit tests plus integration tests.
 - Full P15 gate suite passed: fmt, workspace check/test, docs snippet check, package validate, packaging dry-run, install-smoke dry-run, and `git diff --check`.
 - GUI smoke passed: `timeout 10s cargo run -p aura-gallery` and `timeout 10s cargo run -p aura-docs` both started successfully and exited via expected timeout.
+
+### 2026-06-17 — Track B callback/state and panic audit
+
+- Added API consistency audit tests that lock the public callback convention: value callbacks use `(value, &mut Window, &mut App)`, while entity-local controls such as `Input`, `CodeEditor`, and `HorizontalList` explicitly use `Context<...>` callbacks.
+- Added state-builder audit coverage for `disabled(...)` and `close_on_escape(...)` naming across representative controls.
+- Removed avoidable production-path `unwrap()` / `expect()` / paint-result panics from hardened paths: Button icon-only rendering, DateTimePicker defaults, Input masked/word selection and paint, InputNumber filtering, Chart downsampling, Sparkline empty-data handling, and CodeBlock paint paths.
+
+Validation evidence for this slice:
+- `cargo test -p aura-components api_consistency_audit_tests -- --nocapture` passed.
+- `cargo test -p aura-components -- --nocapture` passed: 195 unit tests plus package integration tests.
+- Full P15 gate suite passed after whitespace cleanup: fmt, workspace check/test, docs snippet check, package validate, packaging dry-run, install-smoke dry-run, and `git diff --check`.
+- GUI smoke passed: `timeout 10s cargo run -p aura-gallery` and `timeout 10s cargo run -p aura-docs` both started successfully and exited via expected timeout.

@@ -3102,3 +3102,15 @@
 - `cargo test -p aura-components -- --nocapture` passed: 192 unit tests plus package integration tests.
 - Full P15 gate suite passed: fmt, workspace check/test, docs snippet check, package validate, packaging dry-run, install-smoke dry-run, and `git diff --check`.
 - GUI smoke passed: `timeout 10s cargo run -p aura-gallery` and `timeout 10s cargo run -p aura-docs` both started successfully and exited via expected timeout.
+
+## Session 2026-06-17 — P15 Track B Callback and Panic Audit
+
+### Actions
+- Added source-level API consistency regression tests for public callback signatures and state-builder naming.
+- Documented entity-local callback exceptions for Input, CodeEditor, and HorizontalList instead of forcing a breaking signature change.
+- Removed avoidable production-path panics from Button icon-only rendering, DateTimePicker defaults, Input text hit-testing/paint, InputNumber filtering, Chart downsampling, Sparkline rendering, and CodeBlock shaped-text paint paths.
+
+### Verification
+- `cargo test -p aura-components api_consistency_audit_tests -- --nocapture` passed.
+- Full P15 gate suite passed after whitespace cleanup: fmt, workspace check/test, docs snippet check, package validate, packaging dry-run, install-smoke dry-run, and `git diff --check`.
+- GUI smoke passed: `timeout 10s cargo run -p aura-gallery` and `timeout 10s cargo run -p aura-docs` both started successfully and exited via expected timeout.

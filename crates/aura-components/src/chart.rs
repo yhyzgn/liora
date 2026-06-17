@@ -827,32 +827,35 @@ where
         let end = (start + bucket_size).min(finite.len() - 1);
         let bucket = &finite[start..end];
         if !bucket.is_empty() {
-            let (min_offset, _) = bucket
-                .iter()
-                .enumerate()
-                .min_by(|(_, a), (_, b)| a.1.total_cmp(&b.1))
-                .unwrap();
-            let (max_offset, _) = bucket
-                .iter()
-                .enumerate()
-                .max_by(|(_, a), (_, b)| a.1.total_cmp(&b.1))
-                .unwrap();
-            if min_offset <= max_offset {
-                sampled.push(bucket[min_offset]);
-                if min_offset != max_offset && sampled.len() + 1 < max_points {
-                    sampled.push(bucket[max_offset]);
-                }
-            } else {
-                sampled.push(bucket[max_offset]);
-                if sampled.len() + 1 < max_points {
+            if let (Some((min_offset, _)), Some((max_offset, _))) = (
+                bucket
+                    .iter()
+                    .enumerate()
+                    .min_by(|(_, a), (_, b)| a.1.total_cmp(&b.1)),
+                bucket
+                    .iter()
+                    .enumerate()
+                    .max_by(|(_, a), (_, b)| a.1.total_cmp(&b.1)),
+            ) {
+                if min_offset <= max_offset {
                     sampled.push(bucket[min_offset]);
+                    if min_offset != max_offset && sampled.len() + 1 < max_points {
+                        sampled.push(bucket[max_offset]);
+                    }
+                } else {
+                    sampled.push(bucket[max_offset]);
+                    if sampled.len() + 1 < max_points {
+                        sampled.push(bucket[min_offset]);
+                    }
                 }
             }
         }
         start = end;
     }
 
-    let last = *finite.last().unwrap();
+    let Some(last) = finite.last().copied() else {
+        return sampled;
+    };
     if sampled.len() >= max_points {
         sampled.pop();
     }

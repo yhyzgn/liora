@@ -523,8 +523,7 @@ impl Button {
         // Build children: icons + label
         let mut children: Vec<AnyElement> = Vec::new();
 
-        if icon_only {
-            let icon = self.icon_only.unwrap();
+        if let Some(icon) = self.icon_only {
             let group = hover_group.clone();
             children.push(
                 Icon::new(icon)

@@ -96,8 +96,16 @@ impl DateTimeValue {
 
 impl DateTimePicker {
     pub fn new() -> Self {
-        let default_date = DateValue::new(2026, 5, 8).expect("valid default date");
-        let default_time = TimeValue::new(0, 0, 0).expect("valid default time");
+        let default_date = DateValue {
+            year: 2026,
+            month: 5,
+            day: 8,
+        };
+        let default_time = TimeValue {
+            hour: 0,
+            minute: 0,
+            second: 0,
+        };
         Self {
             id: aura_core::unique_id("date-time-picker"),
             picker_type: DateTimePickerType::DateTime,
