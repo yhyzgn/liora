@@ -3140,3 +3140,17 @@
 - `cargo check --workspace --all-targets` passed.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+## Session 2026-06-17 — P15 Track C Themed Control Text
+
+### Actions
+- Continued visual/theme consistency hardening for remaining obvious colored-surface text paths.
+- Replaced hard-coded white text in Button gradient rendering, Badge text, and Pagination active-background text with `theme.neutral.inverted`.
+- Left non-text color math/overlay/test `gpui::white()` uses untouched to avoid over-broad visual churn.
+
+### Verification
+- `cargo fmt --all --check` passed.
+- `cargo test -p aura-components -- --nocapture` passed: 198 unit tests plus package integration tests.
+- `cargo check --workspace --all-targets` passed.
+- `git diff --check` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.

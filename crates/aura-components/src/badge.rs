@@ -110,7 +110,7 @@ impl RenderOnce for Badge {
                 .rounded_full()
                 .border_1()
                 .border_color(theme.neutral.body)
-                .text_color(gpui::white())
+                .text_color(theme.neutral.inverted)
                 .text_size(px(10.0))
                 .font_weight(gpui::FontWeight::BOLD)
                 .child(display_value)

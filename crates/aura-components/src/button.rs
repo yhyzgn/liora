@@ -378,7 +378,7 @@ impl Button {
         }
 
         if self.gradient.is_some() {
-            let text = gpui::white();
+            let text = theme.neutral.inverted;
             return ButtonVariantColors {
                 bg: rgba(0, 0, 0, 0.0),
                 hover_bg: rgba(0, 0, 0, 0.0),

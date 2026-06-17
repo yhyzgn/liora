@@ -207,7 +207,7 @@ impl Render for Pagination {
                 theme.neutral.text_3
             } else if active {
                 if background {
-                    gpui::white()
+                    theme.neutral.inverted
                 } else {
                     theme.primary.base
                 }
@@ -226,7 +226,7 @@ impl Render for Pagination {
             };
             let hover_text_color = if active {
                 if background {
-                    gpui::white()
+                    theme.neutral.inverted
                 } else {
                     theme.primary.base
                 }

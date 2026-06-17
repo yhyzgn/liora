@@ -489,6 +489,8 @@ mod visual_theme_consistency_tests {
         for (name, source) in [
             ("tag", include_str!("tag.rs")),
             ("progress", include_str!("progress.rs")),
+            ("badge", include_str!("badge.rs")),
+            ("pagination", include_str!("pagination.rs")),
             ("bar_chart", include_str!("bar_chart.rs")),
             ("pie_chart", include_str!("pie_chart.rs")),
         ] {
@@ -502,6 +504,19 @@ mod visual_theme_consistency_tests {
                 "{name} production rendering should not hard-code white text"
             );
         }
+    }
+
+    #[test]
+    fn gradient_buttons_use_theme_inverted_text_token() {
+        let production = include_str!("button.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap_or_default();
+
+        assert!(
+            production.contains("let text = theme.neutral.inverted"),
+            "gradient button text should use the semantic inverted text token"
+        );
     }
 
     #[test]

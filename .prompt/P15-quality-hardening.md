@@ -137,3 +137,16 @@ Validation evidence for this slice:
 - `cargo check --workspace --all-targets` passed.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+### 2026-06-17 — Track C themed control text slice
+
+- Replaced hard-coded production white text for Button gradient text, Badge text, and Pagination active-background text with `theme.neutral.inverted`.
+- Kept remaining `gpui::white()` occurrences where they are non-text color math, marker/border overlays, tests, or caller-provided example values.
+- Extended visual/theme audit tests for Badge/Pagination colored surfaces and Button gradient text.
+
+Validation evidence for this slice:
+- `cargo fmt --all --check` passed.
+- `cargo test -p aura-components -- --nocapture` passed: 198 unit tests plus package integration tests.
+- `cargo check --workspace --all-targets` passed.
+- `git diff --check` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.

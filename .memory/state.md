@@ -11,7 +11,7 @@ Local implementation phases are complete through P14; P15 is now active for rele
 - P12 Native Packaging: runner-safe readiness complete; remaining work is external-policy/credential/runner gated (signing/notarization, real system install/uninstall, formal license policy, real `v*` release run).
 - P13 Component Expansion: implemented and documented.
 - P14 Deferred Advanced: complete; the P9 backlog has been migrated and delivered.
-- P15 Quality Hardening: active; Track A general CI gates are in place, Track B API consistency/panic cleanup is complete for the first pass, and Track C visual/theme consistency has hardened colored-surface text plus chart internal value labels against semantic inverted text tokens.
+- P15 Quality Hardening: active; Track A general CI gates are in place, Track B API consistency/panic cleanup is complete for the first pass, and Track C visual/theme consistency has hardened colored-surface text, chart internal value labels, gradient button text, badge text, and active pagination text against semantic inverted text tokens.
 
 P12 external-policy items remain tracked but do not block local P15 hardening work. Do not mark P12 fully complete until signing/notarization, real system installs, license policy, and real `v*` release validation are satisfied or formally declared out of scope.
 
