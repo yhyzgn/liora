@@ -1,8 +1,8 @@
 # BarChart
 
-`BarChart` 使用 GPUI 原生 `canvas` 与 `paint_quad` 绘制分类柱状图，适合展示分类对比、分组对比和构成堆叠。它复用 P10 图表基础设施中的 `ChartSeries`、`ChartPoint`、比例尺、坐标轴和主题色板。
+`BarChart` 使用 GPUI 原生 `canvas` 与 `paint_quad` 绘制分类柱状图，适合展示分类对比、分组对比和构成堆叠。它复用 P10 图表基础设施中的 `ChartSeries`、`ChartPoint`、比例尺、坐标轴、主题色板和原生 hover tooltip。
 
-## 基础分组
+## 基础分组 + hover tooltip
 
 ### 效果
 
@@ -13,7 +13,7 @@
 ```rust src="bar_chart/basic.rs"
 ```
 
-## 多序列分组
+## 多序列分组（矩形 hit testing）
 
 ### 效果
 
@@ -46,7 +46,7 @@
 ```rust src="bar_chart/per_bar_gradient.rs"
 ```
 
-## 堆叠柱状图
+## 堆叠柱状图（分段 hover）
 
 ### 效果
 
@@ -81,7 +81,7 @@
 ```rust src="bar_chart/standalone.rs"
 ```
 
-## 迷你指标多风格
+## 迷你指标多风格（可关闭 tooltip）
 
 ### 效果
 

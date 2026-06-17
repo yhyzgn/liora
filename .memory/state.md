@@ -489,3 +489,7 @@ Added `cargo run -p xtask -- package install-smoke ...` as a runner-safe install
 ## 2026-06-17 P10 Cartesian chart hover hit testing
 
 Completed a concrete P10 maintenance slice for chart hover behavior. Added shared pure cartesian hit-testing helpers (`ChartHitPoint`, `nearest_cartesian_hit_point`, `format_hit_tooltip`) plus a reusable `ChartBoundsTracker` that records canvas bounds without storing frame-local GPUI elements. `LineChart` now exposes and uses `.show_tooltip(...)` / `.tooltip_hit_radius(...)` for native hover tooltips. `AreaChart` exposes the same API and enables tooltip hit testing for Overlay mode; Stacked mode intentionally avoids false cartesian hit reporting until a cumulative-layer hit model is added. Gallery and Docs/snippets now surface tooltip radius and disabled-tooltip examples. Remaining optional P10 tooltip polish: BarChart rectangular hit testing and Pie/Ring polar sector hit testing.
+
+## 2026-06-17 P10 BarChart hover hit testing
+
+Completed the next chart tooltip polish slice for `BarChart`. Added tested grouped and stacked rectangular hit-box geometry (`BarChartHitBox`, `bar_chart_hit_boxes`, `nearest_bar_chart_hit_point`) and wired it into the native hover tooltip portal. Grouped mode hits individual side-by-side bars; stacked mode hits the concrete segment inside a stacked column. Gallery and Docs/snippets now show tooltip radius and disabled-tooltip examples. Remaining optional P10 tooltip polish: PieChart/RingChart polar sector hit testing and any further large-data cache policy.

@@ -24,4 +24,5 @@ pub fn bar_chart_grouped() -> impl IntoElement {
     ])
     .height(px(300.0))
     .y_domain(0.0, 120.0)
+    .tooltip_hit_radius(px(12.0))
 }

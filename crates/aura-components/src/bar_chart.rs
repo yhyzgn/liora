@@ -1,23 +1,262 @@
 use crate::chart::{
-    ChartOptions, ChartPalette, ChartSeries, ChartValueLabelContent, ChartValueLabelPlacement,
-    collect_axis_labels, collect_labels, format_value_label, has_chart_data, normalized_domain,
-    series_total, stacked_domain,
+    ChartBoundsTracker, ChartHitPoint, ChartOptions, ChartPalette, ChartSeries,
+    ChartValueLabelContent, ChartValueLabelPlacement, collect_axis_labels, collect_labels,
+    format_hit_tooltip, format_value_label, has_chart_data, normalized_domain, series_total,
+    stacked_domain,
 };
 use crate::chart_frame::{paint_chart_frame, paint_chart_label_aligned};
 use crate::chart_scale::{ScaleBand, ScaleLinear, ScalePoint};
 use crate::{Empty, Space, Text};
-use aura_core::{Config, unique_id};
+use aura_core::{Config, Placement, TooltipData, clear_tooltip, set_active_tooltip, unique_id};
 use gpui::{
     App, Background, BorderStyle, Bounds, Component, Corners, Edges, ElementId, Hsla,
     InteractiveElement, IntoElement, ParentElement, Pixels, RenderOnce, SharedString, Styled,
     Window, canvas, div, fill, linear_color_stop, linear_gradient, point, prelude::*, px, quad,
     size,
 };
+use std::cell::Cell;
+use std::rc::Rc;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BarChartMode {
     Grouped,
     Stacked,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct BarChartHitBox {
+    pub series_index: usize,
+    pub point_index: usize,
+    pub series_name: SharedString,
+    pub label: SharedString,
+    pub value: f64,
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
+}
+
+impl BarChartHitBox {
+    pub fn center_x(&self) -> f32 {
+        self.x + self.width / 2.0
+    }
+
+    pub fn center_y(&self) -> f32 {
+        self.y + self.height / 2.0
+    }
+}
+
+pub fn bar_chart_hit_boxes(
+    series: &[ChartSeries],
+    mode: BarChartMode,
+    domain: (f64, f64),
+    plot_width: f32,
+    plot_height: f32,
+    bar_gap_ratio: f32,
+    bar_width: Option<Pixels>,
+    bar_gap: Option<Pixels>,
+) -> Vec<BarChartHitBox> {
+    if series.is_empty()
+        || !domain.0.is_finite()
+        || !domain.1.is_finite()
+        || (domain.1 - domain.0).abs() < f64::EPSILON
+        || !plot_width.is_finite()
+        || !plot_height.is_finite()
+        || plot_width <= 0.0
+        || plot_height <= 0.0
+    {
+        return Vec::new();
+    }
+
+    let labels = collect_labels(series);
+    if labels.is_empty() {
+        return Vec::new();
+    }
+
+    let band = ScaleBand::new(labels.clone(), (0.0, plot_width))
+        .padding_inner(bar_gap_ratio)
+        .padding_outer((bar_gap_ratio * 0.58).max(0.02));
+    let y = ScaleLinear::new(domain, (plot_height, 0.0));
+    match mode {
+        BarChartMode::Grouped => {
+            grouped_bar_hit_boxes(series, &band, &y, plot_height, bar_width, bar_gap)
+        }
+        BarChartMode::Stacked => stacked_bar_hit_boxes(series, &band, &y, plot_height, bar_width),
+    }
+}
+
+pub fn nearest_bar_chart_hit_point(
+    series: &[ChartSeries],
+    mode: BarChartMode,
+    domain: (f64, f64),
+    plot_width: f32,
+    plot_height: f32,
+    bar_gap_ratio: f32,
+    bar_width: Option<Pixels>,
+    bar_gap: Option<Pixels>,
+    pointer_x: f32,
+    pointer_y: f32,
+    hit_radius: f32,
+) -> Option<ChartHitPoint> {
+    if !pointer_x.is_finite()
+        || !pointer_y.is_finite()
+        || !hit_radius.is_finite()
+        || hit_radius < 0.0
+    {
+        return None;
+    }
+    let hit_boxes = bar_chart_hit_boxes(
+        series,
+        mode,
+        domain,
+        plot_width,
+        plot_height,
+        bar_gap_ratio,
+        bar_width,
+        bar_gap,
+    );
+
+    let mut nearest: Option<(&BarChartHitBox, f32)> = None;
+    for hit_box in &hit_boxes {
+        let inside_x = pointer_x >= hit_box.x && pointer_x <= hit_box.x + hit_box.width;
+        let inside_y = pointer_y >= hit_box.y && pointer_y <= hit_box.y + hit_box.height;
+        let dx = if inside_x {
+            0.0
+        } else if pointer_x < hit_box.x {
+            hit_box.x - pointer_x
+        } else {
+            pointer_x - (hit_box.x + hit_box.width)
+        };
+        let dy = if inside_y {
+            0.0
+        } else if pointer_y < hit_box.y {
+            hit_box.y - pointer_y
+        } else {
+            pointer_y - (hit_box.y + hit_box.height)
+        };
+        let distance = (dx * dx + dy * dy).sqrt();
+        if distance <= hit_radius && nearest.is_none_or(|(_, best)| distance < best) {
+            nearest = Some((hit_box, distance));
+        }
+    }
+
+    nearest.map(|(hit_box, distance)| ChartHitPoint {
+        series_index: hit_box.series_index,
+        point_index: hit_box.point_index,
+        series_name: hit_box.series_name.clone(),
+        label: hit_box.label.clone(),
+        value: hit_box.value,
+        x: hit_box.center_x(),
+        y: hit_box.center_y(),
+        distance,
+    })
+}
+
+fn grouped_bar_hit_boxes(
+    series: &[ChartSeries],
+    band: &ScaleBand,
+    y: &ScaleLinear,
+    plot_height: f32,
+    configured_bar_width: Option<Pixels>,
+    configured_gap: Option<Pixels>,
+) -> Vec<BarChartHitBox> {
+    let baseline = y.tick(0.0).clamp(0.0, plot_height);
+    let series_count = series.len().max(1) as f32;
+    let group_width = band.band_width().max(1.0);
+    let default_width = (group_width / series_count * 0.82).max(1.0);
+    let bar_width = configured_bar_width
+        .map(|width| width.as_f32().min(group_width / series_count).max(1.0))
+        .unwrap_or(default_width);
+    let gap = configured_gap
+        .map(|gap| gap.as_f32())
+        .unwrap_or_else(|| (group_width / series_count - bar_width).max(0.0));
+    let mut boxes = Vec::new();
+
+    for (series_index, current) in series.iter().enumerate() {
+        for (point_index, chart_point) in current.points.iter().enumerate() {
+            if !chart_point.is_finite() {
+                continue;
+            }
+            let Some(group_x) = band.tick_index(point_index) else {
+                continue;
+            };
+            let value_y = y.tick(chart_point.value).clamp(0.0, plot_height);
+            let top_y = baseline.min(value_y);
+            let height = (baseline - value_y).abs().max(1.0);
+            let x = group_x + series_index as f32 * (bar_width + gap) + gap * 0.5;
+            boxes.push(BarChartHitBox {
+                series_index,
+                point_index,
+                series_name: current.name.clone(),
+                label: chart_point.label.clone(),
+                value: chart_point.value,
+                x,
+                y: top_y,
+                width: bar_width,
+                height,
+            });
+        }
+    }
+    boxes
+}
+
+fn stacked_bar_hit_boxes(
+    series: &[ChartSeries],
+    band: &ScaleBand,
+    y: &ScaleLinear,
+    plot_height: f32,
+    configured_bar_width: Option<Pixels>,
+) -> Vec<BarChartHitBox> {
+    let labels_len = series
+        .iter()
+        .map(|series| series.points.len())
+        .max()
+        .unwrap_or(0);
+    let mut boxes = Vec::new();
+    for point_index in 0..labels_len {
+        let Some(group_x) = band.tick_index(point_index) else {
+            continue;
+        };
+        let mut positive_base = 0.0_f64;
+        let mut negative_base = 0.0_f64;
+        for (series_index, current) in series.iter().enumerate() {
+            let Some(chart_point) = current.points.get(point_index) else {
+                continue;
+            };
+            if !chart_point.is_finite() {
+                continue;
+            }
+            let (from, to) = if chart_point.value >= 0.0 {
+                let from = positive_base;
+                positive_base += chart_point.value;
+                (from, positive_base)
+            } else {
+                let from = negative_base;
+                negative_base += chart_point.value;
+                (from, negative_base)
+            };
+            let y0 = y.tick(from).clamp(0.0, plot_height);
+            let y1 = y.tick(to).clamp(0.0, plot_height);
+            let top_y = y0.min(y1);
+            let height = (y0 - y1).abs().max(1.0);
+            let width = configured_bar_width
+                .map(|width| width.as_f32().min(band.band_width()).max(1.0))
+                .unwrap_or_else(|| band.band_width().max(1.0));
+            let x = group_x + (band.band_width().max(1.0) - width) * 0.5;
+            boxes.push(BarChartHitBox {
+                series_index,
+                point_index,
+                series_name: current.name.clone(),
+                label: chart_point.label.clone(),
+                value: chart_point.value,
+                x,
+                y: top_y,
+                width,
+                height,
+            });
+        }
+    }
+    boxes
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -199,6 +438,16 @@ impl BarChart {
 
     pub fn show_value_labels(mut self, show: bool) -> Self {
         self.options.show_value_labels = show;
+        self
+    }
+
+    pub fn show_tooltip(mut self, show: bool) -> Self {
+        self.options.show_tooltip = show;
+        self
+    }
+
+    pub fn tooltip_hit_radius(mut self, radius: Pixels) -> Self {
+        self.options.tooltip_hit_radius = radius.max(px(0.0));
         self
     }
 
@@ -495,7 +744,15 @@ fn render_bar_canvas(
 ) -> impl IntoElement {
     let height = options.height;
     let preferred_width = paint_options.preferred_width(&series, mode, options.padding);
-    canvas(
+    let tooltip_bar_width = paint_options.width;
+    let tooltip_bar_gap = paint_options.gap;
+    let bounds_cell: Rc<Cell<Bounds<Pixels>>> = Rc::new(Cell::new(Bounds::default()));
+    let tooltip_bounds = bounds_cell.clone();
+    let tooltip_series = series.clone();
+    let tooltip_options = options.clone();
+    let tooltip_id: SharedString = format!("{}-tooltip", options.id).into();
+    let move_id = tooltip_id.clone();
+    let chart = canvas(
         |_, _, _| (),
         move |bounds, _, window, cx| {
             let labels = collect_labels(&series);
@@ -573,7 +830,72 @@ fn render_bar_canvas(
     )
     .when_some(preferred_width, |style, width| style.w(width))
     .when(preferred_width.is_none(), |style| style.w_full())
-    .h(height)
+    .h(height);
+
+    div()
+        .relative()
+        .when_some(preferred_width, |style, width| style.w(width))
+        .when(preferred_width.is_none(), |style| style.w_full())
+        .h(height)
+        .on_mouse_move(move |event, _, cx| {
+            if !tooltip_options.show_tooltip {
+                clear_tooltip(&move_id, cx);
+                return;
+            }
+            let bounds = tooltip_bounds.get();
+            if bounds.size.width <= px(0.0) || bounds.size.height <= px(0.0) {
+                clear_tooltip(&move_id, cx);
+                return;
+            }
+            let padding = tooltip_options.padding;
+            let plot_width =
+                (bounds.size.width.as_f32() - padding.left.as_f32() - padding.right.as_f32())
+                    .max(1.0);
+            let plot_height =
+                (bounds.size.height.as_f32() - padding.top.as_f32() - padding.bottom.as_f32())
+                    .max(1.0);
+            let local_x = (event.position.x - bounds.left() - padding.left).as_f32();
+            let local_y = (event.position.y - bounds.top() - padding.top).as_f32();
+            let domain = if mode == BarChartMode::Stacked {
+                tooltip_options
+                    .y_domain
+                    .or_else(|| stacked_domain(&tooltip_series))
+                    .map(|domain| normalized_domain(Some(domain), &[]))
+                    .unwrap_or_else(|| normalized_domain(None, &tooltip_series))
+            } else {
+                normalized_domain(tooltip_options.y_domain, &tooltip_series)
+            };
+            let Some(hit) = nearest_bar_chart_hit_point(
+                &tooltip_series,
+                mode,
+                domain,
+                plot_width,
+                plot_height,
+                bar_gap_ratio,
+                tooltip_bar_width,
+                tooltip_bar_gap,
+                local_x,
+                local_y,
+                tooltip_options.tooltip_hit_radius.as_f32(),
+            ) else {
+                clear_tooltip(&move_id, cx);
+                return;
+            };
+            set_active_tooltip(
+                TooltipData {
+                    id: move_id.clone(),
+                    content: format_hit_tooltip(&hit, tooltip_options.y_format),
+                    anchor_bounds: Bounds::new(
+                        point(event.position.x - px(1.0), event.position.y - px(1.0)),
+                        size(px(2.0), px(2.0)),
+                    ),
+                    placement: Placement::Top,
+                    offset: px(8.0),
+                },
+                cx,
+            );
+        })
+        .child(ChartBoundsTracker::new(chart, bounds_cell))
 }
 
 fn paint_grouped_bars(
@@ -768,6 +1090,8 @@ mod tests {
             .show_legend(false)
             .y_domain(0.0, 100.0)
             .show_value_labels(false)
+            .show_tooltip(false)
+            .tooltip_hit_radius(px(20.0))
             .value_label_content(ChartValueLabelContent::ValueAndPercentage)
             .value_label_placement(ChartValueLabelPlacement::Inside)
             .percentage_decimals(2)
@@ -785,6 +1109,8 @@ mod tests {
         assert!(!chart.options().show_legend);
         assert_eq!(chart.options().y_domain, Some((0.0, 100.0)));
         assert!(!chart.options().show_value_labels);
+        assert!(!chart.options().show_tooltip);
+        assert_eq!(chart.options().tooltip_hit_radius, px(20.0));
         assert_eq!(
             chart.options().value_label_options.content,
             ChartValueLabelContent::ValueAndPercentage
@@ -821,6 +1147,90 @@ mod tests {
 
         assert_eq!(chart.bar_fills_config().len(), 1);
         assert_eq!(chart.value_fill_ranges_config().len(), 1);
+    }
+
+    #[test]
+    fn grouped_bar_hit_testing_returns_the_bar_under_pointer() {
+        let domain = normalized_domain(Some((0.0, 20.0)), &[]);
+        let boxes = bar_chart_hit_boxes(
+            &sample_series(),
+            BarChartMode::Grouped,
+            domain,
+            240.0,
+            120.0,
+            0.18,
+            None,
+            None,
+        );
+        assert_eq!(boxes.len(), 4);
+        assert_eq!(boxes[0].series_index, 0);
+        assert_eq!(boxes[0].point_index, 0);
+        assert!(boxes[0].width > 1.0);
+        assert!(boxes[0].height > 1.0);
+        assert!(boxes[1].x > boxes[0].x);
+
+        let target = &boxes[3];
+        let hit = nearest_bar_chart_hit_point(
+            &sample_series(),
+            BarChartMode::Grouped,
+            domain,
+            240.0,
+            120.0,
+            0.18,
+            None,
+            None,
+            target.center_x(),
+            target.center_y(),
+            0.0,
+        )
+        .expect("pointer inside grouped bar should hit");
+
+        assert_eq!(hit.series_index, target.series_index);
+        assert_eq!(hit.point_index, target.point_index);
+        assert_eq!(hit.series_name, target.series_name);
+        assert_eq!(hit.label, target.label);
+        assert_eq!(hit.value, target.value);
+    }
+
+    #[test]
+    fn stacked_bar_hit_testing_returns_the_stacked_segment_under_pointer() {
+        let domain = normalized_domain(stacked_domain(&sample_series()), &[]);
+        let boxes = bar_chart_hit_boxes(
+            &sample_series(),
+            BarChartMode::Stacked,
+            domain,
+            240.0,
+            120.0,
+            0.18,
+            None,
+            None,
+        );
+        assert_eq!(boxes.len(), 4);
+
+        let second_series_q1 = boxes
+            .iter()
+            .find(|hit_box| hit_box.series_index == 1 && hit_box.point_index == 0)
+            .expect("stacked Q1 second segment should exist");
+        let hit = nearest_bar_chart_hit_point(
+            &sample_series(),
+            BarChartMode::Stacked,
+            domain,
+            240.0,
+            120.0,
+            0.18,
+            None,
+            None,
+            second_series_q1.center_x(),
+            second_series_q1.center_y(),
+            0.0,
+        )
+        .expect("pointer inside stacked segment should hit");
+
+        assert_eq!(hit.series_index, 1);
+        assert_eq!(hit.point_index, 0);
+        assert_eq!(hit.series_name, SharedString::from("Cost"));
+        assert_eq!(hit.label, SharedString::from("Q1"));
+        assert_eq!(hit.value, 7.0);
     }
 
     #[test]

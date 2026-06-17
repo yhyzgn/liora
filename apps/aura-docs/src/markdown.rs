@@ -3395,6 +3395,7 @@ impl Render for LiveDemoContent {
                 )])
                 .id("docs-bar-chart-basic")
                 .height(px(260.0))
+                .tooltip_hit_radius(px(10.0))
                 .into_any_element(),
             ]),
             "BarChartGrouped" => demo_row(vec![
@@ -3421,6 +3422,7 @@ impl Render for LiveDemoContent {
                 .id("docs-bar-chart-grouped")
                 .height(px(300.0))
                 .y_domain(0.0, 120.0)
+                .tooltip_hit_radius(px(12.0))
                 .into_any_element(),
             ]),
             "BarChartGradient" => demo_row(vec![
@@ -3501,6 +3503,7 @@ impl Render for LiveDemoContent {
                 ])
                 .id("docs-bar-chart-stacked")
                 .height(px(300.0))
+                .tooltip_hit_radius(px(8.0))
                 .stacked()
                 .into_any_element(),
             ]),

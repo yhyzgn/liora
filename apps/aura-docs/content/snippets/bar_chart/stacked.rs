@@ -23,5 +23,7 @@ pub fn bar_chart_stacked() -> impl IntoElement {
         ),
     ])
     .height(px(300.0))
+    // 堆叠模式会命中具体分段。
+    .tooltip_hit_radius(px(8.0))
     .stacked()
 }

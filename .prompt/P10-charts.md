@@ -148,10 +148,13 @@ LineChart::new(series)
 - 已完成第二轮大数据性能增强：`LineChart`/`AreaChart` 的 x 轴改为 index-only scale，轴标签通过默认 `max_axis_labels` 稀疏绘制；value label 通过默认 `max_value_labels` 限流。
 - 已完成第三轮大数据性能修正：核心采样新增 `downsample_index_range`/`downsample_indexed_values`，LineChart/AreaChart/Sparkline 不再先构建全量 `(index,value)`/GPUI Point 中间 Vec 再采样；demo/snippet 不再靠显式稀疏标签参数掩盖卡顿。
 - 降采样策略保留首尾点和局部峰谷，避免长序列在 GPUI native path 中产生过量绘制，同时不隐藏监控尖峰。
-- 剩余维护项：hover tooltip / hit testing 边界、进一步缓存策略。
+- 已完成 Cartesian hover tooltip / hit testing：`LineChart` 与 `AreaChart` Overlay 模式支持原生最近点 tooltip，底层提供可测试的 `nearest_cartesian_hit_point`。
+- 已完成 BarChart 矩形 hover tooltip / hit testing：Grouped 命中单根柱，Stacked 命中具体堆叠分段。
+- 剩余维护项：Pie/Ring 极坐标扇区 hit testing、进一步缓存策略。
 
 
 ## 2026-06-17 Cartesian tooltip maintenance
 
 - Completed LineChart and AreaChart Overlay nearest-point hover tooltip support using shared pure hit-testing helpers.
-- Remaining tooltip polish: BarChart rectangular hit testing and Pie/Ring polar sector hit testing.
+- Completed BarChart rectangular hover hit testing for grouped bars and stacked bar segments.
+- Remaining tooltip polish: Pie/Ring polar sector hit testing and any further cache policy.
