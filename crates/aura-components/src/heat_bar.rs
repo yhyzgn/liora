@@ -97,16 +97,16 @@ impl HeatBar {
         self.color_ranges = ranges.into_iter().collect();
         self
     }
-    pub fn height(mut self, height: Pixels) -> Self {
-        self.height = height.max(px(60.0));
+    pub fn height(mut self, height: impl Into<Pixels>) -> Self {
+        self.height = height.into().max(px(60.0));
         self
     }
-    pub fn bar_width(mut self, width: Pixels) -> Self {
-        self.bar_width = width.max(px(1.0));
+    pub fn bar_width(mut self, width: impl Into<Pixels>) -> Self {
+        self.bar_width = width.into().max(px(1.0));
         self
     }
-    pub fn gap(mut self, gap: Pixels) -> Self {
-        self.gap = gap.max(px(0.0));
+    pub fn gap(mut self, gap: impl Into<Pixels>) -> Self {
+        self.gap = gap.into().max(px(0.0));
         self
     }
     pub fn max_value(mut self, value: f64) -> Self {
@@ -241,11 +241,15 @@ mod tests {
     fn heat_bar_tracks_visual_options() {
         let heat = HeatBar::new([HeatBarItem::new("10:00", 3.0, gpui::red())])
             .max_value(10.0)
+            .height(px(120.0))
             .bar_width(px(5.0))
+            .gap(px(2.0))
             .show_axis(false)
             .color_ranges([HeatBarColorRange::new(0.0, 5.0, gpui::blue())]);
         assert_eq!(heat.max_value, Some(10.0));
+        assert_eq!(heat.height, px(120.0));
         assert_eq!(heat.bar_width, px(5.0));
+        assert_eq!(heat.gap, px(2.0));
         assert!(!heat.show_axis);
         assert_eq!(heat.color_ranges.len(), 1);
     }

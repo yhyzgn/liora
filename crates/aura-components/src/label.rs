@@ -35,16 +35,16 @@ impl Label {
         self.custom_icon = Some(icon.into_any_element());
         self
     }
-    pub fn gap(mut self, gap: Pixels) -> Self {
-        self.gap = gap.max(px(0.0));
+    pub fn gap(mut self, gap: impl Into<Pixels>) -> Self {
+        self.gap = gap.into().max(px(0.0));
         self
     }
     pub fn color(mut self, color: Hsla) -> Self {
         self.color = Some(color);
         self
     }
-    pub fn size(mut self, size: Pixels) -> Self {
-        self.size = size.max(px(8.0));
+    pub fn size(mut self, size: impl Into<Pixels>) -> Self {
+        self.size = size.into().max(px(8.0));
         self
     }
 }

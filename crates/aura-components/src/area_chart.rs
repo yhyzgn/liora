@@ -56,8 +56,8 @@ impl AreaChart {
         self
     }
 
-    pub fn height(mut self, height: Pixels) -> Self {
-        self.options.height = height;
+    pub fn height(mut self, height: impl Into<Pixels>) -> Self {
+        self.options.height = height.into();
         self
     }
 
@@ -96,8 +96,8 @@ impl AreaChart {
         self
     }
 
-    pub fn tooltip_hit_radius(mut self, radius: Pixels) -> Self {
-        self.options.tooltip_hit_radius = radius.max(px(0.0));
+    pub fn tooltip_hit_radius(mut self, radius: impl Into<Pixels>) -> Self {
+        self.options.tooltip_hit_radius = radius.into().max(px(0.0));
         self
     }
 
@@ -121,8 +121,8 @@ impl AreaChart {
         self
     }
 
-    pub fn stroke_width(mut self, width: Pixels) -> Self {
-        self.stroke_width = width;
+    pub fn stroke_width(mut self, width: impl Into<Pixels>) -> Self {
+        self.stroke_width = width.into();
         self
     }
 

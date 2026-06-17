@@ -155,8 +155,8 @@ impl HorizontalList {
         self
     }
 
-    pub fn height(mut self, height: Pixels) -> Self {
-        self.set_height(Some(height));
+    pub fn height(mut self, height: impl Into<Pixels>) -> Self {
+        self.set_height(Some(height.into()));
         self
     }
 

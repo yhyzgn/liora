@@ -33,8 +33,8 @@ impl Operation {
     pub fn with_text(text: impl Into<gpui::SharedString>, action: impl IntoElement) -> Self {
         Self::new(Label::new(text), action)
     }
-    pub fn gap(mut self, gap: Pixels) -> Self {
-        self.gap = gap.max(px(0.0));
+    pub fn gap(mut self, gap: impl Into<Pixels>) -> Self {
+        self.gap = gap.into().max(px(0.0));
         self
     }
     pub fn description(mut self, description: impl Into<SharedString>) -> Self {

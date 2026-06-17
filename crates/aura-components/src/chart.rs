@@ -149,8 +149,8 @@ impl ChartSeries {
         self
     }
 
-    pub fn stroke_width(mut self, width: Pixels) -> Self {
-        self.stroke_width = Some(width);
+    pub fn stroke_width(mut self, width: impl Into<Pixels>) -> Self {
+        self.stroke_width = Some(width.into());
         self
     }
 
@@ -171,11 +171,11 @@ impl ChartSeries {
         self.line_style(ChartLineStyle::Solid)
     }
 
-    pub fn dash_pattern(mut self, pattern: impl IntoIterator<Item = Pixels>) -> Self {
+    pub fn dash_pattern(mut self, pattern: impl IntoIterator<Item = impl Into<Pixels>>) -> Self {
         self.dash_pattern = Some(
             pattern
                 .into_iter()
-                .map(|value| value.max(px(0.1)))
+                .map(|value| value.into().max(px(0.1)))
                 .collect(),
         );
         self.line_style = Some(ChartLineStyle::Dashed);

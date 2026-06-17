@@ -93,3 +93,13 @@ P13 高级控件扩展和 P14 deferred backlog 已完成，P12 本地 runner-saf
 
 - Added `.github/workflows/ci.yml` for general quality gates independent from packaging release workflow.
 - Gates cover Linux dependency install, `cargo fmt --all --check`, workspace check/test, docs snippet check, `xtask package validate`, packaging dry-run, and install-smoke dry-run.
+### 2026-06-17 — Track B API consistency slice
+
+- Broadened remaining exact-`Pixels` public builder parameters to `impl Into<Pixels>` for chart dimensions/strokes, P13 visual components, `TagFlow`, `Operation`, and `HorizontalList` height. This is source-compatible for existing `px(...)` calls and aligns these APIs with newer controls such as Input, Select, Progress, QR Code, virtualized controls, and form controls.
+- Kept call sites/tests using explicit `px(...)` where they document visual dimensions so unit intent remains clear.
+- Added/extended builder-state assertions for SignalMeter, HeatBar, SegmentRatioBar, Label, Operation, and TagFlow dimension/gap options.
+
+Validation evidence for this slice:
+- `cargo test -p aura-components -- --nocapture` passed: 192 unit tests plus integration tests.
+- Full P15 gate suite passed: fmt, workspace check/test, docs snippet check, package validate, packaging dry-run, install-smoke dry-run, and `git diff --check`.
+- GUI smoke passed: `timeout 10s cargo run -p aura-gallery` and `timeout 10s cargo run -p aura-docs` both started successfully and exited via expected timeout.

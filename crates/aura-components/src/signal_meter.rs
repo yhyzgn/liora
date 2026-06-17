@@ -112,16 +112,16 @@ impl SignalMeter {
             .sort_by_key(|threshold| threshold.level);
         self
     }
-    pub fn bar_width(mut self, width: Pixels) -> Self {
-        self.bar_width = width.max(px(2.0));
+    pub fn bar_width(mut self, width: impl Into<Pixels>) -> Self {
+        self.bar_width = width.into().max(px(2.0));
         self
     }
-    pub fn gap(mut self, gap: Pixels) -> Self {
-        self.gap = gap.max(px(0.0));
+    pub fn gap(mut self, gap: impl Into<Pixels>) -> Self {
+        self.gap = gap.into().max(px(0.0));
         self
     }
-    pub fn height(mut self, height: Pixels) -> Self {
-        self.height = height.max(px(12.0));
+    pub fn height(mut self, height: impl Into<Pixels>) -> Self {
+        self.height = height.into().max(px(12.0));
         self
     }
 }
@@ -200,6 +200,8 @@ mod tests {
             .total_signals(6)
             .wifi()
             .bar_width(px(8.0))
+            .gap(px(3.0))
+            .height(px(24.0))
             .level_colors([gpui::red(), gpui::yellow(), gpui::green()])
             .threshold_colors([
                 SignalLevelColor::new(2, gpui::red()),

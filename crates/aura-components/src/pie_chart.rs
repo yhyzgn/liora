@@ -234,8 +234,8 @@ impl PieChart {
         self
     }
 
-    pub fn height(mut self, height: Pixels) -> Self {
-        self.height = height;
+    pub fn height(mut self, height: impl Into<Pixels>) -> Self {
+        self.height = height.into();
         self
     }
 
@@ -254,8 +254,8 @@ impl PieChart {
         self
     }
 
-    pub fn tooltip_hit_radius(mut self, radius: Pixels) -> Self {
-        self.tooltip_hit_radius = radius.max(px(0.0));
+    pub fn tooltip_hit_radius(mut self, radius: impl Into<Pixels>) -> Self {
+        self.tooltip_hit_radius = radius.into().max(px(0.0));
         self
     }
 
@@ -318,8 +318,8 @@ impl RingChart {
         self
     }
 
-    pub fn height(mut self, height: Pixels) -> Self {
-        self.height = height;
+    pub fn height(mut self, height: impl Into<Pixels>) -> Self {
+        self.height = height.into();
         self
     }
 
@@ -338,8 +338,8 @@ impl RingChart {
         self
     }
 
-    pub fn tooltip_hit_radius(mut self, radius: Pixels) -> Self {
-        self.tooltip_hit_radius = radius.max(px(0.0));
+    pub fn tooltip_hit_radius(mut self, radius: impl Into<Pixels>) -> Self {
+        self.tooltip_hit_radius = radius.into().max(px(0.0));
         self
     }
 

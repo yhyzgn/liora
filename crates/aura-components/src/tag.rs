@@ -252,8 +252,8 @@ impl TagFlow {
         }
     }
 
-    pub fn gap(mut self, gap: Pixels) -> Self {
-        self.gap = gap.max(px(0.0));
+    pub fn gap(mut self, gap: impl Into<Pixels>) -> Self {
+        self.gap = gap.into().max(px(0.0));
         self
     }
 

@@ -67,21 +67,21 @@ impl SegmentRatioBar {
             legend_inset_x: px(6.0),
         }
     }
-    pub fn height(mut self, height: Pixels) -> Self {
-        self.height = height.max(px(4.0));
+    pub fn height(mut self, height: impl Into<Pixels>) -> Self {
+        self.height = height.into().max(px(4.0));
         self
     }
-    pub fn radius(mut self, radius: Pixels) -> Self {
-        self.radius = radius.max(px(0.0));
-        self
-    }
-
-    pub fn segment_radius(mut self, radius: Pixels) -> Self {
-        self.segment_radius = radius.max(px(0.0));
+    pub fn radius(mut self, radius: impl Into<Pixels>) -> Self {
+        self.radius = radius.into().max(px(0.0));
         self
     }
 
-    pub fn rounded_segments(self, radius: Pixels) -> Self {
+    pub fn segment_radius(mut self, radius: impl Into<Pixels>) -> Self {
+        self.segment_radius = radius.into().max(px(0.0));
+        self
+    }
+
+    pub fn rounded_segments(self, radius: impl Into<Pixels>) -> Self {
         self.segment_radius(radius)
     }
 
@@ -110,12 +110,12 @@ impl SegmentRatioBar {
         self
     }
 
-    pub fn legend_inset_x(mut self, inset: Pixels) -> Self {
-        self.legend_inset_x = inset.max(px(0.0));
+    pub fn legend_inset_x(mut self, inset: impl Into<Pixels>) -> Self {
+        self.legend_inset_x = inset.into().max(px(0.0));
         self
     }
 
-    pub fn legend_text_inset(self, inset: Pixels) -> Self {
+    pub fn legend_text_inset(self, inset: impl Into<Pixels>) -> Self {
         self.legend_inset_x(inset)
     }
 }
@@ -269,12 +269,14 @@ mod tests {
             .legend_top()
             .percentage_decimals(2)
             .split_legend(true)
+            .height(px(18.0))
             .legend_inset_x(px(10.0))
             .radius(px(12.0))
             .segment_radius(px(4.0));
         assert_eq!(bar.legend_position, SegmentLegendPosition::Top);
         assert_eq!(bar.percentage_decimals, 2);
         assert!(bar.split_legend);
+        assert_eq!(bar.height, px(18.0));
         assert_eq!(bar.legend_inset_x, px(10.0));
         assert_eq!(bar.radius, px(12.0));
         assert_eq!(bar.segment_radius, px(4.0));

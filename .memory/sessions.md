@@ -3090,3 +3090,15 @@
 
 ### Verification
 - Run local fmt/check/test/package dry-run gates before committing this slice.
+
+## Session 2026-06-17 — P15 Track B API Consistency
+
+### Actions
+- Normalized remaining exact-`Pixels` public builder parameters across charts and newer P13/P14 components to `impl Into<Pixels>` where this is source-compatible.
+- Preserved explicit `px(...)` usage in tests/examples for visual dimensions; the API is broader, but Aura docs and examples should keep units obvious.
+- Extended builder-state assertions for SignalMeter, HeatBar, SegmentRatioBar, Label, Operation, and TagFlow.
+
+### Verification
+- `cargo test -p aura-components -- --nocapture` passed: 192 unit tests plus package integration tests.
+- Full P15 gate suite passed: fmt, workspace check/test, docs snippet check, package validate, packaging dry-run, install-smoke dry-run, and `git diff --check`.
+- GUI smoke passed: `timeout 10s cargo run -p aura-gallery` and `timeout 10s cargo run -p aura-docs` both started successfully and exited via expected timeout.
