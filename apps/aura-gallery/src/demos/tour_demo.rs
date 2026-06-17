@@ -1,6 +1,8 @@
 use aura_components::layout_helpers::{page, section};
-use aura_components::{Card, Space, Tour, TourPlacement, TourStep, toast_info, toast_success};
-use gpui::{AnyView, App, Context, Render, Window, prelude::*};
+use aura_components::{
+    Button, Card, Space, Text, Tour, TourPlacement, TourStep, toast_info, toast_success,
+};
+use gpui::{AnyView, App, Context, IntoElement, Render, Window, div, prelude::*, px};
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|_| TourDemo).into()
@@ -13,10 +15,13 @@ fn steps() -> Vec<TourStep> {
         TourStep::new("选择组件", "左侧菜单按组件名称排序，统计图会统一放在最后。")
             .target("Gallery menu")
             .placement(TourPlacement::Right),
-        TourStep::new("查看效果", "每个 demo 大方展示主要配置，避免挤在一起。 ")
-            .target("Preview panel")
-            .placement(TourPlacement::Bottom),
-        TourStep::new("复制代码", "Docs 中每种效果下面紧跟对应代码片段。 ")
+        TourStep::new(
+            "查看效果",
+            "右侧主面板展示实际原生控件，Tour 卡片浮在窗口顶层。",
+        )
+        .target("Preview panel")
+        .placement(TourPlacement::Bottom),
+        TourStep::new("复制代码", "Docs 中每种效果下面紧跟对应代码片段。")
             .target("Code block")
             .placement(TourPlacement::Top),
     ]
@@ -26,35 +31,79 @@ impl Render for TourDemo {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         page(
             "Tour 漫游引导",
-            "用步骤卡片说明界面关键区域，支持进度、前进后退、关闭和完成回调。",
+            "Tour 是顶层浮层引导，不占据页面布局空间；通过 Tour::show(cx) 启动，步骤卡片在 modal overlay 中前进、后退、关闭或完成。",
             Space::new()
                 .vertical()
                 .gap_lg()
                 .child(section(
-                    "基础引导",
-                    "active_index 控制当前步骤，on_change 可由上层更新状态。",
-                    Card::new(
-                        Tour::new(steps())
-                            .active_index(0)
-                            .on_change(|index, _, _| toast_info!("Tour step {}", index + 1))
-                            .on_finish(|_, _| toast_success!("Tour finished")),
+                    "顶层浮层引导",
+                    "点击按钮后 Tour 会覆盖在当前窗口顶层，而不是嵌入当前页面。",
+                    demo_panel(
+                        Button::new("启动基础 Tour")
+                            .primary()
+                            .on_click(|_, _, cx| {
+                                Tour::new(steps())
+                                    .on_change(|index, _, _| toast_info!("Tour step {}", index + 1))
+                                    .on_finish(|_, _| toast_success!("Tour finished"))
+                                    .on_close(|_, _| toast_info!("Tour closed"))
+                                    .show(cx);
+                            }),
                     ),
                 ))
                 .child(section(
-                    "中间步骤",
-                    "展示前进/后退按钮同时可用的状态。",
-                    Card::new(Tour::new(steps()).active_index(1)),
+                    "从中间步骤开始",
+                    "active_index 可设置初始步骤；TourView 内部会推进当前步骤并触发 on_change。",
+                    demo_panel(
+                        Button::new("从第二步开始")
+                            .secondary()
+                            .on_click(|_, _, cx| {
+                                Tour::new(steps())
+                                    .active_index(1)
+                                    .previous_text("上一步")
+                                    .next_text("下一步")
+                                    .finish_text("完成")
+                                    .show(cx);
+                            }),
+                    ),
                 ))
                 .child(section(
-                    "无遮罩简洁模式",
-                    "show_mask(false) 适合内嵌说明卡片。",
-                    Card::new(
-                        Tour::new(steps())
-                            .active_index(2)
-                            .show_mask(false)
-                            .finish_text("完成"),
+                    "透明遮罩模式",
+                    "show_mask(false) 保持顶层浮层行为，但不显示半透明遮罩；close_on_click_outside(true) 可点击外部关闭。",
+                    demo_panel(
+                        Button::new("无遮罩 Tour")
+                            .tertiary()
+                            .on_click(|_, _, cx| {
+                                Tour::new(steps())
+                                    .show_mask(false)
+                                    .close_on_click_outside(true)
+                                    .finish_text("完成")
+                                    .show(cx);
+                            }),
                     ),
                 )),
         )
     }
+}
+
+fn demo_panel(button: impl IntoElement) -> impl IntoElement {
+    Card::new(
+        Space::new()
+            .vertical()
+            .gap_md()
+            .child(
+                div()
+                    .h(px(160.0))
+                    .rounded_lg()
+                    .border_1()
+                    .border_color(gpui::rgb(0xe2e8f0))
+                    .bg(gpui::rgb(0xf8fafc))
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .child(Text::new(
+                        "页面内容保持在原位；Tour 打开后会覆盖在窗口顶层。",
+                    )),
+            )
+            .child(button),
+    )
 }

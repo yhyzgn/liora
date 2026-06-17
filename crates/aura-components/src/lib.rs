@@ -265,6 +265,7 @@ mod overlay_escape_coverage_tests {
             ("time_picker", include_str!("time_picker.rs")),
             ("color_picker", include_str!("color_picker.rs")),
             ("autocomplete", include_str!("autocomplete.rs")),
+            ("tour", include_str!("tour.rs")),
         ];
 
         for (name, source) in components {
@@ -299,6 +300,7 @@ mod overlay_escape_coverage_tests {
             "Preview",
             "Select",
             "TimePicker",
+            "Tour",
         ] {
             let registration = format!("{component}::register_key_bindings(cx)");
             assert!(docs.contains(&registration), "docs missing {registration}");

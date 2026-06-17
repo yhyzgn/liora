@@ -3,7 +3,7 @@ mod markdown;
 use aura_components::{
     Autocomplete, Button, Cascader, Checkbox, CodeBlock, CodeEditor, ColorPicker, DatePicker,
     DateTimePicker, Dialog, Drawer, Input, MessageManager, Paragraph, Popover, Preview, Radio,
-    RadioGroup, Select, Space, Switch, Text, TimePicker, Title,
+    RadioGroup, Select, Space, Switch, Text, TimePicker, Title, Tour,
 };
 use aura_core::init_aura;
 use aura_theme::Theme;
@@ -61,6 +61,7 @@ fn run_docs() {
             Text::register_key_bindings(cx);
             Paragraph::register_key_bindings(cx);
             Title::register_key_bindings(cx);
+            Tour::register_key_bindings(cx);
 
             install_docs_tray(cx);
             if let Some(handle) = open_docs_window(cx) {

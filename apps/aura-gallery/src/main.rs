@@ -1,7 +1,7 @@
 use aura_components::{
     Autocomplete, Button, Card, Cascader, Checkbox, CodeBlock, CodeEditor, ColorPicker, Container,
     DatePicker, DateTimePicker, Dialog, Drawer, Input, Menu, MenuMode, MessageManager, Paragraph,
-    Popover, Preview, Radio, RadioGroup, Select, Space, Switch, Text, TimePicker, Title,
+    Popover, Preview, Radio, RadioGroup, Select, Space, Switch, Text, TimePicker, Title, Tour,
 };
 use aura_core::{PassivePortal, Portal, init_aura};
 use aura_gallery::demos;
@@ -72,6 +72,7 @@ fn run_gallery() {
             Text::register_key_bindings(cx);
             Paragraph::register_key_bindings(cx);
             Title::register_key_bindings(cx);
+            Tour::register_key_bindings(cx);
 
             install_gallery_tray(cx);
             if let Some(handle) = open_gallery_window(cx) {
