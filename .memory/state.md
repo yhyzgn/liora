@@ -497,3 +497,7 @@ Completed the next chart tooltip polish slice for `BarChart`. Added tested group
 ## 2026-06-17 P10 Pie/Ring polar chart hover hit testing
 
 Completed the remaining chart tooltip slice for `PieChart` and `RingChart`. Added pure polar-sector hit-testing helpers and wired native hover tooltip support into both charts. `PieChart` hits rendered sectors; `RingChart` hits only donut segments and excludes the inner hole. Public builders `show_tooltip(...)` and `tooltip_hit_radius(...)` are now documented in Gallery, Docs live demos, and compile-checked snippets. Remaining P10 maintenance item: any further cache policy beyond existing downsampling.
+
+## 2026-06-17 P12 install-smoke dry-run readiness
+
+Fixed `xtask package install-smoke --dry-run` so plan-only mode no longer requires real backend artifacts or scans stale `target/packages` files. Dry-run now derives expected artifact paths per app/platform/format and writes install/uninstall plans; non-dry-run still discovers and smokes real artifacts, while `--execute-install` remains restricted to portable `.tar.gz`. Validation passed: `cargo check -p xtask -p aura-packager`, `cargo test -p aura-packager`, `cargo test -p xtask install_smoke -- --nocapture`, `cargo run -p xtask -- package validate`, `cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build`, `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run`, `cargo fmt --all --check`, and `git diff --check`.

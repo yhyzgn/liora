@@ -36,9 +36,12 @@ fn package(args: Vec<String>) -> Result<(), String> {
         PackageAction::Validate => validate(),
         PackageAction::Build => build(command.apps),
         PackageAction::Smoke => smoke(command.apps, command.format),
-        PackageAction::InstallSmoke => {
-            install_smoke(command.apps, command.format, command.execute_install)
-        }
+        PackageAction::InstallSmoke => install_smoke(
+            command.apps,
+            command.format,
+            command.dry_run,
+            command.execute_install,
+        ),
         PackageAction::Package | PackageAction::Ci => package_formats(command),
     }
 }
@@ -112,6 +115,7 @@ fn smoke(apps: Vec<KnownApp>, format: PackageFormat) -> Result<(), String> {
 fn install_smoke(
     apps: Vec<KnownApp>,
     format: PackageFormat,
+    dry_run: bool,
     execute_install: bool,
 ) -> Result<(), String> {
     let root = workspace_root()?;
@@ -127,6 +131,17 @@ fn install_smoke(
     for app in apps {
         let metadata = app.metadata();
         let out_dir = package_out_dir(&root, &metadata, platform);
+        if dry_run {
+            for format in &formats {
+                let path = expected_artifact_path(&out_dir, &metadata.package, platform, *format);
+                let plan = install_smoke_plan(&metadata, platform, *format, &path);
+                println!("{plan}");
+                plans.push(plan);
+                checked += 1;
+            }
+            continue;
+        }
+
         let artifacts = collect_package_artifacts(
             &metadata.package,
             &app_version(),
@@ -171,9 +186,48 @@ fn install_smoke(
     write_install_smoke_plan(&root, &plans, execute_install)?;
     println!(
         "install-smoke {} OK: checked {checked} artifact(s)",
-        if execute_install { "execute" } else { "plan" }
+        if execute_install {
+            "execute"
+        } else if dry_run {
+            "dry-run plan"
+        } else {
+            "plan"
+        }
     );
     Ok(())
+}
+
+fn expected_artifact_path(
+    out_dir: &Path,
+    package: &str,
+    platform: Platform,
+    format: PackageFormat,
+) -> PathBuf {
+    match (platform, format) {
+        (_, PackageFormat::TarGz) => {
+            portable_tar_gz_path(out_dir, package, &app_version(), platform, &target_triple())
+        }
+        (Platform::Linux, PackageFormat::Deb) => {
+            out_dir.join(format!("{package}_{}_amd64.deb", app_version()))
+        }
+        (Platform::Linux, PackageFormat::Rpm) => {
+            out_dir.join(format!("{package}-{}.x86_64.rpm", app_version()))
+        }
+        (Platform::Linux, PackageFormat::AppImage) => {
+            out_dir.join(format!("{package}-{}.AppImage", app_version()))
+        }
+        (Platform::Macos, PackageFormat::App) => out_dir.join(format!("{package}.app")),
+        (Platform::Macos, PackageFormat::Dmg) => {
+            out_dir.join(format!("{package}_{}.dmg", app_version()))
+        }
+        (Platform::Windows, PackageFormat::Nsis) => {
+            out_dir.join(format!("{package}_{}_setup.exe", app_version()))
+        }
+        (Platform::Windows, PackageFormat::Msi) => {
+            out_dir.join(format!("{package}_{}.msi", app_version()))
+        }
+        (_, other) => out_dir.join(format!("{package}-{}.{}", app_version(), other.as_str())),
+    }
 }
 
 fn install_smoke_plan(
@@ -1025,7 +1079,9 @@ fn workspace_root() -> Result<PathBuf, String> {
 
 fn print_help() {
     println!(
-        "Aura xtask\n\n  cargo run -p xtask -- package validate\n  cargo run -p xtask -- package build --app gallery\n  cargo run -p xtask -- package --app docs --format appimage\n  cargo run -p xtask -- package --app docs --format deb --dry-run --skip-build\n  cargo run -p xtask -- package ci --all-apps --format platform-defaults\n  cargo run -p xtask -- package smoke --all-apps --format platform-defaults\n\nOptions:\n  --app <gallery|docs>\n  --all-apps\n  --format <appimage|deb|rpm|tar.gz|app|dmg|nsis|msi|platform-defaults>\n  --dry-run      generate backend config and print cargo-packager invocation\n  --skip-build   reuse target/release binaries instead of building first"
+        "Aura xtask\n\n  cargo run -p xtask -- package validate\n  cargo run -p xtask -- package build --app gallery\n  cargo run -p xtask -- package --app docs --format appimage\n  cargo run -p xtask -- package --app docs --format deb --dry-run --skip-build\n  cargo run -p xtask -- package ci --all-apps --format platform-defaults\n  cargo run -p xtask -- package smoke --all-apps --format platform-defaults
+  cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run\n\nOptions:\n  --app <gallery|docs>\n  --all-apps\n  --format <appimage|deb|rpm|tar.gz|app|dmg|nsis|msi|platform-defaults>\n  --dry-run      generate backend config and print cargo-packager invocation\n  --skip-build   reuse target/release binaries instead of building first
+  --execute-install  execute only safe install-smoke paths (currently portable tar.gz)"
     );
 }
 
@@ -1117,6 +1173,7 @@ mod tests {
 
         assert_eq!(command.action, PackageAction::InstallSmoke);
         assert_eq!(command.format, PackageFormat::TarGz);
+        assert!(!command.dry_run);
         assert!(!command.execute_install);
         assert_eq!(command.apps.len(), aura_packager::known_apps().len());
     }
@@ -1132,5 +1189,34 @@ mod tests {
         .unwrap();
 
         assert!(command.execute_install);
+    }
+
+    #[test]
+    fn install_smoke_dry_run_is_plan_only() {
+        let command = PackageCommand::parse(vec![
+            "install-smoke".into(),
+            "--all-apps".into(),
+            "--format".into(),
+            "platform-defaults".into(),
+            "--dry-run".into(),
+        ])
+        .unwrap();
+
+        assert_eq!(command.action, PackageAction::InstallSmoke);
+        assert!(command.dry_run);
+        assert!(!command.execute_install);
+    }
+
+    #[test]
+    fn expected_tar_gz_path_matches_portable_backend_name() {
+        let path = expected_artifact_path(
+            Path::new("target/packages/aura-gallery/linux"),
+            "aura-gallery",
+            Platform::Linux,
+            PackageFormat::TarGz,
+        );
+
+        assert!(path.to_string_lossy().contains("aura-gallery-"));
+        assert!(path.to_string_lossy().ends_with(".tar.gz"));
     }
 }

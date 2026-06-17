@@ -92,6 +92,7 @@ cargo check -p xtask -p aura-packager
 cargo test -p aura-packager
 cargo run -p xtask -- package validate
 cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build
+cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run
 ```
 
 ### GitHub preview runner 验证
@@ -215,9 +216,10 @@ cargo run -p xtask -- package ci --all-apps --format platform-defaults
 
 ## Install/uninstall smoke plan — 2026-06-17
 
-已新增 `cargo run -p xtask -- package install-smoke ...`：
+已新增并修正 `cargo run -p xtask -- package install-smoke ...`：
 
-- 默认 plan-only，复用 artifact discovery + `package smoke`，输出每个产物的 install / launch-smoke / uninstall 命令。
+- 默认 plan-only，复用已存在 artifact discovery + `package smoke`，输出每个产物的 install / launch-smoke / uninstall 命令。
+- `--dry-run` 是真正的 runner-safe 计划模式：根据 app / platform / format 生成预期产物路径和 install/uninstall plan，不依赖真实后端产物存在，也不会误扫陈旧 `target/packages` artifact。
 - 写入 `target/packages/install-smoke-plan.md`，便于 CI artifact 审计。
 - `--execute-install` 仅允许 portable `.tar.gz` 做安全解压/验证/删除；系统级 deb/rpm/AppImage/macOS/Windows 安装仍保持计划输出，等待真实 runner policy、签名和人工 QA 后再放开。
 - GitHub Actions `package.yml` 已在 artifact smoke 后加入 plan-only install/uninstall smoke gate。
