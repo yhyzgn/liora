@@ -176,20 +176,20 @@ const DOC_PAGES: &[DocPage] = &[
         markdown: BREADCRUMB_DOC,
     },
     DocPage {
-        title: "Calendar",
-        markdown: CALENDAR_DOC,
-    },
-    DocPage {
         title: "Button",
         markdown: BUTTON_DOC,
     },
     DocPage {
-        title: "Carousel",
-        markdown: CAROUSEL_DOC,
+        title: "Calendar",
+        markdown: CALENDAR_DOC,
     },
     DocPage {
         title: "Card",
         markdown: CARD_DOC,
+    },
+    DocPage {
+        title: "Carousel",
+        markdown: CAROUSEL_DOC,
     },
     DocPage {
         title: "Cascader",
@@ -272,12 +272,12 @@ const DOC_PAGES: &[DocPage] = &[
         markdown: INPUT_DOC,
     },
     DocPage {
-        title: "InputTag",
-        markdown: INPUT_TAG_DOC,
-    },
-    DocPage {
         title: "InputNumber",
         markdown: INPUT_NUMBER_DOC,
+    },
+    DocPage {
+        title: "InputTag",
+        markdown: INPUT_TAG_DOC,
     },
     DocPage {
         title: "Label",
@@ -436,12 +436,12 @@ const DOC_PAGES: &[DocPage] = &[
         markdown: TIMER_DOC,
     },
     DocPage {
-        title: "Tour",
-        markdown: TOUR_DOC,
-    },
-    DocPage {
         title: "Tooltip",
         markdown: TOOLTIP_DOC,
+    },
+    DocPage {
+        title: "Tour",
+        markdown: TOUR_DOC,
     },
     DocPage {
         title: "Transfer",
@@ -452,12 +452,12 @@ const DOC_PAGES: &[DocPage] = &[
         markdown: TRAY_DOC,
     },
     DocPage {
-        title: "TreeSelect",
-        markdown: TREE_SELECT_DOC,
-    },
-    DocPage {
         title: "Tree",
         markdown: TREE_DOC,
+    },
+    DocPage {
+        title: "TreeSelect",
+        markdown: TREE_SELECT_DOC,
     },
     DocPage {
         title: "Typography",
@@ -466,10 +466,6 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Upload",
         markdown: UPLOAD_DOC,
-    },
-    DocPage {
-        title: "Watermark",
-        markdown: WATERMARK_DOC,
     },
     DocPage {
         title: "VirtualizedList",
@@ -482,6 +478,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "VirtualizedTree",
         markdown: VIRTUALIZED_TREE_DOC,
+    },
+    DocPage {
+        title: "Watermark",
+        markdown: WATERMARK_DOC,
     },
     DocPage {
         title: "AreaChart",

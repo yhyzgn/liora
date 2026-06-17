@@ -495,6 +495,7 @@ P11 · Native Tray ✅  已完成 — 系统托盘 facade + Gallery/Docs 用例
 P12 · Native Packaging 🔶  Readiness — 打包流水线已可用，签名/真实系统安装需外部策略
 P13 · Component Expansion ✅  已完成 — 业务控件与既有控件增强
 P14 · Deferred Advanced ✅  已完成 — P9 backlog 全部补齐
+P15 · Quality Hardening 🔄  Active — CI 门禁、API/视觉/交互/性能/Docs 收口
 ```
 
 ### P0 · Foundation（已完成）
@@ -894,6 +895,7 @@ pub struct FormRule {
 | P12 Native Packaging | — | 🔶 Readiness | aura-packager + xtask + CI；签名/真实安装需外部策略 |
 | P13 Component Expansion | 18 | ✅ 已完成 | QR/CodeEditor/Signal/Heat/Segment/Timer/Label/Operation 等与既有控件增强 |
 | P14 Deferred Advanced | 9 | ✅ 已完成 | P9 backlog 全部补齐 |
+| P15 Quality Hardening | — | 🔄 Active | 通用 CI 门禁与 API/视觉/交互/性能/Docs 收口 |
 | **合计** | **76+** | **约 6 个月** | 完整企业级组件库 |
 
 ---

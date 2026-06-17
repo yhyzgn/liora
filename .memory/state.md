@@ -2,17 +2,18 @@
 
 ## Current Phase
 
-**Phase readiness / external-policy boundary — 2026-06-17**
+**P15 Quality Hardening — Active (2026-06-17)**
 
-Local implementation phases are currently complete through P14:
+Local implementation phases are complete through P14; P15 is now active for release-quality hardening:
 
 - P10 Native Charts: complete, including downsampling plus Line/Area/Bar/Pie/Ring hover hit testing.
 - P11 Native Tray: complete, including `aura-tray`, dynamic icons, nested/check menus, Gallery/Docs controls, and close-to-tray behavior.
 - P12 Native Packaging: runner-safe readiness complete; remaining work is external-policy/credential/runner gated (signing/notarization, real system install/uninstall, formal license policy, real `v*` release run).
 - P13 Component Expansion: implemented and documented.
 - P14 Deferred Advanced: complete; the P9 backlog has been migrated and delivered.
+- P15 Quality Hardening: active; first slice adds general CI quality gates independent of packaging release workflow.
 
-Next work should either resolve P12 external-policy items with owner-provided credentials/approvals, or start a new explicitly scoped phase. Do not mark P12 fully complete until those external requirements are satisfied or formally declared out of scope.
+P12 external-policy items remain tracked but do not block local P15 hardening work. Do not mark P12 fully complete until signing/notarization, real system installs, license policy, and real `v*` release validation are satisfied or formally declared out of scope.
 
 ## Completed in P4
 
@@ -45,6 +46,7 @@ Next work should either resolve P12 external-policy items with owner-provided cr
 | P12 Native Packaging | 🔶 Readiness | local gates done | external-policy items remain |
 | P13 Component Expansion | ✅ Done | 18/18 | 18 |
 | P14 Deferred Advanced | ✅ Done | 9/9 | 9 |
+| P15 Quality Hardening | 🔄 Active | Track A started | CI gates |
 
 ## Git Status
 
@@ -528,3 +530,7 @@ Added GitHub Actions release tag validation in the package workflow. `v*` releas
 ## 2026-06-17 phase handoff stale-state cleanup
 
 Updated the handoff state so new sessions no longer start from the obsolete P8/P9-era “current phase” text. Current source-of-truth summary: P10/P11/P13/P14 are complete; P12 has local runner-safe packaging readiness implemented and only external-policy items remain. Repository remote is SSH (`git@github.com:yhyzgn/aura.git`).
+
+## 2026-06-17 P15 quality hardening kickoff
+
+Started P15 as the release-quality hardening phase after P13/P14 completion and P12 runner-safe readiness. First concrete slice: add `.github/workflows/ci.yml` as a general quality gate for fmt, workspace check/test, docs snippet check, packaging validate, packaging dry-run, and install-smoke dry-run.

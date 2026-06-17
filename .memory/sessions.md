@@ -3079,3 +3079,14 @@
 
 ### Verification
 - Documentation sync only; run markdown/search checks plus package dry-run and core cargo checks before commit.
+
+
+## Session 2026-06-17 — P15 Quality Hardening Kickoff
+
+### Actions
+- Created `.prompt/P15-quality-hardening.md` to formalize the release-quality hardening phase.
+- Added `.github/workflows/ci.yml` for general quality gates: fmt, workspace check/test, docs snippet check, packaging validate, packaging dry-run, and install-smoke dry-run.
+- Updated `prompt.md` and `.memory/state.md` so future sessions enter P15 rather than reopening completed P13/P14 work.
+
+### Verification
+- Run local fmt/check/test/package dry-run gates before committing this slice.

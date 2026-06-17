@@ -14,7 +14,7 @@
 | UI 框架 | GPUI 0.2.2 (git = "https://github.com/zed-industries/zed") |
 | 参考规范 | Element-Plus 2.x (https://element-plus.org/zh-CN/) |
 | 架构 | Cargo Workspace Monorepo |
-| 目标 | ~76+ 个企业级组件, 分阶段交付；P9 作为延后高级组件补全 backlog；P10 原生统计图组件；P11 系统托盘/进程常驻阶段；P12 原生安装器打包阶段；P13 高级控件扩展阶段；P14 延后高级组件补全阶段 |
+| 目标 | ~76+ 个企业级组件, 分阶段交付；P9 作为延后高级组件补全 backlog；P10 原生统计图组件；P11 系统托盘/进程常驻阶段；P12 原生安装器打包阶段；P13 高级控件扩展阶段；P14 延后高级组件补全阶段；P15 质量收口阶段 |
 
 ---
 
@@ -33,6 +33,7 @@
 | **P12 原生打包** | `.prompt/P12-packaging.md` | Readiness：`aura-packager` / `xtask package` / `packaging/` / CI installer pipeline 已落地；剩签名、真实系统安装、license、真实 release tag 等外部策略项 |
 | **P13 高级控件扩展** | `.prompt/P13-component-expansion.md` | 已实现：二维码、代码编辑器、信号图、热力/比例条、拖动列表、Timer、Label/Operation，以及 BarChart 独立迷你柱样式与 Chart/Button/Tag/Radio/Checkbox 增强 |
 | **P14 延后高级组件补全** | `.prompt/P14-deferred-advanced.md` | 已完成：Carousel、Calendar、InputTag、Mention、Watermark、TreeSelect、Tour、VirtualizedTable、VirtualizedTree 全部补齐 |
+| **P15 质量收口** | `.prompt/P15-quality-hardening.md` | Active：CI/验证门禁、API 一致性、主题视觉、交互键盘、性能和 Docs 完整性 hardening |
 
 ---
 
@@ -65,6 +66,7 @@ aura/
 │           └── markdown.rs          # P8: Markdown AST → Aura 原生元素树
 ├── xtask/                            # P12 统一工程命令入口：cargo run -p xtask -- package ...
 ├── packaging/                        # P12 icons、desktop、metainfo、entitlements、Windows installer resources
+├── .github/workflows/ci.yml           # P15 通用质量门禁
 ├── .github/workflows/package.yml      # P12 Linux/macOS/Windows packaging matrix
 ├── .memory/                          # 🧠 记忆库 (跨会话状态)
 │   ├── state.md                     # 当前阶段 + 进度
@@ -84,7 +86,10 @@ aura/
 │   ├── P9-deferred-advanced.md
 │   ├── P10-charts.md
 │   ├── P11-tray.md
-│   └── P12-packaging.md
+│   ├── P12-packaging.md
+│   ├── P13-component-expansion.md
+│   ├── P14-deferred-advanced.md
+│   └── P15-quality-hardening.md
 ├── prompt.md                         # 📌 本文件 (AI 入口)
 ├── architecture-design.md
 └── structure.txt
@@ -114,6 +119,7 @@ aura/
 - P12 是打包 readiness 阶段：`aura-packager` + `xtask package` + `packaging/` + CI workflow 已落地并有 runner-safe smoke/install-smoke gates。剩余主要是签名/公证、真实系统级安装卸载、license policy、release tag 实跑等外部策略/runner 事项。应用必须保持纯 Rust + GPUI native，严禁转成 Tauri 或引入 WebView/HTML/CSS/DOM/browser runtime。
 - P13 主体已实现：二维码、代码编辑器、信号图、热力/比例条、横向/纵向拖动列表、Timer、Label、Operation，以及 Chart/Button/Tag/Radio/Checkbox 等高自定义能力；详见 `.prompt/P13-component-expansion.md`。
 - P14 延后高级组件补全阶段已完成：Carousel、Calendar、InputTag、Mention、Watermark、TreeSelect、Tour、VirtualizedTable、VirtualizedTree 均已实现并有 Gallery/Docs/snippets/tests。详见 `.prompt/P14-deferred-advanced.md`。
+- P15 质量收口阶段已启动：优先补 CI/验证门禁，然后逐项审计 API 一致性、主题视觉、交互键盘、性能和 Docs 完整性。详见 `.prompt/P15-quality-hardening.md`。
 
 ### 4.2 每个组件/功能开发流程
 

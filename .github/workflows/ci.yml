@@ -1,0 +1,76 @@
+name: Aura quality gates
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: fmt, check, test, snippets, packaging dry-run
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Prefer toolchain cargo shim
+        shell: bash
+        run: echo "$(dirname "$(rustup which cargo)")" >> "$GITHUB_PATH"
+
+      - name: Install Linux native build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            file \
+            libasound2-dev \
+            libatk1.0-dev \
+            libayatana-appindicator3-dev \
+            libcairo2-dev \
+            libfontconfig1-dev \
+            libfreetype6-dev \
+            libgdk-pixbuf-2.0-dev \
+            libglib2.0-dev \
+            libgtk-3-dev \
+            libpango1.0-dev \
+            librsvg2-dev \
+            libvulkan-dev \
+            libwayland-dev \
+            libx11-dev \
+            libxkbcommon-dev \
+            libxkbcommon-x11-dev \
+            pkg-config \
+            rpm \
+            zsync
+
+      - name: Format check
+        run: cargo fmt --all --check
+
+      - name: Workspace check
+        run: cargo check --workspace --all-targets
+
+      - name: Workspace tests
+        run: cargo test --workspace
+
+      - name: Docs snippet check
+        run: cargo check -p aura-docs --bin check_snippets
+
+      - name: Packaging metadata validate
+        run: cargo run -p xtask -- package validate
+
+      - name: Packaging dry-run
+        run: cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build
+
+      - name: Install/uninstall smoke dry-run
+        run: cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run
