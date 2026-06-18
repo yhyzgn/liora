@@ -27,3 +27,16 @@
 
 ```rust src="dropdown/placements.rs"
 ```
+
+## 关闭策略
+
+默认点击菜单外部或按 ESC 会关闭 Dropdown。需要强约束流程时，可以通过 `close_on_click_outside(false)` 和 `close_on_escape(false)` 禁用这些自动关闭路径；菜单项点击仍会在回调执行后关闭菜单。
+
+### 效果
+
+::AuraDemo{component="DropdownCloseStrategy"}::
+
+### 代码
+
+```rust src="dropdown/close_strategy.rs"
+```

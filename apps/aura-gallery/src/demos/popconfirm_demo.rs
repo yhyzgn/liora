@@ -46,8 +46,8 @@ impl Render for PopconfirmDemo {
                     ]),
                 ))
                 .child(section(
-                    "Custom text 自定义文案",
-                    "可自定义确认和取消按钮文本。",
+                    "Custom text & close policy 自定义文案与关闭策略",
+                    "可自定义确认/取消按钮文本，也可禁用 ESC 和点击外部关闭。",
                     row(vec![
                         Popconfirm::new(Button::new("Publish").success())
                             .id("popconfirm-demo-publish")
@@ -60,6 +60,8 @@ impl Render for PopconfirmDemo {
                             .title("This action cannot be undone.")
                             .confirm_text("I understand")
                             .cancel_text("Abort")
+                            .close_on_escape(false)
+                            .close_on_click_outside(false)
                             .placement(Placement::BottomStart),
                     ]),
                 )),

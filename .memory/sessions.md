@@ -3168,3 +3168,18 @@
 - `cargo check --workspace --all-targets` passed.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+## Session 2026-06-18 — P15 Track D Outside Close Docs and Examples
+
+### Actions
+- Added Dropdown close-strategy docs and compile-checked snippet for disabling outside-click and ESC auto-close.
+- Added live Docs and Gallery examples for Dropdown close policy.
+- Updated Popconfirm custom policy examples to show both `close_on_escape(false)` and `close_on_click_outside(false)`.
+
+### Verification
+- `cargo fmt --all --check` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `git diff --check` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.

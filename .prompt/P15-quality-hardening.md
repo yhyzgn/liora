@@ -163,3 +163,16 @@ Validation evidence for this slice:
 - `cargo check --workspace --all-targets` passed.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+### 2026-06-18 — Track D outside-close docs/examples slice
+
+- Added Dropdown close-strategy docs, live demo, compile-checked snippet, and Gallery example for `close_on_click_outside(false)` / `close_on_escape(false)`.
+- Updated Popconfirm custom close-policy examples in Docs, snippets, and Gallery to show both ESC and outside-click close configuration.
+
+Validation evidence for this slice:
+- `cargo fmt --all --check` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `git diff --check` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.

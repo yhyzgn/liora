@@ -217,6 +217,8 @@ mod drawer_placements;
 mod drawer_sizes;
 #[path = "../../content/snippets/dropdown/basic.rs"]
 mod dropdown_basic;
+#[path = "../../content/snippets/dropdown/close_strategy.rs"]
+mod dropdown_close_strategy;
 #[path = "../../content/snippets/dropdown/placements.rs"]
 mod dropdown_placements;
 #[path = "../../content/snippets/empty/basic.rs"]

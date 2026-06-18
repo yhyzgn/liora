@@ -38,6 +38,19 @@ impl Render for DropdownDemo {
                     menu("dropdown-demo-right", "Right", Placement::Right),
                 ]),
             ))
+            .child(section(
+                "Close policy 关闭策略",
+                "可禁用点击外部或 ESC 关闭；菜单项点击仍会执行回调并关闭菜单。",
+                row(vec![
+                    Dropdown::new(Button::new("Manual close menu"))
+                        .id("dropdown-demo-manual-close")
+                        .placement(Placement::BottomStart)
+                        .close_on_click_outside(false)
+                        .close_on_escape(false)
+                        .item("Save draft", |_, _| println!("Save draft"))
+                        .item("Duplicate", |_, _| println!("Duplicate")),
+                ]),
+            ))
     }
 }
 

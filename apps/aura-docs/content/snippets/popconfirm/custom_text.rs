@@ -23,6 +23,7 @@ pub fn popconfirm_custom_text() -> impl IntoElement {
                 .confirm_text("I understand")
                 .cancel_text("Abort")
                 .close_on_escape(false)
+                .close_on_click_outside(false)
                 .placement(Placement::BottomStart),
         )
 }

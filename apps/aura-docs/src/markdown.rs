@@ -1261,6 +1261,9 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
             "../content/snippets/popconfirm/custom_text.rs"
         )),
         "dropdown/basic.rs" => Some(include_str!("../content/snippets/dropdown/basic.rs")),
+        "dropdown/close_strategy.rs" => Some(include_str!(
+            "../content/snippets/dropdown/close_strategy.rs"
+        )),
         "dropdown/placements.rs" => {
             Some(include_str!("../content/snippets/dropdown/placements.rs"))
         }
@@ -4690,6 +4693,7 @@ impl Render for LiveDemoContent {
             "PopconfirmCustomText" => docs_popconfirm_custom_text().into_any_element(),
             "DropdownBasic" => docs_dropdown_basic().into_any_element(),
             "DropdownPlacements" => docs_dropdown_placements().into_any_element(),
+            "DropdownCloseStrategy" => docs_dropdown_close_strategy().into_any_element(),
             "MessageBoxBasic" => docs_message_box_basic().into_any_element(),
             "MessageBoxManualClose" => docs_message_box_manual_close().into_any_element(),
             "NotificationTypes" => docs_notification_types().into_any_element(),
@@ -6185,6 +6189,7 @@ fn docs_popconfirm_custom_text() -> impl IntoElement {
                 .confirm_text("I understand")
                 .cancel_text("Abort")
                 .close_on_escape(false)
+                .close_on_click_outside(false)
                 .placement(Placement::BottomStart),
         )
 }
@@ -6213,6 +6218,16 @@ fn docs_dropdown_at(id: &'static str, label: &'static str, placement: Placement)
         .placement(placement)
         .item("Action 1", |_, _| toast_info!("Action 1"))
         .item("Action 2", |_, _| toast_info!("Action 2"))
+}
+
+fn docs_dropdown_close_strategy() -> Dropdown {
+    Dropdown::new(Button::new("Manual close menu"))
+        .id("docs-dropdown-manual-close")
+        .placement(Placement::BottomStart)
+        .close_on_click_outside(false)
+        .close_on_escape(false)
+        .item("Save draft", |_, _| toast_info!("Save draft"))
+        .item("Duplicate", |_, _| toast_info!("Duplicate"))
 }
 
 fn docs_message_box_basic() -> impl IntoElement {
@@ -8240,7 +8255,11 @@ mod tests {
             (
                 include_str!("../content/pages/dropdown.md"),
                 "DropdownBasic",
-                &["dropdown/basic.rs", "dropdown/placements.rs"][..],
+                &[
+                    "dropdown/basic.rs",
+                    "dropdown/placements.rs",
+                    "dropdown/close_strategy.rs",
+                ][..],
             ),
             (
                 include_str!("../content/pages/message_box.md"),
