@@ -204,3 +204,16 @@ Validation evidence for this slice:
 - `cargo test -p aura-components -- --nocapture` passed: 200 unit tests plus package integration tests.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+### 2026-06-18 — Track D popup close-policy docs/examples slice
+
+- Added close-policy examples to Select, Autocomplete, DatePicker, TimePicker, and ColorPicker Docs/Gallery coverage by applying `close_on_click_outside(false)` and `close_on_escape(false)` in representative scenarios.
+- Updated compile-checked snippets and live docs renderers so the new public popup policy builders remain exercised.
+
+Validation evidence for this slice:
+- `cargo fmt --all --check` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `git diff --check` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.

@@ -17,7 +17,7 @@
 
 ## 自定义展示格式
 
-通过 `format` 将日期展示为业务需要的字符串格式。
+通过 `format` 将日期展示为业务需要的字符串格式；同时可以配置 `close_on_click_outside(false)` / `close_on_escape(false)` 控制弹层关闭策略。
 
 ### 效果
 

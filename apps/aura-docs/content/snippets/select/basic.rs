@@ -17,6 +17,8 @@ impl SelectBasicDemo {
                     Some(1),
                     cx,
                 )
+                .close_on_click_outside(false)
+                .close_on_escape(false)
             }),
         }
     }

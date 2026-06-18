@@ -43,6 +43,8 @@ impl AutocompleteDemo {
                         .width_lg()
                         .max_suggestions(4)
                         .suffix_icon(IconName::Command)
+                        .close_on_click_outside(false)
+                        .close_on_escape(false)
                 }
             }),
             no_suffix: cx.new({
@@ -84,7 +86,7 @@ impl Render for AutocompleteDemo {
                 ))
                 .child(section(
                     "自定义建议",
-                    "Value and label can be different, useful for routes or commands.",
+                    "Value and label can be different; this example also disables outside-click and ESC auto-close.",
                     Card::new(
                         Space::new()
                             .vertical()

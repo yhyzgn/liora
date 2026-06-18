@@ -1780,6 +1780,8 @@ impl LiveDemoContent {
                         .width_lg()
                         .max_suggestions(4)
                         .suffix_icon(IconName::Command)
+                        .close_on_click_outside(false)
+                        .close_on_escape(false)
                 }));
             }
             "AutocompleteNoSuffix" => {
@@ -1980,6 +1982,8 @@ impl LiveDemoContent {
                         Some(1),
                         cx,
                     )
+                    .close_on_click_outside(false)
+                    .close_on_escape(false)
                 }));
             }
             "SliderBasic" => {
@@ -2146,6 +2150,8 @@ impl LiveDemoContent {
                     aura_components::ColorPicker::new("#F56C6C")
                         .id("docs-color-picker-compact")
                         .show_label(false)
+                        .close_on_click_outside(false)
+                        .close_on_escape(false)
                 }));
             }
             "ColorPickerDisabled" => {
@@ -2169,6 +2175,8 @@ impl LiveDemoContent {
                         .id("docs-time-picker-formatted")
                         .value(aura_components::TimeValue::new(9, 30, 15).expect("valid time"))
                         .format("HH时mm分ss秒")
+                        .close_on_click_outside(false)
+                        .close_on_escape(false)
                         .width_md()
                 }));
             }
@@ -2262,6 +2270,8 @@ impl LiveDemoContent {
                         .id("docs-date-picker-formatted")
                         .value(aura_components::DateValue::new(2026, 5, 8).expect("valid date"))
                         .format("YYYY年M月D日")
+                        .close_on_click_outside(false)
+                        .close_on_escape(false)
                         .width_md()
                 }));
             }

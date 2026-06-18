@@ -15,6 +15,8 @@
 
 ## 自定义建议
 
+自定义建议也可以配置关闭策略，例如禁用点击外部与 ESC 自动关闭。
+
 ### 效果
 
 ::AuraDemo{component="AutocompleteCustom"}::

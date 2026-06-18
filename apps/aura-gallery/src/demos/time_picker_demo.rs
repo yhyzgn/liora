@@ -23,6 +23,8 @@ impl TimePickerDemo {
                 TimePicker::new()
                     .value(TimeValue::new(9, 30, 15).expect("valid time"))
                     .format("HH时mm分ss秒")
+                    .close_on_click_outside(false)
+                    .close_on_escape(false)
                     .width_md()
             }),
             stepped: cx.new(|_| {
@@ -69,7 +71,7 @@ impl Render for TimePickerDemo {
                 ))
                 .child(section(
                     "自定义展示格式",
-                    "使用中文格式展示已选时间。",
+                    "使用中文格式展示已选时间，并禁用点击外部/ESC 自动关闭。",
                     self.formatted.clone(),
                 ))
                 .child(section(

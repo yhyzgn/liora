@@ -26,6 +26,8 @@ impl DatePickerDemo {
                 DatePicker::new()
                     .value(DateValue::new(2026, 5, 8).expect("valid date"))
                     .format("YYYY年M月D日")
+                    .close_on_click_outside(false)
+                    .close_on_escape(false)
                     .width_md()
             }),
             date_range: cx.new(|_| {
@@ -99,7 +101,7 @@ impl Render for DatePickerDemo {
                 ))
                 .child(section(
                     "自定义展示格式",
-                    "使用中文格式展示已选日期。",
+                    "使用中文格式展示已选日期，并禁用点击外部/ESC 自动关闭。",
                     self.formatted.clone(),
                 ))
                 .child(section(

@@ -17,7 +17,7 @@
 
 ## 自定义展示格式
 
-使用 `format` 设置输入框中的时间展示格式。
+使用 `format` 设置输入框中的时间展示格式；弹层关闭策略也可通过 `close_on_click_outside(false)` / `close_on_escape(false)` 控制。
 
 ### 效果
 

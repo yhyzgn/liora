@@ -24,6 +24,8 @@ impl AutocompleteCustomDemo {
                     .width_lg()
                     .max_suggestions(4)
                     .suffix_icon(IconName::Command)
+                    .close_on_click_outside(false)
+                    .close_on_escape(false)
             }),
         }
     }

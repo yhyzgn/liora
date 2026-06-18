@@ -23,7 +23,12 @@ impl ColorPickerDemo {
                     "#13C2C2", "#52C41A", "#FAAD14", "#F5222D", "#722ED1", "#EB2F96",
                 ])
             }),
-            compact: cx.new(|_| ColorPicker::new("#F56C6C").show_label(false)),
+            compact: cx.new(|_| {
+                ColorPicker::new("#F56C6C")
+                    .show_label(false)
+                    .close_on_click_outside(false)
+                    .close_on_escape(false)
+            }),
             disabled: cx.new(|_| ColorPicker::new("#909399").disabled(true).width_md()),
         }
     }
@@ -49,7 +54,7 @@ impl Render for ColorPickerDemo {
                     ),
                 ))
                 .child(section("自定义 Popup 预设色", "替换底部快捷色板。", Card::new(self.custom.clone())))
-                .child(section("隐藏文本标签", "仅展示颜色方块触发器。", Card::new(self.compact.clone())))
+                .child(section("隐藏文本标签", "仅展示颜色方块触发器，并禁用点击外部/ESC 自动关闭。", Card::new(self.compact.clone())))
                 .child(section("禁用状态", "禁用后不可打开弹层。", Card::new(self.disabled.clone()))),
         )
     }
