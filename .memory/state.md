@@ -2,18 +2,35 @@
 
 ## Current Phase
 
-**P15 Quality Hardening — Active (2026-06-17)**
+**P15 Quality Hardening — Complete (2026-06-18)**
 
-Local implementation phases are complete through P14; P15 is now active for release-quality hardening:
+Local implementation phases are complete through P14; P15 is complete for local release-quality hardening:
 
 - P10 Native Charts: complete, including downsampling plus Line/Area/Bar/Pie/Ring hover hit testing.
 - P11 Native Tray: complete, including `aura-tray`, dynamic icons, nested/check menus, Gallery/Docs controls, and close-to-tray behavior.
 - P12 Native Packaging: runner-safe readiness complete; remaining work is external-policy/credential/runner gated (signing/notarization, real system install/uninstall, formal license policy, real `v*` release run).
 - P13 Component Expansion: implemented and documented.
 - P14 Deferred Advanced: complete; the P9 backlog has been migrated and delivered.
-- P15 Quality Hardening: active; Track A general CI gates are in place, Track B API consistency/panic cleanup is complete for the first pass with synchronized-state lock poisoning hardening, Track C semantic text token hardening has multiple slices complete, Track D interaction/overlay hardening has close-policy coverage across common overlays/popups, and Track E has started CodeBlock performance hardening with incremental cache eviction plus shared highlight-run storage.
+- P15 Quality Hardening: complete; Track A CI gates, Track B API consistency/panic cleanup, Track C visual/theme token hardening, Track D overlay/keyboard close-policy coverage, Track E CodeBlock/cache performance hardening, and Track F docs/snippet completeness all passed the final local gate suite.
 
 P12 external-policy items remain tracked but do not block local P15 hardening work. Do not mark P12 fully complete until signing/notarization, real system installs, license policy, and real `v*` release validation are satisfied or formally declared out of scope.
+
+
+## P15 Final Completion Audit — 2026-06-18
+
+P15 local quality hardening is complete. Final gate evidence:
+
+- `cargo fmt --all --check` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo run -p xtask -- package validate` passed.
+- `cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build` passed.
+- `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run` passed.
+- `git diff --check -- . ':(exclude).omx'` passed.
+- Gallery and Docs GUI startup smoke both started and exited via expected `timeout 10s` status `124`.
+
+Non-blocking residuals: `MessageManager::init` panic is intentional usage-contract enforcement; Gallery fixed date/time demo `expect(...)` calls are demo constant assumptions; P12 external-policy items remain signing/notarization, real install/uninstall, formal license policy, and real `v*` release validation.
 
 ## Completed in P4
 
@@ -46,7 +63,7 @@ P12 external-policy items remain tracked but do not block local P15 hardening wo
 | P12 Native Packaging | 🔶 Readiness | local gates done | external-policy items remain |
 | P13 Component Expansion | ✅ Done | 18/18 | 18 |
 | P14 Deferred Advanced | ✅ Done | 9/9 | 9 |
-| P15 Quality Hardening | 🔄 Active | Track E started | CI gates + API consistency + visual/theme + overlay behavior + CodeBlock cache performance |
+| P15 Quality Hardening | ✅ Done | final gate passed | CI gates + API consistency + visual/theme + overlay behavior + CodeBlock performance + docs completeness |
 
 ## Git Status
 

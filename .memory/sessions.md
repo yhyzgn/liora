@@ -10,7 +10,7 @@
 - **创建 `.prompt/P7-demo-self-contained.md`**: 定义 Demo 自举要求、缺失控件新增流程、改造范围
 - **重命名 `.prompt/P6-engineering.md` → `.prompt/P8-engineering.md`** 并更新上游引用
 - **同步更新所有相关文件**:
-  - `prompt.md`: 阶段导航 (9)、工程结构 (3) 
+  - `prompt.md`: 阶段导航 (9)、工程结构 (3)
   - `.memory/state.md`: 阶段进度表
   - `.memory/inventory.md`: 组件清单
   - `.memory/decisions.md`: 新增 ADR-011 (Built-in Unique ID)、ADR-012 (Demo Self-Contained)
@@ -3443,3 +3443,22 @@
 - `cargo check -p aura-docs --bin check_snippets` passed.
 - `git diff --check -- . ':(exclude).omx'` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+## Session 2026-06-18 — P15 Final Completion Audit
+
+### Actions
+- Marked P15 Quality Hardening complete after the full local quality gate suite passed.
+- Recorded final coverage across CI gates, API/panic hardening, visual/theme tokens, overlay close policy, CodeBlock performance hardening, and Docs/snippet completeness.
+- Preserved the P12 boundary: external signing/notarization, real install/uninstall, license policy, and real tagged release validation remain outside P15 local completion.
+
+### Verification
+- `cargo fmt --all --check` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo run -p xtask -- package validate` passed.
+- `cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build` passed.
+- `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run` passed.
+- `git diff --check -- . ':(exclude).omx'` passed.
+- Gallery GUI startup smoke passed via expected `timeout 10s` status `124`.
+- Docs GUI startup smoke passed via expected `timeout 10s` status `124`.

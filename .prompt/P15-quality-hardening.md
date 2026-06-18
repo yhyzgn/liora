@@ -1,7 +1,7 @@
 # P15 — Quality Hardening
 
-> 上游: `.prompt/P13-component-expansion.md` / `.prompt/P14-deferred-advanced.md` / `.prompt/P12-packaging.md`  
-> 状态: Active  
+> 上游: `.prompt/P13-component-expansion.md` / `.prompt/P14-deferred-advanced.md` / `.prompt/P12-packaging.md`
+> 状态: Complete
 > 目标: 在组件功能补齐后，进入发布前质量收口阶段，系统性提升 Aura 的可维护性、一致性、性能、文档完整性和 CI 防回归能力。
 
 ## 背景
@@ -419,3 +419,33 @@ Validation evidence for this slice:
 - `cargo check -p aura-docs --bin check_snippets` passed.
 - `git diff --check -- . ':(exclude).omx'` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+### 2026-06-18 — P15 final completion audit
+
+P15 is complete. The final audit confirms all local quality hardening tracks are covered:
+
+- Track A: CI/verification gates and CI/package workflow boundaries are in place and documented.
+- Track B: API consistency and avoidable runtime panic cleanup passed the hardened-path audit, including synchronized UI state recovery, tray icon fallback handling, packager string rendering, and lucide build-script error handling.
+- Track C: visual/theme consistency hardening uses theme tokens for representative colored text surfaces and chart labels.
+- Track D: interaction/overlay behavior is covered for ESC and outside-click close policy across common overlays, popups, Preview, and Tour.
+- Track E: CodeBlock performance hardening uses incremental highlight-cache eviction and shared `Arc<[TextRun]>` highlight-run storage; chart downsampling remains covered from prior phases.
+- Track F: docs/snippet completeness is covered by the native Docs loader audit and compile-checked snippets; QuickStart key bindings are aligned with Gallery/Docs startup registration.
+
+Final gate evidence:
+
+- `cargo fmt --all --check` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo run -p xtask -- package validate` passed.
+- `cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build` passed.
+- `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run` passed.
+- `git diff --check -- . ':(exclude).omx'` passed.
+- `timeout 10s cargo run -p aura-gallery` started successfully and exited via expected timeout status `124`.
+- `timeout 10s cargo run -p aura-docs` started successfully and exited via expected timeout status `124`.
+
+Residuals intentionally outside P15 local completion:
+
+- `MessageManager::init` panic remains intentional usage-contract enforcement.
+- Gallery fixed date/time demo `expect(...)` calls are compile-time/demo constant assumptions, not production component paths.
+- P12 external-policy items remain outside P15: signing, notarization, real system installs/uninstalls, formal license policy, and a real `v*` release validation run.
