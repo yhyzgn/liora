@@ -554,3 +554,7 @@ Docs UI snippet loading is now complete for all authored docs page `src="..."` c
 ## 2026-06-18 P15 Track A split CI quality and packaging dry-run jobs
 
 General CI now has separate `rust-quality` and `packaging-dry-run` jobs. Workspace fmt/check/test/snippet checks keep GPUI/Linux native dependencies; package metadata/dry-run/install-smoke dry-run executes in a lightweight job with only `file` tooling. Packaging Workflow docs and docs tests lock the job split. Validation passed: workflow YAML parse, fmt, focused docs packaging tests, docs snippet check, workspace check/test, xtask package validate/dry-run/install-smoke dry-run, diff whitespace check, and Gallery/Docs GUI startup smoke.
+
+## 2026-06-18 P15 Track F QuickStart key binding completeness
+
+QuickStart minimal window setup now registers CodeEditor and Tour key bindings in addition to existing input, selection, preview, popup, and typography bindings. A docs regression test compares QuickStart against Gallery and Docs for key bindings that affect text selection, code editing, Preview, and Tour overlay behavior. Validation passed: fmt, focused docs test, docs snippet check, workspace check/test, diff whitespace check, and Gallery/Docs GUI startup smoke.

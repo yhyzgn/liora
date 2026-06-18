@@ -7699,6 +7699,37 @@ mod tests {
     }
 
     #[test]
+    fn quick_start_registers_core_app_key_bindings() {
+        let quick_start = include_str!("../content/snippets/quick_start/main_window.rs");
+        let gallery = include_str!("../../aura-gallery/src/main.rs");
+        let docs = include_str!("main.rs");
+
+        for registration in [
+            "Input::register_key_bindings(cx)",
+            "CodeBlock::register_key_bindings(cx)",
+            "CodeEditor::register_key_bindings(cx)",
+            "Preview::register_key_bindings(cx)",
+            "Text::register_key_bindings(cx)",
+            "Paragraph::register_key_bindings(cx)",
+            "Title::register_key_bindings(cx)",
+            "Tour::register_key_bindings(cx)",
+        ] {
+            assert!(
+                quick_start.contains(registration),
+                "QuickStart main_window.rs missing {registration}"
+            );
+            assert!(
+                gallery.contains(registration),
+                "Gallery main.rs missing {registration}"
+            );
+            assert!(
+                docs.contains(registration),
+                "Docs main.rs missing {registration}"
+            );
+        }
+    }
+
+    #[test]
     fn rust_snippets_are_imported_by_compile_check_harness() {
         let harness = include_str!("bin/check_snippets.rs");
 

@@ -310,3 +310,17 @@ Validation evidence for this slice:
 - `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run` passed.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+### 2026-06-18 — Track F QuickStart key binding completeness
+
+- Updated the QuickStart minimal window snippet to register `CodeEditor` and `Tour` key bindings alongside the rest of the core app-level bindings.
+- Added a docs regression test that compares the QuickStart example against Gallery and Docs for key bindings that affect text selection, code editing, Preview, and Tour overlay behavior.
+
+Validation evidence for this slice:
+- `cargo fmt --all --check` passed.
+- `cargo test -p aura-docs markdown::tests::quick_start_registers_core_app_key_bindings -- --nocapture` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `git diff --check` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.

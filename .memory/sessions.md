@@ -3326,3 +3326,18 @@
 - `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run` passed.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+## Session 2026-06-18 — P15 Track F QuickStart Key Bindings
+
+### Actions
+- Added missing `CodeEditor::register_key_bindings(cx)` and `Tour::register_key_bindings(cx)` calls to the QuickStart `main_window.rs` snippet.
+- Added a docs regression test that locks QuickStart/Gallery/Docs alignment for core app-level key bindings.
+
+### Verification
+- `cargo fmt --all --check` passed.
+- `cargo test -p aura-docs markdown::tests::quick_start_registers_core_app_key_bindings -- --nocapture` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `git diff --check` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.

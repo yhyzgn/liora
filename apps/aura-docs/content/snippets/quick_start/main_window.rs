@@ -1,9 +1,9 @@
 //! Minimal GPUI + Aura window bootstrap.
 
 use aura_components::{
-    Autocomplete, Cascader, Checkbox, CodeBlock, ColorPicker, DatePicker, DateTimePicker, Dialog,
-    Drawer, Input, MessageManager, Paragraph, Popover, Preview, Radio, RadioGroup, Select, Switch,
-    Text, TimePicker, Title,
+    Autocomplete, Cascader, Checkbox, CodeBlock, CodeEditor, ColorPicker, DatePicker,
+    DateTimePicker, Dialog, Drawer, Input, MessageManager, Paragraph, Popover, Preview, Radio,
+    RadioGroup, Select, Switch, Text, TimePicker, Title, Tour,
 };
 use aura_core::init_aura;
 use aura_theme::Theme;
@@ -30,6 +30,7 @@ fn main() {
         // 3. Register keyboard behavior for interactive components.
         Input::register_key_bindings(cx);
         CodeBlock::register_key_bindings(cx);
+        CodeEditor::register_key_bindings(cx);
         Checkbox::register_key_bindings(cx);
         Radio::register_key_bindings(cx);
         RadioGroup::register_key_bindings(cx);
@@ -48,6 +49,7 @@ fn main() {
         Text::register_key_bindings(cx);
         Paragraph::register_key_bindings(cx);
         Title::register_key_bindings(cx);
+        Tour::register_key_bindings(cx);
 
         // 4. Open the native window and mount a root GPUI View.
         let _ = cx.open_window(
