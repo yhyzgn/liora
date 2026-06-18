@@ -6,26 +6,26 @@
 
 **Architecture:** Timeline is a `RenderOnce` component that renders a list of `TimelineItem` nodes. It manages a vertical axis line that connects all items.
 
-**Tech Stack:** Rust, GPUI 0.2.2, aura-theme, aura-icons.
+**Tech Stack:** Rust, GPUI 0.2.2, liora-theme, liora-icons.
 
 ---
 
 ### Task 1: Foundation & Types
 
 **Files:**
-- Create: `crates/aura-components/src/timeline.rs`
-- Modify: `crates/aura-components/src/lib.rs`
+- Create: `crates/liora-components/src/timeline.rs`
+- Modify: `crates/liora-components/src/lib.rs`
 
 - [ ] **Step 1: Define Timeline structure and enums**
 
 ```rust
-use aura_core::Config;
+use liora_core::Config;
 use gpui::{
     prelude::*, px, App, IntoElement, RenderOnce, Window,
     div, SharedString, AnyElement, Hsla,
 };
-use aura_icons::Icon;
-use aura_icons_lucide::IconName;
+use liora_icons::Icon;
+use liora_icons_lucide::IconName;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum TimelineMode {
@@ -124,7 +124,7 @@ impl Timeline {
 ### Task 2: Rendering Logic
 
 **Files:**
-- Modify: `crates/aura-components/src/timeline.rs`
+- Modify: `crates/liora-components/src/timeline.rs`
 
 - [ ] **Step 1: Implement `RenderOnce` for Timeline**
 - [ ] **Step 2: Handle `reverse` logic for items**
@@ -138,8 +138,8 @@ impl Timeline {
 ### Task 3: Gallery Demo
 
 **Files:**
-- Create: `apps/aura-gallery/src/demos/timeline_demo.rs`
-- Modify: `apps/aura-gallery/src/demos/mod.rs`
+- Create: `apps/liora-gallery/src/demos/timeline_demo.rs`
+- Modify: `apps/liora-gallery/src/demos/mod.rs`
 
 - [ ] **Step 1: Create demo with Basic, Custom Node, and Timestamp examples**
 - [ ] **Step 2: Register in mod.rs**

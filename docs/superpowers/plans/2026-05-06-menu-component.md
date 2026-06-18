@@ -6,27 +6,27 @@
 
 **Architecture:** Menu is a `Render` (View) that maintains `active_index` and `opened_submenus`. Submenus use inline expansion in Vertical mode and `Popper` in Horizontal/Collapsed modes.
 
-**Tech Stack:** Rust, GPUI 0.2.2, aura-core (Popper), aura-icons.
+**Tech Stack:** Rust, GPUI 0.2.2, liora-core (Popper), liora-icons.
 
 ---
 
 ### Task 1: Foundation & Types
 
 **Files:**
-- Create: `crates/aura-components/src/menu.rs`
-- Modify: `crates/aura-components/src/lib.rs`
+- Create: `crates/liora-components/src/menu.rs`
+- Modify: `crates/liora-components/src/lib.rs`
 
 - [ ] **Step 1: Create menu.rs with basic types**
 
 ```rust
 use crate::Alert; // Temporary to satisfy imports or just use standard gpui
-use aura_core::Config;
+use liora_core::Config;
 use gpui::{
     prelude::*, px, App, Context, IntoElement, Render, Window,
     div, SharedString, AnyElement, Component,
 };
-use aura_icons::Icon;
-use aura_icons_lucide::IconName;
+use liora_icons::Icon;
+use liora_icons_lucide::IconName;
 use std::collections::HashSet;
 use std::sync::Arc;
 
@@ -118,7 +118,7 @@ impl Menu {
 - [ ] **Step 3: Register in lib.rs**
 
 ```rust
-// crates/aura-components/src/lib.rs
+// crates/liora-components/src/lib.rs
 pub mod menu;
 pub use menu::*;
 ```
@@ -128,21 +128,21 @@ Run: `cargo check`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
-`git add crates/aura-components/src/menu.rs crates/aura-components/src/lib.rs && git commit -m "✨ menu: add base types and builders"`
+`git add crates/liora-components/src/menu.rs crates/liora-components/src/lib.rs && git commit -m "✨ menu: add base types and builders"`
 
 ---
 
 ### Task 2: SubMenu & Group Builders
 
 **Files:**
-- Modify: `crates/aura-components/src/menu.rs`
+- Modify: `crates/liora-components/src/menu.rs`
 
 - [ ] **Step 1: Implement SubMenu builder with closure**
 
 ```rust
 impl Menu {
-    pub fn submenu<F>(mut self, id: impl Into<SharedString>, label: impl Into<SharedString>, icon: Option<IconName>, f: F) -> Self 
-    where F: FnOnce(SubMenuBuilder) -> SubMenuBuilder 
+    pub fn submenu<F>(mut self, id: impl Into<SharedString>, label: impl Into<SharedString>, icon: Option<IconName>, f: F) -> Self
+    where F: FnOnce(SubMenuBuilder) -> SubMenuBuilder
     {
         let builder = SubMenuBuilder {
             id: id.into(),
@@ -174,8 +174,8 @@ impl SubMenuBuilder {
         self
     }
     // Allow nested submenus
-    pub fn submenu<F>(mut self, id: impl Into<SharedString>, label: impl Into<SharedString>, icon: Option<IconName>, f: F) -> Self 
-    where F: FnOnce(SubMenuBuilder) -> SubMenuBuilder 
+    pub fn submenu<F>(mut self, id: impl Into<SharedString>, label: impl Into<SharedString>, icon: Option<IconName>, f: F) -> Self
+    where F: FnOnce(SubMenuBuilder) -> SubMenuBuilder
     {
         let builder = SubMenuBuilder { id: id.into(), label: label.into(), icon, children: vec![] };
         let result = f(builder);
@@ -199,7 +199,7 @@ impl SubMenuBuilder {
 ### Task 3: Vertical Rendering (Expanded)
 
 **Files:**
-- Modify: `crates/aura-components/src/menu.rs`
+- Modify: `crates/liora-components/src/menu.rs`
 
 - [ ] **Step 1: Implement Render for Menu**
 - [ ] **Step 2: Recursive rendering of MenuNodes for Vertical mode**
@@ -211,7 +211,7 @@ impl SubMenuBuilder {
 ### Task 4: Horizontal Rendering & Popover Submenus
 
 **Files:**
-- Modify: `crates/aura-components/src/menu.rs`
+- Modify: `crates/liora-components/src/menu.rs`
 
 - [ ] **Step 1: Implement Horizontal mode layout**
 - [ ] **Step 2: Use Popover for SubMenus in Horizontal mode**
@@ -223,8 +223,8 @@ impl SubMenuBuilder {
 ### Task 5: Gallery Demo
 
 **Files:**
-- Create: `apps/aura-gallery/src/demos/menu_demo.rs`
-- Modify: `apps/aura-gallery/src/demos/mod.rs`
+- Create: `apps/liora-gallery/src/demos/menu_demo.rs`
+- Modify: `apps/liora-gallery/src/demos/mod.rs`
 
 - [ ] **Step 1: Create demo with multiple cases (Horizontal, Vertical, Collapsed, Nested)**
 - [ ] **Step 2: Register in mod.rs**

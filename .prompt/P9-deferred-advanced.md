@@ -30,11 +30,11 @@
 ## 实施规则
 
 1. **不要把 P9 当作当前自动执行阶段。** 它是最新的 deferred backlog，等待后续用户明确要求。
-2. 每个组件仍遵守 Aura 组件流程：
-   - `crates/aura-components/src/<name>.rs`
-   - `crates/aura-components/src/lib.rs` 注册 `pub mod` / `pub use`
-   - `apps/aura-gallery/src/demos/<name>_demo.rs`
-   - `apps/aura-gallery/src/demos/mod.rs` 注册 DemoEntry
+2. 每个组件仍遵守 Liora 组件流程：
+   - `crates/liora-components/src/<name>.rs`
+   - `crates/liora-components/src/lib.rs` 注册 `pub mod` / `pub use`
+   - `apps/liora-gallery/src/demos/<name>_demo.rs`
+   - `apps/liora-gallery/src/demos/mod.rs` 注册 DemoEntry
    - 测试覆盖核心状态/过滤/边界逻辑
 3. 优先复用现有组件能力：Input、Popover/Portal、Tree、Table、Scrollbar、Button、Icon。
 4. 对复杂组件先做最小可用版本，再扩展高级 API；避免一次性引入不可验证的大实现。

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>dev.liora.Gallery</id>
+  <name>Liora Gallery</name>
+  <summary>Native GPUI component gallery for Liora.</summary>
+  <metadata_license>MIT</metadata_license>
+  <project_license>LicenseRef-Liora</project_license>
+  <launchable type="desktop-id">liora-gallery.desktop</launchable>
+  <categories>
+    <category>Development</category>
+  </categories>
+  <description>
+    <p>Liora Gallery showcases Liora's native GPUI component library and runtime examples.</p>
+  </description>
+</component>

@@ -2,7 +2,7 @@
 
 > 上游: `.prompt/P12-packaging.md` / `.prompt/P15-quality-hardening.md`
 > 状态: Complete
-> 目标: 让外部 Rust/GPUI 项目能在 10 分钟内理解 Aura、跑起最小示例、找到 API/Docs/发布流程，并知道如何贡献与发布。
+> 目标: 让外部 Rust/GPUI 项目能在 10 分钟内理解 Liora、跑起最小示例、找到 API/Docs/发布流程，并知道如何贡献与发布。
 
 ## Scope
 
@@ -18,13 +18,13 @@ P16 不继续新增大组件，而是完成对外采用闭环：
 ## Non-goals
 
 - 不引入 Tauri/WebView/HTML/CSS/DOM/browser runtime。
-- 不把当前 `LicenseRef-Aura` 伪装成正式 OSS license。
+- 不把当前 `LicenseRef-Liora` 伪装成正式 OSS license。
 - 不执行真实 public release 或签名/公证；这些仍由 owner/protected environment 控制。
 - 不为了文档重构大量组件 API。
 
 ## Completion evidence
 
-- Gallery/Docs 是 adoption 的 compile-checked surfaces；不再要求 `aura-minimal-app`。
+- Gallery/Docs 是 adoption 的 compile-checked surfaces；不再要求 `liora-minimal-app`。
 - `cargo doc --workspace --no-deps` 通过。
 - Docs app 包含 Adoption Guide，且测试覆盖 README/Docs/workflow 入口。
 - Full local gates pass and changes are committed/pushed.

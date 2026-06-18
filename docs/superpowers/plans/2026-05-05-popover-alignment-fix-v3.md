@@ -4,7 +4,7 @@
 
 **Goal:** Fix Popover centering and disappearance by using wide/tall pivot containers that enable robust flexbox centering without knowing content size.
 
-**Architecture:** 
+**Architecture:**
 1. `PopoverView` will calculate the target `final_placement` using `Popper`'s flip logic.
 2. It will create a "Wide Pivot Container" (2000px wide for vertical placements) or a "Tall Pivot Container" (2000px tall for horizontal placements).
 3. The pivot container's center will be aligned with the anchor's center point.
@@ -18,12 +18,12 @@
 ### Task 1: Implement Wide/Tall Pivot Container Positioning
 
 **Files:**
-- Modify: `crates/aura-components/src/popover.rs`
+- Modify: `crates/liora-components/src/popover.rs`
 
 - [ ] **Step 1: Rewrite PopoverView::render with robust centering**
 
 ```rust
-// In crates/aura-components/src/popover.rs
+// In crates/liora-components/src/popover.rs
 
 impl Render for PopoverView {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
@@ -32,7 +32,7 @@ impl Render for PopoverView {
         let placement = self.placement;
         let offset = self.offset;
         let on_close = self.on_close.clone();
-        
+
         let content = (self.content)(_window, cx);
         let viewport_size = _window.viewport_size();
         let viewport = Bounds {
@@ -41,7 +41,7 @@ impl Render for PopoverView {
         };
 
         // Use Popper just for flip logic
-        let popper = aura_core::Popper {
+        let popper = liora_core::Popper {
             anchor_bounds,
             placement,
             offset,
@@ -57,7 +57,7 @@ impl Render for PopoverView {
                 // Vertical placements use a WIDE container for horizontal centering
                 let container_width = px(2000.0);
                 let center_x = anchor_bounds.left() + anchor_bounds.size.width / 2.0;
-                
+
                 pivot_container = pivot_container
                     .w(container_width)
                     .left(center_x - container_width / 2.0);
@@ -146,7 +146,7 @@ Run: `cargo check`
 
 - [ ] **Step 3: Commit**
 ```bash
-git add crates/aura-components/src/popover.rs
+git add crates/liora-components/src/popover.rs
 git commit -m "fix(popover): ultra-robust centering using wide/tall pivot containers"
 ```
 
@@ -155,7 +155,7 @@ git commit -m "fix(popover): ultra-robust centering using wide/tall pivot contai
 ### Task 2: Verify in Gallery
 
 - [ ] **Step 1: Check TopCenter / BottomCenter / LeftCenter / RightCenter**
-Run: `cargo run -p aura-gallery`
+Run: `cargo run -p liora-gallery`
 (Verify all centering variants are perfectly aligned and TopCenter appears correctly).
 
 - [ ] **Step 2: Check Start/End variants**

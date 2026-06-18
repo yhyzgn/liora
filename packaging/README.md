@@ -1,9 +1,9 @@
-# Aura Packaging Resources
+# Liora Packaging Resources
 
 This directory contains static resources consumed by `cargo xtask package` and
-`crates/aura-packager`.
+`crates/liora-packager`.
 
-Aura remains a pure Rust + GPUI native application. These files describe package
+Liora remains a pure Rust + GPUI native application. These files describe package
 metadata and platform integration; they do not introduce Tauri or a WebView
 runtime.
 
@@ -11,9 +11,9 @@ runtime.
 
 The icon set is generated from deterministic SVG sources in `packaging/icons/`:
 
-- `aura.*` — main Aura component-library brand logo.
-- `aura-gallery.*` — application icon for `aura-gallery` packages.
-- `aura-docs.*` — application icon for `aura-docs` packages.
+- `liora.*` — main Liora component-library brand logo.
+- `liora-gallery.*` — application icon for `liora-gallery` packages.
+- `liora-docs.*` — application icon for `liora-docs` packages.
 
 Each icon currently ships as:
 

@@ -6,26 +6,26 @@
 
 **Architecture:** Empty is a `RenderOnce` component that centers an image, a description, and an extra action area vertically.
 
-**Tech Stack:** Rust, GPUI 0.2.2, aura-theme, aura-icons.
+**Tech Stack:** Rust, GPUI 0.2.2, liora-theme, liora-icons.
 
 ---
 
 ### Task 1: Foundation & Types
 
 **Files:**
-- Create: `crates/aura-components/src/empty.rs`
-- Modify: `crates/aura-components/src/lib.rs`
+- Create: `crates/liora-components/src/empty.rs`
+- Modify: `crates/liora-components/src/lib.rs`
 
 - [ ] **Step 1: Define Empty structure and builders**
 
 ```rust
-use aura_core::Config;
+use liora_core::Config;
 use gpui::{
     prelude::*, px, App, IntoElement, RenderOnce, Window,
     div, SharedString, AnyElement,
 };
-use aura_icons::Icon;
-use aura_icons_lucide::IconName;
+use liora_icons::Icon;
+use liora_icons_lucide::IconName;
 
 pub struct Empty {
     image: Option<AnyElement>,
@@ -56,7 +56,7 @@ impl Empty {
         self
     }
 
-    pub fn extra<F>(mut self, f: F) -> Self 
+    pub fn extra<F>(mut self, f: F) -> Self
     where F: Fn(&mut Window, &mut App) -> AnyElement + 'static {
         self.extra = Some(Box::new(f));
         self
@@ -72,7 +72,7 @@ impl Empty {
 ### Task 2: Rendering Logic
 
 **Files:**
-- Modify: `crates/aura-components/src/empty.rs`
+- Modify: `crates/liora-components/src/empty.rs`
 
 - [ ] **Step 1: Implement RenderOnce for Empty**
 - [ ] **Step 2: Implement default SVG placeholder image if none provided**
@@ -85,8 +85,8 @@ impl Empty {
 ### Task 3: Gallery Demo
 
 **Files:**
-- Create: `apps/aura-gallery/src/demos/empty_demo.rs`
-- Modify: `apps/aura-gallery/src/demos/mod.rs`
+- Create: `apps/liora-gallery/src/demos/empty_demo.rs`
+- Modify: `apps/liora-gallery/src/demos/mod.rs`
 
 - [ ] **Step 1: Create demo with multiple cases (Basic, Custom Image, With Action)**
 - [ ] **Step 2: Register in mod.rs**

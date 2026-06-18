@@ -2,7 +2,7 @@
 
 > 上游: `.prompt/P16-adoption-readiness.md`
 > 状态: Complete
-> 目标: 用 Aura 自己构建一个真实 dashboard 示例，验证组件组合、布局、图表、表格、toast、CodeBlock 和启动流程是否适合外部项目采用。
+> 目标: 用 Liora 自己构建一个真实 dashboard 示例，验证组件组合、布局、图表、表格、toast、CodeBlock 和启动流程是否适合外部项目采用。
 
 ## Scope
 
@@ -14,7 +14,7 @@
 
 ## Completion evidence
 
-- `cargo check -p aura-gallery` and `cargo check -p aura-docs` pass.
-- `timeout 10s cargo run -p aura-gallery` and `timeout 10s cargo run -p aura-docs` start and exit with expected timeout status 124.
+- `cargo check -p liora-gallery` and `cargo check -p liora-docs` pass.
+- `timeout 10s cargo run -p liora-gallery` and `timeout 10s cargo run -p liora-docs` start and exit with expected timeout status 124.
 - Workspace checks/tests/docs/package dry-run gates pass.
 - Commit pushed.

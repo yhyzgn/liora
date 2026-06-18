@@ -1,4 +1,4 @@
-name: Aura quality gates
+name: Liora quality gates
 
 on:
   pull_request:
@@ -62,7 +62,7 @@ jobs:
         run: cargo test --workspace
 
       - name: Docs snippet check
-        run: cargo check -p aura-docs --bin check_snippets
+        run: cargo check -p liora-docs --bin check_snippets
 
   packaging-dry-run:
     name: packaging validate and dry-run

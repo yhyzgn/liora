@@ -1,21 +1,21 @@
-# Aura Docs packager metadata.
+# Liora Docs packager metadata.
 # Consumed by future `cargo-packager` integration through `cargo xtask package`.
 
 [application]
-id = "dev.aura.Docs"
-name = "Aura Docs"
-binary = "aura-docs"
-package = "aura-docs"
+id = "dev.liora.Docs"
+name = "Liora Docs"
+binary = "liora-docs"
+package = "liora-docs"
 category = "Documentation"
-short_description = "Native GPUI documentation app for Aura."
-icon = "packaging/icons/aura-docs"
+short_description = "Native GPUI documentation app for Liora."
+icon = "packaging/icons/liora-docs"
 
 [linux]
-desktop = "packaging/linux/aura-docs.desktop"
-metainfo = "packaging/linux/aura-docs.metainfo.xml"
+desktop = "packaging/linux/liora-docs.desktop"
+metainfo = "packaging/linux/liora-docs.metainfo.xml"
 
 [macos]
 entitlements = "packaging/macos/Entitlements.plist"
 
 [windows]
-icon = "packaging/icons/aura-docs.ico"
+icon = "packaging/icons/liora-docs.ico"

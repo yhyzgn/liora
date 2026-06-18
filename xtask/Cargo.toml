@@ -2,10 +2,10 @@
 name = "xtask"
 version = "0.1.0"
 edition = "2024"
-description = "Repository automation commands for Aura development, packaging, and release readiness."
-license = "LicenseRef-Aura"
-repository = "https://github.com/yhyzgn/aura"
+description = "Repository automation commands for Liora development, packaging, and release readiness."
+license = "LicenseRef-Liora"
+repository = "https://github.com/yhyzgn/liora"
 publish = false
 
 [dependencies]
-aura-packager = { path = "../crates/aura-packager" }
+liora-packager = { path = "../crates/liora-packager" }

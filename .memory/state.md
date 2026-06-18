@@ -1,4 +1,4 @@
-# Aura Session State
+# Liora Session State
 
 ## Current Phase
 
@@ -7,15 +7,15 @@
 Local implementation phases are complete through P21. Current repository-owned status:
 
 - P10 Native Charts: complete, including downsampling plus Line/Area/Bar/Pie/Ring hover hit testing.
-- P11 Native Tray: complete, including `aura-tray`, dynamic icons, nested/check menus, Gallery/Docs controls, and close-to-tray behavior.
-- P12 Native Packaging: repository-owned release readiness complete, including `release-readiness` gate, explicit `LicenseRef-Aura` policy, signing/notarization policy docs, CI dry-run gate, and strict `v*` release gate. Real credentials and destructive system-level installs remain protected-environment responsibilities.
+- P11 Native Tray: complete, including `liora-tray`, dynamic icons, nested/check menus, Gallery/Docs controls, and close-to-tray behavior.
+- P12 Native Packaging: repository-owned release readiness complete, including `release-readiness` gate, explicit `LicenseRef-Liora` policy, signing/notarization policy docs, CI dry-run gate, and strict `v*` release gate. Real credentials and destructive system-level installs remain protected-environment responsibilities.
 - P13 Component Expansion: implemented and documented.
 - P14 Deferred Advanced: complete; the P9 backlog has been migrated and delivered.
 - P15 Quality Hardening: complete; Track A CI gates, Track B API consistency/panic cleanup, Track C visual/theme token hardening, Track D overlay/keyboard close-policy coverage, Track E CodeBlock/cache performance hardening, and Track F docs/snippet completeness all passed the final local gate suite.
 - P16 Public API & Adoption Readiness: complete; root README, contributing/changelog docs, crate-level Rustdoc, Docs Adoption Guide, and adoption regression tests are in place; standalone minimal app was removed and folded into Gallery/Docs guidance.
 - P17 Dashboard Dogfooding: complete; dashboard dogfooding has been folded into Gallery/Docs; standalone `examples/dashboard-app` was removed to avoid sample-app drift.
-- P18 Dashboard Polish/API Ergonomics: complete; Gallery now owns shell dogfooding such as search/filtering, theme switching, refresh status, toasts, and tray behavior; dashboard/sample-specific helpers remain app-local and are not exported from `aura-components`.
-- P19 Dashboard State/Data Flow: complete; state/data-flow guidance now lives in Docs and app-layer Gallery patterns; business sample models are not stored in `aura-components`.
+- P18 Dashboard Polish/API Ergonomics: complete; Gallery now owns shell dogfooding such as search/filtering, theme switching, refresh status, toasts, and tray behavior; dashboard/sample-specific helpers remain app-local and are not exported from `liora-components`.
+- P19 Dashboard State/Data Flow: complete; state/data-flow guidance now lives in Docs and app-layer Gallery patterns; business sample models are not stored in `liora-components`.
 - P20 Theme/Interaction Polish: complete; System/Light/Dark theme mode, tokenized overlays/masks, custom window frame polish, and Theme docs/demo are in place.
 - P21 Release Candidate Readiness: complete; `docs/release-candidate-checklist.md`, explicit package metadata, updated README/CHANGELOG/prompt/memory state, and release-boundary regression tests lock the local `0.1.0` RC path.
 
@@ -24,12 +24,12 @@ P12/P21 external-policy items remain protected-environment work: real macOS nota
 
 ## P19 Dashboard State/Data Flow — 2026-06-18
 
-P19 is complete. Documented dashboard-style state/data-flow patterns in native Docs and folded shell-level search/filtering/refresh feedback into Gallery. Business mock models stay out of `aura-components`.
+P19 is complete. Documented dashboard-style state/data-flow patterns in native Docs and folded shell-level search/filtering/refresh feedback into Gallery. Business mock models stay out of `liora-components`.
 
 
 ## P18 Dashboard Polish/API Ergonomics — 2026-06-18
 
-P18 is complete. Moved theme switching/search/filtering dogfooding into Gallery, added native Docs `Dashboard Patterns`, and updated README/prompt/memory. Dashboard/sample-specific helpers stay in the app layer; `aura-components` exports reusable controls only.
+P18 is complete. Moved theme switching/search/filtering dogfooding into Gallery, added native Docs `Dashboard Patterns`, and updated README/prompt/memory. Dashboard/sample-specific helpers stay in the app layer; `liora-components` exports reusable controls only.
 
 
 ## P17 Dashboard Dogfooding — 2026-06-18
@@ -39,11 +39,11 @@ P17 is complete. Dashboard dogfooding is folded into Gallery and Docs instead of
 
 ## P16 Adoption Readiness — 2026-06-18
 
-P16 is complete. Added root `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, crate-level Rustdoc entrypoints, native Docs `Adoption Guide`, and regression coverage for adoption docs/workflow wiring. The former minimal app guidance is folded into Gallery/Docs rather than a standalone workspace package. `cargo doc --workspace --no-deps` passes. Aura remains pure Rust + GPUI native; `LicenseRef-Aura` remains explicit until owner selects formal license terms.
+P16 is complete. Added root `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, crate-level Rustdoc entrypoints, native Docs `Adoption Guide`, and regression coverage for adoption docs/workflow wiring. The former minimal app guidance is folded into Gallery/Docs rather than a standalone workspace package. `cargo doc --workspace --no-deps` passes. Liora remains pure Rust + GPUI native; `LicenseRef-Liora` remains explicit until owner selects formal license terms.
 
 ## P12 Final Closure — 2026-06-18
 
-P12 native packaging is complete for repository-owned scope. Added `cargo run -p xtask -- package release-readiness`, `LICENSE.md` with explicit `LicenseRef-Aura`, `packaging/signing-policy.md`, CI non-strict readiness checks, and package workflow strict `v*` release readiness checks. The release path now blocks missing macOS/Windows signing inputs when `AURA_REQUIRE_SIGNING=true` instead of silently publishing unsigned formal releases. Real signing credentials, notarization accounts, protected runner policy, destructive install/uninstall execution, and real public tag publishing remain owner-controlled release-environment actions, not missing local implementation.
+P12 native packaging is complete for repository-owned scope. Added `cargo run -p xtask -- package release-readiness`, `LICENSE.md` with explicit `LicenseRef-Liora`, `packaging/signing-policy.md`, CI non-strict readiness checks, and package workflow strict `v*` release readiness checks. The release path now blocks missing macOS/Windows signing inputs when `LIORA_REQUIRE_SIGNING=true` instead of silently publishing unsigned formal releases. Real signing credentials, notarization accounts, protected runner policy, destructive install/uninstall execution, and real public tag publishing remain owner-controlled release-environment actions, not missing local implementation.
 
 ## P15 Final Completion Audit — 2026-06-18
 
@@ -52,7 +52,7 @@ P15 local quality hardening is complete. Final gate evidence:
 - `cargo fmt --all --check` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `cargo run -p xtask -- package validate` passed.
 - `cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build` passed.
 - `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run` passed.
@@ -69,7 +69,7 @@ Non-blocking residuals: `MessageManager::init` panic is intentional usage-contra
 
 ## Completed in P6
 
-- ✅ `aura-core` added process-wide atomic unique ID helpers: `next_unique_id()` and `unique_id(prefix)`.
+- ✅ `liora-core` added process-wide atomic unique ID helpers: `next_unique_id()` and `unique_id(prefix)`.
 - ✅ Replaced `track_caller` / render-site / literal repeated interactive IDs in high-risk components with component-prefixed runtime unique IDs.
 - ✅ Preserved/added `.id(...)` override APIs for migrated components where applicable.
 
@@ -101,7 +101,7 @@ Non-blocking residuals: `MessageManager::init` panic is intentional usage-contra
 ## Git Status
 
 - Branch: main
-- Remote: git@github.com:yhyzgn/aura.git
+- Remote: git@github.com:yhyzgn/liora.git
 
 
 ## Deferred Backlog
@@ -130,23 +130,23 @@ Expected P10 deliverables:
 P11 native system tray / process resident support is complete for GPUI apps.
 
 Technical direction:
-- New crate: `crates/aura-tray`.
+- New crate: `crates/liora-tray`.
 - Dependencies: `tray-icon` plus `muda` via `tray_icon::menu` re-export; no vendored source by default.
 - Required APIs: install from `TrayConfig`, dynamic icon updates, tooltip/visibility updates, checkbox menu state, recursive submenus, stable `TrayCommand` mapping.
-- GPUI integration rule: tray-enabled apps must use `QuitMode::Explicit` and keep `AuraTray` alive for process lifetime.
+- GPUI integration rule: tray-enabled apps must use `QuitMode::Explicit` and keep `LioraTray` alive for process lifetime.
 - Demo/docs rule: Gallery and Docs must show rich tray examples (CheckBox, dynamic icons, 2nd/3rd/N-level menus) without creating real OS tray side effects during normal browsing.
 
 ### P11 follow-up: real Gallery tray runtime
 
-After user feedback, `aura-gallery` no longer only previews tray config. On native startup it installs a real OS tray icon, stores `AuraTray` in GPUI global state, routes `MenuEvent`/tray click events through a foreground command loop, and handles show/hide/toggle/quit/set-icon/auto-show commands. If tray installation fails, Gallery falls back to `QuitMode::LastWindowClosed` to avoid a resident process without a tray entry.
+After user feedback, `liora-gallery` no longer only previews tray config. On native startup it installs a real OS tray icon, stores `LioraTray` in GPUI global state, routes `MenuEvent`/tray click events through a foreground command loop, and handles show/hide/toggle/quit/set-icon/auto-show commands. If tray installation fails, Gallery falls back to `QuitMode::LastWindowClosed` to avoid a resident process without a tray entry.
 
 ### P11 follow-up: Gallery and Docs tray demos
 
-Both `aura-gallery` and `aura-docs` now create independent demonstration tray icons on native startup. Gallery uses `aura-gallery`/blue default icon; Docs uses `aura-docs`/purple default icon. Tray menu includes a `resident-enabled` CheckBox for status-bar residency, and app handlers toggle `QuitMode::Explicit` versus `QuitMode::LastWindowClosed` plus tray visibility. Tray docs now include a compile-checked `tray/residency.rs` snippet for page-level residency configuration.
+Both `liora-gallery` and `liora-docs` now create independent demonstration tray icons on native startup. Gallery uses `liora-gallery`/blue default icon; Docs uses `liora-docs`/purple default icon. Tray menu includes a `resident-enabled` CheckBox for status-bar residency, and app handlers toggle `QuitMode::Explicit` versus `QuitMode::LastWindowClosed` plus tray visibility. Tray docs now include a compile-checked `tray/residency.rs` snippet for page-level residency configuration.
 
 ### P11 follow-up: bundled tray icons and in-window controls
 
-`aura-tray` now includes bundled PNG tray icon assets under `crates/aura-tray/assets/tray-icons/` for Gallery and Docs default/syncing/error states. Apps use `bundled_tray_icon(...)` rather than generated solid-color placeholders. `TrayControlCenter` is a GPUI global command bridge so the Tray page buttons in the main window dispatch real tray commands, not just local previews.
+`liora-tray` now includes bundled PNG tray icon assets under `crates/liora-tray/assets/tray-icons/` for Gallery and Docs default/syncing/error states. Apps use `bundled_tray_icon(...)` rather than generated solid-color placeholders. `TrayControlCenter` is a GPUI global command bridge so the Tray page buttons in the main window dispatch real tray commands, not just local previews.
 
 ### P11 follow-up: close confirmation with remembered choice
 
@@ -179,8 +179,8 @@ Wave 1 has started and the first simple/native components are implemented:
 - Gallery demos and Docs pages/snippets were added for these Wave 1 pieces; BarChart and Tag existing docs now include the new in-place enhancement examples.
 
 Validation evidence:
-- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
-- `cargo test -p aura-components` passed: 117 lib tests + integration tests all green.
+- `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets` passed.
+- `cargo test -p liora-components` passed: 117 lib tests + integration tests all green.
 
 Final P13 status is implemented; see `.memory/inventory.md` for the completed component matrix and `.prompt/P13-component-expansion.md` for the maintenance contract.
 
@@ -195,90 +195,90 @@ Docs and Gallery were updated:
 - `Progress` page now has a ring gradient/completion-color section with checked snippet `progress/circle_gradient.rs`.
 
 Validation evidence:
-- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
-- `cargo test -p aura-components` passed.
+- `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets` passed.
+- `cargo test -p liora-components` passed.
 
 ### P13 SegmentRatioBar correction — 2026-05-18
 
 User clarified SegmentRatioBar legend/text must be horizontally arranged, not a vertical list. Updated `segment_ratio_bar.rs` so `render_segment_legend` uses a horizontal wrapping flex row (`flex_row` + `flex_wrap` + wider gaps). `split_legend(true)` now splits label/value within each horizontal legend item via `min_w`, instead of stretching each item to a full row. Gallery/docs wording updated to describe horizontal legend text.
 
 Validation evidence:
-- `cargo test -p aura-components segment_ratio_bar` passed.
-- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
+- `cargo test -p liora-components segment_ratio_bar` passed.
+- `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets` passed.
 
 ### P13 SegmentRatioBar split legend refinement — 2026-05-18
 
 User clarified each SegmentRatioBar segment text item should split alignment internally: left side is color legend dot + label, right side is ratio/value text (still pattern-customizable). Updated `SegmentRatioBar` so `split_legend(true)` is the default and each horizontal legend item uses a configurable `legend_item_width`, `justify_between`, left legend+label, and right-aligned value/pattern text. Added `legend_item_width(...)` builder for custom per-item width.
 
 Validation evidence:
-- `cargo test -p aura-components segment_ratio_bar` passed.
-- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
+- `cargo test -p liora-components segment_ratio_bar` passed.
+- `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets` passed.
 
 ### P13 SegmentRatioBar segment-aligned text correction — 2026-05-18
 
 User clarified the intended layout: for each individual ratio segment, the text block must have the same width and horizontal start/end as that segment. The left legend dot + label aligns to the segment's left edge, and the right value/percent aligns to the segment's right edge. Reworked `render_segment_legend` accordingly: it now renders a full-width horizontal row where each legend text cell uses `gpui::relative(item.value / total)` just like the colored bar segment. Removed fixed `legend_item_width` behavior because it could not align to variable segment boundaries. Pattern customization remains on label/value text.
 
 Validation evidence:
-- `cargo test -p aura-components segment_ratio_bar` passed.
-- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
+- `cargo test -p liora-components segment_ratio_bar` passed.
+- `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets` passed.
 
 ### P13 SegmentRatioBar text inset — 2026-05-18
 
 Added configurable left/right text inset for SegmentRatioBar's segment-aligned legend cells. New builders: `legend_inset_x(Pixels)` and alias `legend_text_inset(Pixels)`. The inset applies inside each proportional segment text cell, preserving alignment to the segment boundaries while avoiding text touching segment edges. Gallery and docs snippets now demonstrate non-default inset values.
 
 Validation evidence:
-- `cargo test -p aura-components segment_ratio_bar` passed.
-- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
+- `cargo test -p liora-components segment_ratio_bar` passed.
+- `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets` passed.
 
 ### P13 SegmentRatioBar radius controls — 2026-05-18
 
 Added separate radius controls for SegmentRatioBar: existing `radius(...)` configures the overall bar container radius, and new `segment_radius(...)` / alias `rounded_segments(...)` configures each colored segment's own radius. This supports both whole-bar rounding and per-segment rounding while preserving segment-aligned text cells and text inset behavior. Gallery and docs snippets now demonstrate both levels of rounding.
 
 Validation evidence:
-- `cargo test -p aura-components segment_ratio_bar` passed.
-- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
+- `cargo test -p liora-components segment_ratio_bar` passed.
+- `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets` passed.
 
 ### P13 SignalMeter total/count and per-level colors — 2026-05-18
 
 Enhanced `SignalMeter` with explicit total signal count aliases and per-level active colors. Existing `max_level(...)` remains; new `total_signals(...)` and `signal_count(...)` aliases configure total bars. New `level_colors(...)` / `signal_colors(...)` lets callers assign different active colors for each signal level; inactive bars still use `inactive_color(...)`. Gallery and docs now include total-count/per-level-color examples.
 
 Validation evidence:
-- `cargo test -p aura-components signal_meter` passed.
-- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
+- `cargo test -p liora-components signal_meter` passed.
+- `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets` passed.
 
 ### P13 docs/demo coverage standard — 2026-05-18
 
 User clarified that every new component and future new component must have Gallery and Docs examples covering the major style/configuration combinations, not just one happy-path example. Applied immediately to SegmentRatioBar: Gallery and Docs now cover bottom legend, top legend, both top+bottom legends, hidden legend, custom label/value pattern, compact thin bar, overall radius, per-segment radius, text inset, split legend, and percentage precision.
 
 Validation evidence:
-- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
-- `cargo test -p aura-components segment_ratio_bar` passed.
+- `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets` passed.
+- `cargo test -p liora-components segment_ratio_bar` passed.
 
 ### P13 SignalMeter threshold-wide colors — 2026-05-18
 
 User clarified that per-level colors also need a threshold-wide mode: when the current signal reaches a configured level, all active bars use one unified color for that current level (e.g. level 2 = red, 3 = yellow, 4 = orange, 5 = green). Kept the existing per-bar `level_colors(...)` / `signal_colors(...)` behavior and added `SignalLevelColor`, `threshold_colors(...)`, `level_threshold_colors(...)`, and incremental `level_color(level, color)`. Rendering prioritizes threshold-wide color over per-bar level colors when a matching threshold exists. Gallery and Docs now include threshold-wide examples.
 
 Validation evidence:
-- `cargo test -p aura-components signal_meter` passed.
-- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
+- `cargo test -p liora-components signal_meter` passed.
+- `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets` passed.
 
 ### P13 Timer component — 2026-05-18
 
-Implemented new `Timer` component in `crates/aura-components/src/timer.rs`. It is a controlled display component for count-up/count-down timers, with `TimerDirection`, `TimerUnit`, `TimerSnapshot`, `count_up`, `count_down`, `display_unit`, `show_unit`, `prefix`, `suffix`, `compact`, `snapshot`, `elapsed_as`, and `remaining_as`. Countdown remaining time saturates at zero and exposes `finished`. Gallery and Docs now include count-up, count-down, unit/compact, and result-reading examples. This follows the new docs/demo coverage standard for newly added components.
+Implemented new `Timer` component in `crates/liora-components/src/timer.rs`. It is a controlled display component for count-up/count-down timers, with `TimerDirection`, `TimerUnit`, `TimerSnapshot`, `count_up`, `count_down`, `display_unit`, `show_unit`, `prefix`, `suffix`, `compact`, `snapshot`, `elapsed_as`, and `remaining_as`. Countdown remaining time saturates at zero and exposes `finished`. Gallery and Docs now include count-up, count-down, unit/compact, and result-reading examples. This follows the new docs/demo coverage standard for newly added components.
 
 Validation evidence:
-- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
-- `cargo test -p aura-components timer` passed.
-- `cargo test -p aura-gallery timer_demo_uses_timer_api` passed.
+- `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets` passed.
+- `cargo test -p liora-components timer` passed.
+- `cargo test -p liora-gallery timer_demo_uses_timer_api` passed.
 
 ### P13 Timer clock format — 2026-05-18
 
 Enhanced Timer with clock-style formatting for `00:00:00` / `HH:MM:SS`. Added `TimerFormat::{Unit, Clock}`, `Timer::format(TimerFormat)`, `Timer::clock_format()`, and public `format_clock(Duration)`. Gallery and Docs now include a clock-format section and checked snippet `timer/clock.rs`.
 
 Validation evidence:
-- `cargo test -p aura-components timer` passed.
-- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
-- `cargo test -p aura-gallery timer_demo_uses_timer_api` passed.
+- `cargo test -p liora-components timer` passed.
+- `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets` passed.
+- `cargo test -p liora-gallery timer_demo_uses_timer_api` passed.
 
 ### P13 Button gradient/custom color enhancement — 2026-05-18
 
@@ -290,9 +290,9 @@ Enhanced existing `Button` in-place with custom color and gradient styling:
 - Gallery `Button` demo and Docs `button.md` now show custom solid/outline/disabled and gradient/loading/disabled examples with compile-checked snippets.
 
 Validation evidence:
-- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
-- `cargo test -p aura-components button` passed.
-- `cargo test -p aura-gallery button_demo_uses_aura_layout_primitives` passed.
+- `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets` passed.
+- `cargo test -p liora-components button` passed.
+- `cargo test -p liora-gallery button_demo_uses_liora_layout_primitives` passed.
 
 ### P13 Radio/Checkbox option style customization — 2026-05-18
 
@@ -304,22 +304,22 @@ Enhanced existing `CheckboxGroup` and `RadioGroup` in-place with option-level la
 - Gallery Form Controls demo and Docs `checkbox.md` / `radio.md` now include card-like and chip-like custom option examples with compile-checked snippets.
 
 Validation evidence:
-- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
-- `cargo test -p aura-components option_style` passed.
-- `cargo test -p aura-gallery form_controls` completed with no failures.
+- `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets` passed.
+- `cargo test -p liora-components option_style` passed.
+- `cargo test -p liora-gallery form_controls` completed with no failures.
 
 
 ### P13 QrCode generation and recognition — 2026-05-18
 
-Added new `QrCode` component in `crates/aura-components/src/qr_code.rs` using pure Rust dependencies (`qrcode` for generation and `rqrr` for recognition). Capabilities:
+Added new `QrCode` component in `crates/liora-components/src/qr_code.rs` using pure Rust dependencies (`qrcode` for generation and `rqrr` for recognition). Capabilities:
 - Native GPUI-rendered QR display via generated `RenderImage`, with configurable size, quiet zone, foreground/background colors, and error-correction level (`QrEcLevel`).
 - Public generation helpers: `encode_matrix(...)` and `render_image(...)`.
 - Recognition helpers: `decode_bytes(...)`, `decode_file(...)`, and `decode_image(...)`, returning `QrDecoded { content, ecc_level, version }`.
 - Gallery demo added as `QrCode 二维码`; Docs page `qr_code.md` added with basic, style/ECC, and recognition API snippets.
 
 Validation evidence:
-- `cargo test -p aura-components qr_` passed, including a generated-image decode round trip.
-- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
+- `cargo test -p liora-components qr_` passed, including a generated-image decode round trip.
+- `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets` passed.
 
 ### P13 QrCode interactive demo refinement — 2026-05-18
 
@@ -329,59 +329,59 @@ Updated QrCode demos/docs to meet the interaction requirement:
 - Docs QrCode page now uses the full interactive Gallery demo for the effect area, and snippets show complete interactive generation and local-file recognition patterns.
 
 Validation evidence:
-- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
-- `cargo test -p aura-components qr_` passed.
+- `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets` passed.
+- `cargo test -p liora-components qr_` passed.
 
 ## 2026-05-18 P13 QrCode style/upload refinement
 - QrCode generation now supports screenshot-like styles: square/rounded/dot modules, square/rounded/circle finder styles, high-recovery center logo badge, corner mini badge, custom foreground/background/logo colors, and logo size ratio.
-- QrCode recognition demos/docs now use Aura Upload to open local image files instead of typing paths; selected file is decoded with QrCode::decode_file and result is shown in the page plus toast feedback.
-- Validation: cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets; cargo test -p aura-components qr_.
+- QrCode recognition demos/docs now use Liora Upload to open local image files instead of typing paths; selected file is decoded with QrCode::decode_file and result is shown in the page plus toast feedback.
+- Validation: cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets; cargo test -p liora-components qr_.
 
-Update: QrCode also gained generic logo(...) and corner_logo(...) builders accepting any GPUI element, in addition to logo_text/corner_logo_text convenience APIs, so callers can render images/icons/custom badges in QR overlays. Validation rerun after this API: cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets; cargo test -p aura-components qr_.
+Update: QrCode also gained generic logo(...) and corner_logo(...) builders accepting any GPUI element, in addition to logo_text/corner_logo_text convenience APIs, so callers can render images/icons/custom badges in QR overlays. Validation rerun after this API: cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets; cargo test -p liora-components qr_.
 
 ## 2026-05-18 P13 QrCode recognition/result and social styles refinement
 - QrCode recognition examples now show the decode result persistently in an on-page result box; toast remains only supplemental feedback.
 - Corrected social QR styling direction by adding `QrPatternStyle::{Matrix, MiniProgram, Douyin}` with radial rendering for mini-program-like and Douyin-like codes instead of rendering them as ordinary dot-matrix QR only.
 - Added builders: `pattern_style(...)`, `matrix_style()`, `mini_program_style()`, `douyin_style()`, and `douyin_badge()`; `mini_program_badge()` now uses the radial mini-program preset.
 - Gallery and Docs style demos now show normal QR, mini-program style, Douyin style, and custom-logo rounded QR.
-- Validation: `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets`; `cargo test -p aura-components qr_`.
+- Validation: `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets`; `cargo test -p liora-components qr_`.
 
 ## 2026-05-18 P13 QrCode social style rewrite
 - Rewrote MiniProgram/Douyin QR style rendering after screenshot feedback showed the previous polar matrix transform looked like noisy broken QR fragments.
 - New social style renderer samples encoded QR content but renders clean radial capsules/dots with deterministic thinning, skips QR finder squares, and draws explicit social-code locator dots plus Douyin-style outer arcs.
-- Validation: `cargo test -p aura-components qr_`; `cargo check -p aura-gallery -p aura-docs --bin check_snippets`.
+- Validation: `cargo test -p liora-components qr_`; `cargo check -p liora-gallery -p liora-docs --bin check_snippets`.
 
 ## 2026-05-18 P13 QrCode social presets second rewrite
 - User clarified the previous social-code output still did not resemble the reference images. Replaced content-matrix polar module plotting with visual-template renderers: MiniProgram now uses sunburst radial capsules/dots plus three locator circles; Douyin now uses segmented circular tracks, sparse radial texture, three locator circles, and bold outer arcs.
 - The render remains deterministic per encoded content via a visual seed, but intentionally prioritizes the requested social-code style instead of QR-matrix readability.
-- Validation: `cargo test -p aura-components qr_`; `cargo check -p aura-gallery -p aura-docs --bin check_snippets`.
+- Validation: `cargo test -p liora-components qr_`; `cargo check -p liora-gallery -p liora-docs --bin check_snippets`.
 
 ## 2026-05-18 P13 QrCode social presets removed, gradient foreground added
 - Removed failed MiniProgram/Douyin social-code style APIs and render branches per user request; no `QrPatternStyle`, `mini_program_*`, or `douyin_*` API remains.
 - Added QR foreground gradient support with color arrays and eight directions via `QrGradientDirection::{ToTop, ToTopRight, ToRight, ToBottomRight, ToBottom, ToBottomLeft, ToLeft, ToTopLeft}`.
 - New builders: `gradient(colors, direction)`, `foreground_gradient(colors, direction)`, `gradient_colors(colors)`, and `gradient_direction(direction)`. Calling `foreground(...)` clears gradient and restores solid color behavior.
 - Gallery and Docs QrCode style examples now show gradient QR variants instead of removed social-code presets.
-- Validation: `cargo test -p aura-components qr_`; `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets`.
+- Validation: `cargo test -p liora-components qr_`; `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets`.
 
 ## 2026-05-18 P13 RingChart external legend enhancement
 - Enhanced existing `RingChart` in-place with fully external legend/value display: `RingExternalLegendOptions`, `RingExternalLegendLayout::{Vertical, Horizontal}`, `external_legend(...)`, `external_vertical_legend()`, `external_horizontal_legend()`, `external_legend_content(...)`, and `external_legend_percentage_decimals(...)`.
 - External legend mode disables inline chart labels and normal legend, avoiding leader lines and putting all label/value/percentage text into a vertical or horizontal legend area.
 - Gallery and Docs now include external legend examples; docs snippet `ring_chart/external.rs` is compile-checked.
-- Validation: `cargo test -p aura-components ring_chart`; `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets`.
+- Validation: `cargo test -p liora-components ring_chart`; `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets`.
 
 ## 2026-05-18 P13 RingChart external vertical side and item limit
 - Enhanced RingChart external legend mode so vertical legends are rendered beside the chart instead of below it. Added `RingExternalLegendSide::{Left, Right}`, `external_legend_side(...)`, `external_legend_left()`, and `external_legend_right()`.
 - Added `max_items(...)` on `RingExternalLegendOptions` and `external_legend_max_items(...)` on `RingChart` to show only the first N non-zero slices.
 - Gallery and Docs now demonstrate a right-side vertical external legend limited to the first 3 items, plus horizontal external legend coverage.
-- Validation: `cargo test -p aura-components ring_chart`; `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets`.
+- Validation: `cargo test -p liora-components ring_chart`; `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets`.
 
 ## 2026-05-18 P13 RingChart external vertical layout fix
 - Fixed vertical external legend layout regression where the legend consumed full row width and hid/squeezed the chart. Vertical legend now has fixed side width and `flex_none`, while the chart container uses `flex_1().min_w(0)`.
-- Validation: `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets`; `cargo test -p aura-components ring_chart`.
+- Validation: `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets`; `cargo test -p liora-components ring_chart`.
 
 ## 2026-05-18 P13 RingChart side legend spacing tightening
 - Tightened RingChart vertical external legend placement so text sits next to the chart instead of far away: reduced side-layout gap, narrowed vertical legend width, and slightly reduced side-layout canvas height to remove excessive empty horizontal/vertical space.
-- Validation: `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets`; `cargo test -p aura-components ring_chart`.
+- Validation: `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets`; `cargo test -p liora-components ring_chart`.
 
 ## 2026-05-18 P13 Timer live ticking
 
@@ -390,12 +390,12 @@ Enhanced `Timer` from a static controlled display into an optional live ticking 
 
 ## 2026-05-18 P13 HorizontalList component
 
-Implemented `HorizontalList` in `crates/aura-components/src/horizontal_list.rs` as a native horizontal scroll list with custom item renderer, custom divider renderer, internal order state, drag-to-reorder interaction, and `on_reorder(from_index, to_index, ...)` callback. Added Gallery demo sections for base horizontal cards, custom arrow divider, and draggable reorder with toast feedback. Added Docs page `horizontal_list.md` and compile-checked snippets for basic/divider/draggable usage.
+Implemented `HorizontalList` in `crates/liora-components/src/horizontal_list.rs` as a native horizontal scroll list with custom item renderer, custom divider renderer, internal order state, drag-to-reorder interaction, and `on_reorder(from_index, to_index, ...)` callback. Added Gallery demo sections for base horizontal cards, custom arrow divider, and draggable reorder with toast feedback. Added Docs page `horizontal_list.md` and compile-checked snippets for basic/divider/draggable usage.
 
 Validation evidence:
-- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
-- `cargo test -p aura-components horizontal_list` passed.
-- `cargo test -p aura-gallery horizontal_list_demo` passed.
+- `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets` passed.
+- `cargo test -p liora-components horizontal_list` passed.
+- `cargo test -p liora-gallery horizontal_list_demo` passed.
 
 
 ## 2026-05-18 P13 VirtualizedList drag reorder
@@ -403,9 +403,9 @@ Validation evidence:
 Enhanced existing `VirtualizedList` in-place with optional vertical drag reorder. The component now keeps an internal item order, renders original item indices through that order, supports `set_draggable(true)`, exposes `set_on_reorder(from_index, to_index, ...)`, and remeasures after reorder without storing `AnyElement` across frames. Gallery and Docs now include a vertical drag sorting example plus compile-checked snippet `virtualized_list/draggable.rs`.
 
 Validation evidence:
-- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
-- `cargo test -p aura-components virtualized_list` passed.
-- `cargo test -p aura-gallery virtualized_list_demo` passed.
+- `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets` passed.
+- `cargo test -p liora-components virtualized_list` passed.
+- `cargo test -p liora-gallery virtualized_list_demo` passed.
 
 
 ## 2026-05-18 Drag reorder handle correction
@@ -423,12 +423,12 @@ Fixed reorder interaction after testing feedback: drag handles are now full-heig
 Added reusable `draggable` module inspired by drag-rs' operation model (start point, current pointer, result/reorder callback) while staying pure GPUI/native. The module provides `DragState`, `DragAxis`, default `drag_handle`, and shared `reorder_indices` helpers so future controls can add handle-based dragging without duplicating pointer bookkeeping or storing rendered elements. HorizontalList and VirtualizedList now use this module and apply axis-specific margin offsets to the active item, producing a native follow-pointer drag motion plus live reorder-on-hover.
 
 Validation evidence:
-- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
-- `cargo test -p aura-components draggable` passed.
-- `cargo test -p aura-components horizontal_list` passed.
-- `cargo test -p aura-components virtualized_list` passed.
-- `cargo test -p aura-gallery horizontal_list_demo` passed.
-- `cargo test -p aura-gallery virtualized_list_demo` passed.
+- `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets` passed.
+- `cargo test -p liora-components draggable` passed.
+- `cargo test -p liora-components horizontal_list` passed.
+- `cargo test -p liora-components virtualized_list` passed.
+- `cargo test -p liora-gallery horizontal_list_demo` passed.
+- `cargo test -p liora-gallery virtualized_list_demo` passed.
 
 
 ## 2026-05-18 Drag follow-pointer positioning fix
@@ -436,10 +436,10 @@ Validation evidence:
 Corrected draggable follow-pointer rendering: the previous implementation used margin offsets (`ml`/`mt`), which changed layout and created empty space but did not visually move the dragged item as a floating object. HorizontalList and VirtualizedList now apply `relative().left(dx).top(dy)` with shadow while active, so the item is visually offset along the drag axis without using margin-based layout movement.
 
 Validation evidence:
-- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
-- `cargo test -p aura-components draggable` passed.
-- `cargo test -p aura-components horizontal_list` passed.
-- `cargo test -p aura-components virtualized_list` passed.
+- `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets` passed.
+- `cargo test -p liora-components draggable` passed.
+- `cargo test -p liora-components horizontal_list` passed.
+- `cargo test -p liora-components virtualized_list` passed.
 
 
 ## 2026-05-18 Drag reorder stability correction
@@ -447,61 +447,61 @@ Validation evidence:
 Fixed the follow-pointer drag instability where the dragged element jumped and then appeared to run away. Root cause: reordering during hover changed the dragged item layout slot while offsets were still computed from the original pointer anchor. Dragging now keeps the original order during movement, only updates the over/target index and pointer offset, and performs the actual reorder once on mouse-up/out using the last hovered target. This keeps the active element following the pointer from its original slot instead of recalculating against a moving slot.
 
 Validation evidence:
-- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
-- `cargo test -p aura-components draggable` passed.
-- `cargo test -p aura-components horizontal_list` passed.
-- `cargo test -p aura-components virtualized_list` passed.
+- `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets` passed.
+- `cargo test -p liora-components draggable` passed.
+- `cargo test -p liora-components horizontal_list` passed.
+- `cargo test -p liora-components virtualized_list` passed.
 - Follow-up correction: root list containers now also track mouse movement while the left button is pressed, and active item hover no longer overwrites the drop target. This prevents the translated active item from stealing hover events and making the target/offset look random.
-- Additional validation: `cargo test -p aura-gallery horizontal_list_demo` passed; `cargo test -p aura-gallery virtualized_list_demo` passed.
+- Additional validation: `cargo test -p liora-gallery horizontal_list_demo` passed; `cargo test -p liora-gallery virtualized_list_demo` passed.
 
 ## 2026-05-18 Drag reorder top-layer and live slot preview
 
 Adjusted draggable list behavior so the active dragged row/card is painted above siblings with GPUI deferred drawing priority while preserving its layout participation. Hovering another item now performs a live visual reorder so surrounding items give way immediately; DragState keeps the original position for the final callback and resets the pointer anchor when the active slot changes to avoid runaway offsets.
 
 Validation evidence:
-- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
-- `cargo test -p aura-components draggable` passed.
-- `cargo test -p aura-components horizontal_list` passed.
-- `cargo test -p aura-components virtualized_list` passed.
-- `cargo test -p aura-gallery horizontal_list_demo` passed.
-- `cargo test -p aura-gallery virtualized_list_demo` passed.
+- `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets` passed.
+- `cargo test -p liora-components draggable` passed.
+- `cargo test -p liora-components horizontal_list` passed.
+- `cargo test -p liora-components virtualized_list` passed.
+- `cargo test -p liora-gallery horizontal_list_demo` passed.
+- `cargo test -p liora-gallery virtualized_list_demo` passed.
 
 ## 2026-06-16 P13 docs navigation cleanup
 
-Split the combined `LabelOperation` docs surface into separate `Label` and `Operation` pages so each P13 component is independently discoverable in aura-docs. Added dedicated compile-checked snippets under `content/snippets/label/basic.rs` and `content/snippets/operation/basic.rs`, wired both snippets into `check_snippets`, and updated the docs page registry. Also refreshed `.memory/inventory.md` to mark CodeEditor, RingChart external labels, and BarChart value range colors as implemented based on current source/docs coverage.
+Split the combined `LabelOperation` docs surface into separate `Label` and `Operation` pages so each P13 component is independently discoverable in liora-docs. Added dedicated compile-checked snippets under `content/snippets/label/basic.rs` and `content/snippets/operation/basic.rs`, wired both snippets into `check_snippets`, and updated the docs page registry. Also refreshed `.memory/inventory.md` to mark CodeEditor, RingChart external labels, and BarChart value range colors as implemented based on current source/docs coverage.
 
 Validation evidence:
-- `cargo check -p aura-docs --bin check_snippets` passed.
-- `cargo check -p aura-docs` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
+- `cargo check -p liora-docs` passed.
 
 ## 2026-06-16 P13 gallery navigation cleanup
 
 Split the combined Gallery `LabelOperation` demo into independent `Label` and `Operation` demo entries to match the docs split. `Label` now demonstrates basic icons, semantic colors, spacing, sizing, and custom icon elements. `Operation` now demonstrates Switch/Button actions, status labels/colors, disabled rows, and compact no-padding rows. The old combined gallery module was removed so P13 components are independently searchable in both Gallery and Docs.
 
 Validation evidence:
-- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed.
-- `cargo test -p aura-gallery label_demo` passed.
-- `cargo test -p aura-gallery operation_demo` passed.
+- `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets` passed.
+- `cargo test -p liora-gallery label_demo` passed.
+- `cargo test -p liora-gallery operation_demo` passed.
 
 ## 2026-06-16 P13 plan status refresh
 
 Updated `.prompt/P13-component-expansion.md` from planned/waiting status to implemented/maintenance status, checked off all five implementation waves, and added a current implementation snapshot. Updated `prompt.md` so the top-level project prompt no longer describes P13 as merely planned.
 
 Validation evidence:
-- `cargo check -p aura-components -p aura-gallery -p aura-docs --bin check_snippets` passed before the status-only documentation update.
+- `cargo check -p liora-components -p liora-gallery -p liora-docs --bin check_snippets` passed before the status-only documentation update.
 
 ## 2026-06-16 P10 Sparkline completion
 
-Audited recent work logs after the user recalled unfinished component supplementation. Found P13 was implemented, but P10 chart inventory still had a real missing `Sparkline` component while PieChart/RingChart were implemented but marked planned. Added native `Sparkline` to `aura-components`, Gallery, Docs, and compile-checked snippets. Updated P10 inventory to reflect PieChart/RingChart/Sparkline status.
+Audited recent work logs after the user recalled unfinished component supplementation. Found P13 was implemented, but P10 chart inventory still had a real missing `Sparkline` component while PieChart/RingChart were implemented but marked planned. Added native `Sparkline` to `liora-components`, Gallery, Docs, and compile-checked snippets. Updated P10 inventory to reflect PieChart/RingChart/Sparkline status.
 
 Sparkline capabilities:
 - Compact native GPUI canvas/path rendering for metric cards, table cells, and dashboards.
 - Trend-aware positive/negative colors, custom color, area fill, 0 baseline, fixed y-domain, smooth/straight lines, solid/dashed/dotted style, custom dash pattern, and optional last-point marker.
 
 Validation evidence:
-- `cargo test -p aura-components sparkline` passed.
-- `cargo test -p aura-gallery sparkline_demo` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo test -p liora-components sparkline` passed.
+- `cargo test -p liora-gallery sparkline_demo` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 
 ## 2026-06-16 P10 chart downsampling performance pass
 
@@ -541,12 +541,12 @@ Implemented `Tour` as a controlled native step-guide component with step list, a
 
 ## 2026-06-17 P14 Wave 5 VirtualizedTable
 
-Implemented `VirtualizedTable` as a fixed-header large-data table that reuses `TableColumn` definitions and GPUI `ListState` to render visible rows only. Cells are generated from row index + column key each frame to avoid stale GPUI element caching. Added Aura scrollbar, height/row-height/overdraw configuration, stripe/border/loading/empty states, sorting callback, Gallery demos, Docs page, compile-checked snippets, and focused tests. Remaining P14 backlog: VirtualizedTree.
+Implemented `VirtualizedTable` as a fixed-header large-data table that reuses `TableColumn` definitions and GPUI `ListState` to render visible rows only. Cells are generated from row index + column key each frame to avoid stale GPUI element caching. Added Liora scrollbar, height/row-height/overdraw configuration, stripe/border/loading/empty states, sorting callback, Gallery demos, Docs page, compile-checked snippets, and focused tests. Remaining P14 backlog: VirtualizedTree.
 
 
 ## 2026-06-17 P14 Wave 6 VirtualizedTree
 
-Implemented `VirtualizedTree` as the final P14 deferred advanced control. It virtualizes large hierarchical datasets by flattening the currently expanded tree into lightweight visible-node metadata and rendering visible rows via GPUI `ListState`, with Aura scrollbar, expand/collapse, single/multiple selection, checkbox mode, default expanded/selected keys, callbacks, Gallery demos, Docs page, compile-checked snippets, and focused tests. P14 backlog is complete.
+Implemented `VirtualizedTree` as the final P14 deferred advanced control. It virtualizes large hierarchical datasets by flattening the currently expanded tree into lightweight visible-node metadata and rendering visible rows via GPUI `ListState`, with Liora scrollbar, expand/collapse, single/multiple selection, checkbox mode, default expanded/selected keys, callbacks, Gallery demos, Docs page, compile-checked snippets, and focused tests. P14 backlog is complete.
 
 
 ## 2026-06-17 P12 install/uninstall smoke plan
@@ -567,7 +567,7 @@ Completed the remaining chart tooltip slice for `PieChart` and `RingChart`. Adde
 
 ## 2026-06-17 P12 install-smoke dry-run readiness
 
-Fixed `xtask package install-smoke --dry-run` so plan-only mode no longer requires real backend artifacts or scans stale `target/packages` files. Dry-run now derives expected artifact paths per app/platform/format and writes install/uninstall plans; non-dry-run still discovers and smokes real artifacts, while `--execute-install` remains restricted to portable `.tar.gz`. Validation passed: `cargo check -p xtask -p aura-packager`, `cargo test -p aura-packager`, `cargo test -p xtask install_smoke -- --nocapture`, `cargo run -p xtask -- package validate`, `cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build`, `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run`, `cargo fmt --all --check`, and `git diff --check`.
+Fixed `xtask package install-smoke --dry-run` so plan-only mode no longer requires real backend artifacts or scans stale `target/packages` files. Dry-run now derives expected artifact paths per app/platform/format and writes install/uninstall plans; non-dry-run still discovers and smokes real artifacts, while `--execute-install` remains restricted to portable `.tar.gz`. Validation passed: `cargo check -p xtask -p liora-packager`, `cargo test -p liora-packager`, `cargo test -p xtask install_smoke -- --nocapture`, `cargo run -p xtask -- package validate`, `cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build`, `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run`, `cargo fmt --all --check`, and `git diff --check`.
 
 ## 2026-06-17 phase readiness documentation sync
 
@@ -575,11 +575,11 @@ Synchronized architecture and inventory records with current evidence: P10 nativ
 
 ## 2026-06-17 P12 release tag validation
 
-Added GitHub Actions release tag validation in the package workflow. `v*` release builds now require `vX.Y.Z` and the tag version must match `crates/aura-packager/Cargo.toml`; this prevents prerelease/mismatched tags from reaching package backends such as Windows MSI that require numeric versions. Updated P12 technical plan and prompt handoff docs to distinguish completed preview packaging from remaining real `v*` release-runner/signing/system-install policy work.
+Added GitHub Actions release tag validation in the package workflow. `v*` release builds now require `vX.Y.Z` and the tag version must match `crates/liora-packager/Cargo.toml`; this prevents prerelease/mismatched tags from reaching package backends such as Windows MSI that require numeric versions. Updated P12 technical plan and prompt handoff docs to distinguish completed preview packaging from remaining real `v*` release-runner/signing/system-install policy work.
 
 ## 2026-06-17 phase handoff stale-state cleanup
 
-Updated the handoff state so new sessions no longer start from the obsolete P8/P9-era “current phase” text. Current source-of-truth summary: P10/P11/P13/P14 are complete; P12 has local runner-safe packaging readiness implemented and only external-policy items remain. Repository remote is SSH (`git@github.com:yhyzgn/aura.git`).
+Updated the handoff state so new sessions no longer start from the obsolete P8/P9-era “current phase” text. Current source-of-truth summary: P10/P11/P13/P14 are complete; P12 has local runner-safe packaging readiness implemented and only external-policy items remain. Repository remote is SSH (`git@github.com:yhyzgn/liora.git`).
 
 ## 2026-06-17 P15 quality hardening kickoff
 
@@ -627,11 +627,11 @@ Gallery and Docs no longer panic if bundled tray icon decoding fails. Both apps 
 
 ## 2026-06-18 P15 Track B packager string rendering panic cleanup
 
-`aura-packager` no longer uses `expect("write to string")` for SHA-256 hex, checksum text, release notes, or package manifest JSON rendering. Those paths now assemble strings with `format!` and `push_str`, preserving generated output while removing impossible-but-panic-based string write assumptions from the packaging pipeline. Validation passed: aura-packager tests, workspace check/test, docs snippet check, diff whitespace check, and Gallery/Docs GUI startup smoke.
+`liora-packager` no longer uses `expect("write to string")` for SHA-256 hex, checksum text, release notes, or package manifest JSON rendering. Those paths now assemble strings with `format!` and `push_str`, preserving generated output while removing impossible-but-panic-based string write assumptions from the packaging pipeline. Validation passed: liora-packager tests, workspace check/test, docs snippet check, diff whitespace check, and Gallery/Docs GUI startup smoke.
 
 ## 2026-06-18 P15 Track B lucide build script error handling
 
-`aura-icons-lucide` build script now uses `try_main() -> io::Result<()>` instead of unwraps for OUT_DIR, SVG directory reads, file names, generated file creation, and writes. Build failures now produce clear cargo error output while preserving the generated `IconName` format and rerun behavior. Validation passed: lucide check, workspace check/test, docs snippet check, diff whitespace check, and Gallery/Docs GUI startup smoke.
+`liora-icons-lucide` build script now uses `try_main() -> io::Result<()>` instead of unwraps for OUT_DIR, SVG directory reads, file names, generated file creation, and writes. Build failures now produce clear cargo error output while preserving the generated `IconName` format and rerun behavior. Validation passed: lucide check, workspace check/test, docs snippet check, diff whitespace check, and Gallery/Docs GUI startup smoke.
 
 
 ## 2026-06-18 P20 theme and interaction polish

@@ -6,26 +6,26 @@
 
 **Architecture:** Result is a `RenderOnce` component that displays a status icon, title, subtitle, and an extra action area.
 
-**Tech Stack:** Rust, GPUI 0.2.2, aura-theme, aura-icons.
+**Tech Stack:** Rust, GPUI 0.2.2, liora-theme, liora-icons.
 
 ---
 
 ### Task 1: Foundation & Types
 
 **Files:**
-- Create: `crates/aura-components/src/result.rs`
-- Modify: `crates/aura-components/src/lib.rs`
+- Create: `crates/liora-components/src/result.rs`
+- Modify: `crates/liora-components/src/lib.rs`
 
 - [ ] **Step 1: Define Result structure and enums**
 
 ```rust
-use aura_core::Config;
+use liora_core::Config;
 use gpui::{
     prelude::*, px, App, IntoElement, RenderOnce, Window,
     div, SharedString, AnyElement,
 };
-use aura_icons::Icon;
-use aura_icons_lucide::IconName;
+use liora_icons::Icon;
+use liora_icons_lucide::IconName;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ResultStatus {
@@ -74,7 +74,7 @@ impl Result {
         self
     }
 
-    pub fn extra<F>(mut self, f: F) -> Self 
+    pub fn extra<F>(mut self, f: F) -> Self
     where F: Fn(&mut Window, &mut App) -> AnyElement + 'static {
         self.extra = Some(Box::new(f));
         self
@@ -90,7 +90,7 @@ impl Result {
 ### Task 2: Rendering Logic
 
 **Files:**
-- Modify: `crates/aura-components/src/result.rs`
+- Modify: `crates/liora-components/src/result.rs`
 
 - [ ] **Step 1: Implement RenderOnce for Result**
 - [ ] **Step 2: Map ResultStatus to default Lucide icons and colors**
@@ -103,8 +103,8 @@ impl Result {
 ### Task 3: Gallery Demo
 
 **Files:**
-- Create: `apps/aura-gallery/src/demos/result_demo.rs`
-- Modify: `apps/aura-gallery/src/demos/mod.rs`
+- Create: `apps/liora-gallery/src/demos/result_demo.rs`
+- Modify: `apps/liora-gallery/src/demos/mod.rs`
 
 - [ ] **Step 1: Create demo with Success, Warning, Error, and Info examples**
 - [ ] **Step 2: Register in mod.rs**

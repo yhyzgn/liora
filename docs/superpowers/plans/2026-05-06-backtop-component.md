@@ -6,26 +6,26 @@
 
 **Architecture:** Backtop is a `View` that takes a `ScrollHandle`. It monitors `handle.offset().y` and toggles its own visibility.
 
-**Tech Stack:** Rust, GPUI 0.2.2, aura-theme, aura-icons.
+**Tech Stack:** Rust, GPUI 0.2.2, liora-theme, liora-icons.
 
 ---
 
 ### Task 1: Foundation & Types
 
 **Files:**
-- Create: `crates/aura-components/src/backtop.rs`
-- Modify: `crates/aura-components/src/lib.rs`
+- Create: `crates/liora-components/src/backtop.rs`
+- Modify: `crates/liora-components/src/lib.rs`
 
 - [ ] **Step 1: Define Backtop structure and builders**
 
 ```rust
-use aura_core::Config;
+use liora_core::Config;
 use gpui::{
     prelude::*, px, App, Context, IntoElement, Render, Window,
     div, SharedString, AnyElement, Pixels, ScrollHandle, point,
 };
-use aura_icons::Icon;
-use aura_icons_lucide::IconName;
+use liora_icons::Icon;
+use liora_icons_lucide::IconName;
 
 pub struct Backtop {
     scroll_handle: ScrollHandle,
@@ -65,7 +65,7 @@ impl Backtop {
         self
     }
 
-    pub fn content<F>(mut self, f: F) -> Self 
+    pub fn content<F>(mut self, f: F) -> Self
     where F: Fn(&mut Window, &mut Context<Backtop>) -> AnyElement + 'static {
         self.content = Some(Box::new(f));
         self
@@ -81,7 +81,7 @@ impl Backtop {
 ### Task 2: Rendering & Scroll Monitoring
 
 **Files:**
-- Modify: `crates/aura-components/src/backtop.rs`
+- Modify: `crates/liora-components/src/backtop.rs`
 
 - [ ] **Step 1: Implement Render for Backtop**
 - [ ] **Step 2: Check `scroll_handle.offset().y` during render**
@@ -94,7 +94,7 @@ impl Backtop {
 ### Task 3: Scroll Logic
 
 **Files:**
-- Modify: `crates/aura-components/src/backtop.rs`
+- Modify: `crates/liora-components/src/backtop.rs`
 
 - [ ] **Step 1: Implement `on_click` handler**
 - [ ] **Step 2: Use `scroll_handle.scroll_to(point(px(0.0), px(0.0)))`**
@@ -105,8 +105,8 @@ impl Backtop {
 ### Task 4: Gallery Demo
 
 **Files:**
-- Create: `apps/aura-gallery/src/demos/backtop_demo.rs`
-- Modify: `apps/aura-gallery/src/demos/mod.rs`
+- Create: `apps/liora-gallery/src/demos/backtop_demo.rs`
+- Modify: `apps/liora-gallery/src/demos/mod.rs`
 
 - [ ] **Step 1: Create demo with a scrollable list and Backtop**
 - [ ] **Step 2: Showcase custom position and content**

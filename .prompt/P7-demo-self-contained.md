@@ -4,14 +4,14 @@
 
 ## 目标
 
-Gallery Demo 完全使用 Aura 组件库自身控件构建，避免在 Demo 中直接使用 GPUI 原生组件。若发现需要的控件缺失，应自行新增到组件库中。
+Gallery Demo 完全使用 Liora 组件库自身控件构建，避免在 Demo 中直接使用 GPUI 原生组件。若发现需要的控件缺失，应自行新增到组件库中。
 
 ## 动机
 
 当前 Gallery Demo 中存在大量直接使用 `div()`、`div().flex()` 等 GPUI 原生 API 的情况，这导致：
-- **Demo 无法展示组件库真实能力** — 用户看到的是 GPUI 用法，不是 Aura 用法
+- **Demo 无法展示组件库真实能力** — 用户看到的是 GPUI 用法，不是 Liora 用法
 - **组件库缺失信号** — Demo 中手写的布局/样式模式没有沉淀为可复用组件
-- **风格不一致** — 混用原生 GPUI 和 Aura 控件导致 Demo 外观不统一
+- **风格不一致** — 混用原生 GPUI 和 Liora 控件导致 Demo 外观不统一
 - **"吃自己的狗粮"缺失** — 组件库自身不用自己的组件，难以发现 API 问题
 
 ## 要求
@@ -26,7 +26,7 @@ fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         .child(div().child("Content"))
 }
 
-// ✅ 正确 — 使用 Aura 组件构建完整 demo
+// ✅ 正确 — 使用 Liora 组件构建完整 demo
 fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
     Container::new()
         .child(Title::new("Title").level(2))
@@ -40,18 +40,18 @@ fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
 
 | 优先级 | 处理方式 | 适用场景 |
 |--------|---------|---------|
-| 1 | 使用现有 Aura 控件组合 | 能用 Space + Container + Text 等已有控件拼出来的效果 |
+| 1 | 使用现有 Liora 控件组合 | 能用 Space + Container + Text 等已有控件拼出来的效果 |
 | 2 | 新增通用控件到组件库 | 确实缺失且具有复用价值的控件 |
 | 3 | 扩展现有控件能力 | 现有控件已存在但缺少某个 builder 方法 |
 
 ### 3. Demo 辅助函数规范
 
 Demo 中允许使用纯函数 helper，但这些 helper 必须：
-- 返回 Aura 控件（`Container`, `Space`, `Text`, `Divider` 等）
+- 返回 Liora 控件（`Container`, `Space`, `Text`, `Divider` 等）
 - 不直接调用 `div()`, `px()`, `rgb()` 等 GPUI 原语
 
 ```rust
-// ✅ 正确的 demo helper — 使用 Aura 控件
+// ✅ 正确的 demo helper — 使用 Liora 控件
 fn section_header(title: &str) -> Container {
     Container::new()
         .child(Title::new(title).level(3))
@@ -68,7 +68,7 @@ fn section_header(title: &str) -> Div {
 
 ### 4. 现有 Demo 改造范围
 
-逐文件审查 `apps/aura-gallery/src/demos/*_demo.rs`：
+逐文件审查 `apps/liora-gallery/src/demos/*_demo.rs`：
 
 - [ ] `button_demo.rs`
 - [ ] `link_demo.rs`
@@ -129,8 +129,8 @@ fn section_header(title: &str) -> Div {
 - [ ] `badge_demo.rs`
 
 以及核心框架文件：
-- [ ] `apps/aura-gallery/src/main.rs`
-- [ ] `apps/aura-gallery/src/category.rs`
+- [ ] `apps/liora-gallery/src/main.rs`
+- [ ] `apps/liora-gallery/src/category.rs`
 
 ### 5. 可能需要新增的控件
 
@@ -150,6 +150,6 @@ Must be Ordered by Component's name with dictionary, ASC
 ## 验证标准
 
 1. `cargo check` 0 errors, 0 warnings
-2. 搜索 `apps/aura-gallery/src/demos/` 下所有文件，无直接 `div().flex().flex_col()` 等 GPUI 布局原语（仅 `aura-components` 内部实现可保留）
+2. 搜索 `apps/liora-gallery/src/demos/` 下所有文件，无直接 `div().flex().flex_col()` 等 GPUI 布局原语（仅 `liora-components` 内部实现可保留）
 3. Gallery 运行正常，所有 Demo 页面视觉一致
-4. Gallery 的 `category.rs` 和 `main.rs` 也使用 Aura 控件
+4. Gallery 的 `category.rs` 和 `main.rs` 也使用 Liora 控件

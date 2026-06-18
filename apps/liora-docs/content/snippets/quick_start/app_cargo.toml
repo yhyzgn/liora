@@ -1,0 +1,25 @@
+[package]
+name = "liora-native-demo"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+gpui = { git = "https://github.com/zed-industries/zed", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", default-features = false }
+
+# When developing inside this repository, prefer path dependencies:
+liora-core = { path = "../liora/crates/liora-core" }
+liora-theme = { path = "../liora/crates/liora-theme" }
+liora-components = { path = "../liora/crates/liora-components" }
+
+[target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
+gpui = { git = "https://github.com/zed-industries/zed", default-features = false, features = ["wayland", "x11", "font-kit"] }
+gpui_platform = { git = "https://github.com/zed-industries/zed", default-features = false, features = ["wayland", "x11"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+gpui = { git = "https://github.com/zed-industries/zed", default-features = false, features = ["font-kit"] }
+gpui_platform = { git = "https://github.com/zed-industries/zed", default-features = false, features = ["font-kit"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+gpui = { git = "https://github.com/zed-industries/zed", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", default-features = false }

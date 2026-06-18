@@ -6,20 +6,20 @@
 
 **Architecture:** Skeleton is a `RenderOnce` component that either renders its children or a collection of `SkeletonItem` placeholders based on the `loading` status.
 
-**Tech Stack:** Rust, GPUI 0.2.2, aura-theme.
+**Tech Stack:** Rust, GPUI 0.2.2, liora-theme.
 
 ---
 
 ### Task 1: Foundation & Types
 
 **Files:**
-- Create: `crates/aura-components/src/skeleton.rs`
-- Modify: `crates/aura-components/src/lib.rs`
+- Create: `crates/liora-components/src/skeleton.rs`
+- Modify: `crates/liora-components/src/lib.rs`
 
 - [ ] **Step 1: Define Skeleton structure and variants**
 
 ```rust
-use aura_core::Config;
+use liora_core::Config;
 use gpui::{
     prelude::*, px, App, IntoElement, RenderOnce, Window,
     div, SharedString, AnyElement,
@@ -82,7 +82,7 @@ impl Skeleton {
         self
     }
 
-    pub fn template<F>(mut self, f: F) -> Self 
+    pub fn template<F>(mut self, f: F) -> Self
     where F: Fn(&mut Window, &mut App) -> AnyElement + 'static {
         self.template = Some(Box::new(f));
         self
@@ -103,7 +103,7 @@ impl Skeleton {
 ### Task 2: Rendering Logic
 
 **Files:**
-- Modify: `crates/aura-components/src/skeleton.rs`
+- Modify: `crates/liora-components/src/skeleton.rs`
 
 - [ ] **Step 1: Implement `RenderOnce` for `SkeletonItem`**
 - [ ] **Step 2: Implement styles for variants (Circle, Square, etc.)**
@@ -116,8 +116,8 @@ impl Skeleton {
 ### Task 3: Gallery Demo
 
 **Files:**
-- Create: `apps/aura-gallery/src/demos/skeleton_demo.rs`
-- Modify: `apps/aura-gallery/src/demos/mod.rs`
+- Create: `apps/liora-gallery/src/demos/skeleton_demo.rs`
+- Modify: `apps/liora-gallery/src/demos/mod.rs`
 
 - [ ] **Step 1: Create demo with multiple use cases (Basic rows, with Circle, Complex template)**
 - [ ] **Step 2: Register in mod.rs**

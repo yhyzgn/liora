@@ -2,7 +2,7 @@
 
 > 上游: `.prompt/P13-component-expansion.md` / `.prompt/P14-deferred-advanced.md` / `.prompt/P12-packaging.md`
 > 状态: Complete
-> 目标: 在组件功能补齐后，进入发布前质量收口阶段，系统性提升 Aura 的可维护性、一致性、性能、文档完整性和 CI 防回归能力。
+> 目标: 在组件功能补齐后，进入发布前质量收口阶段，系统性提升 Liora 的可维护性、一致性、性能、文档完整性和 CI 防回归能力。
 
 ## 背景
 
@@ -10,7 +10,7 @@ P13 高级控件扩展和 P14 deferred backlog 已完成，P12 本地 runner-saf
 
 ## 非目标 / 边界
 
-- 不引入 WebView、HTML/CSS/DOM/browser runtime；Aura 继续保持纯 Rust + GPUI native。
+- 不引入 WebView、HTML/CSS/DOM/browser runtime；Liora 继续保持纯 Rust + GPUI native。
 - 不把 P12 外部策略项伪装成本地完成项；签名、公证、真实系统安装卸载和 license 仍需 owner policy。
 - 不新增平行替代控件来掩盖已有控件问题；优先修原组件、原 demo、原 docs。
 - 不用减少 demo 数据量替代真实性能优化；性能项必须基于 profiling 或可复现的基准/测试证据。
@@ -41,7 +41,7 @@ P13 高级控件扩展和 P14 deferred backlog 已完成，P12 本地 runner-saf
 
 - `on_change` / `on_select` / `on_click` / `on_close` / `on_finish` 签名一致性。
 - `disabled(...)`、`size(...)`、`variant(...)`、`open(...)`、`default_*` builder 命名一致性。
-- P13/P14 新增控件是否遵守已有 Aura 组件 API 范式。
+- P13/P14 新增控件是否遵守已有 Liora 组件 API 范式。
 - 避免生产路径中不必要的 `unwrap()` / `expect()` / `panic!()`。
 
 ## Track C — Visual / Theme Consistency
@@ -100,9 +100,9 @@ P13 高级控件扩展和 P14 deferred backlog 已完成，P12 本地 runner-saf
 - Added/extended builder-state assertions for SignalMeter, HeatBar, SegmentRatioBar, Label, Operation, and TagFlow dimension/gap options.
 
 Validation evidence for this slice:
-- `cargo test -p aura-components -- --nocapture` passed: 192 unit tests plus integration tests.
+- `cargo test -p liora-components -- --nocapture` passed: 192 unit tests plus integration tests.
 - Full P15 gate suite passed: fmt, workspace check/test, docs snippet check, package validate, packaging dry-run, install-smoke dry-run, and `git diff --check`.
-- GUI smoke passed: `timeout 10s cargo run -p aura-gallery` and `timeout 10s cargo run -p aura-docs` both started successfully and exited via expected timeout.
+- GUI smoke passed: `timeout 10s cargo run -p liora-gallery` and `timeout 10s cargo run -p liora-docs` both started successfully and exited via expected timeout.
 
 ### 2026-06-17 — Track B callback/state and panic audit
 
@@ -111,10 +111,10 @@ Validation evidence for this slice:
 - Removed avoidable production-path `unwrap()` / `expect()` / paint-result panics from hardened paths: Button icon-only rendering, DateTimePicker defaults, Input masked/word selection and paint, InputNumber filtering, Chart downsampling, Sparkline empty-data handling, and CodeBlock paint paths.
 
 Validation evidence for this slice:
-- `cargo test -p aura-components api_consistency_audit_tests -- --nocapture` passed.
-- `cargo test -p aura-components -- --nocapture` passed: 195 unit tests plus package integration tests.
+- `cargo test -p liora-components api_consistency_audit_tests -- --nocapture` passed.
+- `cargo test -p liora-components -- --nocapture` passed: 195 unit tests plus package integration tests.
 - Full P15 gate suite passed after whitespace cleanup: fmt, workspace check/test, docs snippet check, package validate, packaging dry-run, install-smoke dry-run, and `git diff --check`.
-- GUI smoke passed: `timeout 10s cargo run -p aura-gallery` and `timeout 10s cargo run -p aura-docs` both started successfully and exited via expected timeout.
+- GUI smoke passed: `timeout 10s cargo run -p liora-gallery` and `timeout 10s cargo run -p liora-docs` both started successfully and exited via expected timeout.
 
 ### 2026-06-17 — Track C visual/theme consistency slice
 
@@ -122,9 +122,9 @@ Validation evidence for this slice:
 - Added visual/theme audit tests for hardened colored surfaces and representative Virtualized* surface/border/radius token usage.
 
 Validation evidence for this slice:
-- `cargo test -p aura-components -- --nocapture` passed: 197 unit tests plus package integration tests.
+- `cargo test -p liora-components -- --nocapture` passed: 197 unit tests plus package integration tests.
 - Full P15 gate suite passed: fmt, workspace check/test, docs snippet check, package validate, packaging dry-run, install-smoke dry-run, and `git diff --check`.
-- GUI smoke passed: `timeout 10s cargo run -p aura-gallery` and `timeout 10s cargo run -p aura-docs` both started successfully and exited via expected timeout.
+- GUI smoke passed: `timeout 10s cargo run -p liora-gallery` and `timeout 10s cargo run -p liora-docs` both started successfully and exited via expected timeout.
 
 ### 2026-06-17 — Track C chart label theme-token slice
 
@@ -133,7 +133,7 @@ Validation evidence for this slice:
 
 Validation evidence for this slice:
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-components -- --nocapture` passed: 197 unit tests plus package integration tests.
+- `cargo test -p liora-components -- --nocapture` passed: 197 unit tests plus package integration tests.
 - `cargo check --workspace --all-targets` passed.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
@@ -146,7 +146,7 @@ Validation evidence for this slice:
 
 Validation evidence for this slice:
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-components -- --nocapture` passed: 198 unit tests plus package integration tests.
+- `cargo test -p liora-components -- --nocapture` passed: 198 unit tests plus package integration tests.
 - `cargo check --workspace --all-targets` passed.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
@@ -159,7 +159,7 @@ Validation evidence for this slice:
 
 Validation evidence for this slice:
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-components -- --nocapture` passed: 199 unit tests plus package integration tests.
+- `cargo test -p liora-components -- --nocapture` passed: 199 unit tests plus package integration tests.
 - `cargo check --workspace --all-targets` passed.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
@@ -171,7 +171,7 @@ Validation evidence for this slice:
 
 Validation evidence for this slice:
 - `cargo fmt --all --check` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
 - `git diff --check` passed.
@@ -185,9 +185,9 @@ Validation evidence for this slice:
 
 Validation evidence for this slice:
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-components overlay_escape_coverage_tests -- --nocapture` passed.
+- `cargo test -p liora-components overlay_escape_coverage_tests -- --nocapture` passed.
 - `cargo check --workspace --all-targets` passed.
-- `cargo test -p aura-components -- --nocapture` passed: 200 unit tests plus package integration tests.
+- `cargo test -p liora-components -- --nocapture` passed: 200 unit tests plus package integration tests.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
 
@@ -199,9 +199,9 @@ Validation evidence for this slice:
 
 Validation evidence for this slice:
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-components overlay_escape_coverage_tests -- --nocapture` passed.
+- `cargo test -p liora-components overlay_escape_coverage_tests -- --nocapture` passed.
 - `cargo check --workspace --all-targets` passed.
-- `cargo test -p aura-components -- --nocapture` passed: 200 unit tests plus package integration tests.
+- `cargo test -p liora-components -- --nocapture` passed: 200 unit tests plus package integration tests.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
 
@@ -212,7 +212,7 @@ Validation evidence for this slice:
 
 Validation evidence for this slice:
 - `cargo fmt --all --check` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
 - `git diff --check` passed.
@@ -226,10 +226,10 @@ Validation evidence for this slice:
 
 Validation evidence for this slice:
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-components overlay_escape_coverage_tests -- --nocapture` passed.
-- `cargo test -p aura-components preview::tests::preview_overlay_has_escape_close_action_and_image_sized_hitbox -- --nocapture` passed.
+- `cargo test -p liora-components overlay_escape_coverage_tests -- --nocapture` passed.
+- `cargo test -p liora-components preview::tests::preview_overlay_has_escape_close_action_and_image_sized_hitbox -- --nocapture` passed.
 - `cargo check --workspace --all-targets` passed.
-- `cargo test -p aura-components -- --nocapture` passed: 201 unit tests plus package integration tests.
+- `cargo test -p liora-components -- --nocapture` passed: 201 unit tests plus package integration tests.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
 
@@ -241,7 +241,7 @@ Validation evidence for this slice:
 
 Validation evidence for this slice:
 - `cargo fmt --all --check` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
 - `git diff --check` passed.
@@ -255,8 +255,8 @@ Validation evidence for this slice:
 
 Validation evidence for this slice:
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-components tour::tests -- --nocapture` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo test -p liora-components tour::tests -- --nocapture` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
 - `git diff --check` passed.
@@ -270,8 +270,8 @@ Validation evidence for this slice:
 
 Validation evidence for this slice:
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-docs markdown::tests::packaging_docs_explain_ci_and_release_workflow_boundaries -- --nocapture` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo test -p liora-docs markdown::tests::packaging_docs_explain_ci_and_release_workflow_boundaries -- --nocapture` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
 - `git diff --check` passed.
@@ -285,8 +285,8 @@ Validation evidence for this slice:
 
 Validation evidence for this slice:
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-docs markdown::tests::authored_page_snippets_are_available_to_docs_loader -- --nocapture` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo test -p liora-docs markdown::tests::authored_page_snippets_are_available_to_docs_loader -- --nocapture` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
 - `git diff --check` passed.
@@ -301,8 +301,8 @@ Validation evidence for this slice:
 Validation evidence for this slice:
 - Workflow YAML parsed successfully with PyYAML.
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-docs packaging -- --nocapture` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo test -p liora-docs packaging -- --nocapture` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
 - `cargo run -p xtask -- package validate` passed.
@@ -318,8 +318,8 @@ Validation evidence for this slice:
 
 Validation evidence for this slice:
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-docs markdown::tests::quick_start_registers_core_app_key_bindings -- --nocapture` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo test -p liora-docs markdown::tests::quick_start_registers_core_app_key_bindings -- --nocapture` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
 - `git diff --check` passed.
@@ -333,7 +333,7 @@ Validation evidence for this slice:
 
 Validation evidence for this slice:
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-components code_block::tests -- --nocapture` passed.
+- `cargo test -p liora-components code_block::tests -- --nocapture` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
 - `git diff --check` passed.
@@ -347,10 +347,10 @@ Validation evidence for this slice:
 
 Validation evidence for this slice:
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-components code_block::tests -- --nocapture` passed.
+- `cargo test -p liora-components code_block::tests -- --nocapture` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `git diff --check -- . ':(exclude).omx'` passed after removing markdown EOF whitespace.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
 
@@ -362,13 +362,13 @@ Validation evidence for this slice:
 
 Validation evidence for this slice:
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-components code_block::tests -- --nocapture` passed.
-- `cargo test -p aura-components selectable_text::tests -- --nocapture` passed.
-- `cargo test -p aura-components timer::tests -- --nocapture` passed.
-- `cargo test -p aura-components api_consistency_audit_tests::avoidable_runtime_panics_stay_out_of_hardened_paths -- --nocapture` passed.
+- `cargo test -p liora-components code_block::tests -- --nocapture` passed.
+- `cargo test -p liora-components selectable_text::tests -- --nocapture` passed.
+- `cargo test -p liora-components timer::tests -- --nocapture` passed.
+- `cargo test -p liora-components api_consistency_audit_tests::avoidable_runtime_panics_stay_out_of_hardened_paths -- --nocapture` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `git diff --check -- . ':(exclude).omx'` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
 
@@ -380,43 +380,43 @@ Validation evidence for this slice:
 
 Validation evidence for this slice:
 - `cargo fmt --all --check` passed.
-- `cargo check -p aura-gallery --all-targets` passed.
-- `cargo check -p aura-docs --all-targets` passed.
-- `cargo test -p aura-gallery shell_tests::gallery_shell_uses_container_and_menu -- --nocapture` passed.
-- `cargo test -p aura-docs markdown::tests::docs_shell_registers_core_documentation_pages -- --nocapture` passed.
+- `cargo check -p liora-gallery --all-targets` passed.
+- `cargo check -p liora-docs --all-targets` passed.
+- `cargo test -p liora-gallery shell_tests::gallery_shell_uses_container_and_menu -- --nocapture` passed.
+- `cargo test -p liora-docs markdown::tests::docs_shell_registers_core_documentation_pages -- --nocapture` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `git diff --check -- . ':(exclude).omx'` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
 
 ### 2026-06-18 — Track B packager string rendering panic cleanup
 
-- Removed avoidable `expect("write to string")` calls from `aura-packager` checksum and manifest rendering paths.
+- Removed avoidable `expect("write to string")` calls from `liora-packager` checksum and manifest rendering paths.
 - Switched checksum hex and manifest text/JSON assembly to infallible `push_str(format!(...))` style output while preserving existing generated formats.
-- Verified `aura-packager` unit tests plus full workspace gates so packaging metadata generation remains stable.
+- Verified `liora-packager` unit tests plus full workspace gates so packaging metadata generation remains stable.
 
 Validation evidence for this slice:
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-packager -- --nocapture` passed.
+- `cargo test -p liora-packager -- --nocapture` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `git diff --check -- . ':(exclude).omx'` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
 
 ### 2026-06-18 — Track B lucide build script error handling
 
-- Replaced `aura-icons-lucide` build script `unwrap()` calls with a `try_main() -> io::Result<()>` flow.
+- Replaced `liora-icons-lucide` build script `unwrap()` calls with a `try_main() -> io::Result<()>` flow.
 - Build failures now emit a clear `cargo:error=...` message and exit non-zero instead of panicking with an unwrap stack.
 - Added explicit UTF-8 validation errors for generated icon file names and propagated directory/file/write errors with context from the build script path being processed.
 
 Validation evidence for this slice:
 - `cargo fmt --all --check` passed.
-- `cargo check -p aura-icons-lucide --all-targets` passed.
+- `cargo check -p liora-icons-lucide --all-targets` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `git diff --check -- . ':(exclude).omx'` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
 
@@ -436,13 +436,13 @@ Final gate evidence:
 - `cargo fmt --all --check` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `cargo run -p xtask -- package validate` passed.
 - `cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build` passed.
 - `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run` passed.
 - `git diff --check -- . ':(exclude).omx'` passed.
-- `timeout 10s cargo run -p aura-gallery` started successfully and exited via expected timeout status `124`.
-- `timeout 10s cargo run -p aura-docs` started successfully and exited via expected timeout status `124`.
+- `timeout 10s cargo run -p liora-gallery` started successfully and exited via expected timeout status `124`.
+- `timeout 10s cargo run -p liora-docs` started successfully and exited via expected timeout status `124`.
 
 Residuals intentionally outside P15 local completion:
 

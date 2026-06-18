@@ -56,10 +56,10 @@ let component_id = format!("button-{}", self.uid);
 
 ### 5. 全局计数器基础设施
 
-在 `aura-core` 中新增全局 ID 生成器：
+在 `liora-core` 中新增全局 ID 生成器：
 
 ```rust
-// crates/aura-core/src/lib.rs 或新建 crates/aura-core/src/unique_id.rs
+// crates/liora-core/src/lib.rs 或新建 crates/liora-core/src/unique_id.rs
 use std::sync::atomic::{AtomicU64, Ordering};
 
 static NEXT_ID: AtomicU64 = AtomicU64::new(1);
@@ -77,7 +77,7 @@ pub fn unique_id(prefix: &str) -> SharedString {
 
 ## 检查清单
 
-对 `crates/aura-components/src/` 下每一个组件文件，逐项检查：
+对 `crates/liora-components/src/` 下每一个组件文件，逐项检查：
 
 - [ ] 是否有默认内置唯一 ID？
 - [ ] 内部交互子元素 ID 是否以组件 ID 为前缀？
@@ -87,9 +87,9 @@ pub fn unique_id(prefix: &str) -> SharedString {
 
 ## 涉及文件范围
 
-- `crates/aura-core/src/` — 新增全局 ID 生成器
-- `crates/aura-components/src/*.rs` — 所有现有组件逐一改造
-- `crates/aura-components/src/lib.rs` — 确保 unique_id 模块可访问
+- `crates/liora-core/src/` — 新增全局 ID 生成器
+- `crates/liora-components/src/*.rs` — 所有现有组件逐一改造
+- `crates/liora-components/src/lib.rs` — 确保 unique_id 模块可访问
 
 ## 验证标准
 

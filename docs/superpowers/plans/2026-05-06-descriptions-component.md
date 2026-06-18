@@ -6,20 +6,20 @@
 
 **Architecture:** Descriptions is a `RenderOnce` component that organizes `DescriptionItem` nodes into a simulated grid using flexbox and percentage widths.
 
-**Tech Stack:** Rust, GPUI 0.2.2, aura-theme.
+**Tech Stack:** Rust, GPUI 0.2.2, liora-theme.
 
 ---
 
 ### Task 1: Foundation & Types
 
 **Files:**
-- Create: `crates/aura-components/src/descriptions.rs`
-- Modify: `crates/aura-components/src/lib.rs`
+- Create: `crates/liora-components/src/descriptions.rs`
+- Modify: `crates/liora-components/src/lib.rs`
 
 - [ ] **Step 1: Define Descriptions structure and enums**
 
 ```rust
-use aura_core::Config;
+use liora_core::Config;
 use gpui::{
     prelude::*, px, App, IntoElement, RenderOnce, Window,
     div, SharedString, AnyElement,
@@ -107,7 +107,7 @@ impl Descriptions {
 ### Task 2: Layout & Row Wrapping Logic
 
 **Files:**
-- Modify: `crates/aura-components/src/descriptions.rs`
+- Modify: `crates/liora-components/src/descriptions.rs`
 
 - [ ] **Step 1: Implement RenderOnce for Descriptions**
 - [ ] **Step 2: Implement logic to group `items` into rows based on `column` and `span`**
@@ -118,7 +118,7 @@ impl Descriptions {
 ### Task 3: Rendering Styles (Bordered & Non-Bordered)
 
 **Files:**
-- Modify: `crates/aura-components/src/descriptions.rs`
+- Modify: `crates/liora-components/src/descriptions.rs`
 
 - [ ] **Step 1: Implement `Horizontal` layout (Label next to Value)**
 - [ ] **Step 2: Implement `Vertical` layout (Label above Value)**
@@ -131,8 +131,8 @@ impl Descriptions {
 ### Task 4: Gallery Demo
 
 **Files:**
-- Create: `apps/aura-gallery/src/demos/descriptions_demo.rs`
-- Modify: `apps/aura-gallery/src/demos/mod.rs`
+- Create: `apps/liora-gallery/src/demos/descriptions_demo.rs`
+- Modify: `apps/liora-gallery/src/demos/mod.rs`
 
 - [ ] **Step 1: Create demo with Basic, Bordered, and Vertical examples**
 - [ ] **Step 2: Register in mod.rs**

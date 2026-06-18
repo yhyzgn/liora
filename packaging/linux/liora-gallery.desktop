@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Liora Gallery
+GenericName=Component Gallery
+Comment=Native GPUI component gallery for Liora.
+TryExec=liora-gallery
+Exec=liora-gallery
+Icon=liora-gallery
+Categories=Development;Utility;
+Keywords=gpui;liora;components;gallery;
+StartupNotify=true
+Terminal=false

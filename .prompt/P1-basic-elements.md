@@ -10,9 +10,9 @@
 
 ### 第一优先级 (完善现有)
 1. **Button 增强** — 添加 `.icon_start()` / `.icon_end()` 支持、`ButtonGroup`、幽灵按钮 (text variant)
-   - 文件: `crates/aura-components/src/button.rs` (修改)
-   - 文件: `crates/aura-components/src/button_group.rs` (新建)
-   - Demo: 更新 `apps/aura-gallery/src/demos/button_demo.rs`
+   - 文件: `crates/liora-components/src/button.rs` (修改)
+   - 文件: `crates/liora-components/src/button_group.rs` (新建)
+   - Demo: 更新 `apps/liora-gallery/src/demos/button_demo.rs`
 
 ### 第二优先级 (核心布局与排版)
 2. **Link** — 链接按钮 (underline, hover 变色)
@@ -36,12 +36,12 @@
 
 ```
 每个组件:
-  1. 创建/修改 crates/aura-components/src/<name>.rs
-  2. 在 crates/aura-components/src/lib.rs 中 pub mod + pub use
-  3. 创建 apps/aura-gallery/src/demos/<name>_demo.rs (render() -> AnyElement)
-  4. 在 apps/aura-gallery/src/demos/mod.rs 注册表添加 DemoEntry
+  1. 创建/修改 crates/liora-components/src/<name>.rs
+  2. 在 crates/liora-components/src/lib.rs 中 pub mod + pub use
+  3. 创建 apps/liora-gallery/src/demos/<name>_demo.rs (render() -> AnyElement)
+  4. 在 apps/liora-gallery/src/demos/mod.rs 注册表添加 DemoEntry
   5. cargo check 通过
-  6. cargo run -p aura-gallery 验证窗口效果
+  6. cargo run -p liora-gallery 验证窗口效果
   7. git add + commit + push
   8. 更新 .memory/inventory.md
 ```
@@ -59,7 +59,7 @@ struct NameDemo;
 
 impl RenderOnce for NameDemo {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let theme = &cx.global::<aura_core::Config>().theme;
+        let theme = &cx.global::<liora_core::Config>().theme;
         div().flex().flex_col().gap_4()
             .child(section(theme, "Variants 变体"))
             .child(demo_row(vec![...]))
@@ -75,17 +75,17 @@ impl RenderOnce for NameDemo {
 
 Row/Col 栅格系统参照 Element-Plus 24 栅格:
 ```rust
-AuraRow::new()
+LioraRow::new()
     .gutter(px(20.0))
-    .child(AuraCol::new().span(12).child(...))
-    .child(AuraCol::new().span(6).offset(6).child(...))
+    .child(LioraCol::new().span(12).child(...))
+    .child(LioraCol::new().span(6).offset(6).child(...))
 ```
 
 ## 完成标准
 
 - [ ] 全部 13 个组件编译通过 (cargo check 0 errors)
 - [ ] 每个组件在 Gallery 中有 Demo 卡片
-- [ ] `cargo run -p aura-gallery` 可滚动查看全部组件
+- [ ] `cargo run -p liora-gallery` 可滚动查看全部组件
 - [ ] Git commit 已推送
 - [ ] .memory/ 已更新 (state.md, inventory.md)
 - [ ] .prompt/P2-form-controls.md 已就绪

@@ -5,7 +5,7 @@
 ### Actions
 - **新增两个阶段 (P6, P7)，原 P6 Engineering 改为 P8**:
   - P6 Built-in Unique ID: 确保全库每个控件有默认内置全局唯一 ID，事件冲突防护由组件库自身保证
-  - P7 Demo Self-Contained: Gallery Demo 完全使用 Aura 组件库自身控件构建，禁止在 Demo 中直接使用 GPUI 原生组件
+  - P7 Demo Self-Contained: Gallery Demo 完全使用 Liora 组件库自身控件构建，禁止在 Demo 中直接使用 GPUI 原生组件
 - **创建 `.prompt/P6-builtin-id.md`**: 详细定义内置唯一 ID 规范、实现策略、全局计数器基础设施
 - **创建 `.prompt/P7-demo-self-contained.md`**: 定义 Demo 自举要求、缺失控件新增流程、改造范围
 - **重命名 `.prompt/P6-engineering.md` → `.prompt/P8-engineering.md`** 并更新上游引用
@@ -55,7 +55,7 @@
 
 ### Verification
 - `cargo check` passed.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - GPUI 中 `cx.entity()` 是在 `Render` 过程中获取自身 View 句柄的正确方式，用于在异步或独立 Context 中回调更新原始 View。
@@ -86,13 +86,13 @@
 
 ### Actions
 - 搭建 Cargo workspace 结构 (4 crate + 2 app per structure.txt)
-- 实现 aura-theme: Theme, Design Tokens, light/dark 模式
-- 实现 aura-core: Config (Global), init_aura(), ContextExt, Z-Index utils
-- 实现 aura-icons: AuraIcon trait, IconSize, 10 个占位图标
-- 实现 aura-components: AuraButton (6 variants × 3 sizes × disabled/loading)
+- 实现 liora-theme: Theme, Design Tokens, light/dark 模式
+- 实现 liora-core: Config (Global), init_liora(), ContextExt, Z-Index utils
+- 实现 liora-icons: LioraIcon trait, IconSize, 10 个占位图标
+- 实现 liora-components: LioraButton (6 variants × 3 sizes × disabled/loading)
 - 适配 GPUI 0.2.2 API (Render trait, Context<'_, V>, InteractiveElement, AnyElement)
 - 解决 GPUI feature 策略: 显式 features 替代 default-features=true
-- 实现 aura-gallery: 分类卡片式组件看板
+- 实现 liora-gallery: 分类卡片式组件看板
 - 编写 architecture-design.md: 完整项目设计文档
 - 搭建 .memory/ + .prompt/ + prompt.md 协作基础设施
 
@@ -113,7 +113,7 @@
 ### Actions
 - **清理工程警告**:
   - 移除 `pagination.rs`, `statistic.rs`, `segmented.rs`, `progress.rs`, `skeleton.rs`, `affix.rs`, `backtop.rs`, `anchor.rs` 等文件中的未使用导入和变量。
-  - 修复 `aura-gallery` 中多个 Demo 文件的未使用导入。
+  - 修复 `liora-gallery` 中多个 Demo 文件的未使用导入。
 - **补全 P4 缺失组件**:
   - **Tag**: 实现标签组件，支持 `Success`/`Warning`/`Danger`/`Info` 类型，`Light`/`Dark`/`Plain` 主题效果，以及 `closable` 和 `round` 属性。
   - **Avatar**: 实现头像组件，支持图片 (`src`)、图标 (`icon`) 和默认占位，支持 `Circle`/`Square` 形状和三种标准尺寸。
@@ -238,7 +238,7 @@
 
 ### Verification
 - `cargo check` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - GPUI 文本折行依赖 `WhiteSpace::Normal` 且通常需要确定的可用宽度；`Text::wrap()` 通过 `w_full()` 让文本在父容器宽度内参与折行。
@@ -256,7 +256,7 @@
 
 ### Verification
 - `cargo check` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - Gallery 卡顿的主要来源是 `Gallery::render()` 每次遍历并渲染全部 demo，同时每次重新调用 `demos::registry()` 分配注册表。
@@ -272,7 +272,7 @@
 
 ### Verification
 - `cargo check` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - 仅依赖 Rate 容器的 `on_hover(false)` 不足以覆盖从最后一颗星右侧移出的路径；每颗星独立处理 hover leave 更可靠。
@@ -295,7 +295,7 @@
 ### Verification
 - `cargo check` passed.
 - `cargo test` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - 之前的 `ActivePopover(Option<AnyView>)` / `ActiveTooltip(Option<TooltipData>)` 架构天然只能存在一个浮层，任何 clear 都是全局清空。
@@ -314,7 +314,7 @@
 ### Verification
 - `cargo check` passed.
 - `cargo test` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - 百分比内显需要与外显状态图标逻辑分离；内显模式应始终显示百分比文本，而不是在 success/exception 状态切换为外部图标。
@@ -332,7 +332,7 @@
 ### Verification
 - `cargo check` passed.
 - `cargo test` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - 文本内显的“是否显示”和“如何对齐”应保持为独立配置；整条进度条居中需要根据文字所在背景动态选择颜色。
@@ -349,7 +349,7 @@
 ### Verification
 - `cargo check` passed.
 - `cargo test` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - 在 render 中临时 `cx.new` 交互控件会让状态生命周期不稳定；demo 中需要把有状态组件保存在父 view 字段里。
@@ -364,7 +364,7 @@
 ### Verification
 - `cargo check` passed.
 - `cargo test` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - 原实现使用 `HashSet` 直接 toggle 选中状态，导致普通 Tree 在没有复选框/多选配置时也表现为多选；默认交互应为单选。
@@ -379,7 +379,7 @@
 ### Verification
 - `cargo check` passed.
 - `cargo test` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - Collapse 组件自身 toggle 逻辑有效；Gallery demo 中在 render 内 `cx.new` 导致有状态组件生命周期不稳定，是点击后看起来无反应的主要原因。
@@ -395,7 +395,7 @@
 ### Verification
 - `cargo check` passed.
 - `cargo test` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - Menu 的状态逻辑有效，但 demo 中 render 内 `cx.new` 会让 active/opened 状态生命周期不稳定。
@@ -411,7 +411,7 @@
 ### Verification
 - `cargo check` passed.
 - `cargo test` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - Popover 内容在独立 view/context 中渲染，不能依赖外层 render 时的局部状态快照；需要通过 Menu entity handle 读取最新 active state。
@@ -428,7 +428,7 @@
 ### Verification
 - `cargo check` passed.
 - `cargo test` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - 事件 propagation 阻断不等于 cursor 命中隔离；GPUI hover/cursor 样式需要当前顶层命中元素显式设置默认 cursor，否则可能保留/穿透底层 pointer 光标。
@@ -444,7 +444,7 @@
 ### Verification
 - `cargo check` passed.
 - `cargo test` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - 通用 Popover 面板默认 cursor 只能覆盖外层浮层；组件自定义 popover 内容根节点也需要声明默认 cursor，才能覆盖内容 padding/空白区域。
@@ -460,7 +460,7 @@
 ### Verification
 - `cargo check` passed.
 - `cargo test` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - Menu 气泡的问题不是单纯 cursor 样式，而是 hover 命中层没有完整接管；需要可命中的 stateful element + hover 阻断。
@@ -477,7 +477,7 @@
 ### Verification
 - `cargo check` passed.
 - `cargo test` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - 仅在 Popover 内部阻断事件仍可能不足；portal 根层本身也需要成为可命中的透明 hover shield，才能阻止底层菜单项接收 hover 状态。
@@ -492,7 +492,7 @@
 ### Verification
 - `cargo check` passed.
 - `cargo test` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - GPUI 防穿透需要使用 `occlude()` / `HitboxBehavior::BlockMouse`；透明背景 + hover/mouse move stop propagation 只能处理事件冒泡，不能阻止底层元素进入 hover。
@@ -507,7 +507,7 @@
 ### Verification
 - `cargo check` passed.
 - `cargo test` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - Tabs 与 Menu/Tree/Collapse 一样，demo 中 render-time entity creation 会重置组件状态；多个 Tabs 示例复用同名 pane 还会造成 GPUI element ID 冲突。
@@ -525,7 +525,7 @@
 ### Verification
 - `cargo check` passed.
 - `cargo test` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - 原 editable add 只调用外部回调并 notify，没有修改内部 panes，所以 demo 中点击 + 不会出现任何 UI 变化。
@@ -541,7 +541,7 @@
 ### Verification
 - `cargo check` passed.
 - `cargo test` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - Menu 组件已经提供 `on_select` 回调；Demo 只需要持有可更新的内容实体，就能展示真实导航页面切换效果。
@@ -560,7 +560,7 @@
 ### Verification
 - `cargo check` passed.
 - `cargo test` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - Pagination 也存在与 Tabs/Menu 相同的两类问题：render-time entity creation 会重置状态，且多实例共享简单按钮 ID 会导致交互冲突。
@@ -579,7 +579,7 @@
 ### Verification
 - `cargo check` passed.
 - `cargo test` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - 复用 Select 比手写候选按钮更符合现有控件体系，也能自然获得弹出层与选择状态。
@@ -597,7 +597,7 @@
 ### Verification
 - `cargo check` passed.
 - `cargo test` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - GPUI 中 hover/cursor 应放在带 ID 与点击监听的实际 hitbox 元素上；子元素单独设置 hover 不一定会体现到用户鼠标所在的命中节点。
@@ -612,7 +612,7 @@
 ### Verification
 - `cargo check` passed.
 - `cargo test` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - 本项目 GPUI 用法里 cursor 最稳妥的写法是放入 hover refinement；只在常规链路上写 cursor 可能不能满足用户期望的“hover 时变小手”。
@@ -628,7 +628,7 @@
 ### Verification
 - `cargo check` passed.
 - `cargo test` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - Pagination 上一页/下一页主要是 Icon，父级文字 hover 不会改变显式 Icon 颜色；需要 group hover。当前页之前也被 hover 条件排除，导致部分分页按钮看起来完全没有 hover/cursor 反馈。
@@ -643,7 +643,7 @@
 ### Verification
 - `cargo check` passed.
 - `cargo test` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - 空 PortalLayer 虽然没有弹层内容，但全屏 `cursor_default()` 仍会向 GPUI 注册 cursor 样式请求，覆盖底层分页按钮的 `cursor_pointer()`。
@@ -659,7 +659,7 @@
 ### Verification
 - `cargo check` passed.
 - `cargo test` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - 仅使用 flex center 仍可能受大号文字 line box 与小尺寸 SVG box 的差异影响；显式统一 line-height/wrapper height 更稳定。
@@ -675,7 +675,7 @@
 ### Verification
 - `cargo check` passed.
 - `cargo test` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - Segmented 与 Tabs/Menu/Pagination 同类：demo render-time entity creation 会丢失内部选中状态，多实例复用简单数字 ID 也会造成 GPUI 交互冲突。
@@ -692,7 +692,7 @@
 ### Verification
 - `cargo check` passed.
 - `cargo test` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - Dropdown 复用 Popover 作为外壳，内部菜单项不应再额外做紧凑 pill 列表；与 Select 一致的整行选项布局更自然。
@@ -707,7 +707,7 @@
 ### Verification
 - `cargo check` passed.
 - `cargo test` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - 多个 Dropdown 都通过同一个 `menu(...)` helper 构造时，`Dropdown::new` 的默认 caller-based ID 相同；Popover trigger ID 冲突后表现为只有一个实例能正常弹出。
@@ -724,7 +724,7 @@
 ### Verification
 - `cargo check` passed.
 - `cargo test` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery successfully; process was intentionally stopped by timeout after startup.
 
 ### Key Discoveries
 - 这三个控件有实际价值，尤其在长页面、文档和组件库 demo 场景中。
@@ -746,12 +746,12 @@
   - AnchorTarget 使用 `prepaint_at(bounds.origin, ...)` 正确预绘制子元素。
   - 调整 Anchor demo 为固定高度可视区，确保滚动区域和右侧锚点导航可见。
 - **新增 passive portal 通道**:
-  - `aura_core::PassivePortal` / `push_passive_portal` 用于 Affix 这类不应 occlude / stop propagation 的顶层渲染。
+  - `liora_core::PassivePortal` / `push_passive_portal` 用于 Affix 这类不应 occlude / stop propagation 的顶层渲染。
   - Gallery 的 `PortalLayer` 分离 passive portal 与原有 active portal，保留弹层类组件的事件阻断行为。
 
 ### Verification
 - `cargo check` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Affix 不适合复用原有 `Portal`，因为原 active portal layer 会 `.occlude()` 并停止事件传播，固定内容应走非阻塞 passive portal。
@@ -762,11 +762,11 @@
 
 ### Actions
 - **Started P5 Advanced implementation with Table P0**:
-  - Added `Table`, `TableColumn`, `TableRow`, and `TableAlign` in `crates/aura-components/src/table.rs`.
+  - Added `Table`, `TableColumn`, `TableRow`, and `TableAlign` in `crates/liora-components/src/table.rs`.
   - Implemented P0 table capabilities: column-driven row rendering, empty state, loading overlay, border mode, stripe mode, and fixed-header scroll body via `.height(...)` / `.fixed_header(true)`.
-  - Added public exports in `crates/aura-components/src/lib.rs`.
+  - Added public exports in `crates/liora-components/src/lib.rs`.
 - **Added Gallery demo**:
-  - Created `apps/aura-gallery/src/demos/table_demo.rs` with Basic, Stripe + Border, Fixed Header, Loading, and Empty examples.
+  - Created `apps/liora-gallery/src/demos/table_demo.rs` with Basic, Stripe + Border, Fixed Header, Loading, and Empty examples.
   - Registered `Table 表格` in the Gallery demo registry.
 - **Updated memory**:
   - Marked P5 progress as 1/20 in `.memory/state.md`.
@@ -774,7 +774,7 @@
 
 ### Verification
 - `cargo check` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - `overflow_y_scroll()` requires a stateful element in this GPUI version, so Table body uses a generated `.id(...)` before enabling fixed-header scrolling.
@@ -785,7 +785,7 @@
 ### Actions
 - **Enhanced Table header API**:
   - Table headers remain bold by default when using `TableColumn::new(key, label)`.
-  - Added `TableColumn::header(...)` so developers can provide any Aura/GPUI element, including `Text`, as custom header content.
+  - Added `TableColumn::header(...)` so developers can provide any Liora/GPUI element, including `Text`, as custom header content.
 - **Added opt-in sortable columns**:
   - Added `TableColumn::sortable()` to explicitly enable sorting behavior per column.
   - Added `TableSortOrder` and `TableSortState`.
@@ -797,7 +797,7 @@
 
 ### Verification
 - `cargo check` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Because table cells hold `AnyElement`, automatic internal sorting cannot safely infer comparable values. A controlled sort callback keeps Table generic while letting developers sort their source data explicitly.
@@ -807,12 +807,12 @@
 
 ### Actions
 - **Added DatePicker component**:
-  - Implemented `DatePicker` and `DateValue` in `crates/aura-components/src/date_picker.rs`.
+  - Implemented `DatePicker` and `DateValue` in `crates/liora-components/src/date_picker.rs`.
   - Supports single-date selection, formatted display (`YYYY-MM-DD`), month navigation, disabled state, width/placeholder/id builder options, and `on_change` / `set_on_change` callbacks.
   - Calendar panel renders through the existing portal layer and captures trigger bounds for placement.
-  - Added public exports in `crates/aura-components/src/lib.rs`.
+  - Added public exports in `crates/liora-components/src/lib.rs`.
 - **Added Gallery demo**:
-  - Created `apps/aura-gallery/src/demos/date_picker_demo.rs`.
+  - Created `apps/liora-gallery/src/demos/date_picker_demo.rs`.
   - Registered `DatePicker 日期选择器` in the Gallery demo registry.
   - Demo covers basic selection with callback text, preset value, and disabled state.
 - **Updated memory**:
@@ -821,7 +821,7 @@
 
 ### Verification
 - `cargo check` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - DatePicker avoids adding a date/time dependency for the initial P5 slice by using small local calendar helpers for leap years, month length, and weekday alignment.
@@ -835,7 +835,7 @@
 
 ### Verification
 - `cargo check` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - GPUI `AnyElement` instances cannot be reconstructed independently across custom Element lifecycle methods; `request_layout` must establish the drawable state used by `prepaint`. Rebuilding a fresh child in `prepaint_at` triggers `must call request_layout before prepaint`.
@@ -853,7 +853,7 @@
 
 ### Verification
 - `cargo check` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Portal-rendered content is outside the trigger subtree, so `on_mouse_down_out` on the trigger will close the DatePicker before panel controls can be used. Popup components need backdrop-level outside-click handling instead.
@@ -878,7 +878,7 @@
 
 ### Verification
 - `cargo check` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Since date/month/year values share the same `DateValue` storage, modes normalize granularity: month values use day `1`, and year values use month/day `1/1`.
@@ -894,7 +894,7 @@
 
 ### Verification
 - `cargo check` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Range display should not be a single concatenated string once custom formats are supported; separate layout nodes keep separator spacing predictable across date, month, and year ranges.
@@ -909,7 +909,7 @@
 
 ### Verification
 - `cargo check` passed.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - When the separator already has a chip background, adding backgrounds to both date values makes the range trigger visually heavy and less balanced.
@@ -923,7 +923,7 @@
 
 ### Verification
 - `cargo check` passed.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Even when mutable `cx` use is visually before theme reads, holding an owned theme clone is safer in GPUI demo render functions that update child entities and then render themed content.
@@ -938,7 +938,7 @@
 
 ### Verification
 - `cargo check` passed.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Rebinding child callbacks inside a parent `Render::render` is fragile and can create `Context` borrow overlap diagnostics in downstream editors/toolchains. Demo render paths should prefer read-only child inspection unless mutation is unavoidable.
@@ -948,12 +948,12 @@
 
 ### Actions
 - **Added TimePicker component**:
-  - Implemented `TimePicker` and `TimeValue` in `crates/aura-components/src/time_picker.rs`.
+  - Implemented `TimePicker` and `TimeValue` in `crates/liora-components/src/time_picker.rs`.
   - Supports fixed-list time selection, custom display formats, minute/second step controls, optional hidden seconds, disabled state, width/placeholder/id builder options, and `on_change` / `set_on_change` callbacks.
   - Uses the existing portal layer for the dropdown panel and trigger bounds capture for placement.
-  - Added public exports in `crates/aura-components/src/lib.rs`.
+  - Added public exports in `crates/liora-components/src/lib.rs`.
 - **Added Gallery demo**:
-  - Created `apps/aura-gallery/src/demos/time_picker_demo.rs`.
+  - Created `apps/liora-gallery/src/demos/time_picker_demo.rs`.
   - Registered `TimePicker 时间选择器` in the Gallery demo registry.
   - Demo covers basic selection, custom format, stepped options, hidden seconds, and disabled state.
 - **Updated memory**:
@@ -962,7 +962,7 @@
 
 ### Verification
 - `cargo check` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - The TimePicker panel can reuse the DatePicker portal/backdrop pattern safely when the panel itself is a normal element tree rather than a custom wrapper element.
@@ -976,7 +976,7 @@
 
 ### Verification
 - `cargo check` passed.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Range endpoint values should match the normal DatePicker input text size; only secondary separators need reduced visual weight.
@@ -988,9 +988,9 @@
   - Implemented `DateTimePicker`, `DateTimeValue`, `DateTimePickerType`, and `DateTimePickerSelection`.
   - Supports single date-time selection, date-time ranges, custom display formats, range separator text, minute/second steps, optional hidden seconds, disabled state, and change callbacks.
   - Uses the portal/dropdown pattern with a normal element tree, calendar navigation, time columns, range endpoint chips, and explicit confirm/cancel actions.
-  - Added public exports in `crates/aura-components/src/lib.rs`.
+  - Added public exports in `crates/liora-components/src/lib.rs`.
 - **Added Gallery demo**:
-  - Created `apps/aura-gallery/src/demos/date_time_picker_demo.rs`.
+  - Created `apps/liora-gallery/src/demos/date_time_picker_demo.rs`.
   - Registered `DateTimePicker 日期时间选择器` in the Gallery demo registry.
   - Demo covers basic selection, custom format, stepped time, hidden seconds, range selection, and disabled state.
 - **Updated memory**:
@@ -999,7 +999,7 @@
 
 ### Verification
 - `cargo check` passed.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - DateTime selection benefits from explicit confirm/cancel because users may need to adjust both a calendar date and multiple time columns before committing the value.
@@ -1011,9 +1011,9 @@
   - Implemented `Upload`, `UploadFile`, `UploadStatus`, and `UploadListType`.
   - Supports button and drag-style upload triggers, text file lists, picture-card lists, progress bars, success/error/uploading/ready states, file size metadata, disabled state, multiple/accept/limit options, and select/remove callbacks.
   - Exposes mutation helpers for host-driven file list updates and internal remove actions.
-  - Added public exports in `crates/aura-components/src/lib.rs`.
+  - Added public exports in `crates/liora-components/src/lib.rs`.
 - **Added Gallery demo**:
-  - Created `apps/aura-gallery/src/demos/upload_demo.rs`.
+  - Created `apps/liora-gallery/src/demos/upload_demo.rs`.
   - Registered `Upload 上传` in the Gallery demo registry.
   - Demo covers basic list, drag style, picture card list, upload limit, and disabled state.
 - **Updated memory**:
@@ -1022,7 +1022,7 @@
 
 ### Verification
 - `cargo check` passed.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - GPUI does not provide a browser-style file input in this component layer, so `Upload` exposes `on_select` for the host app to bridge a native file picker while the component owns presentation and list interactions.
@@ -1039,7 +1039,7 @@
 
 ### Verification
 - `cargo check` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery; process ended by timeout with no startup crash.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery; process ended by timeout with no startup crash.
 
 ### Key Discoveries
 - Dense time candidate lists read better when each column has an explicit label, a quiet surface, and a high-contrast selected pill instead of flat text rows.
@@ -1058,7 +1058,7 @@
 
 ### Verification
 - `cargo check` passed.
-- `timeout 8s cargo run -p aura-gallery` compiled and launched the gallery; process ended by timeout with no startup crash.
+- `timeout 8s cargo run -p liora-gallery` compiled and launched the gallery; process ended by timeout with no startup crash.
 
 ### Key Discoveries
 - The previous TimePicker popup still used a 260px minimum width while the redesigned three-column panel needed more horizontal space, causing visible overflow.
@@ -1068,14 +1068,14 @@
 
 ### Actions
 - **Added Cascader component**:
-  - Implemented `Cascader` and `CascaderOption` in `crates/aura-components/src/cascader.rs`.
+  - Implemented `Cascader` and `CascaderOption` in `crates/liora-components/src/cascader.rs`.
   - Supports multi-level option columns, default selected paths, disabled/loading options, clearable trigger, search-result rendering via `search_query`, width/placeholder/separator options, and `on_change` callbacks.
   - Added pure path helpers for label resolution and selectable-path validation.
-  - Added public exports in `crates/aura-components/src/lib.rs`.
+  - Added public exports in `crates/liora-components/src/lib.rs`.
 - **Added test coverage**:
-  - Created `crates/aura-components/tests/cascader.rs` for selected-path label resolution and disabled/unknown path rejection.
+  - Created `crates/liora-components/tests/cascader.rs` for selected-path label resolution and disabled/unknown path rejection.
 - **Added Gallery demo**:
-  - Created `apps/aura-gallery/src/demos/cascader_demo.rs`.
+  - Created `apps/liora-gallery/src/demos/cascader_demo.rs`.
   - Registered `Cascader 级联选择器` in the Gallery demo registry.
   - Demo covers basic multi-level selection, default selected path, disabled state, and searchable result panel.
 - **Updated memory**:
@@ -1083,9 +1083,9 @@
   - Added Cascader status to `.memory/inventory.md`.
 
 ### Verification
-- `cargo test -p aura-components --test cascader` passed after an intentional RED failure for missing `Cascader` exports.
+- `cargo test -p liora-components --test cascader` passed after an intentional RED failure for missing `Cascader` exports.
 - `cargo check` passed.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Cascader can reuse the Select portal/bounds pattern while keeping hierarchical option traversal as pure helpers, making the path behavior testable without GPUI rendering.
@@ -1100,10 +1100,10 @@
   - Added regression coverage for stable popup item id generation.
 
 ### Verification
-- `cargo test -p aura-components --test cascader` passed with 3 tests.
+- `cargo test -p liora-components --test cascader` passed with 3 tests.
 - `cargo check` passed.
 - `git diff --check` passed.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Portal popup rows inside scrollable columns need stable element ids for reliable hover/click hit testing, matching the DatePicker/TimePicker item pattern.
@@ -1119,9 +1119,9 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test cascader` passed with 3 tests.
+- `cargo test -p liora-components --test cascader` passed with 3 tests.
 - `git diff --check` passed.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Trigger-level outside-click handlers do not distinguish portal descendants from true outside clicks; dropdown-style portal components should own their backdrop/inside-click propagation policy.
@@ -1136,7 +1136,7 @@
   - Added host update helpers `set_children_at_path(...)` and `set_loading_at_path(...)`, backed by pure option-tree helpers.
   - Updated selection behavior so lazy empty branches trigger `on_lazy_load`, show loading state, keep the popup open, and only select when a leaf is chosen.
 - **Added Gallery usage**:
-  - Extended `apps/aura-gallery/src/demos/cascader_demo.rs` with a `懒加载` section showing `lazy(true)`, `set_on_lazy_load`, and `set_children_at_path`.
+  - Extended `apps/liora-gallery/src/demos/cascader_demo.rs` with a `懒加载` section showing `lazy(true)`, `set_on_lazy_load`, and `set_children_at_path`.
 - **Added tests**:
   - Covered lazy option selectability and installing children into a lazy path.
 - **Updated memory**:
@@ -1144,9 +1144,9 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test cascader` passed with 5 tests.
+- `cargo test -p liora-components --test cascader` passed with 5 tests.
 - `git diff --check` passed.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Lazy Cascader needs an explicit `leaf(true)` marker because an empty child list can mean either a final selectable node or a not-yet-loaded branch.
@@ -1162,9 +1162,9 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test cascader` passed with 5 tests.
+- `cargo test -p liora-components --test cascader` passed with 5 tests.
 - `git diff --check` passed.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - GPUI entities cannot be updated recursively while already leased; component callbacks that may mutate the same component should receive the active mutable component/context rather than requiring callers to re-enter `Entity::update`.
@@ -1174,14 +1174,14 @@
 
 ### Actions
 - **Added Transfer component**:
-  - Implemented `Transfer` and `TransferItem` in `crates/aura-components/src/transfer.rs`.
+  - Implemented `Transfer` and `TransferItem` in `crates/liora-components/src/transfer.rs`.
   - Supports source/target panels, checked item movement, disabled items, target key ordering, optional filter display, custom titles/sizing, and `on_change` callbacks.
-  - Added public exports in `crates/aura-components/src/lib.rs`.
+  - Added public exports in `crates/liora-components/src/lib.rs`.
 - **Added test coverage**:
-  - Created `crates/aura-components/tests/transfer.rs`.
+  - Created `crates/liora-components/tests/transfer.rs`.
   - Covered moving checked source items, moving checked target items back, disabled item preservation, and filtering by key/label/description.
 - **Added Gallery demo**:
-  - Created `apps/aura-gallery/src/demos/transfer_demo.rs`.
+  - Created `apps/liora-gallery/src/demos/transfer_demo.rs`.
   - Registered `Transfer 穿梭框` in the Gallery demo registry.
   - Demo covers basic movement, filtered display, and disabled target items.
 - **Updated memory**:
@@ -1190,9 +1190,9 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test transfer` passed with 3 tests.
+- `cargo test -p liora-components --test transfer` passed with 3 tests.
 - `git diff --check` passed.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Transfer needs to be a stateful `Render` component, not `RenderOnce`, because item checking and move actions mutate internal selected-key state before emitting changed target keys.
@@ -1207,10 +1207,10 @@
   - Added regression tests for source→target and target→source checked-state handoff.
 
 ### Verification
-- `cargo test -p aura-components --test transfer` passed with 5 tests.
+- `cargo test -p liora-components --test transfer` passed with 5 tests.
 - `cargo check` passed.
 - `git diff --check` passed.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Transfer should preserve user intent across side changes by transferring checked state with moved items instead of clearing all destination checks.
@@ -1225,13 +1225,13 @@
   - Added `Upload::file_count` and `Upload::can_accept_more_len` helpers.
   - Extended the Upload demo so clicking the button/drag/picture-card triggers adds a simulated file via `on_select`.
 - **Added tests**:
-  - Created `crates/aura-components/tests/upload.rs` for accept/limit checks and progress clamping.
+  - Created `crates/liora-components/tests/upload.rs` for accept/limit checks and progress clamping.
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test upload` passed with 2 tests.
+- `cargo test -p liora-components --test upload` passed with 2 tests.
 - `git diff --check` passed.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Upload demo previously exposed an empty select callback path, so clicking appeared broken. Same-component mutation callbacks should pass the active component/context directly to avoid GPUI double-lease risks.
@@ -1251,29 +1251,29 @@
   - Replaced simulated selection with real file picker usage.
   - Added accept/max-size examples for basic, drag, picture-card, and limited uploads.
 - **Added tests**:
-  - Expanded `crates/aura-components/tests/upload.rs` to cover accept matching and max-size rejection.
+  - Expanded `crates/liora-components/tests/upload.rs` to cover accept matching and max-size rejection.
 
 ### Verification
-- `cargo test -p aura-components --test upload` passed with 4 tests.
+- `cargo test -p liora-components --test upload` passed with 4 tests.
 - `cargo check` passed.
 - `git diff --check` passed.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
-- GPUI 0.2.2 exposes `prompt_for_paths` for file picking but its `PathPromptOptions` does not include native accept/type filters, so Aura validates accepted type and size after selection.
+- GPUI 0.2.2 exposes `prompt_for_paths` for file picking but its `PathPromptOptions` does not include native accept/type filters, so Liora validates accepted type and size after selection.
 
 
 ## Session 79 — 2026-05-10 (P5 ColorPicker)
 
 ### Actions
 - **Added ColorPicker component**:
-  - Implemented `ColorPicker` in `crates/aura-components/src/color_picker.rs`.
+  - Implemented `ColorPicker` in `crates/liora-components/src/color_picker.rs`.
   - Supports HEX normalization, RGB conversion helper, preset swatches, custom presets, disabled state, optional label display, sizing, and `on_change` callbacks.
-  - Added public exports in `crates/aura-components/src/lib.rs`.
+  - Added public exports in `crates/liora-components/src/lib.rs`.
 - **Added test coverage**:
-  - Created `crates/aura-components/tests/color_picker.rs` for HEX normalization, invalid color rejection, and RGB conversion.
+  - Created `crates/liora-components/tests/color_picker.rs` for HEX normalization, invalid color rejection, and RGB conversion.
 - **Added Gallery demo**:
-  - Created `apps/aura-gallery/src/demos/color_picker_demo.rs`.
+  - Created `apps/liora-gallery/src/demos/color_picker_demo.rs`.
   - Registered `ColorPicker 颜色选择器` in the Gallery demo registry.
   - Demo covers basic use, custom presets, hidden label, and disabled state.
 - **Updated memory**:
@@ -1282,9 +1282,9 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test color_picker` passed with 3 tests.
+- `cargo test -p liora-components --test color_picker` passed with 3 tests.
 - `git diff --check` passed.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - A preset-swatch ColorPicker can keep color parsing testable by exposing pure HEX normalization/RGB helpers while leaving richer custom color input for a future enhancement.
@@ -1306,9 +1306,9 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test color_picker` passed with 4 tests.
+- `cargo test -p liora-components --test color_picker` passed with 4 tests.
 - `git diff --check` passed.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - GPUI does not expose a CSS-style gradient background helper in this version, so the ColorPicker popup uses a dense rainbow swatch matrix to approximate a colorful gradient panel while preserving reliable hit testing.
@@ -1331,7 +1331,7 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test color_picker` passed with 6 tests.
+- `cargo test -p liora-components --test color_picker` passed with 6 tests.
 - `git diff --check` passed.
 
 ### Key Discoveries
@@ -1351,9 +1351,9 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test color_picker` passed with 7 tests.
+- `cargo test -p liora-components --test color_picker` passed with 7 tests.
 - `git diff --check` passed.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Alpha previously only affected the text/alpha bar, not the rendered picker swatch or SV panel; applying opacity at render points makes the demo visibly respond to alpha changes.
@@ -1367,9 +1367,9 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test color_picker` passed with 7 tests.
+- `cargo test -p liora-components --test color_picker` passed with 7 tests.
 - `git diff --check` passed.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Applying alpha to the SV grid made alpha changes visually alter the color-selection surface itself; the selection surface should remain an opaque source of color values while alpha is edited independently.
@@ -1383,9 +1383,9 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test color_picker` passed with 7 tests.
+- `cargo test -p liora-components --test color_picker` passed with 7 tests.
 - `git diff --check` passed.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - The visible stall came from tens of thousands of GPUI elements/listeners for a 1px grid; painting quads from one custom element keeps the 1px visual density while avoiding 50k child elements.
@@ -1399,9 +1399,9 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test color_picker` passed with 7 tests.
+- `cargo test -p liora-components --test color_picker` passed with 7 tests.
 - `git diff --check` passed.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - The second stall came from painting tens of thousands of quads each frame; cached raster surfaces keep the 1px appearance and selection accuracy without rebuilding scene geometry on every popup/click.
@@ -1414,9 +1414,9 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test color_picker` passed with 7 tests.
+- `cargo test -p liora-components --test color_picker` passed with 7 tests.
 - `git diff --check` passed.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - `RenderImage` data is expected in BGRA order; generating RGBA bytes made the rasterized panel display a different color than the HSV value selected by clicking it.
@@ -1429,9 +1429,9 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test color_picker` passed with 7 tests.
+- `cargo test -p liora-components --test color_picker` passed with 7 tests.
 - `git diff --check` passed.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - The trigger already had a full-size bounds-capture overlay; the icon can use a separate absolute full-size flex overlay to center without affecting click handling.
@@ -1447,17 +1447,17 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test image` passed with 3 tests.
+- `cargo test -p liora-components --test image` passed with 3 tests.
 - `git diff --check` passed.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
-- GPUI `img` already provides object-fit, loading, and fallback hooks, so Aura Image can wrap that API with Element-style defaults and gallery-friendly states.
+- GPUI `img` already provides object-fit, loading, and fallback hooks, so Liora Image can wrap that API with Element-style defaults and gallery-friendly states.
 
 ## Session 89 — 2026-05-10 (Image Remote URL and Local File Sources)
 
 ### Actions
-- Copied `~/Downloads/local.jpeg` into `apps/aura-gallery/assets/local.jpeg` for the Image demo workspace.
+- Copied `~/Downloads/local.jpeg` into `apps/liora-gallery/assets/local.jpeg` for the Image demo workspace.
 - Added first-class `ImageSource` support for remote URL strings and local filesystem paths.
 - Added `Image::local(...)` / `Image::file(...)` builders and source inspection helpers.
 - Updated the Image demo to show the provided Element remote URL and the copied local image asset.
@@ -1465,12 +1465,12 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test image` passed with 5 tests.
+- `cargo test -p liora-components --test image` passed with 5 tests.
 - `git diff --check` passed.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
-- GPUI `img` treats strings as URI/embedded resources, while filesystem images should be passed as `PathBuf`; Aura Image now preserves that distinction instead of forcing all sources through `SharedString`.
+- GPUI `img` treats strings as URI/embedded resources, while filesystem images should be passed as `PathBuf`; Liora Image now preserves that distinction instead of forcing all sources through `SharedString`.
 
 ## Session 90 — 2026-05-10 (Image Demo Local Asset Absolute Path)
 
@@ -1480,9 +1480,9 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test image` passed with 5 tests.
+- `cargo test -p liora-components --test image` passed with 5 tests.
 - `git diff --check` passed after reverting unrelated local formatting noise.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - GPUI `img(PathBuf)` resolves filesystem paths literally; a workspace-relative string can fail when the gallery binary runs with a different cwd, so demo assets should use the gallery crate manifest directory.
@@ -1498,12 +1498,12 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test image` passed with 6 tests.
+- `cargo test -p liora-components --test image` passed with 6 tests.
 - `git diff --check` passed after trimming trailing whitespace in the user-updated P7 prompt.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
-- Absolute local paths were correct, but relying on GPUI's path-resource async image branch still did not render in the demo. Directly decoding local files to `RenderImage` makes local image display deterministic for Aura Image.
+- Absolute local paths were correct, but relying on GPUI's path-resource async image branch still did not render in the demo. Directly decoding local files to `RenderImage` makes local image display deterministic for Liora Image.
 
 
 ## Session 92 — 2026-05-10 (Image Local Custom Painter)
@@ -1515,9 +1515,9 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test image` passed with 6 tests.
+- `cargo test -p liora-components --test image` passed with 6 tests.
 - `git diff --check` passed.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process exited successfully in this run.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process exited successfully in this run.
 
 ### Key Discoveries
 - Local file decoding and asset-path existence were both verified, so the remaining blank local display path is the local RenderImage handoff through `gpui::img`; direct `paint_image` is the narrower rendering path.
@@ -1532,9 +1532,9 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test image` passed with 7 tests.
+- `cargo test -p liora-components --test image` passed with 7 tests.
 - `git diff --check` passed.
-- `timeout 20s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 20s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - The file existed and decoded, so the remaining risks were source classification ambiguity and the custom local painter not filling the visual frame. The demo now exercises the same file-protocol API users should call.
@@ -1544,14 +1544,14 @@
 
 ### Actions
 - Interpreted the screenshot: the local deer image is visible, while remote URL slots are falling back.
-- Added a cached direct remote URL decode path for Aura Image using `ureq`, sharing the same raster painter as local files.
+- Added a cached direct remote URL decode path for Liora Image using `ureq`, sharing the same raster painter as local files.
 - Kept source classification: `file://` and `Image::local` use filesystem decode; `https://` URLs use cached URL decode before falling back.
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test image` passed with 7 tests.
+- `cargo test -p liora-components --test image` passed with 7 tests.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - The provided screenshot shows the local asset rendering in the middle Image slots; the real remaining failure is GPUI's async remote URL branch falling back for the Element CDN URL.
@@ -1561,14 +1561,14 @@
 
 ### Actions
 - Removed blocking remote URL fetch from Image render path; remote images now load on a background thread and request animation frames while pending.
-- Added a persistent preview popup for Image preview mode using the loaded raster, Aura portal layer, and gallery-level preview renderer.
+- Added a persistent preview popup for Image preview mode using the loaded raster, Liora portal layer, and gallery-level preview renderer.
 - Passed component radius into raster image painting so round/circle images clip through `Window::paint_image` instead of only rounding the outer frame.
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test image` passed with 7 tests.
+- `cargo test -p liora-components --test image` passed with 7 tests.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Direct synchronous URL decoding fixed remote display but made selecting the Image demo stall; remote decoding must not happen on the render path.
@@ -1583,9 +1583,9 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test image` passed: 7 tests.
+- `cargo test -p liora-components --test image` passed: 7 tests.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; timeout stopped the running GUI smoke test.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; timeout stopped the running GUI smoke test.
 
 ### Key Discoveries
 - Remote loading should signal the window directly when complete; relying only on animation-frame polling can make the ready image appear late. The circle demo was using a remote source, so remote latency made it look like circle rendering was broken.
@@ -1598,9 +1598,9 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test image` passed: 7 tests.
+- `cargo test -p liora-components --test image` passed: 7 tests.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; timeout stopped the running GUI smoke test.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; timeout stopped the running GUI smoke test.
 
 ### Key Discoveries
 - The circle image path uses the custom raster painter, not GPUI's `img` element. GPUI's `img` clamps corner radii before painting; the custom painter was passing the sentinel round radius directly. After clamping, cover-cropped images could still look rounded because the painted image bounds can be wider than the visible square, so round radius must be based on the visible container bounds.
@@ -1614,9 +1614,9 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test image` passed: 7 tests.
+- `cargo test -p liora-components --test image` passed: 7 tests.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; timeout stopped the running GUI smoke test.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; timeout stopped the running GUI smoke test.
 
 ### Key Discoveries
 - Painting a rectangular cover-fitted raster with large radii still produces a rounded rectangle because the rounded rectangle is computed against the expanded cover bounds. A true circle requires a square paint target and square source crop.
@@ -1630,11 +1630,11 @@
 - Updated the Image demo with Circle, Round bounds, and Ring sleeve examples.
 
 ### Verification
-- Red test first: `cargo test -p aura-components --test image image_supports` failed before the new API existed.
+- Red test first: `cargo test -p liora-components --test image image_supports` failed before the new API existed.
 - `cargo check` passed.
-- `cargo test -p aura-components --test image` passed: 9 tests.
+- `cargo test -p liora-components --test image` passed: 9 tests.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; timeout stopped the running GUI smoke test.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; timeout stopped the running GUI smoke test.
 
 ### Key Discoveries
 - The ring sleeve should be a transparent-background paint overlay with only border pixels, so the image remains visible through the center of the circular sleeve.
@@ -1648,9 +1648,9 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test image` passed: 9 tests.
+- `cargo test -p liora-components --test image` passed: 9 tests.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; timeout stopped the running GUI smoke test.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; timeout stopped the running GUI smoke test.
 
 ### Key Discoveries
 - `Round bounds` looked like `Circle` because the custom raster painter forced all round rendering through square bounds. The no-square-crop option needs to preserve the container bounds and only apply half-short-side radii.
@@ -1665,10 +1665,10 @@
 - Marked Calendar, TreeSelect, InputTag, Mention, Watermark, Tour, and VirtualizedTable/VirtualizedTree as deferred/identified for later per user request.
 
 ### Verification
-- `cargo test -p aura-components` passed.
+- `cargo test -p liora-components` passed.
 - `cargo check` passed.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; timeout stopped the running GUI smoke test.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; timeout stopped the running GUI smoke test.
 
 ### Key Discoveries
 - Autocomplete can reuse the existing `Input` entity safely when text-change observation is exposed by `Input`, avoiding a second text-editing implementation.
@@ -1683,10 +1683,10 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test autocomplete` passed: 4 tests.
-- `cargo test -p aura-components` passed.
+- `cargo test -p liora-components --test autocomplete` passed: 4 tests.
+- `cargo test -p liora-components` passed.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; timeout stopped the running GUI smoke test.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; timeout stopped the running GUI smoke test.
 
 ### Key Discoveries
 - Input already has a centered clear icon that is hidden while empty, so Autocomplete should configure/reuse it instead of painting a second absolute clear icon.
@@ -1700,9 +1700,9 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components` passed.
+- `cargo test -p liora-components` passed.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; timeout stopped the running GUI smoke test.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; timeout stopped the running GUI smoke test.
 
 ### Key Discoveries
 - Clear was using mouse-up without propagation control; in composed input wrappers that also listen to mouse-down, the interaction could focus/open instead of clearing reliably.
@@ -1717,10 +1717,10 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test autocomplete` passed: 4 tests.
-- `cargo test -p aura-components` passed.
+- `cargo test -p liora-components --test autocomplete` passed: 4 tests.
+- `cargo test -p liora-components` passed.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; timeout stopped the running GUI smoke test.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; timeout stopped the running GUI smoke test.
 
 ### Key Discoveries
 - Autocomplete's absolute bounds-capture child was rendered above the Input child, blocking Input's own clear icon interactions. Reordering the capture child behind Input preserves composition and lets Input own clear behavior.
@@ -1735,10 +1735,10 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test autocomplete` passed: 4 tests.
-- `cargo test -p aura-components` passed.
+- `cargo test -p liora-components --test autocomplete` passed: 4 tests.
+- `cargo test -p liora-components` passed.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; timeout stopped the running GUI smoke test.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; timeout stopped the running GUI smoke test.
 
 ### Key Discoveries
 - Input's clear icon already works by itself. In Autocomplete, the remaining blocker was the Autocomplete wrapper registering its own full-width mouse handler over the same interaction area, competing with the composed Input's inner controls.
@@ -1752,10 +1752,10 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test autocomplete` passed: 4 tests.
-- `cargo test -p aura-components` passed.
+- `cargo test -p liora-components --test autocomplete` passed: 4 tests.
+- `cargo test -p liora-components` passed.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; timeout stopped the running GUI smoke test.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; timeout stopped the running GUI smoke test.
 
 ### Key Discoveries
 - Even outside-click listeners add a wrapper hitbox/listener to the same composed region. For Autocomplete, the input wrapper must not register mouse handlers over the Input if Input child controls (clear) need hover/click priority.
@@ -1770,10 +1770,10 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test autocomplete` passed: 4 tests.
-- `cargo test -p aura-components` passed.
+- `cargo test -p liora-components --test autocomplete` passed: 4 tests.
+- `cargo test -p liora-components` passed.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; timeout stopped the running GUI smoke test.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; timeout stopped the running GUI smoke test.
 
 ### Key Discoveries
 - The safe event split is: Input owns clear on mouse-down; popup panel owns outside dismissal. The Autocomplete input wrapper should remain non-interactive over the Input region.
@@ -1804,9 +1804,9 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components` passed: 37 tests total across component/unit/integration suites.
+- `cargo test -p liora-components` passed: 37 tests total across component/unit/integration suites.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - The reference maps best to an opt-in segmented button layout, not a replacement of the existing radio-circle / checkbox-row defaults.
@@ -1822,9 +1822,9 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components` passed.
+- `cargo test -p liora-components` passed.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - This behavior matches the existing Tabs `stretch(true)` pattern and Segmented `block(true)` width semantics: default content width, opt-in full parent width with equal option widths.
@@ -1837,9 +1837,9 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components --test group_layout` passed.
+- `cargo test -p liora-components --test group_layout` passed.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Root cause: the Form demo places groups inside a flex-column parent whose default cross-axis alignment stretches child flex items. The group itself needed `self_start()` when not stretched; width auto alone was not enough.
@@ -1853,9 +1853,9 @@
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-gallery` passed.
+- `cargo test -p liora-gallery` passed.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - The safest extraction path is additive: standalone component demos can duplicate the existing usage examples while leaving `FormDemo` as the form-layout integration reference.
@@ -1864,15 +1864,15 @@
 ## Session 113 — 2026-05-10 (P6 Built-in Unique IDs)
 
 ### Actions
-- Added `aura_core::next_unique_id()` and `aura_core::unique_id(prefix)` backed by a process-wide `AtomicU64`.
+- Added `liora_core::next_unique_id()` and `liora_core::unique_id(prefix)` backed by a process-wide `AtomicU64`.
 - Replaced call-site/render-site derived default IDs in interactive components with runtime unique, component-prefixed IDs.
 - Added/retained `.id(...)` override APIs for migrated components including Alert, Breadcrumb, Collapse, Link, PageHeader, Scrollbar, Tag, and Tree.
 - Prefixed internal child IDs with each component root ID for migrated controls, including Dropdown items, Cascader search results, Tag close buttons, Tree node sub-elements, and Scrollbar viewport.
 - Advanced project state from P6 to P7 pending.
 
 ### Verification
-- `cargo test -p aura-core unique_id_tests::generated_ids_are_prefixed_and_unique` passed.
-- `cargo test -p aura-components` passed.
+- `cargo test -p liora-core unique_id_tests::generated_ids_are_prefixed_and_unique` passed.
+- `cargo test -p liora-components` passed.
 - `cargo check` passed with 0 warnings.
 - `git diff --check` passed.
 
@@ -1886,16 +1886,16 @@
 ### Actions
 - Root-caused the interaction regression introduced by P6: several `RenderOnce` components were assigning fresh atomic IDs during each render, which changes GPUI `ElementId`s across frames and breaks hover/click/portal state.
 - Restored cross-frame stable IDs for transient `RenderOnce` controls including Button, Link, Tooltip, Popover, Popconfirm, Tag, Tree child elements, Alert, PageHeader, Scrollbar, and related demo controls.
-- Added `aura_core::stable_unique_id(...)`, which stores a generated ID in GPUI keyed element state so render-path components can get a globally unique ID without changing it every frame.
-- Kept `aura_core::unique_id(prefix)` for persistent component/entity construction where the ID is assigned once and then remains stable.
+- Added `liora_core::stable_unique_id(...)`, which stores a generated ID in GPUI keyed element state so render-path components can get a globally unique ID without changing it every frame.
+- Kept `liora_core::unique_id(prefix)` for persistent component/entity construction where the ID is assigned once and then remains stable.
 - Updated `unique_id` documentation to explicitly forbid direct per-frame allocation.
 
 ### Verification
 - `cargo check` passed.
-- `cargo test -p aura-components` passed.
-- `cargo test -p aura-core unique_id_tests::generated_ids_are_prefixed_and_unique` passed.
+- `cargo test -p liora-components` passed.
+- `cargo test -p liora-core unique_id_tests::generated_ids_are_prefixed_and_unique` passed.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - GPUI `ElementId` must be globally unique enough for the rendered tree and stable across frames for the same visual element.
@@ -1915,10 +1915,10 @@
 ### Verification
 - `cargo fmt --all` passed.
 - `cargo check` passed.
-- `cargo test -p aura-components` passed.
-- `cargo test -p aura-core unique_id_tests::generated_ids_are_prefixed_and_unique` passed.
+- `cargo test -p liora-components` passed.
+- `cargo test -p liora-core unique_id_tests::generated_ids_are_prefixed_and_unique` passed.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Passive/non-modal overlays must not use the active `Portal` layer because `PortalLayer` intentionally occludes the full window whenever active portals exist.
@@ -1936,10 +1936,10 @@
 
 ### Verification
 - `cargo fmt --all` passed.
-- `cargo test -p aura-components` passed.
-- `cargo test -p aura-core unique_id_tests::generated_ids_are_prefixed_and_unique` passed.
+- `cargo test -p liora-components` passed.
+- `cargo test -p liora-core unique_id_tests::generated_ids_are_prefixed_and_unique` passed.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Menu popover close must clear the trigger popover id, not a child item id-derived string.
@@ -1965,10 +1965,10 @@
 
 ### Verification
 - `cargo fmt --all` passed.
-- `cargo test -p aura-components` passed.
+- `cargo test -p liora-components` passed.
 - `cargo check` passed.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - GPUI `linear_gradient` currently accepts two stops, so arbitrary multi-color gradients are best represented as equal-width adjacent two-stop segments until a multi-stop background API exists.
@@ -1978,18 +1978,18 @@
 ### Actions
 - Extracted Image preview behavior into a standalone `Preview` component with image URL/file source builders and arbitrary trigger content.
 - Kept `Image::preview(true)` behavior and hover styling intact by delegating click/overlay behavior to `Preview` while preserving the Image frame styling.
-- Moved the shared preview portal/global state to the new Preview module and kept `aura_components::image::render_image_preview` as a compatibility re-export.
+- Moved the shared preview portal/global state to the new Preview module and kept `liora_components::image::render_image_preview` as a compatibility re-export.
 - Added a Gallery `Preview 预览` demo entry showing image and custom-card triggers.
 - Added regression tests for the new Preview builder and existing Image preview flag behavior.
 
 ### Verification
-- Wrote failing tests first: `cargo test -p aura-components --test image` failed because `Preview` and `Image::preview_enabled` did not exist.
+- Wrote failing tests first: `cargo test -p liora-components --test image` failed because `Preview` and `Image::preview_enabled` did not exist.
 - `cargo fmt --all` passed.
-- `cargo test -p aura-components --test image` passed.
-- `cargo test -p aura-components` passed.
+- `cargo test -p liora-components --test image` passed.
+- `cargo test -p liora-components` passed.
 - `cargo check` passed.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - The preview overlay can be separated cleanly from Image rendering by sharing the existing `RasterImageElement` and image-loading helpers within the crate.
@@ -2013,26 +2013,26 @@
 ### Actions
 - Started P7 Demo Self-Contained work.
 - Locked Gallery demo ordering with a regression test and sorted `registry()` by component name ascending at runtime.
-- Migrated `button_demo.rs` away from direct GPUI layout primitives by using Aura `Space` and `Title`.
-- Added small Aura API helpers needed for demo self-containment: `Space::wrap`, semantic gap helpers, and Button rounded convenience builders.
+- Migrated `button_demo.rs` away from direct GPUI layout primitives by using Liora `Space` and `Title`.
+- Added small Liora API helpers needed for demo self-containment: `Space::wrap`, semantic gap helpers, and Button rounded convenience builders.
 - Added tests for the new ordering rule, Button demo primitive ban, Space wrap builder, and Button rounded helpers.
 
 ### Verification
 - Confirmed the new registry-order test failed before implementation.
 - Confirmed the Button demo primitive-ban test failed before migration.
 - `cargo fmt --all` passed.
-- `cargo test -p aura-gallery registry_entries_are_sorted_by_component_name` passed.
-- `cargo test -p aura-gallery button_demo_uses_aura_layout_primitives` passed.
-- `cargo test -p aura-components space_wrap_builder_tracks_state` passed.
-- `cargo test -p aura-components button_rounded_helpers_set_custom_radius` passed.
-- `cargo test -p aura-components` passed.
-- `cargo test -p aura-gallery` passed.
+- `cargo test -p liora-gallery registry_entries_are_sorted_by_component_name` passed.
+- `cargo test -p liora-gallery button_demo_uses_liora_layout_primitives` passed.
+- `cargo test -p liora-components space_wrap_builder_tracks_state` passed.
+- `cargo test -p liora-components button_rounded_helpers_set_custom_radius` passed.
+- `cargo test -p liora-components` passed.
+- `cargo test -p liora-gallery` passed.
 - `cargo check` passed.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
-- P7 needs a few small semantic builder helpers in existing Aura components before demos can stop using GPUI primitives cleanly.
+- P7 needs a few small semantic builder helpers in existing Liora components before demos can stop using GPUI primitives cleanly.
 - Sorting the registry at return time enforces the ASC requirement without risky manual reorder churn.
 
 ## Session 122 — 2026-05-10 (P7 Link Demo Migration)
@@ -2040,16 +2040,16 @@
 ### Actions
 - Added a reusable Gallery test helper that bans direct demo usage of `div(`, `px(`, and low-level flex method chains for migrated demo files.
 - Added and confirmed a failing self-contained test for `link_demo.rs` before migration.
-- Migrated `link_demo.rs` to use Aura `Space` and `Title` for layout/section headings instead of GPUI primitives.
+- Migrated `link_demo.rs` to use Liora `Space` and `Title` for layout/section headings instead of GPUI primitives.
 
 ### Verification
-- `cargo test -p aura-gallery link_demo_uses_aura_layout_primitives` failed before migration and passed after migration.
-- `cargo test -p aura-gallery button_demo_uses_aura_layout_primitives` passed.
-- `cargo test -p aura-gallery registry_entries_are_sorted_by_component_name` passed.
-- `cargo test -p aura-gallery` passed.
+- `cargo test -p liora-gallery link_demo_uses_liora_layout_primitives` failed before migration and passed after migration.
+- `cargo test -p liora-gallery button_demo_uses_liora_layout_primitives` passed.
+- `cargo test -p liora-gallery registry_entries_are_sorted_by_component_name` passed.
+- `cargo test -p liora-gallery` passed.
 - `cargo check` passed.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - The same `Space` + `Title` pattern used for Button demo cleanly covers Link demo without adding new component API.
@@ -2057,53 +2057,53 @@
 ## Session 123 — 2026-05-10 (P7 Feedback Demo Batch)
 
 ### Actions
-- Added `apps/aura-gallery/src/demos/common.rs` with Aura-only demo helpers: `page`, `section`, `header`, `row`, and `row_md`.
+- Added `apps/liora-gallery/src/demos/common.rs` with Liora-only demo helpers: `page`, `section`, `header`, `row`, and `row_md`.
 - Added a batch self-contained guard test for feedback demos and confirmed it failed before migration.
 - Migrated `dropdown_demo.rs`, `loading_demo.rs`, `message_box_demo.rs`, `message_demo.rs`, and `notification_demo.rs` away from direct demo-level `div(`, `px(`, and low-level flex primitives.
 
 ### Verification
-- `cargo test -p aura-gallery feedback_demos_use_aura_layout_primitives` failed before migration and passed after migration.
-- `cargo test -p aura-gallery` passed.
+- `cargo test -p liora-gallery feedback_demos_use_liora_layout_primitives` failed before migration and passed after migration.
+- `cargo test -p liora-gallery` passed.
 - `cargo check` passed.
 - `git diff --check` passed.
 - Confirmed migrated Button/Link/feedback demo files have zero occurrences of `div(`, `px(`, `.flex()`, `.flex_col()`, `.flex_row()`.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
-- A shared Aura-only demo helper allows multiple feedback demos to migrate without adding new production component APIs.
+- A shared Liora-only demo helper allows multiple feedback demos to migrate without adding new production component APIs.
 
 ## Session 124 — 2026-05-10 (P7 Display Demo Batch)
 
 ### Actions
 - Added and confirmed a failing self-contained guard test for display demos before migration.
-- Migrated `alert_demo.rs`, `empty_demo.rs`, `result_demo.rs`, `segmented_demo.rs`, `statistic_demo.rs`, and `tree_demo.rs` to Aura/common demo helpers.
+- Migrated `alert_demo.rs`, `empty_demo.rs`, `result_demo.rs`, `segmented_demo.rs`, `statistic_demo.rs`, and `tree_demo.rs` to Liora/common demo helpers.
 - Removed direct demo-level `div(`, `px(`, and low-level flex primitives from that batch.
 
 ### Verification
-- `cargo test -p aura-gallery display_demos_use_aura_layout_primitives` failed before migration and passed after migration.
-- `cargo test -p aura-gallery` passed.
+- `cargo test -p liora-gallery display_demos_use_liora_layout_primitives` failed before migration and passed after migration.
+- `cargo test -p liora-gallery` passed.
 - `cargo check` passed.
 - `git diff --check` passed.
 - Confirmed migrated display demo files have zero occurrences of `div(`, `px(`, `.flex()`, `.flex_col()`, `.flex_row()`.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
-- Several display demos can be significantly reduced by composing `page`, `section`, `row`, `Space`, and existing Aura presentation components.
+- Several display demos can be significantly reduced by composing `page`, `section`, `row`, `Space`, and existing Liora presentation components.
 
 ## Session 125 — 2026-05-10 (P7 Interaction Demo Batch)
 
 ### Actions
 - Added and confirmed a failing self-contained guard test for interaction demos before migration.
-- Migrated `pagination_demo.rs`, `popconfirm_demo.rs`, and `tooltip_demo.rs` to Aura/common demo helpers.
+- Migrated `pagination_demo.rs`, `popconfirm_demo.rs`, and `tooltip_demo.rs` to Liora/common demo helpers.
 - Removed direct demo-level `div(`, `px(`, and low-level flex primitives from that batch.
 
 ### Verification
-- `cargo test -p aura-gallery interaction_demos_use_aura_layout_primitives` failed before migration and passed after migration.
-- `cargo test -p aura-gallery` passed.
+- `cargo test -p liora-gallery interaction_demos_use_liora_layout_primitives` failed before migration and passed after migration.
+- `cargo test -p liora-gallery` passed.
 - `cargo check` passed.
 - `git diff --check` passed.
 - Confirmed migrated interaction demo files have zero occurrences of `div(`, `px(`, `.flex()`, `.flex_col()`, `.flex_row()`.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - The common `page`/`section`/`row` helpers cover Popper-style demo pages without needing new production APIs.
@@ -2113,18 +2113,18 @@
 ### Actions
 - Added and confirmed a failing self-contained guard test for `progress_demo.rs` and `typography_demo.rs` before migration.
 - Migrated Progress demo to `page`/`section`/`Space` helpers and added `Progress::thick()` / `Progress::primary()` semantic builders to avoid demo-level `px()` and raw GPUI colors.
-- Migrated Typography demo to shared helpers and Aura text/layout components, removing direct demo-level GPUI layout primitives.
+- Migrated Typography demo to shared helpers and Liora text/layout components, removing direct demo-level GPUI layout primitives.
 - Added a unit test for `Progress::thick()`.
 
 ### Verification
-- `cargo test -p aura-gallery typography_and_progress_demos_use_aura_layout_primitives` failed before migration and passed after migration.
-- `cargo test -p aura-components progress_thick_sets_stroke_width` passed.
-- `cargo test -p aura-components` passed.
-- `cargo test -p aura-gallery` passed.
+- `cargo test -p liora-gallery typography_and_progress_demos_use_liora_layout_primitives` failed before migration and passed after migration.
+- `cargo test -p liora-components progress_thick_sets_stroke_width` passed.
+- `cargo test -p liora-components` passed.
+- `cargo test -p liora-gallery` passed.
 - `cargo check` passed.
 - `git diff --check` passed.
 - Confirmed Progress/Typography demo files have zero occurrences of `div(`, `px(`, `.flex()`, `.flex_col()`, `.flex_row()`.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Progress needed small semantic builders to keep the demo expressive without reaching for low-level pixel/color primitives.
@@ -2133,18 +2133,18 @@
 
 ### Actions
 - Added and confirmed a failing self-contained guard test for `breadcrumb_demo.rs`, `collapse_demo.rs`, and `steps_demo.rs` before migration.
-- Migrated Breadcrumb, Collapse, and Steps demos to `page`/`section`/`Space` helpers and existing Aura components.
-- Replaced Collapse item content demo-level `div()` wrappers with Aura `Text` content.
+- Migrated Breadcrumb, Collapse, and Steps demos to `page`/`section`/`Space` helpers and existing Liora components.
+- Replaced Collapse item content demo-level `div()` wrappers with Liora `Text` content.
 - Removed the Steps vertical example's demo-level fixed-height GPUI wrapper so the demo no longer reaches for `px()`.
 
 ### Verification
-- `cargo test -p aura-gallery demos::tests::navigation_demos_use_aura_layout_primitives -- --exact` failed before migration and passed after migration.
-- `cargo test -p aura-gallery` passed.
+- `cargo test -p liora-gallery demos::tests::navigation_demos_use_liora_layout_primitives -- --exact` failed before migration and passed after migration.
+- `cargo test -p liora-gallery` passed.
 - `cargo check` passed.
-- `cargo test -p aura-components` passed.
+- `cargo test -p liora-components` passed.
 - `git diff --check` passed.
 - Confirmed Breadcrumb/Collapse/Steps demo files have zero occurrences of `div(`, `px(`, `.flex()`, `.flex_col()`, `.flex_row()`.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Navigation/structure demos can be expressed with the existing common helper stack without adding new production component APIs.
@@ -2153,7 +2153,7 @@
 
 ### Actions
 - Added and confirmed a failing self-contained guard test for ColorPicker, DatePicker, DateTimePicker, TimePicker, and Upload demos before migration.
-- Migrated those input picker/upload demos to `page`/`section`/`Space` and existing Aura components.
+- Migrated those input picker/upload demos to `page`/`section`/`Space` and existing Liora components.
 - Added semantic demo-width helpers so demos no longer need direct `px()` for common picker/upload widths:
   - `ColorPicker::width_md()`
   - `DatePicker::width_md()` / `DatePicker::width_lg()`
@@ -2163,14 +2163,14 @@
 - Added unit coverage for the new width helpers.
 
 ### Verification
-- `cargo test -p aura-gallery demos::tests::input_picker_demos_use_aura_layout_primitives -- --exact` failed before migration and passed after migration.
-- `cargo test -p aura-components width_` passed the new helper tests.
-- `cargo test -p aura-gallery` passed.
+- `cargo test -p liora-gallery demos::tests::input_picker_demos_use_liora_layout_primitives -- --exact` failed before migration and passed after migration.
+- `cargo test -p liora-components width_` passed the new helper tests.
+- `cargo test -p liora-gallery` passed.
 - `cargo check` passed.
-- `cargo test -p aura-components` passed.
+- `cargo test -p liora-components` passed.
 - `git diff --check` passed.
 - Confirmed ColorPicker/DatePicker/DateTimePicker/TimePicker/Upload demo files have zero occurrences of `div(`, `px(`, `.flex()`, `.flex_col()`, `.flex_row()`.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Picker demos are blocked mostly by repeated literal widths; narrow semantic width helpers keep demos self-contained without changing component behavior.
@@ -2179,19 +2179,19 @@
 
 ### Actions
 - Added and confirmed a failing self-contained guard test for Avatar, Badge, Descriptions, and Timeline demos before migration.
-- Migrated those demos to shared `page`/`section`/`row`/`Space` helpers and existing Aura components.
+- Migrated those demos to shared `page`/`section`/`row`/`Space` helpers and existing Liora components.
 - Added `TimelineTone` plus semantic `TimelineItem::{primary,success,warning,danger,info}` helpers so timeline demos can avoid reaching into theme/raw GPUI colors.
 - Added unit coverage for Timeline tone helper precedence.
 
 ### Verification
-- `cargo test -p aura-gallery data_display_demos_use_aura_layout_primitives` failed before migration and passed after migration.
-- `cargo test -p aura-components timeline_tone_helpers_track_semantic_tone` passed.
-- `cargo test -p aura-gallery` passed.
+- `cargo test -p liora-gallery data_display_demos_use_liora_layout_primitives` failed before migration and passed after migration.
+- `cargo test -p liora-components timeline_tone_helpers_track_semantic_tone` passed.
+- `cargo test -p liora-gallery` passed.
 - `cargo check` passed.
-- `cargo test -p aura-components` passed.
+- `cargo test -p liora-components` passed.
 - `git diff --check` passed.
 - Confirmed Avatar/Badge/Descriptions/Timeline demo files have zero occurrences of `div(`, `px(`, `.flex()`, `.flex_col()`, `.flex_row()`.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Timeline color examples needed semantic component-level tone APIs to remain self-contained without exposing demo code to theme internals.
@@ -2200,20 +2200,20 @@
 
 ### Actions
 - Added and confirmed a failing self-contained guard test for Card, Scrollbar, and Splitter demos before migration.
-- Migrated those demos to shared Aura helpers and component APIs, removing demo-level `div()`, `px()`, and flex primitives.
+- Migrated those demos to shared Liora helpers and component APIs, removing demo-level `div()`, `px()`, and flex primitives.
 - Added `Card::width`, `Card::width_md()`, and `Card::width_lg()` to keep card demo sizing inside component semantics.
 - Added `Splitter::height`, `Splitter::height_md()`, and `Splitter::bordered()` to express demo presentation without raw GPUI wrappers.
 - Added unit coverage for the new Card and Splitter helpers.
 
 ### Verification
-- `cargo test -p aura-gallery layout_container_demos_use_aura_layout_primitives` failed before migration and passed after migration.
-- `cargo test -p aura-components helpers` passed the helper-focused tests.
-- `cargo test -p aura-gallery` passed.
+- `cargo test -p liora-gallery layout_container_demos_use_liora_layout_primitives` failed before migration and passed after migration.
+- `cargo test -p liora-components helpers` passed the helper-focused tests.
+- `cargo test -p liora-gallery` passed.
 - `cargo check` passed.
-- `cargo test -p aura-components` passed.
+- `cargo test -p liora-components` passed.
 - `git diff --check` passed.
 - Confirmed Card/Scrollbar/Splitter demo files have zero occurrences of `div(`, `px(`, `.flex()`, `.flex_col()`, `.flex_row()`.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Layout-oriented demos often need small semantic presentation helpers; migrating broader `layout_demo.rs` should be handled as a separate pass because grid color boxes still need component-level API support.
@@ -2222,7 +2222,7 @@
 
 ### Actions
 - Added and confirmed a failing self-contained guard test for Autocomplete, Cascader, and Transfer demos before migration.
-- Migrated those demos to shared `page`/`section`/`Space`/`Card` helpers and Aura `Text`, removing demo-level GPUI layout primitives.
+- Migrated those demos to shared `page`/`section`/`Space`/`Card` helpers and Liora `Text`, removing demo-level GPUI layout primitives.
 - Added semantic width helpers used by the migrated demos:
   - `Autocomplete::width_lg()`
   - `Cascader::width_md()`
@@ -2231,14 +2231,14 @@
 - Regenerated the remaining un-self-contained demo scan after migration.
 
 ### Verification
-- `cargo test -p aura-gallery selection_demos_use_aura_layout_primitives` failed before migration and passed after migration.
-- `cargo test -p aura-components transfer_width_lg_sets_demo_width` passed.
-- `cargo test -p aura-gallery` passed.
+- `cargo test -p liora-gallery selection_demos_use_liora_layout_primitives` failed before migration and passed after migration.
+- `cargo test -p liora-components transfer_width_lg_sets_demo_width` passed.
+- `cargo test -p liora-gallery` passed.
 - `cargo check` passed.
-- `cargo test -p aura-components` passed.
+- `cargo test -p liora-components` passed.
 - `git diff --check` passed.
 - Confirmed Autocomplete/Cascader/Transfer demo files have zero occurrences of `div(`, `px(`, `.flex()`, `.flex_col()`, `.flex_row()`.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Remaining Not Self-Contained After This Session
 - `affix_demo.rs`
@@ -2265,24 +2265,24 @@
 
 ### Actions
 - Added and confirmed a failing self-contained guard test for Dialog, Drawer, Popover, and PageHeader demos before migration.
-- Migrated those demos to shared Aura helpers and Aura content/layout components, including content closures.
+- Migrated those demos to shared Liora helpers and Liora content/layout components, including content closures.
 - Added semantic helpers used by overlay demos:
   - `Drawer::width_lg()`
   - `Drawer::height_sm()` / `Drawer::height_lg()`
   - `Popover::offset_lg()`
 - Added unit coverage for Drawer size helpers and Popover offset helper.
-- Kept PageHeader API unchanged after validating that existing closure APIs can return Aura components without demo-level GPUI primitives.
+- Kept PageHeader API unchanged after validating that existing closure APIs can return Liora components without demo-level GPUI primitives.
 - Regenerated the remaining non-self-contained demo scan after migration.
 
 ### Verification
-- `cargo test -p aura-gallery overlay_demos_use_aura_layout_primitives` failed before migration and passed after migration.
-- `cargo test -p aura-components demo_` passed the helper-focused tests.
-- `cargo test -p aura-gallery` passed.
+- `cargo test -p liora-gallery overlay_demos_use_liora_layout_primitives` failed before migration and passed after migration.
+- `cargo test -p liora-components demo_` passed the helper-focused tests.
+- `cargo test -p liora-gallery` passed.
 - `cargo check` passed.
-- `cargo test -p aura-components` passed.
+- `cargo test -p liora-components` passed.
 - `git diff --check` passed.
 - Confirmed Dialog/Drawer/Popover/PageHeader demo files have zero occurrences of `div(`, `px(`, `.flex()`, `.flex_col()`, `.flex_row()`.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Remaining Not Self-Contained After This Session
 - `affix_demo.rs`
@@ -2305,7 +2305,7 @@
 
 ### Actions
 - Investigated reported Popover bubble content being visually cramped after overlay demo migration.
-- Identified root cause: the Popover shell rendered content directly inside the bordered/shadowed bubble without default padding, so Aura `Space` content touched the edge and appeared compressed.
+- Identified root cause: the Popover shell rendered content directly inside the bordered/shadowed bubble without default padding, so Liora `Space` content touched the edge and appeared compressed.
 - Added default `.p_4()` padding to the Popover content wrapper.
 - Investigated reported Cascader disabled state cursor.
 - Identified root cause: disabled Cascader trigger and disabled/loading popup options only skipped pointer hover; they did not set `cursor_not_allowed()`.
@@ -2313,15 +2313,15 @@
 - Added source-sliced regression tests so the assertions inspect production code only, not the test body itself.
 
 ### Verification
-- `cargo test -p aura-components regression` failed before the fix and passed after the fix.
-- `cargo test -p aura-gallery` passed.
+- `cargo test -p liora-components regression` failed before the fix and passed after the fix.
+- `cargo test -p liora-gallery` passed.
 - `cargo check` passed.
-- `cargo test -p aura-components` passed.
+- `cargo test -p liora-components` passed.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
-- Popover default content padding belongs in the component shell because caller content can be plain text or compact Aura layout primitives.
+- Popover default content padding belongs in the component shell because caller content can be plain text or compact Liora layout primitives.
 - Cursor semantics need to be explicit on disabled states; merely omitting pointer hover leaves the default cursor.
 
 ## Session 134 — 2026-05-11 (P7 Tag and Tabs Demo Batch)
@@ -2329,17 +2329,17 @@
 ### Actions
 - Added and confirmed a failing self-contained guard test for Tag and Tabs demos before migration.
 - Migrated Tag demo to shared `page`/`section`/`row_md`/`Space`/`Card` helpers while preserving dynamic add/remove behavior.
-- Migrated Tabs demo to shared helpers and changed tab pane closures to return Aura `Text` instead of demo-level GPUI `div()`.
+- Migrated Tabs demo to shared helpers and changed tab pane closures to return Liora `Text` instead of demo-level GPUI `div()`.
 - Regenerated the remaining non-self-contained demo scan after migration.
 
 ### Verification
-- `cargo test -p aura-gallery tag_and_tabs_demos_use_aura_layout_primitives` failed before migration and passed after migration.
-- `cargo test -p aura-gallery` passed.
+- `cargo test -p liora-gallery tag_and_tabs_demos_use_liora_layout_primitives` failed before migration and passed after migration.
+- `cargo test -p liora-gallery` passed.
 - `cargo check` passed.
-- `cargo test -p aura-components` passed.
+- `cargo test -p liora-components` passed.
 - `git diff --check` passed.
 - Confirmed Tag/Tabs demo files have zero occurrences of `div(`, `px(`, `.flex()`, `.flex_col()`, `.flex_row()`.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Remaining Not Self-Contained After This Session
 - `affix_demo.rs`
@@ -2369,14 +2369,14 @@
 - Added regression tests for compact Tag input usage and natural Tabs height in scroll pages.
 
 ### Verification
-- `cargo test -p aura-gallery tag_dynamic_input_uses_compact_input_width` failed before fix and passed after fix.
-- `cargo test -p aura-gallery tabs_demo_scrolls_with_natural_tab_height` failed before fix and passed after fix.
-- `cargo test -p aura-components input_width_sm_sets_compact_width` passed.
-- `cargo test -p aura-gallery` passed.
+- `cargo test -p liora-gallery tag_dynamic_input_uses_compact_input_width` failed before fix and passed after fix.
+- `cargo test -p liora-gallery tabs_demo_scrolls_with_natural_tab_height` failed before fix and passed after fix.
+- `cargo test -p liora-components input_width_sm_sets_compact_width` passed.
+- `cargo test -p liora-gallery` passed.
 - `cargo check` passed.
-- `cargo test -p aura-components` passed.
+- `cargo test -p liora-components` passed.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - Compact input sizing should be component-level API (`Input::width_sm`) rather than borrowing Card width presets.
@@ -2393,12 +2393,12 @@
 - Added TDD regression coverage for horizontal layout helpers, icon position/color builders, and default icon color resolution.
 
 ### Verification
-- `cargo test -p aura-components statistic_ --lib` failed before implementation because the new layout/icon API did not exist, then passed after implementation.
-- `cargo test -p aura-components` passed: 21 unit tests plus component integration/doc tests.
-- `cargo test -p aura-gallery` passed: 16 gallery tests including the Statistic demo self-contained guard batch.
+- `cargo test -p liora-components statistic_ --lib` failed before implementation because the new layout/icon API did not exist, then passed after implementation.
+- `cargo test -p liora-components` passed: 21 unit tests plus component integration/doc tests.
+- `cargo test -p liora-gallery` passed: 16 gallery tests including the Statistic demo self-contained guard batch.
 - `cargo check` passed for the workspace.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - `Icon::color(Hsla)` already exists, but an unset Icon falls back to neutral icon color; Statistic therefore needs to explicitly pass the resolved value color to satisfy “icon follows number color by default”.
@@ -2409,16 +2409,16 @@
 ### Actions
 - Added a failing gallery guard for `icon_demo.rs` so it cannot use raw GPUI demo primitives (`div`, `px`, flex helpers) going forward.
 - Added `Icon::size_xs`, `Icon::size_md`, `Icon::size_lg`, and `Icon::size_xl` helpers to replace demo-level pixel sizing with component-level semantic sizing.
-- Rewrote the Icon demo with shared `page`/`section`/`row` helpers plus Aura `Space` and `Text`, preserving default color, size, and theme color examples.
+- Rewrote the Icon demo with shared `page`/`section`/`row` helpers plus Liora `Space` and `Text`, preserving default color, size, and theme color examples.
 
 ### Verification
-- `cargo test -p aura-icons icon_size_helpers_set_common_demo_sizes --lib` failed before the Icon helper implementation and passed after it.
-- `cargo test -p aura-gallery icon_demo_uses_aura_layout_primitives` failed before the demo migration and passed after it.
-- `cargo test -p aura-icons` passed.
-- `cargo test -p aura-gallery` passed: 17 gallery tests.
+- `cargo test -p liora-icons icon_size_helpers_set_common_demo_sizes --lib` failed before the Icon helper implementation and passed after it.
+- `cargo test -p liora-gallery icon_demo_uses_liora_layout_primitives` failed before the demo migration and passed after it.
+- `cargo test -p liora-icons` passed.
+- `cargo test -p liora-gallery` passed: 17 gallery tests.
 - `cargo check` passed.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Remaining Not Self-Contained After This Session
 - `affix_demo.rs`
@@ -2444,37 +2444,37 @@
 - Added regression tests covering the Space alignment builder and the Icon demo's centered label requirement.
 
 ### Verification
-- `cargo test -p aura-components space_align_center_tracks_cross_axis_alignment --lib` failed before the Space API implementation and passed after it.
-- `cargo test -p aura-gallery icon_demo_labels_are_center_aligned_under_icons` failed before the demo update and passed after it.
-- `cargo test -p aura-gallery icon_demo_uses_aura_layout_primitives` passed.
-- `cargo test -p aura-components` passed: 22 component tests plus integration/doc tests.
-- `cargo test -p aura-gallery` passed: 18 gallery tests.
+- `cargo test -p liora-components space_align_center_tracks_cross_axis_alignment --lib` failed before the Space API implementation and passed after it.
+- `cargo test -p liora-gallery icon_demo_labels_are_center_aligned_under_icons` failed before the demo update and passed after it.
+- `cargo test -p liora-gallery icon_demo_uses_liora_layout_primitives` passed.
+- `cargo test -p liora-components` passed: 22 component tests plus integration/doc tests.
+- `cargo test -p liora-gallery` passed: 18 gallery tests.
 - `cargo check` passed.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
-- Aura `Space` needed explicit cross-axis alignment to replace raw GPUI layout in vertical label stacks without losing visual centering.
+- Liora `Space` needed explicit cross-axis alignment to replace raw GPUI layout in vertical label stacks without losing visual centering.
 
 ## Session 139 — 2026-05-11 (P7 Skeleton Demo Self-Bootstrap Batch)
 
 ### Actions
 - Added a gallery guard for `skeleton_demo.rs` so it cannot use raw GPUI demo primitives (`div`, `px`, flex helpers) going forward.
-- Added `Space::grow()` to express flex growth through the Aura layout primitive instead of demo-level `flex_1`.
+- Added `Space::grow()` to express flex growth through the Liora layout primitive instead of demo-level `flex_1`.
 - Added `SkeletonItem::width(...)` and `SkeletonItem::width_2_5()` so custom skeleton templates can express partial-width paragraph placeholders without raw wrapper divs.
 - Added `Avatar::background(...)` so loaded skeleton content can keep the colored avatar without raw demo-level circle styling.
 - Rewrote the Skeleton demo with `page`/`section`/`row`, `Space`, `Text`, `Avatar`, `Skeleton`, and `SkeletonItem` while preserving loading toggle, common variants, custom template, and loaded content.
 
 ### Verification
-- `cargo test -p aura-gallery skeleton_demo_uses_aura_layout_primitives` failed before migration and passed after migration.
-- `cargo test -p aura-components skeleton_item_width_2_5_sets_fraction_width --lib` passed.
-- `cargo test -p aura-components space_grow_tracks_flex_growth --lib` passed.
-- `cargo test -p aura-components avatar_background_tracks_custom_color --lib` passed.
-- `cargo test -p aura-components` passed: 25 component tests plus integration/doc tests.
-- `cargo test -p aura-gallery` passed: 19 gallery tests.
+- `cargo test -p liora-gallery skeleton_demo_uses_liora_layout_primitives` failed before migration and passed after migration.
+- `cargo test -p liora-components skeleton_item_width_2_5_sets_fraction_width --lib` passed.
+- `cargo test -p liora-components space_grow_tracks_flex_growth --lib` passed.
+- `cargo test -p liora-components avatar_background_tracks_custom_color --lib` passed.
+- `cargo test -p liora-components` passed: 25 component tests plus integration/doc tests.
+- `cargo test -p liora-gallery` passed: 19 gallery tests.
 - `cargo check` passed.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Remaining Not Self-Contained After This Session
 - `affix_demo.rs`
@@ -2502,13 +2502,13 @@
 - Preserved remote/local image triggers and the custom card trigger while keeping Image preview disabled inside wrapped Preview triggers.
 
 ### Verification
-- `cargo test -p aura-gallery preview_demo_uses_aura_layout_primitives` failed before migration and passed after migration.
-- `cargo test -p aura-components image_thumbnail_sets_preview_dimensions --lib` failed before `Image::thumbnail()` and passed after implementation.
-- `cargo test -p aura-components` passed: 26 component tests plus integration/doc tests.
-- `cargo test -p aura-gallery` passed: 20 gallery tests.
+- `cargo test -p liora-gallery preview_demo_uses_liora_layout_primitives` failed before migration and passed after migration.
+- `cargo test -p liora-components image_thumbnail_sets_preview_dimensions --lib` failed before `Image::thumbnail()` and passed after implementation.
+- `cargo test -p liora-components` passed: 26 component tests plus integration/doc tests.
+- `cargo test -p liora-gallery` passed: 20 gallery tests.
 - `cargo check` passed.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Remaining Not Self-Contained After This Session
 - `affix_demo.rs`
@@ -2534,14 +2534,14 @@
 - Preserved the main feature coverage: remote/local images, preview, cover/contain/fill/scale-down fit variants, circle crop, rounded bounds, ring sleeve, large-radius shadow, fallback, and empty states.
 
 ### Verification
-- `cargo test -p aura-gallery image_demo_uses_aura_layout_primitives` failed before migration and passed after migration.
-- `cargo test -p aura-components image_demo_size_helpers_track_common_examples --lib` failed before the Image size helpers and passed after implementation.
-- `cargo test -p aura-components image_round_sleeve_sets_ring_configuration --lib` failed before `Image::round_sleeve()` and passed after implementation.
-- `cargo test -p aura-components` passed: 28 component tests plus integration/doc tests.
-- `cargo test -p aura-gallery` passed: 21 gallery tests.
+- `cargo test -p liora-gallery image_demo_uses_liora_layout_primitives` failed before migration and passed after migration.
+- `cargo test -p liora-components image_demo_size_helpers_track_common_examples --lib` failed before the Image size helpers and passed after implementation.
+- `cargo test -p liora-components image_round_sleeve_sets_ring_configuration --lib` failed before `Image::round_sleeve()` and passed after implementation.
+- `cargo test -p liora-components` passed: 28 component tests plus integration/doc tests.
+- `cargo test -p liora-gallery` passed: 21 gallery tests.
 - `cargo check` passed.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Remaining Not Self-Contained After This Session
 - `affix_demo.rs`
@@ -2561,17 +2561,17 @@
 
 ### Actions
 - Added `menu_demo.rs` to the navigation self-bootstrap guard batch.
-- Rewrote the Menu demo with shared `page`/`section` helpers and Aura `Space`, `Row`, `Col`, `Card`, and `Text` components.
+- Rewrote the Menu demo with shared `page`/`section` helpers and Liora `Space`, `Row`, `Col`, `Card`, and `Text` components.
 - Preserved horizontal, vertical, and collapsed menu examples plus active content updates for each mode.
 - Replaced hand-written content card styling with `Card::new(...).no_shadow()` and text styling through `Text`.
 
 ### Verification
-- `cargo test -p aura-gallery navigation_demos_use_aura_layout_primitives` failed before migration because `menu_demo.rs` contained raw GPUI primitives, then passed after migration.
-- `cargo test -p aura-components` passed: 28 component tests plus integration/doc tests.
-- `cargo test -p aura-gallery` passed: 21 gallery tests.
+- `cargo test -p liora-gallery navigation_demos_use_liora_layout_primitives` failed before migration because `menu_demo.rs` contained raw GPUI primitives, then passed after migration.
+- `cargo test -p liora-components` passed: 28 component tests plus integration/doc tests.
+- `cargo test -p liora-gallery` passed: 21 gallery tests.
 - `cargo check` passed.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Remaining Not Self-Contained After This Session
 - `affix_demo.rs`
@@ -2589,20 +2589,20 @@
 ## Session 143 — 2026-05-11 (Gallery Shell Container/Menu Self-Bootstrap)
 
 ### Actions
-- Added a shell-level regression test requiring the gallery main view to use Aura `Container` and `Menu` instead of the bespoke left-nav implementation.
+- Added a shell-level regression test requiring the gallery main view to use Liora `Container` and `Menu` instead of the bespoke left-nav implementation.
 - Extended `Container` for real app-shell usage: configurable header/footer height, aside width, aside/main scrolling, main padding, and root overlays for portal layers.
-- Rebuilt the Aura gallery shell with `Container::new()` for header/aside/main layout and an Aura `Menu` entity for demo navigation.
+- Rebuilt the Liora gallery shell with `Container::new()` for header/aside/main layout and an Liora `Menu` entity for demo navigation.
 - Preserved one-demo-at-a-time rendering, selected demo content cards, and all existing portal/message/notification/tooltip/popover/modal/drawer rendering.
 - Kept the remaining raw GPUI in `main.rs` scoped to the low-level portal layer implementation rather than the app shell/navigation layout.
 
 ### Verification
-- `cargo test -p aura-gallery gallery_shell_uses_container_and_menu` failed before the shell refactor and passed after it.
-- `cargo test -p aura-components container_gallery_shell_helpers_track_layout_state --lib` failed before the Container API additions and passed after implementation.
-- `cargo test -p aura-components` passed: 29 component tests plus integration/doc tests.
-- `cargo test -p aura-gallery` passed: 22 gallery tests.
+- `cargo test -p liora-gallery gallery_shell_uses_container_and_menu` failed before the shell refactor and passed after it.
+- `cargo test -p liora-components container_gallery_shell_helpers_track_layout_state --lib` failed before the Container API additions and passed after implementation.
+- `cargo test -p liora-components` passed: 29 component tests plus integration/doc tests.
+- `cargo test -p liora-gallery` passed: 22 gallery tests.
 - `cargo check` passed.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Remaining Not Self-Contained Demo Pages
 - `affix_demo.rs`
@@ -2627,14 +2627,14 @@
 - Added a source-sliced regression test ensuring the two scroll regions keep distinct stable ID keys and do not regress to the shared key.
 
 ### Verification
-- `cargo test -p aura-components container_scroll_regions_use_distinct_stable_id_keys --lib` failed before the fix and passed after it.
-- `cargo test -p aura-components container_gallery_shell_helpers_track_layout_state --lib` passed.
-- `cargo test -p aura-gallery gallery_shell_uses_container_and_menu` passed.
-- `cargo test -p aura-components` passed: 30 component tests plus integration/doc tests.
-- `cargo test -p aura-gallery` passed: 22 gallery tests.
+- `cargo test -p liora-components container_scroll_regions_use_distinct_stable_id_keys --lib` failed before the fix and passed after it.
+- `cargo test -p liora-components container_gallery_shell_helpers_track_layout_state --lib` passed.
+- `cargo test -p liora-gallery gallery_shell_uses_container_and_menu` passed.
+- `cargo test -p liora-components` passed: 30 component tests plus integration/doc tests.
+- `cargo test -p liora-gallery` passed: 22 gallery tests.
 - `cargo check` passed.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - `stable_unique_id`'s first argument is the keyed-state key; the prefix only affects the generated value. Distinct scroll regions must not share the same key even if their prefixes differ.
@@ -2648,14 +2648,14 @@
 - Added a source-sliced regression test to keep the main scroll region height-constrained.
 
 ### Verification
-- `cargo test -p aura-components container_main_scroll_region_is_height_constrained --lib` failed before the fix and passed after it.
-- `cargo test -p aura-components container_scroll_regions_use_distinct_stable_id_keys --lib` passed.
-- `cargo test -p aura-gallery gallery_shell_uses_container_and_menu` passed.
-- `cargo test -p aura-components` passed: 31 component tests plus integration/doc tests.
-- `cargo test -p aura-gallery` passed: 22 gallery tests.
+- `cargo test -p liora-components container_main_scroll_region_is_height_constrained --lib` failed before the fix and passed after it.
+- `cargo test -p liora-components container_scroll_regions_use_distinct_stable_id_keys --lib` passed.
+- `cargo test -p liora-gallery gallery_shell_uses_container_and_menu` passed.
+- `cargo test -p liora-components` passed: 31 component tests plus integration/doc tests.
+- `cargo test -p liora-gallery` passed: 22 gallery tests.
 - `cargo check` passed.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - For GPUI scroll regions nested in flex layouts, `flex_1/min_h_0` alone may not create the bounded viewport; the previous working gallery implementation also had `h_full()`, which Container now mirrors.
@@ -2670,13 +2670,13 @@
 - Added tests for the Card helper and the gallery shell requirement.
 
 ### Verification
-- `cargo test -p aura-components card_no_shrink_tracks_scroll_container_usage --lib` passed.
-- `cargo test -p aura-gallery gallery_shell_uses_container_and_menu` passed.
-- `cargo test -p aura-components` passed: 32 component tests plus integration/doc tests.
-- `cargo test -p aura-gallery` passed: 22 gallery tests.
+- `cargo test -p liora-components card_no_shrink_tracks_scroll_container_usage --lib` passed.
+- `cargo test -p liora-gallery gallery_shell_uses_container_and_menu` passed.
+- `cargo test -p liora-components` passed: 32 component tests plus integration/doc tests.
+- `cargo test -p liora-gallery` passed: 22 gallery tests.
 - `cargo check` passed.
 - `git diff --check` passed.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
 - `Card::overflow_hidden()` is correct for visual clipping, but scroll-region content cards must be non-shrinking so long child content contributes to the outer scroll height instead of being clipped inside the card.
@@ -2686,64 +2686,64 @@
 
 ### Actions
 - Completed the remaining demo self-bootstrap work for `affix_demo.rs`, `anchor_demo.rs`, `backtop_demo.rs`, `container_demo.rs`, `form_controls_demo.rs`, `form_demo.rs`, `layout_demo.rs`, and `table_demo.rs`.
-- Added the reusable Aura `Flex` layout primitive so demos can express row/column layout, fixed-size showcase panels, scroll viewports, borders, rounded surfaces, padding, and tracked scroll containers without raw GPUI `div()`/`px()` layout calls.
+- Added the reusable Liora `Flex` layout primitive so demos can express row/column layout, fixed-size showcase panels, scroll viewports, borders, rounded surfaces, padding, and tracked scroll containers without raw GPUI `div()`/`px()` layout calls.
 - Added small convenience APIs needed by self-bootstrapped demos: Affix offset helpers, Anchor offset helper, Backtop visibility/right helpers, Input text/icon addon helpers, Select compact width/text/padding helpers, and Table width/height helpers.
 - Extended gallery regression tests to cover the last self-bootstrap files.
 - Marked P7 Demo Self-Contained complete in `.memory/state.md`.
 
 ### Verification
-- Red phase: `cargo test -p aura-gallery demos::tests::` failed on the newly added checks for the remaining non-self-contained demos.
-- `cargo test -p aura-components flex_tracks --lib` passed.
-- `cargo test -p aura-gallery demos::tests::` passed: 24 demo regression tests before full suite, then 25 gallery tests after shell test inclusion.
-- `cargo test -p aura-components` passed: 35 component unit tests plus integration/doc tests.
-- `cargo test -p aura-gallery` passed: 25 gallery tests.
+- Red phase: `cargo test -p liora-gallery demos::tests::` failed on the newly added checks for the remaining non-self-contained demos.
+- `cargo test -p liora-components flex_tracks --lib` passed.
+- `cargo test -p liora-gallery demos::tests::` passed: 24 demo regression tests before full suite, then 25 gallery tests after shell test inclusion.
+- `cargo test -p liora-components` passed: 35 component unit tests plus integration/doc tests.
+- `cargo test -p liora-gallery` passed: 25 gallery tests.
 - `cargo check` passed.
 - `git diff --check` passed.
-- `rg -n "div\(|px\(|\.flex\(\)|\.flex_col\(\)|\.flex_row\(\)" apps/aura-gallery/src/demos -g'*.rs'` now reports only the forbidden-token test list in `demos/mod.rs`.
-- `timeout 25s cargo run -p aura-gallery` compiled and launched `target/debug/aura-gallery`; process ended by timeout with no startup compile error or immediate crash.
+- `rg -n "div\(|px\(|\.flex\(\)|\.flex_col\(\)|\.flex_row\(\)" apps/liora-gallery/src/demos -g'*.rs'` now reports only the forbidden-token test list in `demos/mod.rs`.
+- `timeout 25s cargo run -p liora-gallery` compiled and launched `target/debug/liora-gallery`; process ended by timeout with no startup compile error or immediate crash.
 
 ### Key Discoveries
-- A single Aura-owned `Flex` primitive covers the remaining demo-only layout needs better than continuing to add ad hoc raw GPUI layout snippets in each demo.
-- The last raw GPUI usage was concentrated in complex scroll showcases and older form/table/layout demos; the whole `apps/aura-gallery/src/demos` tree is now guarded by regression tests.
+- A single Liora-owned `Flex` primitive covers the remaining demo-only layout needs better than continuing to add ad hoc raw GPUI layout snippets in each demo.
+- The last raw GPUI usage was concentrated in complex scroll showcases and older form/table/layout demos; the whole `apps/liora-gallery/src/demos` tree is now guarded by regression tests.
 
 ## Session 148 — 2026-05-11 (Fedora Dependency Script + Compact Menu Demo)
 
 ### Actions
-- Added `scripts/install-fedora-deps.sh` to install Fedora system dependencies needed by Aura Gallery / GPUI (`gcc-c++`, `fontconfig-devel`, `freetype-devel`, Wayland/X11/XCB/Vulkan headers and loaders, clang/LLVM helpers, etc.).
+- Added `scripts/install-fedora-deps.sh` to install Fedora system dependencies needed by Liora Gallery / GPUI (`gcc-c++`, `fontconfig-devel`, `freetype-devel`, Wayland/X11/XCB/Vulkan headers and loaders, clang/LLVM helpers, etc.).
 - Narrowed the Menu demo vertical layout so the regular vertical menu uses a 4/24 sidebar column instead of 6/24, and the collapsed menu uses a 2/24 compact column instead of 4/24.
 - Added a gallery regression test that keeps the Menu demo vertical and collapsed sidebars compact while preserving the existing self-contained demo guard.
 
 ### Verification
-- `cargo test -p aura-gallery menu_demo_keeps_vertical_menu_compact` failed before the layout change and passed after the Menu demo columns were narrowed.
-- `cargo test -p aura-gallery navigation_demos_use_aura_layout_primitives` passed after keeping the fix within Aura layout primitives.
+- `cargo test -p liora-gallery menu_demo_keeps_vertical_menu_compact` failed before the layout change and passed after the Menu demo columns were narrowed.
+- `cargo test -p liora-gallery navigation_demos_use_liora_layout_primitives` passed after keeping the fix within Liora layout primitives.
 - Full verification rerun after memory update is recorded in the assistant response for this session.
 
 ### Key Discoveries
-- Menu itself renders with `.w_full()`, so demo sidebar width should be controlled by the surrounding Aura grid column rather than raw GPUI pixel wrappers.
+- Menu itself renders with `.w_full()`, so demo sidebar width should be controlled by the surrounding Liora grid column rather than raw GPUI pixel wrappers.
 
 ## Session 149 — 2026-05-11 (Promote Demo Helpers to Component Crate)
 
 ### Actions
 - Reviewed gallery demo self-bootstrap boundaries: the raw GPUI primitive scan only reports the forbidden-token test list in `demos/mod.rs`; no demo page leaked raw layout primitives.
-- Moved shared demo layout helpers from `apps/aura-gallery/src/demos/common.rs` into `crates/aura-components/src/layout_helpers.rs` as `aura_components::layout_helpers::{page, section, header, row, row_md}`.
+- Moved shared demo layout helpers from `apps/liora-gallery/src/demos/common.rs` into `crates/liora-components/src/layout_helpers.rs` as `liora_components::layout_helpers::{page, section, header, row, row_md}`.
 - Removed the gallery-local `common` module and updated demo files to import shared helpers from the component crate.
-- Added a gallery regression test requiring shared demo helpers to live in `aura-components::demo` and preventing reintroduction of `pub mod common` in the gallery demos registry.
+- Added a gallery regression test requiring shared demo helpers to live in `liora-components::demo` and preventing reintroduction of `pub mod common` in the gallery demos registry.
 
 ### Verification
-- `cargo test -p aura-gallery layout_helpers_live_in_component_crate` failed before renaming/promoting helpers and passed after the migration.
-- `rg -n "super::common|pub mod common|demos/common" apps/aura-gallery/src/demos crates/aura-components/src -S` no longer reports stale local common imports/module declarations.
-- `rg -n "\\bdiv\\(|\\bpx\\(|\\.flex\\(\\)|\\.flex_col\\(\\)|\\.flex_row\\(|rgb\\(|hsla\\(" apps/aura-gallery/src/demos -g'*.rs' -S` reports only the guard token list in `demos/mod.rs`.
+- `cargo test -p liora-gallery layout_helpers_live_in_component_crate` failed before renaming/promoting helpers and passed after the migration.
+- `rg -n "super::common|pub mod common|demos/common" apps/liora-gallery/src/demos crates/liora-components/src -S` no longer reports stale local common imports/module declarations.
+- `rg -n "\\bdiv\\(|\\bpx\\(|\\.flex\\(\\)|\\.flex_col\\(\\)|\\.flex_row\\(|rgb\\(|hsla\\(" apps/liora-gallery/src/demos -g'*.rs' -S` reports only the guard token list in `demos/mod.rs`.
 - Full verification rerun after memory update is recorded in the assistant response for this session.
 
 ### Key Discoveries
-- The old `common.rs` helpers were already pure Aura component compositions, so the cleanest boundary is a namespaced `aura_components::layout_helpers` module rather than re-exporting generic names like `page` and `section` at crate root.
+- The old `common.rs` helpers were already pure Liora component compositions, so the cleanest boundary is a namespaced `liora_components::layout_helpers` module rather than re-exporting generic names like `page` and `section` at crate root.
 
 ## Session 150 — 2026-05-11 (P8 Native Gallery Documentation Replan)
 
 ### Actions
-- Replaced the previous P8 VitePress/Web documentation plan with a pure GPUI native Aura Gallery documentation architecture.
-- Updated `architecture-design.md` with the new P8 native documentation architecture: `pulldown-cmark` parsing, Aura Typography bootstrapping, stack-based Markdown renderer, code block rendering, two-column document shell, and Live Demo injection.
-- Updated `prompt.md` so future sessions treat P8 as a native Aura Gallery documentation phase and not as a Web docs phase.
+- Replaced the previous P8 VitePress/Web documentation plan with a pure GPUI native Liora Gallery documentation architecture.
+- Updated `architecture-design.md` with the new P8 native documentation architecture: `pulldown-cmark` parsing, Liora Typography bootstrapping, stack-based Markdown renderer, code block rendering, two-column document shell, and Live Demo injection.
+- Updated `prompt.md` so future sessions treat P8 as a native Liora Gallery documentation phase and not as a Web docs phase.
 - Rewrote `.prompt/P8-engineering.md` into a four-phase execution plan: Typography infrastructure, Markdown renderer/state machine, code block/document shell polish, and Live Demo injection.
 - Added ADR-013 documenting the decision to run official documentation entirely inside the GPUI native gallery.
 - Updated `.memory/state.md` and `.memory/inventory.md` to reflect the new P8 scope.
@@ -2752,26 +2752,26 @@
 - Documentation consistency checks and project verification were run after the edits; see the assistant response for exact commands and outcomes.
 
 ### Key Discoveries
-- The new P8 plan should dogfood Aura's own text/layout primitives instead of creating a separate Web documentation surface.
+- The new P8 plan should dogfood Liora's own text/layout primitives instead of creating a separate Web documentation surface.
 - The repo currently uses Rust edition 2024; the new P8 plan treats Rust 2021 as a minimum language baseline but does not downgrade the workspace edition.
 
 ## Session 151 — 2026-05-11 (Image/Preview Menu Switch Performance)
 
 ### Actions
 - Investigated Image and Preview menu-switch stutter and slow remote image display.
-- Identified two image loading issues: URL rendering scheduled Aura's own background `ureq` fetch while also returning GPUI `img(src)`, causing a second remote loading path; cached remote states also requested animation frames during render.
-- Changed remote URL rendering to use the Aura remote cache path only: loading renders the Aura placeholder, completion refreshes windows explicitly, and no GPUI `img(src)` fallback is started.
+- Identified two image loading issues: URL rendering scheduled Liora's own background `ureq` fetch while also returning GPUI `img(src)`, causing a second remote loading path; cached remote states also requested animation frames during render.
+- Changed remote URL rendering to use the Liora remote cache path only: loading renders the Liora placeholder, completion refreshes windows explicitly, and no GPUI `img(src)` fallback is started.
 - Added a local image render cache so repeated local thumbnails in Image/Preview demos do not synchronously read/decode the same file on every render.
 - Kept exactly one remote image in each Image/Preview demo for remote-loading coverage while moving repeated examples to the bundled local asset, so menu switching does not trigger many network loads.
 - Added regression tests for passive remote loading state, single remote fetch path, local render-image cache, and bounded remote demo coverage.
 
 ### Verification
-- `cargo test -p aura-components remote_image_loading_state_is_passive_after_first_fetch --lib` failed before the helper existed and passed after the remote state change.
-- `cargo test -p aura-gallery image_and_preview_demos_keep_remote_loading_coverage_bounded` failed when the demos had zero remote URLs and passed after keeping exactly one remote URL per demo.
+- `cargo test -p liora-components remote_image_loading_state_is_passive_after_first_fetch --lib` failed before the helper existed and passed after the remote state change.
+- `cargo test -p liora-gallery image_and_preview_demos_keep_remote_loading_coverage_bounded` failed when the demos had zero remote URLs and passed after keeping exactly one remote URL per demo.
 - Full verification rerun after formatting is recorded in the assistant response for this session.
 
 ### Key Discoveries
-- The previous URL branch could start two remote image loaders for the same URL: Aura's background cache fetch plus GPUI `img(src)`.
+- The previous URL branch could start two remote image loaders for the same URL: Liora's background cache fetch plus GPUI `img(src)`.
 - The Image and Preview gallery pages are performance-sensitive because selecting those cached views renders many image instances at once; local file decode must be cached too.
 
 ## Session 152 — 2026-05-11 (Preview Outside-Image Close)
@@ -2779,7 +2779,7 @@
 ### Actions
 - Changed the Preview overlay so the backdrop close handler is blocked only by an image-sized preview box, not by the previous fixed 72% viewport container.
 - Added `PreviewClose` and `Preview::register_key_bindings(cx)` so ESC closes an active image preview.
-- Registered Preview key bindings in Aura Gallery startup.
+- Registered Preview key bindings in Liora Gallery startup.
 - Added regression coverage for image-aspect preview sizing, ESC action registration, and gallery key-binding registration.
 
 ### Verification
@@ -2799,17 +2799,17 @@
 - Added regression coverage for the layered 3D shadow values and kept the image-sized hitbox guard.
 
 ### Verification
-- `cargo test -p aura-components preview --lib` passed after the frame treatment change.
+- `cargo test -p liora-components preview --lib` passed after the frame treatment change.
 - Full verification rerun after this memory update is recorded in the assistant response for this session.
 
 ### Key Discoveries
 - The 3D depth can live on the same image-sized hitbox; GPUI shadows paint outside the frame, so the visible shadow area remains outside the consumed click bounds and still dismisses via the backdrop.
 
-## Session 154 — 2026-05-11 (Aura Motion Foundation and Component Coverage)
+## Session 154 — 2026-05-11 (Liora Motion Foundation and Component Coverage)
 
 ### Actions
-- Added `crates/aura-components/src/motion.rs` as the shared Aura motion layer on top of GPUI `AnimationExt`, with duration tokens, easing tokens, fade/pop/pulse/spin helpers, and elastic slide easing.
-- Added icon rotation support in `aura-icons::Icon` using GPUI SVG transformation so loading indicators can spin without changing layout or hitboxes.
+- Added `crates/liora-components/src/motion.rs` as the shared Liora motion layer on top of GPUI `AnimationExt`, with duration tokens, easing tokens, fade/pop/pulse/spin helpers, and elastic slide easing.
+- Added icon rotation support in `liora-icons::Icon` using GPUI SVG transformation so loading indicators can spin without changing layout or hitboxes.
 - Covered high-impact animated components:
   - Preview: fade in/out overlay, pop-in image frame, delayed close state for fade-out.
   - Dialog / Drawer: fade-in overlay plus pop-in panel.
@@ -2823,18 +2823,18 @@
 - Added source-sliced and unit regression coverage for the motion layer and each covered component path.
 
 ### Verification
-- Targeted motion tests passed for `aura-components`, `aura-icons`, and `aura-core` before the final full verification run.
+- Targeted motion tests passed for `liora-components`, `liora-icons`, and `liora-core` before the final full verification run.
 - Full verification rerun after this memory update is recorded in the assistant response for this session.
 
 ### Key Discoveries
-- GPUI already provides `Animation` / `AnimationExt`; Aura needed a design-system wrapper for consistent duration/easing and component usage.
+- GPUI already provides `Animation` / `AnimationExt`; Liora needed a design-system wrapper for consistent duration/easing and component usage.
 - Switch animation must remember the previous checked state; using only the target checked state makes initially unchecked switches animate from the wrong side on first render.
 - SVG icon rotation is the narrowest native way to animate loading spinners without adding a custom paint wrapper.
 
 ## Session 155 — 2026-05-11 (Motion Timing and Switch Crash Fix)
 
 ### Actions
-- Fixed the Switch crash caused by using an overshooting elastic curve as a GPUI easing function. GPUI asserts easing output must stay in `0..=1`, so Aura now clamps the `MotionEasing::Elastic` easing output for GPUI while keeping `elastic_slide` available for visual overshoot inside component interpolation.
+- Fixed the Switch crash caused by using an overshooting elastic curve as a GPUI easing function. GPUI asserts easing output must stay in `0..=1`, so Liora now clamps the `MotionEasing::Elastic` easing output for GPUI while keeping `elastic_slide` available for visual overshoot inside component interpolation.
 - Changed Switch thumb animation to use bounded `MotionEasing::EaseOut` for GPUI and apply `elastic_slide(delta)` only when computing the thumb position.
 - Slowed global motion timing from `120/180/240ms` to `220/320/900ms` for fast/normal/slow so overlays, switch movement, pulse, and spinner animations are more legible.
 - Updated Preview close delay to use `MotionDuration::Fast` and Tooltip fade-in to 220ms so hard-coded timings align with the slower motion system.
@@ -2842,8 +2842,8 @@
 
 ### Verification
 - Targeted motion and Switch tests passed after the fix.
-- Full verification passed: `cargo test -p aura-core`, `cargo test -p aura-icons`, `cargo test -p aura-components`, `cargo test -p aura-gallery`, `cargo check`, `git diff --check`.
-- Smoke-ran `cargo run -p aura-gallery` with the normal default entry and with a temporary Switch-selected startup entry; both launched and were stopped by timeout without reproducing the panic.
+- Full verification passed: `cargo test -p liora-core`, `cargo test -p liora-icons`, `cargo test -p liora-components`, `cargo test -p liora-gallery`, `cargo check`, `git diff --check`.
+- Smoke-ran `cargo run -p liora-gallery` with the normal default entry and with a temporary Switch-selected startup entry; both launched and were stopped by timeout without reproducing the panic.
 
 ### Key Discoveries
 - GPUI `AnimationElement` validates the eased delta before invoking the component animator, so any easing passed to `Animation::with_easing` must never overshoot.
@@ -2852,31 +2852,31 @@
 ## Session 156 — 2026-05-11 (Motion Interpolator and Elastic Snap Slide)
 
 ### Actions
-- Added an `Interpolator` helper to `aura-components::motion` for reusable numeric interpolation across complex animations.
+- Added an `Interpolator` helper to `liora-components::motion` for reusable numeric interpolation across complex animations.
 - Added `MotionCurve` with `Linear`, `EaseInOut`, `EaseOut`, and `ElasticSnap` curves.
 - Added `elastic_snap(delta)` and `slide_snap(from, to, delta)` helpers so components can implement springy property interpolation without passing overshooting values into GPUI easing.
 - Updated Switch thumb movement to use bounded linear GPUI animation plus `slide_snap(...)` for the default slide behavior: slow start, acceleration, deceleration, and a small snap/settle overshoot near the target.
 - Added unit coverage for Interpolator sampling, elastic snap behavior, reverse-direction overshoot, and Switch use of `slide_snap`.
 
 ### Verification
-- `cargo test -p aura-components motion --lib` passed.
-- `cargo test -p aura-components switch_thumb_uses_elastic_motion --lib` passed.
-- Full verification passed: `cargo test -p aura-core`, `cargo test -p aura-icons`, `cargo test -p aura-components`, `cargo test -p aura-gallery`, `cargo check`, `git diff --check`.
+- `cargo test -p liora-components motion --lib` passed.
+- `cargo test -p liora-components switch_thumb_uses_elastic_motion --lib` passed.
+- Full verification passed: `cargo test -p liora-core`, `cargo test -p liora-icons`, `cargo test -p liora-components`, `cargo test -p liora-gallery`, `cargo check`, `git diff --check`.
 - Smoke-ran normal Gallery startup and a temporary Switch-selected startup; both launched and were stopped by timeout without panic.
 
 ### Key Discoveries
-- The safe pattern for complex motion is: keep GPUI easing bounded, then use Aura `Interpolator` / `slide_snap` inside the animator closure for overshoot or other non-linear property effects.
+- The safe pattern for complex motion is: keep GPUI easing bounded, then use Liora `Interpolator` / `slide_snap` inside the animator closure for overshoot or other non-linear property effects.
 
 ## Session 80 — 2026-05-11 (Motion Coverage Audit)
 
 ### Actions
 - 审计组件库动画覆盖面：确认现有 motion 已覆盖 Preview/Dialog/Drawer/Popover/Dropdown/Tooltip/Message/Notification/Loading/Button Loading/Switch/Skeleton。
-- 为仍明显依赖“出现/展开/选中反馈”的交互控件补齐 Aura motion：Select、Cascader、DatePicker、TimePicker、DateTimePicker、Backtop、Checkbox、Radio、Collapse、Tree、Menu、Segmented、Tabs、Rate。
+- 为仍明显依赖“出现/展开/选中反馈”的交互控件补齐 Liora motion：Select、Cascader、DatePicker、TimePicker、DateTimePicker、Backtop、Checkbox、Radio、Collapse、Tree、Menu、Segmented、Tabs、Rate。
 - 对弹出层统一使用 `pop_in`，对选中/展开/活动指示器使用轻量 `pop_in`，避免引入新的未受控 GPUI easing，继续保持弹性 overshoot 只在受控插值路径中使用。
 - 增加 motion coverage 单测，防止后续重构移除这些交互动效接入点。
 
 ### Verification
-- `cargo test -p aura-components` passed locally during implementation.
+- `cargo test -p liora-components` passed locally during implementation.
 
 ### Key Discoveries
 - 本轮适合补动效的是“短生命周期可见性变化”和“选中态视觉反馈”；Progress/Slider/Upload 等连续数值型动效需要记忆前值或自绘动画状态，后续应单独做，不宜用出现动画伪装数值插值。
@@ -2892,7 +2892,7 @@
 - Updated P8 tracking docs to mark Phase 1 Typography bootstrapping complete and set Phase 2 Markdown renderer as next.
 
 ### Verification
-- `cargo test -p aura-components paragraph` passed during implementation.
+- `cargo test -p liora-components paragraph` passed during implementation.
 
 ### Key Discoveries
 - GPUI `StyledText` supports per-run font family/weight/style/color/background/underline/strikethrough via `TextRun`; per-run font size is not represented in `TextRun`, so segment-level size remains a standalone `Text` behavior rather than mixed-run paragraph behavior.
@@ -2901,36 +2901,36 @@
 ## Session 82 — 2026-05-11 (P8 Phase 2 Markdown Renderer)
 
 ### Actions
-- Added `pulldown-cmark` to `aura-gallery`.
-- Created `apps/aura-docs/src/markdown.rs` with `render_markdown(md_text: &str) -> gpui::AnyElement`.
+- Added `pulldown-cmark` to `liora-gallery`.
+- Created `apps/liora-docs/src/markdown.rs` with `render_markdown(md_text: &str) -> gpui::AnyElement`.
 - Implemented a stack-based Markdown parser using `Vec<Frame>` for Root/Paragraph/Heading/BlockQuote/List/ListItem and an inline style context for strong/emphasis/code/strikethrough.
-- Mapped parsed Markdown blocks to native Aura/GPUI elements: `Title`, `Paragraph`, `Text`, `Space`, and GPUI layout primitives.
+- Mapped parsed Markdown blocks to native Liora/GPUI elements: `Title`, `Paragraph`, `Text`, `Space`, and GPUI layout primitives.
 - Added regression tests for entrypoint construction, heading + mixed inline styles, unordered/ordered lists, and blockquote nesting.
 - Exported the `markdown` module from the Gallery binary so the public renderer surface stays warning-free before the full document shell consumes it.
 - Updated P8 tracking docs to mark Phase 2 complete and set Phase 3 code block styling + docs shell as next.
 
 ### Verification
-- `cargo test -p aura-gallery markdown` passed during implementation.
-- `cargo check -p aura-gallery` passed with no warnings after making the module public and test-gating parser inspection helpers.
+- `cargo test -p liora-gallery markdown` passed during implementation.
+- `cargo check -p liora-gallery` passed with no warnings after making the module public and test-gating parser inspection helpers.
 
 ### Key Discoveries
 - `pulldown-cmark` 0.13 uses `Tag::Heading { level, .. }` and `TagEnd::Heading(level)`, so the renderer stores heading level on Start and pops the frame on End.
-- Phase 2 intentionally leaves fenced/indented code block handling for Phase 3; inline code is already mapped through Aura `Text::code_style`.
+- Phase 2 intentionally leaves fenced/indented code block handling for Phase 3; inline code is already mapped through Liora `Text::code_style`.
 
 ## Session 83 — 2026-05-11 (P8 Phase 3 Code Blocks + Docs Shell)
 
 ### Actions
 - Extended the native Markdown renderer with fenced/indented code block parsing using `Tag::CodeBlock` and `CodeBlockKind`.
-- Rendered code blocks as native GPUI/Aura shells with neutral background, border, monospace text, no wrapping, and horizontal scrolling via `overflow_x_scroll`.
-- Added a `DocsShell` native two-column document window: Aura `Container` + left Aura `Menu` navigation + right Markdown-rendered document content with vertical scrolling.
-- Registered `Aura Docs` in the Gallery registry so the native docs shell is reachable from the existing demo bootstrap.
+- Rendered code blocks as native GPUI/Liora shells with neutral background, border, monospace text, no wrapping, and horizontal scrolling via `overflow_x_scroll`.
+- Added a `DocsShell` native two-column document window: Liora `Container` + left Liora `Menu` navigation + right Markdown-rendered document content with vertical scrolling.
+- Registered `Liora Docs` in the Gallery registry so the native docs shell is reachable from the existing demo bootstrap.
 - Kept inline code styling through the existing `Text::code_style` path from Phase 1/2.
 - Added tests for fenced code parsing, code block horizontal scroll styling, and docs shell native Container/Menu integration.
 - Updated P8 tracking docs to mark Phase 3 complete and set Phase 4 Live Demo injection as next.
 
 ### Verification
-- `cargo test -p aura-gallery markdown` passed during implementation.
-- `cargo check -p aura-gallery` passed without warnings during implementation.
+- `cargo test -p liora-gallery markdown` passed during implementation.
+- `cargo check -p liora-gallery` passed without warnings during implementation.
 
 ### Key Discoveries
 - Current GPUI supports `overflow_x_scroll` on stateful divs, which is sufficient for Phase 3 horizontal code scrolling without introducing a custom horizontal Scrollbar component.
@@ -2939,15 +2939,15 @@
 ## Session 84 — 2026-05-11 (P8 Phase 4 Live Demo Injection)
 
 ### Actions
-- Implemented Markdown live demo marker recognition for `::AuraDemo{component="Button"}::` in text events outside code blocks.
+- Implemented Markdown live demo marker recognition for `::LioraDemo{component="Button"}::` in text events outside code blocks.
 - Added text splitting so live demo markers are removed from paragraph text and inserted as dedicated `Block::LiveDemo` nodes while preserving surrounding text.
-- Rendered `Block::LiveDemo { component: "Button" }` as a real Aura `Button` inside a native highlighted card shell with hover/click-capable GPUI interaction.
+- Rendered `Block::LiveDemo { component: "Button" }` as a real Liora `Button` inside a native highlighted card shell with hover/click-capable GPUI interaction.
 - Updated the docs component page to include the live Button marker so the Gallery docs shell exercises the injection path.
-- Added regression tests for marker parsing, split behavior, marker removal from text blocks, and Button mapping to a real Aura component node.
+- Added regression tests for marker parsing, split behavior, marker removal from text blocks, and Button mapping to a real Liora component node.
 - Updated P8 tracking docs to mark Phase 4 complete and P8 core done.
 
 ### Verification
-- `cargo test -p aura-gallery markdown` passed during implementation.
+- `cargo test -p liora-gallery markdown` passed during implementation.
 
 ### Key Discoveries
 - `pulldown-cmark` emits the custom live demo syntax as normal `Event::Text`, so recognition belongs in the text-event path and must be disabled while the top frame is a code block.
@@ -2956,45 +2956,45 @@
 ## Session 85 — 2026-05-11 (P8 Docs App Split)
 
 ### Actions
-- Split the native docs surface into a dedicated `apps/aura-docs` binary crate with its own `main.rs` and Markdown renderer.
-- Removed the docs shell entry and markdown module from `aura-gallery`, restoring gallery to a pure component showcase.
-- Updated workspace membership, app Cargo manifests, and the project/phase docs to describe `aura-docs` as the official native docs main window.
-- Adjusted app titles and shell text to refer to Aura Docs instead of the old gallery-hosted docs shell.
+- Split the native docs surface into a dedicated `apps/liora-docs` binary crate with its own `main.rs` and Markdown renderer.
+- Removed the docs shell entry and markdown module from `liora-gallery`, restoring gallery to a pure component showcase.
+- Updated workspace membership, app Cargo manifests, and the project/phase docs to describe `liora-docs` as the official native docs main window.
+- Adjusted app titles and shell text to refer to Liora Docs instead of the old gallery-hosted docs shell.
 
 ### Verification
-- `cargo check -p aura-gallery -p aura-docs` passed.
-- `cargo test -p aura-docs --no-run` passed.
-- `timeout 8s cargo run -p aura-docs` started successfully and was stopped by timeout.
-- `timeout 8s cargo run -p aura-gallery` started successfully and was stopped by timeout.
+- `cargo check -p liora-gallery -p liora-docs` passed.
+- `cargo test -p liora-docs --no-run` passed.
+- `timeout 8s cargo run -p liora-docs` started successfully and was stopped by timeout.
+- `timeout 8s cargo run -p liora-gallery` started successfully and was stopped by timeout.
 
 ## Session 86 — 2026-05-12 (CodeBlock Component)
 
 ### Actions
-- Added `CodeBlock` to `aura-components` with block and inline formats.
+- Added `CodeBlock` to `liora-components` with block and inline formats.
 - Implemented lightweight native syntax highlighting with `StyledText`/`TextRun` for common Rust/TOML/JSON/Markdown/Shell/TS/JS tokens.
 - Added language labels, convenience language builders, and a copy button backed by GPUI clipboard APIs.
-- Replaced the Aura Docs Markdown code-block renderer with the reusable `CodeBlock` component.
+- Replaced the Liora Docs Markdown code-block renderer with the reusable `CodeBlock` component.
 - Added a Gallery demo covering Rust, JSON, Shell, and inline usage.
 
 ### Verification
-- `cargo test -p aura-components code_block -- --nocapture` passed.
-- `cargo check -p aura-docs -p aura-gallery` passed.
-- `cargo test -p aura-gallery code_block_demo_uses_component_api` passed.
-- `timeout 8s cargo run -p aura-gallery` started successfully and was stopped by timeout.
-- `timeout 8s cargo run -p aura-docs` started successfully and was stopped by timeout.
+- `cargo test -p liora-components code_block -- --nocapture` passed.
+- `cargo check -p liora-docs -p liora-gallery` passed.
+- `cargo test -p liora-gallery code_block_demo_uses_component_api` passed.
+- `timeout 8s cargo run -p liora-gallery` started successfully and was stopped by timeout.
+- `timeout 8s cargo run -p liora-docs` started successfully and was stopped by timeout.
 
-## Session 87 — 2026-05-12 (Aura Docs Content Expansion)
+## Session 87 — 2026-05-12 (Liora Docs Content Expansion)
 
 ### Actions
-- Expanded `aura-docs` from three placeholder pages to a fuller native documentation set: Overview, Quick Start, Architecture, Typography, CodeBlock, Markdown, Live Demo, and Authoring.
+- Expanded `liora-docs` from three placeholder pages to a fuller native documentation set: Overview, Quick Start, Architecture, Typography, CodeBlock, Markdown, Live Demo, and Authoring.
 - Added runnable command snippets, component examples, Markdown renderer architecture notes, and CodeBlock API docs.
 - Added a regression test that verifies the core documentation pages are registered in the docs navigation.
 
 ### Verification
-- `cargo test -p aura-docs markdown -- --nocapture` passed during implementation.
-- `cargo check -p aura-docs` passed during implementation.
-- `cargo check -p aura-gallery` passed.
-- `timeout 8s cargo run -p aura-docs` started successfully and was stopped by timeout.
+- `cargo test -p liora-docs markdown -- --nocapture` passed during implementation.
+- `cargo check -p liora-docs` passed during implementation.
+- `cargo check -p liora-gallery` passed.
+- `timeout 8s cargo run -p liora-docs` started successfully and was stopped by timeout.
 
 ## Session 88 — 2026-05-12 (CodeBlock Syntect Highlighting)
 
@@ -3002,33 +3002,33 @@
 - Replaced the hand-written CodeBlock token highlighter with `syntect`.
 - Kept rendering native by converting syntect regions into GPUI `TextRun`s inside `StyledText`.
 - Switched CodeBlock visuals to a more polished dark code surface using the `base16-ocean.dark` syntect theme palette.
-- Updated Aura Docs wording to document `syntect` as the highlighter implementation.
+- Updated Liora Docs wording to document `syntect` as the highlighter implementation.
 
 ### Verification
-- `cargo test -p aura-components code_block -- --nocapture` passed during implementation.
-- `cargo check -p aura-docs -p aura-gallery` passed.
-- `cargo test -p aura-docs markdown` passed.
-- `cargo test -p aura-gallery code_block_demo_uses_component_api` passed.
-- `cargo test -p aura-components code_block` passed.
-- `timeout 8s cargo run -p aura-gallery` started successfully and was stopped by timeout.
-- `timeout 8s cargo run -p aura-docs` started successfully and was stopped by timeout.
+- `cargo test -p liora-components code_block -- --nocapture` passed during implementation.
+- `cargo check -p liora-docs -p liora-gallery` passed.
+- `cargo test -p liora-docs markdown` passed.
+- `cargo test -p liora-gallery code_block_demo_uses_component_api` passed.
+- `cargo test -p liora-components code_block` passed.
+- `timeout 8s cargo run -p liora-gallery` started successfully and was stopped by timeout.
+- `timeout 8s cargo run -p liora-docs` started successfully and was stopped by timeout.
 
-## Session 90 — 2026-05-12 (Aura Docs Page Split + External Snippets)
+## Session 90 — 2026-05-12 (Liora Docs Page Split + External Snippets)
 
 ### Actions
-- Split Aura Docs authored content out of `apps/aura-docs/src/markdown.rs` into per-page Markdown files under `apps/aura-docs/content/pages/`.
+- Split Liora Docs authored content out of `apps/liora-docs/src/markdown.rs` into per-page Markdown files under `apps/liora-docs/content/pages/`.
 - Migrated current docs pages: Overview, Quick Start, Architecture, Typography, Button, CodeBlock, Input, Switch, Message, Markdown, Live Demo, Authoring.
-- Extracted code samples into external `.rs` snippets under `apps/aura-docs/content/snippets/<page>/<case>.rs`.
+- Extracted code samples into external `.rs` snippets under `apps/liora-docs/content/snippets/<page>/<case>.rs`.
 - Added fenced code `src="..."` support in the Markdown renderer so snippets are loaded by convention and rendered through the existing native `CodeBlock` component.
 - Updated architecture/prompt/memory docs with the page/snippet naming convention.
 
 ### Verification
-- `cargo test -p aura-docs` passed during implementation.
+- `cargo test -p liora-docs` passed during implementation.
 
 ### Key Decisions
 - Docs authored content should not be embedded as large Rust string constants.
 - Component documentation uses one Markdown file per component.
-- Code examples are maintained separately from Markdown and included via `src` paths relative to `apps/aura-docs/content/snippets/`.
+- Code examples are maintained separately from Markdown and included via `src` paths relative to `apps/liora-docs/content/snippets/`.
 
 ## Session 53 — 2026-05-14 (P10 Charts Planning)
 
@@ -3040,7 +3040,7 @@
 - Updated `prompt.md`, `architecture-design.md`, and `.memory/*` to make P10 the active charts phase and preserve the native-only constraint.
 
 ### Key Decisions
-- Charts are first-class Aura components, not external chart runtime wrappers.
+- Charts are first-class Liora components, not external chart runtime wrappers.
 - GPUI official/local source is the primary reference; zedis is only a structural case study.
 - First delivery set: LineChart, AreaChart, BarChart, PieChart, RingChart, Sparkline plus shared scale/axis/grid/legend/tooltip infrastructure.
 
@@ -3050,7 +3050,7 @@
 ## Session 54 — 2026-05-14 (P10 Charts Implementation Slice)
 
 ### Actions
-- Added native chart foundation in `aura-components`: `ChartPoint`, `ChartSeries`, `ChartOptions`, palette/domain helpers, `ScaleLinear`, `ScalePoint`, `ScaleBand`, shared chart frame painting, and shape helpers.
+- Added native chart foundation in `liora-components`: `ChartPoint`, `ChartSeries`, `ChartOptions`, palette/domain helpers, `ScaleLinear`, `ScalePoint`, `ScaleBand`, shared chart frame painting, and shape helpers.
 - Implemented `LineChart`, `AreaChart`, and `BarChart` as pure GPUI components using `canvas`, `PathBuilder`, `paint_path`, and `paint_quad`.
 - Added Gallery demos and Docs pages/snippets for LineChart, AreaChart, and BarChart.
 
@@ -3061,13 +3061,13 @@
 
 ### Verification
 - `cargo fmt`
-- `cargo check -p aura-components`
-- `cargo check -p aura-docs --bin check_snippets`
-- `cargo check -p aura-docs`
-- `cargo check -p aura-gallery`
+- `cargo check -p liora-components`
+- `cargo check -p liora-docs --bin check_snippets`
+- `cargo check -p liora-docs`
+- `cargo check -p liora-gallery`
 - `cargo test --workspace`
-- `timeout 8s cargo run -p aura-docs` (124 expected GUI timeout)
-- `timeout 8s cargo run -p aura-gallery` (124 expected GUI timeout)
+- `timeout 8s cargo run -p liora-docs` (124 expected GUI timeout)
+- `timeout 8s cargo run -p liora-gallery` (124 expected GUI timeout)
 
 
 ## Session 2026-06-17 — Phase Handoff Stale-State Cleanup
@@ -3095,13 +3095,13 @@
 
 ### Actions
 - Normalized remaining exact-`Pixels` public builder parameters across charts and newer P13/P14 components to `impl Into<Pixels>` where this is source-compatible.
-- Preserved explicit `px(...)` usage in tests/examples for visual dimensions; the API is broader, but Aura docs and examples should keep units obvious.
+- Preserved explicit `px(...)` usage in tests/examples for visual dimensions; the API is broader, but Liora docs and examples should keep units obvious.
 - Extended builder-state assertions for SignalMeter, HeatBar, SegmentRatioBar, Label, Operation, and TagFlow.
 
 ### Verification
-- `cargo test -p aura-components -- --nocapture` passed: 192 unit tests plus package integration tests.
+- `cargo test -p liora-components -- --nocapture` passed: 192 unit tests plus package integration tests.
 - Full P15 gate suite passed: fmt, workspace check/test, docs snippet check, package validate, packaging dry-run, install-smoke dry-run, and `git diff --check`.
-- GUI smoke passed: `timeout 10s cargo run -p aura-gallery` and `timeout 10s cargo run -p aura-docs` both started successfully and exited via expected timeout.
+- GUI smoke passed: `timeout 10s cargo run -p liora-gallery` and `timeout 10s cargo run -p liora-docs` both started successfully and exited via expected timeout.
 
 ## Session 2026-06-17 — P15 Track B Callback and Panic Audit
 
@@ -3111,9 +3111,9 @@
 - Removed avoidable production-path panics from Button icon-only rendering, DateTimePicker defaults, Input text hit-testing/paint, InputNumber filtering, Chart downsampling, Sparkline rendering, and CodeBlock shaped-text paint paths.
 
 ### Verification
-- `cargo test -p aura-components api_consistency_audit_tests -- --nocapture` passed.
+- `cargo test -p liora-components api_consistency_audit_tests -- --nocapture` passed.
 - Full P15 gate suite passed after whitespace cleanup: fmt, workspace check/test, docs snippet check, package validate, packaging dry-run, install-smoke dry-run, and `git diff --check`.
-- GUI smoke passed: `timeout 10s cargo run -p aura-gallery` and `timeout 10s cargo run -p aura-docs` both started successfully and exited via expected timeout.
+- GUI smoke passed: `timeout 10s cargo run -p liora-gallery` and `timeout 10s cargo run -p liora-docs` both started successfully and exited via expected timeout.
 
 ## Session 2026-06-17 — P15 Track C Visual Theme Consistency
 
@@ -3123,7 +3123,7 @@
 - Added source-level visual consistency regression tests for colored surface text tokens and representative Virtualized* surface/border/radius token usage.
 
 ### Verification
-- `cargo test -p aura-components -- --nocapture` passed: 197 unit tests plus package integration tests.
+- `cargo test -p liora-components -- --nocapture` passed: 197 unit tests plus package integration tests.
 - Full P15 gate suite passed: fmt, workspace check/test, docs snippet check, package validate, packaging dry-run, install-smoke dry-run, and `git diff --check`.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
 
@@ -3136,7 +3136,7 @@
 
 ### Verification
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-components -- --nocapture` passed: 197 unit tests plus package integration tests.
+- `cargo test -p liora-components -- --nocapture` passed: 197 unit tests plus package integration tests.
 - `cargo check --workspace --all-targets` passed.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
@@ -3150,7 +3150,7 @@
 
 ### Verification
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-components -- --nocapture` passed: 198 unit tests plus package integration tests.
+- `cargo test -p liora-components -- --nocapture` passed: 198 unit tests plus package integration tests.
 - `cargo check --workspace --all-targets` passed.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
@@ -3164,7 +3164,7 @@
 
 ### Verification
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-components -- --nocapture` passed: 199 unit tests plus package integration tests.
+- `cargo test -p liora-components -- --nocapture` passed: 199 unit tests plus package integration tests.
 - `cargo check --workspace --all-targets` passed.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
@@ -3178,7 +3178,7 @@
 
 ### Verification
 - `cargo fmt --all --check` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
 - `git diff --check` passed.
@@ -3193,9 +3193,9 @@
 
 ### Verification
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-components overlay_escape_coverage_tests -- --nocapture` passed.
+- `cargo test -p liora-components overlay_escape_coverage_tests -- --nocapture` passed.
 - `cargo check --workspace --all-targets` passed.
-- `cargo test -p aura-components -- --nocapture` passed: 200 unit tests plus package integration tests.
+- `cargo test -p liora-components -- --nocapture` passed: 200 unit tests plus package integration tests.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
 
@@ -3208,9 +3208,9 @@
 
 ### Verification
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-components overlay_escape_coverage_tests -- --nocapture` passed.
+- `cargo test -p liora-components overlay_escape_coverage_tests -- --nocapture` passed.
 - `cargo check --workspace --all-targets` passed.
-- `cargo test -p aura-components -- --nocapture` passed: 200 unit tests plus package integration tests.
+- `cargo test -p liora-components -- --nocapture` passed: 200 unit tests plus package integration tests.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
 
@@ -3222,7 +3222,7 @@
 
 ### Verification
 - `cargo fmt --all --check` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
 - `git diff --check` passed.
@@ -3237,10 +3237,10 @@
 
 ### Verification
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-components overlay_escape_coverage_tests -- --nocapture` passed.
-- `cargo test -p aura-components preview::tests::preview_overlay_has_escape_close_action_and_image_sized_hitbox -- --nocapture` passed.
+- `cargo test -p liora-components overlay_escape_coverage_tests -- --nocapture` passed.
+- `cargo test -p liora-components preview::tests::preview_overlay_has_escape_close_action_and_image_sized_hitbox -- --nocapture` passed.
 - `cargo check --workspace --all-targets` passed.
-- `cargo test -p aura-components -- --nocapture` passed: 201 unit tests plus package integration tests.
+- `cargo test -p liora-components -- --nocapture` passed: 201 unit tests plus package integration tests.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
 
@@ -3253,7 +3253,7 @@
 
 ### Verification
 - `cargo fmt --all --check` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
 - `git diff --check` passed.
@@ -3268,8 +3268,8 @@
 
 ### Verification
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-components tour::tests -- --nocapture` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo test -p liora-components tour::tests -- --nocapture` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
 - `git diff --check` passed.
@@ -3284,8 +3284,8 @@
 
 ### Verification
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-docs markdown::tests::packaging_docs_explain_ci_and_release_workflow_boundaries -- --nocapture` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo test -p liora-docs markdown::tests::packaging_docs_explain_ci_and_release_workflow_boundaries -- --nocapture` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
 - `git diff --check` passed.
@@ -3300,8 +3300,8 @@
 
 ### Verification
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-docs markdown::tests::authored_page_snippets_are_available_to_docs_loader -- --nocapture` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo test -p liora-docs markdown::tests::authored_page_snippets_are_available_to_docs_loader -- --nocapture` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
 - `git diff --check` passed.
@@ -3317,8 +3317,8 @@
 ### Verification
 - Workflow YAML parsed successfully with PyYAML.
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-docs packaging -- --nocapture` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo test -p liora-docs packaging -- --nocapture` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
 - `cargo run -p xtask -- package validate` passed.
@@ -3335,8 +3335,8 @@
 
 ### Verification
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-docs markdown::tests::quick_start_registers_core_app_key_bindings -- --nocapture` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo test -p liora-docs markdown::tests::quick_start_registers_core_app_key_bindings -- --nocapture` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
 - `git diff --check` passed.
@@ -3351,7 +3351,7 @@
 
 ### Verification
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-components code_block::tests -- --nocapture` passed.
+- `cargo test -p liora-components code_block::tests -- --nocapture` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
 - `git diff --check` passed.
@@ -3366,10 +3366,10 @@
 
 ### Verification
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-components code_block::tests -- --nocapture` passed.
+- `cargo test -p liora-components code_block::tests -- --nocapture` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `git diff --check -- . ':(exclude).omx'` passed after removing markdown EOF whitespace.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
 
@@ -3383,13 +3383,13 @@
 
 ### Verification
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-components code_block::tests -- --nocapture` passed.
-- `cargo test -p aura-components selectable_text::tests -- --nocapture` passed.
-- `cargo test -p aura-components timer::tests -- --nocapture` passed.
-- `cargo test -p aura-components api_consistency_audit_tests::avoidable_runtime_panics_stay_out_of_hardened_paths -- --nocapture` passed.
+- `cargo test -p liora-components code_block::tests -- --nocapture` passed.
+- `cargo test -p liora-components selectable_text::tests -- --nocapture` passed.
+- `cargo test -p liora-components timer::tests -- --nocapture` passed.
+- `cargo test -p liora-components api_consistency_audit_tests::avoidable_runtime_panics_stay_out_of_hardened_paths -- --nocapture` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `git diff --check -- . ':(exclude).omx'` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
 
@@ -3397,50 +3397,50 @@
 
 ### Actions
 - Changed Gallery and Docs tray icon helpers to return `Option<TrayIconImage>` instead of panicking on bundled icon decode errors.
-- Added Gallery blue and Docs purple solid-icon fallbacks through `aura_tray::solid_icon`.
+- Added Gallery blue and Docs purple solid-icon fallbacks through `liora_tray::solid_icon`.
 - Made initial tray install and dynamic `SetIcon` handling tolerate icon load failures without crashing the app.
 
 ### Verification
 - `cargo fmt --all --check` passed.
-- `cargo check -p aura-gallery --all-targets` passed.
-- `cargo check -p aura-docs --all-targets` passed.
-- `cargo test -p aura-gallery shell_tests::gallery_shell_uses_container_and_menu -- --nocapture` passed.
-- `cargo test -p aura-docs markdown::tests::docs_shell_registers_core_documentation_pages -- --nocapture` passed.
+- `cargo check -p liora-gallery --all-targets` passed.
+- `cargo check -p liora-docs --all-targets` passed.
+- `cargo test -p liora-gallery shell_tests::gallery_shell_uses_container_and_menu -- --nocapture` passed.
+- `cargo test -p liora-docs markdown::tests::docs_shell_registers_core_documentation_pages -- --nocapture` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `git diff --check -- . ':(exclude).omx'` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
 
 ## Session 2026-06-18 — P15 Track B Packager String Rendering Panic Cleanup
 
 ### Actions
-- Removed `expect("write to string")` from `crates/aura-packager/src/checksum.rs` SHA-256 hex rendering.
+- Removed `expect("write to string")` from `crates/liora-packager/src/checksum.rs` SHA-256 hex rendering.
 - Removed `expect("write to string")` from package manifest checksum, release notes, and JSON rendering.
 - Kept output formats stable by relying on `format!` plus `push_str` instead of fallible `fmt::Write` calls.
 
 ### Verification
 - `cargo fmt --all --check` passed.
-- `cargo test -p aura-packager -- --nocapture` passed.
+- `cargo test -p liora-packager -- --nocapture` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `git diff --check -- . ':(exclude).omx'` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
 
 ## Session 2026-06-18 — P15 Track B Lucide Build Script Error Handling
 
 ### Actions
-- Reworked `crates/aura-icons-lucide/build.rs` around `try_main() -> io::Result<()>`.
+- Reworked `crates/liora-icons-lucide/build.rs` around `try_main() -> io::Result<()>`.
 - Replaced OUT_DIR, SVG directory, directory entry, UTF-8 conversion, file create, and generated-file write unwraps with propagated errors.
 - Kept the existing generated `IconName` output format and cargo rerun/warning behavior.
 
 ### Verification
 - `cargo fmt --all --check` passed.
-- `cargo check -p aura-icons-lucide --all-targets` passed.
+- `cargo check -p liora-icons-lucide --all-targets` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `git diff --check -- . ':(exclude).omx'` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
 
@@ -3455,7 +3455,7 @@
 - `cargo fmt --all --check` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `cargo run -p xtask -- package validate` passed.
 - `cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build` passed.
 - `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run` passed.
@@ -3467,22 +3467,22 @@
 
 ### Actions
 - Added `cargo run -p xtask -- package release-readiness` to check packaging layout, license policy, tag/version policy, signing/notarization inputs, and GitHub Release workflow wiring.
-- Added `LICENSE.md` documenting current `LicenseRef-Aura` policy and `packaging/signing-policy.md` documenting macOS/Windows signing and notarization gates.
+- Added `LICENSE.md` documenting current `LicenseRef-Liora` policy and `packaging/signing-policy.md` documenting macOS/Windows signing and notarization gates.
 - Added readiness checks to ordinary CI and strict `v*` release package workflow.
 - Updated P12 prompt, main prompt, native docs packaging workflow, technical packaging plan, and memory state to mark repository-owned P12 scope complete.
 
 ### Verification
 - `cargo fmt --all --check` passed.
 - GitHub workflow YAML parse check passed for `.github/workflows/package.yml` and `.github/workflows/ci.yml`.
-- `cargo check -p xtask -p aura-packager` passed.
-- `cargo test -p xtask -p aura-packager` passed.
-- `cargo test -p aura-docs markdown::tests::packaging_docs_and_workflows_include_release_readiness_gate -- --nocapture` passed.
+- `cargo check -p xtask -p liora-packager` passed.
+- `cargo test -p xtask -p liora-packager` passed.
+- `cargo test -p liora-docs markdown::tests::packaging_docs_and_workflows_include_release_readiness_gate -- --nocapture` passed.
 - `cargo run -p xtask -- package validate` passed.
 - `cargo run -p xtask -- package release-readiness` passed with local non-tag warning only.
-- `AURA_PACKAGE_VERSION=0.1.0 GITHUB_REF_NAME=v0.1.0 AURA_REQUIRE_SIGNING=true cargo run -p xtask -- package release-readiness` passed on Linux simulated tag gate.
+- `LIORA_PACKAGE_VERSION=0.1.0 GITHUB_REF_NAME=v0.1.0 LIORA_REQUIRE_SIGNING=true cargo run -p xtask -- package release-readiness` passed on Linux simulated tag gate.
 - `cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build` passed.
 - `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
 - `git diff --check -- . ':(exclude).omx'` passed.
@@ -3500,12 +3500,12 @@
 
 ### Verification
 - `cargo fmt --all --check` passed.
-- `cargo check -p aura-minimal-app` passed.
-- `cargo test -p aura-docs markdown::tests::adoption_docs_cover_minimal_app_and_public_entrypoints -- --nocapture` passed.
+- `cargo check -p liora-minimal-app` passed.
+- `cargo test -p liora-docs markdown::tests::adoption_docs_cover_minimal_app_and_public_entrypoints -- --nocapture` passed.
 - `cargo doc --workspace --no-deps` passed.
 - `cargo check --workspace --all-targets` passed.
-- `cargo test --workspace` passed, including `aura-minimal-app`.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo test --workspace` passed, including `liora-minimal-app`.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `cargo run -p xtask -- package validate` passed.
 - `cargo run -p xtask -- package release-readiness` passed.
 - `cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build` passed.
@@ -3519,17 +3519,17 @@
 ### Actions
 - Added `.prompt/P17-dogfood-dashboard.md` and completed the P17 dogfooding phase.
 - Added compile-checked `examples/dashboard-app` workspace package.
-- Built a realistic native GPUI dashboard combining Aura filters, metric cards, `LineChart`, `BarChart`, `Progress`, `Table`, `CodeBlock`, toast, and key binding setup.
+- Built a realistic native GPUI dashboard combining Liora filters, metric cards, `LineChart`, `BarChart`, `Progress`, `Table`, `CodeBlock`, toast, and key binding setup.
 - Added native Docs `Dashboard App` page plus README and Adoption Guide entries.
 - Added regression coverage for dashboard workspace/docs/README wiring.
 
 ### Verification
-- `cargo check -p aura-dashboard-app` passed.
-- `cargo test -p aura-docs markdown::tests::dashboard_dogfood_app_is_documented_and_workspace_registered -- --nocapture` passed.
+- `cargo check -p liora-dashboard-app` passed.
+- `cargo test -p liora-docs markdown::tests::dashboard_dogfood_app_is_documented_and_workspace_registered -- --nocapture` passed.
 - `cargo fmt --all --check` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `cargo doc --workspace --no-deps` passed.
 - `cargo run -p xtask -- package validate` passed.
 - `cargo run -p xtask -- package release-readiness` passed.
@@ -3543,19 +3543,19 @@
 
 ### Actions
 - Added `.prompt/P18-dashboard-polish-and-api-ergonomics.md` and completed the P18 phase.
-- Removed the attempted `aura_components::dashboard` helper direction; dashboard/sample-specific composition remains app-local, not exported from the core component crate.
+- Removed the attempted `liora_components::dashboard` helper direction; dashboard/sample-specific composition remains app-local, not exported from the core component crate.
 - Polished `examples/dashboard-app` to use the helpers, larger dashboard sections, theme tokens, and light/dark theme switching.
 - Added native Docs `Dashboard Patterns` page plus README/prompt/memory wiring.
 - Added regression coverage for dashboard helper API and dashboard pattern documentation.
 
 ### Verification
-- `cargo check -p aura-dashboard-app` passed.
-- `cargo test -p aura-components dashboard::tests::dashboard_grid_presets_track_columns -- --nocapture` passed.
-- `cargo test -p aura-docs markdown::tests::dashboard_patterns_cover_composition_helpers_and_theme_switching -- --nocapture` passed.
+- `cargo check -p liora-dashboard-app` passed.
+- `cargo test -p liora-components dashboard::tests::dashboard_grid_presets_track_columns -- --nocapture` passed.
+- `cargo test -p liora-docs markdown::tests::dashboard_patterns_cover_composition_helpers_and_theme_switching -- --nocapture` passed.
 - `cargo fmt --all --check` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `cargo doc --workspace --no-deps` passed.
 - `cargo run -p xtask -- package validate` passed.
 - `cargo run -p xtask -- package release-readiness` passed.
@@ -3572,19 +3572,19 @@
 - Added `examples/dashboard-app/src/model.rs` with explicit dashboard data, filters, status, generation, and filtering helpers.
 - Wired search, region, and alerts-only controls into the parent dashboard state.
 - Made refresh regenerate revisioned mock data across metrics, charts, table rows, and progress panels.
-- Added loading/ready/empty/degraded state branches using ordinary Aura components.
+- Added loading/ready/empty/degraded state branches using ordinary Liora components.
 - Added native Docs `Dashboard State` page plus README/prompt/memory wiring.
 
 ### Verification
-- `cargo check -p aura-dashboard-app` passed.
-- `cargo test -p aura-dashboard-app model::tests::filters_match_query_region_and_alerts -- --nocapture` passed.
-- `cargo test -p aura-dashboard-app model::tests::empty_status_is_reported_for_no_visible_services -- --nocapture` passed.
-- `cargo test -p aura-dashboard-app model::tests::refresh_generation_changes_metrics_but_keeps_shape -- --nocapture` passed.
-- `cargo test -p aura-docs markdown::tests::dashboard_state_docs_cover_data_flow_model -- --nocapture` passed.
+- `cargo check -p liora-dashboard-app` passed.
+- `cargo test -p liora-dashboard-app model::tests::filters_match_query_region_and_alerts -- --nocapture` passed.
+- `cargo test -p liora-dashboard-app model::tests::empty_status_is_reported_for_no_visible_services -- --nocapture` passed.
+- `cargo test -p liora-dashboard-app model::tests::refresh_generation_changes_metrics_but_keeps_shape -- --nocapture` passed.
+- `cargo test -p liora-docs markdown::tests::dashboard_state_docs_cover_data_flow_model -- --nocapture` passed.
 - `cargo fmt --all --check` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `cargo doc --workspace --no-deps` passed.
 - `cargo run -p xtask -- package validate` passed.
 - `cargo run -p xtask -- package release-readiness` passed.
@@ -3599,13 +3599,13 @@
 - Removed standalone `examples/minimal-app` and `examples/dashboard-app` workspace packages.
 - Folded useful dashboard/minimal app traits into maintained surfaces: Gallery now owns shell search/filtering, theme switching, refresh status/toast feedback, tray behavior, and component composition dogfooding.
 - Updated Docs adoption/dashboard pages to point to Gallery/Docs rather than standalone sample apps.
-- Reaffirmed boundary: `aura-components` must not contain business sample screens or mock dashboard models; Gallery/Docs raw GPUI glue should drive reusable Aura helper/component extraction.
+- Reaffirmed boundary: `liora-components` must not contain business sample screens or mock dashboard models; Gallery/Docs raw GPUI glue should drive reusable Liora helper/component extraction.
 
 ### Verification
 - `cargo fmt --all --check` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `cargo doc --workspace --no-deps` passed.
 - Gallery and Docs GUI startup smoke both started and exited via expected `timeout 10s` status `124`.
 
@@ -3628,20 +3628,43 @@
 ### Actions
 - Added `.prompt/P21-release-candidate-readiness.md` and `docs/release-candidate-checklist.md` as the `0.1.0` RC readiness contract.
 - Refreshed README, CHANGELOG, native Docs packaging/adoption pages, `prompt.md`, and memory state so they match the current Gallery/Docs-only adoption boundary.
-- Prepared package metadata/readiness coverage so manifests explicitly carry `LicenseRef-Aura`, repository URL, descriptions, and `publish = false` unless the owner changes publication policy.
+- Prepared package metadata/readiness coverage so manifests explicitly carry `LicenseRef-Liora`, repository URL, descriptions, and `publish = false` unless the owner changes publication policy.
 - Added release-boundary regression tests covering RC commands, canonical app boundaries, workflow roles, license metadata, and absence of removed sample apps.
 
 ### Verification
-- `cargo test -p aura-docs -- --nocapture` passed: 39 tests, including P21 RC metadata/readiness coverage.
+- `cargo test -p liora-docs -- --nocapture` passed: 39 tests, including P21 RC metadata/readiness coverage.
 - `cargo fmt --all --check` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
-- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
 - `cargo doc --workspace --no-deps` passed.
 - `cargo run -p xtask -- package validate` passed.
 - `cargo run -p xtask -- package release-readiness` passed with expected non-tag warning.
 - `cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build` passed.
 - `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run` passed.
 - `git diff --check -- . ':(exclude).omx'` passed.
-- Gallery GUI smoke passed: `timeout 10s cargo run -p aura-gallery` exited `124` after startup.
-- Docs GUI smoke passed: `timeout 10s cargo run -p aura-docs` exited `124` after startup.
+- Gallery GUI smoke passed: `timeout 10s cargo run -p liora-gallery` exited `124` after startup.
+- Docs GUI smoke passed: `timeout 10s cargo run -p liora-docs` exited `124` after startup.
+
+## Session 2026-06-18 — Rename retired project to Liora
+
+### Actions
+- Renamed the project to Liora across workspace crates, apps, binaries, package metadata, docs, snippets, CI, packaging resources, memory, prompt files, icon filenames, and tests.
+- Renamed crate/app packages to `liora-*` and binaries to `liora-gallery` / `liora-docs`.
+- Updated release/package policy identifiers from the retired license/env identifiers to `LicenseRef-Liora` / `LIORA_*`.
+- Updated `origin` to `git@github.com:yhyzgn/liora.git`.
+
+### Verification
+- `cargo fmt --all --check` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
+- `cargo doc --workspace --no-deps` passed.
+- `cargo run -p xtask -- package validate` passed.
+- `cargo run -p xtask -- package release-readiness` passed with expected non-tag warning.
+- `cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build` passed.
+- `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run` passed.
+- `git diff --check -- . ':(exclude).omx'` passed.
+- Non `.git` / `.omx` / `target` residual search for the retired project name in paths/text returned 0.
+- Gallery GUI smoke passed: `timeout 10s cargo run -p liora-gallery` exited `124` after startup.
+- Docs GUI smoke passed: `timeout 10s cargo run -p liora-docs` exited `124` after startup.

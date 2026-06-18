@@ -4,7 +4,7 @@
 
 **Goal:** Fix Popover centering and disappearance (TopCenter) by using zero-size anchor points and flexbox centering in the overlay.
 
-**Architecture:** 
+**Architecture:**
 1. `PopoverView` will calculate a "pivot point" based on the anchor and placement.
 2. For `Center` placements (Top/Bottom/Left/Right), a zero-size `div` will be positioned at the pivot.
 3. This pivot `div` will use `flex`, `justify_center`, and `items_center` with `overflow_visible` to ensure the child (popover content) grows outward from the pivot point, achieving perfect centering without knowing the content size.
@@ -17,12 +17,12 @@
 ### Task 1: Refactor PopoverView for Pivot-based Positioning
 
 **Files:**
-- Modify: `crates/aura-components/src/popover.rs`
+- Modify: `crates/liora-components/src/popover.rs`
 
 - [ ] **Step 1: Rewrite PopoverView::render with pivot logic**
 
 ```rust
-// In crates/aura-components/src/popover.rs
+// In crates/liora-components/src/popover.rs
 
 impl Render for PopoverView {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
@@ -31,14 +31,14 @@ impl Render for PopoverView {
         let placement = self.placement;
         let offset = self.offset;
         let on_close = self.on_close.clone();
-        
+
         let content = (self.content)(_window, cx);
         let viewport_size = _window.viewport_size();
 
         // Calculate Pivot Point and Pivot Alignment
         // A pivot point is where the zero-size container is placed.
         // We use flexbox to grow the content FROM this pivot point.
-        
+
         let mut pivot_div = div().absolute().overflow_visible().flex();
 
         match placement {
@@ -117,7 +117,7 @@ Run: `cargo check`
 
 - [ ] **Step 3: Commit**
 ```bash
-git add crates/aura-components/src/popover.rs
+git add crates/liora-components/src/popover.rs
 git commit -m "fix(popover): robust centering using pivot and flexbox alignment"
 ```
 
@@ -126,7 +126,7 @@ git commit -m "fix(popover): robust centering using pivot and flexbox alignment"
 ### Task 2: Verify in Gallery
 
 - [ ] **Step 1: Run Gallery and check TopCenter / BottomCenter**
-Run: `cargo run -p aura-gallery`
+Run: `cargo run -p liora-gallery`
 (Verify that the popover is perfectly centered horizontally relative to the button).
 
 - [ ] **Step 2: Verify Left / Right Centering**

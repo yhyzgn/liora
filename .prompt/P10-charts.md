@@ -1,11 +1,11 @@
 # P10 Charts — 原生统计图组件
 
-> 上游: `.prompt/P8-engineering.md` / 当前阶段  
+> 上游: `.prompt/P8-engineering.md` / 当前阶段
 > 参考: GPUI 官方源码优先；`https://github.com/vicanso/zedis` 仅作为 GPUI Metrics 图表案例参考
 
 ## 目标
 
-为 Aura UI 新增一组企业级统计图控件，用于 Dashboard、监控、报表和数据分析页面。所有图表必须是 **Rust + GPUI 原生绘制**，并作为 `aura-components` 的一等组件交付。
+为 Liora UI 新增一组企业级统计图控件，用于 Dashboard、监控、报表和数据分析页面。所有图表必须是 **Rust + GPUI 原生绘制**，并作为 `liora-components` 的一等组件交付。
 
 ## 绝对边界
 
@@ -24,7 +24,7 @@
 - `gpui::PathBuilder`：构建 stroke/fill path，支持 line、curve、arc、polygon、dash array。
 - `Window::paint_path(path, color)`：绘制矢量 path。
 - `Window::paint_quad(...)` / `fill(...)` / `quad(...)`：绘制柱体、背景、网格辅助块。
-- GPUI TextSystem / Aura `Text`、`Paragraph`：绘制标题、坐标轴标签、legend、tooltip 文案。
+- GPUI TextSystem / Liora `Text`、`Paragraph`：绘制标题、坐标轴标签、legend、tooltip 文案。
 
 ### zedis 案例参考结论
 
@@ -34,14 +34,14 @@
 - 将图表拆为 `scale`、`axis/grid`、`shape` 层。
 - Area/Line/Bar 都在 paint 回调中根据 bounds 计算 scale，再绘制 path/quad。
 
-Aura P10 采用同类分层思想，但实现自己的组件 API、主题 token、测试、Gallery demo 和 Docs 文档。
+Liora P10 采用同类分层思想，但实现自己的组件 API、主题 token、测试、Gallery demo 和 Docs 文档。
 
 ## 架构分层
 
 建议文件结构：
 
 ```text
-crates/aura-components/src/
+crates/liora-components/src/
 ├── chart.rs            # 公共数据模型、ChartTheme、Legend、Tooltip、ChartFrame
 ├── chart_scale.rs      # ScaleLinear / ScaleBand / ScalePoint
 ├── chart_axis.rs       # Axis、Grid、Tick、Label 布局
@@ -73,7 +73,7 @@ LineChart::new(series)
 
 - X 轴第一版支持分类值（`SharedString`）和后续可扩展数值/时间值。
 - Y 轴第一版支持 `f64`，自动计算 min/max，可手动覆盖 domain。
-- 空数据必须渲染 Aura `Empty` 或轻量占位，不 panic。
+- 空数据必须渲染 Liora `Empty` 或轻量占位，不 panic。
 - 所有组件提供 `.id(...)` 覆盖，默认使用内置唯一 ID。
 
 ## 首批组件范围
@@ -98,16 +98,16 @@ LineChart::new(series)
 5. danger
 6. neutral.text_3 / neutral.border / neutral.divider 用于 axis/grid
 
-若视觉不足，再在 `aura-theme` 中新增 `ChartPalette`，包含 `series_1..series_8`、`axis`、`grid`、`tooltip_bg` 等 token。
+若视觉不足，再在 `liora-theme` 中新增 `ChartPalette`，包含 `series_1..series_8`、`axis`、`grid`、`tooltip_bg` 等 token。
 
 ## Gallery / Docs 要求
 
 每个图表控件都必须同时完成：
 
-- `apps/aura-gallery/src/demos/<chart>_demo.rs`
+- `apps/liora-gallery/src/demos/<chart>_demo.rs`
 - Gallery registry 注册
-- `apps/aura-docs/content/pages/<chart>.md`
-- `apps/aura-docs/content/snippets/<chart>/*.rs`
+- `apps/liora-docs/content/pages/<chart>.md`
+- `apps/liora-docs/content/snippets/<chart>/*.rs`
 - Docs 页面按“效果 → 对应代码”组织
 
 ## 测试要求
@@ -136,8 +136,8 @@ LineChart::new(series)
 - [x] 首批 6 类图表组件完成并导出。
 - [x] Gallery demos 完整且自举。
 - [x] Docs 每个控件按“效果 → 代码”展示。
-- [x] `cargo fmt`、`cargo check -p aura-components`、`cargo check -p aura-docs`、`cargo check -p aura-gallery`、相关 chart tests 通过。
-- [x] `timeout 15s cargo run -p aura-docs`、`timeout 15s cargo run -p aura-gallery` 可启动无即时崩溃。
+- [x] `cargo fmt`、`cargo check -p liora-components`、`cargo check -p liora-docs`、`cargo check -p liora-gallery`、相关 chart tests 通过。
+- [x] `timeout 15s cargo run -p liora-docs`、`timeout 15s cargo run -p liora-gallery` 可启动无即时崩溃。
 - [x] `.memory/*` 与 `architecture-design.md` 更新。
 
 

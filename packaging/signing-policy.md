@@ -1,22 +1,22 @@
-# Aura Native Package Signing Policy
+# Liora Native Package Signing Policy
 
-Aura remains pure Rust + GPUI native. Signing and notarization only apply to generated installer/package artifacts; they do not introduce Tauri, WebView, HTML/CSS, DOM, or browser runtime architecture.
+Liora remains pure Rust + GPUI native. Signing and notarization only apply to generated installer/package artifacts; they do not introduce Tauri, WebView, HTML/CSS, DOM, or browser runtime architecture.
 
 ## Enforcement mode
 
 `cargo run -p xtask -- package release-readiness` supports two modes:
 
 - default: unsigned builds are allowed, but missing signing/notarization inputs are reported as warnings;
-- strict: set `AURA_REQUIRE_SIGNING=true` to fail the release readiness gate when the current platform signing inputs are missing.
+- strict: set `LIORA_REQUIRE_SIGNING=true` to fail the release readiness gate when the current platform signing inputs are missing.
 
 ## macOS inputs
 
 Required for strict signed macOS release gates:
 
-- `AURA_MACOS_CODESIGN_IDENTITY` — Developer ID Application identity used by `codesign`;
-- `AURA_MACOS_NOTARY_APPLE_ID` — Apple ID for `notarytool`;
-- `AURA_MACOS_NOTARY_TEAM_ID` — Apple Developer Team ID;
-- `AURA_MACOS_NOTARY_PASSWORD` — app-specific password or keychain credential for notarization.
+- `LIORA_MACOS_CODESIGN_IDENTITY` — Developer ID Application identity used by `codesign`;
+- `LIORA_MACOS_NOTARY_APPLE_ID` — Apple ID for `notarytool`;
+- `LIORA_MACOS_NOTARY_TEAM_ID` — Apple Developer Team ID;
+- `LIORA_MACOS_NOTARY_PASSWORD` — app-specific password or keychain credential for notarization.
 
 Expected release sequence once credentials are available:
 
@@ -30,9 +30,9 @@ Expected release sequence once credentials are available:
 
 Required for strict signed Windows release gates:
 
-- `AURA_WINDOWS_SIGNTOOL_CERT_PATH` — certificate/PFX path or CI materialized secret path;
-- `AURA_WINDOWS_SIGNTOOL_CERT_PASSWORD` — certificate password;
-- `AURA_WINDOWS_TIMESTAMP_URL` — timestamp server URL, for example a vendor-approved RFC 3161 endpoint.
+- `LIORA_WINDOWS_SIGNTOOL_CERT_PATH` — certificate/PFX path or CI materialized secret path;
+- `LIORA_WINDOWS_SIGNTOOL_CERT_PASSWORD` — certificate password;
+- `LIORA_WINDOWS_TIMESTAMP_URL` — timestamp server URL, for example a vendor-approved RFC 3161 endpoint.
 
 Expected release sequence once credentials are available:
 

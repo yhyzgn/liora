@@ -36,9 +36,9 @@
 
 ## Table 组件特别规划
 
-Table 是 Aura 最复杂的单一组件。参考 Element-Plus el-table 的能力矩阵:
+Table 是 Liora 最复杂的单一组件。参考 Element-Plus el-table 的能力矩阵:
 
-| 能力 | 优先级 | 
+| 能力 | 优先级 |
 |------|--------|
 | 基础渲染 (列定义+行数据) | P0 |
 | 固定表头 (sticky header) | P0 |

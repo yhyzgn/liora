@@ -6,26 +6,26 @@
 
 **Architecture:** Pagination is a `View` component that manages the `current_page` state. It renders different sub-components (total, prev, pager, next, jumper) based on a layout string.
 
-**Tech Stack:** Rust, GPUI 0.2.2, aura-theme, aura-components (Input/Button).
+**Tech Stack:** Rust, GPUI 0.2.2, liora-theme, liora-components (Input/Button).
 
 ---
 
 ### Task 1: Foundation & Types
 
 **Files:**
-- Create: `crates/aura-components/src/pagination.rs`
-- Modify: `crates/aura-components/src/lib.rs`
+- Create: `crates/liora-components/src/pagination.rs`
+- Modify: `crates/liora-components/src/lib.rs`
 
 - [ ] **Step 1: Define Pagination structure and state**
 
 ```rust
-use aura_core::Config;
+use liora_core::Config;
 use gpui::{
     prelude::*, px, App, Context, IntoElement, Render, Window,
     div, SharedString, AnyElement,
 };
-use aura_icons::Icon;
-use aura_icons_lucide::IconName;
+use liora_icons::Icon;
+use liora_icons_lucide::IconName;
 
 pub struct Pagination {
     total: usize,
@@ -102,7 +102,7 @@ impl Pagination {
 ### Task 2: Pager Algorithm & Basic Navigation
 
 **Files:**
-- Modify: `crates/aura-components/src/pagination.rs`
+- Modify: `crates/liora-components/src/pagination.rs`
 
 - [ ] **Step 1: Implement `Render` trait for Pagination**
 - [ ] **Step 2: Implement Pager algorithm**
@@ -117,7 +117,7 @@ impl Pagination {
 ### Task 3: Layout Support (Total, Jumper) & Background Mode
 
 **Files:**
-- Modify: `crates/aura-components/src/pagination.rs`
+- Modify: `crates/liora-components/src/pagination.rs`
 
 - [ ] **Step 1: Implement `layout` parsing**
     - Split layout string by `,` and iterate to render parts sequentially.
@@ -132,8 +132,8 @@ impl Pagination {
 ### Task 4: Gallery Demo
 
 **Files:**
-- Create: `apps/aura-gallery/src/demos/pagination_demo.rs`
-- Modify: `apps/aura-gallery/src/demos/mod.rs`
+- Create: `apps/liora-gallery/src/demos/pagination_demo.rs`
+- Modify: `apps/liora-gallery/src/demos/mod.rs`
 
 - [ ] **Step 1: Create demo with Basic, Background, Layout variations**
 - [ ] **Step 2: Register in mod.rs**

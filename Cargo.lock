@@ -451,104 +451,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
 
 [[package]]
-name = "aura-components"
-version = "0.1.0"
-dependencies = [
- "aura-core",
- "aura-icons",
- "aura-icons-lucide",
- "aura-theme",
- "gpui",
- "image",
- "lyon_tessellation",
- "qrcode",
- "rqrr",
- "syntect",
- "two-face",
- "ureq",
-]
-
-[[package]]
-name = "aura-core"
-version = "0.1.0"
-dependencies = [
- "aura-theme",
- "gpui",
-]
-
-[[package]]
-name = "aura-docs"
-version = "0.1.0"
-dependencies = [
- "aura-components",
- "aura-core",
- "aura-gallery",
- "aura-icons",
- "aura-icons-lucide",
- "aura-theme",
- "aura-tray",
- "gpui",
- "gpui_platform",
- "pulldown-cmark",
-]
-
-[[package]]
-name = "aura-gallery"
-version = "0.1.0"
-dependencies = [
- "aura-components",
- "aura-core",
- "aura-icons",
- "aura-icons-lucide",
- "aura-theme",
- "aura-tray",
- "gpui",
- "gpui_platform",
-]
-
-[[package]]
-name = "aura-icons"
-version = "0.1.0"
-dependencies = [
- "aura-core",
- "aura-theme",
- "gpui",
-]
-
-[[package]]
-name = "aura-icons-lucide"
-version = "0.1.0"
-dependencies = [
- "aura-icons",
- "gpui",
-]
-
-[[package]]
-name = "aura-packager"
-version = "0.1.0"
-dependencies = [
- "thiserror 2.0.18",
-]
-
-[[package]]
-name = "aura-theme"
-version = "0.1.0"
-dependencies = [
- "gpui",
-]
-
-[[package]]
-name = "aura-tray"
-version = "0.1.0"
-dependencies = [
- "gpui",
- "gtk",
- "image",
- "thiserror 2.0.18",
- "tray-icon",
-]
-
-[[package]]
 name = "autocfg"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3542,6 +3444,104 @@ name = "linux-raw-sys"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32a66949e030da00e8c7d4434b251670a91556f4144941d37452769c25d58a53"
+
+[[package]]
+name = "liora-components"
+version = "0.1.0"
+dependencies = [
+ "gpui",
+ "image",
+ "liora-core",
+ "liora-icons",
+ "liora-icons-lucide",
+ "liora-theme",
+ "lyon_tessellation",
+ "qrcode",
+ "rqrr",
+ "syntect",
+ "two-face",
+ "ureq",
+]
+
+[[package]]
+name = "liora-core"
+version = "0.1.0"
+dependencies = [
+ "gpui",
+ "liora-theme",
+]
+
+[[package]]
+name = "liora-docs"
+version = "0.1.0"
+dependencies = [
+ "gpui",
+ "gpui_platform",
+ "liora-components",
+ "liora-core",
+ "liora-gallery",
+ "liora-icons",
+ "liora-icons-lucide",
+ "liora-theme",
+ "liora-tray",
+ "pulldown-cmark",
+]
+
+[[package]]
+name = "liora-gallery"
+version = "0.1.0"
+dependencies = [
+ "gpui",
+ "gpui_platform",
+ "liora-components",
+ "liora-core",
+ "liora-icons",
+ "liora-icons-lucide",
+ "liora-theme",
+ "liora-tray",
+]
+
+[[package]]
+name = "liora-icons"
+version = "0.1.0"
+dependencies = [
+ "gpui",
+ "liora-core",
+ "liora-theme",
+]
+
+[[package]]
+name = "liora-icons-lucide"
+version = "0.1.0"
+dependencies = [
+ "gpui",
+ "liora-icons",
+]
+
+[[package]]
+name = "liora-packager"
+version = "0.1.0"
+dependencies = [
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "liora-theme"
+version = "0.1.0"
+dependencies = [
+ "gpui",
+]
+
+[[package]]
+name = "liora-tray"
+version = "0.1.0"
+dependencies = [
+ "gpui",
+ "gtk",
+ "image",
+ "thiserror 2.0.18",
+ "tray-icon",
+]
 
 [[package]]
 name = "litemap"
@@ -7789,7 +7789,7 @@ checksum = "ec7a2a501ed189703dba8b08142f057e887dfc4b2cc4db2d343ac6376ba3e0b9"
 name = "xtask"
 version = "0.1.0"
 dependencies = [
- "aura-packager",
+ "liora-packager",
 ]
 
 [[package]]

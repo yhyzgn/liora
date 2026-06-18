@@ -4,7 +4,7 @@
 
 **Goal:** Fix Popover/Popconfirm display issues: restore `on_click` behavior and fix the positioning gap/alignment when placed at Top/Left.
 
-**Architecture:** 
+**Architecture:**
 1. Use `#[track_caller]` to generate a stable `ElementId` for the Popover trigger, allowing the use of `.id(id).on_click(...)` on a `div` wrapper.
 2. Implement "Opposite Side Positioning" in `PopoverView`: for `Top` placement, position the `bottom` edge relative to the viewport bottom; for `Left` placement, position the `right` edge. This allows elements of unknown height/width to "grow" away from the anchor correctly without needing measurement.
 3. Improve centering by assuming a default size for alignment but allowing the container to shrink/wrap content.
@@ -16,12 +16,12 @@
 ### Task 1: Update Popover with Stable ID and on_click
 
 **Files:**
-- Modify: `crates/aura-components/src/popover.rs`
+- Modify: `crates/liora-components/src/popover.rs`
 
 - [ ] **Step 1: Add auto_id and update render to use on_click**
 
 ```rust
-// In crates/aura-components/src/popover.rs
+// In crates/liora-components/src/popover.rs
 
 impl Popover {
     #[track_caller]
@@ -31,7 +31,7 @@ impl Popover {
             content: Arc::new(|_, _| div().child("Popover Content").into_any_element()),
             placement: Placement::Bottom,
             offset: px(8.0),
-            // Add this field to Popover struct if not present, 
+            // Add this field to Popover struct if not present,
             // but we can just use the caller location directly in render.
         }
     }
@@ -44,7 +44,7 @@ impl RenderOnce for Popover {
         let placement = self.placement;
         let offset = self.offset;
         let content = self.content.clone();
-        
+
         let bounds_cell = Rc::new(Cell::new(None));
         let bounds_cell_clone = bounds_cell.clone();
 
@@ -86,7 +86,7 @@ Run: `cargo check`
 
 - [ ] **Step 3: Commit**
 ```bash
-git add crates/aura-components/src/popover.rs
+git add crates/liora-components/src/popover.rs
 git commit -m "fix(popover): use stable id and on_click for trigger"
 ```
 
@@ -95,12 +95,12 @@ git commit -m "fix(popover): use stable id and on_click for trigger"
 ### Task 2: Implement "Opposite Side Positioning" in PopoverView
 
 **Files:**
-- Modify: `crates/aura-components/src/popover.rs`
+- Modify: `crates/liora-components/src/popover.rs`
 
 - [ ] **Step 1: Update PopoverView::render to handle Top/Left via bottom/right**
 
 ```rust
-// In crates/aura-components/src/popover.rs
+// In crates/liora-components/src/popover.rs
 
 impl Render for PopoverView {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
@@ -109,7 +109,7 @@ impl Render for PopoverView {
         let placement = self.placement;
         let offset = self.offset;
         let on_close = self.on_close.clone();
-        
+
         let content = (self.content)(_window, cx);
         let viewport_size = _window.viewport_size();
         let viewport = Bounds {
@@ -165,7 +165,7 @@ impl Render for PopoverView {
         match final_placement {
             Placement::Top | Placement::Bottom => {
                 // Try to center horizontally
-                // Since we don't know the width, we'll use left positioning 
+                // Since we don't know the width, we'll use left positioning
                 // but we might need a translate or flex wrapper.
                 // For now, let's use the calculated pos.x as a baseline.
                 popover_div = popover_div.left(pos.x);
@@ -206,7 +206,7 @@ Run: `cargo check`
 
 - [ ] **Step 3: Commit**
 ```bash
-git add crates/aura-components/src/popover.rs
+git add crates/liora-components/src/popover.rs
 git commit -m "fix(popover): improve positioning using opposite side anchoring"
 ```
 
@@ -215,7 +215,7 @@ git commit -m "fix(popover): improve positioning using opposite side anchoring"
 ### Task 3: Verify in Gallery
 
 - [ ] **Step 1: Check Popover and Popconfirm in the Gallery**
-Run: `cargo run -p aura-gallery`
+Run: `cargo run -p liora-gallery`
 (Manually verify that Top placement has no gap and horizontal alignment is better).
 
 - [ ] **Step 2: Verify other components (Dropdown)**

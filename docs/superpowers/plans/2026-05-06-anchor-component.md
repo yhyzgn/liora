@@ -6,20 +6,20 @@
 
 **Architecture:** Anchor is a `View` that maintains a registry of `AnchorTarget` bounds. `AnchorTarget` elements report their window bounds during `paint`. Anchor uses these bounds to highlight the active link.
 
-**Tech Stack:** Rust, GPUI 0.2.2, aura-theme, aura-icons.
+**Tech Stack:** Rust, GPUI 0.2.2, liora-theme, liora-icons.
 
 ---
 
 ### Task 1: Foundation & Types
 
 **Files:**
-- Create: `crates/aura-components/src/anchor.rs`
-- Modify: `crates/aura-components/src/lib.rs`
+- Create: `crates/liora-components/src/anchor.rs`
+- Modify: `crates/liora-components/src/lib.rs`
 
 - [ ] **Step 1: Define Anchor models and builders**
 
 ```rust
-use aura_core::Config;
+use liora_core::Config;
 use gpui::{
     prelude::*, px, App, Context, IntoElement, Render, Window,
     div, SharedString, AnyElement, Pixels, ScrollHandle, point, Bounds, Entity,
@@ -90,7 +90,7 @@ impl Anchor {
 ### Task 2: AnchorTarget & Bounds Reporting
 
 **Files:**
-- Modify: `crates/aura-components/src/anchor.rs`
+- Modify: `crates/liora-components/src/anchor.rs`
 
 - [ ] **Step 1: Implement `AnchorTarget` helper component**
 
@@ -116,7 +116,7 @@ impl AnchorTarget {
 ### Task 3: Anchor Rendering & Active Detection
 
 **Files:**
-- Modify: `crates/aura-components/src/anchor.rs`
+- Modify: `crates/liora-components/src/anchor.rs`
 
 - [ ] **Step 1: Implement `Render` for `Anchor`**
 - [ ] **Step 2: Implement recursive link rendering**
@@ -128,7 +128,7 @@ impl AnchorTarget {
 ### Task 4: Jump Logic
 
 **Files:**
-- Modify: `crates/aura-components/src/anchor.rs`
+- Modify: `crates/liora-components/src/anchor.rs`
 
 - [ ] **Step 1: Handle link click**
 - [ ] **Step 2: Calculate target scroll offset from bounds**
@@ -139,8 +139,8 @@ impl AnchorTarget {
 ### Task 5: Gallery Demo
 
 **Files:**
-- Create: `apps/aura-gallery/src/demos/anchor_demo.rs`
-- Modify: `apps/aura-gallery/src/demos/mod.rs`
+- Create: `apps/liora-gallery/src/demos/anchor_demo.rs`
+- Modify: `apps/liora-gallery/src/demos/mod.rs`
 
 - [ ] **Step 1: Create demo with long content and multiple `AnchorTarget`s**
 - [ ] **Step 2: Register in mod.rs**

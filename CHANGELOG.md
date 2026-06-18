@@ -1,6 +1,6 @@
 # Changelog
 
-Aura currently records detailed implementation history in `.memory/sessions.md` and phase-level plans under `.prompt/`.
+Liora currently records detailed implementation history in `.memory/sessions.md` and phase-level plans under `.prompt/`.
 
 ## Unreleased
 
@@ -15,15 +15,15 @@ Aura currently records detailed implementation history in `.memory/sessions.md` 
 - P15 quality hardening: workspace CI gates, docs/snippet checks, API consistency, theme/overlay cleanup, keyboard behavior, and CodeBlock/cache performance hardening.
 - P14 deferred advanced controls: Carousel, Calendar, InputTag, Mention, Watermark, TreeSelect, Tour, VirtualizedTable, and VirtualizedTree.
 - P13 component expansion: QR code, CodeEditor, SignalMeter, HeatBar, SegmentRatioBar, HorizontalList drag behavior, Timer, Label, Operation, and in-place enhancements for charts, Progress, Button, Tag, Radio, and Checkbox.
-- P12 packaging/release readiness: `aura-packager`, `xtask package`, platform packaging resources, CI installer pipeline, grouped changelog generation, raw binary upload policy, signing policy, and release-readiness gate.
+- P12 packaging/release readiness: `liora-packager`, `xtask package`, platform packaging resources, CI installer pipeline, grouped changelog generation, raw binary upload policy, signing policy, and release-readiness gate.
 
 ### Changed
 
-- Preferred Aura app initialization now follows the operating system by default with `init_aura_with_mode(cx, ThemeMode::System)`. Fixed explicit themes such as `init_aura(cx, Theme::light())` remain supported for compatibility and product-specific policies.
-- Gallery and Docs are the canonical maintained app surfaces. `examples/minimal-app`, `examples/dashboard-app`, `aura-minimal-app`, and `aura-dashboard-app` must not be reintroduced as separate products.
+- Preferred Liora app initialization now follows the operating system by default with `init_liora_with_mode(cx, ThemeMode::System)`. Fixed explicit themes such as `init_liora(cx, Theme::light())` remain supported for compatibility and product-specific policies.
+- Gallery and Docs are the canonical maintained app surfaces. `examples/minimal-app`, `examples/dashboard-app`, `liora-minimal-app`, and `liora-dashboard-app` must not be reintroduced as separate products.
 
 ### Notes
 
-- Aura remains pure Rust + GPUI native.
-- Package/license metadata currently uses `LicenseRef-Aura`; do not assume OSS terms until the owner replaces the policy in `LICENSE.md` and package metadata.
+- Liora remains pure Rust + GPUI native.
+- Package/license metadata currently uses `LicenseRef-Liora`; do not assume OSS terms until the owner replaces the policy in `LICENSE.md` and package metadata.
 - Formal public releases remain gated by owner-controlled signing/notarization credentials, protected release environments, real system-level install/uninstall smoke tests, and a matching `vX.Y.Z` GitHub Release tag.

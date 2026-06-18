@@ -2,7 +2,7 @@
 
 > 上游: `.prompt/P17-dogfood-dashboard.md`
 > 状态: Complete
-> 目标: 用 P17 Dashboard Dogfooding App 反向优化 Aura 的真实应用组合体验。
+> 目标: 用 P17 Dashboard Dogfooding App 反向优化 Liora 的真实应用组合体验。
 
 ## Scope
 
@@ -14,9 +14,9 @@
 
 ## Completion evidence
 
-- `cargo check -p aura-gallery` and `cargo check -p aura-docs` pass.
-- `aura-components` has no `dashboard` module or dashboard sample/model exports.
-- `cargo test -p aura-docs markdown::tests::dashboard_patterns_keep_sample_code_out_of_components -- --nocapture` passes.
+- `cargo check -p liora-gallery` and `cargo check -p liora-docs` pass.
+- `liora-components` has no `dashboard` module or dashboard sample/model exports.
+- `cargo test -p liora-docs markdown::tests::dashboard_patterns_keep_sample_code_out_of_components -- --nocapture` passes.
 - Workspace checks/tests/docs/package dry-run gates pass.
 - GUI smoke for Gallery and Docs starts and exits by expected timeout.
 - Commit pushed.

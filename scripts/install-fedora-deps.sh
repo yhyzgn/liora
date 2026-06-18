@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Install Fedora system dependencies required to build/run Aura Gallery (GPUI).
+# Install Fedora system dependencies required to build/run Liora Gallery (GPUI).
 # Usage:
 #   ./scripts/install-fedora-deps.sh          # install packages + smoke-check system deps
 #   ./scripts/install-fedora-deps.sh --verify # also run `cargo check` afterwards
@@ -84,7 +84,7 @@ packages=(
   openssl-devel
 )
 
-echo "Installing Aura/GPUI Fedora dependencies..."
+echo "Installing Liora/GPUI Fedora dependencies..."
 $SUDO dnf install -y "${packages[@]}"
 
 echo
@@ -121,7 +121,7 @@ fi
 
 if [[ "$VERIFY" -eq 1 ]]; then
   if [[ ! -f Cargo.toml ]]; then
-    echo "--verify expects to be run from the Aura repository root." >&2
+    echo "--verify expects to be run from the Liora repository root." >&2
     exit 1
   fi
   echo
@@ -130,4 +130,4 @@ if [[ "$VERIFY" -eq 1 ]]; then
 fi
 
 echo
-echo "Done. Try: cargo run -p aura-gallery"
+echo "Done. Try: cargo run -p liora-gallery"

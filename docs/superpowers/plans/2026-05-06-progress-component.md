@@ -6,26 +6,26 @@
 
 **Architecture:** Progress is a `RenderOnce` component that renders a progress bar using nested divs for the line type.
 
-**Tech Stack:** Rust, GPUI 0.2.2, aura-theme, aura-icons.
+**Tech Stack:** Rust, GPUI 0.2.2, liora-theme, liora-icons.
 
 ---
 
 ### Task 1: Foundation & Types
 
 **Files:**
-- Create: `crates/aura-components/src/progress.rs`
-- Modify: `crates/aura-components/src/lib.rs`
+- Create: `crates/liora-components/src/progress.rs`
+- Modify: `crates/liora-components/src/lib.rs`
 
 - [ ] **Step 1: Define Progress structure and enums**
 
 ```rust
-use aura_core::Config;
+use liora_core::Config;
 use gpui::{
     prelude::*, px, App, IntoElement, RenderOnce, Window,
     div, SharedString, Pixels, Hsla,
 };
-use aura_icons::Icon;
-use aura_icons_lucide::IconName;
+use liora_icons::Icon;
+use liora_icons_lucide::IconName;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ProgressType {
@@ -101,7 +101,7 @@ impl Progress {
 ### Task 2: Rendering Logic (Line)
 
 **Files:**
-- Modify: `crates/aura-components/src/progress.rs`
+- Modify: `crates/liora-components/src/progress.rs`
 
 - [ ] **Step 1: Implement RenderOnce for Progress**
 - [ ] **Step 2: Implement Line mode layout (track + bar)**
@@ -114,8 +114,8 @@ impl Progress {
 ### Task 3: Gallery Demo
 
 **Files:**
-- Create: `apps/aura-gallery/src/demos/progress_demo.rs`
-- Modify: `apps/aura-gallery/src/demos/mod.rs`
+- Create: `apps/liora-gallery/src/demos/progress_demo.rs`
+- Modify: `apps/liora-gallery/src/demos/mod.rs`
 
 - [ ] **Step 1: Create demo with multiple use cases (Different percentages, statuses, stroke widths)**
 - [ ] **Step 2: Register in mod.rs**

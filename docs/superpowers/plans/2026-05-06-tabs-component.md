@@ -6,26 +6,26 @@
 
 **Architecture:** Tabs is a `Render` (View) managing `active_name`. It contains `TabPane` items which hold label and content rendering closures.
 
-**Tech Stack:** Rust, GPUI 0.2.2, aura-theme, aura-icons.
+**Tech Stack:** Rust, GPUI 0.2.2, liora-theme, liora-icons.
 
 ---
 
 ### Task 1: Foundation & Types
 
 **Files:**
-- Create: `crates/aura-components/src/tabs.rs`
-- Modify: `crates/aura-components/src/lib.rs`
+- Create: `crates/liora-components/src/tabs.rs`
+- Modify: `crates/liora-components/src/lib.rs`
 
 - [ ] **Step 1: Define basic types and models**
 
 ```rust
-use aura_core::Config;
+use liora_core::Config;
 use gpui::{
     prelude::*, px, App, Context, IntoElement, Render, Window,
     div, SharedString, AnyElement,
 };
-use aura_icons::Icon;
-use aura_icons_lucide::IconName;
+use liora_icons::Icon;
+use liora_icons_lucide::IconName;
 use std::sync::Arc;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -97,8 +97,8 @@ impl Tabs {
         self
     }
 
-    pub fn pane<F, E>(mut self, name: impl Into<SharedString>, label: impl Into<SharedString>, f: F) -> Self 
-    where 
+    pub fn pane<F, E>(mut self, name: impl Into<SharedString>, label: impl Into<SharedString>, f: F) -> Self
+    where
         F: Fn(&mut Window, &mut Context<Self>) -> E + 'static,
         E: IntoElement,
     {
@@ -123,7 +123,7 @@ Run: `cargo check`
 ### Task 2: Standard Style Rendering (Top)
 
 **Files:**
-- Modify: `crates/aura-components/src/tabs.rs`
+- Modify: `crates/liora-components/src/tabs.rs`
 
 - [ ] **Step 1: Implement Render for Tabs**
 - [ ] **Step 2: Implement Header rendering with active indicator**
@@ -136,7 +136,7 @@ Run: `cargo check`
 ### Task 3: Support for Card & BorderCard Styles
 
 **Files:**
-- Modify: `crates/aura-components/src/tabs.rs`
+- Modify: `crates/liora-components/src/tabs.rs`
 
 - [ ] **Step 1: Add styling for Card mode (header background and borders)**
 - [ ] **Step 2: Add styling for BorderCard mode (outer border and content background)**
@@ -147,7 +147,7 @@ Run: `cargo check`
 ### Task 4: Tab Positions (Bottom, Left, Right)
 
 **Files:**
-- Modify: `crates/aura-components/src/tabs.rs`
+- Modify: `crates/liora-components/src/tabs.rs`
 
 - [ ] **Step 1: Implement layout switching for different positions**
 - [ ] **Step 2: Adjust indicator orientation for vertical positions**
@@ -158,7 +158,7 @@ Run: `cargo check`
 ### Task 5: Editable Tabs (Add/Remove)
 
 **Files:**
-- Modify: `crates/aura-components/src/tabs.rs`
+- Modify: `crates/liora-components/src/tabs.rs`
 
 - [ ] **Step 1: Add "Add" button to the header**
 - [ ] **Step 2: Add "Close" icon to each tab pane if closable**
@@ -170,8 +170,8 @@ Run: `cargo check`
 ### Task 6: Gallery Demo
 
 **Files:**
-- Create: `apps/aura-gallery/src/demos/tabs_demo.rs`
-- Modify: `apps/aura-gallery/src/demos/mod.rs`
+- Create: `apps/liora-gallery/src/demos/tabs_demo.rs`
+- Modify: `apps/liora-gallery/src/demos/mod.rs`
 
 - [ ] **Step 1: Implement demo with multiple cases (Styles, Positions, Editable)**
 - [ ] **Step 2: Register in mod.rs**

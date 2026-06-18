@@ -1,10 +1,10 @@
-# Contributing to Aura
+# Contributing to Liora
 
-Aura is developed as a pure Rust + GPUI native component library. Contributions must preserve that architecture.
+Liora is developed as a pure Rust + GPUI native component library. Contributions must preserve that architecture.
 
 ## Ground rules
 
-- Do not convert Aura apps to Tauri.
+- Do not convert Liora apps to Tauri.
 - Do not introduce WebView, HTML/CSS/DOM, browser runtime, or frontend build systems as application runtime dependencies.
 - Prefer improving existing components over adding parallel replacements.
 - Keep diffs small, reversible, and covered by tests or docs checks.
@@ -18,7 +18,7 @@ Before submitting a phase or PR, run the relevant targeted tests plus the standa
 cargo fmt --all --check
 cargo check --workspace --all-targets
 cargo test --workspace
-cargo check -p aura-docs --bin check_snippets
+cargo check -p liora-docs --bin check_snippets
 cargo run -p xtask -- package validate
 cargo run -p xtask -- package release-readiness
 cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build
@@ -28,8 +28,8 @@ cargo run -p xtask -- package install-smoke --all-apps --format platform-default
 For documentation/adoption changes, also run:
 
 ```bash
-cargo check -p aura-gallery
-cargo check -p aura-docs
+cargo check -p liora-gallery
+cargo check -p liora-docs
 cargo doc --workspace --no-deps
 ```
 
@@ -47,6 +47,6 @@ Docs pages should keep each effect next to its corresponding code block: effect 
 
 ## Release changes
 
-Packaging and release changes must use `xtask package` and `aura-packager`. Update `docs/packaging-installer-technical-plan.md`, `apps/aura-docs/content/pages/packaging_workflow.md`, and `.prompt/P12-packaging.md` when release policy changes.
+Packaging and release changes must use `xtask package` and `liora-packager`. Update `docs/packaging-installer-technical-plan.md`, `apps/liora-docs/content/pages/packaging_workflow.md`, and `.prompt/P12-packaging.md` when release policy changes.
 
 Formal release signing/notarization credentials must be provided only through protected release environments and secrets documented in `packaging/signing-policy.md`.

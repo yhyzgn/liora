@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Liora Docs
+GenericName=Documentation
+Comment=Native GPUI documentation app for Liora.
+TryExec=liora-docs
+Exec=liora-docs
+Icon=liora-docs
+Categories=Development;Documentation;
+Keywords=gpui;liora;docs;documentation;
+StartupNotify=true
+Terminal=false

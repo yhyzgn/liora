@@ -1,8 +1,8 @@
-# Aura 组件性能审查清单
+# Liora 组件性能审查清单
 
-日期：2026-05-10  
-范围：`crates/aura-components/src` 下所有组件实现，以及 Gallery 中与全局渲染相关的入口。  
-性质：只读分析记录；本文件只总结潜在算法/数据结构风险，不代表已经修改实现。  
+日期：2026-05-10
+范围：`crates/liora-components/src` 下所有组件实现，以及 Gallery 中与全局渲染相关的入口。
+性质：只读分析记录；本文件只总结潜在算法/数据结构风险，不代表已经修改实现。
 约束：任何后续优化都必须保持控件现有 API、功能和视觉效果不变。
 
 ## 总体结论
@@ -92,7 +92,7 @@
 
 ### 1. Table：行内 cell 查找成本偏高
 
-- 证据：`crates/aura-components/src/table.rs` 中 `TableRow::take_cell` 使用 `position` 查找 key 后 `remove`；渲染时对每一列调用一次。
+- 证据：`crates/liora-components/src/table.rs` 中 `TableRow::take_cell` 使用 `position` 查找 key 后 `remove`；渲染时对每一列调用一次。
 - 影响：小表无明显问题；大表或列很多时，复杂度接近 `rows * cols * cells`。
 - 可选方案：渲染前把每行 cells 转成 key-index map，或在 `TableRow` 内部保存有序 map。输出顺序仍按 columns 渲染，视觉不变。
 

@@ -4,7 +4,7 @@
 
 **Goal:** Ensure Popover stays within viewport when centering and fix the `TopCenter` disappearance issue.
 
-**Architecture:** 
+**Architecture:**
 1. `PopoverView` will determine the "ideal center" for the pivot container.
 2. It will apply clamping to this center point based on a `reference_size` (e.g., 200x150) to ensure the content edges don't exceed viewport boundaries [0, viewport_width/height].
 3. For `Top` placement, use `bottom(viewport_height - anchor_top + offset)` but ensure it doesn't result in negative positioning or being pushed off-screen.
@@ -17,12 +17,12 @@
 ### Task 1: Implement Boundary Clamping and Fix TopCenter
 
 **Files:**
-- Modify: `crates/aura-components/src/popover.rs`
+- Modify: `crates/liora-components/src/popover.rs`
 
 - [ ] **Step 1: Update PopoverView::render with clamping logic**
 
 ```rust
-// In crates/aura-components/src/popover.rs
+// In crates/liora-components/src/popover.rs
 
 impl Render for PopoverView {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
@@ -31,13 +31,13 @@ impl Render for PopoverView {
         let placement = self.placement;
         let offset = self.offset;
         let on_close = self.on_close.clone();
-        
+
         let content = (self.content)(_window, cx);
         let viewport_size = _window.viewport_size();
         let viewport = Bounds { origin: gpui::Point::default(), size: viewport_size };
 
         // Use Popper for flip logic
-        let popper = aura_core::Popper { anchor_bounds, placement, offset };
+        let popper = liora_core::Popper { anchor_bounds, placement, offset };
         let reference_size = gpui::Size { width: px(200.0), height: px(150.0) };
         let (_pos, final_placement) = popper.calculate_position_with_flip(reference_size, viewport);
 
@@ -47,7 +47,7 @@ impl Render for PopoverView {
             Placement::Top | Placement::Bottom | Placement::TopStart | Placement::BottomStart | Placement::TopEnd | Placement::BottomEnd => {
                 let container_width = px(2000.0);
                 let ideal_center_x = anchor_bounds.left() + anchor_bounds.size.width / 2.0;
-                
+
                 // Clamping for horizontal centering
                 let half_content_width = reference_size.width / 2.0;
                 let clamped_center_x = ideal_center_x
@@ -147,7 +147,7 @@ Run: `cargo check`
 
 - [ ] **Step 3: Commit**
 ```bash
-git add crates/aura-components/src/popover.rs
+git add crates/liora-components/src/popover.rs
 git commit -m "fix(popover): implement boundary clamping and fix TopCenter positioning"
 ```
 
@@ -156,7 +156,7 @@ git commit -m "fix(popover): implement boundary clamping and fix TopCenter posit
 ### Task 2: Verify in Gallery
 
 - [ ] **Step 1: Check TopCenter / BottomCenter at window edges**
-Run: `cargo run -p aura-gallery`
+Run: `cargo run -p liora-gallery`
 (Verify that if the button is near the edge, the popover stays inside the window).
 
 - [ ] **Step 2: Verify TopCenter visibility**

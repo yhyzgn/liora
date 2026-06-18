@@ -6,20 +6,20 @@
 
 **Architecture:** Affix is a `View` that renders a placeholder in the layout. It tracks its window bounds during `paint`. If it crosses the threshold, it renders its content in a `Portal` at a fixed position.
 
-**Tech Stack:** Rust, GPUI 0.2.2, aura-core (Portal/Popper logic).
+**Tech Stack:** Rust, GPUI 0.2.2, liora-core (Portal/Popper logic).
 
 ---
 
 ### Task 1: Foundation & Types
 
 **Files:**
-- Create: `crates/aura-components/src/affix.rs`
-- Modify: `crates/aura-components/src/lib.rs`
+- Create: `crates/liora-components/src/affix.rs`
+- Modify: `crates/liora-components/src/lib.rs`
 
 - [ ] **Step 1: Define Affix structure and enums**
 
 ```rust
-use aura_core::Config;
+use liora_core::Config;
 use gpui::{
     prelude::*, px, App, Context, IntoElement, Render, Window,
     div, SharedString, AnyElement, Pixels, Bounds,
@@ -72,7 +72,7 @@ impl Affix {
         self
     }
 
-    pub fn content<F>(mut self, f: F) -> Self 
+    pub fn content<F>(mut self, f: F) -> Self
     where F: Fn(&mut Window, &mut Context<Affix>) -> AnyElement + 'static {
         self.content = Some(Box::new(f));
         self
@@ -88,7 +88,7 @@ impl Affix {
 ### Task 2: Implementation of Affix Element & Paint Logic
 
 **Files:**
-- Modify: `crates/aura-components/src/affix.rs`
+- Modify: `crates/liora-components/src/affix.rs`
 
 - [ ] **Step 1: Create `AffixElement` to handle custom layout and paint**
 - [ ] **Step 2: In `paint`, get the current window bounds of the element**
@@ -102,8 +102,8 @@ impl Affix {
 ### Task 3: Gallery Demo
 
 **Files:**
-- Create: `apps/aura-gallery/src/demos/affix_demo.rs`
-- Modify: `apps/aura-gallery/src/demos/mod.rs`
+- Create: `apps/liora-gallery/src/demos/affix_demo.rs`
+- Modify: `apps/liora-gallery/src/demos/mod.rs`
 
 - [ ] **Step 1: Create demo with a scrollable container and multiple Affix examples**
 - [ ] **Step 2: Register in mod.rs**

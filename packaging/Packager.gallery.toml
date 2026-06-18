@@ -1,21 +1,21 @@
-# Aura Gallery packager metadata.
+# Liora Gallery packager metadata.
 # Consumed by future `cargo-packager` integration through `cargo xtask package`.
 
 [application]
-id = "dev.aura.Gallery"
-name = "Aura Gallery"
-binary = "aura-gallery"
-package = "aura-gallery"
+id = "dev.liora.Gallery"
+name = "Liora Gallery"
+binary = "liora-gallery"
+package = "liora-gallery"
 category = "DeveloperTool"
-short_description = "Native GPUI component gallery for Aura."
-icon = "packaging/icons/aura-gallery"
+short_description = "Native GPUI component gallery for Liora."
+icon = "packaging/icons/liora-gallery"
 
 [linux]
-desktop = "packaging/linux/aura-gallery.desktop"
-metainfo = "packaging/linux/aura-gallery.metainfo.xml"
+desktop = "packaging/linux/liora-gallery.desktop"
+metainfo = "packaging/linux/liora-gallery.metainfo.xml"
 
 [macos]
 entitlements = "packaging/macos/Entitlements.plist"
 
 [windows]
-icon = "packaging/icons/aura-gallery.ico"
+icon = "packaging/icons/liora-gallery.ico"

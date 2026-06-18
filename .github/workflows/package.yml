@@ -1,4 +1,4 @@
-name: Package native Aura apps
+name: Package native Liora apps
 
 on:
   workflow_dispatch:
@@ -65,9 +65,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          base_version="$(sed -n 's/^version = "\(.*\)"/\1/p' crates/aura-packager/Cargo.toml | head -n 1)"
+          base_version="$(sed -n 's/^version = "\(.*\)"/\1/p' crates/liora-packager/Cargo.toml | head -n 1)"
           if [[ -z "${base_version}" ]]; then
-            echo "Failed to read base package version from crates/aura-packager/Cargo.toml" >&2
+            echo "Failed to read base package version from crates/liora-packager/Cargo.toml" >&2
             exit 1
           fi
 
@@ -79,7 +79,7 @@ jobs:
               exit 1
             fi
             if [[ "${version}" != "${base_version}" ]]; then
-              echo "Release tag ${GITHUB_REF_NAME} does not match crates/aura-packager version ${base_version}. Bump the package version or retag before releasing." >&2
+              echo "Release tag ${GITHUB_REF_NAME} does not match crates/liora-packager version ${base_version}. Bump the package version or retag before releasing." >&2
               exit 1
             fi
           else
@@ -88,8 +88,8 @@ jobs:
             version="${base_version}-preview.${GITHUB_RUN_NUMBER}.${short_sha}"
           fi
 
-          echo "AURA_PACKAGE_CHANNEL=${channel}" >> "${GITHUB_ENV}"
-          echo "AURA_PACKAGE_VERSION=${version}" >> "${GITHUB_ENV}"
+          echo "LIORA_PACKAGE_CHANNEL=${channel}" >> "${GITHUB_ENV}"
+          echo "LIORA_PACKAGE_VERSION=${version}" >> "${GITHUB_ENV}"
           echo "channel=${channel}" >> "${GITHUB_OUTPUT}"
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
           echo "Packaging ${channel} build as version ${version}"
@@ -140,18 +140,18 @@ jobs:
 
       - name: Check release readiness policy
         env:
-          AURA_REQUIRE_SIGNING: ${{ startsWith(github.ref, 'refs/tags/v') && 'true' || 'false' }}
-          AURA_MACOS_CODESIGN_IDENTITY: ${{ secrets.AURA_MACOS_CODESIGN_IDENTITY }}
-          AURA_MACOS_NOTARY_APPLE_ID: ${{ secrets.AURA_MACOS_NOTARY_APPLE_ID }}
-          AURA_MACOS_NOTARY_TEAM_ID: ${{ secrets.AURA_MACOS_NOTARY_TEAM_ID }}
-          AURA_MACOS_NOTARY_PASSWORD: ${{ secrets.AURA_MACOS_NOTARY_PASSWORD }}
-          AURA_WINDOWS_SIGNTOOL_CERT_PATH: ${{ secrets.AURA_WINDOWS_SIGNTOOL_CERT_PATH }}
-          AURA_WINDOWS_SIGNTOOL_CERT_PASSWORD: ${{ secrets.AURA_WINDOWS_SIGNTOOL_CERT_PASSWORD }}
-          AURA_WINDOWS_TIMESTAMP_URL: ${{ secrets.AURA_WINDOWS_TIMESTAMP_URL }}
+          LIORA_REQUIRE_SIGNING: ${{ startsWith(github.ref, 'refs/tags/v') && 'true' || 'false' }}
+          LIORA_MACOS_CODESIGN_IDENTITY: ${{ secrets.LIORA_MACOS_CODESIGN_IDENTITY }}
+          LIORA_MACOS_NOTARY_APPLE_ID: ${{ secrets.LIORA_MACOS_NOTARY_APPLE_ID }}
+          LIORA_MACOS_NOTARY_TEAM_ID: ${{ secrets.LIORA_MACOS_NOTARY_TEAM_ID }}
+          LIORA_MACOS_NOTARY_PASSWORD: ${{ secrets.LIORA_MACOS_NOTARY_PASSWORD }}
+          LIORA_WINDOWS_SIGNTOOL_CERT_PATH: ${{ secrets.LIORA_WINDOWS_SIGNTOOL_CERT_PATH }}
+          LIORA_WINDOWS_SIGNTOOL_CERT_PASSWORD: ${{ secrets.LIORA_WINDOWS_SIGNTOOL_CERT_PASSWORD }}
+          LIORA_WINDOWS_TIMESTAMP_URL: ${{ secrets.LIORA_WINDOWS_TIMESTAMP_URL }}
         run: cargo run -p xtask -- package release-readiness
 
       - name: Test packager domain logic
-        run: cargo test -p aura-packager
+        run: cargo test -p liora-packager
 
       - name: Build raw runnable binaries
         if: github.event.inputs.dry_run != 'true'
@@ -181,14 +181,14 @@ jobs:
           fi
 
           if [[ "$APP_INPUT" == "all" ]]; then
-            apps=(aura-gallery aura-docs)
+            apps=(liora-gallery liora-docs)
           elif [[ "$APP_INPUT" == "gallery" ]]; then
-            apps=(aura-gallery)
+            apps=(liora-gallery)
           else
-            apps=(aura-docs)
+            apps=(liora-docs)
           fi
 
-          out_root="target/aura-raw-binaries"
+          out_root="target/liora-raw-binaries"
           rm -rf "$out_root"
           mkdir -p "$out_root"
           checksum_file="$out_root/checksums.txt"
@@ -218,13 +218,13 @@ jobs:
           done
 
           cat > "$out_root/README.md" <<EOF
-          # Aura raw runnable binaries
+          # Liora raw runnable binaries
 
           Version: \`$version\`
           Platform: \`$platform\`
 
           These are the original release-mode executables built before installer packaging.
-          They are uploaded for Aura's own release verification and smoke-test workflow; downstream Aura component-library users do not need to publish raw binaries unless their product release policy requires it.
+          They are uploaded for Liora's own release verification and smoke-test workflow; downstream Liora component-library users do not need to publish raw binaries unless their product release policy requires it.
           EOF
           sed -i.bak 's/^          //' "$out_root/README.md" && rm "$out_root/README.md.bak"
 
@@ -255,7 +255,7 @@ jobs:
           printf '%q ' "${args[@]}" >> "$GITHUB_OUTPUT"
           printf '\n' >> "$GITHUB_OUTPUT"
 
-      - name: Package Aura apps
+      - name: Package Liora apps
         shell: bash
         run: ${{ steps.package-command.outputs.command }}
 
@@ -299,8 +299,8 @@ jobs:
         if: github.event.inputs.dry_run != 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: aura-${{ steps.package-channel.outputs.channel }}-binaries-${{ matrix.platform }}
-          path: target/aura-raw-binaries/**
+          name: liora-${{ steps.package-channel.outputs.channel }}-binaries-${{ matrix.platform }}
+          path: target/liora-raw-binaries/**
           if-no-files-found: error
           retention-days: ${{ startsWith(github.ref, 'refs/tags/v') && 90 || 14 }}
 
@@ -308,10 +308,10 @@ jobs:
         if: github.event.inputs.dry_run != 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: aura-${{ steps.package-channel.outputs.channel }}-packages-${{ matrix.platform }}
+          name: liora-${{ steps.package-channel.outputs.channel }}-packages-${{ matrix.platform }}
           path: |
             target/packages/**
-            target/aura-packager/*.toml
+            target/liora-packager/*.toml
           if-no-files-found: error
           retention-days: ${{ startsWith(github.ref, 'refs/tags/v') && 90 || 14 }}
 
@@ -332,14 +332,14 @@ jobs:
       - name: Download package artifacts
         uses: actions/download-artifact@v8
         with:
-          pattern: aura-release-packages-*
+          pattern: liora-release-packages-*
           path: dist
           merge-multiple: false
 
       - name: Download raw runnable binaries
         uses: actions/download-artifact@v8
         with:
-          pattern: aura-release-binaries-*
+          pattern: liora-release-binaries-*
           path: dist
           merge-multiple: false
 
@@ -441,7 +441,7 @@ jobs:
           }
 
           {
-            echo "# Aura ${tag}"
+            echo "# Liora ${tag}"
             echo
             echo "## Changelog"
             echo
@@ -454,8 +454,8 @@ jobs:
             emit_grouped_changelog "${changelog_input}"
             echo "## Installer and package artifacts"
             echo
-            if find release-assets -type f | grep -q 'aura-release-packages-'; then
-              find release-assets -type f | grep 'aura-release-packages-' | sort | while read -r artifact; do
+            if find release-assets -type f | grep -q 'liora-release-packages-'; then
+              find release-assets -type f | grep 'liora-release-packages-' | sort | while read -r artifact; do
                 size="$(du -h "$artifact" | cut -f1)"
                 echo "- \`${artifact#release-assets/}\` (${size})"
               done
@@ -465,10 +465,10 @@ jobs:
             echo
             echo "## Raw runnable binaries"
             echo
-            echo "These release assets are Aura-project convenience outputs: they are the original release-mode executables built before installer packaging for smoke tests and direct debugging. Downstream projects using Aura as a component library do not need to publish raw binaries unless their own release policy requires it."
+            echo "These release assets are Liora-project convenience outputs: they are the original release-mode executables built before installer packaging for smoke tests and direct debugging. Downstream projects using Liora as a component library do not need to publish raw binaries unless their own release policy requires it."
             echo
-            if find release-assets -type f | grep -q 'aura-release-binaries-'; then
-              find release-assets -type f | grep 'aura-release-binaries-' | sort | while read -r artifact; do
+            if find release-assets -type f | grep -q 'liora-release-binaries-'; then
+              find release-assets -type f | grep 'liora-release-binaries-' | sort | while read -r artifact; do
                 size="$(du -h "$artifact" | cut -f1)"
                 echo "- \`${artifact#release-assets/}\` (${size})"
               done
@@ -499,12 +499,12 @@ jobs:
 
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release edit "$tag" \
-              --title "Aura ${tag}" \
+              --title "Liora ${tag}" \
               --notes-file release-notes.md
             gh release upload "$tag" "${files[@]}" --clobber
           else
             gh release create "$tag" "${files[@]}" \
-              --title "Aura ${tag}" \
+              --title "Liora ${tag}" \
               --notes-file release-notes.md
           fi
 

@@ -2,23 +2,23 @@
 
 ## Goal
 
-Build a cross-platform installer and package generation pipeline for Aura's pure Rust + GPUI native applications.
+Build a cross-platform installer and package generation pipeline for Liora's pure Rust + GPUI native applications.
 
 ## Non-negotiable Constraint
 
-Aura applications must remain pure Rust + GPUI native apps. Do not convert `aura-gallery`, `aura-docs`, or future Aura apps to Tauri. Do not introduce WebView, HTML/CSS/DOM, browser runtime, or frontend build systems as application runtime dependencies.
+Liora applications must remain pure Rust + GPUI native apps. Do not convert `liora-gallery`, `liora-docs`, or future Liora apps to Tauri. Do not introduce WebView, HTML/CSS/DOM, browser runtime, or frontend build systems as application runtime dependencies.
 
 ## Naming Decision
 
-The internal packaging module is named `aura-packager`, not `aura-installer`.
+The internal packaging module is named `liora-packager`, not `liora-installer`.
 
-- `aura-packager` is a Rust library for packaging domain logic.
+- `liora-packager` is a Rust library for packaging domain logic.
 - `xtask` is the command entrypoint: `cargo run -p xtask -- package ...`.
 - `packaging/` stores static platform resources and packager configuration.
 
 ## Technical Direction
 
-- `crates/aura-packager`: app metadata, package formats, checksums, output manifests, validation helpers.
+- `crates/liora-packager`: app metadata, package formats, checksums, output manifests, validation helpers.
 - `xtask`: build orchestration, app/format selection, future cargo-packager/RPM backend invocation.
 - `packaging/`: Packager config, icons, Linux desktop/metainfo, macOS entitlements, Windows installer resources.
 - Primary backend: `cargo-packager` for app/dmg/deb/AppImage/NSIS/MSI/Pacman where practical.
@@ -33,18 +33,18 @@ The internal packaging module is named `aura-packager`, not `aura-installer`.
 ## Current Readiness Baseline
 
 - `docs/packaging-installer-technical-plan.md` is the source technical plan.
-- `crates/aura-packager` contains the packaging domain model: known apps, platform formats, checksums, manifests, release notes, cargo-packager config generation, and RPM metadata generation.
+- `crates/liora-packager` contains the packaging domain model: known apps, platform formats, checksums, manifests, release notes, cargo-packager config generation, and RPM metadata generation.
 - `xtask package` is the public entrypoint for validate/build/package/ci/smoke/install-smoke flows.
-- `packaging/` contains real Aura/Gallery/Docs icons plus Linux desktop/metainfo, macOS entitlements, and Windows installer resource directories.
-- `.github/workflows/package.yml` runs Linux/macOS/Windows package preview builds, uploads raw binaries and packages, performs artifact smoke, generates install-smoke plans, groups changelog entries by commit type, and validates `vX.Y.Z` release tags against `crates/aura-packager/Cargo.toml`.
+- `packaging/` contains real Liora/Gallery/Docs icons plus Linux desktop/metainfo, macOS entitlements, and Windows installer resource directories.
+- `.github/workflows/package.yml` runs Linux/macOS/Windows package preview builds, uploads raw binaries and packages, performs artifact smoke, generates install-smoke plans, groups changelog entries by commit type, and validates `vX.Y.Z` release tags against `crates/liora-packager/Cargo.toml`.
 
 ## Completion Status
 
 P12 repository-owned implementation is complete. The earlier external-policy TODOs have been converted into explicit release readiness gates instead of remaining as loose notes:
 
-1. Signing / notarization: documented in `packaging/signing-policy.md`; `xtask package release-readiness` warns by default and fails strict release runs when `AURA_REQUIRE_SIGNING=true` and required platform secrets are missing.
+1. Signing / notarization: documented in `packaging/signing-policy.md`; `xtask package release-readiness` warns by default and fails strict release runs when `LIORA_REQUIRE_SIGNING=true` and required platform secrets are missing.
 2. Real system-level install/uninstall: `xtask package install-smoke` writes auditable install/launch/uninstall plans for every artifact and executes only the safe portable tar path locally; destructive/system-level execution remains intentionally gated by approved runners.
-3. License policy: `LICENSE.md` declares the current `LicenseRef-Aura` policy until the owner chooses OSS or commercial terms.
+3. License policy: `LICENSE.md` declares the current `LicenseRef-Liora` policy until the owner chooses OSS or commercial terms.
 4. Real `v*` release path: `.github/workflows/package.yml` validates tag/version matching, runs release-readiness before packaging, downloads package/raw-binary artifacts, generates grouped release notes, and publishes GitHub Releases.
 5. Artifact naming normalization: portable tar naming is deterministic; backend-produced installer names remain smoke-validated and should only be further normalized after real backend evidence requires it.
 
@@ -56,7 +56,7 @@ P12 repository-owned implementation is complete. The earlier external-policy TOD
 
 ### 已完成并推送
 
-- `crates/aura-packager`
+- `crates/liora-packager`
   - app metadata / known app registry：Gallery、Docs。
   - package format model：Linux/macOS/Windows 默认格式。
   - checksum：SHA-256。
@@ -74,24 +74,24 @@ P12 repository-owned implementation is complete. The earlier external-policy TOD
   - Linux `.desktop` / metainfo。
   - macOS entitlements placeholder。
   - Windows nsis/wix resource folders（用 `.gitkeep` 跟踪空目录，确保 GitHub runner validate 通过）。
-  - app icon sets：`aura-gallery.*`、`aura-docs.*`。
-  - main Aura brand icon 已选第 3 套 ribbon，落到 `packaging/icons/aura.*`。
+  - app icon sets：`liora-gallery.*`、`liora-docs.*`。
+  - main Liora brand icon 已选第 3 套 ribbon，落到 `packaging/icons/liora.*`。
 - CI
   - `.github/workflows/package.yml` 已添加 Linux/macOS/Windows packaging matrix。
   - package artifact 上传前运行 `cargo run -p xtask -- package smoke ...`，对 portable `.tar.gz` 做结构校验，并对其他格式做 runner-safe 头部/非空检查。
   - CI 真实反馈修正：`cargo-generate-rpm --metadata-overwrite` 必须使用 `GenerateRpm.<app>.toml#package.metadata.generate-rpm` 分支加载，且生成 TOML 必须把 metadata 放在 `[package.metadata.generate-rpm]` 下、依赖放在 `[package.metadata.generate-rpm.requires]` 下。
-  - CI 真实反馈修正：artifact collection/smoke 必须忽略 `.cargo-packager` 等隐藏后端工作目录，避免把 deb 内部 `control.tar.gz` 误判为 Aura portable tar.gz。
+  - CI 真实反馈修正：artifact collection/smoke 必须忽略 `.cargo-packager` 等隐藏后端工作目录，避免把 deb 内部 `control.tar.gz` 误判为 Liora portable tar.gz。
   - `workflow_dispatch` 默认 dry-run。
-  - `main` push 触发 preview 打包，包版本使用 `AURA_PACKAGE_VERSION=<base>-preview.<run_number>.<short_sha>`。
+  - `main` push 触发 preview 打包，包版本使用 `LIORA_PACKAGE_VERSION=<base>-preview.<run_number>.<short_sha>`。
   - `v*` tag 触发 release 打包，包版本使用 tag 去掉 `v` 后的版本。
-  - 上传 `target/packages/**` 和 `target/aura-packager/*.toml`，artifact 命名区分 `aura-preview-packages-*` / `aura-release-packages-*`。
+  - 上传 `target/packages/**` 和 `target/liora-packager/*.toml`，artifact 命名区分 `liora-preview-packages-*` / `liora-release-packages-*`。
   - release job 下载各平台 release artifacts，按 `feat` / `fix` / `docs` / `ci` / `build` / `refactor` / `perf` / `test` / `style` / `chore` / `revert` / `Other` 分组收集 git changelog，创建/更新 GitHub Release，并上传全部构建产物。
 
 ### 已验证命令
 
 ```bash
-cargo check -p xtask -p aura-packager
-cargo test -p aura-packager
+cargo check -p xtask -p liora-packager
+cargo test -p liora-packager
 cargo run -p xtask -- package validate
 cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build
 cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run
@@ -99,7 +99,7 @@ cargo run -p xtask -- package install-smoke --all-apps --format platform-default
 
 ### GitHub preview runner 验证
 
-- `27613242837` / commit `5a3615d`：`Package native Aura apps` workflow 成功。
+- `27613242837` / commit `5a3615d`：`Package native Liora apps` workflow 成功。
 - Linux/macOS/Windows matrix 均完成：release binary build、package generation、artifact smoke、raw binary upload、package artifact upload。
 - Linux 真实生成路径已覆盖 AppImage、deb、rpm、portable tar.gz；macOS 覆盖 app/dmg；Windows preview 覆盖 NSIS。
 - 修复过的 CI 反馈：RPM metadata-overwrite 分支、RPM TOML 嵌套结构、artifact smoke 忽略 `.cargo-packager` 内部工作目录。
@@ -107,10 +107,10 @@ cargo run -p xtask -- package install-smoke --all-apps --format platform-default
 Dry-run 预期生成：
 
 ```text
-target/aura-packager/Packager.gallery.toml
-target/aura-packager/Packager.docs.toml
-target/aura-packager/GenerateRpm.gallery.toml
-target/aura-packager/GenerateRpm.docs.toml
+target/liora-packager/Packager.gallery.toml
+target/liora-packager/Packager.docs.toml
+target/liora-packager/GenerateRpm.gallery.toml
+target/liora-packager/GenerateRpm.docs.toml
 ```
 
 ## Historical Remaining Work / Completed Gate Mapping
@@ -142,7 +142,7 @@ cargo run -p xtask -- package ci --all-apps --format platform-defaults
 
 ### 3. 真正的 portable `.tar.gz` backend（已补）
 
-`tar.gz` 不再映射为 cargo-packager `pacman`，而是 Aura supplemental backend：
+`tar.gz` 不再映射为 cargo-packager `pacman`，而是 Liora supplemental backend：
 
 - 收集 `target/release/<binary>`；
 - 收集 PNG/SVG app icons；
@@ -162,7 +162,7 @@ cargo run -p xtask -- package ci --all-apps --format platform-defaults
 
 ### 5. GitHub Release automation（已接入 readiness gate）
 
-基础能力已接入，并在打包前运行 release-readiness：`main` push 会生成 preview 包；`v*` tag package matrix 完成后，release job 会下载 `aura-release-packages-*` artifacts，自动收集上一个 tag 以来的 git commit changelog，并按 Conventional Commit 类型分组生成 release notes，随后创建/更新 GitHub Release 并上传全部构建产物。
+基础能力已接入，并在打包前运行 release-readiness：`main` push 会生成 preview 包；`v*` tag package matrix 完成后，release job 会下载 `liora-release-packages-*` artifacts，自动收集上一个 tag 以来的 git commit changelog，并按 Conventional Commit 类型分组生成 release notes，随后创建/更新 GitHub Release 并上传全部构建产物。
 
 后续增强：
 
@@ -193,7 +193,7 @@ cargo run -p xtask -- package ci --all-apps --format platform-defaults
 
 ### 8. License / metadata cleanup（已明确当前策略）
 
-已新增 `LICENSE.md`，明确当前仓库和 package metadata 使用 `LicenseRef-Aura`，直到 owner 决定正式 OSS 或商业 license。RPM config 继续使用 `LicenseRef-Aura`，这是显式策略而非遗漏。
+已新增 `LICENSE.md`，明确当前仓库和 package metadata 使用 `LicenseRef-Liora`，直到 owner 决定正式 OSS 或商业 license。RPM config 继续使用 `LicenseRef-Liora`，这是显式策略而非遗漏。
 
 ### 9. CI real-run iteration
 
@@ -205,7 +205,7 @@ cargo run -p xtask -- package ci --all-apps --format platform-defaults
 
 ## Guardrails for P12 Continuation
 
-- 绝对不要把 Aura app 改成 Tauri。
+- 绝对不要把 Liora app 改成 Tauri。
 - 保持应用为纯 Rust + GPUI native。
 - packaging tools 可以使用，但 WebView / HTML / CSS / browser runtime 不能进入 app architecture。
 - `xtask` 继续作为唯一公开打包入口。
@@ -227,10 +227,10 @@ P12 is complete for this repository's controllable scope. Final closure added:
 
 - `cargo run -p xtask -- package release-readiness`;
 - `target/packages/release-readiness.md` report generation;
-- `LICENSE.md` with explicit `LicenseRef-Aura` policy;
+- `LICENSE.md` with explicit `LicenseRef-Liora` policy;
 - `packaging/signing-policy.md` for macOS/Windows signing and notarization inputs;
 - CI dry-run readiness check in `.github/workflows/ci.yml`;
 - strict release readiness gate in `.github/workflows/package.yml` for `v*` tag releases;
-- Docs updates in `apps/aura-docs/content/pages/packaging_workflow.md` and `docs/packaging-installer-technical-plan.md`.
+- Docs updates in `apps/liora-docs/content/pages/packaging_workflow.md` and `docs/packaging-installer-technical-plan.md`.
 
 The only actions not executed by the agent are intentionally external and credential-gated: provisioning signing credentials, approving protected release environments, running destructive system-level installers on dedicated machines, and creating a real public `vX.Y.Z` GitHub Release. The repository now blocks or documents those gates rather than silently treating them as unfinished implementation work.

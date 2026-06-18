@@ -13,7 +13,7 @@
 ### Task 1: Update Popover Implementation
 
 **Files:**
-- Modify: `crates/aura-components/src/popover.rs`
+- Modify: `crates/liora-components/src/popover.rs`
 
 - [ ] **Step 1: Update `Popover::new` with `#[track_caller]`**
     ```rust
@@ -37,11 +37,11 @@
     ```
 
 - [ ] **Step 3: Run `cargo check` to verify compilation**
-    Run: `cargo check -p aura-components`
+    Run: `cargo check -p liora-components`
     Expected: Success
 
 - [ ] **Step 4: Commit changes**
     ```bash
-    git add crates/aura-components/src/popover.rs
+    git add crates/liora-components/src/popover.rs
     git commit -m "fix(popover): use stable id and on_click for trigger"
     ```

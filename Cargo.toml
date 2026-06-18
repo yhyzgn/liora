@@ -1,17 +1,17 @@
 [workspace]
 resolver = "2"
-default-members = ["apps/aura-gallery"]
+default-members = ["apps/liora-gallery"]
 members = [
-    "crates/aura-core",
-    "crates/aura-theme",
-    "crates/aura-components",
-    "crates/aura-tray",
-    "crates/aura-packager",
+    "crates/liora-core",
+    "crates/liora-theme",
+    "crates/liora-components",
+    "crates/liora-tray",
+    "crates/liora-packager",
     "xtask",
-    "crates/aura-icons",
-    "crates/aura-icons-lucide",
-    "apps/aura-gallery",
-    "apps/aura-docs",
+    "crates/liora-icons",
+    "crates/liora-icons-lucide",
+    "apps/liora-gallery",
+    "apps/liora-docs",
 ]
 
 [workspace.dependencies]

@@ -1,12 +1,12 @@
 # Architecture Decisions
 
-## ADR-009: No `Aura` Prefix on Any Public Type
+## ADR-009: No `Liora` Prefix on Any Public Type
 
-**Decision**: Remove `Aura` prefix from ALL public types. Components: Button, Icon, Link, Text.
+**Decision**: Remove `Liora` prefix from ALL public types. Components: Button, Icon, Link, Text.
 Theme/config: Theme, Config, ContextExt, ElementExt, ColorPalette, Spacing, Radius, FontSize.
 
 **Rationale**:
-- `aura_theme::Theme` is already namespaced by the crate
+- `liora_theme::Theme` is already namespaced by the crate
 - No conflict with GPUI types (verified at compile time)
 - Consistent with component naming decision
 
@@ -90,7 +90,7 @@ Theme/config: Theme, Config, ContextExt, ElementExt, ColorPalette, Spacing, Radi
 
 ## ADR-010: Popper Foundation — Placement, Flip, and Portal
 
-**Decision**: 
+**Decision**:
 - Implement 12 standard placements (Top/Bottom/Left/Right + Start/End/Center).
 - Implement `calculate_position_with_flip` which prioritizes flipped position if original overflows viewport.
 - Clamping is used as a final fallback to keep elements within viewport.
@@ -104,7 +104,7 @@ Theme/config: Theme, Config, ContextExt, ElementExt, ColorPalette, Spacing, Radi
 
 ## ADR-011: Built-in Unique ID for Every Control
 
-**Decision**: Every Aura component MUST generate a default globally-unique Element ID at construction time. Users MAY override via `.id(...)` but MUST NOT be required to set one for correct behavior. The unique ID is generated from a global atomic counter (`AtomicU64`).
+**Decision**: Every Liora component MUST generate a default globally-unique Element ID at construction time. Users MAY override via `.id(...)` but MUST NOT be required to set one for correct behavior. The unique ID is generated from a global atomic counter (`AtomicU64`).
 
 **Rationale**:
 - GPUI `InteractiveElement` requires unique `.id()` for hit-testing, event dispatch, and state management.
@@ -113,85 +113,85 @@ Theme/config: Theme, Config, ContextExt, ElementExt, ColorPalette, Spacing, Radi
 - The library should guarantee correctness by default — not push the burden onto the consumer.
 
 **Implementation**:
-- `aura-core` provides `next_unique_id() -> u64` backed by a static `AtomicU64`.
+- `liora-core` provides `next_unique_id() -> u64` backed by a static `AtomicU64`.
 - Components call `unique_id("component-type")` → returns `SharedString` like `"button-42"`.
 - Internal interactive sub-elements use `"{component-id}-{role}"` (e.g. `"button-42-icon-start"`).
 - Users can override: `Button::new("X").id("my-custom-id")`.
 
 ## ADR-012: Gallery Demo Must Be Self-Contained (No Raw GPUI Primitives in Demos)
 
-**Decision**: Gallery demo files (`apps/aura-gallery/src/demos/*_demo.rs`) and gallery framework files (`main.rs`, `category.rs`) must use only Aura library controls for layout and styling. Direct use of GPUI primitives (`div()`, `px()`, `rgb()`, etc.) in demo code is forbidden. If a needed layout/style pattern has no corresponding Aura control, the control should be added to the library.
+**Decision**: Gallery demo files (`apps/liora-gallery/src/demos/*_demo.rs`) and gallery framework files (`main.rs`, `category.rs`) must use only Liora library controls for layout and styling. Direct use of GPUI primitives (`div()`, `px()`, `rgb()`, etc.) in demo code is forbidden. If a needed layout/style pattern has no corresponding Liora control, the control should be added to the library.
 
 **Rationale**:
-- Demos serve as the canonical usage reference — they should demonstrate Aura's API, not GPUI's.
+- Demos serve as the canonical usage reference — they should demonstrate Liora's API, not GPUI's.
 - Eating our own dog food surfaces missing controls and API pain points.
 - Consistent visual appearance across all demos.
 - Lowers the barrier for new users: copy-paste from demos and it works.
 
 ## ADR-008: Components Read Theme from GPUI Global (duplicate — kept for reference)
 
-**Decision**: Aura components implement GPUI `IntoElement` + `RenderOnce` and read `Config.theme` from `App` during render. Business usage is `Button::new("Save").primary()` without `.build(&theme)`.
+**Decision**: Liora components implement GPUI `IntoElement` + `RenderOnce` and read `Config.theme` from `App` during render. Business usage is `Button::new("Save").primary()` without `.build(&theme)`.
 
 **Supersedes**: ADR-001's `.build(&theme)` conversion detail and ADR-006's explicit theme-parameter policy.
 
 **Rationale**:
-- Preserves the global theme model established by `init_aura(cx, Theme::...)`.
+- Preserves the global theme model established by `init_liora(cx, Theme::...)`.
 - Avoids threading `&Theme` through every component call and demo registry.
 - Matches GPUI/Zed component patterns where `RenderOnce::render(..., cx: &mut App)` resolves theme and style.
 - Keeps chainable builder API while making components directly usable as `IntoElement` children.
 
 **Escape hatch**: Low-level private helpers may accept `&Theme` for tests or style extraction, but public component use should not require theme parameters.
 
-## ADR-013: P8 Documentation Runs Inside Native Aura Gallery
+## ADR-013: P8 Documentation Runs Inside Native Liora Gallery
 
-**Decision**: P8 abandons the previous VitePress/Web documentation plan. Aura's official documentation now runs in a separate `aura-docs` GPUI native application, while `aura-gallery` remains the component showcase. Markdown is an input format only; rendering output must be Aura/GPUI native elements.
+**Decision**: P8 abandons the previous VitePress/Web documentation plan. Liora's official documentation now runs in a separate `liora-docs` GPUI native application, while `liora-gallery` remains the component showcase. Markdown is an input format only; rendering output must be Liora/GPUI native elements.
 
 **Rationale**:
-- The project goal is a native Rust/GPUI component library; the official documentation surface should dogfood Aura rather than fork into a Web stack.
-- Rich text rendering should validate and improve Aura's own Typography/Layout primitives.
-- Live component examples must remain real GPUI/Aura view nodes with native hover/click behavior.
+- The project goal is a native Rust/GPUI component library; the official documentation surface should dogfood Liora rather than fork into a Web stack.
+- Rich text rendering should validate and improve Liora's own Typography/Layout primitives.
+- Live component examples must remain real GPUI/Liora view nodes with native hover/click behavior.
 
 **Implementation constraints**:
 - Use `pulldown-cmark` for Markdown AST/Event parsing.
-- Use Aura Typography/Layout components for all layout, styling, wrapping, and scrolling.
-- Implement Markdown rendering as a stack-based state machine in `aura-docs`.
-- Store authored documentation as one Markdown file per page/component under `apps/aura-docs/content/pages/`.
-- Store code examples outside Markdown under `apps/aura-docs/content/snippets/<page>/<case>.rs`; Markdown code fences reference them with `src="..."`.
-- Support Live Demo injection syntax such as `::AuraDemo{component="Button"}::` by inserting real Aura components.
+- Use Liora Typography/Layout components for all layout, styling, wrapping, and scrolling.
+- Implement Markdown rendering as a stack-based state machine in `liora-docs`.
+- Store authored documentation as one Markdown file per page/component under `apps/liora-docs/content/pages/`.
+- Store code examples outside Markdown under `apps/liora-docs/content/snippets/<page>/<case>.rs`; Markdown code fences reference them with `src="..."`.
+- Support Live Demo injection syntax such as `::LioraDemo{component="Button"}::` by inserting real Liora components.
 - Do not introduce a VitePress app, Web documentation runtime, or cross-runtime rendering path.
 
 **Edition note**: The new architecture can be understood as Rust 2021-compatible in language semantics, but the existing workspace remains edition 2024 unless a separate migration decision changes it.
 
 ## ADR-014: P10 Charts Use Native GPUI Canvas and Path Pipeline
 
-**Decision**: Aura chart components must be implemented as native Rust/GPUI components using GPUI `canvas`, `PathBuilder`, `Window::paint_path`, `Window::paint_quad`, and Aura/GPUI text primitives. Web chart engines, WebView, DOM/SVG DOM, WASM, and remote image rendering are forbidden.
+**Decision**: Liora chart components must be implemented as native Rust/GPUI components using GPUI `canvas`, `PathBuilder`, `Window::paint_path`, `Window::paint_quad`, and Liora/GPUI text primitives. Web chart engines, WebView, DOM/SVG DOM, WASM, and remote image rendering are forbidden.
 
 **Rationale**:
-- Aura is a native GPUI component library; charts must validate the same rendering stack as the rest of the library.
-- Native charts can share Aura theme tokens, interaction patterns, docs snippets, and Gallery self-bootstrapping.
+- Liora is a native GPUI component library; charts must validate the same rendering stack as the rest of the library.
+- Native charts can share Liora theme tokens, interaction patterns, docs snippets, and Gallery self-bootstrapping.
 - GPUI already exposes enough low-level drawing primitives for line/area/bar/pie/ring/sparkline MVPs.
 
 **Reference policy**:
 - GPUI official/local source is the primary reference.
 - `https://github.com/vicanso/zedis` may be used as a case study because its Metrics page draws Area/Line/Bar charts through GPUI `canvas` and separates scale, axis/grid, and shape layers.
-- Aura must not copy zedis' public API or depend on its component crate; implement Aura-owned chart primitives and tests.
+- Liora must not copy zedis' public API or depend on its component crate; implement Liora-owned chart primitives and tests.
 
 **Implementation constraints**:
 - First-class components: `LineChart`, `AreaChart`, `BarChart`, `PieChart`, `RingChart`, `Sparkline`.
 - Shared infrastructure should cover linear/band/point scales, axis/grid/ticks, legend, tooltip/hover hit testing, and theme palette selection.
 - Every chart gets Gallery demo, Docs page, external `.rs` snippets, and scale/shape/builder tests.
 
-## ADR-015: P11 Tray Uses an Aura Facade over tray-icon/muda
+## ADR-015: P11 Tray Uses an Liora Facade over tray-icon/muda
 
-**Decision**: Implement system tray support in a new `crates/aura-tray` crate rather than exposing `tray-icon`/`muda` directly from apps or vendoring their source.
+**Decision**: Implement system tray support in a new `crates/liora-tray` crate rather than exposing `tray-icon`/`muda` directly from apps or vendoring their source.
 
 **Rationale**:
 - Keeps GPUI apps focused on window lifecycle commands while isolating platform-specific tray/menu APIs.
-- Allows Aura to provide stable `TrayCommand` routing for Show/Hide/Toggle/Quit/SetIcon/Custom actions.
+- Allows Liora to provide stable `TrayCommand` routing for Show/Hide/Toggle/Quit/SetIcon/Custom actions.
 - Supports future customization behind one facade without copying Tauri-maintained source today.
 
 **Implementation constraints**:
 - Use `tray-icon` and its `tray_icon::menu` re-export for `muda` menu types.
 - Support runtime icon changes, tooltip/visibility updates, checkbox state sync, separators, and recursive 2nd/3rd/N-level submenus.
-- Tray-enabled GPUI apps must use `QuitMode::Explicit` and retain the `AuraTray` handle for process lifetime.
+- Tray-enabled GPUI apps must use `QuitMode::Explicit` and retain the `LioraTray` handle for process lifetime.
 - Normal Gallery/Docs examples should preview config and command behavior without creating intrusive OS tray icons.

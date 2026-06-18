@@ -1,14 +1,14 @@
-aura-workspace/
+liora-workspace/
 ├── crates/
-│   ├── aura-core/           # 核心 Trait、全局配置、宏、工具函数
-│   ├── aura-theme/          # 设计系统、Token、暗/亮色模式、色彩计算
-│   ├── aura-components/     # 具体组件实现 (Button/Input/Dialog/Chart 等)
-│   ├── aura-icons/          # 图标库封装
-│   ├── aura-icons-lucide/   # Lucide 图标枚举生成与路径适配
-│   └── aura-tray/           # P11 系统托盘 facade (tray-icon + muda)
+│   ├── liora-core/           # 核心 Trait、全局配置、宏、工具函数
+│   ├── liora-theme/          # 设计系统、Token、暗/亮色模式、色彩计算
+│   ├── liora-components/     # 具体组件实现 (Button/Input/Dialog/Chart 等)
+│   ├── liora-icons/          # 图标库封装
+│   ├── liora-icons-lucide/   # Lucide 图标枚举生成与路径适配
+│   └── liora-tray/           # P11 系统托盘 facade (tray-icon + muda)
 ├── apps/
-│   ├── aura-gallery/        # GPUI 原生组件看板
-│   └── aura-docs/           # GPUI 原生官方文档主程序
+│   ├── liora-gallery/        # GPUI 原生组件看板
+│   └── liora-docs/           # GPUI 原生官方文档主程序
 │       └── content/
 │           ├── pages/       # Markdown 文档页
 │           └── snippets/    # 外部 .rs/.sh 示例片段
