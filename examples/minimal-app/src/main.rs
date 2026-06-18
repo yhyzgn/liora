@@ -13,7 +13,7 @@ use aura_core::{Config, init_aura};
 use aura_theme::Theme;
 use gpui::{
     App, AppContext, Bounds, Context, Entity, IntoElement, Render, Window, WindowBounds,
-    WindowOptions, div, prelude::*, px, size,
+    WindowControlArea, WindowDecorations, WindowOptions, div, prelude::*, px, size,
 };
 
 struct AppView {
@@ -28,66 +28,160 @@ impl AppView {
             enabled: cx.new(|cx| Switch::new(true, cx)),
         }
     }
+
+    fn titlebar(&self, window: &mut Window, theme: &Theme) -> impl IntoElement {
+        div()
+            .id("minimal-titlebar")
+            .window_control_area(WindowControlArea::Drag)
+            .h(px(40.0))
+            .w_full()
+            .px_3()
+            .bg(theme.neutral.card)
+            .border_b_1()
+            .border_color(theme.neutral.border)
+            .flex()
+            .items_center()
+            .justify_between()
+            .child(
+                div()
+                    .flex()
+                    .items_center()
+                    .gap_2()
+                    .child(
+                        div()
+                            .w(px(10.0))
+                            .h(px(10.0))
+                            .rounded_full()
+                            .bg(theme.primary.base),
+                    )
+                    .child(
+                        div()
+                            .text_sm()
+                            .font_weight(gpui::FontWeight::MEDIUM)
+                            .text_color(theme.neutral.text_1)
+                            .child("Aura Minimal"),
+                    ),
+            )
+            .child(
+                div()
+                    .window_control_area(WindowControlArea::Drag)
+                    .flex()
+                    .items_center()
+                    .gap_1()
+                    .child(window_button(
+                        "minimal-window-min",
+                        "−",
+                        theme,
+                        WindowControlArea::Min,
+                        |window, _cx| {
+                            window.minimize_window();
+                        },
+                    ))
+                    .child(window_button(
+                        "minimal-window-max",
+                        if window.is_maximized() { "↙" } else { "□" },
+                        theme,
+                        WindowControlArea::Max,
+                        |window, _cx| {
+                            window.zoom_window();
+                        },
+                    ))
+                    .child(window_button(
+                        "minimal-window-close",
+                        "×",
+                        theme,
+                        WindowControlArea::Close,
+                        |window, cx| {
+                            window.remove_window();
+                            cx.quit();
+                        },
+                    )),
+            )
+    }
 }
 
 impl Render for AppView {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
 
         div()
             .size_full()
             .bg(theme.neutral.body)
             .flex()
-            .items_start()
-            .justify_start()
-            .p_4()
+            .flex_col()
+            .child(self.titlebar(window, &theme))
             .child(
-                Card::new(
-                    Space::new()
-                        .vertical()
-                        .gap_lg()
-                        .child(
-                            Space::new()
-                                .vertical()
-                                .gap_xs()
-                                .child(Title::new("Hello Aura").h2())
-                                .child(Text::new(
-                                    "A minimal pure Rust + GPUI native app using Aura components.",
-                                )),
-                        )
-                        .child(
-                            Space::new()
-                                .vertical()
-                                .gap_sm()
-                                .child(Text::new("Project name"))
-                                .child(self.name.clone()),
-                        )
-                        .child(
-                            div()
-                                .flex()
-                                .items_center()
-                                .justify_between()
-                                .gap_4()
-                                .child(
-                                    Space::new()
-                                        .vertical()
-                                        .gap_xs()
-                                        .child(Text::new("Enable native controls"))
-                                        .child(Text::new(
-                                            "Entity-backed state survives re-rendering.",
-                                        )),
-                                )
-                                .child(self.enabled.clone()),
-                        )
-                        .child(
-                            Button::new("Save")
-                                .primary()
-                                .on_click(|_, _, _| toast_success!("Saved from {}", "minimal app")),
-                        ),
-                )
-                .width(px(680.0)),
+                div().flex_1().min_h_0().p_4().child(
+                    Card::new(
+                        Space::new()
+                            .vertical()
+                            .gap_lg()
+                            .child(
+                                Space::new()
+                                    .vertical()
+                                    .gap_xs()
+                                    .child(Title::new("Hello Aura").h2())
+                                    .child(Text::new(
+                                        "A minimal pure Rust + GPUI native app using Aura components.",
+                                    )),
+                            )
+                            .child(
+                                Space::new()
+                                    .vertical()
+                                    .gap_sm()
+                                    .child(Text::new("Project name"))
+                                    .child(self.name.clone()),
+                            )
+                            .child(
+                                div()
+                                    .flex()
+                                    .items_center()
+                                    .justify_between()
+                                    .gap_4()
+                                    .child(
+                                        Space::new()
+                                            .vertical()
+                                            .gap_xs()
+                                            .child(Text::new("Enable native controls"))
+                                            .child(Text::new(
+                                                "Entity-backed state survives re-rendering.",
+                                            )),
+                                    )
+                                    .child(self.enabled.clone()),
+                            )
+                            .child(
+                                Button::new("Save")
+                                    .primary()
+                                    .on_click(|_, _, _| toast_success!("Saved from {}", "minimal app")),
+                            ),
+                    )
+                    .width(px(680.0)),
+                ),
             )
     }
+}
+
+fn window_button(
+    id: &'static str,
+    label: &'static str,
+    theme: &Theme,
+    area: WindowControlArea,
+    action: fn(&mut Window, &mut App),
+) -> impl IntoElement {
+    div()
+        .id(id)
+        .window_control_area(area)
+        .w(px(32.0))
+        .h(px(28.0))
+        .rounded(px(theme.radius.sm))
+        .flex()
+        .items_center()
+        .justify_center()
+        .text_sm()
+        .text_color(theme.neutral.text_2)
+        .hover(|style| style.bg(theme.neutral.hover).cursor_pointer())
+        .on_click(move |_, window, cx| action(window, cx))
+        .child(label)
 }
 
 fn main() {
@@ -112,12 +206,11 @@ fn main() {
             WindowOptions {
                 window_bounds: Some(WindowBounds::Windowed(Bounds {
                     origin: gpui::Point::default(),
-                    size: size(px(720.0), px(480.0)),
+                    size: size(px(960.0), px(600.0)),
                 })),
-                titlebar: Some(gpui::TitlebarOptions {
-                    title: Some("Aura Minimal App".into()),
-                    ..Default::default()
-                }),
+                titlebar: None,
+                window_decorations: Some(WindowDecorations::Client),
+                window_min_size: Some(size(px(640.0), px(420.0))),
                 ..Default::default()
             },
             |window, cx| {
