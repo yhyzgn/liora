@@ -1,7 +1,7 @@
 <div align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/liora-logo.svg">
-    <img src="assets/liora-logo.svg" alt="Liora — 纯 Rust + GPUI 原生 UI 组件库" width="720">
+    <img src="assets/liora-logo.svg" alt="Liora — 纯 Rust + GPUI 原生 UI 组件库" width="220">
   </picture>
 
   <p><strong>面向 Rust 桌面应用的企业级 GPUI 原生组件库。</strong></p>

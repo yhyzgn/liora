@@ -1,7 +1,7 @@
 <div align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/liora-logo.svg">
-    <img src="assets/liora-logo.svg" alt="Liora — pure Rust + GPUI native UI component library" width="720">
+    <img src="assets/liora-logo.svg" alt="Liora — pure Rust + GPUI native UI component library" width="220">
   </picture>
 
   <p><strong>Enterprise-grade native UI components for Rust desktop applications.</strong></p>

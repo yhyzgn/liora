@@ -7746,8 +7746,15 @@ mod tests {
         assert!(repo_metadata.contains("rust-desktop"));
         assert!(repo_metadata.contains("no more than 20 topics"));
         let logo = include_str!("../../../assets/liora-logo.svg");
-        assert!(logo.contains(r#"<title id="title">Liora logo</title>"#));
-        assert!(logo.contains("PURE RUST + GPUI NATIVE UI"));
+        assert!(logo.contains(r#"<title id="title">Liora abstract native UI mark</title>"#));
+        assert!(!logo.contains("<text"));
+        assert!(!logo.contains("PURE RUST + GPUI NATIVE UI"));
+        for wrong_name in ["Liorea", "liorea", "Loirea", "loirea"] {
+            assert!(!readme.contains(wrong_name));
+            assert!(!readme_zh.contains(wrong_name));
+            assert!(!repo_metadata.contains(wrong_name));
+            assert!(!logo.contains(wrong_name));
+        }
         assert!(changelog.contains("P21 release-candidate readiness"));
         assert!(prompt.contains(".prompt/P21-release-candidate-readiness.md"));
         assert!(!cargo.contains("examples/minimal-app"));

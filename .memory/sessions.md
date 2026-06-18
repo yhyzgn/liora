@@ -3677,3 +3677,7 @@ Validation evidence:
 - `cargo fmt --all --check` passed.
 - `cargo test -p liora-docs release_candidate_readiness_docs_cover_current_boundaries -- --nocapture` passed.
 - Topic metadata self-check confirmed 20 topics, all lowercase/digit/hyphen and <=50 characters.
+
+## 2026-06-19 logo mark correction
+
+Replaced the README logo with a symbol-only abstract native UI mark. The prior asset used visible letter/wordmark treatment, which could read as a misspelled wordmark; the new SVG intentionally contains no visible `<text>` or letterform paths and keeps README copy outside the logo image. README display width was reduced to fit a standalone mark.
