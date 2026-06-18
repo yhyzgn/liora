@@ -75,3 +75,12 @@ Avoid these claims until owner policy changes or a public release exists:
 - Do not imply crates are published unless the owner enables publishing.
 - Do not imply official GPUI/Zed affiliation.
 - Do not advertise Tauri, WebView, HTML/CSS, DOM, or browser runtime support.
+
+
+## Applied repository settings
+
+Applied to `github.com/yhyzgn/liora` on 2026-06-19 with `gh repo edit`:
+
+- Description: `Pure Rust + GPUI native enterprise UI component library for desktop apps — Element Plus-inspired components, charts, docs, tray integration, and installer packaging.`
+- Homepage: `https://github.com/yhyzgn/liora#readme`
+- Topics: the 20-topic set listed above.

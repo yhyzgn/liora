@@ -3681,3 +3681,7 @@ Validation evidence:
 ## 2026-06-19 logo mark correction
 
 Replaced the README logo with a symbol-only abstract native UI mark. The prior asset used visible letter/wordmark treatment, which could read as a misspelled wordmark; the new SVG intentionally contains no visible `<text>` or letterform paths and keeps README copy outside the logo image. README display width was reduced to fit a standalone mark.
+
+## 2026-06-19 GitHub About metadata and logo palette correction
+
+Updated the README logo palette to a restrained graphite/glacier-glass mark after user feedback that the prior colors were ugly. Also applied GitHub repository About metadata directly via `gh repo edit` instead of only documenting recommended settings: description, homepage, and the 20-topic SEO set are now configured on `github.com/yhyzgn/liora`.
