@@ -266,13 +266,13 @@ impl ColorPicker {
         }
 
         let base = hex_to_hsla(&self.value).unwrap_or_else(|| hsla_from_hsv(210.0, 0.75, 1.0, 1.0));
-        let image = render_image_from_pixels(ALPHA_WIDTH, ALPHA_HEIGHT, |x, _| {
+        let image = render_image_from_pixels(ALPHA_WIDTH, ALPHA_HEIGHT, |x, y| {
             let alpha = if ALPHA_WIDTH <= 1 {
                 1.0
             } else {
                 x as f32 / (ALPHA_WIDTH - 1) as f32
             };
-            bgra_pixel(base.opacity(alpha))
+            alpha_checker_bgra_pixel(base, x, y, alpha)
         });
         self.alpha_image = Some((self.value.clone(), image.clone()));
         image
@@ -783,12 +783,30 @@ fn render_image_from_pixels(
 
 fn bgra_pixel(color: Hsla) -> ImageRgba<u8> {
     let rgba = Rgba::from(color);
+    bgra_from_rgba_channels(rgba.r, rgba.g, rgba.b, rgba.a)
+}
+
+fn bgra_from_rgba_channels(r: f32, g: f32, b: f32, a: f32) -> ImageRgba<u8> {
     ImageRgba([
-        (rgba.b.clamp(0.0, 1.0) * 255.0).round() as u8,
-        (rgba.g.clamp(0.0, 1.0) * 255.0).round() as u8,
-        (rgba.r.clamp(0.0, 1.0) * 255.0).round() as u8,
-        (rgba.a.clamp(0.0, 1.0) * 255.0).round() as u8,
+        (b.clamp(0.0, 1.0) * 255.0).round() as u8,
+        (g.clamp(0.0, 1.0) * 255.0).round() as u8,
+        (r.clamp(0.0, 1.0) * 255.0).round() as u8,
+        (a.clamp(0.0, 1.0) * 255.0).round() as u8,
     ])
+}
+
+fn alpha_checker_bgra_pixel(base: Hsla, x: u32, y: u32, alpha: f32) -> ImageRgba<u8> {
+    const CHECKER_SIZE: u32 = 7;
+    let checker_is_light = ((x / CHECKER_SIZE) + (y / CHECKER_SIZE)).is_multiple_of(2);
+    let checker = if checker_is_light { 1.0 } else { 0.0 };
+    let rgba = Rgba::from(base);
+    let alpha = alpha.clamp(0.0, 1.0);
+    bgra_from_rgba_channels(
+        rgba.r * alpha + checker * (1.0 - alpha),
+        rgba.g * alpha + checker * (1.0 - alpha),
+        rgba.b * alpha + checker * (1.0 - alpha),
+        1.0,
+    )
 }
 
 fn paint_surface_marker(bounds: Bounds<Pixels>, ratio: f32, horizontal: bool, window: &mut Window) {
@@ -941,5 +959,20 @@ mod tests {
             ColorPicker::new("#409eff").width_md().width,
             Some(px(360.0))
         );
+    }
+
+    #[test]
+    fn alpha_slider_renders_checkerboard_under_transparent_color() {
+        let base = gpui::rgb(0xff0000).into();
+
+        let transparent_light = alpha_checker_bgra_pixel(base, 0, 0, 0.0);
+        let transparent_dark = alpha_checker_bgra_pixel(base, 7, 0, 0.0);
+        let opaque_red = alpha_checker_bgra_pixel(base, 0, 0, 1.0);
+        let half_over_dark = alpha_checker_bgra_pixel(base, 7, 0, 0.5);
+
+        assert_eq!(transparent_light.0, [255, 255, 255, 255]);
+        assert_eq!(transparent_dark.0, [0, 0, 0, 255]);
+        assert_eq!(opaque_red.0, [0, 0, 255, 255]);
+        assert_eq!(half_over_dark.0, [0, 0, 128, 255]);
     }
 }
