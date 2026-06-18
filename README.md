@@ -92,6 +92,7 @@ cargo run -p xtask -- package install-smoke --all-apps --format platform-default
 
 - Native Docs app: `cargo run -p aura-docs`
 - Dashboard Patterns page: composition guidance for real Aura product screens
+- Dashboard State page: data modeling, filters, refresh, and state branches for the dogfood app
 - Component Gallery: `cargo run -p aura-gallery`
 - Packaging plan: `docs/packaging-installer-technical-plan.md`
 - Phase prompts and status: `.prompt/` and `.memory/`

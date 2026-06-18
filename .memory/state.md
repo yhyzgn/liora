@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-**P18 Dashboard Polish/API Ergonomics — Complete (2026-06-18)**
+**P19 Dashboard State/Data Flow — Complete (2026-06-18)**
 
 Local implementation phases are complete through P17. Current repository-owned status:
 
@@ -15,9 +15,15 @@ Local implementation phases are complete through P17. Current repository-owned s
 - P16 Public API & Adoption Readiness: complete; root README, contributing/changelog docs, minimal app workspace example, crate-level Rustdoc, Docs Adoption Guide, and adoption regression tests are in place.
 - P17 Dashboard Dogfooding: complete; `examples/dashboard-app` provides a realistic native GPUI dashboard that composes Aura filters, metric cards, charts, progress panels, table, CodeBlock runbook, toast, and key binding setup.
 - P18 Dashboard Polish/API Ergonomics: complete; dashboard dogfood app now uses `DashboardGrid`, `dashboard_card`, and `metric_card`, supports light/dark theme switching, and is documented in `Dashboard Patterns`.
+- P19 Dashboard State/Data Flow: complete; dashboard dogfood app now has explicit data models, live search/region/alerts filters, revisioned refresh, and loading/empty/degraded state branches documented in `Dashboard State`.
 
 P12 external-policy items remain tracked but do not block local P17 dogfooding/adoption work. Do not mark P12 fully complete until signing/notarization, real system installs, license policy, and real `v*` release validation are satisfied or formally declared out of scope.
 
+
+
+## P19 Dashboard State/Data Flow — 2026-06-18
+
+P19 is complete. Added `examples/dashboard-app/src/model.rs`, wired search/region/alerts controls into parent dashboard state, made refresh regenerate revisioned mock data, and documented state/data-flow patterns in native Docs. The app remains pure Rust + GPUI native with ordinary Aura components for all state branches.
 
 
 ## P18 Dashboard Polish/API Ergonomics — 2026-06-18
@@ -89,6 +95,7 @@ Non-blocking residuals: `MessageManager::init` panic is intentional usage-contra
 | P16 Adoption Readiness | ✅ Done | adoption gate passed | README + examples/minimal-app + Rustdoc + Docs Adoption Guide |
 | P17 Dashboard Dogfooding | ✅ Done | dogfood gate passed | examples/dashboard-app + Docs Dashboard App + README/Adoption wiring |
 | P18 Dashboard Polish/API Ergonomics | ✅ Done | ergonomics gate passed | DashboardGrid + dashboard helpers + theme toggle + Dashboard Patterns docs |
+| P19 Dashboard State/Data Flow | ✅ Done | state/data gate passed | model structs + live filters + refresh + Dashboard State docs |
 
 ## Git Status
 

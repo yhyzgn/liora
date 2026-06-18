@@ -214,6 +214,14 @@ impl Select {
         self
     }
 
+    pub fn set_on_change(&mut self, cb: impl Fn(usize, &mut Window, &mut App) + 'static) {
+        self.on_change = Some(Box::new(cb));
+    }
+
+    pub fn selected_index(&self) -> Option<usize> {
+        self.selected_idx
+    }
+
     fn toggle_open(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.is_open = !self.is_open;
         if self.is_open {

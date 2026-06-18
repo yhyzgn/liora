@@ -28,6 +28,7 @@ const PACKAGING_WORKFLOW_DOC: &str = include_str!("../content/pages/packaging_wo
 const ADOPTION_DOC: &str = include_str!("../content/pages/adoption.md");
 const DASHBOARD_APP_DOC: &str = include_str!("../content/pages/dashboard_app.md");
 const DASHBOARD_PATTERNS_DOC: &str = include_str!("../content/pages/dashboard_patterns.md");
+const DASHBOARD_STATE_DOC: &str = include_str!("../content/pages/dashboard_state.md");
 const ABOUT_DOC: &str = include_str!("../content/pages/about.md");
 
 const AFFIX_DOC: &str = include_str!("../content/pages/affix.md");
@@ -153,6 +154,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Dashboard Patterns",
         markdown: DASHBOARD_PATTERNS_DOC,
+    },
+    DocPage {
+        title: "Dashboard State",
+        markdown: DASHBOARD_STATE_DOC,
     },
     DocPage {
         title: "About",
@@ -7515,6 +7520,24 @@ mod tests {
         assert!(
             include_str!("../../../crates/aura-components/src/dashboard.rs")
                 .contains("pub struct DashboardGrid")
+        );
+    }
+
+    #[test]
+    fn dashboard_state_docs_cover_data_flow_model() {
+        let titles = DOC_PAGES.iter().map(|page| page.title).collect::<Vec<_>>();
+        assert!(titles.contains(&"Dashboard State"));
+        assert!(DASHBOARD_STATE_DOC.contains("DashboardData"));
+        assert!(DASHBOARD_STATE_DOC.contains("DashboardFilters"));
+        assert!(DASHBOARD_STATE_DOC.contains("apply_filters"));
+        assert!(DASHBOARD_STATE_DOC.contains("DashboardStatus"));
+        assert!(
+            include_str!("../../../examples/dashboard-app/src/model.rs")
+                .contains("pub fn apply_filters")
+        );
+        assert!(
+            include_str!("../../../examples/dashboard-app/src/main.rs")
+                .contains("refresh_dashboard")
         );
     }
 

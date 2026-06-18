@@ -3563,3 +3563,32 @@
 - `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run` passed.
 - Gallery, Docs, Minimal App, and Dashboard App GUI startup smoke all passed via expected `timeout 10s` status `124`.
 - `git diff --check -- . ':(exclude).omx'` passed.
+
+
+## Session 2026-06-18 — P19 Dashboard State and Data Flow
+
+### Actions
+- Added `.prompt/P19-dashboard-state-and-data-flow.md` and completed P19.
+- Added `examples/dashboard-app/src/model.rs` with explicit dashboard data, filters, status, generation, and filtering helpers.
+- Wired search, region, and alerts-only controls into the parent dashboard state.
+- Made refresh regenerate revisioned mock data across metrics, charts, table rows, and progress panels.
+- Added loading/ready/empty/degraded state branches using ordinary Aura components.
+- Added native Docs `Dashboard State` page plus README/prompt/memory wiring.
+
+### Verification
+- `cargo check -p aura-dashboard-app` passed.
+- `cargo test -p aura-dashboard-app model::tests::filters_match_query_region_and_alerts -- --nocapture` passed.
+- `cargo test -p aura-dashboard-app model::tests::empty_status_is_reported_for_no_visible_services -- --nocapture` passed.
+- `cargo test -p aura-dashboard-app model::tests::refresh_generation_changes_metrics_but_keeps_shape -- --nocapture` passed.
+- `cargo test -p aura-docs markdown::tests::dashboard_state_docs_cover_data_flow_model -- --nocapture` passed.
+- `cargo fmt --all --check` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo doc --workspace --no-deps` passed.
+- `cargo run -p xtask -- package validate` passed.
+- `cargo run -p xtask -- package release-readiness` passed.
+- `cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build` passed.
+- `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run` passed.
+- Gallery, Docs, Minimal App, and Dashboard App GUI startup smoke all passed via expected `timeout 10s` status `124`.
+- `git diff --check -- . ':(exclude).omx'` passed.

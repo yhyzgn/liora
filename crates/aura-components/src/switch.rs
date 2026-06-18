@@ -44,6 +44,14 @@ impl Switch {
         self
     }
 
+    pub fn set_on_change(&mut self, cb: impl Fn(bool, &mut Window, &mut App) + 'static) {
+        self.on_change = Some(Box::new(cb));
+    }
+
+    pub fn checked(&self) -> bool {
+        self.checked
+    }
+
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([
             KeyBinding::new("space", SwitchToggle, None),
