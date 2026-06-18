@@ -3851,3 +3851,33 @@ Validation evidence:
   - `timeout 10s cargo run -p liora-docs` reached expected status 124.
 - After trimming vendored examples/docs and allowing upstream GPUI rustdoc link warnings locally, `cargo doc --workspace --no-deps` passed with no warnings in captured output.
 - `third_party` was reduced from an accidental 1.3G build-output copy to about 3.1M / 112 source/resource files; `.omx` runtime files remain uncommitted.
+
+## 2026-06-19 GPUI patch minimization pass
+
+User asked whether the vendored GPUI patch could be made smaller and more maintainable.
+
+Findings:
+- With Cargo `[patch]` pointing at a path crate, Liora cannot vendor only the 4 changed files; Cargo needs a complete `gpui` crate plus `gpui_linux` crate, and those crates inherit workspace dependencies from `third_party/zed/Cargo.toml`.
+- Attempted deleting GPUI test-support sources. `cargo check` could still pass, but `cargo fmt --all --check` failed because rustfmt still resolves cfg-gated module files. Those files must stay if the vendored crate is kept locally.
+- The real smaller long-term shape remains either upstreaming to Zed or using a dedicated fork branch and pinned git revision.
+
+Safe minimizations kept:
+- Added exact root workspace `exclude` entries for `third_party/zed`, `third_party/zed/crates/gpui`, and `third_party/zed/crates/gpui_linux`, so `cargo test --workspace` no longer treats GPUI as a Liora workspace member and no longer runs GPUI's own 143-test suite.
+- This reduced root `Cargo.lock` substantially by dropping upstream GPUI dev/self-test-only lock entries.
+- Fixed broken vendored Apache license symlinks by adding `third_party/zed/LICENSE-APACHE`.
+- Added `third_party/zed/README.md` documenting the upstream base commit, why the patch exists, what is intentionally included/excluded, and the preferred upstream/fork exit path.
+- Made the source-level regression test whitespace-insensitive so rustfmt changes in vendored files do not break it spuriously.
+
+Validation evidence:
+- `cargo fmt --all --check` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace --no-fail-fast` passed, including `gpui_startup_window_state`.
+- `cargo check -p liora-docs --bin check_snippets` passed.
+- `cargo doc --workspace --no-deps` passed with no captured warnings.
+- `cargo run -p xtask -- package validate` passed.
+- `cargo run -p xtask -- package release-readiness` passed with expected local non-tag warning only.
+- `cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build` passed.
+- `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run` passed.
+- `git diff --check -- . ':(exclude).omx'` passed.
+- `timeout 10s cargo run -p liora-gallery` and `timeout 10s cargo run -p liora-docs` reached expected timeout status.
+- Full pass printed `MIN_PATCH_FULL_GATE_PASS`.

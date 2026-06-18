@@ -8,6 +8,10 @@ fn workspace_file(relative: &str) -> String {
         .unwrap_or_else(|err| panic!("failed to read {}: {err}", path.display()))
 }
 
+fn compact(source: &str) -> String {
+    source.chars().filter(|ch| !ch.is_whitespace()).collect()
+}
+
 fn assert_before(source: &str, first: &str, second: &str, label: &str) {
     let first_index = source
         .find(first)
@@ -70,8 +74,9 @@ fn linux_backends_request_initial_maximized_before_first_map_or_commit() {
     assert!(x11.contains("InitialWindowState::Maximized =>"));
     assert!(x11.contains("atoms._NET_WM_STATE_MAXIMIZED_VERT"));
     assert!(x11.contains("atoms._NET_WM_STATE_MAXIMIZED_HORZ"));
-    assert!(x11.contains(
-        "maximized_vertical: matches!(params.initial_window_state, InitialWindowState::Maximized)"
+    let compact_x11 = compact(&x11);
+    assert!(compact_x11.contains(
+        "maximized_vertical:matches!(params.initial_window_state,InitialWindowState::Maximized)"
     ));
     assert_before(
         &x11,

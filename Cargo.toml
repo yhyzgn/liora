@@ -13,6 +13,11 @@ members = [
     "apps/liora-gallery",
     "apps/liora-docs",
 ]
+exclude = [
+    "third_party/zed",
+    "third_party/zed/crates/gpui",
+    "third_party/zed/crates/gpui_linux",
+]
 
 [workspace.lints.rust]
 unexpected_cfgs = { level = "allow" }
