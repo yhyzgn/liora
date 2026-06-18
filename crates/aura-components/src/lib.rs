@@ -660,4 +660,40 @@ mod visual_theme_consistency_tests {
             );
         }
     }
+
+    #[test]
+    fn modal_masks_and_loading_masks_use_theme_tokens() {
+        for (name, source, token) in [
+            ("dialog", include_str!("dialog.rs"), "theme.neutral.overlay"),
+            ("drawer", include_str!("drawer.rs"), "theme.neutral.overlay"),
+            ("tour", include_str!("tour.rs"), "theme.neutral.overlay"),
+            ("loading", include_str!("loading.rs"), "theme.neutral.mask"),
+        ] {
+            let production = source.split("#[cfg(test)]").next().unwrap_or(source);
+            assert!(production.contains(token), "{name} should use {token}");
+            assert!(
+                !production.contains("0x00000066") && !production.contains("0xFFFFFF99"),
+                "{name} should not hard-code light/dark mask colors"
+            );
+        }
+    }
+
+    #[test]
+    fn code_editor_and_window_frame_use_theme_interaction_tokens() {
+        let code_editor = include_str!("code_editor.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap_or_default();
+        assert!(code_editor.contains("theme.neutral.border"));
+        assert!(!code_editor.contains("rgb(0xe2e8f0)"));
+
+        let window_frame = include_str!("window_frame.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap_or_default();
+        assert!(window_frame.contains("theme.danger.base"));
+        assert!(window_frame.contains("theme.neutral.inverted"));
+        assert!(!window_frame.contains("gpui::red()"));
+        assert!(!window_frame.contains("gpui::white()"));
+    }
 }

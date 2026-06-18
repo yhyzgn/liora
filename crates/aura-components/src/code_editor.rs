@@ -4,7 +4,7 @@ use aura_icons::Icon;
 use aura_icons_lucide::IconName;
 use gpui::{
     App, Context, Entity, FocusHandle, Focusable, Hsla, IntoElement, KeyBinding, Pixels, Render,
-    SharedString, Window, actions, div, prelude::*, px, rgb,
+    SharedString, Window, actions, div, prelude::*, px,
 };
 use std::sync::Arc;
 
@@ -369,7 +369,7 @@ impl Render for CodeEditor {
                     .min_h(px(220.0))
                     .bg(theme.neutral.hover.opacity(0.24))
                     .child(if self.line_numbers {
-                        line_number_gutter(line_count, theme.neutral.text_3).into_any_element()
+                        line_number_gutter(line_count, &theme).into_any_element()
                     } else {
                         div().into_any_element()
                     })
@@ -415,17 +415,17 @@ fn line_count(value: &str) -> usize {
     value.lines().count().max(1)
 }
 
-fn line_number_gutter(line_count: usize, color: Hsla) -> gpui::Div {
+fn line_number_gutter(line_count: usize, theme: &aura_theme::Theme) -> gpui::Div {
     let mut gutter = div()
         .flex_none()
         .w(px(52.0))
         .px_3()
         .py_4()
         .border_r_1()
-        .border_color(rgb(0xe2e8f0))
+        .border_color(theme.neutral.border)
         .font_family(".ZedMono")
         .text_xs()
-        .text_color(color)
+        .text_color(theme.neutral.text_3)
         .flex()
         .flex_col()
         .items_end()

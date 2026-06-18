@@ -631,3 +631,8 @@ Gallery and Docs no longer panic if bundled tray icon decoding fails. Both apps 
 ## 2026-06-18 P15 Track B lucide build script error handling
 
 `aura-icons-lucide` build script now uses `try_main() -> io::Result<()>` instead of unwraps for OUT_DIR, SVG directory reads, file names, generated file creation, and writes. Build failures now produce clear cargo error output while preserving the generated `IconName` format and rerun behavior. Validation passed: lucide check, workspace check/test, docs snippet check, diff whitespace check, and Gallery/Docs GUI startup smoke.
+
+
+## 2026-06-18 P20 theme and interaction polish
+
+Completed P20 as a focused theme/interaction consistency phase. Dark semantic subtle tokens now use translucent semantic overlays instead of white-mixed tints, preventing selected/hover states from becoming overly bright in dark mode. Dialog, Drawer, Tour, and Loading masks now use theme tokens; CodeEditor gutter borders and custom WindowFrame close hover use semantic theme tokens. Gallery now has a Theme dogfooding demo, Docs has a Theme page with compile-checked snippet coverage, and visual theme regression tests lock the tokenized paths.

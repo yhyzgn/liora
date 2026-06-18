@@ -65,6 +65,7 @@ pub mod steps_demo;
 pub mod table_demo;
 pub mod tabs_demo;
 pub mod tag_demo;
+pub mod theme_demo;
 pub mod time_picker_demo;
 pub mod timeline_demo;
 pub mod timer_demo;
@@ -96,6 +97,11 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "Button 按钮",
             description: "常用的操作按钮",
             render: |cx| button_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "Theme 主题系统",
+            description: "System / Light / Dark 主题、语义色和交互状态",
+            render: |cx| theme_demo::render(cx).into(),
         },
         DemoEntry {
             name: "QrCode 二维码",
@@ -632,6 +638,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Steps" => Some(steps_demo::render(cx).into()),
         "Switch" => Some(form_controls_demo::render_switch(cx)),
         "Table" => Some(table_demo::render(cx).into()),
+        "Theme" => Some(theme_demo::render(cx).into()),
         "Tabs" => Some(tabs_demo::render(cx).into()),
         "Tag" => Some(tag_demo::render(cx).into()),
         "Textarea" => Some(form_controls_demo::render_textarea(cx)),

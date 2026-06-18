@@ -55,7 +55,7 @@ impl RenderOnce for Loading {
                 div()
                     .absolute()
                     .size_full()
-                    .bg(gpui::rgba(0xFFFFFF99))
+                    .bg(theme.neutral.mask)
                     .flex()
                     .items_center()
                     .justify_center()

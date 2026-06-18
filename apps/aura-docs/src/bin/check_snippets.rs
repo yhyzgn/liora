@@ -537,6 +537,8 @@ mod tag_types;
 mod textarea_basic;
 #[path = "../../content/snippets/textarea/limit.rs"]
 mod textarea_limit;
+#[path = "../../content/snippets/theme/system_mode.rs"]
+mod theme_system_mode;
 #[path = "../../content/snippets/time_picker/basic.rs"]
 mod time_picker_basic;
 #[path = "../../content/snippets/time_picker/disabled.rs"]

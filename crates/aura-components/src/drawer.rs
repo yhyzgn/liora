@@ -86,7 +86,7 @@ impl Render for DrawerView {
             .absolute()
             .size_full()
             .cursor_default()
-            .bg(gpui::rgba(0x00000066))
+            .bg(theme.neutral.overlay)
             .on_mouse_move(|_, _, cx| {
                 cx.stop_propagation();
             })

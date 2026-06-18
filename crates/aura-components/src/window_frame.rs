@@ -181,7 +181,7 @@ impl RenderOnce for AppWindowFrame {
                             .child(Text::new("Custom Frame").size(px(12.0)))
                             .children(self.actions),
                     )
-                    .child(window_controls(on_close, window)),
+                    .child(window_controls(on_close, window, theme.clone())),
             )
             .child(div().flex_1().min_h_0().child(self.content))
             .into_any_element()
@@ -199,6 +199,7 @@ impl IntoElement for AppWindowFrame {
 fn window_controls(
     on_close: Option<Box<dyn Fn(&mut Window, &mut App) + 'static>>,
     window: &mut Window,
+    theme: aura_theme::Theme,
 ) -> impl IntoElement {
     Space::new()
         .gap_xs()
@@ -207,6 +208,7 @@ fn window_controls(
             IconName::Minus,
             WindowControlArea::Min,
             false,
+            theme.clone(),
             |window, _| window.minimize_window(),
         ))
         .child(frame_control_button(
@@ -218,6 +220,7 @@ fn window_controls(
             },
             WindowControlArea::Max,
             false,
+            theme.clone(),
             |window, _| window.zoom_window(),
         ))
         .child(frame_control_button(
@@ -225,6 +228,7 @@ fn window_controls(
             IconName::X,
             WindowControlArea::Close,
             true,
+            theme.clone(),
             move |window, cx| {
                 if let Some(close) = on_close.as_ref() {
                     close(window, cx);
@@ -241,6 +245,7 @@ fn frame_control_button(
     icon: IconName,
     control_area: WindowControlArea,
     danger: bool,
+    theme: aura_theme::Theme,
     on_click: impl Fn(&mut Window, &mut App) + 'static,
 ) -> impl IntoElement {
     Button::new("")
@@ -255,7 +260,7 @@ fn frame_control_button(
                 .window_control_area(control_area)
                 .rounded(px(8.0))
                 .when(danger, |s| {
-                    s.hover(|s| s.bg(gpui::red()).text_color(gpui::white()))
+                    s.hover(move |s| s.bg(theme.danger.base).text_color(theme.neutral.inverted))
                 })
                 .child(button)
         })
@@ -302,6 +307,8 @@ mod tests {
         assert!(source.contains("WindowControlArea::Min"));
         assert!(source.contains("WindowControlArea::Max"));
         assert!(source.contains("WindowControlArea::Close"));
+        assert!(source.contains("theme.danger.base"));
+        assert!(source.contains("theme.neutral.inverted"));
         assert!(source.contains("start_window_move"));
         assert!(source.contains("titlebar_double_click"));
     }

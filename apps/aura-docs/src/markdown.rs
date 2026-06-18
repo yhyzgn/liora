@@ -32,6 +32,7 @@ const ADOPTION_DOC: &str = include_str!("../content/pages/adoption.md");
 const DASHBOARD_APP_DOC: &str = include_str!("../content/pages/dashboard_app.md");
 const DASHBOARD_PATTERNS_DOC: &str = include_str!("../content/pages/dashboard_patterns.md");
 const DASHBOARD_STATE_DOC: &str = include_str!("../content/pages/dashboard_state.md");
+const THEME_SYSTEM_DOC: &str = include_str!("../content/pages/theme_system.md");
 const ABOUT_DOC: &str = include_str!("../content/pages/about.md");
 
 const AFFIX_DOC: &str = include_str!("../content/pages/affix.md");
@@ -445,6 +446,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Textarea",
         markdown: TEXTAREA_DOC,
+    },
+    DocPage {
+        title: "Theme",
+        markdown: THEME_SYSTEM_DOC,
     },
     DocPage {
         title: "TimePicker",
@@ -1059,6 +1064,7 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "tour/middle.rs" => Some(include_str!("../content/snippets/tour/middle.rs")),
         "tour/no_mask.rs" => Some(include_str!("../content/snippets/tour/no_mask.rs")),
         "tour/close_policy.rs" => Some(include_str!("../content/snippets/tour/close_policy.rs")),
+        "theme/system_mode.rs" => Some(include_str!("../content/snippets/theme/system_mode.rs")),
         "calendar/events.rs" => Some(include_str!("../content/snippets/calendar/events.rs")),
         "calendar/range.rs" => Some(include_str!("../content/snippets/calendar/range.rs")),
         "carousel/autoplay.rs" => Some(include_str!("../content/snippets/carousel/autoplay.rs")),
@@ -7503,6 +7509,15 @@ impl InlineSegment {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn docs_shell_registers_theme_system_page() {
+        let titles = DOC_PAGES.iter().map(|page| page.title).collect::<Vec<_>>();
+        assert!(titles.contains(&"Theme"));
+        assert!(THEME_SYSTEM_DOC.contains("ThemeMode::System"));
+        assert!(THEME_SYSTEM_DOC.contains("observe_window_appearance"));
+        assert!(load_code_snippet("theme/system_mode.rs").is_some());
+    }
 
     #[test]
     fn docs_shell_registers_core_documentation_pages() {

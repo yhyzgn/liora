@@ -14,7 +14,7 @@
 | UI 框架 | GPUI 0.2.2 (git = "https://github.com/zed-industries/zed") |
 | 参考规范 | Element-Plus 2.x (https://element-plus.org/zh-CN/) |
 | 架构 | Cargo Workspace Monorepo |
-| 目标 | ~76+ 个企业级组件, 分阶段交付；P9 作为延后高级组件补全 backlog；P10 原生统计图组件；P11 系统托盘/进程常驻阶段；P12 原生安装器打包阶段；P13 高级控件扩展阶段；P14 延后高级组件补全阶段；P15 质量收口阶段；P16 对外采用准备阶段；P17 真实 Dashboard Dogfooding 阶段；P18 Dashboard Polish/API Ergonomics 阶段；P19 Dashboard State/Data Flow 阶段 |
+| 目标 | ~76+ 个企业级组件, 分阶段交付；P9 作为延后高级组件补全 backlog；P10 原生统计图组件；P11 系统托盘/进程常驻阶段；P12 原生安装器打包阶段；P13 高级控件扩展阶段；P14 延后高级组件补全阶段；P15 质量收口阶段；P16 对外采用准备阶段；P17 真实 Dashboard Dogfooding 阶段；P18 Dashboard Polish/API Ergonomics 阶段；P19 Dashboard State/Data Flow 阶段；P20 Theme/Interaction Polish 阶段 |
 
 ---
 
@@ -38,6 +38,7 @@
 | **P17 Dashboard Dogfooding** | `.prompt/P17-dogfood-dashboard.md` | ✅ 已完成并回流：独立 dashboard app 已移除，真实组合/主题/过滤/toast 等能力进入 Gallery/Docs |
 | **P18 Dashboard Polish/API Ergonomics** | `.prompt/P18-dashboard-polish-and-api-ergonomics.md` | ✅ 已完成：Gallery shell polish、暗色主题切换、Dashboard Patterns 文档和回归测试；dashboard/sample 专用代码不进入核心组件库 |
 | **P19 Dashboard State/Data Flow** | `.prompt/P19-dashboard-state-and-data-flow.md` | ✅ 已完成：Dashboard 数据模型、过滤、刷新、状态分支、Dashboard State 文档和回归测试 |
+| **P20 Theme/Interaction Polish** | `.prompt/P20-theme-and-interaction-polish.md` | ✅ 已完成：System/Light/Dark 主题入口、dark subtle token、浮层/Loading mask token 化、Theme Gallery/Docs 页面和回归测试 |
 
 ---
 
@@ -97,7 +98,8 @@ aura/
 │   ├── P16-adoption-readiness.md
 │   ├── P17-dogfood-dashboard.md
 │   ├── P18-dashboard-polish-and-api-ergonomics.md
-│   └── P19-dashboard-state-and-data-flow.md
+│   ├── P19-dashboard-state-and-data-flow.md
+│   └── P20-theme-and-interaction-polish.md
 ├── prompt.md                         # 📌 本文件 (AI 入口)
 ├── architecture-design.md
 └── structure.txt
@@ -131,6 +133,7 @@ aura/
 - P16 对外采用准备阶段已完成：根 README、CONTRIBUTING、CHANGELOG、crate-level Rustdoc、native Docs Adoption Guide 和相关回归测试已落地；独立 `examples/minimal-app` 已移除，采用说明融合进 Gallery/Docs。详见 `.prompt/P16-adoption-readiness.md`。
 - P17 Dashboard Dogfooding 阶段已完成并已回流：原 `examples/dashboard-app` 独立样例已移除，其验证出的搜索/过滤、主题切换、toast、组合布局和状态说明融合进 Gallery/Docs。详见 `.prompt/P17-dogfood-dashboard.md`。
 - P18 Dashboard Polish/API Ergonomics 阶段；P19 Dashboard State/Data Flow 阶段已完成并已回流：Dashboard app-shell 能力放在 Gallery/Docs；dashboard/sample 专用 helper、业务 sample/model 不进入核心组件库；Docs 保留 `Dashboard Patterns`/`Dashboard State` 作为 app-layer 模式说明。详见 `.prompt/P18-dashboard-polish-and-api-ergonomics.md`。
+- P20 Theme/Interaction Polish 阶段已完成：System/Light/Dark 成为正式主题入口，dark subtle token 改为透明 overlay，Dialog/Drawer/Tour/Loading/CodeEditor/WindowFrame 等关键路径完成 token 化，并新增 Gallery Theme demo 与 Docs Theme 页面。详见 `.prompt/P20-theme-and-interaction-polish.md`。
 
 ### 4.1.2 应用与示例边界红线
 

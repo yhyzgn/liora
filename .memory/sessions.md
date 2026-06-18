@@ -3608,3 +3608,17 @@
 - `cargo check -p aura-docs --bin check_snippets` passed.
 - `cargo doc --workspace --no-deps` passed.
 - Gallery and Docs GUI startup smoke both started and exited via expected `timeout 10s` status `124`.
+
+
+## Session 2026-06-18 — P20 Theme and Interaction Polish
+
+### Actions
+- Added `.prompt/P20-theme-and-interaction-polish.md` and completed P20.
+- Changed dark semantic subtle tokens (`light_9` / `light_8` / `light_7`) to translucent overlays.
+- Tokenized Dialog/Drawer/Tour overlay masks, Loading full-screen mask, CodeEditor gutter border, and custom WindowFrame close hover colors.
+- Added Gallery `Theme 主题系统` dogfooding page.
+- Added Docs `Theme System` page plus compile-checked `theme/system_mode.rs` snippet.
+- Added regression tests for theme subtle tokens, mask token usage, and key hard-coded color regressions.
+
+### Verification
+- Full verification executed before commit/push for this phase.

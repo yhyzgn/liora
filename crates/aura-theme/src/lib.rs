@@ -77,6 +77,22 @@ impl ColorFamily {
             light_7: lighten(base, 0.7),
         }
     }
+
+    fn new_dark(base: Hsla, hover: Hsla, active: Hsla, suppl: Hsla) -> Self {
+        Self {
+            base,
+            hover,
+            active,
+            suppl,
+            // These tokens are used as selected/hover subtle backgrounds. In
+            // dark mode they must stay translucent instead of being blended
+            // toward white, otherwise table rows and picker chips become
+            // visually louder than their foreground content.
+            light_9: base.opacity(0.16),
+            light_8: base.opacity(0.22),
+            light_7: base.opacity(0.30),
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -307,31 +323,31 @@ impl Theme {
                 xl: 16.0,
             },
 
-            primary: ColorFamily::new(
+            primary: ColorFamily::new_dark(
                 rgb(99, 226, 183),  // #63E2B7 — brighter green for dark
                 rgb(127, 231, 196), // #7FE7C4
                 rgb(90, 206, 167),  // #5ACEA7
                 rgb(42, 148, 125),  // #2A947D (suppl)
             ),
-            info: ColorFamily::new(
+            info: ColorFamily::new_dark(
                 rgb(112, 192, 232), // #70C0E8
                 rgb(138, 203, 236), // #8ACBEC
                 rgb(102, 175, 211), // #66AFD3
                 rgb(56, 137, 197),  // #3889C5
             ),
-            success: ColorFamily::new(
+            success: ColorFamily::new_dark(
                 rgb(99, 226, 183),  // #63E2B7
                 rgb(127, 231, 196), // #7FE7C4
                 rgb(90, 206, 167),  // #5ACEA7
                 rgb(42, 148, 125),  // #2A947D
             ),
-            warning: ColorFamily::new(
+            warning: ColorFamily::new_dark(
                 rgb(242, 201, 125), // #F2C97D
                 rgb(245, 213, 153), // #F5D599
                 rgb(230, 194, 96),  // #E6C260
                 rgb(240, 138, 0),   // #F08A00
             ),
-            danger: ColorFamily::new(
+            danger: ColorFamily::new_dark(
                 rgb(232, 128, 128), // #E88080
                 rgb(233, 139, 139), // #E98B8B
                 rgb(229, 114, 114), // #E57272
@@ -611,6 +627,24 @@ mod tests {
             active.b < hover.b,
             "active blue channel should be darker than hover"
         );
+    }
+
+    #[test]
+    fn dark_semantic_subtle_backgrounds_remain_translucent() {
+        let theme = Theme::dark();
+
+        assert!(theme.primary.light_9.a < 0.2);
+        assert!(theme.primary.light_8.a > theme.primary.light_9.a);
+        assert!(theme.primary.light_7.a > theme.primary.light_8.a);
+        assert_eq!(theme.primary.light_9.h, theme.primary.base.h);
+    }
+
+    #[test]
+    fn light_semantic_subtle_backgrounds_remain_opaque_tints() {
+        let theme = Theme::light();
+
+        assert_eq!(theme.primary.light_9.a, 1.0);
+        assert!(theme.primary.light_9.l > theme.primary.base.l);
     }
 
     #[test]

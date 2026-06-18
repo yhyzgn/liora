@@ -412,9 +412,9 @@ impl Render for TourView {
             .cursor_default()
             .occlude()
             .bg(if self.show_mask {
-                gpui::rgba(0x00000066)
+                theme.neutral.overlay
             } else {
-                gpui::rgba(0x00000000)
+                gpui::transparent_black()
             })
             .on_mouse_move(|_, _, cx| cx.stop_propagation())
             .when(close_on_click_outside, |s| {
