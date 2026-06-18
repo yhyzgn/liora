@@ -45,6 +45,8 @@ Run the dogfooding dashboard example:
 cargo run -p aura-dashboard-app
 ```
 
+Linux example apps enable GPUI `wayland`/`x11` features explicitly. If a native window does not appear, run from a graphical session and check `DISPLAY` or `WAYLAND_DISPLAY`.
+
 ## Minimal application shape
 
 A GPUI app using Aura should initialize the Aura theme/config, initialize global services that the selected components need, register component key bindings, then open a GPUI window:

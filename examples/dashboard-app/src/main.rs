@@ -379,6 +379,14 @@ fn self_view_button_label(revision: u32) -> String {
 }
 
 fn main() {
+    if std::env::var_os("DISPLAY").is_none() && std::env::var_os("WAYLAND_DISPLAY").is_none() {
+        eprintln!("failed to start Aura Dashboard App: neither DISPLAY nor WAYLAND_DISPLAY is set");
+        eprintln!(
+            "hint: run from a graphical Linux session, or export WAYLAND_DISPLAY/DISPLAY before launching."
+        );
+        std::process::exit(1);
+    }
+
     gpui_platform::application().run(|cx: &mut App| {
         init_aura(cx, Theme::light());
         MessageManager::init(cx);
@@ -389,7 +397,8 @@ fn main() {
         Text::register_key_bindings(cx);
         Title::register_key_bindings(cx);
 
-        let _ = cx.open_window(
+        eprintln!("starting Aura Dashboard App...");
+        match cx.open_window(
             WindowOptions {
                 window_bounds: Some(WindowBounds::Windowed(Bounds {
                     origin: gpui::Point::default(),
@@ -401,7 +410,19 @@ fn main() {
                 }),
                 ..Default::default()
             },
-            |_, cx| cx.new(DashboardApp::new),
-        );
+            |window, cx| {
+                window.activate_window();
+                cx.new(DashboardApp::new)
+            },
+        ) {
+            Ok(_) => eprintln!("Aura Dashboard App window opened."),
+            Err(error) => {
+                eprintln!("failed to open Aura Dashboard App window: {error:?}");
+                eprintln!(
+                    "hint: run from a graphical session with DISPLAY or WAYLAND_DISPLAY set."
+                );
+                cx.quit();
+            }
+        }
     });
 }
