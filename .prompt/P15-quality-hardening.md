@@ -404,3 +404,18 @@ Validation evidence for this slice:
 - `cargo check -p aura-docs --bin check_snippets` passed.
 - `git diff --check -- . ':(exclude).omx'` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+### 2026-06-18 — Track B lucide build script error handling
+
+- Replaced `aura-icons-lucide` build script `unwrap()` calls with a `try_main() -> io::Result<()>` flow.
+- Build failures now emit a clear `cargo:error=...` message and exit non-zero instead of panicking with an unwrap stack.
+- Added explicit UTF-8 validation errors for generated icon file names and propagated directory/file/write errors with context from the build script path being processed.
+
+Validation evidence for this slice:
+- `cargo fmt --all --check` passed.
+- `cargo check -p aura-icons-lucide --all-targets` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `git diff --check -- . ':(exclude).omx'` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.

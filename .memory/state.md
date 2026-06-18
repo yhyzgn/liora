@@ -578,3 +578,7 @@ Gallery and Docs no longer panic if bundled tray icon decoding fails. Both apps 
 ## 2026-06-18 P15 Track B packager string rendering panic cleanup
 
 `aura-packager` no longer uses `expect("write to string")` for SHA-256 hex, checksum text, release notes, or package manifest JSON rendering. Those paths now assemble strings with `format!` and `push_str`, preserving generated output while removing impossible-but-panic-based string write assumptions from the packaging pipeline. Validation passed: aura-packager tests, workspace check/test, docs snippet check, diff whitespace check, and Gallery/Docs GUI startup smoke.
+
+## 2026-06-18 P15 Track B lucide build script error handling
+
+`aura-icons-lucide` build script now uses `try_main() -> io::Result<()>` instead of unwraps for OUT_DIR, SVG directory reads, file names, generated file creation, and writes. Build failures now produce clear cargo error output while preserving the generated `IconName` format and rerun behavior. Validation passed: lucide check, workspace check/test, docs snippet check, diff whitespace check, and Gallery/Docs GUI startup smoke.

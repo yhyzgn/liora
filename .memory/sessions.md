@@ -3427,3 +3427,19 @@
 - `cargo check -p aura-docs --bin check_snippets` passed.
 - `git diff --check -- . ':(exclude).omx'` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+## Session 2026-06-18 — P15 Track B Lucide Build Script Error Handling
+
+### Actions
+- Reworked `crates/aura-icons-lucide/build.rs` around `try_main() -> io::Result<()>`.
+- Replaced OUT_DIR, SVG directory, directory entry, UTF-8 conversion, file create, and generated-file write unwraps with propagated errors.
+- Kept the existing generated `IconName` output format and cargo rerun/warning behavior.
+
+### Verification
+- `cargo fmt --all --check` passed.
+- `cargo check -p aura-icons-lucide --all-targets` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `git diff --check -- . ':(exclude).omx'` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
