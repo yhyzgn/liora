@@ -1,53 +1,49 @@
 # Adoption Guide
 
-This page is for a new Rust/GPUI project that wants to adopt Aura without reading the whole repository first.
+This page is for a Rust/GPUI project that wants to adopt Aura without treating sample apps as separate products.
 
 ## 10-minute path
 
 1. Install Rust stable and the GPUI platform dependencies from Quick Start.
-2. Run the native examples:
+2. Run the maintained native surfaces:
 
 ```bash
 cargo run -p aura-gallery
 cargo run -p aura-docs
-cargo run -p aura-minimal-app
-cargo run -p aura-dashboard-app
 ```
 
-3. Copy the app shape from `examples/minimal-app/src/main.rs`.
-4. Initialize Aura once with `init_aura(cx, Theme::light())` or `Theme::dark()`.
-5. Initialize global services such as `MessageManager::init(cx)` when using messages/toasts.
-6. Register key bindings for components used by the app.
-7. Keep stateful controls as `Entity<T>` fields.
+3. Use Gallery to inspect component behavior and app-shell interactions such as menu search, theme switching, tray controls, toasts, and close-to-tray flow.
+4. Use Docs to copy the setup shape: `init_aura(cx, Theme::light())`, global service initialization, and component key binding registration.
+5. Keep stateful controls as `Entity<T>` fields in your own app views.
 
-## Minimal app
+## Canonical app surfaces
 
-The repository includes a compile-checked external-style app:
+Aura no longer maintains separate `minimal-app` or `dashboard-app` binaries. That functionality belongs in the maintained native apps:
 
-```bash
-cargo check -p aura-minimal-app
-cargo run -p aura-minimal-app
+- Gallery is the visual dogfooding surface for components, filters, theme switching, feedback, tray residency, and shell-level interactions.
+- Docs is the adoption/reference surface for setup, architecture, packaging, and component usage.
+
+This avoids sample-only drift. If Gallery or Docs needs raw GPUI glue for a common product behavior, treat that as a signal to improve Aura components or shell helpers instead of creating another standalone sample app.
+
+## Minimal app shape
+
+A downstream application still follows the same minimal setup:
+
+```rust
+use aura_core::init_aura;
+use aura_theme::Theme;
+use gpui::App;
+
+fn main() {
+    gpui_platform::application().run(|cx: &mut App| {
+        init_aura(cx, Theme::light());
+        aura_components::MessageManager::init(cx);
+        aura_components::Input::register_key_bindings(cx);
+        aura_components::Text::register_key_bindings(cx);
+        // open your product window here
+    });
+}
 ```
-
-It demonstrates:
-
-- native GPUI window creation;
-- Aura theme initialization;
-- global message/toast initialization;
-- key binding registration;
-- `Entity<Input>` and `Entity<Switch>` state preservation;
-- basic `Card`, `Space`, `Title`, `Text`, and `Button` composition.
-
-## Dashboard dogfooding app
-
-Use the dashboard app when you want to inspect real composition friction instead of isolated component behavior:
-
-```bash
-cargo check -p aura-dashboard-app
-cargo run -p aura-dashboard-app
-```
-
-`examples/dashboard-app/src/main.rs` combines filters, statistic cards, charts, progress panels, a table, a runbook `CodeBlock`, toasts, and key binding setup in one native GPUI window. If a component API change makes this app difficult to maintain, treat that as adoption feedback.
 
 ## Dependency shape
 

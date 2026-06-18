@@ -6,17 +6,17 @@
 
 ## Scope
 
-- Polish `examples/dashboard-app` so it behaves more like a real product screen.
+- Polish Gallery/Docs so dashboard-style shell behaviors live in maintained surfaces, not standalone sample apps.
 - Add light/dark theme switching in the dashboard dogfood app.
-- Extract small composition helpers instead of broad abstractions: `DashboardGrid`, `dashboard_card`, and `metric_card`.
+- Keep dashboard-specific composition helpers app-local unless they become neutral reusable component APIs across maintained surfaces.
 - Add native Docs `Dashboard Patterns` guidance.
 - Update README / prompt / memory and regression tests.
 
 ## Completion evidence
 
-- `cargo check -p aura-dashboard-app` passes.
-- `cargo test -p aura-components dashboard::tests::dashboard_grid_presets_track_columns -- --nocapture` passes.
-- `cargo test -p aura-docs markdown::tests::dashboard_patterns_cover_composition_helpers_and_theme_switching -- --nocapture` passes.
+- `cargo check -p aura-gallery` and `cargo check -p aura-docs` pass.
+- `aura-components` has no `dashboard` module or dashboard sample/model exports.
+- `cargo test -p aura-docs markdown::tests::dashboard_patterns_keep_sample_code_out_of_components -- --nocapture` passes.
 - Workspace checks/tests/docs/package dry-run gates pass.
-- GUI smoke for Gallery, Docs, Minimal App, and Dashboard App starts and exits by expected timeout.
+- GUI smoke for Gallery and Docs starts and exits by expected timeout.
 - Commit pushed.

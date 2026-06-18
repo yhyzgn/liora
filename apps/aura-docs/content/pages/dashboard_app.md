@@ -1,39 +1,26 @@
-# Dashboard App
+# Gallery Dogfooding
 
-`examples/dashboard-app` is the P17 dogfooding example. It is not another isolated component demo; it is a realistic native GPUI screen that composes many Aura primitives together.
+Aura does not maintain a separate dashboard sample app. The dashboard-app experiment was folded back into the maintained Gallery and Docs surfaces.
 
-Run it with:
+## What moved into Gallery
 
-```bash
-cargo run -p aura-dashboard-app
-```
+Gallery now carries the useful app-level behaviors that were validated during dogfooding:
 
-## What it covers
+- shell-level menu search/filtering;
+- light/dark theme switching through the global Aura `Config`;
+- refresh status and toast feedback;
+- tray residency and close-to-tray flows;
+- large component composition through existing component pages rather than a one-off sample binary.
 
-- Native GPUI window bootstrapping with `init_aura` and `Theme::light()`.
-- Global message/toast setup through `MessageManager::init`.
-- Key binding registration for inputs, select, switch, code blocks, text, and titles.
-- Dashboard layout with header, filters, metric cards, charts, progress panels, table, and runbook code block.
-- P18 polish: `DashboardGrid`, `dashboard_card`, `metric_card`, and light/dark theme switching are used directly by the dogfood app.
-- P19 state/data flow: filters, region switching, alerts-only toggle, refresh, and loading/empty/degraded state branches are backed by explicit Rust data models.
-- Real composition of `Card`, `Space`, `Statistic`, `Tag`, `Input`, `Select`, `Switch`, `Button`, `LineChart`, `BarChart`, `Progress`, `Table`, `CodeBlock`, `Text`, and `Title`.
+The goal is that Gallery itself exposes adoption friction. If a real product behavior requires too much raw GPUI glue inside Gallery or Docs, improve Aura's reusable components/helpers instead of adding another sample app.
 
-## Dogfooding checklist
-
-When changing Aura components, use this example as a smoke screen:
+## Verification
 
 ```bash
-cargo check -p aura-dashboard-app
-timeout 10s cargo run -p aura-dashboard-app
+cargo check -p aura-gallery
+cargo run -p aura-gallery
+cargo check -p aura-docs
+cargo run -p aura-docs
 ```
 
-The app should compile, start a native window, and remain responsive long enough for manual inspection. If a component API change makes this app awkward to update, record that as API friction rather than hiding it in the example.
-
-## Current observations
-
-The first dogfooding pass validated that Aura can already build a management-dashboard style screen from existing components. The most useful future improvements are API ergonomics rather than missing primitives:
-
-- layout helpers now expose dashboard presets through `DashboardGrid`;
-- table cells are flexible but verbose for common text/tag rows;
-- charts are usable in cards, but dashboard presets could reduce repeated options;
-- app startup still requires manual key binding registration, so docs must keep that list visible; dashboard state now lives in testable Rust structs rather than render-local arrays.
+Use Gallery for visual behavior and Docs for setup/reference. Standalone `minimal-app` and `dashboard-app` binaries are intentionally removed.

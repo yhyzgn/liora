@@ -30,7 +30,7 @@
 //!
 //! Controls with focus, selection, open state, or text value should normally be
 //! stored as `gpui::Entity<T>` fields in a parent view. This preserves state
-//! across GPUI renders and mirrors the pattern used by `examples/minimal-app`.
+//! across GPUI renders. Gallery and Docs are the maintained examples for this pattern.
 //!
 //! ## Architecture boundary
 //!
@@ -65,7 +65,6 @@ pub mod col;
 pub mod collapse;
 pub mod color_picker;
 pub mod container;
-pub mod dashboard;
 pub mod date_picker;
 pub mod date_time_picker;
 pub mod descriptions;
@@ -171,7 +170,6 @@ pub use col::*;
 pub use collapse::*;
 pub use color_picker::*;
 pub use container::*;
-pub use dashboard::*;
 pub use date_picker::*;
 pub use date_time_picker::*;
 pub use descriptions::*;

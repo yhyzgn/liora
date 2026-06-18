@@ -148,7 +148,7 @@ const DOC_PAGES: &[DocPage] = &[
         markdown: ADOPTION_DOC,
     },
     DocPage {
-        title: "Dashboard App",
+        title: "Gallery Dogfooding",
         markdown: DASHBOARD_APP_DOC,
     },
     DocPage {
@@ -7471,74 +7471,63 @@ mod tests {
     }
 
     #[test]
-    fn adoption_docs_cover_minimal_app_and_public_entrypoints() {
+    fn adoption_docs_cover_gallery_docs_public_entrypoints() {
         let titles = DOC_PAGES.iter().map(|page| page.title).collect::<Vec<_>>();
         assert!(titles.contains(&"Adoption Guide"));
-        assert!(ADOPTION_DOC.contains("cargo run -p aura-minimal-app"));
-        assert!(ADOPTION_DOC.contains("examples/minimal-app/src/main.rs"));
+        assert!(ADOPTION_DOC.contains("cargo run -p aura-gallery"));
+        assert!(ADOPTION_DOC.contains("cargo run -p aura-docs"));
         assert!(ADOPTION_DOC.contains("init_aura(cx, Theme::light())"));
         assert!(ADOPTION_DOC.contains("Entity<T>"));
-        assert!(include_str!("../../../README.md").contains("cargo run -p aura-minimal-app"));
+        assert!(!ADOPTION_DOC.contains("aura-minimal-app"));
+        assert!(!ADOPTION_DOC.contains("aura-dashboard-app"));
+        assert!(include_str!("../../../README.md").contains("cargo run -p aura-gallery"));
         assert!(
             include_str!("../../../CONTRIBUTING.md").contains("cargo doc --workspace --no-deps")
         );
-        assert!(
-            include_str!("../../../examples/minimal-app/Cargo.toml").contains("aura-minimal-app")
-        );
     }
 
     #[test]
-    fn dashboard_dogfood_app_is_documented_and_workspace_registered() {
+    fn gallery_dogfooding_is_documented_without_standalone_examples() {
         let titles = DOC_PAGES.iter().map(|page| page.title).collect::<Vec<_>>();
-        assert!(titles.contains(&"Dashboard App"));
-        assert!(DASHBOARD_APP_DOC.contains("cargo run -p aura-dashboard-app"));
-        assert!(DASHBOARD_APP_DOC.contains("examples/dashboard-app"));
-        assert!(DASHBOARD_APP_DOC.contains("LineChart"));
-        assert!(DASHBOARD_APP_DOC.contains("Table"));
-        assert!(DASHBOARD_APP_DOC.contains("CodeBlock"));
-        assert!(DASHBOARD_APP_DOC.contains("DashboardGrid"));
-        assert!(include_str!("../../../README.md").contains("cargo run -p aura-dashboard-app"));
-        assert!(include_str!("../../../Cargo.toml").contains("examples/dashboard-app"));
-        assert!(
-            include_str!("../../../examples/dashboard-app/Cargo.toml")
-                .contains("aura-dashboard-app")
-        );
+        assert!(titles.contains(&"Gallery Dogfooding"));
+        assert!(DASHBOARD_APP_DOC.contains("Gallery Dogfooding"));
+        assert!(DASHBOARD_APP_DOC.contains("cargo run -p aura-gallery"));
+        assert!(DASHBOARD_APP_DOC.contains("cargo run -p aura-docs"));
+        assert!(DASHBOARD_APP_DOC.contains(
+            "Standalone `minimal-app` and `dashboard-app` binaries are intentionally removed"
+        ));
+        assert!(!include_str!("../../../Cargo.toml").contains("examples/dashboard-app"));
+        assert!(!include_str!("../../../Cargo.toml").contains("examples/minimal-app"));
     }
 
     #[test]
-    fn dashboard_patterns_cover_composition_helpers_and_theme_switching() {
+    fn dashboard_patterns_keep_sample_code_out_of_components() {
         let titles = DOC_PAGES.iter().map(|page| page.title).collect::<Vec<_>>();
         assert!(titles.contains(&"Dashboard Patterns"));
-        assert!(DASHBOARD_PATTERNS_DOC.contains("DashboardGrid"));
-        assert!(DASHBOARD_PATTERNS_DOC.contains("dashboard_card"));
-        assert!(DASHBOARD_PATTERNS_DOC.contains("metric_card"));
+        assert!(DASHBOARD_PATTERNS_DOC.contains("app_metric_card"));
+        assert!(DASHBOARD_PATTERNS_DOC.contains("Keep business models"));
         assert!(DASHBOARD_PATTERNS_DOC.contains("window.refresh()"));
+        assert!(!DASHBOARD_PATTERNS_DOC.contains("DashboardGrid"));
+        assert!(!DASHBOARD_PATTERNS_DOC.contains("dashboard_card"));
         assert!(
-            include_str!("../../../examples/dashboard-app/src/main.rs")
-                .contains("DashboardGrid::metrics()")
+            !include_str!("../../../crates/aura-components/src/lib.rs")
+                .contains("pub mod dashboard")
         );
         assert!(
-            include_str!("../../../crates/aura-components/src/dashboard.rs")
-                .contains("pub struct DashboardGrid")
+            include_str!("../../../apps/aura-gallery/src/main.rs")
+                .contains("Gallery theme switched")
         );
     }
 
     #[test]
-    fn dashboard_state_docs_cover_data_flow_model() {
+    fn dashboard_state_docs_keep_state_in_app_layer() {
         let titles = DOC_PAGES.iter().map(|page| page.title).collect::<Vec<_>>();
         assert!(titles.contains(&"Dashboard State"));
-        assert!(DASHBOARD_STATE_DOC.contains("DashboardData"));
-        assert!(DASHBOARD_STATE_DOC.contains("DashboardFilters"));
-        assert!(DASHBOARD_STATE_DOC.contains("apply_filters"));
-        assert!(DASHBOARD_STATE_DOC.contains("DashboardStatus"));
-        assert!(
-            include_str!("../../../examples/dashboard-app/src/model.rs")
-                .contains("pub fn apply_filters")
-        );
-        assert!(
-            include_str!("../../../examples/dashboard-app/src/main.rs")
-                .contains("refresh_dashboard")
-        );
+        assert!(DASHBOARD_STATE_DOC.contains("app layer"));
+        assert!(DASHBOARD_STATE_DOC.contains("Entity<T>"));
+        assert!(DASHBOARD_STATE_DOC.contains("cx.notify()"));
+        assert!(DASHBOARD_STATE_DOC.contains("cargo check -p aura-gallery"));
+        assert!(!DASHBOARD_STATE_DOC.contains("aura-dashboard-app"));
     }
 
     #[test]

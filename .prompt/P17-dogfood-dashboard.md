@@ -6,7 +6,7 @@
 
 ## Scope
 
-- 新增 `examples/dashboard-app` workspace package。
+- Dashboard dogfooding 已回流到 Gallery/Docs；不再维护独立 `examples/dashboard-app` workspace package。
 - Dashboard 覆盖 header、filters、metric cards、LineChart、BarChart、Progress、Table、CodeBlock、toast 和 key binding setup。
 - Native Docs 增加 `Dashboard App` 页面。
 - README / adoption docs 补 dashboard app 入口。
@@ -14,7 +14,7 @@
 
 ## Completion evidence
 
-- `cargo check -p aura-dashboard-app` passes.
-- `timeout 10s cargo run -p aura-dashboard-app` starts and exits with expected timeout status 124.
+- `cargo check -p aura-gallery` and `cargo check -p aura-docs` pass.
+- `timeout 10s cargo run -p aura-gallery` and `timeout 10s cargo run -p aura-docs` start and exit with expected timeout status 124.
 - Workspace checks/tests/docs/package dry-run gates pass.
 - Commit pushed.

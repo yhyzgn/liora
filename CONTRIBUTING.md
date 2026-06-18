@@ -28,7 +28,8 @@ cargo run -p xtask -- package install-smoke --all-apps --format platform-default
 For documentation/adoption changes, also run:
 
 ```bash
-cargo check -p aura-minimal-app
+cargo check -p aura-gallery
+cargo check -p aura-docs
 cargo doc --workspace --no-deps
 ```
 

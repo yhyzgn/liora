@@ -12,8 +12,6 @@ members = [
     "crates/aura-icons-lucide",
     "apps/aura-gallery",
     "apps/aura-docs",
-    "examples/minimal-app",
-    "examples/dashboard-app",
 ]
 
 [workspace.dependencies]

@@ -1,9 +1,10 @@
 use aura_components::{
     Autocomplete, Button, Card, Cascader, Checkbox, CodeBlock, CodeEditor, ColorPicker, Container,
     DatePicker, DateTimePicker, Dialog, Drawer, Input, Menu, MenuMode, MessageManager, Paragraph,
-    Popover, Preview, Radio, RadioGroup, Select, Space, Switch, Text, TimePicker, Title, Tour,
+    Popover, Preview, Radio, RadioGroup, Select, Space, Switch, Tag, Text, TimePicker, Title, Tour,
+    toast_info, toast_success,
 };
-use aura_core::{PassivePortal, Portal, init_aura};
+use aura_core::{Config, PassivePortal, Portal, init_aura};
 use aura_gallery::demos;
 use aura_theme::Theme;
 use aura_tray::{
@@ -28,7 +29,9 @@ pub struct Gallery {
     entries: Vec<demos::DemoEntry>,
     demos: Vec<AnyView>,
     selected: usize,
-    nav_menu: Option<gpui::Entity<aura_components::Menu>>,
+    nav_filter: gpui::Entity<Input>,
+    dark_mode: gpui::Entity<Switch>,
+    refresh_revision: u32,
 }
 
 struct GalleryTrayState {
@@ -87,11 +90,13 @@ fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
     match cx.open_window(gallery_window_options(), |window, cx| {
         let entries = demos::registry();
         let demos = entries.iter().map(|entry| (entry.render)(cx)).collect();
-        let view = cx.new(|_| Gallery {
+        let view = cx.new(|cx| Gallery {
             entries,
             demos,
             selected: 0,
-            nav_menu: None,
+            nav_filter: cx.new(|cx| Input::new("", cx).placeholder("搜索组件 / Search demos")),
+            dark_mode: cx.new(|cx| Switch::new(false, cx)),
+            refresh_revision: 0,
         });
         window.on_window_should_close(cx, |window, cx| {
             handle_gallery_window_should_close(window, cx)
@@ -461,7 +466,8 @@ mod shell_tests {
         assert!(source.contains("Menu::new()"));
         assert!(source.contains(".no_shrink()"));
         assert!(source.contains("Preview::register_key_bindings(cx)"));
-        assert!(!source.contains(&format!("gallery-demo{}nav-", "-")));
+        assert!(source.contains("nav_filter"));
+        assert!(source.contains("Gallery theme switched"));
     }
 }
 
@@ -470,19 +476,53 @@ impl Render for Gallery {
         let selected = self.selected.min(self.entries.len().saturating_sub(1));
         self.selected = selected;
 
+        self.wire_shell_controls(cx);
         let nav_menu = self.gallery_nav_menu(selected, cx);
 
         let selected_entry = &self.entries[selected];
         let selected_demo = self.demos[selected].clone();
 
-        let header = Space::new()
-            .vertical()
-            .gap_xs()
-            .child(Title::new("Aura UI").h2())
-            .child(Text::new(format!(
-                "Native Component Library · {} demos · rendering one demo at a time",
-                self.entries.len()
-            )));
+        let header = div()
+            .flex()
+            .items_center()
+            .justify_between()
+            .gap_4()
+            .child(
+                Space::new()
+                    .vertical()
+                    .gap_xs()
+                    .child(Title::new("Aura UI").h2())
+                    .child(Text::new(format!(
+                        "Native Component Library · {} demos · rendering one demo at a time",
+                        self.entries.len()
+                    ))),
+            )
+            .child(
+                Space::new()
+                    .gap_md()
+                    .wrap()
+                    .child(
+                        Tag::new(format!("rev {}", self.refresh_revision))
+                            .success()
+                            .round(true),
+                    )
+                    .child(Button::new("Refresh").primary().on_click({
+                        let gallery = cx.entity().clone();
+                        move |_, _window, cx| {
+                            gallery.update(cx, |gallery, cx| {
+                                gallery.refresh_revision += 1;
+                                cx.notify();
+                            });
+                            toast_success!("Gallery refreshed");
+                        }
+                    }))
+                    .child(
+                        Space::new()
+                            .gap_sm()
+                            .child(Text::new("Dark"))
+                            .child(self.dark_mode.clone()),
+                    ),
+            );
 
         let content = Card::new(
             Space::new()
@@ -511,7 +551,13 @@ impl Render for Gallery {
         Container::new()
             .header(header)
             .header_height_lg()
-            .aside(nav_menu)
+            .aside(
+                Space::new()
+                    .vertical()
+                    .gap_sm()
+                    .child(self.nav_filter.clone())
+                    .child(nav_menu),
+            )
             .aside_width_lg()
             .aside_scroll()
             .main_scroll()
@@ -523,20 +569,56 @@ impl Render for Gallery {
 
 impl Gallery {
     fn gallery_nav_menu(&mut self, selected: usize, cx: &mut Context<Self>) -> gpui::Entity<Menu> {
-        if let Some(nav_menu) = &self.nav_menu {
-            return nav_menu.clone();
-        }
-
-        let gallery = cx.entity().downgrade();
+        let query = self
+            .nav_filter
+            .read(cx)
+            .value()
+            .to_string()
+            .trim()
+            .to_lowercase();
         let items = self
             .entries
             .iter()
             .enumerate()
+            .filter(|(_, entry)| {
+                query.is_empty()
+                    || entry.name.to_lowercase().contains(&query)
+                    || entry.description.to_lowercase().contains(&query)
+            })
             .map(|(index, entry)| (index, entry.name))
             .collect::<Vec<_>>();
-        let nav_menu = cx.new(move |_| build_gallery_menu(items, selected, gallery));
-        self.nav_menu = Some(nav_menu.clone());
-        nav_menu
+
+        let gallery = cx.entity().downgrade();
+        cx.new(move |_| build_gallery_menu(items, selected, gallery))
+    }
+
+    fn wire_shell_controls(&self, cx: &mut Context<Self>) {
+        let gallery = cx.entity().clone();
+        cx.update_entity(&self.nav_filter, |input, _cx| {
+            input.set_on_change({
+                let gallery = gallery.clone();
+                move |_, cx| {
+                    let _ = gallery.update(cx, |_gallery, cx| {
+                        cx.notify();
+                    });
+                }
+            });
+        });
+
+        cx.update_entity(&self.dark_mode, |switch, _cx| {
+            switch.set_on_change(|enabled, window, cx| {
+                cx.global_mut::<Config>().theme = if enabled {
+                    Theme::dark()
+                } else {
+                    Theme::light()
+                };
+                window.refresh();
+                toast_info!(
+                    "Gallery theme switched to {}",
+                    if enabled { "dark" } else { "light" }
+                );
+            });
+        });
     }
 }
 
@@ -558,6 +640,10 @@ fn build_gallery_menu(
                 cx.notify();
             });
         });
+
+    if items.is_empty() {
+        return menu.item("empty", "无匹配组件", None);
+    }
 
     for (index, name) in items {
         menu = menu.item(index.to_string(), name, None);

@@ -14,9 +14,9 @@
 
 ## Completion evidence
 
-- `cargo check -p aura-dashboard-app` passes.
-- `cargo test -p aura-dashboard-app model::tests::filters_match_query_region_and_alerts -- --nocapture` passes.
-- `cargo test -p aura-dashboard-app model::tests::empty_status_is_reported_for_no_visible_services -- --nocapture` passes.
+- `cargo check -p aura-gallery` and `cargo check -p aura-docs` pass.
+- Gallery/Docs state/filtering guidance remains covered by docs and shell tests.
+- Business sample models must not be moved into `aura-components`; keep them app-layer when needed.
 - `cargo test -p aura-docs markdown::tests::dashboard_state_docs_cover_data_flow_model -- --nocapture` passes.
 - Workspace checks/tests/docs/package dry-run gates pass.
 - GUI smoke for Gallery, Docs, Minimal App, and Dashboard App starts and exits by expected timeout.

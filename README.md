@@ -12,10 +12,8 @@ Aura applications stay native: no Tauri runtime, no WebView, no HTML/CSS/DOM app
 - `aura-icons` / `aura-icons-lucide` — native GPUI icon rendering and bundled Lucide icon paths.
 - `aura-tray` — cross-platform system tray facade for Aura GPUI applications.
 - `aura-packager` + `xtask` — native installer/package metadata, validation, manifests, checksums, and release-readiness gates.
-- `apps/aura-gallery` — native component demo app.
-- `apps/aura-docs` — native documentation app.
-- `examples/minimal-app` — minimal external-style GPUI + Aura application.
-- `examples/dashboard-app` — realistic dogfooding dashboard that composes Aura charts, forms, tables, progress, code blocks, and toasts.
+- `apps/aura-gallery` — native component demo app and dogfooding shell for search/filtering, theme switching, tray behavior, toasts, and component composition.
+- `apps/aura-docs` — native documentation app and adoption guide.
 
 ## Quick start
 
@@ -33,19 +31,7 @@ Run the Docs app:
 cargo run -p aura-docs
 ```
 
-Run the minimal adoption example:
-
-```bash
-cargo run -p aura-minimal-app
-```
-
-Run the dogfooding dashboard example:
-
-```bash
-cargo run -p aura-dashboard-app
-```
-
-Linux example apps enable GPUI `wayland`/`x11` features explicitly. If a native window does not appear, run from a graphical session and check `DISPLAY` or `WAYLAND_DISPLAY`.
+Gallery and Docs are the canonical native adoption surfaces. Linux app crates enable GPUI `wayland`/`x11` features explicitly. If a native window does not appear, run from a graphical session and check `DISPLAY` or `WAYLAND_DISPLAY`.
 
 ## Minimal application shape
 
@@ -67,7 +53,7 @@ fn main() {
 }
 ```
 
-Use `Entity<T>` for stateful controls such as `Input`, `Switch`, `Select`, or `CodeEditor` so focus and internal state survive re-rendering. See `examples/minimal-app/src/main.rs` for a complete compile-checked starter and `examples/dashboard-app/src/main.rs` for a larger composition example using `DashboardGrid`, `dashboard_card`, `metric_card`, and theme switching.
+Use `Entity<T>` for stateful controls such as `Input`, `Switch`, `Select`, or `CodeEditor` so focus and internal state survive re-rendering. Gallery and Docs are the maintained compile-checked examples for app shell setup, key binding registration, theme switching, tray behavior, toasts, and composition patterns.
 
 ## Development checks
 
@@ -93,8 +79,8 @@ cargo run -p xtask -- package install-smoke --all-apps --format platform-default
 ## Documentation
 
 - Native Docs app: `cargo run -p aura-docs`
-- Dashboard Patterns page: composition guidance for real Aura product screens
-- Dashboard State page: data modeling, filters, refresh, and state branches for the dogfood app
+- Dashboard Patterns page: composition guidance extracted from Gallery/Docs dogfooding
+- Dashboard State page: data modeling, filters, refresh, and state branches for real Aura screens
 - Component Gallery: `cargo run -p aura-gallery`
 - Packaging plan: `docs/packaging-installer-technical-plan.md`
 - Phase prompts and status: `.prompt/` and `.memory/`

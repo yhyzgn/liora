@@ -1,54 +1,54 @@
 # Dashboard State Patterns
 
-P19 turns the dashboard dogfood app from a static composition sample into a small state/data-flow sample. The goal is still native GPUI + Aura primitives, not a framework on top of GPUI.
+Dashboard-like state belongs in the app layer, not in `aura-components` as a sample screen. Aura components should make that state easy to render.
 
 ## Model first
 
 Keep dashboard data in explicit Rust structs before rendering components:
 
-- `DashboardData` owns metrics, chart series, service rows, progress values, and a revision number.
-- `DashboardFilters` owns search query, region, and alerts-only state.
-- `DashboardStatus` models loading, ready, empty, and degraded branches.
+- model data owns metrics, chart series, service rows, progress values, and a revision number;
+- filter state owns search query, region, and alerts-only toggles;
+- status enums model loading, ready, empty, and degraded branches.
 
 This keeps rendering code focused on Aura composition and makes filtering/refresh logic unit-testable.
 
 ```rust
-let data = DashboardData::generate(revision, filters.region);
-let visible = apply_filters(&data.services, &filters);
-let status = status_for(&data, visible.len());
+let visible = services
+    .iter()
+    .filter(|service| filters.matches(service))
+    .collect::<Vec<_>>();
 ```
 
 ## Control wiring
 
-Long-lived controls remain `Entity<T>` fields. Their callbacks update the parent dashboard view and call `cx.notify()`:
+Long-lived controls remain `Entity<T>` fields. Their callbacks update the parent view and call `cx.notify()`:
 
 ```rust
 input.set_on_change(move |value, cx| {
-    view.update(cx, |dashboard, cx| {
-        dashboard.filters.query = value.to_string();
+    view.update(cx, |screen, cx| {
+        screen.query = value.to_string();
         cx.notify();
     });
 });
 ```
 
-Use the same pattern for region select and alert toggle. Refresh increments the model revision and regenerates mock data so metric cards, charts, table rows, and progress panels move together.
+Gallery uses the same pattern for shell search/filtering and theme switching. Docs explains the pattern; neither requires a separate dashboard binary.
 
 ## State branches
 
-The dashboard uses ordinary Aura components for state branches:
+Use ordinary Aura components for state branches:
 
-- loading: simple text state;
-- ready: summary text;
+- loading: simple text or `Loading`;
+- ready: summary text and content;
 - empty: `Empty` component;
-- degraded: warning text plus service table details.
+- degraded: warning text plus table/details.
 
 No special dashboard runtime is needed. State is normal Rust data; UI is normal Aura composition.
 
 ## Verification
 
 ```bash
-cargo test -p aura-dashboard-app model::tests::filters_match_query_region_and_alerts -- --nocapture
-cargo test -p aura-dashboard-app model::tests::empty_status_is_reported_for_no_visible_services -- --nocapture
-cargo check -p aura-dashboard-app
-timeout 10s cargo run -p aura-dashboard-app
+cargo check -p aura-gallery
+cargo test -p aura-gallery
+cargo check -p aura-docs
 ```
