@@ -7,7 +7,9 @@ use liora_components::{
     Segmented, SegmentedOption, Space, Switch, Tag, Text, Title, WindowFrameMode,
     apply_window_frame_mode, frame_mode_switch_row, init_liora, toast_info, toast_success,
 };
-use liora_core::{Config, PassivePortal, Portal, ThemeMode, apply_theme_mode, sync_system_theme};
+use liora_core::{
+    Config, PassivePortal, Portal, ThemeMode, apply_theme_mode, attach_system_theme_observer,
+};
 use liora_gallery::demos;
 use liora_tray::{
     BundledTrayIconSet, BundledTrayIconState, LioraTray, MouseButton, MouseButtonState,
@@ -68,6 +70,8 @@ fn run_gallery() {
 fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
     let frame_mode = gallery_frame_mode(cx);
     match cx.open_window(gallery_window_options(frame_mode), |window, cx| {
+        attach_system_theme_observer(window, cx);
+
         let entries = demos::registry();
         let demos = entries.iter().map(|entry| (entry.render)(cx)).collect();
         let view = cx.new(|cx| {
@@ -86,7 +90,6 @@ fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
                 refresh_revision: 0,
             }
         });
-        let _ = window.observe_window_appearance(|window, cx| sync_system_theme(window, cx));
         window.on_window_should_close(cx, |window, cx| {
             handle_gallery_window_should_close(window, cx)
         });
@@ -524,7 +527,20 @@ mod shell_tests {
         assert!(source.contains("AppWindowFrame::new"));
         assert!(source.contains("theme_mode_segmented"));
         assert!(source.contains("ThemeMode::System"));
-        assert!(source.contains("observe_window_appearance"));
+        let attach_call = format!("{}(window, cx);", "attach_system_theme_observer");
+        let open_window = &source[source
+            .find("match cx.open_window")
+            .expect("Gallery should open a GPUI window")..];
+        let attach_index = open_window
+            .find(&attach_call)
+            .expect("Gallery should attach System theme before first render");
+        let entries_index = open_window
+            .find("let entries = demos::registry();")
+            .expect("Gallery should build demos after theme attach");
+        assert!(
+            attach_index < entries_index,
+            "System theme must sync from the real window before demo/view creation to avoid first-frame theme flash"
+        );
         assert!(source.contains("Gallery theme switched"));
     }
 }

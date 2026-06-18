@@ -3744,3 +3744,40 @@ Validation evidence:
   - `git diff --check -- . ':(exclude).omx'`
   - `timeout 10s cargo run -p liora-gallery` reached expected status 124.
   - `timeout 10s cargo run -p liora-docs` reached expected status 124.
+
+## 2026-06-19 System theme first-frame sync fix
+
+Fixed the issue where `ThemeMode::System` was selected by default but did not actually resolve against the real window appearance until the user switched to Light/Dark and back to System. Also corrected the first attempted fix because syncing only after root view creation could cause a white-to-dark first-frame flash.
+
+Root cause:
+- `liora_components::init_liora(cx)` runs before a concrete GPUI window exists, so `liora_core::init_liora_with_mode(cx, ThemeMode::System)` can only use the app-level appearance snapshot.
+- Gallery and Docs previously registered `window.observe_window_appearance(...)` only after opening the window, but they did not perform an initial sync against the newly created window before building the root view.
+- The returned GPUI `Subscription` was assigned to `let _ = ...`, so it was dropped immediately rather than kept/detached; later OS appearance changes would not be reliably observed.
+
+Resolution:
+- Added `liora_core::attach_system_theme_observer(window, cx)`.
+- The helper first calls `sync_system_theme(window, cx)` immediately, then registers `observe_window_appearance` and calls `.detach()` so the observer stays alive.
+- Gallery and Docs now call this helper at the very start of their `open_window` callback, before creating demos/root views/docs shells, so the first GPUI draw already uses the real window appearance and does not flash from the app-level default theme.
+- Theme System docs and checked snippet now document the correct first-frame-safe window-level attachment pattern.
+
+Validation evidence:
+- RED first: `cargo test -p liora-gallery gallery_shell_uses_container_and_menu -- --nocapture` failed before implementation when the test required `attach_system_theme_observer(window, cx)`.
+- `cargo fmt --all --check` passed.
+- `cargo test -p liora-core system_theme_observer_syncs_immediately_and_stays_attached -- --nocapture` passed.
+- `cargo test -p liora-gallery gallery_shell_uses_container_and_menu -- --nocapture` passed and now asserts `attach_system_theme_observer(window, cx)` happens before `let entries = demos::registry();`.
+- `cargo test -p liora-docs docs_shell_uses_native_container_and_menu -- --nocapture` passed and now asserts `attach_system_theme_observer(window, cx)` happens before `let view = markdown::render_docs_shell`.
+- `cargo test -p liora-docs docs_shell_registers_theme_system_page -- --nocapture` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
+- Full pre-submit gate passed with `set -euo pipefail`:
+  - `cargo fmt --all --check`
+  - `cargo check --workspace --all-targets`
+  - `cargo test --workspace`
+  - `cargo check -p liora-docs --bin check_snippets`
+  - `cargo doc --workspace --no-deps`
+  - `cargo run -p xtask -- package validate`
+  - `cargo run -p xtask -- package release-readiness` passed with the expected local non-tag warning only.
+  - `cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build`
+  - `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run`
+  - `git diff --check -- . ':(exclude).omx'`
+  - `timeout 10s cargo run -p liora-gallery` reached expected status 124.
+  - `timeout 10s cargo run -p liora-docs` reached expected status 124.

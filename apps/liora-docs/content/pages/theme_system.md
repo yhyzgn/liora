@@ -32,7 +32,7 @@ Gallery 和 Docs 都使用同一套接入方式：
 
 1. `liora_components::init_liora(cx)` 初始化默认跟随系统，并统一注册组件全局服务和 key bindings。
 2. 如果产品需要固定启动主题，调用 `liora_components::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)`。
-3. 窗口创建后注册 `observe_window_appearance`。
+3. 在 `open_window` 回调一开始、创建 root view 之前调用 `attach_system_theme_observer(window, cx)`；它会先用真实窗口外观立即同步一次，避免首帧浅/深色闪烁，再保活 `observe_window_appearance` 以跟随后续系统变化。
 4. 用户切换分段控件时调用 `apply_theme_mode(window, cx, mode)`。
 5. 处于 `System` 模式时，系统外观变化由 `sync_system_theme(window, cx)` 自动刷新。
 

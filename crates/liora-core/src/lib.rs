@@ -172,6 +172,20 @@ pub fn sync_system_theme(window: &mut Window, cx: &mut App) {
     }
 }
 
+/// Attach System theme tracking to a concrete GPUI window.
+///
+/// `init_liora_with_mode(cx, ThemeMode::System)` runs before a window exists and
+/// can only use the app-level appearance snapshot. Call this at the start of each
+/// `open_window` callback, before constructing the root view, so the first draw
+/// already uses the real window appearance and later OS appearance changes
+/// continue to update the theme.
+pub fn attach_system_theme_observer(window: &mut Window, cx: &mut App) {
+    sync_system_theme(window, cx);
+    window
+        .observe_window_appearance(|window, cx| sync_system_theme(window, cx))
+        .detach();
+}
+
 pub fn render_active_popover_in_window(_window: &mut gpui::Window, cx: &mut App) {
     for entry in cx.global::<crate::popper::ActivePopover>().0.clone() {
         push_portal(
@@ -322,6 +336,30 @@ mod theme_mode_tests {
         assert!(!config.sync_system_theme(WindowAppearance::VibrantDark));
         assert!(config.sync_system_theme(WindowAppearance::Light));
         assert_eq!(config.theme.name, "light");
+    }
+
+    #[test]
+    fn system_theme_observer_syncs_immediately_and_stays_attached() {
+        let source = include_str!("lib.rs");
+        let start = source
+            .find("pub fn attach_system_theme_observer")
+            .expect("system theme observer helper should exist");
+        let body = &source[start
+            ..source[start..]
+                .find("pub fn render_active_popover_in_window")
+                .expect("next function should follow observer helper")
+                + start];
+
+        let sync_call = format!("{}(window, cx);", "sync_system_theme");
+        let observe_call = format!("{}", "observe_window_appearance");
+        let sync_index = body
+            .find(&sync_call)
+            .expect("observer helper should sync the current window appearance immediately");
+        let observe_index = body
+            .find(&observe_call)
+            .expect("observer helper should observe later appearance changes");
+        assert!(sync_index < observe_index);
+        assert!(body.contains(".detach();"));
     }
 }
 

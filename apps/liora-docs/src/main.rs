@@ -5,7 +5,7 @@ use liora_components::{
     Button, Checkbox, Dialog, Paragraph, Space, WindowFrameMode, apply_window_frame_mode,
     init_liora,
 };
-use liora_core::sync_system_theme;
+use liora_core::attach_system_theme_observer;
 use liora_tray::{
     BundledTrayIconSet, BundledTrayIconState, LioraTray, MouseButton, MouseButtonState,
     TrayCloseAction, TrayCommand, TrayConfig, TrayControlCenter, TrayIconEvent, bundled_tray_icon,
@@ -51,13 +51,14 @@ fn run_docs() {
 fn open_docs_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
     let frame_mode = docs_frame_mode(cx);
     match cx.open_window(docs_window_options(frame_mode), |window, cx| {
+        attach_system_theme_observer(window, cx);
+
         let view = markdown::render_docs_shell(
             frame_mode,
             set_docs_frame_mode,
             request_docs_window_close,
             cx,
         );
-        let _ = window.observe_window_appearance(|window, cx| sync_system_theme(window, cx));
         window.on_window_should_close(cx, |window, cx| handle_docs_window_should_close(window, cx));
         view
     }) {

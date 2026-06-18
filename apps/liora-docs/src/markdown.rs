@@ -7539,6 +7539,7 @@ mod tests {
         assert!(titles.contains(&"Theme"));
         assert!(THEME_SYSTEM_DOC.contains("ThemeMode::System"));
         assert!(THEME_SYSTEM_DOC.contains("liora_components::init_liora_with_mode"));
+        assert!(THEME_SYSTEM_DOC.contains("attach_system_theme_observer"));
         assert!(THEME_SYSTEM_DOC.contains("observe_window_appearance"));
         assert!(load_code_snippet("theme/system_mode.rs").is_some());
     }
@@ -8262,6 +8263,21 @@ mod tests {
         assert!(source.contains("AppWindowFrame::new"));
         assert!(source.contains("theme_mode_segmented"));
         assert!(source.contains("ThemeMode::System"));
+        let docs_main = include_str!("main.rs");
+        let attach_call = format!("{}(window, cx);", "attach_system_theme_observer");
+        let open_window = &docs_main[docs_main
+            .find("match cx.open_window")
+            .expect("Docs should open a GPUI window")..];
+        let attach_index = open_window
+            .find(&attach_call)
+            .expect("Docs should attach System theme before first render");
+        let view_index = open_window
+            .find("let view = markdown::render_docs_shell")
+            .expect("Docs should build shell after theme attach");
+        assert!(
+            attach_index < view_index,
+            "System theme must sync from the real window before docs shell creation to avoid first-frame theme flash"
+        );
         assert!(source.contains("frame_mode_switch"));
         assert!(source.contains("Menu::new()"));
         assert!(source.contains(".aside_scroll()"));
