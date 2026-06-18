@@ -1,6 +1,6 @@
 use gpui::{
-    Animation, AnimationExt, App, Bounds, Context, Global, Hsla, TextRun, Window, WindowAppearance,
-    prelude::*, px,
+    Animation, AnimationExt, App, Bounds, Context, Global, Hsla, Pixels, TextRun, Window,
+    WindowAppearance, WindowBounds, prelude::*, px,
 };
 
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -97,6 +97,139 @@ impl ThemeMode {
     }
 }
 
+/// Return startup bounds for a window that should appear maximized immediately.
+///
+/// GPUI represents [`WindowBounds::Maximized`] as a restore bounds plus a later
+/// platform maximize request. On Linux that request can visibly arrive after the
+/// first mapped/configured surface, so use the display's visible bounds as the
+/// restore bounds as well. The first frame is therefore already screen-sized even
+/// before the window manager acknowledges maximization.
+pub fn startup_maximized_window_bounds(
+    cx: &App,
+    fallback_size: gpui::Size<Pixels>,
+) -> WindowBounds {
+    let bounds = cx
+        .primary_display()
+        .map(|display| display.visible_bounds())
+        .unwrap_or(Bounds {
+            origin: gpui::Point::default(),
+            size: fallback_size,
+        });
+    WindowBounds::Maximized(bounds)
+}
+
+fn startup_system_appearance(cx: &App) -> WindowAppearance {
+    platform_system_appearance().unwrap_or_else(|| cx.window_appearance())
+}
+
+fn current_system_appearance(window: &Window, _cx: &App) -> WindowAppearance {
+    platform_system_appearance().unwrap_or_else(|| window.appearance())
+}
+
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
+fn platform_system_appearance() -> Option<WindowAppearance> {
+    gtk_theme_env_appearance()
+        .or_else(gtk_settings_appearance)
+        .or_else(gsettings_color_scheme_appearance)
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "freebsd")))]
+fn platform_system_appearance() -> Option<WindowAppearance> {
+    None
+}
+
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
+fn gtk_theme_env_appearance() -> Option<WindowAppearance> {
+    std::env::var("GTK_THEME")
+        .ok()
+        .and_then(|theme| appearance_from_theme_name(&theme))
+}
+
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
+fn gtk_settings_appearance() -> Option<WindowAppearance> {
+    ["gtk-4.0", "gtk-3.0"]
+        .into_iter()
+        .filter_map(|version| {
+            std::env::var_os("HOME").map(|home| {
+                std::path::PathBuf::from(home)
+                    .join(".config")
+                    .join(version)
+                    .join("settings.ini")
+            })
+        })
+        .filter_map(|path| std::fs::read_to_string(path).ok())
+        .find_map(|settings| appearance_from_gtk_settings(&settings))
+}
+
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
+fn gsettings_color_scheme_appearance() -> Option<WindowAppearance> {
+    let output = std::process::Command::new("gsettings")
+        .args(["get", "org.gnome.desktop.interface", "color-scheme"])
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let value = String::from_utf8_lossy(&output.stdout);
+    appearance_from_color_scheme(&value)
+}
+
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
+fn appearance_from_color_scheme(value: &str) -> Option<WindowAppearance> {
+    let value = value
+        .trim()
+        .trim_matches('\'')
+        .trim_matches('"')
+        .to_ascii_lowercase();
+    if value.contains("prefer-dark") {
+        Some(WindowAppearance::Dark)
+    } else if value.contains("prefer-light") || value == "default" {
+        Some(WindowAppearance::Light)
+    } else {
+        None
+    }
+}
+
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
+fn appearance_from_gtk_settings(settings: &str) -> Option<WindowAppearance> {
+    for line in settings.lines() {
+        let line = line.trim();
+        if line.starts_with('#') || line.starts_with(';') || line.is_empty() {
+            continue;
+        }
+        let Some((key, value)) = line.split_once('=') else {
+            continue;
+        };
+        let key = key.trim();
+        let value = value.trim();
+        if key == "gtk-application-prefer-dark-theme" {
+            return match value.to_ascii_lowercase().as_str() {
+                "true" | "1" => Some(WindowAppearance::Dark),
+                "false" | "0" => Some(WindowAppearance::Light),
+                _ => None,
+            };
+        }
+        if key == "gtk-theme-name"
+            && let Some(appearance) = appearance_from_theme_name(value)
+        {
+            return Some(appearance);
+        }
+    }
+    None
+}
+
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
+fn appearance_from_theme_name(theme: &str) -> Option<WindowAppearance> {
+    let theme = theme.to_ascii_lowercase();
+    if theme.contains("dark") {
+        Some(WindowAppearance::Dark)
+    } else if theme.contains("light") {
+        Some(WindowAppearance::Light)
+    } else {
+        None
+    }
+}
+
 pub fn theme_for_window_appearance(appearance: WindowAppearance) -> Theme {
     match appearance {
         WindowAppearance::Light | WindowAppearance::VibrantLight => Theme::light(),
@@ -144,7 +277,7 @@ pub fn init_liora(cx: &mut App, theme: Theme) {
 }
 
 pub fn init_liora_with_mode(cx: &mut App, mode: ThemeMode) {
-    let appearance = cx.window_appearance();
+    let appearance = startup_system_appearance(cx);
     cx.set_global(Config {
         theme: mode.resolve(appearance),
         theme_mode: mode,
@@ -158,16 +291,14 @@ pub fn init_liora_with_mode(cx: &mut App, mode: ThemeMode) {
 }
 
 pub fn apply_theme_mode(window: &mut Window, cx: &mut App, mode: ThemeMode) {
-    cx.global_mut::<Config>()
-        .set_theme_mode(mode, window.appearance());
+    let appearance = current_system_appearance(window, cx);
+    cx.global_mut::<Config>().set_theme_mode(mode, appearance);
     window.refresh();
 }
 
 pub fn sync_system_theme(window: &mut Window, cx: &mut App) {
-    if cx
-        .global_mut::<Config>()
-        .sync_system_theme(window.appearance())
-    {
+    let appearance = current_system_appearance(window, cx);
+    if cx.global_mut::<Config>().sync_system_theme(appearance) {
         window.refresh();
     }
 }
@@ -175,10 +306,10 @@ pub fn sync_system_theme(window: &mut Window, cx: &mut App) {
 /// Attach System theme tracking to a concrete GPUI window.
 ///
 /// `init_liora_with_mode(cx, ThemeMode::System)` runs before a window exists and
-/// can only use the app-level appearance snapshot. Call this at the start of each
-/// `open_window` callback, before constructing the root view, so the first draw
-/// already uses the real window appearance and later OS appearance changes
-/// continue to update the theme.
+/// can only use the app-level appearance snapshot. Following Zed's main-window
+/// pattern, create the window with `WindowOptions { show: false, .. }`, call this
+/// at the start of the `open_window` callback before constructing the root view,
+/// then activate the returned window handle after `open_window` completes.
 pub fn attach_system_theme_observer(window: &mut Window, cx: &mut App) {
     sync_system_theme(window, cx);
     window
@@ -296,6 +427,29 @@ pub fn render_active_tooltip_in_window(window: &mut gpui::Window, cx: &mut App) 
 #[cfg(test)]
 mod theme_mode_tests {
     use super::*;
+
+    #[cfg(any(target_os = "linux", target_os = "freebsd"))]
+    #[test]
+    fn linux_startup_appearance_parses_synchronous_dark_preferences() {
+        assert_eq!(
+            appearance_from_color_scheme("'prefer-dark'"),
+            Some(WindowAppearance::Dark)
+        );
+        assert_eq!(
+            appearance_from_color_scheme("prefer-light"),
+            Some(WindowAppearance::Light)
+        );
+        assert_eq!(
+            appearance_from_gtk_settings(
+                "[Settings]\ngtk-application-prefer-dark-theme=true\ngtk-theme-name=Breeze\n"
+            ),
+            Some(WindowAppearance::Dark)
+        );
+        assert_eq!(
+            appearance_from_theme_name("Adwaita-dark"),
+            Some(WindowAppearance::Dark)
+        );
+    }
 
     #[test]
     fn theme_mode_values_and_labels_are_stable() {

@@ -1,11 +1,11 @@
 mod markdown;
 
-use gpui::{App, AppContext, Bounds, Global, Window, WindowBounds, WindowOptions, px, size};
+use gpui::{App, AppContext, Global, Window, WindowOptions, px, size};
 use liora_components::{
     Button, Checkbox, Dialog, Paragraph, Space, WindowFrameMode, apply_window_frame_mode,
     init_liora,
 };
-use liora_core::attach_system_theme_observer;
+use liora_core::{attach_system_theme_observer, startup_maximized_window_bounds};
 use liora_tray::{
     BundledTrayIconSet, BundledTrayIconState, LioraTray, MouseButton, MouseButtonState,
     TrayCloseAction, TrayCommand, TrayConfig, TrayControlCenter, TrayIconEvent, bundled_tray_icon,
@@ -50,7 +50,7 @@ fn run_docs() {
 
 fn open_docs_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
     let frame_mode = docs_frame_mode(cx);
-    match cx.open_window(docs_window_options(frame_mode), |window, cx| {
+    match cx.open_window(docs_window_options(cx, frame_mode), |window, cx| {
         attach_system_theme_observer(window, cx);
 
         let view = markdown::render_docs_shell(
@@ -62,7 +62,11 @@ fn open_docs_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
         window.on_window_should_close(cx, |window, cx| handle_docs_window_should_close(window, cx));
         view
     }) {
-        Ok(handle) => Some(handle.into()),
+        Ok(handle) => {
+            let any_handle: gpui::AnyWindowHandle = handle.into();
+            let _ = any_handle.update(cx, |_, window, _| window.activate_window());
+            Some(any_handle)
+        }
         Err(error) => {
             eprintln!("failed to open Liora Docs window: {error:?}");
             None
@@ -70,13 +74,14 @@ fn open_docs_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
     }
 }
 
-fn docs_window_options(frame_mode: WindowFrameMode) -> WindowOptions {
+fn docs_window_options(cx: &App, frame_mode: WindowFrameMode) -> WindowOptions {
     apply_window_frame_mode(
         WindowOptions {
-            window_bounds: Some(WindowBounds::Maximized(Bounds {
-                origin: gpui::Point::default(),
-                size: size(px(1680.0), px(1080.0)),
-            })),
+            show: false,
+            window_bounds: Some(startup_maximized_window_bounds(
+                cx,
+                size(px(1680.0), px(1080.0)),
+            )),
             titlebar: Some(gpui::TitlebarOptions {
                 title: Some("Liora Docs — Native Main Window".into()),
                 ..Default::default()

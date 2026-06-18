@@ -8268,6 +8268,8 @@ mod tests {
         let open_window = &docs_main[docs_main
             .find("match cx.open_window")
             .expect("Docs should open a GPUI window")..];
+        assert!(docs_main.contains("show: false,"));
+        assert!(docs_main.contains("startup_maximized_window_bounds"));
         let attach_index = open_window
             .find(&attach_call)
             .expect("Docs should attach System theme before first render");
@@ -8278,6 +8280,10 @@ mod tests {
             attach_index < view_index,
             "System theme must sync from the real window before docs shell creation to avoid first-frame theme flash"
         );
+        let ok_branch = &docs_main[docs_main
+            .find("Ok(handle) =>")
+            .expect("Docs should handle opened window")..];
+        assert!(ok_branch.contains("window.activate_window()"));
         assert!(source.contains("frame_mode_switch"));
         assert!(source.contains("Menu::new()"));
         assert!(source.contains(".aside_scroll()"));

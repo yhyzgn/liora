@@ -32,8 +32,11 @@ Gallery 和 Docs 都使用同一套接入方式：
 
 1. `liora_components::init_liora(cx)` 初始化默认跟随系统，并统一注册组件全局服务和 key bindings。
 2. 如果产品需要固定启动主题，调用 `liora_components::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)`。
-3. 在 `open_window` 回调一开始、创建 root view 之前调用 `attach_system_theme_observer(window, cx)`；它会先用真实窗口外观立即同步一次，避免首帧浅/深色闪烁，再保活 `observe_window_appearance` 以跟随后续系统变化。
-4. 用户切换分段控件时调用 `apply_theme_mode(window, cx, mode)`。
-5. 处于 `System` 模式时，系统外观变化由 `sync_system_theme(window, cx)` 自动刷新。
+3. 最大化启动窗口使用 `startup_maximized_window_bounds(cx, fallback)`：它仍保留 GPUI 的 `WindowBounds::Maximized` 状态，但把 restore bounds 设为当前显示器可用区域，避免 Linux 窗口管理器确认 maximize 前先露出默认尺寸。
+4. 窗口选项保留 `show: false` 并在 `open_window` 返回 handle 后调用 `window.activate_window()`，与 Zed 主窗口显示时机保持一致；注意当前 GPUI Linux 后端仍会在 `Window::new` 中执行平台 map，因此真正避免尺寸跳变的关键是第 3 步的首帧 bounds。
+5. 在 `open_window` 回调一开始、创建 root view 之前调用 `attach_system_theme_observer(window, cx)`；它会先同步一次，再保活 `observe_window_appearance` 以跟随后续系统变化。
+6. Linux / FreeBSD 启动时，`System` 会优先读取同步可用的桌面偏好（`GTK_THEME`、GTK settings、`gsettings org.gnome.desktop.interface color-scheme`），避免 GPUI Linux 后端默认 `Light` 等待 xdg-desktop-portal 异步回传时造成首帧浅色。
+7. 用户切换分段控件时调用 `apply_theme_mode(window, cx, mode)`。
+8. 处于 `System` 模式时，系统外观变化由 `sync_system_theme(window, cx)` 自动刷新。
 
 这套能力仍然是纯 Rust + GPUI 原生应用能力，不依赖 Tauri、WebView、HTML、CSS 或 DOM runtime。

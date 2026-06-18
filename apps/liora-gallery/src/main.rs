@@ -1,6 +1,6 @@
 use gpui::{
-    AnyView, App, Bounds, Component, Context, Global, Render, WeakEntity, Window, WindowBounds,
-    WindowOptions, div, prelude::*, px, size,
+    AnyView, App, Component, Context, Global, Render, WeakEntity, Window, WindowOptions, div,
+    prelude::*, px, size,
 };
 use liora_components::{
     AppWindowFrame, Button, Card, Checkbox, Container, Dialog, Input, Menu, MenuMode, Paragraph,
@@ -9,6 +9,7 @@ use liora_components::{
 };
 use liora_core::{
     Config, PassivePortal, Portal, ThemeMode, apply_theme_mode, attach_system_theme_observer,
+    startup_maximized_window_bounds,
 };
 use liora_gallery::demos;
 use liora_tray::{
@@ -69,7 +70,7 @@ fn run_gallery() {
 
 fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
     let frame_mode = gallery_frame_mode(cx);
-    match cx.open_window(gallery_window_options(frame_mode), |window, cx| {
+    match cx.open_window(gallery_window_options(cx, frame_mode), |window, cx| {
         attach_system_theme_observer(window, cx);
 
         let entries = demos::registry();
@@ -95,7 +96,11 @@ fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
         });
         view
     }) {
-        Ok(handle) => Some(handle.into()),
+        Ok(handle) => {
+            let any_handle: gpui::AnyWindowHandle = handle.into();
+            let _ = any_handle.update(cx, |_, window, _| window.activate_window());
+            Some(any_handle)
+        }
         Err(error) => {
             eprintln!("failed to open Liora Gallery window: {error:?}");
             None
@@ -103,13 +108,14 @@ fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
     }
 }
 
-fn gallery_window_options(frame_mode: WindowFrameMode) -> WindowOptions {
+fn gallery_window_options(cx: &App, frame_mode: WindowFrameMode) -> WindowOptions {
     apply_window_frame_mode(
         WindowOptions {
-            window_bounds: Some(WindowBounds::Maximized(Bounds {
-                origin: gpui::Point::default(),
-                size: size(px(1920.0), px(1080.0)),
-            })),
+            show: false,
+            window_bounds: Some(startup_maximized_window_bounds(
+                cx,
+                size(px(1920.0), px(1080.0)),
+            )),
             titlebar: Some(gpui::TitlebarOptions {
                 title: Some("Liora UI Gallery".into()),
                 ..Default::default()
@@ -531,6 +537,8 @@ mod shell_tests {
         let open_window = &source[source
             .find("match cx.open_window")
             .expect("Gallery should open a GPUI window")..];
+        assert!(source.contains("show: false,"));
+        assert!(source.contains("startup_maximized_window_bounds"));
         let attach_index = open_window
             .find(&attach_call)
             .expect("Gallery should attach System theme before first render");
@@ -541,6 +549,10 @@ mod shell_tests {
             attach_index < entries_index,
             "System theme must sync from the real window before demo/view creation to avoid first-frame theme flash"
         );
+        let ok_branch = &source[source
+            .find("Ok(handle) =>")
+            .expect("Gallery should handle opened window")..];
+        assert!(ok_branch.contains("window.activate_window()"));
         assert!(source.contains("Gallery theme switched"));
     }
 }

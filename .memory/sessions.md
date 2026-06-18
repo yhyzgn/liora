@@ -3781,3 +3781,37 @@ Validation evidence:
   - `git diff --check -- . ':(exclude).omx'`
   - `timeout 10s cargo run -p liora-gallery` reached expected status 124.
   - `timeout 10s cargo run -p liora-docs` reached expected status 124.
+
+## 2026-06-19 GPUI startup first-frame theme and maximized-window root-cause fix
+
+User reported the prior Zed-like `show:false` / post-open activation attempt did not visibly change startup behavior. Re-read GPUI/Zed source instead of continuing trial-and-error.
+
+Root cause evidence:
+- GPUI Linux initializes `LinuxCommon.appearance` as `WindowAppearance::Light` and later receives xdg-desktop-portal color-scheme asynchronously, so `ThemeMode::System` could still paint the first Liora frame light even on a dark desktop.
+- On this KDE/Plasma machine, synchronous desktop evidence is dark: `XDG_CURRENT_DESKTOP=KDE`, `gsettings get org.gnome.desktop.interface color-scheme` returned `'prefer-dark'`, and GTK settings have `gtk-application-prefer-dark-theme=true`.
+- GPUI `WindowBounds::Maximized(bounds)` passes `bounds.get_bounds()` into platform window creation and only then calls `platform_window.zoom()`. On Linux, `WindowParams.show` is marked dead code and not used by the backends, so `show:false` alone cannot prevent seeing the pre-maximized restore size.
+
+Resolution:
+- Added `liora_core::startup_maximized_window_bounds(cx, fallback)` so Gallery/Docs still request `WindowBounds::Maximized` but use the current display visible bounds as the restore bounds. The first mapped/configured frame is therefore screen-sized before WM/compositor maximization confirmation.
+- Changed `ThemeMode::System` startup/sync resolution to prefer synchronous Linux/FreeBSD desktop hints (`GTK_THEME`, GTK settings, then `gsettings org.gnome.desktop.interface color-scheme`) before falling back to GPUI's potentially stale `cx.window_appearance()` / `window.appearance()` snapshot.
+- Kept the Zed-style `show:false` plus post-open `activate_window()` timing as secondary behavior, but documented that Linux's visible-size fix depends on the startup bounds, not `show:false` alone.
+- Updated Gallery/Docs startup options and Theme System docs/tests to lock the new root-cause behavior.
+
+Validation evidence:
+- `cargo fmt --all --check` passed.
+- `cargo test -p liora-core linux_startup_appearance_parses_synchronous_dark_preferences -- --nocapture` passed.
+- `cargo test -p liora-gallery gallery_shell_uses_container_and_menu -- --nocapture` passed.
+- `cargo test -p liora-docs docs_shell_uses_native_container_and_menu -- --nocapture` passed.
+- Full pre-submit gate passed with `set -euo pipefail`:
+  - `cargo fmt --all --check`
+  - `cargo check --workspace --all-targets`
+  - `cargo test --workspace`
+  - `cargo check -p liora-docs --bin check_snippets`
+  - `cargo doc --workspace --no-deps`
+  - `cargo run -p xtask -- package validate`
+  - `cargo run -p xtask -- package release-readiness` passed with expected local non-tag warning only.
+  - `cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build`
+  - `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run`
+  - `git diff --check -- . ':(exclude).omx'`
+  - `timeout 10s cargo run -p liora-gallery` reached expected status 124.
+  - `timeout 10s cargo run -p liora-docs` reached expected status 124.
