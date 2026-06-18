@@ -25,6 +25,7 @@ const INTRO_DOC: &str = include_str!("../content/pages/overview.md");
 const QUICK_START_DOC: &str = include_str!("../content/pages/quick_start.md");
 const ARCHITECTURE_DOC: &str = include_str!("../content/pages/architecture.md");
 const PACKAGING_WORKFLOW_DOC: &str = include_str!("../content/pages/packaging_workflow.md");
+const ADOPTION_DOC: &str = include_str!("../content/pages/adoption.md");
 const ABOUT_DOC: &str = include_str!("../content/pages/about.md");
 
 const AFFIX_DOC: &str = include_str!("../content/pages/affix.md");
@@ -138,6 +139,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Packaging Workflow",
         markdown: PACKAGING_WORKFLOW_DOC,
+    },
+    DocPage {
+        title: "Adoption Guide",
+        markdown: ADOPTION_DOC,
     },
     DocPage {
         title: "About",
@@ -7448,6 +7453,23 @@ mod tests {
         assert!(ARCHITECTURE_DOC.contains("Workspace 分层"));
         assert!(ARCHITECTURE_DOC.contains("Live Demo 与代码片段"));
         assert!(ABOUT_DOC.contains("贡献文档的规则"));
+    }
+
+    #[test]
+    fn adoption_docs_cover_minimal_app_and_public_entrypoints() {
+        let titles = DOC_PAGES.iter().map(|page| page.title).collect::<Vec<_>>();
+        assert!(titles.contains(&"Adoption Guide"));
+        assert!(ADOPTION_DOC.contains("cargo run -p aura-minimal-app"));
+        assert!(ADOPTION_DOC.contains("examples/minimal-app/src/main.rs"));
+        assert!(ADOPTION_DOC.contains("init_aura(cx, Theme::light())"));
+        assert!(ADOPTION_DOC.contains("Entity<T>"));
+        assert!(include_str!("../../../README.md").contains("cargo run -p aura-minimal-app"));
+        assert!(
+            include_str!("../../../CONTRIBUTING.md").contains("cargo doc --workspace --no-deps")
+        );
+        assert!(
+            include_str!("../../../examples/minimal-app/Cargo.toml").contains("aura-minimal-app")
+        );
     }
 
     #[test]

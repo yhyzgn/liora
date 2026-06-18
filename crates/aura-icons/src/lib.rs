@@ -1,3 +1,9 @@
+//! Native GPUI icon rendering helpers for Aura.
+//!
+//! This crate exposes an `Icon` component plus the `IntoIconPath` trait used by
+//! Aura demos and docs. Icons are rendered as GPUI SVG/image assets and do not
+//! require a web icon runtime.
+
 use aura_core::Config;
 use gpui::{
     App, Component, DefiniteLength, Hsla, IntoElement, Radians, RenderOnce, SharedString,

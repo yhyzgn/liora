@@ -1,8 +1,13 @@
 //! Packaging domain logic for Aura native GPUI applications.
 //!
 //! This crate intentionally contains no installer runtime and no Tauri runtime
-//! integration. It only models package metadata, package formats, output
-//! manifests, checksums, and validation helpers used by `cargo xtask package`.
+//! integration. It only models package metadata, package formats, generated
+//! backend config, output manifests, checksums, and validation helpers used by
+//! `cargo run -p xtask -- package ...`.
+//!
+//! Public release policy is enforced by `xtask package release-readiness`, which
+//! checks layout, `LicenseRef-Aura`, tag/version policy, signing inputs, and
+//! GitHub Release workflow wiring before formal packaging.
 
 mod app;
 mod cargo_packager;

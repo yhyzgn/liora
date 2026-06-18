@@ -524,6 +524,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "aura-minimal-app"
+version = "0.1.0"
+dependencies = [
+ "aura-components",
+ "aura-core",
+ "aura-theme",
+ "gpui",
+ "gpui_platform",
+]
+
+[[package]]
 name = "aura-packager"
 version = "0.1.0"
 dependencies = [

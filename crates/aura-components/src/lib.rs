@@ -1,3 +1,42 @@
+//! Aura's public GPUI component prelude.
+//!
+//! `aura-components` exports the visual and interactive controls used by the
+//! native Gallery and Docs applications: form controls, overlays, navigation,
+//! data display, charts, code blocks/editors, virtualized data views, and small
+//! utility widgets.
+//!
+//! ## Application setup
+//!
+//! A GPUI app should initialize Aura once during application startup:
+//!
+//! ```no_run
+//! use aura_core::init_aura;
+//! use aura_theme::Theme;
+//! use gpui::App;
+//!
+//! fn setup(cx: &mut App) {
+//!     init_aura(cx, Theme::light());
+//!     aura_components::MessageManager::init(cx);
+//!     aura_components::Input::register_key_bindings(cx);
+//!     aura_components::Text::register_key_bindings(cx);
+//! }
+//! ```
+//!
+//! Register key bindings for the components your app uses. Text/code selection,
+//! inputs, overlays, Preview, Tour, and picker popups all rely on app-level
+//! action registration.
+//!
+//! ## Stateful controls
+//!
+//! Controls with focus, selection, open state, or text value should normally be
+//! stored as `gpui::Entity<T>` fields in a parent view. This preserves state
+//! across GPUI renders and mirrors the pattern used by `examples/minimal-app`.
+//!
+//! ## Architecture boundary
+//!
+//! Aura components render native GPUI element trees. This crate does not require
+//! Tauri, WebView, HTML/CSS, DOM, or a browser runtime.
+
 pub mod affix;
 pub mod alert;
 pub mod anchor;

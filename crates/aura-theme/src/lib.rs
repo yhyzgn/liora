@@ -1,3 +1,10 @@
+//! Theme tokens for Aura GPUI components.
+//!
+//! `aura-theme` defines the semantic colors, spacing, radius, typography, and
+//! component size/variant enums consumed by `aura-core` and `aura-components`.
+//! Use `Theme::light()` or `Theme::dark()` with `aura_core::init_aura(...)` at
+//! app startup.
+
 use gpui::{Hsla, Rgba};
 
 /// NaiveUI-inspired Forest Green theme.

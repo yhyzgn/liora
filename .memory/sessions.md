@@ -3487,3 +3487,28 @@
 - `cargo test --workspace` passed.
 - `git diff --check -- . ':(exclude).omx'` passed.
 - Gallery/Docs GUI startup smoke passed via expected `timeout 10s` status `124`.
+
+## Session 2026-06-18 — P16 Public API & Adoption Readiness
+
+### Actions
+- Added `.prompt/P16-adoption-readiness.md` and marked P16 complete for external adoption readiness.
+- Added root `README.md`, `CONTRIBUTING.md`, and `CHANGELOG.md`.
+- Added compile-checked `examples/minimal-app` workspace package.
+- Added crate-level Rustdoc entrypoints for components, theme, icons, and packager crates.
+- Added native Docs `Adoption Guide` page and regression tests for README/docs/minimal-app readiness.
+- Updated `prompt.md` and `.memory/state.md` with P16 completion state.
+
+### Verification
+- `cargo fmt --all --check` passed.
+- `cargo check -p aura-minimal-app` passed.
+- `cargo test -p aura-docs markdown::tests::adoption_docs_cover_minimal_app_and_public_entrypoints -- --nocapture` passed.
+- `cargo doc --workspace --no-deps` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed, including `aura-minimal-app`.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo run -p xtask -- package validate` passed.
+- `cargo run -p xtask -- package release-readiness` passed.
+- `cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build` passed.
+- `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run` passed.
+- `git diff --check -- . ':(exclude).omx'` passed.
+- Gallery, Docs, and Minimal App GUI startup smoke all passed via expected `timeout 10s` status `124`.

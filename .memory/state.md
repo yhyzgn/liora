@@ -12,10 +12,16 @@ Local implementation phases are complete through P14; P15 is complete for local 
 - P13 Component Expansion: implemented and documented.
 - P14 Deferred Advanced: complete; the P9 backlog has been migrated and delivered.
 - P15 Quality Hardening: complete; Track A CI gates, Track B API consistency/panic cleanup, Track C visual/theme token hardening, Track D overlay/keyboard close-policy coverage, Track E CodeBlock/cache performance hardening, and Track F docs/snippet completeness all passed the final local gate suite.
+- P16 Public API & Adoption Readiness: complete; root README, contributing/changelog docs, minimal app workspace example, crate-level Rustdoc, Docs Adoption Guide, and adoption regression tests are in place.
 
 P12 external-policy items remain tracked but do not block local P15 hardening work. Do not mark P12 fully complete until signing/notarization, real system installs, license policy, and real `v*` release validation are satisfied or formally declared out of scope.
 
 
+
+
+## P16 Adoption Readiness — 2026-06-18
+
+P16 is complete. Added root `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `examples/minimal-app`, crate-level Rustdoc entrypoints, native Docs `Adoption Guide`, and regression coverage for adoption docs/workflow wiring. The minimal app is a workspace member and compiles with `cargo check -p aura-minimal-app`. `cargo doc --workspace --no-deps` passes. Aura remains pure Rust + GPUI native; `LicenseRef-Aura` remains explicit until owner selects formal license terms.
 
 ## P12 Final Closure — 2026-06-18
 
@@ -69,6 +75,7 @@ Non-blocking residuals: `MessageManager::init` panic is intentional usage-contra
 | P13 Component Expansion | ✅ Done | 18/18 | 18 |
 | P14 Deferred Advanced | ✅ Done | 9/9 | 9 |
 | P15 Quality Hardening | ✅ Done | final gate passed | CI gates + API consistency + visual/theme + overlay behavior + CodeBlock performance + docs completeness |
+| P16 Adoption Readiness | ✅ Done | adoption gate passed | README + examples/minimal-app + Rustdoc + Docs Adoption Guide |
 
 ## Git Status
 
