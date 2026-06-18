@@ -276,3 +276,18 @@ Validation evidence for this slice:
 - `cargo test --workspace` passed.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+### 2026-06-18 — Track F docs snippet loader completeness
+
+- Audited all authored docs `src="..."` code blocks against the Docs UI snippet loader and compile-check harness.
+- Fixed 22 Docs UI loader gaps for Calendar, Carousel, InputTag, Mention, Progress gradient completion, TreeSelect, VirtualizedTable, VirtualizedTree, and Watermark snippets; all files were already present and compile-checked, but the UI could not display them.
+- Added a regression test that parses every docs page and asserts every referenced snippet can be loaded by the native Docs renderer.
+
+Validation evidence for this slice:
+- `cargo fmt --all --check` passed.
+- `cargo test -p aura-docs markdown::tests::authored_page_snippets_are_available_to_docs_loader -- --nocapture` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `git diff --check` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.

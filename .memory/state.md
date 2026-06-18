@@ -546,3 +546,7 @@ Tour overlay close-policy behavior is now covered in source-level tests, Gallery
 ## 2026-06-18 P15 Track A CI/package workflow boundary docs
 
 Packaging Workflow docs now explicitly separate `.github/workflows/ci.yml` quality gates from `.github/workflows/package.yml` native packaging/release responsibilities. CI is documented as validation/dry-run only; package workflow owns platform-specific packaging, raw binaries, artifacts, changelog, and `v*` GitHub Release publishing. A docs regression test locks this boundary. Validation passed: fmt, focused docs test, docs snippet check, workspace check/test, diff whitespace check, and Gallery/Docs GUI startup smoke.
+
+## 2026-06-18 P15 Track F docs snippet loader completeness
+
+Docs UI snippet loading is now complete for all authored docs page `src="..."` code blocks. Fixed 22 loader gaps for snippets that were present and compile-checked but not displayable in Docs. Added a regression test that parses every docs page and asserts each referenced snippet resolves through `load_code_snippet`. Validation passed: fmt, focused docs loader test, docs snippet check, workspace check/test, diff whitespace check, and Gallery/Docs GUI startup smoke.

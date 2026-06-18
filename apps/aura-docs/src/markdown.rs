@@ -1036,6 +1036,44 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "tour/middle.rs" => Some(include_str!("../content/snippets/tour/middle.rs")),
         "tour/no_mask.rs" => Some(include_str!("../content/snippets/tour/no_mask.rs")),
         "tour/close_policy.rs" => Some(include_str!("../content/snippets/tour/close_policy.rs")),
+        "calendar/events.rs" => Some(include_str!("../content/snippets/calendar/events.rs")),
+        "calendar/range.rs" => Some(include_str!("../content/snippets/calendar/range.rs")),
+        "carousel/autoplay.rs" => Some(include_str!("../content/snippets/carousel/autoplay.rs")),
+        "carousel/basic.rs" => Some(include_str!("../content/snippets/carousel/basic.rs")),
+        "carousel/custom.rs" => Some(include_str!("../content/snippets/carousel/custom.rs")),
+        "input_tag/basic.rs" => Some(include_str!("../content/snippets/input_tag/basic.rs")),
+        "input_tag/duplicates.rs" => {
+            Some(include_str!("../content/snippets/input_tag/duplicates.rs"))
+        }
+        "input_tag/limited.rs" => Some(include_str!("../content/snippets/input_tag/limited.rs")),
+        "mention/disabled.rs" => Some(include_str!("../content/snippets/mention/disabled.rs")),
+        "mention/issues.rs" => Some(include_str!("../content/snippets/mention/issues.rs")),
+        "mention/people.rs" => Some(include_str!("../content/snippets/mention/people.rs")),
+        "progress/gradient_complete.rs" => Some(include_str!(
+            "../content/snippets/progress/gradient_complete.rs"
+        )),
+        "tree_select/filterable.rs" => Some(include_str!(
+            "../content/snippets/tree_select/filterable.rs"
+        )),
+        "tree_select/multiple.rs" => {
+            Some(include_str!("../content/snippets/tree_select/multiple.rs"))
+        }
+        "tree_select/single.rs" => Some(include_str!("../content/snippets/tree_select/single.rs")),
+        "virtualized_table/basic.rs" => Some(include_str!(
+            "../content/snippets/virtualized_table/basic.rs"
+        )),
+        "virtualized_table/sortable.rs" => Some(include_str!(
+            "../content/snippets/virtualized_table/sortable.rs"
+        )),
+        "virtualized_tree/basic.rs" => Some(include_str!(
+            "../content/snippets/virtualized_tree/basic.rs"
+        )),
+        "virtualized_tree/checkable.rs" => Some(include_str!(
+            "../content/snippets/virtualized_tree/checkable.rs"
+        )),
+        "watermark/cover.rs" => Some(include_str!("../content/snippets/watermark/cover.rs")),
+        "watermark/custom.rs" => Some(include_str!("../content/snippets/watermark/custom.rs")),
+        "watermark/header.rs" => Some(include_str!("../content/snippets/watermark/header.rs")),
         "button/types.rs" => Some(include_str!("../content/snippets/button/types.rs")),
         "button/secondary.rs" => Some(include_str!("../content/snippets/button/secondary.rs")),
         "button/text.rs" => Some(include_str!("../content/snippets/button/text.rs")),
@@ -7604,6 +7642,43 @@ mod tests {
         assert!(load_code_snippet("code_block/theme.rs").is_some());
         assert!(load_code_snippet("quick_start/run.sh").is_some());
         assert!(load_code_snippet("missing.rs").is_none());
+    }
+
+    #[test]
+    fn authored_page_snippets_are_available_to_docs_loader() {
+        for page in DOC_PAGES {
+            let document = MarkdownDocument::parse(page.markdown);
+            for block in document.blocks() {
+                assert_page_block_snippets_load(page.title, block);
+            }
+        }
+    }
+
+    fn assert_page_block_snippets_load(page_title: &str, block: &Block) {
+        match block {
+            Block::CodeBlock {
+                source: Some(source),
+                ..
+            } => {
+                assert!(
+                    load_code_snippet(source.as_ref()).is_some(),
+                    "{page_title} references missing docs loader snippet {source}"
+                );
+            }
+            Block::BlockQuote(children) => {
+                for child in children {
+                    assert_page_block_snippets_load(page_title, child);
+                }
+            }
+            Block::List { items, .. } => {
+                for item in items {
+                    for child in item {
+                        assert_page_block_snippets_load(page_title, child);
+                    }
+                }
+            }
+            _ => {}
+        }
     }
 
     #[test]
