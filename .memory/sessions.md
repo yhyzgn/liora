@@ -3685,3 +3685,7 @@ Replaced the README logo with a symbol-only abstract native UI mark. The prior a
 ## 2026-06-19 GitHub About metadata and logo palette correction
 
 Updated the README logo palette to a restrained graphite/glacier-glass mark after user feedback that the prior colors were ugly. Also applied GitHub repository About metadata directly via `gh repo edit` instead of only documenting recommended settings: description, homepage, and the 20-topic SEO set are now configured on `github.com/yhyzgn/liora`.
+
+## 2026-06-19 logo full style redesign
+
+Replaced the previous organic folded/ribbon logo direction with a completely different symbol-only modular native UI mark: a dark app tile containing component-grid panels, subtle cyan signal paths, and no visible text or letterform. This responds to user feedback that color-only changes were insufficient.

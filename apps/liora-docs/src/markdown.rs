@@ -7746,7 +7746,7 @@ mod tests {
         assert!(repo_metadata.contains("rust-desktop"));
         assert!(repo_metadata.contains("no more than 20 topics"));
         let logo = include_str!("../../../assets/liora-logo.svg");
-        assert!(logo.contains(r#"<title id="title">Liora abstract native UI mark</title>"#));
+        assert!(logo.contains(r#"<title id="title">Liora modular native UI mark</title>"#));
         assert!(!logo.contains("<text"));
         assert!(!logo.contains("PURE RUST + GPUI NATIVE UI"));
         for wrong_name in ["Liorea", "liorea", "Loirea", "loirea"] {
