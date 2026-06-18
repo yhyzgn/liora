@@ -12,7 +12,7 @@ use std::{
     collections::{HashMap, VecDeque},
     hash::{Hash, Hasher},
     ops::Range,
-    sync::{Arc, Mutex, OnceLock},
+    sync::{Arc, Mutex, MutexGuard, OnceLock},
     time::{Duration, Instant},
 };
 use syntect::{
@@ -554,12 +554,7 @@ fn should_render_code_now(
     cx: &mut App,
 ) -> bool {
     let cache_key = HighlightCacheKey::new(code, language, highlighter, code_theme, true, theme);
-    if highlight_cache()
-        .lock()
-        .expect("highlight cache lock poisoned")
-        .runs
-        .contains_key(&cache_key)
-    {
+    if lock_highlight_cache().runs.contains_key(&cache_key) {
         return true;
     }
 
@@ -603,7 +598,7 @@ fn take_deferred_highlight_slot() -> bool {
             })
         })
         .lock()
-        .expect("deferred highlight budget lock poisoned");
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
 
     let now = Instant::now();
     if now.duration_since(budget.window_start) >= FRAME_WINDOW {
@@ -790,14 +785,7 @@ fn cached_highlight_runs_with_key(
     block: bool,
 ) -> (HighlightCacheKey, HighlightRuns) {
     let key = HighlightCacheKey::new(text, language, highlighter, code_theme, block, theme);
-    let cache = highlight_cache();
-    if let Some(runs) = cache
-        .lock()
-        .expect("highlight cache lock poisoned")
-        .runs
-        .get(&key)
-        .cloned()
-    {
+    if let Some(runs) = lock_highlight_cache().runs.get(&key).cloned() {
         return (key, runs);
     }
 
@@ -809,7 +797,7 @@ fn cached_highlight_runs_with_key(
         theme,
         block,
     ));
-    let mut cache = cache.lock().expect("highlight cache lock poisoned");
+    let mut cache = lock_highlight_cache();
     cache.insert(key.clone(), runs.clone());
     (key, runs)
 }
@@ -887,6 +875,12 @@ impl HighlightCache {
 fn highlight_cache() -> &'static Mutex<HighlightCache> {
     static CACHE: OnceLock<Mutex<HighlightCache>> = OnceLock::new();
     CACHE.get_or_init(|| Mutex::new(HighlightCache::default()))
+}
+
+fn lock_highlight_cache() -> MutexGuard<'static, HighlightCache> {
+    highlight_cache()
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
 }
 
 fn highlight_runs(
@@ -1308,6 +1302,12 @@ fn selectable_state_map() -> &'static Mutex<HashMap<String, SelectableCodeState>
     STATES.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
+fn lock_selectable_state_map() -> MutexGuard<'static, HashMap<String, SelectableCodeState>> {
+    selectable_state_map()
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
 fn set_selectable_layout_state(
     id: &ElementId,
     lines: Vec<(ShapedLine, Pixels, usize)>,
@@ -1324,16 +1324,12 @@ fn selectable_key(id: &ElementId) -> String {
 }
 
 fn with_selectable_state<R>(id: &ElementId, f: impl FnOnce(&mut SelectableCodeState) -> R) -> R {
-    let mut states = selectable_state_map()
-        .lock()
-        .expect("selectable code state lock poisoned");
+    let mut states = lock_selectable_state_map();
     f(states.entry(selectable_key(id)).or_default())
 }
 
 fn selectable_state_snapshot(id: &ElementId) -> SelectableCodeState {
-    selectable_state_map()
-        .lock()
-        .expect("selectable code state lock poisoned")
+    lock_selectable_state_map()
         .get(&selectable_key(id))
         .cloned()
         .unwrap_or_default()

@@ -538,6 +538,27 @@ mod api_consistency_audit_tests {
                 || !code_block_production.contains(".unwrap();"),
             "CodeBlock paint paths should not panic on shaped text paint results"
         );
+        assert!(
+            !code_block_production.contains("lock poisoned")
+                && code_block_production.contains("lock_highlight_cache")
+                && code_block_production.contains("lock_selectable_state_map"),
+            "CodeBlock synchronized caches should recover poisoned locks instead of panicking"
+        );
+
+        for (name, source, helper) in [
+            (
+                "selectable_text",
+                include_str!("selectable_text.rs"),
+                "lock_selection_state_map",
+            ),
+            ("timer", include_str!("timer.rs"), "lock_timer_windows"),
+        ] {
+            let production = source.split("#[cfg(test)]").next().unwrap_or(source);
+            assert!(
+                !production.contains("lock poisoned") && production.contains(helper),
+                "{name} synchronized runtime state should recover poisoned locks instead of panicking"
+            );
+        }
     }
 }
 

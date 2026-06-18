@@ -9,7 +9,7 @@ use gpui::{
 use std::{
     collections::HashMap,
     ops::Range,
-    sync::{Arc, Mutex, OnceLock},
+    sync::{Arc, Mutex, MutexGuard, OnceLock},
 };
 
 actions!(
@@ -132,6 +132,13 @@ fn selection_state_map() -> &'static Mutex<HashMap<String, SelectableTextSelecti
     STATES.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
+fn lock_selection_state_map() -> MutexGuard<'static, HashMap<String, SelectableTextSelectionState>>
+{
+    selection_state_map()
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
 fn selection_key(id: &ElementId) -> String {
     format!("{id:?}")
 }
@@ -140,16 +147,12 @@ fn with_selection_state<R>(
     id: &ElementId,
     f: impl FnOnce(&mut SelectableTextSelectionState) -> R,
 ) -> R {
-    let mut states = selection_state_map()
-        .lock()
-        .expect("selectable text state lock poisoned");
+    let mut states = lock_selection_state_map();
     f(states.entry(selection_key(id)).or_default())
 }
 
 fn selected_range_snapshot(id: &ElementId) -> Range<usize> {
-    selection_state_map()
-        .lock()
-        .expect("selectable text state lock poisoned")
+    lock_selection_state_map()
         .get(&selection_key(id))
         .map(|state| state.selected_range.clone())
         .unwrap_or(0..0)
@@ -284,9 +287,7 @@ impl SelectableTextState {
     }
 
     fn index_for_point(&self, pt: Point<Pixels>) -> usize {
-        let states = selection_state_map()
-            .lock()
-            .expect("selectable text state lock poisoned");
+        let states = lock_selection_state_map();
         let Some(state) = states.get(&selection_key(&self.id)) else {
             return self.text.len();
         };

@@ -5,7 +5,7 @@ use gpui::{
 };
 use std::{
     collections::{HashMap, HashSet},
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, MutexGuard},
     time::{Duration, Instant},
 };
 
@@ -329,9 +329,7 @@ impl TimerRuntime {
         cx.spawn(async move |cx: &mut gpui::AsyncApp| {
             loop {
                 executor.timer(Duration::from_millis(250)).await;
-                let handles = windows
-                    .lock()
-                    .expect("timer runtime window registry poisoned")
+                let handles = lock_timer_windows(&windows)
                     .iter()
                     .copied()
                     .collect::<Vec<_>>();
@@ -345,19 +343,29 @@ impl TimerRuntime {
     }
 
     fn started_at(&self, id: SharedString) -> Instant {
-        let mut starts = self
-            .starts
-            .lock()
-            .expect("timer runtime start registry poisoned");
+        let mut starts = lock_timer_starts(&self.starts);
         *starts.entry(id).or_insert_with(Instant::now)
     }
 
     fn register(&self, window: gpui::AnyWindowHandle, _interval: Duration) {
-        self.windows
-            .lock()
-            .expect("timer runtime window registry poisoned")
-            .insert(window);
+        lock_timer_windows(&self.windows).insert(window);
     }
+}
+
+fn lock_timer_windows(
+    windows: &Arc<Mutex<HashSet<gpui::AnyWindowHandle>>>,
+) -> MutexGuard<'_, HashSet<gpui::AnyWindowHandle>> {
+    windows
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
+fn lock_timer_starts(
+    starts: &Arc<Mutex<HashMap<SharedString, Instant>>>,
+) -> MutexGuard<'_, HashMap<SharedString, Instant>> {
+    starts
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
 }
 
 fn ensure_timer_runtime(cx: &mut App) {

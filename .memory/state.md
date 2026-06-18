@@ -11,7 +11,7 @@ Local implementation phases are complete through P14; P15 is now active for rele
 - P12 Native Packaging: runner-safe readiness complete; remaining work is external-policy/credential/runner gated (signing/notarization, real system install/uninstall, formal license policy, real `v*` release run).
 - P13 Component Expansion: implemented and documented.
 - P14 Deferred Advanced: complete; the P9 backlog has been migrated and delivered.
-- P15 Quality Hardening: active; Track A general CI gates are in place, Track B API consistency/panic cleanup is complete for the first pass, Track C semantic text token hardening has multiple slices complete, Track D interaction/overlay hardening has close-policy coverage across common overlays/popups, and Track E has started CodeBlock performance hardening with incremental cache eviction plus shared highlight-run storage.
+- P15 Quality Hardening: active; Track A general CI gates are in place, Track B API consistency/panic cleanup is complete for the first pass with synchronized-state lock poisoning hardening, Track C semantic text token hardening has multiple slices complete, Track D interaction/overlay hardening has close-policy coverage across common overlays/popups, and Track E has started CodeBlock performance hardening with incremental cache eviction plus shared highlight-run storage.
 
 P12 external-policy items remain tracked but do not block local P15 hardening work. Do not mark P12 fully complete until signing/notarization, real system installs, license policy, and real `v*` release validation are satisfied or formally declared out of scope.
 
@@ -566,3 +566,7 @@ CodeBlock highlight cache now uses bounded FIFO eviction instead of clearing the
 ## 2026-06-18 P15 Track E CodeBlock shared highlight runs
 
 CodeBlock highlight cache values now use shared `Arc<[TextRun]>` storage. Selectable and read-only block code paths retrieve a highlight cache key plus shared runs, so repeated visible CodeBlock/CodeEditor preview renders do not allocate-clone the full TextRun vector unless an inline `StyledText` API still requires owned runs. Focused regression coverage proves repeated cached block lookups pointer-share the same Arc storage. Validation passed: fmt, focused CodeBlock tests, workspace check/test, docs snippet check, diff whitespace check, and Gallery/Docs GUI startup smoke.
+
+## 2026-06-18 P15 Track B synchronized state panic hardening
+
+CodeBlock highlight/selection state, SelectableText selection state, and Timer runtime registries now recover poisoned mutexes with helper functions instead of panicking on `expect("... lock poisoned")`. The avoidable runtime panic audit now explicitly locks this behavior for those synchronized runtime-state paths. Validation passed: fmt, focused component tests, workspace check/test, docs snippet check, diff whitespace check, and Gallery/Docs GUI startup smoke.

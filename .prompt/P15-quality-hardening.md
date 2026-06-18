@@ -353,3 +353,21 @@ Validation evidence for this slice:
 - `cargo check -p aura-docs --bin check_snippets` passed.
 - `git diff --check -- . ':(exclude).omx'` passed after removing markdown EOF whitespace.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+### 2026-06-18 — Track B synchronized state panic hardening
+
+- Replaced production `expect("... lock poisoned")` paths in CodeBlock highlight/selection state, SelectableText selection state, and Timer runtime registries with poisoned-lock recovery via `into_inner()`.
+- Added small lock helper functions so cache/selection/timer runtime state can continue operating after an unrelated panic poisons a mutex instead of crashing the GPUI UI loop.
+- Extended the API consistency panic audit to lock this behavior for CodeBlock, SelectableText, and Timer synchronized runtime state.
+
+Validation evidence for this slice:
+- `cargo fmt --all --check` passed.
+- `cargo test -p aura-components code_block::tests -- --nocapture` passed.
+- `cargo test -p aura-components selectable_text::tests -- --nocapture` passed.
+- `cargo test -p aura-components timer::tests -- --nocapture` passed.
+- `cargo test -p aura-components api_consistency_audit_tests::avoidable_runtime_panics_stay_out_of_hardened_paths -- --nocapture` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `git diff --check -- . ':(exclude).omx'` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.

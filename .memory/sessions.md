@@ -3372,3 +3372,23 @@
 - `cargo check -p aura-docs --bin check_snippets` passed.
 - `git diff --check -- . ':(exclude).omx'` passed after removing markdown EOF whitespace.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+## Session 2026-06-18 — P15 Track B Synchronized State Panic Hardening
+
+### Actions
+- Replaced CodeBlock highlight/selection lock `expect(...)` calls with poisoned-lock recovery helpers.
+- Replaced SelectableText selection lock `expect(...)` calls with a shared recovery helper.
+- Replaced Timer runtime window/start registry lock `expect(...)` calls with recovery helpers.
+- Extended the avoidable runtime panic audit to cover these synchronized runtime-state paths.
+
+### Verification
+- `cargo fmt --all --check` passed.
+- `cargo test -p aura-components code_block::tests -- --nocapture` passed.
+- `cargo test -p aura-components selectable_text::tests -- --nocapture` passed.
+- `cargo test -p aura-components timer::tests -- --nocapture` passed.
+- `cargo test -p aura-components api_consistency_audit_tests::avoidable_runtime_panics_stay_out_of_hardened_paths -- --nocapture` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `git diff --check -- . ':(exclude).omx'` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
