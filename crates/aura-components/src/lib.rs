@@ -310,6 +310,11 @@ mod overlay_escape_coverage_tests {
         for (name, source) in [
             ("select", include_str!("select.rs")),
             ("autocomplete", include_str!("autocomplete.rs")),
+            ("cascader", include_str!("cascader.rs")),
+            ("date_picker", include_str!("date_picker.rs")),
+            ("date_time_picker", include_str!("date_time_picker.rs")),
+            ("time_picker", include_str!("time_picker.rs")),
+            ("color_picker", include_str!("color_picker.rs")),
         ] {
             assert!(
                 source.contains("close_on_click_outside: true"),

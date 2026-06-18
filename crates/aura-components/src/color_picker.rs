@@ -29,6 +29,7 @@ pub struct ColorPicker {
     hue_image: Option<Arc<RenderImage>>,
     alpha_image: Option<(SharedString, Arc<RenderImage>)>,
     on_change: Option<Arc<dyn Fn(SharedString, &mut Window, &mut App) + 'static>>,
+    close_on_click_outside: bool,
     close_on_escape: bool,
 }
 
@@ -53,6 +54,7 @@ impl ColorPicker {
             hue_image: None,
             alpha_image: None,
             on_change: None,
+            close_on_click_outside: true,
             close_on_escape: true,
         }
     }
@@ -111,6 +113,11 @@ impl ColorPicker {
 
     pub fn close_on_escape(mut self, close: bool) -> Self {
         self.close_on_escape = close;
+        self
+    }
+
+    pub fn close_on_click_outside(mut self, close: bool) -> Self {
+        self.close_on_click_outside = close;
         self
     }
 
@@ -330,6 +337,7 @@ impl Render for ColorPicker {
             let self_alpha = self.alpha;
             let self_hue = self.hue;
             let entity_for_portal = entity.clone();
+            let close_on_click_outside = self.close_on_click_outside;
 
             push_portal(
                 move |_window, _cx| {
@@ -358,11 +366,13 @@ impl Render for ColorPicker {
                         .left_0()
                         .size_full()
                         .bg(gpui::transparent_black())
-                        .on_mouse_down(MouseButton::Left, move |_, _, cx| {
-                            close_entity.update(cx, |picker, cx| {
-                                picker.is_open = false;
-                                cx.notify();
-                            });
+                        .when(close_on_click_outside, |s| {
+                            s.on_mouse_down(MouseButton::Left, move |_, _, cx| {
+                                close_entity.update(cx, |picker, cx| {
+                                    picker.is_open = false;
+                                    cx.notify();
+                                });
+                            })
                         })
                         .child(panel)
                         .into_any_element()

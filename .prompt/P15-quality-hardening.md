@@ -190,3 +190,17 @@ Validation evidence for this slice:
 - `cargo test -p aura-components -- --nocapture` passed: 200 unit tests plus package integration tests.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+### 2026-06-18 — Track D picker outside-close policy
+
+- Added `close_on_click_outside(...)` to Cascader, DatePicker, DateTimePicker, TimePicker, and ColorPicker.
+- Preserved default outside-click close behavior while making portal backdrop close handlers conditional on the new policy flag.
+- Extended source-level popup policy coverage across input popups and picker popups.
+
+Validation evidence for this slice:
+- `cargo fmt --all --check` passed.
+- `cargo test -p aura-components overlay_escape_coverage_tests -- --nocapture` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test -p aura-components -- --nocapture` passed: 200 unit tests plus package integration tests.
+- `git diff --check` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.

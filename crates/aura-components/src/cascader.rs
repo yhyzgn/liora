@@ -37,6 +37,7 @@ pub struct Cascader {
     focus_handle: FocusHandle,
     last_bounds: Option<Bounds<Pixels>>,
     lazy: bool,
+    close_on_click_outside: bool,
     close_on_escape: bool,
     on_change: Option<Arc<dyn Fn(Vec<SharedString>, &mut Window, &mut App) + 'static>>,
     on_lazy_load: Option<
@@ -106,6 +107,7 @@ impl Cascader {
             focus_handle: cx.focus_handle(),
             last_bounds: None,
             lazy: false,
+            close_on_click_outside: true,
             close_on_escape: true,
             on_change: None,
             on_lazy_load: None,
@@ -182,6 +184,11 @@ impl Cascader {
 
     pub fn close_on_escape(mut self, close: bool) -> Self {
         self.close_on_escape = close;
+        self
+    }
+
+    pub fn close_on_click_outside(mut self, close: bool) -> Self {
+        self.close_on_click_outside = close;
         self
     }
 
@@ -513,6 +520,7 @@ impl Render for Cascader {
             let selected_path = self.selected_path.clone();
             let filterable = self.filterable;
             let matches = self.matching_leaf_paths();
+            let close_on_click_outside = self.close_on_click_outside;
 
             push_portal(
                 move |_window, _cx| {
@@ -574,11 +582,13 @@ impl Render for Cascader {
                         .left_0()
                         .size_full()
                         .bg(gpui::transparent_black())
-                        .on_mouse_down(MouseButton::Left, move |_, _, cx| {
-                            close_entity.update(cx, |this, cx| {
-                                this.is_open = false;
-                                cx.notify();
-                            });
+                        .when(close_on_click_outside, |s| {
+                            s.on_mouse_down(MouseButton::Left, move |_, _, cx| {
+                                close_entity.update(cx, |this, cx| {
+                                    this.is_open = false;
+                                    cx.notify();
+                                });
+                            })
                         })
                         .child(pop_in(format!("{}-panel-motion", cascader_id), panel))
                         .into_any_element()

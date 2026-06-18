@@ -61,6 +61,7 @@ pub struct DateTimePicker {
     second_step: u32,
     show_seconds: bool,
     last_bounds: Option<Bounds<Pixels>>,
+    close_on_click_outside: bool,
     close_on_escape: bool,
     on_change: Option<Box<dyn Fn(Option<DateTimeValue>, &mut Window, &mut App) + 'static>>,
     on_range_change: Option<
@@ -127,6 +128,7 @@ impl DateTimePicker {
             second_step: 1,
             show_seconds: true,
             last_bounds: None,
+            close_on_click_outside: true,
             close_on_escape: true,
             on_change: None,
             on_range_change: None,
@@ -228,6 +230,11 @@ impl DateTimePicker {
 
     pub fn close_on_escape(mut self, close: bool) -> Self {
         self.close_on_escape = close;
+        self
+    }
+
+    pub fn close_on_click_outside(mut self, close: bool) -> Self {
+        self.close_on_click_outside = close;
         self
     }
 
@@ -485,6 +492,7 @@ impl Render for DateTimePicker {
             let entity = entity.clone();
             let picker_id = self.id.clone();
             let bounds = self.last_bounds;
+            let close_on_click_outside = self.close_on_click_outside;
             push_portal(
                 move |_window, _cx| {
                     let (top, left, width) = if let Some(bounds) = bounds {
@@ -500,8 +508,10 @@ impl Render for DateTimePicker {
                         .left_0()
                         .size_full()
                         .bg(gpui::transparent_black())
-                        .on_mouse_down(MouseButton::Left, move |_, _, cx| {
-                            close_entity.update(cx, |picker, cx| picker.close(cx));
+                        .when(close_on_click_outside, |s| {
+                            s.on_mouse_down(MouseButton::Left, move |_, _, cx| {
+                                close_entity.update(cx, |picker, cx| picker.close(cx));
+                            })
                         })
                         .child(pop_in(
                             format!("{}-panel-motion", picker_id),
