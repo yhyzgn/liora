@@ -12,7 +12,7 @@ on:
           - "true"
           - "false"
       app:
-        description: "App to package"
+        description: "Raw executable target; installer packaging is gallery-only"
         required: true
         default: "all"
         type: choice
@@ -140,7 +140,7 @@ jobs:
 
       - name: Check release readiness policy
         env:
-          LIORA_REQUIRE_SIGNING: ${{ startsWith(github.ref, 'refs/tags/v') && 'true' || 'false' }}
+          LIORA_REQUIRE_SIGNING: ${{ vars.LIORA_REQUIRE_SIGNING == 'true' && 'true' || 'false' }}
           LIORA_MACOS_CODESIGN_IDENTITY: ${{ secrets.LIORA_MACOS_CODESIGN_IDENTITY }}
           LIORA_MACOS_NOTARY_APPLE_ID: ${{ secrets.LIORA_MACOS_NOTARY_APPLE_ID }}
           LIORA_MACOS_NOTARY_TEAM_ID: ${{ secrets.LIORA_MACOS_NOTARY_TEAM_ID }}
@@ -228,12 +228,12 @@ jobs:
           EOF
           sed -i.bak 's/^          //' "$out_root/README.md" && rm "$out_root/README.md.bak"
 
-      - name: Build package command
+      - name: Build gallery package command
         id: package-command
+        if: github.event.inputs.app != 'docs'
         shell: bash
         run: |
           set -euo pipefail
-          APP_INPUT="${{ github.event.inputs.app || 'all' }}"
           DRY_INPUT="${{ github.event.inputs.dry_run || 'false' }}"
           format="platform-defaults"
           if [[ "${{ matrix.platform }}" == "windows" && "${{ steps.package-channel.outputs.channel }}" == "preview" && "$DRY_INPUT" != "true" ]]; then
@@ -241,13 +241,7 @@ jobs:
             # building the NSIS package; tagged release builds still use the full Windows default set.
             format="nsis"
           fi
-          args=(cargo run -p xtask -- package ci --format "$format")
-          if [[ "$APP_INPUT" == "all" ]]; then
-            args+=(--all-apps)
-          else
-            args+=(--app "$APP_INPUT")
-          fi
-          args+=(--skip-build)
+          args=(cargo run -p xtask -- package ci --app gallery --format "$format" --skip-build)
           if [[ "$DRY_INPUT" == "true" ]]; then
             args+=(--dry-run)
           fi
@@ -255,45 +249,32 @@ jobs:
           printf '%q ' "${args[@]}" >> "$GITHUB_OUTPUT"
           printf '\n' >> "$GITHUB_OUTPUT"
 
-      - name: Package Liora apps
+      - name: Package Gallery installers
+        if: github.event.inputs.app != 'docs'
         shell: bash
         run: ${{ steps.package-command.outputs.command }}
 
-      - name: Smoke package artifacts
-        if: github.event.inputs.dry_run != 'true'
+      - name: Smoke Gallery package artifacts
+        if: github.event.inputs.dry_run != 'true' && github.event.inputs.app != 'docs'
         shell: bash
         run: |
           set -euo pipefail
-          APP_INPUT="${{ github.event.inputs.app || 'all' }}"
           format="platform-defaults"
           if [[ "${{ matrix.platform }}" == "windows" && "${{ steps.package-channel.outputs.channel }}" == "preview" ]]; then
             format="nsis"
           fi
-          args=(cargo run -p xtask -- package smoke --format "$format")
-          if [[ "$APP_INPUT" == "all" ]]; then
-            args+=(--all-apps)
-          else
-            args+=(--app "$APP_INPUT")
-          fi
-          "${args[@]}"
+          cargo run -p xtask -- package smoke --app gallery --format "$format"
 
-      - name: Plan install and uninstall smoke
-        if: github.event.inputs.dry_run != 'true'
+      - name: Plan Gallery install and uninstall smoke
+        if: github.event.inputs.dry_run != 'true' && github.event.inputs.app != 'docs'
         shell: bash
         run: |
           set -euo pipefail
-          APP_INPUT="${{ github.event.inputs.app || 'all' }}"
           format="platform-defaults"
           if [[ "${{ matrix.platform }}" == "windows" && "${{ steps.package-channel.outputs.channel }}" == "preview" ]]; then
             format="nsis"
           fi
-          args=(cargo run -p xtask -- package install-smoke --format "$format")
-          if [[ "$APP_INPUT" == "all" ]]; then
-            args+=(--all-apps)
-          else
-            args+=(--app "$APP_INPUT")
-          fi
-          "${args[@]}"
+          cargo run -p xtask -- package install-smoke --app gallery --format "$format"
 
       - name: Upload raw runnable binaries
         if: github.event.inputs.dry_run != 'true'
@@ -304,11 +285,11 @@ jobs:
           if-no-files-found: error
           retention-days: ${{ startsWith(github.ref, 'refs/tags/v') && 90 || 14 }}
 
-      - name: Upload package artifacts
-        if: github.event.inputs.dry_run != 'true'
+      - name: Upload Gallery package artifacts
+        if: github.event.inputs.dry_run != 'true' && github.event.inputs.app != 'docs'
         uses: actions/upload-artifact@v7
         with:
-          name: liora-${{ steps.package-channel.outputs.channel }}-packages-${{ matrix.platform }}
+          name: liora-${{ steps.package-channel.outputs.channel }}-gallery-packages-${{ matrix.platform }}
           path: |
             target/packages/**
             target/liora-packager/*.toml
@@ -332,7 +313,7 @@ jobs:
       - name: Download package artifacts
         uses: actions/download-artifact@v8
         with:
-          pattern: liora-release-packages-*
+          pattern: liora-release-gallery-packages-*
           path: dist
           merge-multiple: false
 
@@ -360,63 +341,59 @@ jobs:
         run: |
           set -euo pipefail
           tag="${GITHUB_REF_NAME}"
+          version="${tag#v}"
           git fetch --tags --force
           previous_tag="$(git tag --sort=-v:refname | grep -v "^${tag}$" | head -n 1 || true)"
 
           changelog_input="changelog.tsv"
           if [[ -n "${previous_tag}" ]]; then
-            git log --pretty=format:'%s%x09%h' "${previous_tag}..${tag}" > "${changelog_input}" || true
+            git log --pretty=format:'%s%x09%h%x09%cs' "${previous_tag}..${tag}" > "${changelog_input}" || true
           else
-            git log --pretty=format:'%s%x09%h' "${tag}" --max-count=100 > "${changelog_input}" || true
+            git log --pretty=format:'%s%x09%h%x09%cs' "${tag}" --max-count=100 > "${changelog_input}" || true
           fi
 
           emit_grouped_changelog() {
             local input="$1"
-            local found_any="false"
-            local wanted line subject sha type scope title
+            local wanted subject sha date type scope title
             local conventional_commit_pattern='^([A-Za-z]+)(\(([^)]*)\))?(!)?:[[:space:]]*(.*)$'
             local order=(feat fix docs ci build refactor perf test style chore revert other)
             declare -A headings=(
-              [feat]="Features"
-              [fix]="Fixes"
+              [feat]="Added"
+              [fix]="Fixed"
               [docs]="Documentation"
               [ci]="CI"
               [build]="Build"
-              [refactor]="Refactoring"
+              [refactor]="Changed"
               [perf]="Performance"
               [test]="Tests"
               [style]="Style"
-              [chore]="Chores"
+              [chore]="Maintenance"
               [revert]="Reverts"
-              [other]="Other"
+              [other]="Changed"
             )
 
             for wanted in "${order[@]}"; do
               local lines=()
-              while IFS=$'\t' read -r subject sha; do
+              while IFS=$'	' read -r subject sha date; do
                 [[ -z "${subject}" ]] && continue
                 type="other"
                 scope=""
                 title="${subject}"
-
                 if [[ "${subject}" =~ ${conventional_commit_pattern} ]]; then
                   type="${BASH_REMATCH[1],,}"
                   scope="${BASH_REMATCH[3]}"
                   title="${BASH_REMATCH[5]}"
                 fi
-
                 case "${type}" in
                   feature|features) type="feat" ;;
                   fixes) type="fix" ;;
                   doc) type="docs" ;;
                   tests) type="test" ;;
                 esac
-
                 case "${type}" in
                   feat|fix|docs|ci|build|refactor|perf|test|style|chore|revert) ;;
                   *) type="other" ;;
                 esac
-
                 if [[ "${type}" == "${wanted}" ]]; then
                   if [[ -n "${scope}" ]]; then
                     lines+=("- **${scope}:** ${title} (\`${sha}\`)")
@@ -425,60 +402,126 @@ jobs:
                   fi
                 fi
               done < "${input}"
-
               if [[ ${#lines[@]} -gt 0 ]]; then
-                found_any="true"
-                echo "### ${headings[$wanted]}"
+                echo "## ${headings[$wanted]}"
+                echo
                 printf '%s\n' "${lines[@]}"
                 echo
               fi
             done
-
-            if [[ "${found_any}" == "false" ]]; then
-              echo "_No commits found._"
-              echo
-            fi
           }
 
-          {
-            echo "# Liora ${tag}"
+          emit_download_table() {
+            echo "## Downloads"
             echo
-            echo "## Changelog"
-            echo
-            if [[ -n "${previous_tag}" ]]; then
-              echo "Changes since \`${previous_tag}\`:"
-            else
-              echo "No previous tag found. Listing up to 100 commits reachable from this tag:"
-            fi
-            echo
-            emit_grouped_changelog "${changelog_input}"
-            echo "## Installer and package artifacts"
-            echo
-            if find release-assets -type f | grep -q 'liora-release-packages-'; then
-              find release-assets -type f | grep 'liora-release-packages-' | sort | while read -r artifact; do
-                size="$(du -h "$artifact" | cut -f1)"
-                echo "- \`${artifact#release-assets/}\` (${size})"
-              done
-            else
-              echo "No package artifacts were downloaded."
-            fi
-            echo
-            echo "## Raw runnable binaries"
-            echo
-            echo "These release assets are Liora-project convenience outputs: they are the original release-mode executables built before installer packaging for smoke tests and direct debugging. Downstream projects using Liora as a component library do not need to publish raw binaries unless their own release policy requires it."
-            echo
+            echo "| Package | Platform / profile | Asset |"
+            echo "| --- | --- | --- |"
             if find release-assets -type f | grep -q 'liora-release-binaries-'; then
               find release-assets -type f | grep 'liora-release-binaries-' | sort | while read -r artifact; do
-                size="$(du -h "$artifact" | cut -f1)"
-                echo "- \`${artifact#release-assets/}\` (${size})"
+                name="${artifact#release-assets/}"
+                case "$name" in
+                  *linux*) platform="Linux" ;;
+                  *macos*) platform="macOS" ;;
+                  *windows*) platform="Windows" ;;
+                  *) platform="Cross-platform" ;;
+                esac
+                echo "| Raw runnable executable | ${platform} | \`${name}\` |"
               done
+            fi
+            if find release-assets -type f | grep -q 'liora-release-gallery-packages-'; then
+              find release-assets -type f | grep 'liora-release-gallery-packages-' | sort | while read -r artifact; do
+                name="${artifact#release-assets/}"
+                case "$name" in
+                  *linux*) platform="Linux Gallery installers" ;;
+                  *macos*) platform="macOS Gallery installers" ;;
+                  *windows*) platform="Windows Gallery installers" ;;
+                  *) platform="Gallery installers" ;;
+                esac
+                echo "| Gallery installer bundle | ${platform} | \`${name}\` |"
+              done
+            fi
+            echo "| Release notes | All platforms | \`release-notes.md\` |"
+            echo
+          }
+
+          emit_commit_audit() {
+            echo "## Commit audit"
+            echo
+            if [[ -n "${previous_tag}" ]]; then
+              echo "Release range: \`${previous_tag} → ${tag}\`."
             else
-              echo "No raw runnable binaries were downloaded."
+              echo "No previous tag was found; listing up to 100 commits reachable from \`${tag}\`."
             fi
             echo
-            echo "## Integrity"
+            if [[ -s "${changelog_input}" ]]; then
+              while IFS=$'	' read -r subject sha date; do
+                [[ -z "${subject}" ]] && continue
+                echo "- \`${sha}\` ${date} — ${subject}"
+              done < "${changelog_input}"
+            else
+              echo "- No commits found in this release range."
+            fi
             echo
-            echo "Package artifact bundles include generated \`checksums.txt\` and \`package-manifest.json\` files when package outputs were discovered. Raw binary bundles include a separate \`checksums.txt\` for the staged executables."
+          }
+
+          asset_count="$(find release-assets -type f | wc -l | tr -d ' ')"
+          checksum_count="$(find release-assets -type f -name '*checksums*' | wc -l | tr -d ' ')"
+
+          {
+            echo "# Liora ${version} — Native GPUI SDK & Apps"
+            echo
+            echo "### Codename: Aurora"
+            echo
+            echo "This release ships the Liora SDK crates, cross-platform runnable Docs/Gallery binaries, and Gallery installer packages from the automated release pipeline."
+            echo
+            echo "## Highlights"
+            echo
+            echo "- **SDK crates** — \`liora-theme\`, \`liora-core\`, \`liora-icons\`, \`liora-icons-lucide\`, \`liora-components\`, and \`liora-tray\` are published through the dedicated crates.io workflow."
+            echo "- **Docs app** — Cross-platform raw runnable executables are attached for Linux, macOS, and Windows."
+            echo "- **Gallery app** — Cross-platform raw runnable executables plus native Gallery installer bundles are attached from the packaging workflow."
+            echo "- **Release automation** — Assets, checksums, grouped changelog, verification notes, and commit audit are generated by GitHub Actions."
+            echo
+            echo "> Download the matching executable or installer bundle from the assets attached below. Use artifacts from the same tag together."
+            echo
+            emit_download_table
+            echo "## SDK crates"
+            echo
+            echo "| Crate | Version | Install |"
+            echo "| --- | --- | --- |"
+            for crate in liora-theme liora-core liora-icons liora-icons-lucide liora-components liora-tray; do
+              echo "| \`${crate}\` | \`${version}\` | \`cargo add ${crate}\` |"
+            done
+            echo
+            echo "## Added"
+            echo
+            echo "- Dedicated crates.io SDK publishing pipeline using \`CRATES_IO_TOKEN\` and dependency-ordered publishing."
+            echo "- Cross-platform raw executable assets for both Liora Docs and Liora Gallery."
+            echo "- Gallery installer package assets for the platform default installer formats."
+            echo
+            emit_grouped_changelog "${changelog_input}"
+            echo "## Upgrade notes"
+            echo
+            if [[ -n "${previous_tag}" ]]; then
+              echo "- Release range: \`${previous_tag} → ${tag}\`."
+            else
+              echo "- First tagged release in this repository history."
+            fi
+            echo "- SDK consumers can start with \`cargo add liora-components\`; lower-level crates are published for token/theme/icon/tray-focused integrations."
+            echo "- \`liora-docs\` is distributed as a raw executable; \`liora-gallery\` includes both raw executables and installer bundles."
+            echo "- macOS/Windows artifacts are unsigned unless the repository release environment provides signing/notarization secrets and sets \`LIORA_REQUIRE_SIGNING=true\`."
+            echo
+            echo "## Verification"
+            echo
+            echo "- \`cargo fmt --all --check\`"
+            echo "- \`cargo check --workspace --all-targets\`"
+            echo "- \`cargo test --workspace\`"
+            echo "- \`cargo check -p liora-docs --bin check_snippets\`"
+            echo "- \`cargo doc --workspace --no-deps\`"
+            echo "- \`cargo run -p xtask -- package release-readiness\`"
+            echo "- Gallery package dry-run and install-smoke dry-run in CI."
+            echo "- Release asset count: \`${asset_count}\`; checksum files discovered: \`${checksum_count}\`."
+            echo
+            emit_commit_audit
           } > release-notes.md
 
           cat release-notes.md

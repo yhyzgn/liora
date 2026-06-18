@@ -77,6 +77,7 @@ fn release_readiness() -> Result<(), String> {
     check_release_tag_policy(&mut report);
     check_signing_policy(&mut report);
     check_release_workflow(&root, &mut report);
+    check_sdk_release_workflow(&root, &mut report);
 
     write_release_readiness_report(&root, &report)?;
     report.print();
@@ -319,19 +320,41 @@ fn check_release_workflow(root: &Path, report: &mut ReleaseReadinessReport) {
         Ok(text)
             if text.contains("release-readiness")
                 && text.contains("gh release create")
-                && text.contains("liora-release-packages-*")
+                && text.contains("liora-release-gallery-packages-*")
                 && text.contains("liora-release-binaries-*") =>
         {
             report.pass(
                 "release workflow",
-                "package.yml contains release readiness, artifact download, grouped release notes, and GitHub Release upload steps",
+                "package.yml contains release readiness, Gallery package artifacts, raw binary artifacts, grouped release notes, and GitHub Release upload steps",
             );
         }
         Ok(_) => report.fail(
             "release workflow",
-            "package.yml is missing release-readiness, release artifact, or GitHub Release publishing steps",
+            "package.yml is missing release-readiness, Gallery package artifacts, raw binary artifacts, or GitHub Release publishing steps",
         ),
         Err(_) => report.fail("release workflow", "missing .github/workflows/package.yml"),
+    }
+}
+
+fn check_sdk_release_workflow(root: &Path, report: &mut ReleaseReadinessReport) {
+    let workflow_path = root.join(".github/workflows/release-sdk.yml");
+    match fs::read_to_string(&workflow_path) {
+        Ok(text)
+            if text.contains("CRATES_IO_TOKEN")
+                && text.contains("cargo package -p")
+                && text.contains("cargo publish -p")
+                && text.contains("liora-theme liora-core liora-icons liora-icons-lucide liora-components liora-tray") =>
+        {
+            report.pass(
+                "SDK release workflow",
+                "release-sdk.yml verifies and publishes SDK crates with CRATES_IO_TOKEN in dependency order",
+            );
+        }
+        Ok(_) => report.fail(
+            "SDK release workflow",
+            "release-sdk.yml is missing SDK package verification, publish commands, token wiring, or dependency order",
+        ),
+        Err(_) => report.fail("SDK release workflow", "missing .github/workflows/release-sdk.yml"),
     }
 }
 

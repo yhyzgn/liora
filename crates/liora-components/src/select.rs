@@ -385,6 +385,7 @@ impl Render for Select {
                             offset: gpui::point(gpui::px(0.0), gpui::px(4.0)),
                             blur_radius: gpui::px(12.0),
                             spread_radius: gpui::px(0.0),
+                            inset: false,
                         }])
                         .children(options.iter().enumerate().map(|(idx, label)| {
                             let is_selected = Some(idx) == selected_idx;

@@ -3,9 +3,9 @@ name = "liora-tray"
 version = "0.1.0"
 edition = "2024"
 description = "Cross-platform system tray facade for Liora native GPUI applications."
-license = "LicenseRef-Liora"
+license-file = "../../LICENSE.md"
 repository = "https://github.com/yhyzgn/liora"
-publish = false
+publish = true
 
 [dependencies]
 gpui = { workspace = true }

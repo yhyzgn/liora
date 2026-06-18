@@ -8,7 +8,7 @@ Local implementation phases are complete through P21. Current repository-owned s
 
 - P10 Native Charts: complete, including downsampling plus Line/Area/Bar/Pie/Ring hover hit testing.
 - P11 Native Tray: complete, including `liora-tray`, dynamic icons, nested/check menus, Gallery/Docs controls, and close-to-tray behavior.
-- P12 Native Packaging: repository-owned release readiness complete, including `release-readiness` gate, explicit `LicenseRef-Liora` policy, signing/notarization policy docs, CI dry-run gate, and strict `v*` release gate. Real credentials and destructive system-level installs remain protected-environment responsibilities.
+- P12 Native Packaging: repository-owned release readiness complete, including `release-readiness` gate, explicit `LicenseRef-Liora` installer/app policy, signing/notarization policy docs, CI dry-run gate, dedicated crates.io SDK publishing workflow using `CRATES_IO_TOKEN`, and strict `v*` app release gate. Docs ships as cross-platform raw executables; Gallery ships as raw executables plus planned native installer formats. Real credentials and destructive system-level installs remain protected-environment responsibilities.
 - P13 Component Expansion: implemented and documented.
 - P14 Deferred Advanced: complete; the P9 backlog has been migrated and delivered.
 - P15 Quality Hardening: complete; Track A CI gates, Track B API consistency/panic cleanup, Track C visual/theme token hardening, Track D overlay/keyboard close-policy coverage, Track E CodeBlock/cache performance hardening, and Track F docs/snippet completeness all passed the final local gate suite.
@@ -19,7 +19,7 @@ Local implementation phases are complete through P21. Current repository-owned s
 - P20 Theme/Interaction Polish: complete; System/Light/Dark theme mode, tokenized overlays/masks, custom window frame polish, and Theme docs/demo are in place.
 - P21 Release Candidate Readiness: complete; `docs/release-candidate-checklist.md`, explicit package metadata, updated README/CHANGELOG/prompt/memory state, and release-boundary regression tests lock the local `0.1.0` RC path.
 
-P12/P21 external-policy items remain protected-environment work: real macOS notarization, Windows signing, destructive system-level installs, formal license replacement if any, and real `v*` release publication.
+P12/P21 external-policy items remain protected-environment work: crates.io SDK publication approval, real macOS notarization, Windows signing, destructive system-level installs, formal license replacement if any, and real `v*` release publication.
 
 
 ## P19 Dashboard State/Data Flow — 2026-06-18
@@ -43,7 +43,7 @@ P16 is complete. Added root `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, crat
 
 ## P12 Final Closure — 2026-06-18
 
-P12 native packaging is complete for repository-owned scope. Added `cargo run -p xtask -- package release-readiness`, `LICENSE.md` with explicit `LicenseRef-Liora`, `packaging/signing-policy.md`, CI non-strict readiness checks, and package workflow strict `v*` release readiness checks. The release path now blocks missing macOS/Windows signing inputs when `LIORA_REQUIRE_SIGNING=true` instead of silently publishing unsigned formal releases. Real signing credentials, notarization accounts, protected runner policy, destructive install/uninstall execution, and real public tag publishing remain owner-controlled release-environment actions, not missing local implementation.
+P12 native packaging is complete for repository-owned scope. Added `cargo run -p xtask -- package release-readiness`, `LICENSE.md` with explicit `LicenseRef-Liora`, `packaging/signing-policy.md`, CI non-strict readiness checks, package workflow strict `v*` app release readiness checks, and a dedicated SDK crates.io workflow using `CRATES_IO_TOKEN`. The app release path now blocks missing macOS/Windows signing inputs when `LIORA_REQUIRE_SIGNING=true` instead of silently publishing unsigned formal releases. Docs is raw-executable only; Gallery owns installer artifacts. Real signing credentials, notarization accounts, protected runner policy, destructive install/uninstall execution, SDK publish approval, and real public tag publishing remain owner-controlled release-environment actions, not missing local implementation.
 
 ## P15 Final Completion Audit — 2026-06-18
 

@@ -7656,13 +7656,29 @@ mod tests {
     fn packaging_docs_explain_ci_and_release_workflow_boundaries() {
         assert!(PACKAGING_WORKFLOW_DOC.contains(".github/workflows/ci.yml"));
         assert!(PACKAGING_WORKFLOW_DOC.contains(".github/workflows/package.yml"));
+        assert!(PACKAGING_WORKFLOW_DOC.contains(".github/workflows/release-sdk.yml"));
         assert!(PACKAGING_WORKFLOW_DOC.contains("Should publish release assets?"));
         assert!(PACKAGING_WORKFLOW_DOC.contains("`rust-quality`"));
         assert!(PACKAGING_WORKFLOW_DOC.contains("`packaging-dry-run`"));
         assert!(
             PACKAGING_WORKFLOW_DOC.contains("Only `v*` tag runs publish GitHub Release assets")
         );
+        assert!(PACKAGING_WORKFLOW_DOC.contains("CRATES_IO_TOKEN"));
+        assert!(PACKAGING_WORKFLOW_DOC.contains("statically auditing every SDK manifest"));
+        assert!(
+            PACKAGING_WORKFLOW_DOC
+                .contains("Docs is released as cross-platform raw executables only")
+        );
+        assert!(
+            PACKAGING_WORKFLOW_DOC.contains(
+                "Gallery is released as raw executables and as installer/package artifacts"
+            )
+        );
         assert!(PACKAGING_WORKFLOW_DOC.contains("If a step builds installers, uploads artifacts, or calls `gh release`, it belongs only in `package.yml`."));
+        assert!(
+            PACKAGING_WORKFLOW_DOC
+                .contains("If a step publishes SDK crates, it belongs only in `release-sdk.yml`.")
+        );
     }
 
     #[test]
@@ -7673,7 +7689,7 @@ mod tests {
         assert!(ci.contains("packaging-dry-run:"));
         assert!(ci.contains("cargo check --workspace --all-targets"));
         assert!(ci.contains("cargo run -p xtask -- package validate"));
-        assert!(ci.contains("cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run"));
+        assert!(ci.contains("cargo run -p xtask -- package install-smoke --app gallery --format platform-defaults --dry-run"));
         assert!(ci.contains("Install Linux native build dependencies"));
         assert!(ci.contains("Install packaging dry-run tools"));
         assert!(!ci.contains("rpm"));
@@ -7684,6 +7700,7 @@ mod tests {
     fn packaging_docs_and_workflows_include_release_readiness_gate() {
         let ci = include_str!("../../../.github/workflows/ci.yml");
         let package = include_str!("../../../.github/workflows/package.yml");
+        let sdk = include_str!("../../../.github/workflows/release-sdk.yml");
 
         assert!(PACKAGING_WORKFLOW_DOC.contains("package release-readiness"));
         assert!(PACKAGING_WORKFLOW_DOC.contains("packaging/signing-policy.md"));
@@ -7694,6 +7711,10 @@ mod tests {
         assert!(package.contains("LIORA_REQUIRE_SIGNING"));
         assert!(package.contains("LIORA_MACOS_CODESIGN_IDENTITY"));
         assert!(package.contains("LIORA_WINDOWS_SIGNTOOL_CERT_PATH"));
+        assert!(sdk.contains("CRATES_IO_TOKEN"));
+        assert!(sdk.contains("Audit SDK publish metadata"));
+        assert!(sdk.contains("cargo package -p liora-theme"));
+        assert!(sdk.contains("cargo publish -p"));
     }
 
     #[test]
@@ -7765,6 +7786,7 @@ mod tests {
         let prompt = include_str!("../../../prompt.md");
         let cargo = include_str!("../../../Cargo.toml");
         let package_workflow = include_str!("../../../.github/workflows/package.yml");
+        let sdk_workflow = include_str!("../../../.github/workflows/release-sdk.yml");
         let ci_workflow = include_str!("../../../.github/workflows/ci.yml");
 
         for command in [
@@ -7775,8 +7797,8 @@ mod tests {
             "cargo doc --workspace --no-deps",
             "cargo run -p xtask -- package validate",
             "cargo run -p xtask -- package release-readiness",
-            "cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build",
-            "cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run",
+            "cargo run -p xtask -- package ci --app gallery --format platform-defaults --dry-run --skip-build",
+            "cargo run -p xtask -- package install-smoke --app gallery --format platform-defaults --dry-run",
             "timeout 10s cargo run -p liora-gallery",
             "timeout 10s cargo run -p liora-docs",
         ] {
@@ -7831,24 +7853,43 @@ mod tests {
         assert!(!cargo.contains("examples/dashboard-app"));
         assert!(ci_workflow.contains("cargo run -p xtask -- package release-readiness"));
         assert!(package_workflow.contains("release-assets"));
+        assert!(package_workflow.contains("--app gallery --format"));
+        assert!(package_workflow.contains("liora-release-gallery-packages-*"));
+        assert!(package_workflow.contains("liora-release-binaries-*"));
+        assert!(
+            !package_workflow
+                .contains("package ci --all-apps --format platform-defaults --skip-build")
+        );
+        assert!(sdk_workflow.contains("Publish Liora SDK crates"));
+        assert!(sdk_workflow.contains("CRATES_IO_TOKEN"));
     }
 
     #[test]
     fn workspace_package_manifests_have_rc_metadata() {
-        let manifests = [
+        let sdk_manifests = [
             include_str!("../../../crates/liora-core/Cargo.toml"),
             include_str!("../../../crates/liora-theme/Cargo.toml"),
             include_str!("../../../crates/liora-components/Cargo.toml"),
             include_str!("../../../crates/liora-icons/Cargo.toml"),
             include_str!("../../../crates/liora-icons-lucide/Cargo.toml"),
             include_str!("../../../crates/liora-tray/Cargo.toml"),
+        ];
+
+        for manifest in sdk_manifests {
+            assert!(manifest.contains("license-file = \"../../LICENSE.md\""));
+            assert!(manifest.contains("repository = \"https://github.com/yhyzgn/liora\""));
+            assert!(manifest.contains("publish = true"));
+            assert!(manifest.contains("description = \""));
+        }
+
+        let private_manifests = [
             include_str!("../../../crates/liora-packager/Cargo.toml"),
             include_str!("../../../apps/liora-gallery/Cargo.toml"),
             include_str!("../../../apps/liora-docs/Cargo.toml"),
             include_str!("../../../xtask/Cargo.toml"),
         ];
 
-        for manifest in manifests {
+        for manifest in private_manifests {
             assert!(manifest.contains("license = \"LicenseRef-Liora\""));
             assert!(manifest.contains("repository = \"https://github.com/yhyzgn/liora\""));
             assert!(manifest.contains("publish = false"));

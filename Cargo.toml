@@ -40,22 +40,15 @@ derive_more = { version = "2.1.1", features = ["add", "add_assign", "deref", "de
 env_logger = "0.11"
 futures = "0.3.32"
 futures-concurrency = "7.7.1"
-gpui = { path = "third_party/zed/crates/gpui", default-features = false }
-gpui_macros = { git = "https://github.com/zed-industries/zed", rev = "c97ad4692f99df4cc5eaa0a83a91afaefb641076" }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "c97ad4692f99df4cc5eaa0a83a91afaefb641076" }
-gpui_shared_string = { git = "https://github.com/zed-industries/zed", rev = "c97ad4692f99df4cc5eaa0a83a91afaefb641076" }
-gpui_util = { git = "https://github.com/zed-industries/zed", rev = "c97ad4692f99df4cc5eaa0a83a91afaefb641076" }
-gpui_web = { git = "https://github.com/zed-industries/zed", rev = "c97ad4692f99df4cc5eaa0a83a91afaefb641076" }
-gpui_wgpu = { git = "https://github.com/zed-industries/zed", rev = "c97ad4692f99df4cc5eaa0a83a91afaefb641076" }
+gpui = { package = "open-gpui", version = "0.1.0", default-features = false }
+gpui_platform = { package = "open-gpui-platform", version = "0.1.0", default-features = false }
 hdrhistogram = "7"
-http_client = { git = "https://github.com/zed-industries/zed", rev = "c97ad4692f99df4cc5eaa0a83a91afaefb641076" }
 image = "0.25.1"
 inventory = "0.3.19"
 itertools = "0.14.0"
 libc = "0.2"
 log = { version = "0.4.16", features = ["kv_unstable_serde", "serde"] }
 mach2 = "0.5"
-media = { git = "https://github.com/zed-industries/zed", rev = "c97ad4692f99df4cc5eaa0a83a91afaefb641076" }
 metal = "0.33"
 objc = "0.2"
 parking_lot = "0.12.1"
@@ -64,11 +57,7 @@ postage = { version = "0.5", features = ["futures-traits"] }
 profiling = "1"
 proptest = { git = "https://github.com/proptest-rs/proptest", rev = "3dca198a8fef1b32e3a66f1e1897c955b4dc5b5b", features = ["attr-macro"] }
 rand = "0.9"
-refineable = { git = "https://github.com/zed-industries/zed", rev = "c97ad4692f99df4cc5eaa0a83a91afaefb641076" }
 regex = "1.5"
-reqwest_client = { git = "https://github.com/zed-industries/zed", rev = "c97ad4692f99df4cc5eaa0a83a91afaefb641076" }
-scap = { git = "https://github.com/zed-industries/scap", rev = "4afea48c3b002197176fb19cd0f9b180dd36eaac", default-features = false, package = "zed-scap", version = "0.0.8-zed" }
-scheduler = { git = "https://github.com/zed-industries/zed", rev = "c97ad4692f99df4cc5eaa0a83a91afaefb641076" }
 schemars = { version = "1.0", features = ["indexmap2"] }
 serde = { version = "1.0.221", features = ["derive", "rc"] }
 serde_json = { version = "1.0.144", features = ["preserve_order", "raw_value"] }
@@ -77,16 +66,9 @@ smallvec = { version = "1.6", features = ["union", "const_new"] }
 smol = "2.0"
 stacksafe = "0.1"
 strum = { version = "0.27.2", features = ["derive"] }
-sum_tree = { git = "https://github.com/zed-industries/zed", rev = "c97ad4692f99df4cc5eaa0a83a91afaefb641076" }
 thiserror = "2.0.12"
 unicode-segmentation = "1.10"
 url = "2.2"
-util = { git = "https://github.com/zed-industries/zed", rev = "c97ad4692f99df4cc5eaa0a83a91afaefb641076" }
-util_macros = { git = "https://github.com/zed-industries/zed", rev = "c97ad4692f99df4cc5eaa0a83a91afaefb641076" }
 uuid = { version = "1.1.2", features = ["v4", "v5", "v7", "serde"] }
 wasm-bindgen = "0.2.113"
 web-time = "1.1.0"
-
-[patch."https://github.com/zed-industries/zed"]
-gpui = { path = "third_party/zed/crates/gpui" }
-gpui_linux = { path = "third_party/zed/crates/gpui_linux" }

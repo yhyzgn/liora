@@ -90,7 +90,7 @@ impl RenderOnce for Icon {
         let theme = &cx.global::<Config>().theme;
 
         let sz = self.size.unwrap_or_else(|| px(18.0).into());
-        let mut el = gpui::svg().external_path(self.asset_path).size(sz);
+        let mut el = gpui::svg().path(self.asset_path).size(sz);
         if let Some(color) = self.color {
             el = el.text_color(color);
         } else {

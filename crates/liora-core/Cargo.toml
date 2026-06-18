@@ -3,10 +3,10 @@ name = "liora-core"
 version = "0.1.0"
 edition = "2024"
 description = "Core Liora app configuration, theme initialization, portals, and shared native GPUI helpers."
-license = "LicenseRef-Liora"
+license-file = "../../LICENSE.md"
 repository = "https://github.com/yhyzgn/liora"
-publish = false
+publish = true
 
 [dependencies]
 gpui.workspace = true
-liora-theme = { path = "../liora-theme" }
+liora-theme = { version = "0.1.0", path = "../liora-theme" }

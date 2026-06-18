@@ -103,14 +103,15 @@ impl ThemeMode {
 /// the Linux platform window creation path, so Wayland requests maximization
 /// before the first `surface.commit()` and X11 sets `_NET_WM_STATE` before
 /// `MapWindow`. The bounds below remain the restore/fallback geometry for that
-/// maximized request.
+/// maximized request and intentionally use the stable GPUI display-bounds API so
+/// SDK crates remain compatible with crates.io `gpui`.
 pub fn startup_maximized_window_bounds(
     cx: &App,
     fallback_size: gpui::Size<Pixels>,
 ) -> WindowBounds {
     let bounds = cx
         .primary_display()
-        .map(|display| display.visible_bounds())
+        .map(|display| display.bounds())
         .unwrap_or(Bounds {
             origin: gpui::Point::default(),
             size: fallback_size,
@@ -351,7 +352,7 @@ pub fn render_active_tooltip_in_window(window: &mut gpui::Window, cx: &mut App) 
         .retain(|data| data.anchor_bounds.contains(&mouse_pos));
 
     let active = cx.global::<crate::popper::ActiveTooltip>().0.clone();
-    for data in active {
+    for (tooltip_index, data) in active.into_iter().enumerate() {
         let theme = cx.global::<Config>().theme.clone();
 
         // Measure text accurately
@@ -412,7 +413,7 @@ pub fn render_active_tooltip_in_window(window: &mut gpui::Window, cx: &mut App) 
                     .text_size(font_size)
                     .child(data.content.clone())
                     .with_animation(
-                        format!("{}-tooltip-motion", data.id),
+                        ("liora-tooltip-motion", tooltip_index),
                         Animation::new(Duration::from_millis(220))
                             .with_easing(gpui::ease_out_quint()),
                         |tooltip, delta| tooltip.opacity(delta),

@@ -8,7 +8,7 @@ This checklist defines the repository-owned readiness gate for the Liora `0.1.0`
 - Runtime boundary: pure Rust + GPUI native apps only. Do not introduce Tauri, WebView, HTML/CSS/DOM, WASM chart runtimes, or browser shells.
 - Canonical apps: `apps/liora-gallery` and `apps/liora-docs`.
 - Removed sample-app boundary: do not re-add `examples/minimal-app`, `examples/dashboard-app`, `liora-minimal-app`, or `liora-dashboard-app`; their useful adoption and dogfooding behavior lives in Gallery and Docs.
-- Package policy: `LicenseRef-Liora` remains the explicit package/license metadata until the owner replaces it with formal OSS or commercial terms.
+- Package policy: SDK crates publish to crates.io using the repository license file; app/packager automation crates remain private workspace packages. `LicenseRef-Liora` remains the explicit package/install metadata until the owner replaces it with formal OSS or commercial terms.
 
 ## Local RC gates
 
@@ -22,8 +22,8 @@ cargo check -p liora-docs --bin check_snippets
 cargo doc --workspace --no-deps
 cargo run -p xtask -- package validate
 cargo run -p xtask -- package release-readiness
-cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build
-cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run
+cargo run -p xtask -- package ci --app gallery --format platform-defaults --dry-run --skip-build
+cargo run -p xtask -- package install-smoke --app gallery --format platform-defaults --dry-run
 git diff --check -- . ':(exclude).omx'
 timeout 10s cargo run -p liora-gallery
 timeout 10s cargo run -p liora-docs
@@ -35,20 +35,20 @@ The GUI smoke commands are expected to exit with status `124` under `timeout` af
 
 Before a tag release, verify these files agree:
 
-- `Cargo.toml` and every workspace package manifest include repository-owned metadata: `license = "LicenseRef-Liora"`, `repository = "https://github.com/yhyzgn/liora"`, and `publish = false` unless the owner explicitly approves publishing a crate.
+- `Cargo.toml` and every workspace package manifest include repository-owned metadata. SDK crates (`liora-theme`, `liora-core`, `liora-icons`, `liora-icons-lucide`, `liora-components`, `liora-tray`) use `license-file = "../../LICENSE.md"` and `publish = true`; app/automation crates keep `license = "LicenseRef-Liora"` and `publish = false`.
 - `README.md`, `CHANGELOG.md`, `prompt.md`, `.prompt/P21-release-candidate-readiness.md`, and `.memory/state.md` all describe the same RC boundary.
 - `docs/packaging-installer-technical-plan.md` and `apps/liora-docs/content/pages/packaging_workflow.md` keep packaging as a pure native installer pipeline.
 - `.github/workflows/ci.yml` remains validation-only and must not publish installers or mutate GitHub Releases.
-- `.github/workflows/package.yml` owns preview/release artifacts, grouped changelog generation, raw binary upload for this repository, and `v*` release publication.
+- `.github/workflows/package.yml` owns native app preview/release artifacts: cross-platform raw binaries for Docs/Gallery, Gallery installer packages, grouped changelog generation, and `v*` GitHub Release publication.
 
 ## Protected release-only items
 
 These items are intentionally outside local developer machines and ordinary CI dry-runs. They must be executed only in owner-controlled protected environments:
 
 1. Create and push a real `v0.1.0` tag only after the local RC gates pass.
-2. Configure macOS signing/notarization inputs (`codesign`, `notarytool`, `stapler`) and Windows signing inputs (`signtool`, timestamp server, certificate secrets).
+2. For signed releases, configure macOS signing/notarization inputs (`codesign`, `notarytool`, `stapler`) and Windows signing inputs (`signtool`, timestamp server, certificate secrets), then set `LIORA_REQUIRE_SIGNING=true`; unsigned first-release builds are allowed when that variable is absent.
 3. Run real system-level install/uninstall smoke tests for `.deb`, `.rpm`, AppImage, macOS app/dmg, NSIS, and MSI on dedicated runners or test machines.
-4. Publish GitHub Release assets only through the protected `package.yml` release path.
+4. Publish GitHub Release app assets only through the protected `package.yml` release path; publish SDK crates only through `release-sdk.yml` with `CRATES_IO_TOKEN`.
 5. Change license metadata only when the owner formally chooses the replacement license.
 
 ## Completion definition

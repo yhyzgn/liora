@@ -3,11 +3,11 @@ name = "liora-icons"
 version = "0.1.0"
 edition = "2024"
 description = "Native GPUI icon primitives and shared Liora icon rendering helpers."
-license = "LicenseRef-Liora"
+license-file = "../../LICENSE.md"
 repository = "https://github.com/yhyzgn/liora"
-publish = false
+publish = true
 
 [dependencies]
 gpui.workspace = true
-liora-core = { path = "../liora-core" }
-liora-theme = { path = "../liora-theme" }
+liora-core = { version = "0.1.0", path = "../liora-core" }
+liora-theme = { version = "0.1.0", path = "../liora-theme" }

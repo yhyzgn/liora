@@ -20,8 +20,8 @@ Close the repository-owned release-candidate gap for Liora `0.1.0` without chang
 
 - Added `docs/release-candidate-checklist.md` as the RC source of truth.
 - Refreshed README/CHANGELOG/prompt/memory so P12–P21 describe current reality instead of old sample-app or license TODOs.
-- Added explicit package metadata to workspace package manifests: `LicenseRef-Liora`, repository URL, descriptions, and `publish = false`.
-- Locked the RC boundary with docs regression tests covering commands, metadata, app boundaries, package workflow roles, and absence of removed sample apps.
+- Added explicit package metadata to workspace package manifests: SDK crates are crates.io publishable with `license-file = "../../LICENSE.md"`; app/automation crates remain `publish = false` with `LicenseRef-Liora` metadata.
+- Locked the RC boundary with docs regression tests covering commands, metadata, app boundaries, package workflow roles, SDK publishing, and absence of removed sample apps.
 
 ## Required local verification
 
@@ -33,8 +33,8 @@ cargo check -p liora-docs --bin check_snippets
 cargo doc --workspace --no-deps
 cargo run -p xtask -- package validate
 cargo run -p xtask -- package release-readiness
-cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build
-cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run
+cargo run -p xtask -- package ci --app gallery --format platform-defaults --dry-run --skip-build
+cargo run -p xtask -- package install-smoke --app gallery --format platform-defaults --dry-run
 git diff --check -- . ':(exclude).omx'
 timeout 10s cargo run -p liora-gallery
 timeout 10s cargo run -p liora-docs
@@ -44,4 +44,4 @@ timeout 10s cargo run -p liora-docs
 
 ## Protected follow-up
 
-Only the owner/protected release environment should run the real `v0.1.0` tag release, macOS notarization, Windows signing, destructive system install/uninstall smoke, and GitHub Release publication.
+Only the owner/protected release environment should run the real `v0.1.0` tag release, crates.io SDK publication through `release-sdk.yml`, macOS notarization, Windows signing, destructive system install/uninstall smoke, and GitHub Release publication.

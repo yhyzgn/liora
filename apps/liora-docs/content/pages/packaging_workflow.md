@@ -6,17 +6,19 @@ This page documents the packaging pipeline used by this repository and the piece
 
 ## Scope
 
-Liora currently packages two applications:
+Liora publishes three kinds of release outputs:
 
-- `liora-gallery` — the component gallery and visual demo application.
-- `liora-docs` — the standalone documentation application.
+- SDK crates — `liora-theme`, `liora-core`, `liora-icons`, `liora-icons-lucide`, `liora-components`, and `liora-tray` are published to crates.io from a dedicated SDK workflow.
+- `liora-docs` raw executables — cross-platform runnable documentation binaries for Linux, macOS, and Windows.
+- `liora-gallery` raw executables plus installers — the component gallery is both directly downloadable as a binary and packaged into the planned native installer formats.
 
 The reusable packaging logic lives in:
 
 - `crates/liora-packager` — package metadata, format decisions, generated backend config, manifest/checksum helpers.
 - `xtask` — command-line entry point used locally and by CI.
 - `.github/workflows/ci.yml` — ordinary quality gate for every pull request and `main` push.
-- `.github/workflows/package.yml` — GitHub Actions preview/release pipeline.
+- `.github/workflows/package.yml` — GitHub Actions preview/release pipeline for native app binaries and Gallery installers.
+- `.github/workflows/release-sdk.yml` — GitHub Actions workflow for crates.io SDK package verification and publishing.
 - `packaging/` — icons, desktop metadata, macOS/Windows/Linux package resources.
 
 ## Local Commands
@@ -47,17 +49,19 @@ Generate backend configs without building packages:
 cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build
 ```
 
-Build platform default packages for both applications:
+Build the planned Gallery installer/package formats:
 
 ```bash
-cargo run -p xtask -- package ci --all-apps --format platform-defaults
+cargo run -p xtask -- package ci --app gallery --format platform-defaults
 ```
 
-Build one application and one format:
+Build one Gallery format:
 
 ```bash
-cargo run -p xtask -- package ci --app docs --format deb
+cargo run -p xtask -- package ci --app gallery --format deb
 ```
+
+Docs is intentionally distributed from this repository as raw executables only. Do not add Docs installer generation to `package.yml` unless the release policy changes.
 
 ## Workflow Responsibilities
 
@@ -66,9 +70,12 @@ Liora intentionally separates ordinary quality gates from packaging/release gene
 | Workflow | Trigger | Responsibility | Should publish release assets? |
 | --- | --- | --- | --- |
 | `.github/workflows/ci.yml` | pull requests, `main` pushes, manual dispatch | Fast correctness gate split into two jobs: `rust-quality` runs formatting, workspace check/test, and docs snippets with native Linux build dependencies; `packaging-dry-run` runs package metadata validation, packaging dry-run, and install-smoke dry-run with only lightweight packaging prerequisites. | No. It must not upload installers or mutate GitHub Releases. |
-| `.github/workflows/package.yml` | `main` pushes, `v*` tags, manual dispatch | Native app packaging matrix for Linux/macOS/Windows: build raw release binaries, generate installer/package artifacts, smoke package outputs, and plan install/uninstall checks. | Only `v*` tag runs publish GitHub Release assets. `main` runs produce preview Actions artifacts for QA. |
+| `.github/workflows/package.yml` | `main` pushes, `v*` tags, manual dispatch | Native app release matrix for Linux/macOS/Windows: build raw release binaries for Docs/Gallery, generate installer/package artifacts for Gallery only, smoke Gallery package outputs, and plan Gallery install/uninstall checks. | Only `v*` tag runs publish GitHub Release assets. `main` runs produce preview Actions artifacts for QA. |
+| `.github/workflows/release-sdk.yml` | manual dispatch, `v*` tags | SDK crate pipeline: static manifest audit checks every publishable SDK crate, `cargo package -p liora-theme` fully verifies the root SDK crate, and explicit publish runs use `CRATES_IO_TOKEN` to publish SDK crates in dependency order while waiting for each crates.io index update. | Only explicit `publish=true` manual runs or `v*` tags publish crates to crates.io. Package verification alone never publishes. |
 
-Keep `ci.yml` small and dependency-light enough to run on every code change. The workflow intentionally separates `rust-quality` from `packaging-dry-run` so package metadata changes can fail quickly without waiting for the full native workspace test job, and so packaging dry-run does not inherit GTK/Wayland/X11 dependencies it does not use. Keep `package.yml` responsible for expensive platform-specific packaging, raw binary staging, artifact upload, grouped changelog generation, and release publishing. If a new package validation can run without real backend artifacts, add it to both workflows: `ci.yml` as a dry-run gate and `package.yml` before packaging. If a step builds installers, uploads artifacts, or calls `gh release`, it belongs only in `package.yml`.
+Because crates.io resolves versioned internal dependencies from the registry during package preparation, dependent SDK crates cannot be fully `cargo package`-verified before their prerequisites have been published. The SDK workflow handles this by statically auditing every SDK manifest, fully verifying `liora-theme`, then letting the publish job publish in dependency order and wait for each index update before continuing.
+
+Keep `ci.yml` small and dependency-light enough to run on every code change. The workflow intentionally separates `rust-quality` from `packaging-dry-run` so package metadata changes can fail quickly without waiting for the full native workspace test job, and so packaging dry-run does not inherit GTK/Wayland/X11 dependencies it does not use. Keep `package.yml` responsible for expensive platform-specific app builds, raw binary staging, Gallery installer artifacts, grouped changelog generation, and GitHub Release publishing. Keep `release-sdk.yml` responsible for crates.io package verification and publication; it is the only workflow that may read `CRATES_IO_TOKEN` or call `cargo publish`. If a new package validation can run without real backend artifacts, add it to both workflows: `ci.yml` as a dry-run gate and `package.yml` before packaging. If a step builds installers, uploads artifacts, or calls `gh release`, it belongs only in `package.yml`. If a step publishes SDK crates, it belongs only in `release-sdk.yml`.
 
 ## CI Pipeline Steps
 
@@ -115,7 +122,7 @@ Validation catches missing icons, desktop metadata, package resources, generated
 
 ### 5. Build raw runnable binaries
 
-CI builds release-mode application executables before packaging:
+CI builds release-mode application executables before packaging. `all` builds both runnable apps; `docs` builds only Docs; `gallery` builds only Gallery:
 
 ```bash
 cargo run -p xtask -- package build --all-apps
@@ -127,20 +134,20 @@ The built programs are staged under `target/liora-raw-binaries/` with a `checksu
 liora-<preview|release>-binaries-<platform>
 ```
 
-> Project-specific note: uploading the raw pre-installer executables is an Liora repository release policy. It is useful for smoke tests, direct debugging, and verifying the exact executable that was fed into packaging. Projects that only consume Liora as a component library do not need to upload raw binaries unless their own product release process requires it.
+> Project-specific note: raw executables are first-class release outputs. Docs is released as cross-platform raw executables only. Gallery is released as raw executables and as installer/package artifacts.
 
 ### 6. Build installer/package artifacts
 
-After raw binaries are built, package generation reuses them via `--skip-build`:
+After raw binaries are built, Gallery package generation reuses the Gallery release executable via `--skip-build`:
 
 ```bash
-cargo run -p xtask -- package ci --all-apps --format platform-defaults --skip-build
+cargo run -p xtask -- package ci --app gallery --format platform-defaults --skip-build
 ```
 
-Generated package outputs are uploaded as:
+Generated Gallery package outputs are uploaded as:
 
 ```text
-liora-<preview|release>-packages-<platform>
+liora-<preview|release>-gallery-packages-<platform>
 ```
 
 The package artifact bundle includes generated backend TOML files and, when outputs are discovered, package manifest/checksum/release-note files under `target/packages/`. The manifest records `version`, `platform`, `targetTriple`, optional `gitSha`, format, path, checksum, and signing state.
@@ -158,7 +165,7 @@ Portable `.tar.gz` is generated by Liora's supplemental backend, not by mapping 
 When package files exist, CI runs a runner-safe smoke gate before upload:
 
 ```bash
-cargo run -p xtask -- package smoke --all-apps --format platform-defaults
+cargo run -p xtask -- package smoke --app gallery --format platform-defaults
 ```
 
 The smoke command validates package headers for distro/installer formats where possible and fully inspects portable `.tar.gz` archives for the expected binary, launcher, icons, README, and Linux desktop metadata.
@@ -166,7 +173,7 @@ The smoke command validates package headers for distro/installer formats where p
 CI then generates a runner-safe install/uninstall smoke plan:
 
 ```bash
-cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults
+cargo run -p xtask -- package install-smoke --app gallery --format platform-defaults
 ```
 
 `install-smoke` defaults to plan-only mode: it validates the discovered artifacts, writes `target/packages/install-smoke-plan.md`, and prints the exact install, launch-smoke, and uninstall commands that should be used for each format. It does not mutate the runner or install system packages unless a developer explicitly passes `--execute-install`. The only executable path currently allowed by `--execute-install` is portable `.tar.gz`, which extracts to `target/install-smoke/`, verifies the launcher and binary layout, then deletes the directory.
@@ -179,7 +186,7 @@ Every push to `main` produces preview artifacts for Linux, macOS, and Windows. T
 
 When the workflow runs from a `v*` tag, the release job downloads both groups:
 
-- `liora-release-packages-*`
+- `liora-release-gallery-packages-*`
 - `liora-release-binaries-*`
 
 It then flattens them into `release-assets/`, generates grouped release notes, and uploads everything to the GitHub Release.
@@ -188,7 +195,7 @@ The release notes include three sections:
 
 1. grouped changelog by commit type (`feat`, `fix`, `docs`, `ci`, `build`, `refactor`, `perf`, `test`, `style`, `chore`, `revert`, and `Other`),
 2. installer/package artifacts,
-3. raw runnable binaries with a clear note that they are Liora-project convenience outputs.
+3. raw runnable binaries with a clear note that Docs is raw-only and Gallery also has installer artifacts.
 
 
 ### 10. Release readiness, signing, and notarization gates
@@ -199,9 +206,9 @@ P12 no longer treats signing, notarization, license policy, and real release val
 - `packaging/signing-policy.md` documents macOS `codesign`/`notarytool`/`stapler` and Windows `signtool` inputs.
 - `cargo run -p xtask -- package release-readiness` checks layout, license policy, release tag/version matching, signing inputs, and package workflow release wiring.
 - `.github/workflows/ci.yml` runs the readiness gate in non-strict mode for ordinary validation.
-- `.github/workflows/package.yml` runs the readiness gate before package generation; tagged `v*` release runs set `LIORA_REQUIRE_SIGNING=true`, so macOS/Windows releases fail unless their signing secrets are configured.
+- `.github/workflows/package.yml` runs the readiness gate before package generation; tagged `v*` release runs sign only when the release environment sets `LIORA_REQUIRE_SIGNING=true`; otherwise macOS/Windows artifacts are allowed as unsigned first-release builds and the release notes call that out.
 
-For a real public release, create a protected `vX.Y.Z` tag that matches `crates/liora-packager/Cargo.toml`, configure the documented signing secrets, and let `package.yml` publish the GitHub Release. Without those credentials the workflow intentionally stops instead of publishing unsigned release artifacts by accident.
+For a real signed public release, create a protected `vX.Y.Z` tag that matches `crates/liora-packager/Cargo.toml`, configure the documented signing secrets, set `LIORA_REQUIRE_SIGNING=true`, and let `package.yml` publish the GitHub Release. If signing is not required, the workflow publishes unsigned artifacts and records that status in the release notes.
 
 
 ## Release Candidate Checklist
@@ -209,7 +216,7 @@ For a real public release, create a protected `vX.Y.Z` tag that matches `crates/
 The repository-owned release-candidate checklist lives at `docs/release-candidate-checklist.md`. It is the source of truth for the Liora `0.1.0` RC gate and covers:
 
 - local validation commands for formatting, workspace checks/tests, snippet checks, Rustdoc, packaging validation, release-readiness, dry-run packaging, install-smoke dry-run, and Gallery/Docs GUI smoke;
-- package metadata expectations such as `LicenseRef-Liora`, repository URL, and `publish = false`;
+- package metadata expectations: SDK crates are publishable with `license-file = "../../LICENSE.md"`, while apps, `liora-packager`, and `xtask` remain `publish = false`;
 - the canonical app boundary: Gallery and Docs only, with no standalone `minimal-app` or `dashboard-app`;
 - protected release-only work such as real `v0.1.0` tag publication, macOS notarization, Windows signing, and destructive system installer smoke tests.
 
@@ -223,4 +230,4 @@ If another GPUI project wants to reuse this packaging approach, copy the structu
 4. Use preview builds on branch pushes and release builds on version tags.
 5. Upload installer/package artifacts for QA and releases.
 6. Keep a neutral portable archive backend if users need a direct unpack-and-run fallback independent of distro package managers.
-7. Upload raw runnable binaries only if the project explicitly wants direct executable downloads or release debugging artifacts.
+7. Split SDK crate publishing from app artifact publishing, and keep the crates.io token out of native app packaging jobs.

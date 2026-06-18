@@ -94,7 +94,7 @@ jobs:
         run: cargo run -p xtask -- package release-readiness
 
       - name: Packaging dry-run
-        run: cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build
+        run: cargo run -p xtask -- package ci --app gallery --format platform-defaults --dry-run --skip-build
 
       - name: Install/uninstall smoke dry-run
-        run: cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run
+        run: cargo run -p xtask -- package install-smoke --app gallery --format platform-defaults --dry-run

@@ -256,18 +256,21 @@ fn preview_image_frame_shadow() -> Vec<BoxShadow> {
             offset: gpui::point(px(0.0), px(28.0)),
             blur_radius: px(64.0),
             spread_radius: px(4.0),
+            inset: false,
         },
         BoxShadow {
             color: gpui::black().opacity(0.34),
             offset: gpui::point(px(0.0), px(10.0)),
             blur_radius: px(24.0),
             spread_radius: px(-2.0),
+            inset: false,
         },
         BoxShadow {
             color: gpui::white().opacity(0.22),
             offset: gpui::point(px(0.0), px(-2.0)),
             blur_radius: px(8.0),
             spread_radius: px(-4.0),
+            inset: false,
         },
     ]
 }
