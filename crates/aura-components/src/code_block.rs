@@ -661,7 +661,7 @@ fn render_highlighted_text(
         theme,
         block,
     );
-    StyledText::new(code).with_runs(runs)
+    StyledText::new(code).with_runs(runs.to_vec())
 }
 
 fn render_code_content(
@@ -675,7 +675,7 @@ fn render_code_content(
     window: &mut Window,
     cx: &mut App,
 ) -> gpui::AnyElement {
-    let runs = cached_highlight_runs(
+    let (highlight_key, runs) = cached_highlight_runs_with_key(
         code.as_ref(),
         language,
         highlighter,
@@ -693,18 +693,19 @@ fn render_code_content(
         let initial_code = code.clone();
         let initial_runs = runs.clone();
         let initial_theme = theme.clone();
+        let initial_highlight_key = highlight_key.clone();
         let input = window.use_keyed_state(state_key, cx, move |_, cx| {
             SelectableCodeText::new(
                 cx,
                 initial_id,
                 initial_code,
                 initial_runs,
-                code_theme,
+                initial_highlight_key,
                 &initial_theme,
             )
         });
         input.update(cx, |text, cx| {
-            text.update_content(id, code, runs, code_theme, theme, cx);
+            text.update_content(id, code, runs, highlight_key, theme, cx);
         });
         SelectableCodeTextView { input }.into_any_element()
     } else {
@@ -715,11 +716,17 @@ fn render_code_content(
         let initial_code = code.clone();
         let initial_runs = runs.clone();
         let initial_theme = theme.clone();
+        let initial_highlight_key = highlight_key.clone();
         let input = window.use_keyed_state(state_key, cx, move |_, _| {
-            ReadOnlyCodeText::new(initial_code, initial_runs, &initial_theme)
+            ReadOnlyCodeText::new(
+                initial_code,
+                initial_runs,
+                initial_highlight_key,
+                &initial_theme,
+            )
         });
         input.update(cx, |text, cx| {
-            text.update_content(code, runs, theme, cx);
+            text.update_content(code, runs, highlight_key, theme, cx);
         });
         ReadOnlyCodeTextView { input }.into_any_element()
     }
@@ -769,6 +776,19 @@ fn cached_highlight_runs(
     theme: &aura_theme::Theme,
     block: bool,
 ) -> Vec<TextRun> {
+    cached_highlight_runs_with_key(text, language, highlighter, code_theme, theme, block)
+        .1
+        .to_vec()
+}
+
+fn cached_highlight_runs_with_key(
+    text: &str,
+    language: CodeLanguage,
+    highlighter: CodeHighlighter,
+    code_theme: ResolvedCodeTheme,
+    theme: &aura_theme::Theme,
+    block: bool,
+) -> (HighlightCacheKey, HighlightRuns) {
     let key = HighlightCacheKey::new(text, language, highlighter, code_theme, block, theme);
     let cache = highlight_cache();
     if let Some(runs) = cache
@@ -778,13 +798,20 @@ fn cached_highlight_runs(
         .get(&key)
         .cloned()
     {
-        return runs;
+        return (key, runs);
     }
 
-    let runs = highlight_runs(text, language, highlighter, code_theme, theme, block);
+    let runs = HighlightRuns::from(highlight_runs(
+        text,
+        language,
+        highlighter,
+        code_theme,
+        theme,
+        block,
+    ));
     let mut cache = cache.lock().expect("highlight cache lock poisoned");
-    cache.insert(key, runs.clone());
-    runs
+    cache.insert(key.clone(), runs.clone());
+    (key, runs)
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -827,15 +854,16 @@ impl HighlightCacheKey {
 }
 
 const HIGHLIGHT_CACHE_CAPACITY: usize = 256;
+type HighlightRuns = Arc<[TextRun]>;
 
 #[derive(Default)]
 struct HighlightCache {
-    runs: HashMap<HighlightCacheKey, Vec<TextRun>>,
+    runs: HashMap<HighlightCacheKey, HighlightRuns>,
     order: VecDeque<HighlightCacheKey>,
 }
 
 impl HighlightCache {
-    fn insert(&mut self, key: HighlightCacheKey, runs: Vec<TextRun>) {
+    fn insert(&mut self, key: HighlightCacheKey, runs: HighlightRuns) {
         if self.runs.contains_key(&key) {
             self.runs.insert(key, runs);
             return;
@@ -1077,16 +1105,23 @@ fn code_accent(theme: &aura_theme::Theme, code_theme: ResolvedCodeTheme) -> Hsla
 
 struct ReadOnlyCodeText {
     code: SharedString,
-    runs: Vec<TextRun>,
+    runs: HighlightRuns,
+    highlight_key: HighlightCacheKey,
     theme: aura_theme::Theme,
     layout: Option<Arc<SelectableCodeLayout>>,
 }
 
 impl ReadOnlyCodeText {
-    fn new(code: SharedString, runs: Vec<TextRun>, theme: &aura_theme::Theme) -> Self {
+    fn new(
+        code: SharedString,
+        runs: HighlightRuns,
+        highlight_key: HighlightCacheKey,
+        theme: &aura_theme::Theme,
+    ) -> Self {
         Self {
             code,
             runs,
+            highlight_key,
             theme: theme.clone(),
             layout: None,
         }
@@ -1095,12 +1130,12 @@ impl ReadOnlyCodeText {
     fn update_content(
         &mut self,
         code: SharedString,
-        runs: Vec<TextRun>,
+        runs: HighlightRuns,
+        highlight_key: HighlightCacheKey,
         theme: &aura_theme::Theme,
         cx: &mut Context<Self>,
     ) {
-        let changed = self.code != code
-            || self.runs != runs
+        let changed = self.highlight_key != highlight_key
             || self.theme.name != theme.name
             || self.theme.font_size.sm != theme.font_size.sm
             || self.theme.font_size.md != theme.font_size.md
@@ -1111,6 +1146,7 @@ impl ReadOnlyCodeText {
 
         self.code = code;
         self.runs = runs;
+        self.highlight_key = highlight_key;
         self.theme = theme.clone();
         self.layout = None;
         cx.notify();
@@ -1307,7 +1343,8 @@ struct SelectableCodeText {
     id: ElementId,
     focus_handle: FocusHandle,
     code: SharedString,
-    runs: Vec<TextRun>,
+    runs: HighlightRuns,
+    highlight_key: HighlightCacheKey,
     theme: aura_theme::Theme,
     layout: Option<Arc<SelectableCodeLayout>>,
 }
@@ -1317,8 +1354,8 @@ impl SelectableCodeText {
         cx: &mut Context<Self>,
         id: ElementId,
         code: SharedString,
-        runs: Vec<TextRun>,
-        _code_theme: ResolvedCodeTheme,
+        runs: HighlightRuns,
+        highlight_key: HighlightCacheKey,
         theme: &aura_theme::Theme,
     ) -> Self {
         Self {
@@ -1326,6 +1363,7 @@ impl SelectableCodeText {
             focus_handle: cx.focus_handle(),
             code,
             runs,
+            highlight_key,
             theme: theme.clone(),
             layout: None,
         }
@@ -1335,14 +1373,13 @@ impl SelectableCodeText {
         &mut self,
         id: ElementId,
         code: SharedString,
-        runs: Vec<TextRun>,
-        _code_theme: ResolvedCodeTheme,
+        runs: HighlightRuns,
+        highlight_key: HighlightCacheKey,
         theme: &aura_theme::Theme,
         cx: &mut Context<Self>,
     ) {
         let changed = self.id != id
-            || self.code != code
-            || self.runs != runs
+            || self.highlight_key != highlight_key
             || self.theme.name != theme.name
             || self.theme.font_size.sm != theme.font_size.sm
             || self.theme.font_size.md != theme.font_size.md
@@ -1355,6 +1392,7 @@ impl SelectableCodeText {
         self.id = id;
         self.code = code;
         self.runs = runs;
+        self.highlight_key = highlight_key;
         self.theme = theme.clone();
         self.layout = None;
 
@@ -1953,6 +1991,30 @@ mod tests {
     }
 
     #[test]
+    fn cached_highlight_runs_share_arc_storage_for_block_layouts() {
+        let theme = aura_theme::Theme::light();
+        let code_theme = resolve_code_theme(CodeTheme::Auto, &theme);
+        let (_, first) = cached_highlight_runs_with_key(
+            "fn shared_runs() { println!(\"cache\"); }",
+            CodeLanguage::Rust,
+            CodeHighlighter::Syntect,
+            code_theme,
+            &theme,
+            true,
+        );
+        let (_, second) = cached_highlight_runs_with_key(
+            "fn shared_runs() { println!(\"cache\"); }",
+            CodeLanguage::Rust,
+            CodeHighlighter::Syntect,
+            code_theme,
+            &theme,
+            true,
+        );
+
+        assert!(Arc::ptr_eq(&first, &second));
+    }
+
+    #[test]
     fn highlight_cache_evicts_incrementally_without_clearing_all_runs() {
         let mut cache = HighlightCache::default();
         let theme = aura_theme::Theme::light();
@@ -1986,7 +2048,9 @@ mod tests {
             );
             cache.insert(
                 key,
-                vec![base_style(&theme, code_theme, true).to_run(text.len())],
+                HighlightRuns::from(vec![
+                    base_style(&theme, code_theme, true).to_run(text.len()),
+                ]),
             );
         }
 

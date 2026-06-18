@@ -11,7 +11,7 @@ Local implementation phases are complete through P14; P15 is now active for rele
 - P12 Native Packaging: runner-safe readiness complete; remaining work is external-policy/credential/runner gated (signing/notarization, real system install/uninstall, formal license policy, real `v*` release run).
 - P13 Component Expansion: implemented and documented.
 - P14 Deferred Advanced: complete; the P9 backlog has been migrated and delivered.
-- P15 Quality Hardening: active; Track A general CI gates are in place, Track B API consistency/panic cleanup is complete for the first pass, Track C semantic text token hardening has multiple slices complete, and Track D interaction/overlay hardening has popover wrapper outside-close policy forwarding, Docs/Gallery/snippet coverage for Dropdown and Popconfirm close strategies, and Select/Autocomplete plus Cascader/DatePicker/DateTimePicker/TimePicker/ColorPicker outside-click close configuration, with representative Docs/Gallery examples for common popup controls, plus Preview outside-click close configuration.
+- P15 Quality Hardening: active; Track A general CI gates are in place, Track B API consistency/panic cleanup is complete for the first pass, Track C semantic text token hardening has multiple slices complete, Track D interaction/overlay hardening has close-policy coverage across common overlays/popups, and Track E has started CodeBlock performance hardening with incremental cache eviction plus shared highlight-run storage.
 
 P12 external-policy items remain tracked but do not block local P15 hardening work. Do not mark P12 fully complete until signing/notarization, real system installs, license policy, and real `v*` release validation are satisfied or formally declared out of scope.
 
@@ -46,7 +46,7 @@ P12 external-policy items remain tracked but do not block local P15 hardening wo
 | P12 Native Packaging | 🔶 Readiness | local gates done | external-policy items remain |
 | P13 Component Expansion | ✅ Done | 18/18 | 18 |
 | P14 Deferred Advanced | ✅ Done | 9/9 | 9 |
-| P15 Quality Hardening | 🔄 Active | Track D started | CI gates + API consistency + visual/theme + overlay behavior |
+| P15 Quality Hardening | 🔄 Active | Track E started | CI gates + API consistency + visual/theme + overlay behavior + CodeBlock cache performance |
 
 ## Git Status
 
@@ -562,3 +562,7 @@ QuickStart minimal window setup now registers CodeEditor and Tour key bindings i
 ## 2026-06-18 P15 Track E CodeBlock highlight cache eviction
 
 CodeBlock highlight cache now uses bounded FIFO eviction instead of clearing the entire cache after overflow. This prevents long docs pages or theme/language variations from forcing a full cache cold start after a single over-capacity insertion. Validation passed: fmt, focused CodeBlock tests, workspace check/test, diff whitespace check, and Gallery/Docs GUI startup smoke.
+
+## 2026-06-18 P15 Track E CodeBlock shared highlight runs
+
+CodeBlock highlight cache values now use shared `Arc<[TextRun]>` storage. Selectable and read-only block code paths retrieve a highlight cache key plus shared runs, so repeated visible CodeBlock/CodeEditor preview renders do not allocate-clone the full TextRun vector unless an inline `StyledText` API still requires owned runs. Focused regression coverage proves repeated cached block lookups pointer-share the same Arc storage. Validation passed: fmt, focused CodeBlock tests, workspace check/test, docs snippet check, diff whitespace check, and Gallery/Docs GUI startup smoke.

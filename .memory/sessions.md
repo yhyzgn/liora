@@ -3356,3 +3356,19 @@
 - `cargo test --workspace` passed.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+## Session 2026-06-18 — P15 Track E CodeBlock Shared Highlight Runs
+
+### Actions
+- Stored CodeBlock highlight cache values as `Arc<[TextRun]>` so visible block layouts and CodeEditor previews reuse cached run storage instead of cloning full run vectors on every render.
+- Added `cached_highlight_runs_with_key(...)` for block render paths that need both invalidation identity and shared highlight runs.
+- Added a focused regression asserting repeated cached lookups return pointer-shared Arc storage.
+
+### Verification
+- `cargo fmt --all --check` passed.
+- `cargo test -p aura-components code_block::tests -- --nocapture` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `git diff --check -- . ':(exclude).omx'` passed after removing markdown EOF whitespace.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.

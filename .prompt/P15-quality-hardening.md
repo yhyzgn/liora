@@ -338,3 +338,18 @@ Validation evidence for this slice:
 - `cargo test --workspace` passed.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+### 2026-06-18 — Track E CodeBlock shared highlight runs
+
+- Changed the CodeBlock highlight cache value from owned `Vec<TextRun>` to shared `Arc<[TextRun]>` storage so repeated block renders reuse the cached highlight run allocation instead of cloning the full run vector for every visible CodeBlock/CodeEditor preview.
+- Added a cached helper that returns the highlight key together with shared runs, letting selectable/read-only code layouts invalidate from the cache key while preserving existing public `cached_highlight_runs` behavior for inline styled text.
+- Added a regression test proving repeated block highlight lookups share the same Arc-backed run storage.
+
+Validation evidence for this slice:
+- `cargo fmt --all --check` passed.
+- `cargo test -p aura-components code_block::tests -- --nocapture` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `git diff --check -- . ':(exclude).omx'` passed after removing markdown EOF whitespace.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
