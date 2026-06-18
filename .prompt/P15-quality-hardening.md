@@ -324,3 +324,17 @@ Validation evidence for this slice:
 - `cargo test --workspace` passed.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+### 2026-06-18 — Track E CodeBlock highlight cache eviction
+
+- Replaced CodeBlock's all-or-nothing highlight cache clear with a bounded FIFO eviction policy so one cache overflow no longer invalidates every highlighted snippet at once.
+- Kept HashMap lookup behavior for render speed while adding insertion-order tracking for incremental eviction.
+- Added a regression test proving the oldest entry is evicted while newer cached runs survive at capacity.
+
+Validation evidence for this slice:
+- `cargo fmt --all --check` passed.
+- `cargo test -p aura-components code_block::tests -- --nocapture` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `git diff --check` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.

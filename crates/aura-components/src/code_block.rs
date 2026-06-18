@@ -9,7 +9,7 @@ use gpui::{
     WhiteSpace, Window, actions, div, fill, point, prelude::*, px, relative, size,
 };
 use std::{
-    collections::HashMap,
+    collections::{HashMap, VecDeque},
     hash::{Hash, Hasher},
     ops::Range,
     sync::{Arc, Mutex, OnceLock},
@@ -557,6 +557,7 @@ fn should_render_code_now(
     if highlight_cache()
         .lock()
         .expect("highlight cache lock poisoned")
+        .runs
         .contains_key(&cache_key)
     {
         return true;
@@ -773,6 +774,7 @@ fn cached_highlight_runs(
     if let Some(runs) = cache
         .lock()
         .expect("highlight cache lock poisoned")
+        .runs
         .get(&key)
         .cloned()
     {
@@ -781,9 +783,6 @@ fn cached_highlight_runs(
 
     let runs = highlight_runs(text, language, highlighter, code_theme, theme, block);
     let mut cache = cache.lock().expect("highlight cache lock poisoned");
-    if cache.len() > 256 {
-        cache.clear();
-    }
     cache.insert(key, runs.clone());
     runs
 }
@@ -827,9 +826,39 @@ impl HighlightCacheKey {
     }
 }
 
-fn highlight_cache() -> &'static Mutex<HashMap<HighlightCacheKey, Vec<TextRun>>> {
-    static CACHE: OnceLock<Mutex<HashMap<HighlightCacheKey, Vec<TextRun>>>> = OnceLock::new();
-    CACHE.get_or_init(|| Mutex::new(HashMap::new()))
+const HIGHLIGHT_CACHE_CAPACITY: usize = 256;
+
+#[derive(Default)]
+struct HighlightCache {
+    runs: HashMap<HighlightCacheKey, Vec<TextRun>>,
+    order: VecDeque<HighlightCacheKey>,
+}
+
+impl HighlightCache {
+    fn insert(&mut self, key: HighlightCacheKey, runs: Vec<TextRun>) {
+        if self.runs.contains_key(&key) {
+            self.runs.insert(key, runs);
+            return;
+        }
+
+        self.runs.insert(key.clone(), runs);
+        self.order.push_back(key);
+        self.evict_over_capacity();
+    }
+
+    fn evict_over_capacity(&mut self) {
+        while self.runs.len() > HIGHLIGHT_CACHE_CAPACITY {
+            let Some(oldest) = self.order.pop_front() else {
+                break;
+            };
+            self.runs.remove(&oldest);
+        }
+    }
+}
+
+fn highlight_cache() -> &'static Mutex<HighlightCache> {
+    static CACHE: OnceLock<Mutex<HighlightCache>> = OnceLock::new();
+    CACHE.get_or_init(|| Mutex::new(HighlightCache::default()))
 }
 
 fn highlight_runs(
@@ -1921,6 +1950,49 @@ mod tests {
         );
 
         assert_eq!(first, second);
+    }
+
+    #[test]
+    fn highlight_cache_evicts_incrementally_without_clearing_all_runs() {
+        let mut cache = HighlightCache::default();
+        let theme = aura_theme::Theme::light();
+        let code_theme = resolve_code_theme(CodeTheme::Auto, &theme);
+        let first_key = HighlightCacheKey::new(
+            "let item_0 = 0;",
+            CodeLanguage::Rust,
+            CodeHighlighter::Syntect,
+            code_theme,
+            true,
+            &theme,
+        );
+        let last_key = HighlightCacheKey::new(
+            "let item_256 = 256;",
+            CodeLanguage::Rust,
+            CodeHighlighter::Syntect,
+            code_theme,
+            true,
+            &theme,
+        );
+
+        for index in 0..=HIGHLIGHT_CACHE_CAPACITY {
+            let text = format!("let item_{index} = {index};");
+            let key = HighlightCacheKey::new(
+                &text,
+                CodeLanguage::Rust,
+                CodeHighlighter::Syntect,
+                code_theme,
+                true,
+                &theme,
+            );
+            cache.insert(
+                key,
+                vec![base_style(&theme, code_theme, true).to_run(text.len())],
+            );
+        }
+
+        assert_eq!(cache.runs.len(), HIGHLIGHT_CACHE_CAPACITY);
+        assert!(!cache.runs.contains_key(&first_key));
+        assert!(cache.runs.contains_key(&last_key));
     }
 
     #[test]

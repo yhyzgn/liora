@@ -558,3 +558,7 @@ General CI now has separate `rust-quality` and `packaging-dry-run` jobs. Workspa
 ## 2026-06-18 P15 Track F QuickStart key binding completeness
 
 QuickStart minimal window setup now registers CodeEditor and Tour key bindings in addition to existing input, selection, preview, popup, and typography bindings. A docs regression test compares QuickStart against Gallery and Docs for key bindings that affect text selection, code editing, Preview, and Tour overlay behavior. Validation passed: fmt, focused docs test, docs snippet check, workspace check/test, diff whitespace check, and Gallery/Docs GUI startup smoke.
+
+## 2026-06-18 P15 Track E CodeBlock highlight cache eviction
+
+CodeBlock highlight cache now uses bounded FIFO eviction instead of clearing the entire cache after overflow. This prevents long docs pages or theme/language variations from forcing a full cache cold start after a single over-capacity insertion. Validation passed: fmt, focused CodeBlock tests, workspace check/test, diff whitespace check, and Gallery/Docs GUI startup smoke.
