@@ -1,13 +1,15 @@
 use aura_components::{
     AppWindowFrame, Autocomplete, Button, Card, Cascader, Checkbox, CodeBlock, CodeEditor,
     ColorPicker, Container, DatePicker, DateTimePicker, Dialog, Drawer, Input, Menu, MenuMode,
-    MessageManager, Paragraph, Popover, Preview, Radio, RadioGroup, Select, Space, Switch, Tag,
-    Text, TimePicker, Title, Tour, WindowFrameMode, apply_window_frame_mode, frame_mode_switch_row,
-    toast_info, toast_success,
+    MessageManager, Paragraph, Popover, Preview, Radio, RadioGroup, Segmented, SegmentedOption,
+    Select, Space, Switch, Tag, Text, TimePicker, Title, Tour, WindowFrameMode,
+    apply_window_frame_mode, frame_mode_switch_row, toast_info, toast_success,
 };
-use aura_core::{Config, PassivePortal, Portal, init_aura};
+use aura_core::{
+    Config, PassivePortal, Portal, ThemeMode, apply_theme_mode, init_aura_with_mode,
+    sync_system_theme,
+};
 use aura_gallery::demos;
-use aura_theme::Theme;
 use aura_tray::{
     AuraTray, BundledTrayIconSet, BundledTrayIconState, MouseButton, MouseButtonState,
     TrayCloseAction, TrayCommand, TrayConfig, TrayControlCenter, TrayIconEvent, bundled_tray_icon,
@@ -33,7 +35,8 @@ pub struct Gallery {
     nav_filter: gpui::Entity<Input>,
     nav_menu: Option<gpui::Entity<aura_components::Menu>>,
     nav_query: String,
-    dark_mode: gpui::Entity<Switch>,
+    theme_mode: ThemeMode,
+    theme_mode_segmented: gpui::Entity<Segmented>,
     frame_mode: WindowFrameMode,
     frame_mode_switch: gpui::Entity<Switch>,
     refresh_revision: u32,
@@ -56,7 +59,7 @@ fn run_gallery() {
     gpui_platform::application()
         .with_quit_mode(gpui::QuitMode::Explicit)
         .run(|cx: &mut App| {
-            init_aura(cx, Theme::light());
+            init_aura_with_mode(cx, ThemeMode::System);
             MessageManager::init(cx);
 
             // Register all key bindings
@@ -97,18 +100,23 @@ fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
     match cx.open_window(gallery_window_options(frame_mode), |window, cx| {
         let entries = demos::registry();
         let demos = entries.iter().map(|entry| (entry.render)(cx)).collect();
-        let view = cx.new(|cx| Gallery {
-            entries,
-            demos,
-            selected: 0,
-            nav_filter: cx.new(|cx| Input::new("", cx).placeholder("搜索组件 / Search demos")),
-            nav_menu: None,
-            nav_query: String::new(),
-            dark_mode: cx.new(|cx| Switch::new(false, cx)),
-            frame_mode,
-            frame_mode_switch: cx.new(|cx| Switch::new(frame_mode.is_custom(), cx)),
-            refresh_revision: 0,
+        let view = cx.new(|cx| {
+            let theme_mode = cx.global::<Config>().theme_mode;
+            Gallery {
+                entries,
+                demos,
+                selected: 0,
+                nav_filter: cx.new(|cx| Input::new("", cx).placeholder("搜索组件 / Search demos")),
+                nav_menu: None,
+                nav_query: String::new(),
+                theme_mode,
+                theme_mode_segmented: cx.new(move |_| theme_mode_segmented(theme_mode)),
+                frame_mode,
+                frame_mode_switch: cx.new(|cx| Switch::new(frame_mode.is_custom(), cx)),
+                refresh_revision: 0,
+            }
         });
+        let _ = window.observe_window_appearance(|window, cx| sync_system_theme(window, cx));
         window.on_window_should_close(cx, |window, cx| {
             handle_gallery_window_should_close(window, cx)
         });
@@ -544,6 +552,9 @@ mod shell_tests {
         assert!(source.contains("self.nav_menu = Some"));
         assert!(source.contains("frame_mode_switch"));
         assert!(source.contains("AppWindowFrame::new"));
+        assert!(source.contains("theme_mode_segmented"));
+        assert!(source.contains("ThemeMode::System"));
+        assert!(source.contains("observe_window_appearance"));
         assert!(source.contains("Gallery theme switched"));
     }
 }
@@ -596,8 +607,8 @@ impl Render for Gallery {
                     .child(
                         Space::new()
                             .gap_sm()
-                            .child(Text::new("Dark"))
-                            .child(self.dark_mode.clone()),
+                            .child(Text::new("Theme"))
+                            .child(self.theme_mode_segmented.clone()),
                     )
                     .child(frame_mode_switch_row(
                         self.frame_mode_switch.clone(),
@@ -701,18 +712,18 @@ impl Gallery {
             });
         });
 
-        cx.update_entity(&self.dark_mode, |switch, _cx| {
-            switch.set_on_change(|enabled, window, cx| {
-                cx.global_mut::<Config>().theme = if enabled {
-                    Theme::dark()
-                } else {
-                    Theme::light()
+        let gallery = cx.entity().clone();
+        cx.update_entity(&self.theme_mode_segmented, |segmented, _cx| {
+            segmented.set_on_change(move |value, window, cx| {
+                let Some(mode) = ThemeMode::from_value(value.as_ref()) else {
+                    return;
                 };
-                window.refresh();
-                toast_info!(
-                    "Gallery theme switched to {}",
-                    if enabled { "dark" } else { "light" }
-                );
+                apply_theme_mode(window, cx, mode);
+                let _ = gallery.update(cx, |gallery, cx| {
+                    gallery.theme_mode = mode;
+                    cx.notify();
+                });
+                toast_info!("Gallery theme switched to {}", mode.label());
             });
         });
 
@@ -722,6 +733,16 @@ impl Gallery {
             });
         });
     }
+}
+
+fn theme_mode_segmented(mode: ThemeMode) -> Segmented {
+    Segmented::new(vec![
+        SegmentedOption::new("System", ThemeMode::System.value()),
+        SegmentedOption::new("Light", ThemeMode::Light.value()),
+        SegmentedOption::new("Dark", ThemeMode::Dark.value()),
+    ])
+    .id("gallery-theme-mode")
+    .value(mode.value())
 }
 
 fn build_gallery_menu(

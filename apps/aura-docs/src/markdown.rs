@@ -6,14 +6,16 @@ use aura_components::{
     Image, Input, InputNumber, InputNumberControlsPosition, Link, Loading, Menu, MenuMode,
     NotificationType, Paragraph, Popconfirm, Popover, Preview, Progress, ProgressStatus, QrCode,
     QrEcLevel, QrFinderStyle, QrGradientDirection, QrModuleStyle, Radio, RadioGroup,
-    RadioOptionStyle, Rate, Result as AuraResult, ResultStatus, Select, Skeleton, SkeletonItem,
-    SkeletonVariant, Slider, Space, Statistic, Switch, Tag as AuraTag, Text, Textarea, Timer,
-    TimerFormat, TimerUnit, Title, Transfer, TransferItem, Tree, TreeNode, Upload, UploadFile,
-    UploadStatus, VirtualizedList, VirtualizedTable, VirtualizedTree, WindowFrameMode,
-    frame_mode_switch_row, show_notification, toast_error, toast_info, toast_success,
-    toast_warning,
+    RadioOptionStyle, Rate, Result as AuraResult, ResultStatus, Segmented, SegmentedOption, Select,
+    Skeleton, SkeletonItem, SkeletonVariant, Slider, Space, Statistic, Switch, Tag as AuraTag,
+    Text, Textarea, Timer, TimerFormat, TimerUnit, Title, Transfer, TransferItem, Tree, TreeNode,
+    Upload, UploadFile, UploadStatus, VirtualizedList, VirtualizedTable, VirtualizedTree,
+    WindowFrameMode, frame_mode_switch_row, show_notification, toast_error, toast_info,
+    toast_success, toast_warning,
 };
-use aura_core::{Config, PassivePortal, Placement, Portal, clear_popover};
+use aura_core::{
+    Config, PassivePortal, Placement, Portal, ThemeMode, apply_theme_mode, clear_popover,
+};
 use aura_icons::Icon;
 use aura_icons_lucide::IconName;
 use gpui::{
@@ -7100,14 +7102,19 @@ pub fn render_docs_shell(
     on_close: fn(&mut Window, &mut App),
     cx: &mut App,
 ) -> Entity<DocsShell> {
-    cx.new(|cx| DocsShell {
-        selected: 0,
-        nav_menu: None,
-        page_views: vec![None; DOC_PAGES.len()],
-        frame_mode,
-        frame_mode_switch: cx.new(|cx| Switch::new(frame_mode.is_custom(), cx)),
-        on_frame_mode_change,
-        on_close,
+    cx.new(|cx| {
+        let theme_mode = cx.global::<Config>().theme_mode;
+        DocsShell {
+            selected: 0,
+            nav_menu: None,
+            page_views: vec![None; DOC_PAGES.len()],
+            theme_mode,
+            theme_mode_segmented: cx.new(move |_| theme_mode_segmented(theme_mode)),
+            frame_mode,
+            frame_mode_switch: cx.new(|cx| Switch::new(frame_mode.is_custom(), cx)),
+            on_frame_mode_change,
+            on_close,
+        }
     })
 }
 
@@ -7115,6 +7122,8 @@ pub struct DocsShell {
     selected: usize,
     nav_menu: Option<Entity<Menu>>,
     page_views: Vec<Option<Entity<DocsPageView>>>,
+    theme_mode: ThemeMode,
+    theme_mode_segmented: Entity<Segmented>,
     frame_mode: WindowFrameMode,
     frame_mode_switch: Entity<Switch>,
     on_frame_mode_change: fn(WindowFrameMode, &mut Window, &mut App),
@@ -7147,6 +7156,12 @@ impl Render for DocsShell {
                             .child(Text::new(
                                 "Native Markdown · GPUI elements · Aura components",
                             )),
+                    )
+                    .child(
+                        Space::new()
+                            .gap_sm()
+                            .child(Text::new("Theme"))
+                            .child(self.theme_mode_segmented.clone()),
                     )
                     .child(frame_mode_switch_row(
                         self.frame_mode_switch.clone(),
@@ -7323,8 +7338,33 @@ impl RenderOnce for DocsPortalLayer {
     }
 }
 
+fn theme_mode_segmented(mode: ThemeMode) -> Segmented {
+    Segmented::new(vec![
+        SegmentedOption::new("System", ThemeMode::System.value()),
+        SegmentedOption::new("Light", ThemeMode::Light.value()),
+        SegmentedOption::new("Dark", ThemeMode::Dark.value()),
+    ])
+    .id("docs-theme-mode")
+    .value(mode.value())
+}
+
 impl DocsShell {
     fn wire_shell_controls(&self, cx: &mut Context<Self>) {
+        let docs = cx.entity().clone();
+        cx.update_entity(&self.theme_mode_segmented, |segmented, _cx| {
+            segmented.set_on_change(move |value, window, cx| {
+                let Some(mode) = ThemeMode::from_value(value.as_ref()) else {
+                    return;
+                };
+                apply_theme_mode(window, cx, mode);
+                let _ = docs.update(cx, |docs, cx| {
+                    docs.theme_mode = mode;
+                    cx.notify();
+                });
+                toast_info!("Docs theme switched to {}", mode.label());
+            });
+        });
+
         let on_frame_mode_change = self.on_frame_mode_change;
         cx.update_entity(&self.frame_mode_switch, |switch, _cx| {
             switch.set_on_change(move |enabled, window, cx| {
@@ -8009,6 +8049,8 @@ mod tests {
 
         assert!(source.contains("Container::new()"));
         assert!(source.contains("AppWindowFrame::new"));
+        assert!(source.contains("theme_mode_segmented"));
+        assert!(source.contains("ThemeMode::System"));
         assert!(source.contains("frame_mode_switch"));
         assert!(source.contains("Menu::new()"));
         assert!(source.contains(".aside_scroll()"));

@@ -6,8 +6,7 @@ use aura_components::{
     RadioGroup, Select, Space, Switch, Text, TimePicker, Title, Tour, WindowFrameMode,
     apply_window_frame_mode,
 };
-use aura_core::init_aura;
-use aura_theme::Theme;
+use aura_core::{ThemeMode, init_aura_with_mode, sync_system_theme};
 use aura_tray::{
     AuraTray, BundledTrayIconSet, BundledTrayIconState, MouseButton, MouseButtonState,
     TrayCloseAction, TrayCommand, TrayConfig, TrayControlCenter, TrayIconEvent, bundled_tray_icon,
@@ -40,7 +39,7 @@ fn run_docs() {
     gpui_platform::application()
         .with_quit_mode(gpui::QuitMode::Explicit)
         .run(|cx: &mut App| {
-            init_aura(cx, Theme::light());
+            init_aura_with_mode(cx, ThemeMode::System);
             MessageManager::init(cx);
             Input::register_key_bindings(cx);
             CodeBlock::register_key_bindings(cx);
@@ -83,6 +82,7 @@ fn open_docs_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
             request_docs_window_close,
             cx,
         );
+        let _ = window.observe_window_appearance(|window, cx| sync_system_theme(window, cx));
         window.on_window_should_close(cx, |window, cx| handle_docs_window_should_close(window, cx));
         view
     }) {

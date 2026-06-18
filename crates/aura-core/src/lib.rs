@@ -1,5 +1,6 @@
 use gpui::{
-    Animation, AnimationExt, App, Bounds, Context, Global, Hsla, TextRun, Window, prelude::*, px,
+    Animation, AnimationExt, App, Bounds, Context, Global, Hsla, TextRun, Window, WindowAppearance,
+    prelude::*, px,
 };
 
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -46,16 +47,93 @@ pub use popper::*;
 
 pub use aura_theme::Theme;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum ThemeMode {
+    #[default]
+    System,
+    Light,
+    Dark,
+}
+
+impl ThemeMode {
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::System => "System",
+            Self::Light => "Light",
+            Self::Dark => "Dark",
+        }
+    }
+
+    pub fn value(self) -> &'static str {
+        match self {
+            Self::System => "system",
+            Self::Light => "light",
+            Self::Dark => "dark",
+        }
+    }
+
+    pub fn from_value(value: &str) -> Option<Self> {
+        match value {
+            "system" => Some(Self::System),
+            "light" => Some(Self::Light),
+            "dark" => Some(Self::Dark),
+            _ => None,
+        }
+    }
+
+    pub fn resolve(self, appearance: WindowAppearance) -> Theme {
+        match self {
+            Self::System => theme_for_window_appearance(appearance),
+            Self::Light => Theme::light(),
+            Self::Dark => Theme::dark(),
+        }
+    }
+
+    pub fn from_theme(theme: &Theme) -> Self {
+        match theme.name.as_str() {
+            "dark" => Self::Dark,
+            _ => Self::Light,
+        }
+    }
+}
+
+pub fn theme_for_window_appearance(appearance: WindowAppearance) -> Theme {
+    match appearance {
+        WindowAppearance::Light | WindowAppearance::VibrantLight => Theme::light(),
+        WindowAppearance::Dark | WindowAppearance::VibrantDark => Theme::dark(),
+    }
+}
+
 pub struct Config {
     pub theme: Theme,
+    pub theme_mode: ThemeMode,
     pub z_index_base: u32,
 }
 
 impl Global for Config {}
 
+impl Config {
+    pub fn set_theme_mode(&mut self, mode: ThemeMode, appearance: WindowAppearance) {
+        self.theme_mode = mode;
+        self.theme = mode.resolve(appearance);
+    }
+
+    pub fn sync_system_theme(&mut self, appearance: WindowAppearance) -> bool {
+        if self.theme_mode != ThemeMode::System {
+            return false;
+        }
+        let theme = ThemeMode::System.resolve(appearance);
+        let changed = self.theme.name != theme.name;
+        self.theme = theme;
+        changed
+    }
+}
+
 pub fn init_aura(cx: &mut App, theme: Theme) {
+    let theme_mode = ThemeMode::from_theme(&theme);
     cx.set_global(Config {
         theme,
+        theme_mode,
         z_index_base: 1000,
     });
     cx.set_global(crate::popper::ZIndexStack::default());
@@ -63,6 +141,35 @@ pub fn init_aura(cx: &mut App, theme: Theme) {
     cx.set_global(crate::popper::ActivePopover(Vec::new()));
     cx.set_global(crate::popper::ActiveModal(Vec::new()));
     cx.set_global(crate::popper::ActiveDrawer(Vec::new()));
+}
+
+pub fn init_aura_with_mode(cx: &mut App, mode: ThemeMode) {
+    let appearance = cx.window_appearance();
+    cx.set_global(Config {
+        theme: mode.resolve(appearance),
+        theme_mode: mode,
+        z_index_base: 1000,
+    });
+    cx.set_global(crate::popper::ZIndexStack::default());
+    cx.set_global(crate::popper::ActiveTooltip(Vec::new()));
+    cx.set_global(crate::popper::ActivePopover(Vec::new()));
+    cx.set_global(crate::popper::ActiveModal(Vec::new()));
+    cx.set_global(crate::popper::ActiveDrawer(Vec::new()));
+}
+
+pub fn apply_theme_mode(window: &mut Window, cx: &mut App, mode: ThemeMode) {
+    cx.global_mut::<Config>()
+        .set_theme_mode(mode, window.appearance());
+    window.refresh();
+}
+
+pub fn sync_system_theme(window: &mut Window, cx: &mut App) {
+    if cx
+        .global_mut::<Config>()
+        .sync_system_theme(window.appearance())
+    {
+        window.refresh();
+    }
 }
 
 pub fn render_active_popover_in_window(_window: &mut gpui::Window, cx: &mut App) {
@@ -169,6 +276,52 @@ pub fn render_active_tooltip_in_window(window: &mut gpui::Window, cx: &mut App) 
             },
             cx,
         );
+    }
+}
+
+#[cfg(test)]
+mod theme_mode_tests {
+    use super::*;
+
+    #[test]
+    fn theme_mode_values_and_labels_are_stable() {
+        assert_eq!(ThemeMode::System.value(), "system");
+        assert_eq!(ThemeMode::Light.label(), "Light");
+        assert_eq!(ThemeMode::from_value("dark"), Some(ThemeMode::Dark));
+        assert_eq!(ThemeMode::from_theme(&Theme::dark()), ThemeMode::Dark);
+        assert_eq!(ThemeMode::from_theme(&Theme::light()), ThemeMode::Light);
+        assert_eq!(ThemeMode::from_value("unknown"), None);
+    }
+
+    #[test]
+    fn system_theme_resolves_from_window_appearance() {
+        assert_eq!(
+            ThemeMode::System.resolve(WindowAppearance::Light).name,
+            Theme::light().name
+        );
+        assert_eq!(
+            ThemeMode::System
+                .resolve(WindowAppearance::VibrantDark)
+                .name,
+            Theme::dark().name
+        );
+    }
+
+    #[test]
+    fn config_syncs_only_in_system_mode() {
+        let mut config = Config {
+            theme: Theme::light(),
+            theme_mode: ThemeMode::Light,
+            z_index_base: 1000,
+        };
+        assert!(!config.sync_system_theme(WindowAppearance::Dark));
+        assert_eq!(config.theme.name, "light");
+
+        config.set_theme_mode(ThemeMode::System, WindowAppearance::Dark);
+        assert_eq!(config.theme.name, "dark");
+        assert!(!config.sync_system_theme(WindowAppearance::VibrantDark));
+        assert!(config.sync_system_theme(WindowAppearance::Light));
+        assert_eq!(config.theme.name, "light");
     }
 }
 

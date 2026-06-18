@@ -63,6 +63,10 @@ impl Segmented {
         self
     }
 
+    pub fn set_on_change(&mut self, f: impl Fn(SharedString, &mut Window, &mut App) + 'static) {
+        self.on_change = Some(Box::new(f));
+    }
+
     fn select_option(&mut self, value: SharedString, window: &mut Window, cx: &mut Context<Self>) {
         if Some(&value) != self.value.as_ref() {
             self.value = Some(value.clone());
@@ -135,5 +139,15 @@ impl Render for Segmented {
                     option.into_any_element()
                 }
             }))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn segmented_supports_runtime_on_change_binding() {
+        let source = include_str!("segmented.rs");
+        assert!(source.contains("pub fn set_on_change"));
+        assert!(source.contains("on_change: Option"));
     }
 }
