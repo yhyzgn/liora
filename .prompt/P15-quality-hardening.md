@@ -246,3 +246,18 @@ Validation evidence for this slice:
 - `cargo test --workspace` passed.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+### 2026-06-18 — Track D Tour close-policy docs/examples slice
+
+- Hardened Tour overlay close-policy coverage by locking its ESC and outside-click conditional handlers in source-level tests.
+- Added a controlled-close Tour Gallery example that disables both ESC and outside-click dismissal for critical guided flows.
+- Added Tour close-policy docs and a compile-checked snippet, and fixed the docs snippet loader to display authored Tour snippets instead of falling back to missing-source text.
+
+Validation evidence for this slice:
+- `cargo fmt --all --check` passed.
+- `cargo test -p aura-components tour::tests -- --nocapture` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `git diff --check` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.

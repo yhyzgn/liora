@@ -571,6 +571,8 @@ mod tooltip_basic;
 mod tooltip_more;
 #[path = "../../content/snippets/tour/basic.rs"]
 mod tour_basic;
+#[path = "../../content/snippets/tour/close_policy.rs"]
+mod tour_close_policy;
 #[path = "../../content/snippets/tour/middle.rs"]
 mod tour_middle;
 #[path = "../../content/snippets/tour/no_mask.rs"]

@@ -3258,3 +3258,19 @@
 - `cargo test --workspace` passed.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+## Session 2026-06-18 — P15 Track D Tour Close Policy Examples
+
+### Actions
+- Added controlled-close Tour Gallery coverage using `close_on_escape(false)` and `close_on_click_outside(false)`.
+- Added Tour close-policy docs and a compile-checked `tour/close_policy.rs` snippet.
+- Added Tour snippet loader mappings and strengthened Tour overlay policy tests for conditional ESC/outside handlers.
+
+### Verification
+- `cargo fmt --all --check` passed.
+- `cargo test -p aura-components tour::tests -- --nocapture` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `git diff --check` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.

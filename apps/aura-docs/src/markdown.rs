@@ -1032,6 +1032,10 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
             "../content/snippets/preview/custom_trigger.rs"
         )),
         "preview/escape.rs" => Some(include_str!("../content/snippets/preview/escape.rs")),
+        "tour/basic.rs" => Some(include_str!("../content/snippets/tour/basic.rs")),
+        "tour/middle.rs" => Some(include_str!("../content/snippets/tour/middle.rs")),
+        "tour/no_mask.rs" => Some(include_str!("../content/snippets/tour/no_mask.rs")),
+        "tour/close_policy.rs" => Some(include_str!("../content/snippets/tour/close_policy.rs")),
         "button/types.rs" => Some(include_str!("../content/snippets/button/types.rs")),
         "button/secondary.rs" => Some(include_str!("../content/snippets/button/secondary.rs")),
         "button/text.rs" => Some(include_str!("../content/snippets/button/text.rs")),

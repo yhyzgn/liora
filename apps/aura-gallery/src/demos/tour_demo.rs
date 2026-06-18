@@ -80,6 +80,22 @@ impl Render for TourDemo {
                                     .show(cx);
                             }),
                     ),
+                ))
+                .child(section(
+                    "受控关闭策略",
+                    "禁用 ESC 与外部点击关闭，避免用户误触中断关键引导流程。",
+                    demo_panel(
+                        Button::new("启动受控 Tour")
+                            .warning()
+                            .on_click(|_, _, cx| {
+                                Tour::new(steps())
+                                    .close_on_escape(false)
+                                    .close_on_click_outside(false)
+                                    .finish_text("我已了解")
+                                    .on_close(|_, _| toast_info!("Tour closed explicitly"))
+                                    .show(cx);
+                            }),
+                    ),
                 )),
         )
     }

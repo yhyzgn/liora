@@ -538,3 +538,7 @@ Started P15 as the release-quality hardening phase after P13/P14 completion and 
 ## 2026-06-18 P15 Track D Preview close-policy docs/examples
 
 Preview outside-click close policy is now discoverable in Docs, compile-checked snippets, live docs demos, and Gallery. The representative example disables both ESC and outside-click dismissal for controlled overlay flows. Validation passed: fmt, docs snippet check, workspace check/test, diff whitespace check, and Gallery/Docs GUI startup smoke.
+
+## 2026-06-18 P15 Track D Tour close-policy docs/examples
+
+Tour overlay close-policy behavior is now covered in source-level tests, Gallery, Docs, compile-checked snippets, and the docs snippet loader. The controlled-close example disables both ESC and outside-click dismissal for critical guided flows. Validation passed: fmt, focused Tour tests, docs snippet check, workspace check/test, diff whitespace check, and Gallery/Docs GUI startup smoke.

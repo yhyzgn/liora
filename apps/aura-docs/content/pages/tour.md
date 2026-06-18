@@ -30,3 +30,12 @@
 
 ```rust src="tour/no_mask.rs"
 ```
+
+## 受控关闭策略
+
+默认 Tour 支持 ESC 关闭，外部点击关闭默认关闭以避免误触中断引导。需要强制用户点击关闭或完成按钮时，可同时设置 `close_on_escape(false)` 与 `close_on_click_outside(false)`。
+
+### 代码
+
+```rust src="tour/close_policy.rs"
+```

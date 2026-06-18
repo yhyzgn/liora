@@ -481,6 +481,9 @@ mod tests {
         assert!(source.contains("absolute()"));
         assert!(source.contains("size_full()"));
         assert!(source.contains("close_on_escape"));
+        assert!(source.contains("close_on_click_outside"));
+        assert!(source.contains("when(close_on_click_outside"));
+        assert!(source.contains("when(close_on_escape"));
         assert!(source.contains("Tour::show(cx)"));
         let render_once_impl = ["impl RenderOnce", " for Tour"].concat();
         let into_element_impl = ["impl IntoElement", " for Tour"].concat();
