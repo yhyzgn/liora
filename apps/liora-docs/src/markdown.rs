@@ -7696,6 +7696,67 @@ mod tests {
     }
 
     #[test]
+    fn public_readmes_do_not_expose_internal_draft_scaffolding() {
+        let readme = include_str!("../../../README.md");
+        let readme_zh = include_str!("../../../README.zh-CN.md");
+
+        for forbidden in [
+            "GitHub SEO metadata",
+            "Current status",
+            ".memory",
+            ".prompt",
+            "source of truth",
+            "owner-controlled",
+            "protected release",
+            "dogfooding",
+            "canonical",
+            ".omx",
+            "sample model",
+            "dashboard glue",
+            "维护中的",
+        ] {
+            assert!(
+                !readme.contains(forbidden),
+                "English README should not expose internal draft phrase: {forbidden}"
+            );
+            assert!(
+                !readme_zh.contains(forbidden),
+                "Chinese README should not expose internal draft phrase: {forbidden}"
+            );
+        }
+
+        for required in [
+            "Design principles",
+            "Runtime model",
+            "liora_components::init_liora(cx)",
+            "liora_components::init_liora_with_mode",
+            "Native packaging",
+            "Quality gates",
+            "Technical differentiators",
+        ] {
+            assert!(
+                readme.contains(required),
+                "English README missing {required}"
+            );
+        }
+
+        for required in [
+            "设计原则",
+            "运行时模型",
+            "liora_components::init_liora(cx)",
+            "liora_components::init_liora_with_mode",
+            "原生打包",
+            "质量门禁",
+            "技术创新点",
+        ] {
+            assert!(
+                readme_zh.contains(required),
+                "Chinese README missing {required}"
+            );
+        }
+    }
+
+    #[test]
     fn release_candidate_readiness_docs_cover_current_boundaries() {
         let checklist = include_str!("../../../docs/release-candidate-checklist.md");
         let readme = include_str!("../../../README.md");
@@ -7734,16 +7795,21 @@ mod tests {
         assert!(checklist.contains("liora-dashboard-app"));
         assert!(checklist.contains("do not re-add"));
 
-        assert!(readme.contains("docs/release-candidate-checklist.md"));
         assert!(readme.contains("assets/liora-logo.svg"));
         assert!(readme.contains("README.zh-CN.md"));
-        assert!(readme.contains("assets/github-repository-metadata.md"));
+        assert!(readme.contains("Design principles"));
+        assert!(readme.contains("Runtime model"));
         assert!(readme.contains("liora_components::init_liora(cx)"));
         assert!(readme.contains("liora_components::init_liora_with_mode"));
+        assert!(readme.contains("Native packaging"));
+        assert!(readme.contains("Quality gates"));
+        assert!(readme.contains("Technical differentiators"));
         let readme_zh = include_str!("../../../README.zh-CN.md");
         assert!(readme_zh.contains("纯 Rust + GPUI 原生"));
         assert!(readme_zh.contains("assets/liora-logo.svg"));
-        assert!(readme_zh.contains("assets/github-repository-metadata.md"));
+        assert!(readme_zh.contains("设计原则"));
+        assert!(readme_zh.contains("运行时模型"));
+        assert!(readme_zh.contains("技术创新点"));
         let repo_metadata = include_str!("../../../assets/github-repository-metadata.md");
         assert!(repo_metadata.contains("Pure Rust + GPUI native enterprise UI component library"));
         assert!(repo_metadata.contains("rust-desktop"));

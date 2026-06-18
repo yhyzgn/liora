@@ -3721,3 +3721,26 @@ Validation evidence after fix:
 - `git diff --check -- . ':(exclude).omx'` passed.
 - `timeout 10s cargo run -p liora-gallery` reached expected status 124 after native app startup.
 - `timeout 10s cargo run -p liora-docs` reached expected status 124 after native app startup.
+
+## 2026-06-19 public README deslop and documentation polish
+
+Cleaned the English and Chinese README files so they read as public-facing project documentation rather than AI/internal phase notes. Removed visible internal scaffolding such as GitHub SEO metadata, current-status/RC framing, source-of-truth wording, protected/owner-controlled release wording, dogfooding/canonical labels, `.prompt`, `.memory`, and `.omx` references from README content. Added public-facing Technical differentiators / 技术创新点 sections covering one-call initialization, native Markdown rendering, native charts, app-shell coverage, and packaging-aware workspace checks. Tightened Chinese wording and added regression coverage to prevent these draft phrases from returning.
+
+Validation evidence:
+- `cargo fmt --all --check` passed.
+- `cargo test -p liora-docs public_readmes_do_not_expose_internal_draft_scaffolding -- --nocapture` passed.
+- `cargo test -p liora-docs release_candidate_readiness_docs_cover_current_boundaries -- --nocapture` passed.
+- README forbidden-term scan returned no matches.
+- Full pre-submit gate passed with `set -euo pipefail`:
+  - `cargo fmt --all --check`
+  - `cargo check --workspace --all-targets`
+  - `cargo test --workspace`
+  - `cargo check -p liora-docs --bin check_snippets`
+  - `cargo doc --workspace --no-deps`
+  - `cargo run -p xtask -- package validate`
+  - `cargo run -p xtask -- package release-readiness` passed with the expected local non-tag warning only.
+  - `cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build`
+  - `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run`
+  - `git diff --check -- . ':(exclude).omx'`
+  - `timeout 10s cargo run -p liora-gallery` reached expected status 124.
+  - `timeout 10s cargo run -p liora-docs` reached expected status 124.
