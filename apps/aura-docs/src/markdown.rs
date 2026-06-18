@@ -26,6 +26,7 @@ const QUICK_START_DOC: &str = include_str!("../content/pages/quick_start.md");
 const ARCHITECTURE_DOC: &str = include_str!("../content/pages/architecture.md");
 const PACKAGING_WORKFLOW_DOC: &str = include_str!("../content/pages/packaging_workflow.md");
 const ADOPTION_DOC: &str = include_str!("../content/pages/adoption.md");
+const DASHBOARD_APP_DOC: &str = include_str!("../content/pages/dashboard_app.md");
 const ABOUT_DOC: &str = include_str!("../content/pages/about.md");
 
 const AFFIX_DOC: &str = include_str!("../content/pages/affix.md");
@@ -143,6 +144,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Adoption Guide",
         markdown: ADOPTION_DOC,
+    },
+    DocPage {
+        title: "Dashboard App",
+        markdown: DASHBOARD_APP_DOC,
     },
     DocPage {
         title: "About",
@@ -7469,6 +7474,23 @@ mod tests {
         );
         assert!(
             include_str!("../../../examples/minimal-app/Cargo.toml").contains("aura-minimal-app")
+        );
+    }
+
+    #[test]
+    fn dashboard_dogfood_app_is_documented_and_workspace_registered() {
+        let titles = DOC_PAGES.iter().map(|page| page.title).collect::<Vec<_>>();
+        assert!(titles.contains(&"Dashboard App"));
+        assert!(DASHBOARD_APP_DOC.contains("cargo run -p aura-dashboard-app"));
+        assert!(DASHBOARD_APP_DOC.contains("examples/dashboard-app"));
+        assert!(DASHBOARD_APP_DOC.contains("LineChart"));
+        assert!(DASHBOARD_APP_DOC.contains("Table"));
+        assert!(DASHBOARD_APP_DOC.contains("CodeBlock"));
+        assert!(include_str!("../../../README.md").contains("cargo run -p aura-dashboard-app"));
+        assert!(include_str!("../../../Cargo.toml").contains("examples/dashboard-app"));
+        assert!(
+            include_str!("../../../examples/dashboard-app/Cargo.toml")
+                .contains("aura-dashboard-app")
         );
     }
 

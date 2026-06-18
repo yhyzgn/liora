@@ -11,6 +11,7 @@ This page is for a new Rust/GPUI project that wants to adopt Aura without readin
 cargo run -p aura-gallery
 cargo run -p aura-docs
 cargo run -p aura-minimal-app
+cargo run -p aura-dashboard-app
 ```
 
 3. Copy the app shape from `examples/minimal-app/src/main.rs`.
@@ -36,6 +37,17 @@ It demonstrates:
 - key binding registration;
 - `Entity<Input>` and `Entity<Switch>` state preservation;
 - basic `Card`, `Space`, `Title`, `Text`, and `Button` composition.
+
+## Dashboard dogfooding app
+
+Use the dashboard app when you want to inspect real composition friction instead of isolated component behavior:
+
+```bash
+cargo check -p aura-dashboard-app
+cargo run -p aura-dashboard-app
+```
+
+`examples/dashboard-app/src/main.rs` combines filters, statistic cards, charts, progress panels, a table, a runbook `CodeBlock`, toasts, and key binding setup in one native GPUI window. If a component API change makes this app difficult to maintain, treat that as adoption feedback.
 
 ## Dependency shape
 

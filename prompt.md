@@ -14,7 +14,7 @@
 | UI 框架 | GPUI 0.2.2 (git = "https://github.com/zed-industries/zed") |
 | 参考规范 | Element-Plus 2.x (https://element-plus.org/zh-CN/) |
 | 架构 | Cargo Workspace Monorepo |
-| 目标 | ~76+ 个企业级组件, 分阶段交付；P9 作为延后高级组件补全 backlog；P10 原生统计图组件；P11 系统托盘/进程常驻阶段；P12 原生安装器打包阶段；P13 高级控件扩展阶段；P14 延后高级组件补全阶段；P15 质量收口阶段；P16 对外采用准备阶段 |
+| 目标 | ~76+ 个企业级组件, 分阶段交付；P9 作为延后高级组件补全 backlog；P10 原生统计图组件；P11 系统托盘/进程常驻阶段；P12 原生安装器打包阶段；P13 高级控件扩展阶段；P14 延后高级组件补全阶段；P15 质量收口阶段；P16 对外采用准备阶段；P17 真实 Dashboard Dogfooding 阶段 |
 
 ---
 
@@ -35,6 +35,7 @@
 | **P14 延后高级组件补全** | `.prompt/P14-deferred-advanced.md` | 已完成：Carousel、Calendar、InputTag、Mention、Watermark、TreeSelect、Tour、VirtualizedTable、VirtualizedTree 全部补齐 |
 | **P15 质量收口** | `.prompt/P15-quality-hardening.md` | ✅ 已完成：CI/验证门禁、API 一致性、主题视觉、交互键盘、性能和 Docs 完整性 hardening |
 | **P16 对外采用准备** | `.prompt/P16-adoption-readiness.md` | ✅ 已完成：README、CONTRIBUTING、CHANGELOG、minimal app、Rustdoc 入口、Docs Adoption Guide、采用性回归测试 |
+| **P17 Dashboard Dogfooding** | `.prompt/P17-dogfood-dashboard.md` | ✅ 已完成：`examples/dashboard-app` 真实组合示例、Docs Dashboard App 页面、README/Adoption 入口和回归测试 |
 
 ---
 
@@ -90,7 +91,9 @@ aura/
 │   ├── P12-packaging.md
 │   ├── P13-component-expansion.md
 │   ├── P14-deferred-advanced.md
-│   └── P15-quality-hardening.md
+│   ├── P15-quality-hardening.md
+│   ├── P16-adoption-readiness.md
+│   └── P17-dogfood-dashboard.md
 ├── prompt.md                         # 📌 本文件 (AI 入口)
 ├── architecture-design.md
 └── structure.txt
@@ -122,6 +125,7 @@ aura/
 - P14 延后高级组件补全阶段已完成：Carousel、Calendar、InputTag、Mention、Watermark、TreeSelect、Tour、VirtualizedTable、VirtualizedTree 均已实现并有 Gallery/Docs/snippets/tests。详见 `.prompt/P14-deferred-advanced.md`。
 - P15 质量收口阶段已完成：CI/验证门禁、API 一致性、主题视觉、交互键盘、性能和 Docs 完整性均已收口。详见 `.prompt/P15-quality-hardening.md`。
 - P16 对外采用准备阶段已完成：根 README、CONTRIBUTING、CHANGELOG、`examples/minimal-app`、crate-level Rustdoc、native Docs Adoption Guide 和相关回归测试已落地。详见 `.prompt/P16-adoption-readiness.md`。
+- P17 Dashboard Dogfooding 阶段已完成：新增 `examples/dashboard-app` 真实原生 Dashboard 示例，组合 filters/metrics/charts/progress/table/codeblock/toast/key bindings，并接入 README、Adoption Guide 和 Docs `Dashboard App` 页面。详见 `.prompt/P17-dogfood-dashboard.md`。
 
 ### 4.2 每个组件/功能开发流程
 

@@ -15,6 +15,7 @@ Aura applications stay native: no Tauri runtime, no WebView, no HTML/CSS/DOM app
 - `apps/aura-gallery` — native component demo app.
 - `apps/aura-docs` — native documentation app.
 - `examples/minimal-app` — minimal external-style GPUI + Aura application.
+- `examples/dashboard-app` — realistic dogfooding dashboard that composes Aura charts, forms, tables, progress, code blocks, and toasts.
 
 ## Quick start
 
@@ -38,6 +39,12 @@ Run the minimal adoption example:
 cargo run -p aura-minimal-app
 ```
 
+Run the dogfooding dashboard example:
+
+```bash
+cargo run -p aura-dashboard-app
+```
+
 ## Minimal application shape
 
 A GPUI app using Aura should initialize the Aura theme/config, initialize global services that the selected components need, register component key bindings, then open a GPUI window:
@@ -58,7 +65,7 @@ fn main() {
 }
 ```
 
-Use `Entity<T>` for stateful controls such as `Input`, `Switch`, `Select`, or `CodeEditor` so focus and internal state survive re-rendering. See `examples/minimal-app/src/main.rs` for a complete compile-checked example.
+Use `Entity<T>` for stateful controls such as `Input`, `Switch`, `Select`, or `CodeEditor` so focus and internal state survive re-rendering. See `examples/minimal-app/src/main.rs` for a complete compile-checked starter and `examples/dashboard-app/src/main.rs` for a larger composition example.
 
 ## Development checks
 

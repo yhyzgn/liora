@@ -3512,3 +3512,28 @@
 - `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run` passed.
 - `git diff --check -- . ':(exclude).omx'` passed.
 - Gallery, Docs, and Minimal App GUI startup smoke all passed via expected `timeout 10s` status `124`.
+
+
+## Session 2026-06-18 — P17 Dashboard Dogfooding App
+
+### Actions
+- Added `.prompt/P17-dogfood-dashboard.md` and completed the P17 dogfooding phase.
+- Added compile-checked `examples/dashboard-app` workspace package.
+- Built a realistic native GPUI dashboard combining Aura filters, metric cards, `LineChart`, `BarChart`, `Progress`, `Table`, `CodeBlock`, toast, and key binding setup.
+- Added native Docs `Dashboard App` page plus README and Adoption Guide entries.
+- Added regression coverage for dashboard workspace/docs/README wiring.
+
+### Verification
+- `cargo check -p aura-dashboard-app` passed.
+- `cargo test -p aura-docs markdown::tests::dashboard_dogfood_app_is_documented_and_workspace_registered -- --nocapture` passed.
+- `cargo fmt --all --check` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo doc --workspace --no-deps` passed.
+- `cargo run -p xtask -- package validate` passed.
+- `cargo run -p xtask -- package release-readiness` passed.
+- `cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build` passed.
+- `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run` passed.
+- Gallery, Docs, Minimal App, and Dashboard App GUI startup smoke all passed via expected `timeout 10s` status `124`.
+- `git diff --check -- . ':(exclude).omx'` passed.

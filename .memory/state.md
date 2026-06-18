@@ -2,9 +2,9 @@
 
 ## Current Phase
 
-**P15 Quality Hardening — Complete (2026-06-18)**
+**P17 Dashboard Dogfooding — Complete (2026-06-18)**
 
-Local implementation phases are complete through P14; P15 is complete for local release-quality hardening:
+Local implementation phases are complete through P17. Current repository-owned status:
 
 - P10 Native Charts: complete, including downsampling plus Line/Area/Bar/Pie/Ring hover hit testing.
 - P11 Native Tray: complete, including `aura-tray`, dynamic icons, nested/check menus, Gallery/Docs controls, and close-to-tray behavior.
@@ -13,10 +13,15 @@ Local implementation phases are complete through P14; P15 is complete for local 
 - P14 Deferred Advanced: complete; the P9 backlog has been migrated and delivered.
 - P15 Quality Hardening: complete; Track A CI gates, Track B API consistency/panic cleanup, Track C visual/theme token hardening, Track D overlay/keyboard close-policy coverage, Track E CodeBlock/cache performance hardening, and Track F docs/snippet completeness all passed the final local gate suite.
 - P16 Public API & Adoption Readiness: complete; root README, contributing/changelog docs, minimal app workspace example, crate-level Rustdoc, Docs Adoption Guide, and adoption regression tests are in place.
+- P17 Dashboard Dogfooding: complete; `examples/dashboard-app` provides a realistic native GPUI dashboard that composes Aura filters, metric cards, charts, progress panels, table, CodeBlock runbook, toast, and key binding setup.
 
-P12 external-policy items remain tracked but do not block local P15 hardening work. Do not mark P12 fully complete until signing/notarization, real system installs, license policy, and real `v*` release validation are satisfied or formally declared out of scope.
+P12 external-policy items remain tracked but do not block local P17 dogfooding/adoption work. Do not mark P12 fully complete until signing/notarization, real system installs, license policy, and real `v*` release validation are satisfied or formally declared out of scope.
 
 
+
+## P17 Dashboard Dogfooding — 2026-06-18
+
+P17 is complete. Added `examples/dashboard-app` as a workspace package and documented it in README, Adoption Guide, and native Docs `Dashboard App`. The example validates real Aura composition across filters, metric cards, `LineChart`, `BarChart`, `Progress`, `Table`, `CodeBlock`, toasts, and app-level key binding registration while preserving pure Rust + GPUI native constraints.
 
 
 ## P16 Adoption Readiness — 2026-06-18
@@ -76,6 +81,7 @@ Non-blocking residuals: `MessageManager::init` panic is intentional usage-contra
 | P14 Deferred Advanced | ✅ Done | 9/9 | 9 |
 | P15 Quality Hardening | ✅ Done | final gate passed | CI gates + API consistency + visual/theme + overlay behavior + CodeBlock performance + docs completeness |
 | P16 Adoption Readiness | ✅ Done | adoption gate passed | README + examples/minimal-app + Rustdoc + Docs Adoption Guide |
+| P17 Dashboard Dogfooding | ✅ Done | dogfood gate passed | examples/dashboard-app + Docs Dashboard App + README/Adoption wiring |
 
 ## Git Status
 
