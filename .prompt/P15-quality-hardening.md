@@ -150,3 +150,16 @@ Validation evidence for this slice:
 - `cargo check --workspace --all-targets` passed.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+### 2026-06-18 — Track D popover wrapper outside-close policy
+
+- Added `close_on_click_outside(...)` to Dropdown and Popconfirm so Popover wrappers expose the same outside-click close policy as their underlying overlay shell.
+- Forwarded the policy to `Popover::close_on_click_outside(...)` while preserving default close-on-outside behavior.
+- Added source-level coverage for wrapper defaults, public builders, and forwarding.
+
+Validation evidence for this slice:
+- `cargo fmt --all --check` passed.
+- `cargo test -p aura-components -- --nocapture` passed: 199 unit tests plus package integration tests.
+- `cargo check --workspace --all-targets` passed.
+- `git diff --check` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.

@@ -14,6 +14,7 @@ pub struct Dropdown {
     trigger: AnyElement,
     items: Vec<DropdownItem>,
     placement: Placement,
+    close_on_click_outside: bool,
     close_on_escape: bool,
     id: Option<SharedString>,
 }
@@ -24,6 +25,7 @@ impl Dropdown {
             trigger: trigger.into_any_element(),
             items: vec![],
             placement: Placement::BottomStart,
+            close_on_click_outside: true,
             close_on_escape: true,
             id: None,
         }
@@ -55,6 +57,11 @@ impl Dropdown {
         self.close_on_escape = close;
         self
     }
+
+    pub fn close_on_click_outside(mut self, close: bool) -> Self {
+        self.close_on_click_outside = close;
+        self
+    }
 }
 
 impl RenderOnce for Dropdown {
@@ -66,10 +73,12 @@ impl RenderOnce for Dropdown {
             stable_unique_id(format!("dropdown:{}", items.len()), "dropdown", _window, cx)
         });
 
+        let close_on_click_outside = self.close_on_click_outside;
         Popover::new(self.trigger)
             .id(dropdown_id.clone())
             .placement(self.placement)
             .offset(px(4.0))
+            .close_on_click_outside(close_on_click_outside)
             .close_on_escape(close_on_escape)
             .content(move |_window, _cx| {
                 let theme = theme.clone();

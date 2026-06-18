@@ -13,6 +13,7 @@ pub struct Popconfirm {
     on_confirm: Option<Arc<dyn Fn(&mut Window, &mut App) + 'static>>,
     on_cancel: Option<Arc<dyn Fn(&mut Window, &mut App) + 'static>>,
     placement: Placement,
+    close_on_click_outside: bool,
     close_on_escape: bool,
     trigger_id: Option<SharedString>,
 }
@@ -27,6 +28,7 @@ impl Popconfirm {
             on_confirm: None,
             on_cancel: None,
             placement: Placement::Top,
+            close_on_click_outside: true,
             close_on_escape: true,
             trigger_id: None,
         }
@@ -71,6 +73,11 @@ impl Popconfirm {
         self.close_on_escape = close;
         self
     }
+
+    pub fn close_on_click_outside(mut self, close: bool) -> Self {
+        self.close_on_click_outside = close;
+        self
+    }
 }
 
 impl RenderOnce for Popconfirm {
@@ -80,6 +87,7 @@ impl RenderOnce for Popconfirm {
         let cancel_text = self.cancel_text.clone();
         let on_confirm = self.on_confirm.clone();
         let on_cancel = self.on_cancel.clone();
+        let close_on_click_outside = self.close_on_click_outside;
         let close_on_escape = self.close_on_escape;
         let theme = cx.global::<Config>().theme.clone();
         let trigger_id = self
@@ -91,6 +99,7 @@ impl RenderOnce for Popconfirm {
         Popover::new(self.trigger)
             .id(trigger_id)
             .placement(self.placement)
+            .close_on_click_outside(close_on_click_outside)
             .close_on_escape(close_on_escape)
             .content(move |_window, _cx| {
                 let on_confirm = on_confirm.clone();

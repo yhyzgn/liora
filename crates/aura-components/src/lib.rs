@@ -285,6 +285,27 @@ mod overlay_escape_coverage_tests {
     }
 
     #[test]
+    fn popover_wrappers_forward_click_outside_close_policy() {
+        for (name, source) in [
+            ("dropdown", include_str!("dropdown.rs")),
+            ("popconfirm", include_str!("popconfirm.rs")),
+        ] {
+            assert!(
+                source.contains("close_on_click_outside: true"),
+                "{name} should default to click-outside close"
+            );
+            assert!(
+                source.contains("pub fn close_on_click_outside("),
+                "{name} should expose close_on_click_outside(...)"
+            );
+            assert!(
+                source.contains(".close_on_click_outside(close_on_click_outside)"),
+                "{name} should forward click-outside policy to Popover"
+            );
+        }
+    }
+
+    #[test]
     fn popup_key_bindings_are_registered_by_apps() {
         let docs = include_str!("../../../apps/aura-docs/src/main.rs");
         let gallery = include_str!("../../../apps/aura-gallery/src/main.rs");
@@ -435,6 +456,8 @@ mod api_consistency_audit_tests {
             ("dialog", include_str!("dialog.rs")),
             ("drawer", include_str!("drawer.rs")),
             ("popover", include_str!("popover.rs")),
+            ("dropdown", include_str!("dropdown.rs")),
+            ("popconfirm", include_str!("popconfirm.rs")),
             ("tour", include_str!("tour.rs")),
             ("select", include_str!("select.rs")),
             ("date_picker", include_str!("date_picker.rs")),

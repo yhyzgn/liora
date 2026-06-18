@@ -3154,3 +3154,17 @@
 - `cargo check --workspace --all-targets` passed.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+## Session 2026-06-18 — P15 Track D Popover Wrapper Outside Close
+
+### Actions
+- Started Track D interaction/overlay behavior hardening with Dropdown and Popconfirm.
+- Added `close_on_click_outside(...)` builders to both wrappers and forwarded the policy to Popover.
+- Preserved default outside-click close behavior and locked wrapper forwarding with source-level coverage.
+
+### Verification
+- `cargo fmt --all --check` passed.
+- `cargo test -p aura-components -- --nocapture` passed: 199 unit tests plus package integration tests.
+- `cargo check --workspace --all-targets` passed.
+- `git diff --check` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
