@@ -14,6 +14,7 @@ cargo run -p aura-dashboard-app
 - Global message/toast setup through `MessageManager::init`.
 - Key binding registration for inputs, select, switch, code blocks, text, and titles.
 - Dashboard layout with header, filters, metric cards, charts, progress panels, table, and runbook code block.
+- P18 polish: `DashboardGrid`, `dashboard_card`, `metric_card`, and light/dark theme switching are used directly by the dogfood app.
 - Real composition of `Card`, `Space`, `Statistic`, `Tag`, `Input`, `Select`, `Switch`, `Button`, `LineChart`, `BarChart`, `Progress`, `Table`, `CodeBlock`, `Text`, and `Title`.
 
 ## Dogfooding checklist
@@ -31,7 +32,7 @@ The app should compile, start a native window, and remain responsive long enough
 
 The first dogfooding pass validated that Aura can already build a management-dashboard style screen from existing components. The most useful future improvements are API ergonomics rather than missing primitives:
 
-- layout helpers could expose more responsive grid presets;
+- layout helpers now expose dashboard presets through `DashboardGrid`;
 - table cells are flexible but verbose for common text/tag rows;
 - charts are usable in cards, but dashboard presets could reduce repeated options;
 - app startup still requires manual key binding registration, so docs must keep that list visible.

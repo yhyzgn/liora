@@ -27,6 +27,7 @@ const ARCHITECTURE_DOC: &str = include_str!("../content/pages/architecture.md");
 const PACKAGING_WORKFLOW_DOC: &str = include_str!("../content/pages/packaging_workflow.md");
 const ADOPTION_DOC: &str = include_str!("../content/pages/adoption.md");
 const DASHBOARD_APP_DOC: &str = include_str!("../content/pages/dashboard_app.md");
+const DASHBOARD_PATTERNS_DOC: &str = include_str!("../content/pages/dashboard_patterns.md");
 const ABOUT_DOC: &str = include_str!("../content/pages/about.md");
 
 const AFFIX_DOC: &str = include_str!("../content/pages/affix.md");
@@ -148,6 +149,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Dashboard App",
         markdown: DASHBOARD_APP_DOC,
+    },
+    DocPage {
+        title: "Dashboard Patterns",
+        markdown: DASHBOARD_PATTERNS_DOC,
     },
     DocPage {
         title: "About",
@@ -7486,11 +7491,30 @@ mod tests {
         assert!(DASHBOARD_APP_DOC.contains("LineChart"));
         assert!(DASHBOARD_APP_DOC.contains("Table"));
         assert!(DASHBOARD_APP_DOC.contains("CodeBlock"));
+        assert!(DASHBOARD_APP_DOC.contains("DashboardGrid"));
         assert!(include_str!("../../../README.md").contains("cargo run -p aura-dashboard-app"));
         assert!(include_str!("../../../Cargo.toml").contains("examples/dashboard-app"));
         assert!(
             include_str!("../../../examples/dashboard-app/Cargo.toml")
                 .contains("aura-dashboard-app")
+        );
+    }
+
+    #[test]
+    fn dashboard_patterns_cover_composition_helpers_and_theme_switching() {
+        let titles = DOC_PAGES.iter().map(|page| page.title).collect::<Vec<_>>();
+        assert!(titles.contains(&"Dashboard Patterns"));
+        assert!(DASHBOARD_PATTERNS_DOC.contains("DashboardGrid"));
+        assert!(DASHBOARD_PATTERNS_DOC.contains("dashboard_card"));
+        assert!(DASHBOARD_PATTERNS_DOC.contains("metric_card"));
+        assert!(DASHBOARD_PATTERNS_DOC.contains("window.refresh()"));
+        assert!(
+            include_str!("../../../examples/dashboard-app/src/main.rs")
+                .contains("DashboardGrid::metrics()")
+        );
+        assert!(
+            include_str!("../../../crates/aura-components/src/dashboard.rs")
+                .contains("pub struct DashboardGrid")
         );
     }
 

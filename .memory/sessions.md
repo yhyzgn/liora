@@ -3537,3 +3537,29 @@
 - `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run` passed.
 - Gallery, Docs, Minimal App, and Dashboard App GUI startup smoke all passed via expected `timeout 10s` status `124`.
 - `git diff --check -- . ':(exclude).omx'` passed.
+
+
+## Session 2026-06-18 — P18 Dashboard Polish and API Ergonomics
+
+### Actions
+- Added `.prompt/P18-dashboard-polish-and-api-ergonomics.md` and completed the P18 phase.
+- Added `aura_components::dashboard` with `DashboardGrid`, `dashboard_card`, and `metric_card` thin composition helpers.
+- Polished `examples/dashboard-app` to use the helpers, larger dashboard sections, theme tokens, and light/dark theme switching.
+- Added native Docs `Dashboard Patterns` page plus README/prompt/memory wiring.
+- Added regression coverage for dashboard helper API and dashboard pattern documentation.
+
+### Verification
+- `cargo check -p aura-dashboard-app` passed.
+- `cargo test -p aura-components dashboard::tests::dashboard_grid_presets_track_columns -- --nocapture` passed.
+- `cargo test -p aura-docs markdown::tests::dashboard_patterns_cover_composition_helpers_and_theme_switching -- --nocapture` passed.
+- `cargo fmt --all --check` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo doc --workspace --no-deps` passed.
+- `cargo run -p xtask -- package validate` passed.
+- `cargo run -p xtask -- package release-readiness` passed.
+- `cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build` passed.
+- `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run` passed.
+- Gallery, Docs, Minimal App, and Dashboard App GUI startup smoke all passed via expected `timeout 10s` status `124`.
+- `git diff --check -- . ':(exclude).omx'` passed.

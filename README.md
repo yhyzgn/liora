@@ -65,7 +65,7 @@ fn main() {
 }
 ```
 
-Use `Entity<T>` for stateful controls such as `Input`, `Switch`, `Select`, or `CodeEditor` so focus and internal state survive re-rendering. See `examples/minimal-app/src/main.rs` for a complete compile-checked starter and `examples/dashboard-app/src/main.rs` for a larger composition example.
+Use `Entity<T>` for stateful controls such as `Input`, `Switch`, `Select`, or `CodeEditor` so focus and internal state survive re-rendering. See `examples/minimal-app/src/main.rs` for a complete compile-checked starter and `examples/dashboard-app/src/main.rs` for a larger composition example using `DashboardGrid`, `dashboard_card`, `metric_card`, and theme switching.
 
 ## Development checks
 
@@ -91,6 +91,7 @@ cargo run -p xtask -- package install-smoke --all-apps --format platform-default
 ## Documentation
 
 - Native Docs app: `cargo run -p aura-docs`
+- Dashboard Patterns page: composition guidance for real Aura product screens
 - Component Gallery: `cargo run -p aura-gallery`
 - Packaging plan: `docs/packaging-installer-technical-plan.md`
 - Phase prompts and status: `.prompt/` and `.memory/`
