@@ -574,3 +574,7 @@ CodeBlock highlight/selection state, SelectableText selection state, and Timer r
 ## 2026-06-18 P15 Track B tray icon fallback hardening
 
 Gallery and Docs no longer panic if bundled tray icon decoding fails. Both apps now attempt the bundled icon first, then app-specific solid-color fallback icons, and finally continue tray installation without an icon if all icon creation fails. Dynamic tray icon changes also skip failed icon loads instead of crashing command handling. Validation passed: app checks, focused tests, workspace check/test, docs snippet check, diff whitespace check, and Gallery/Docs GUI startup smoke.
+
+## 2026-06-18 P15 Track B packager string rendering panic cleanup
+
+`aura-packager` no longer uses `expect("write to string")` for SHA-256 hex, checksum text, release notes, or package manifest JSON rendering. Those paths now assemble strings with `format!` and `push_str`, preserving generated output while removing impossible-but-panic-based string write assumptions from the packaging pipeline. Validation passed: aura-packager tests, workspace check/test, docs snippet check, diff whitespace check, and Gallery/Docs GUI startup smoke.

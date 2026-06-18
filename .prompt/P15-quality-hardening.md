@@ -389,3 +389,18 @@ Validation evidence for this slice:
 - `cargo check -p aura-docs --bin check_snippets` passed.
 - `git diff --check -- . ':(exclude).omx'` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+### 2026-06-18 — Track B packager string rendering panic cleanup
+
+- Removed avoidable `expect("write to string")` calls from `aura-packager` checksum and manifest rendering paths.
+- Switched checksum hex and manifest text/JSON assembly to infallible `push_str(format!(...))` style output while preserving existing generated formats.
+- Verified `aura-packager` unit tests plus full workspace gates so packaging metadata generation remains stable.
+
+Validation evidence for this slice:
+- `cargo fmt --all --check` passed.
+- `cargo test -p aura-packager -- --nocapture` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `git diff --check -- . ':(exclude).omx'` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.

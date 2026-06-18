@@ -1,5 +1,4 @@
 use std::{
-    fmt::Write as _,
     fs, io,
     path::{Path, PathBuf},
 };
@@ -40,13 +39,11 @@ impl PackageManifest {
     pub fn checksums_txt(&self) -> String {
         let mut out = String::new();
         for artifact in &self.artifacts {
-            writeln!(
-                out,
-                "{}  {}",
+            out.push_str(&format!(
+                "{}  {}\n",
                 artifact.checksum.hex,
                 artifact.path.display()
-            )
-            .expect("write to string");
+            ));
         }
         out
     }
@@ -62,11 +59,10 @@ impl PackageManifest {
         for artifact in &self.artifacts {
             if current_platform != Some(artifact.platform) {
                 current_platform = Some(artifact.platform);
-                writeln!(out, "\n## {}\n", artifact.platform.as_str()).expect("write to string");
+                out.push_str(&format!("\n## {}\n\n", artifact.platform.as_str()));
             }
-            writeln!(
-                out,
-                "- `{}` `{}` `{}` `{}`  \n  SHA256: `{}`{}",
+            out.push_str(&format!(
+                "- `{}` `{}` `{}` `{}`  \n  SHA256: `{}`{}\n",
                 artifact.app,
                 artifact.version,
                 artifact.target_triple,
@@ -77,8 +73,7 @@ impl PackageManifest {
                     .as_ref()
                     .map(|sha| format!("  \n  Git: `{sha}`"))
                     .unwrap_or_default()
-            )
-            .expect("write to string");
+            ));
         }
         out
     }
@@ -89,8 +84,7 @@ impl PackageManifest {
             if idx > 0 {
                 out.push(',');
             }
-            write!(
-                out,
+            out.push_str(&format!(
                 "\n    {{\n      \"app\": \"{}\",\n      \"version\": \"{}\",\n      \"platform\": \"{}\",\n      \"targetTriple\": \"{}\",\n      \"gitSha\": {},\n      \"format\": \"{}\",\n      \"path\": \"{}\",\n      \"checksum\": {{ \"algorithm\": \"{}\", \"hex\": \"{}\" }},\n      \"signed\": {}\n    }}",
                 escape(&artifact.app),
                 escape(&artifact.version),
@@ -102,8 +96,7 @@ impl PackageManifest {
                 artifact.checksum.algorithm,
                 artifact.checksum.hex,
                 artifact.signed
-            )
-            .expect("write to string");
+            ));
         }
         out.push_str("\n  ]\n}\n");
         out

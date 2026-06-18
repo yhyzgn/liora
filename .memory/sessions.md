@@ -3411,3 +3411,19 @@
 - `cargo check -p aura-docs --bin check_snippets` passed.
 - `git diff --check -- . ':(exclude).omx'` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+## Session 2026-06-18 — P15 Track B Packager String Rendering Panic Cleanup
+
+### Actions
+- Removed `expect("write to string")` from `crates/aura-packager/src/checksum.rs` SHA-256 hex rendering.
+- Removed `expect("write to string")` from package manifest checksum, release notes, and JSON rendering.
+- Kept output formats stable by relying on `format!` plus `push_str` instead of fallible `fmt::Write` calls.
+
+### Verification
+- `cargo fmt --all --check` passed.
+- `cargo test -p aura-packager -- --nocapture` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `git diff --check -- . ':(exclude).omx'` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.

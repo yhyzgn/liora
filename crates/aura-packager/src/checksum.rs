@@ -1,5 +1,4 @@
 use std::{
-    fmt::Write as _,
     fs::File,
     io::{self, Read},
     path::Path,
@@ -96,7 +95,7 @@ impl Sha256 {
 
         let mut out = String::with_capacity(64);
         for word in self.state {
-            write!(&mut out, "{word:08x}").expect("write to string");
+            out.push_str(&format!("{word:08x}"));
         }
         out
     }
