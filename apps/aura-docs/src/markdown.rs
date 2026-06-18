@@ -6073,8 +6073,9 @@ fn docs_preview_escape() -> Preview {
 
     Preview::new(remote)
         .close_on_escape(false)
+        .close_on_click_outside(false)
         .hover_effect(false)
-        .child(Button::new("打开预览（ESC 不关闭）").primary())
+        .child(Button::new("打开预览（ESC / 外部点击不关闭）").primary())
 }
 
 fn docs_popover_basic() -> Popover {

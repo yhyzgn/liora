@@ -38,7 +38,7 @@ impl Render for PreviewDemo {
                     "自定义触发器",
                     "Preview 可以包裹卡片、按钮或其他元素。",
                     row(vec![
-                        Preview::new(local).child(
+                        Preview::new(local.clone()).child(
                             Card::new(
                                 Space::new()
                                     .gap_md()
@@ -59,6 +59,17 @@ impl Render for PreviewDemo {
                             )
                             .no_shadow(),
                         ),
+                    ]),
+                ))
+                .child(section(
+                    "关闭策略",
+                    "禁用 ESC 和外部点击关闭，适合需要用户通过明确操作完成的受控预览流程。",
+                    row(vec![
+                        Preview::new(local)
+                            .close_on_escape(false)
+                            .close_on_click_outside(false)
+                            .hover_effect(false)
+                            .child(Text::new("打开预览（ESC / 外部点击不关闭）")),
                     ]),
                 )),
         )

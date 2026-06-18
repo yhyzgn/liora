@@ -232,3 +232,17 @@ Validation evidence for this slice:
 - `cargo test -p aura-components -- --nocapture` passed: 201 unit tests plus package integration tests.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+### 2026-06-18 — Track D Preview close-policy docs/examples slice
+
+- Documented Preview close policy controls in Docs by expanding ESC-only guidance into combined ESC and outside-click close strategy guidance.
+- Updated the compile-checked Preview snippet and live docs renderer to exercise both `close_on_escape(false)` and `close_on_click_outside(false)`.
+- Added a Gallery Preview close-policy example so the API-only overlay behavior is discoverable in the native demo app.
+
+Validation evidence for this slice:
+- `cargo fmt --all --check` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `git diff --check` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.

@@ -534,3 +534,7 @@ Updated the handoff state so new sessions no longer start from the obsolete P8/P
 ## 2026-06-17 P15 quality hardening kickoff
 
 Started P15 as the release-quality hardening phase after P13/P14 completion and P12 runner-safe readiness. First concrete slice: add `.github/workflows/ci.yml` as a general quality gate for fmt, workspace check/test, docs snippet check, packaging validate, packaging dry-run, and install-smoke dry-run.
+
+## 2026-06-18 P15 Track D Preview close-policy docs/examples
+
+Preview outside-click close policy is now discoverable in Docs, compile-checked snippets, live docs demos, and Gallery. The representative example disables both ESC and outside-click dismissal for controlled overlay flows. Validation passed: fmt, docs snippet check, workspace check/test, diff whitespace check, and Gallery/Docs GUI startup smoke.

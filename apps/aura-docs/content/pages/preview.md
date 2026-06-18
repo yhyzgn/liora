@@ -28,9 +28,9 @@ Preview 的 child 可以是任意 Aura/GPUI 元素，例如卡片、按钮或自
 ```rust src="preview/custom_trigger.rs"
 ```
 
-## ESC 关闭策略
+## 关闭策略
 
-默认点击图片外阴影区域或按 ESC 会关闭。对于受控流程，可通过 `close_on_escape(false)` 禁用 ESC 关闭。
+默认点击图片外阴影区域或按 ESC 会关闭。对于受控流程，可通过 `close_on_escape(false)` 禁用 ESC 关闭，也可以通过 `close_on_click_outside(false)` 禁用点击外部关闭。
 
 ### 效果
 
