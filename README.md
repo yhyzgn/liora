@@ -138,28 +138,19 @@ A Liora-powered GPUI app should initialize theme/config, initialize global servi
 
 ```rust
 use gpui::App;
-use liora_core::{init_liora_with_mode, ThemeMode};
+use liora_components::init_liora;
 
 fn main() {
     gpui_platform::application().run(|cx: &mut App| {
-        init_liora_with_mode(cx, ThemeMode::System);
-
-        liora_components::MessageManager::init(cx);
-        liora_components::Input::register_key_bindings(cx);
-        liora_components::CodeBlock::register_key_bindings(cx);
-        liora_components::CodeEditor::register_key_bindings(cx);
-        liora_components::Preview::register_key_bindings(cx);
-        liora_components::Text::register_key_bindings(cx);
-        liora_components::Paragraph::register_key_bindings(cx);
-        liora_components::Title::register_key_bindings(cx);
-        liora_components::Tour::register_key_bindings(cx);
+        // Initializes Liora core/theme state, component services, and key bindings.
+        init_liora(cx);
 
         // cx.open_window(...)
     });
 }
 ```
 
-Prefer `init_liora_with_mode(cx, ThemeMode::System)` so applications follow the operating system by default. Use `Entity<T>` for stateful controls such as `Input`, `Switch`, `Select`, and `CodeEditor` so focus and internal state survive re-rendering. Gallery and Docs are the maintained compile-checked references for app shell setup, key binding registration, theme switching, tray behavior, toasts, and composition patterns.
+`liora_components::init_liora(cx)` follows the operating system by default and also initializes component services plus key bindings. Use `liora_components::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)` when a product wants to choose the startup mode explicitly. Use `Entity<T>` for stateful controls such as `Input`, `Switch`, `Select`, and `CodeEditor` so focus and internal state survive re-rendering. Gallery and Docs are the maintained compile-checked references for app shell setup, key binding registration, theme switching, tray behavior, toasts, and composition patterns.
 
 ## Component API example
 

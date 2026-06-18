@@ -3689,3 +3689,17 @@ Updated the README logo palette to a restrained graphite/glacier-glass mark afte
 ## 2026-06-19 logo full style redesign
 
 Replaced the previous organic folded/ribbon logo direction with a completely different symbol-only modular native UI mark: a dark app tile containing component-grid panels, subtle cyan signal paths, and no visible text or letterform. This responds to user feedback that color-only changes were insufficient.
+
+## 2026-06-19 unified Liora init API
+
+Added high-level `liora_components::init_liora(cx)` and `liora_components::init_liora_with_mode(cx, ThemeMode)` so downstream users no longer manually call `MessageManager::init(cx)` or per-component `register_key_bindings(cx)`. `ThemeMode` is re-exported from `liora-components` for ergonomic imports. Gallery, Docs, README, Chinese README, QuickStart snippets, Adoption Guide, Dashboard Patterns, Theme System docs, and regression tests now use the unified application init path. Low-level `liora_core::*` init functions remain core/theme-only for advanced use.
+
+Validation evidence:
+- RED first: `cargo test -p liora-components application_init_api_tests::components_crate_exposes_one_line_application_init -- --nocapture` failed before implementation because unified registrations were missing.
+- `cargo fmt --all --check` passed.
+- `cargo test -p liora-components application_init_api_tests::components_crate_exposes_one_line_application_init -- --nocapture` passed.
+- `cargo test -p liora-docs quick_start_uses_unified_liora_application_init -- --nocapture` passed.
+- `cargo test -p liora-docs adoption_docs_cover_gallery_docs_public_entrypoints -- --nocapture` passed.
+- `cargo test -p liora-docs release_candidate_readiness_docs_cover_current_boundaries -- --nocapture` passed.
+- `cargo check -p liora-gallery -p liora-docs --bin check_snippets` passed.
+- `git diff --check -- . ':(exclude).omx'` passed.

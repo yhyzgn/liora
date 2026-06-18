@@ -10,21 +10,19 @@
 //! A GPUI app should initialize Liora once during application startup:
 //!
 //! ```no_run
-//! use liora_core::init_liora;
-//! use liora_theme::Theme;
 //! use gpui::App;
+//! use liora_components::init_liora;
 //!
 //! fn setup(cx: &mut App) {
-//!     init_liora(cx, Theme::light());
-//!     liora_components::MessageManager::init(cx);
-//!     liora_components::Input::register_key_bindings(cx);
-//!     liora_components::Text::register_key_bindings(cx);
+//!     init_liora(cx);
 //! }
 //! ```
 //!
-//! Register key bindings for the components your app uses. Text/code selection,
-//! inputs, overlays, Preview, Tour, and picker popups all rely on app-level
-//! action registration.
+//! The high-level `liora_components::init_liora(cx)` entry point initializes
+//! Liora core/theme state, global component services, and the app-level key
+//! bindings needed by inputs, text/code selection, overlays, Preview, Tour, and
+//! picker popups. Use `liora_components::init_liora_with_mode(...)` for an
+//! explicit Light or Dark startup mode.
 //!
 //! ## Stateful controls
 //!
@@ -190,6 +188,7 @@ pub use input_tag::*;
 pub use label::*;
 pub use line_chart::*;
 pub use link::*;
+pub use liora_core::ThemeMode;
 pub use liora_theme::{ButtonSize, ButtonVariant};
 pub use loading::*;
 pub use mention::*;
@@ -247,6 +246,100 @@ pub use virtualized_table::*;
 pub use virtualized_tree::*;
 pub use watermark::*;
 pub use window_frame::*;
+
+/// Initialize Liora's recommended application runtime in one call.
+///
+/// This is the high-level setup entry point application authors should use for
+/// normal Liora + GPUI apps. It initializes the core theme/portal state with
+/// [`liora_core::ThemeMode::System`], installs global component services such as
+/// [`MessageManager`], and registers key bindings for interactive components.
+///
+/// Use [`init_liora_with_mode`] when a product needs an explicit Light or Dark
+/// startup mode. The lower-level `liora_core::init_liora(...)` functions remain
+/// available for advanced crate-local setup, but they intentionally initialize
+/// only core/theme state and not component services.
+pub fn init_liora(cx: &mut gpui::App) {
+    init_liora_with_mode(cx, ThemeMode::System);
+}
+
+/// Initialize Liora's recommended application runtime with an explicit theme mode.
+pub fn init_liora_with_mode(cx: &mut gpui::App, mode: ThemeMode) {
+    liora_core::init_liora_with_mode(cx, mode);
+    MessageManager::init(cx);
+    register_liora_key_bindings(cx);
+}
+
+fn register_liora_key_bindings(cx: &mut gpui::App) {
+    Input::register_key_bindings(cx);
+    CodeBlock::register_key_bindings(cx);
+    CodeEditor::register_key_bindings(cx);
+    Checkbox::register_key_bindings(cx);
+    CheckboxGroup::register_key_bindings(cx);
+    Radio::register_key_bindings(cx);
+    RadioGroup::register_key_bindings(cx);
+    Switch::register_key_bindings(cx);
+    Dialog::register_key_bindings(cx);
+    Drawer::register_key_bindings(cx);
+    Preview::register_key_bindings(cx);
+    Autocomplete::register_key_bindings(cx);
+    Cascader::register_key_bindings(cx);
+    ColorPicker::register_key_bindings(cx);
+    DatePicker::register_key_bindings(cx);
+    DateTimePicker::register_key_bindings(cx);
+    Popover::register_key_bindings(cx);
+    Select::register_key_bindings(cx);
+    TimePicker::register_key_bindings(cx);
+    Text::register_key_bindings(cx);
+    Paragraph::register_key_bindings(cx);
+    Title::register_key_bindings(cx);
+    Tour::register_key_bindings(cx);
+}
+
+#[cfg(test)]
+mod application_init_api_tests {
+    #[test]
+    fn components_crate_exposes_one_line_application_init() {
+        let source = include_str!("lib.rs");
+        assert!(source.contains("pub fn init_liora(cx: &mut gpui::App)"));
+        assert!(
+            source.contains("pub fn init_liora_with_mode(cx: &mut gpui::App, mode: ThemeMode)")
+        );
+        assert!(source.contains("pub use liora_core::ThemeMode"));
+        assert!(source.contains("fn register_liora_key_bindings(cx: &mut gpui::App)"));
+        assert!(source.contains("MessageManager::init(cx)"));
+
+        for component in [
+            "Input",
+            "CodeBlock",
+            "CodeEditor",
+            "Checkbox",
+            "Radio",
+            "RadioGroup",
+            "Switch",
+            "Dialog",
+            "Drawer",
+            "Preview",
+            "Autocomplete",
+            "Cascader",
+            "ColorPicker",
+            "DatePicker",
+            "DateTimePicker",
+            "Popover",
+            "Select",
+            "TimePicker",
+            "Text",
+            "Paragraph",
+            "Title",
+            "Tour",
+        ] {
+            let registration = format!("{component}::register_key_bindings(cx)");
+            assert!(
+                source.contains(&registration),
+                "unified app init should include {registration}"
+            );
+        }
+    }
+}
 
 #[cfg(test)]
 mod motion_coverage_tests {
@@ -382,9 +475,14 @@ mod overlay_escape_coverage_tests {
     }
 
     #[test]
-    fn popup_key_bindings_are_registered_by_apps() {
+    fn popup_key_bindings_are_registered_by_unified_component_init() {
+        let source = include_str!("lib.rs");
         let docs = include_str!("../../../apps/liora-docs/src/main.rs");
         let gallery = include_str!("../../../apps/liora-gallery/src/main.rs");
+
+        assert!(docs.contains("init_liora(cx)"));
+        assert!(gallery.contains("init_liora(cx)"));
+
         for component in [
             "Autocomplete",
             "Cascader",
@@ -400,10 +498,9 @@ mod overlay_escape_coverage_tests {
             "Tour",
         ] {
             let registration = format!("{component}::register_key_bindings(cx)");
-            assert!(docs.contains(&registration), "docs missing {registration}");
             assert!(
-                gallery.contains(&registration),
-                "gallery missing {registration}"
+                source.contains(&registration),
+                "unified component init missing {registration}"
             );
         }
     }

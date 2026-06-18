@@ -199,3 +199,7 @@ Theme/config: Theme, Config, ContextExt, ElementExt, ColorPalette, Spacing, Radi
 ## ADR — Root `assets/` for README-facing static resources (2026-06-19)
 
 README-facing static resources such as logos, social/SEO metadata notes, and other project presentation attachments live under the repository root `assets/` directory. Do not place these assets under `docs/`, because `docs/` may be cleaned as an AI-agent working/documentation area in future maintenance passes. README links should use stable `assets/...` paths.
+
+## ADR — Unified high-level Liora application initialization (2026-06-19)
+
+Downstream apps should use `liora_components::init_liora(cx)` as the default one-line setup. It initializes core/theme state with `ThemeMode::System`, component global services such as `MessageManager`, and all app-level component key bindings. `liora_components::init_liora_with_mode(cx, mode)` remains available for explicit `System`/`Light`/`Dark` startup mode selection. Lower-level `liora_core::init_liora(...)` and `liora_core::init_liora_with_mode(...)` remain core/theme-only APIs for advanced crate-local use.

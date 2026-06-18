@@ -2,12 +2,10 @@ mod markdown;
 
 use gpui::{App, AppContext, Bounds, Global, Window, WindowBounds, WindowOptions, px, size};
 use liora_components::{
-    Autocomplete, Button, Cascader, Checkbox, CodeBlock, CodeEditor, ColorPicker, DatePicker,
-    DateTimePicker, Dialog, Drawer, Input, MessageManager, Paragraph, Popover, Preview, Radio,
-    RadioGroup, Select, Space, Switch, Text, TimePicker, Title, Tour, WindowFrameMode,
-    apply_window_frame_mode,
+    Button, Checkbox, Dialog, Paragraph, Space, WindowFrameMode, apply_window_frame_mode,
+    init_liora,
 };
-use liora_core::{ThemeMode, init_liora_with_mode, sync_system_theme};
+use liora_core::sync_system_theme;
 use liora_tray::{
     BundledTrayIconSet, BundledTrayIconState, LioraTray, MouseButton, MouseButtonState,
     TrayCloseAction, TrayCommand, TrayConfig, TrayControlCenter, TrayIconEvent, bundled_tray_icon,
@@ -39,30 +37,7 @@ fn run_docs() {
     gpui_platform::application()
         .with_quit_mode(gpui::QuitMode::Explicit)
         .run(|cx: &mut App| {
-            init_liora_with_mode(cx, ThemeMode::System);
-            MessageManager::init(cx);
-            Input::register_key_bindings(cx);
-            CodeBlock::register_key_bindings(cx);
-            CodeEditor::register_key_bindings(cx);
-            Checkbox::register_key_bindings(cx);
-            Radio::register_key_bindings(cx);
-            RadioGroup::register_key_bindings(cx);
-            Switch::register_key_bindings(cx);
-            Dialog::register_key_bindings(cx);
-            Drawer::register_key_bindings(cx);
-            Preview::register_key_bindings(cx);
-            Autocomplete::register_key_bindings(cx);
-            Cascader::register_key_bindings(cx);
-            ColorPicker::register_key_bindings(cx);
-            DatePicker::register_key_bindings(cx);
-            DateTimePicker::register_key_bindings(cx);
-            Popover::register_key_bindings(cx);
-            Select::register_key_bindings(cx);
-            TimePicker::register_key_bindings(cx);
-            Text::register_key_bindings(cx);
-            Paragraph::register_key_bindings(cx);
-            Title::register_key_bindings(cx);
-            Tour::register_key_bindings(cx);
+            init_liora(cx);
 
             install_docs_tray(cx);
             if let Some(handle) = open_docs_window(cx) {

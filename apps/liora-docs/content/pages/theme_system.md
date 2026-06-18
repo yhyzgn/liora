@@ -30,9 +30,10 @@ src="theme/system_mode.rs"
 
 Gallery 和 Docs 都使用同一套接入方式：
 
-1. `init_liora_with_mode(cx, ThemeMode::System)` 初始化默认跟随系统。
-2. 窗口创建后注册 `observe_window_appearance`。
-3. 用户切换分段控件时调用 `apply_theme_mode(window, cx, mode)`。
-4. 处于 `System` 模式时，系统外观变化由 `sync_system_theme(window, cx)` 自动刷新。
+1. `liora_components::init_liora(cx)` 初始化默认跟随系统，并统一注册组件全局服务和 key bindings。
+2. 如果产品需要固定启动主题，调用 `liora_components::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)`。
+3. 窗口创建后注册 `observe_window_appearance`。
+4. 用户切换分段控件时调用 `apply_theme_mode(window, cx, mode)`。
+5. 处于 `System` 模式时，系统外观变化由 `sync_system_theme(window, cx)` 自动刷新。
 
 这套能力仍然是纯 Rust + GPUI 原生应用能力，不依赖 Tauri、WebView、HTML、CSS 或 DOM runtime。

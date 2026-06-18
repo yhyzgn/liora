@@ -3,13 +3,7 @@
 use gpui::{
     App, AppContext, Bounds, Context, Render, Window, WindowBounds, WindowOptions, px, size,
 };
-use liora_components::{
-    Autocomplete, Cascader, Checkbox, CodeBlock, CodeEditor, ColorPicker, DatePicker,
-    DateTimePicker, Dialog, Drawer, Input, MessageManager, Paragraph, Popover, Preview, Radio,
-    RadioGroup, Select, Switch, Text, TimePicker, Title, Tour,
-};
-use liora_core::init_liora;
-use liora_theme::Theme;
+use liora_components::{ThemeMode, init_liora, init_liora_with_mode};
 
 struct RootView;
 
@@ -21,37 +15,13 @@ impl Render for RootView {
 
 fn main() {
     gpui_platform::application().run(|cx: &mut App| {
-        // 1. Register Liora theme/config globally.
-        init_liora(cx, Theme::light());
+        // 1. Initialize Liora core/theme state, component services, and key bindings.
+        init_liora(cx);
 
-        // 2. Initialize global services used by components.
-        MessageManager::init(cx);
+        // Optional: choose an explicit startup mode instead.
+        // init_liora_with_mode(cx, ThemeMode::Dark);
 
-        // 3. Register keyboard behavior for interactive components.
-        Input::register_key_bindings(cx);
-        CodeBlock::register_key_bindings(cx);
-        CodeEditor::register_key_bindings(cx);
-        Checkbox::register_key_bindings(cx);
-        Radio::register_key_bindings(cx);
-        RadioGroup::register_key_bindings(cx);
-        Switch::register_key_bindings(cx);
-        Dialog::register_key_bindings(cx);
-        Drawer::register_key_bindings(cx);
-        Preview::register_key_bindings(cx);
-        Autocomplete::register_key_bindings(cx);
-        Cascader::register_key_bindings(cx);
-        ColorPicker::register_key_bindings(cx);
-        DatePicker::register_key_bindings(cx);
-        DateTimePicker::register_key_bindings(cx);
-        Popover::register_key_bindings(cx);
-        Select::register_key_bindings(cx);
-        TimePicker::register_key_bindings(cx);
-        Text::register_key_bindings(cx);
-        Paragraph::register_key_bindings(cx);
-        Title::register_key_bindings(cx);
-        Tour::register_key_bindings(cx);
-
-        // 4. Open the native window and mount a root GPUI View.
+        // 2. Open the native window and mount a root GPUI View.
         let _ = cx.open_window(
             WindowOptions {
                 window_bounds: Some(WindowBounds::Windowed(Bounds {

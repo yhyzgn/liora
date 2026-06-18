@@ -7538,6 +7538,7 @@ mod tests {
         let titles = DOC_PAGES.iter().map(|page| page.title).collect::<Vec<_>>();
         assert!(titles.contains(&"Theme"));
         assert!(THEME_SYSTEM_DOC.contains("ThemeMode::System"));
+        assert!(THEME_SYSTEM_DOC.contains("liora_components::init_liora_with_mode"));
         assert!(THEME_SYSTEM_DOC.contains("observe_window_appearance"));
         assert!(load_code_snippet("theme/system_mode.rs").is_some());
     }
@@ -7595,7 +7596,8 @@ mod tests {
         assert!(titles.contains(&"Release Candidate"));
         assert!(ADOPTION_DOC.contains("cargo run -p liora-gallery"));
         assert!(ADOPTION_DOC.contains("cargo run -p liora-docs"));
-        assert!(ADOPTION_DOC.contains("init_liora(cx, Theme::light())"));
+        assert!(ADOPTION_DOC.contains("liora_components::init_liora(cx)"));
+        assert!(ADOPTION_DOC.contains("liora_components::init_liora_with_mode"));
         assert!(ADOPTION_DOC.contains("Entity<T>"));
         assert!(!ADOPTION_DOC.contains("liora-minimal-app"));
         assert!(!ADOPTION_DOC.contains("liora-dashboard-app"));
@@ -7736,7 +7738,8 @@ mod tests {
         assert!(readme.contains("assets/liora-logo.svg"));
         assert!(readme.contains("README.zh-CN.md"));
         assert!(readme.contains("assets/github-repository-metadata.md"));
-        assert!(readme.contains("init_liora_with_mode(cx, ThemeMode::System)"));
+        assert!(readme.contains("liora_components::init_liora(cx)"));
+        assert!(readme.contains("liora_components::init_liora_with_mode"));
         let readme_zh = include_str!("../../../README.zh-CN.md");
         assert!(readme_zh.contains("纯 Rust + GPUI 原生"));
         assert!(readme_zh.contains("assets/liora-logo.svg"));
@@ -8016,10 +8019,19 @@ mod tests {
     }
 
     #[test]
-    fn quick_start_registers_core_app_key_bindings() {
+    fn quick_start_uses_unified_liora_application_init() {
         let quick_start = include_str!("../content/snippets/quick_start/main_window.rs");
         let gallery = include_str!("../../liora-gallery/src/main.rs");
         let docs = include_str!("main.rs");
+        let components = include_str!("../../../crates/liora-components/src/lib.rs");
+
+        for source in [quick_start, gallery, docs] {
+            assert!(source.contains("init_liora(cx)"));
+            assert!(!source.contains("MessageManager::init(cx)"));
+            assert!(!source.contains("Input::register_key_bindings(cx)"));
+        }
+        assert!(quick_start.contains("init_liora_with_mode"));
+        assert!(quick_start.contains("ThemeMode::Dark"));
 
         for registration in [
             "Input::register_key_bindings(cx)",
@@ -8032,16 +8044,8 @@ mod tests {
             "Tour::register_key_bindings(cx)",
         ] {
             assert!(
-                quick_start.contains(registration),
-                "QuickStart main_window.rs missing {registration}"
-            );
-            assert!(
-                gallery.contains(registration),
-                "Gallery main.rs missing {registration}"
-            );
-            assert!(
-                docs.contains(registration),
-                "Docs main.rs missing {registration}"
+                components.contains(registration),
+                "unified component init missing {registration}"
             );
         }
     }

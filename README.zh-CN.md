@@ -138,28 +138,19 @@ cargo doc --workspace --no-deps
 
 ```rust
 use gpui::App;
-use liora_core::{init_liora_with_mode, ThemeMode};
+use liora_components::init_liora;
 
 fn main() {
     gpui_platform::application().run(|cx: &mut App| {
-        init_liora_with_mode(cx, ThemeMode::System);
-
-        liora_components::MessageManager::init(cx);
-        liora_components::Input::register_key_bindings(cx);
-        liora_components::CodeBlock::register_key_bindings(cx);
-        liora_components::CodeEditor::register_key_bindings(cx);
-        liora_components::Preview::register_key_bindings(cx);
-        liora_components::Text::register_key_bindings(cx);
-        liora_components::Paragraph::register_key_bindings(cx);
-        liora_components::Title::register_key_bindings(cx);
-        liora_components::Tour::register_key_bindings(cx);
+        // 初始化 Liora core/theme 状态、组件服务和 key bindings。
+        init_liora(cx);
 
         // cx.open_window(...)
     });
 }
 ```
 
-推荐使用 `init_liora_with_mode(cx, ThemeMode::System)`，让应用默认跟随系统主题。对于 `Input`、`Switch`、`Select`、`CodeEditor` 等有内部状态的控件，使用 `Entity<T>` 以保证 focus 和内部状态在重渲染后仍然稳定。Gallery 和 Docs 是应用壳初始化、key binding 注册、主题切换、托盘、toast 与组合模式的维护中参考实现。
+`liora_components::init_liora(cx)` 默认跟随系统主题，并统一初始化组件服务与 key bindings。当产品需要显式选择启动主题时，使用 `liora_components::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)`。对于 `Input`、`Switch`、`Select`、`CodeEditor` 等有内部状态的控件，使用 `Entity<T>` 以保证 focus 和内部状态在重渲染后仍然稳定。Gallery 和 Docs 是应用壳初始化、key binding 注册、主题切换、托盘、toast 与组合模式的维护中参考实现。
 
 ## 组件 API 示例
 

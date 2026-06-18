@@ -3,16 +3,11 @@ use gpui::{
     WindowOptions, div, prelude::*, px, size,
 };
 use liora_components::{
-    AppWindowFrame, Autocomplete, Button, Card, Cascader, Checkbox, CodeBlock, CodeEditor,
-    ColorPicker, Container, DatePicker, DateTimePicker, Dialog, Drawer, Input, Menu, MenuMode,
-    MessageManager, Paragraph, Popover, Preview, Radio, RadioGroup, Segmented, SegmentedOption,
-    Select, Space, Switch, Tag, Text, TimePicker, Title, Tour, WindowFrameMode,
-    apply_window_frame_mode, frame_mode_switch_row, toast_info, toast_success,
+    AppWindowFrame, Button, Card, Container, Input, Menu, MenuMode, Segmented, SegmentedOption,
+    Space, Switch, Tag, Text, WindowFrameMode, apply_window_frame_mode, frame_mode_switch_row,
+    init_liora, toast_info, toast_success,
 };
-use liora_core::{
-    Config, PassivePortal, Portal, ThemeMode, apply_theme_mode, init_liora_with_mode,
-    sync_system_theme,
-};
+use liora_core::{Config, PassivePortal, Portal, ThemeMode, apply_theme_mode, sync_system_theme};
 use liora_gallery::demos;
 use liora_tray::{
     BundledTrayIconSet, BundledTrayIconState, LioraTray, MouseButton, MouseButtonState,
@@ -59,32 +54,7 @@ fn run_gallery() {
     gpui_platform::application()
         .with_quit_mode(gpui::QuitMode::Explicit)
         .run(|cx: &mut App| {
-            init_liora_with_mode(cx, ThemeMode::System);
-            MessageManager::init(cx);
-
-            // Register all key bindings
-            Input::register_key_bindings(cx);
-            CodeBlock::register_key_bindings(cx);
-            CodeEditor::register_key_bindings(cx);
-            Checkbox::register_key_bindings(cx);
-            Radio::register_key_bindings(cx);
-            RadioGroup::register_key_bindings(cx);
-            Switch::register_key_bindings(cx);
-            Dialog::register_key_bindings(cx);
-            Drawer::register_key_bindings(cx);
-            Preview::register_key_bindings(cx);
-            Autocomplete::register_key_bindings(cx);
-            Cascader::register_key_bindings(cx);
-            ColorPicker::register_key_bindings(cx);
-            DatePicker::register_key_bindings(cx);
-            DateTimePicker::register_key_bindings(cx);
-            Popover::register_key_bindings(cx);
-            Select::register_key_bindings(cx);
-            TimePicker::register_key_bindings(cx);
-            Text::register_key_bindings(cx);
-            Paragraph::register_key_bindings(cx);
-            Title::register_key_bindings(cx);
-            Tour::register_key_bindings(cx);
+            init_liora(cx);
 
             install_gallery_tray(cx);
             if let Some(handle) = open_gallery_window(cx) {
@@ -546,7 +516,7 @@ mod shell_tests {
         assert!(source.contains("Container::new()"));
         assert!(source.contains("Menu::new()"));
         assert!(source.contains(".no_shrink()"));
-        assert!(source.contains("Preview::register_key_bindings(cx)"));
+        assert!(source.contains("init_liora(cx)"));
         assert!(source.contains("nav_filter"));
         assert!(source.contains("nav_menu: Option"));
         assert!(source.contains("self.nav_menu = Some"));

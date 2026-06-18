@@ -1,5 +1,6 @@
 use gpui::{App, Window};
-use liora_core::{ThemeMode, apply_theme_mode, init_liora_with_mode, sync_system_theme};
+use liora_components::{ThemeMode, init_liora_with_mode};
+use liora_core::{apply_theme_mode, sync_system_theme};
 
 pub fn init_app_theme(cx: &mut App) {
     // 推荐默认跟随系统外观。

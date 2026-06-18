@@ -13,7 +13,7 @@ cargo run -p liora-docs
 ```
 
 3. Use Gallery to inspect component behavior and app-shell interactions such as menu search, theme switching, tray controls, toasts, and close-to-tray flow.
-4. Use Docs to copy the setup shape: `init_liora_with_mode(cx, ThemeMode::System)`, global service initialization, and component key binding registration. `init_liora(cx, Theme::light())` remains available when a product wants an explicit fixed theme.
+4. Use Docs to copy the setup shape: `liora_components::init_liora(cx)` as the one-line default entry point. It initializes core/theme state, global component services, and component key bindings. Use `liora_components::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)` when a product wants an explicit startup mode.
 5. Keep stateful controls as `Entity<T>` fields in your own app views.
 
 ## Canonical app surfaces
@@ -30,21 +30,12 @@ This avoids sample-only drift. If Gallery or Docs needs raw GPUI glue for a comm
 A downstream application still follows the same minimal setup:
 
 ```rust
-use liora_core::{ThemeMode, init_liora_with_mode};
 use gpui::App;
+use liora_components::init_liora;
 
 fn main() {
     gpui_platform::application().run(|cx: &mut App| {
-        init_liora_with_mode(cx, ThemeMode::System);
-        liora_components::MessageManager::init(cx);
-        liora_components::Input::register_key_bindings(cx);
-        liora_components::CodeBlock::register_key_bindings(cx);
-        liora_components::CodeEditor::register_key_bindings(cx);
-        liora_components::Preview::register_key_bindings(cx);
-        liora_components::Text::register_key_bindings(cx);
-        liora_components::Paragraph::register_key_bindings(cx);
-        liora_components::Title::register_key_bindings(cx);
-        liora_components::Tour::register_key_bindings(cx);
+        init_liora(cx);
         // open your product window here
     });
 }
@@ -71,7 +62,7 @@ Before using a component in production, check:
 
 - Docs page for effect + code examples.
 - Gallery page for native visual behavior.
-- Whether it needs app-level key binding registration.
+- Whether it has state that should live in an `Entity<T>`; app-level key bindings are covered by `liora_components::init_liora(cx)`.
 - Whether it should live as `Entity<T>` instead of being rebuilt every render.
 - Overlay close policy: ESC and outside-click behavior for popups, drawers, dialogs, Preview, and Tour.
 - Performance knobs for large data components such as CodeBlock, charts, and virtualized controls.

@@ -13,6 +13,6 @@ fn formatted_toasts() {
 }
 
 fn main() {
-    // In an app, call MessageManager::init(cx) before these macros run.
+    // In an app, call liora_components::init_liora(cx) before these macros run.
     let _ = formatted_toasts as fn();
 }

@@ -44,8 +44,7 @@ Liora 代码基本围绕 GPUI 的几个核心抽象组织：
 
 应用入口一般按这个顺序：
 
-1. `init_liora(cx, Theme::light())` 注册主题配置。
-2. `MessageManager::init(cx)` 初始化全局提示。
+1. `liora_components::init_liora(cx)` 统一注册主题配置、组件全局服务和 key bindings。
 3. 注册 `Input`、`CodeBlock`、`Checkbox`、`Radio`、`Switch`、`Dialog`、`Drawer`、`Preview` 等 key bindings。
 4. `cx.open_window(WindowOptions { ... }, |_, cx| cx.new(...))` 打开窗口。
 5. 根 View 渲染 `Container`、页面内容和 Portal / Message overlay。
