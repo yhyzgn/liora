@@ -30,7 +30,7 @@ P13 高级控件扩展和 P14 deferred backlog 已完成，P12 本地 runner-saf
 目标：让每次普通提交都能自动验证核心质量，而不是只依赖 packaging workflow。
 
 - [x] 新增通用 CI workflow：fmt、workspace check/test、docs snippet check、packaging validate、packaging dry-run、install-smoke dry-run。
-- [ ] 评估是否需要拆分 Linux GUI 依赖缓存和 workspace test matrix。
+- [x] 评估并拆分 Linux GUI workspace 质量 job 与 lightweight packaging dry-run job。
 - [x] 将 release/package workflow 与 CI workflow 的职责边界写入 docs。
 
 ## Track B — API Consistency Audit
@@ -289,5 +289,24 @@ Validation evidence for this slice:
 - `cargo check -p aura-docs --bin check_snippets` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.
+- `git diff --check` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+### 2026-06-18 — Track A split CI quality and packaging dry-run jobs
+
+- Split `.github/workflows/ci.yml` into `rust-quality` and `packaging-dry-run` jobs.
+- Kept full GPUI/Linux native dependencies only on the workspace fmt/check/test/docs-snippet job, while the packaging dry-run job now installs only lightweight tooling needed by `xtask` dry-run gates.
+- Updated Packaging Workflow docs and regression tests to lock the CI job split and prevent packaging dry-run from silently inheriting unused rpm/zsync/native GUI dependency setup.
+
+Validation evidence for this slice:
+- Workflow YAML parsed successfully with PyYAML.
+- `cargo fmt --all --check` passed.
+- `cargo test -p aura-docs packaging -- --nocapture` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `cargo run -p xtask -- package validate` passed.
+- `cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build` passed.
+- `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run` passed.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.

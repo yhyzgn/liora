@@ -3306,3 +3306,23 @@
 - `cargo test --workspace` passed.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+## Session 2026-06-18 — P15 Track A Split CI Jobs
+
+### Actions
+- Split the general CI workflow into `rust-quality` and `packaging-dry-run` jobs.
+- Removed unused rpm/zsync package prerequisites from ordinary quality CI; packaging dry-run now only installs lightweight `file` tooling before running `xtask` package gates.
+- Updated Packaging Workflow docs and docs tests to capture the CI job split.
+
+### Verification
+- Workflow YAML parsed successfully with PyYAML.
+- `cargo fmt --all --check` passed.
+- `cargo test -p aura-docs packaging -- --nocapture` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `cargo run -p xtask -- package validate` passed.
+- `cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build` passed.
+- `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run` passed.
+- `git diff --check` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.

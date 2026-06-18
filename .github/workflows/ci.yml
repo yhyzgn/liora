@@ -11,8 +11,8 @@ permissions:
   contents: read
 
 jobs:
-  quality:
-    name: fmt, check, test, snippets, packaging dry-run
+  rust-quality:
+    name: fmt, check, test, docs snippets
     runs-on: ubuntu-24.04
 
     steps:
@@ -50,9 +50,7 @@ jobs:
             libx11-dev \
             libxkbcommon-dev \
             libxkbcommon-x11-dev \
-            pkg-config \
-            rpm \
-            zsync
+            pkg-config
 
       - name: Format check
         run: cargo fmt --all --check
@@ -65,6 +63,29 @@ jobs:
 
       - name: Docs snippet check
         run: cargo check -p aura-docs --bin check_snippets
+
+  packaging-dry-run:
+    name: packaging validate and dry-run
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Prefer toolchain cargo shim
+        shell: bash
+        run: echo "$(dirname "$(rustup which cargo)")" >> "$GITHUB_PATH"
+
+      - name: Install packaging dry-run tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y file
 
       - name: Packaging metadata validate
         run: cargo run -p xtask -- package validate

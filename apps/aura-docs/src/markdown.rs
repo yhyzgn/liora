@@ -7455,10 +7455,27 @@ mod tests {
         assert!(PACKAGING_WORKFLOW_DOC.contains(".github/workflows/ci.yml"));
         assert!(PACKAGING_WORKFLOW_DOC.contains(".github/workflows/package.yml"));
         assert!(PACKAGING_WORKFLOW_DOC.contains("Should publish release assets?"));
+        assert!(PACKAGING_WORKFLOW_DOC.contains("`rust-quality`"));
+        assert!(PACKAGING_WORKFLOW_DOC.contains("`packaging-dry-run`"));
         assert!(
             PACKAGING_WORKFLOW_DOC.contains("Only `v*` tag runs publish GitHub Release assets")
         );
         assert!(PACKAGING_WORKFLOW_DOC.contains("If a step builds installers, uploads artifacts, or calls `gh release`, it belongs only in `package.yml`."));
+    }
+
+    #[test]
+    fn ci_workflow_splits_workspace_and_packaging_dry_run_jobs() {
+        let ci = include_str!("../../../.github/workflows/ci.yml");
+
+        assert!(ci.contains("rust-quality:"));
+        assert!(ci.contains("packaging-dry-run:"));
+        assert!(ci.contains("cargo check --workspace --all-targets"));
+        assert!(ci.contains("cargo run -p xtask -- package validate"));
+        assert!(ci.contains("cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run"));
+        assert!(ci.contains("Install Linux native build dependencies"));
+        assert!(ci.contains("Install packaging dry-run tools"));
+        assert!(!ci.contains("rpm"));
+        assert!(!ci.contains("zsync"));
     }
 
     #[test]
