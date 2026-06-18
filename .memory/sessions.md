@@ -3668,3 +3668,12 @@
 - Non `.git` / `.omx` / `target` residual search for the retired project name in paths/text returned 0.
 - Gallery GUI smoke passed: `timeout 10s cargo run -p liora-gallery` exited `124` after startup.
 - Docs GUI smoke passed: `timeout 10s cargo run -p liora-docs` exited `124` after startup.
+
+## 2026-06-19 README bilingual documentation and root assets
+
+Expanded project presentation documentation: rewrote the English README, added `README.zh-CN.md`, designed a README-embedded SVG logo, and documented recommended GitHub repository description/topics for SEO. Per user direction, README-facing static resources and presentation attachments now live under root `assets/` instead of `docs/`, because `docs/` may be cleaned as an AI-agent working/documentation area. Added regression coverage in `apps/liora-docs/src/markdown.rs` for the bilingual README links, logo asset, GitHub metadata note, and current RC boundaries.
+
+Validation evidence:
+- `cargo fmt --all --check` passed.
+- `cargo test -p liora-docs release_candidate_readiness_docs_cover_current_boundaries -- --nocapture` passed.
+- Topic metadata self-check confirmed 20 topics, all lowercase/digit/hyphen and <=50 characters.

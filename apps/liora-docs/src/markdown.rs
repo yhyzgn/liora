@@ -7733,7 +7733,21 @@ mod tests {
         assert!(checklist.contains("do not re-add"));
 
         assert!(readme.contains("docs/release-candidate-checklist.md"));
+        assert!(readme.contains("assets/liora-logo.svg"));
+        assert!(readme.contains("README.zh-CN.md"));
+        assert!(readme.contains("assets/github-repository-metadata.md"));
         assert!(readme.contains("init_liora_with_mode(cx, ThemeMode::System)"));
+        let readme_zh = include_str!("../../../README.zh-CN.md");
+        assert!(readme_zh.contains("纯 Rust + GPUI 原生"));
+        assert!(readme_zh.contains("assets/liora-logo.svg"));
+        assert!(readme_zh.contains("assets/github-repository-metadata.md"));
+        let repo_metadata = include_str!("../../../assets/github-repository-metadata.md");
+        assert!(repo_metadata.contains("Pure Rust + GPUI native enterprise UI component library"));
+        assert!(repo_metadata.contains("rust-desktop"));
+        assert!(repo_metadata.contains("no more than 20 topics"));
+        let logo = include_str!("../../../assets/liora-logo.svg");
+        assert!(logo.contains(r#"<title id="title">Liora logo</title>"#));
+        assert!(logo.contains("PURE RUST + GPUI NATIVE UI"));
         assert!(changelog.contains("P21 release-candidate readiness"));
         assert!(prompt.contains(".prompt/P21-release-candidate-readiness.md"));
         assert!(!cargo.contains("examples/minimal-app"));

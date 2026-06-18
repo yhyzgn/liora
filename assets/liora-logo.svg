@@ -1,0 +1,47 @@
+<svg width="960" height="300" viewBox="0 0 960 300" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Liora logo</title>
+  <desc id="desc">A refined native UI logo with a luminous ribbon mark and the Liora wordmark.</desc>
+  <defs>
+    <linearGradient id="mark" x1="96" y1="42" x2="248" y2="254" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8EE7FF"/>
+      <stop offset="0.45" stop-color="#8B5CF6"/>
+      <stop offset="1" stop-color="#10B981"/>
+    </linearGradient>
+    <linearGradient id="stroke" x1="64" y1="36" x2="268" y2="264" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.92"/>
+      <stop offset="0.5" stop-color="#E0E7FF" stop-opacity="0.52"/>
+      <stop offset="1" stop-color="#A7F3D0" stop-opacity="0.68"/>
+    </linearGradient>
+    <linearGradient id="word" x1="326" y1="72" x2="700" y2="210" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#111827"/>
+      <stop offset="0.55" stop-color="#334155"/>
+      <stop offset="1" stop-color="#0F766E"/>
+    </linearGradient>
+    <filter id="glow" x="16" y="-16" width="304" height="332" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="18" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.38 0 0 0 0 0.25 0 0 0 0 0.92 0 0 0 0.28 0"/>
+      <feBlend in="SourceGraphic" mode="normal"/>
+    </filter>
+  </defs>
+
+  <rect width="960" height="300" rx="42" fill="#F8FAFC"/>
+  <circle cx="168" cy="150" r="108" fill="#EEF2FF"/>
+  <circle cx="214" cy="98" r="68" fill="#CCFBF1" fill-opacity="0.55"/>
+  <circle cx="108" cy="214" r="64" fill="#EDE9FE" fill-opacity="0.72"/>
+
+  <g filter="url(#glow)">
+    <path d="M168 42C217.706 42 258 82.2944 258 132C258 214 168 258 168 258C168 258 78 214 78 132C78 82.2944 118.294 42 168 42Z" fill="url(#mark)"/>
+    <path d="M168 42C217.706 42 258 82.2944 258 132C258 214 168 258 168 258C168 258 78 214 78 132C78 82.2944 118.294 42 168 42Z" stroke="url(#stroke)" stroke-width="10"/>
+    <path d="M132 190V84H164V162H212V190H132Z" fill="white"/>
+    <path d="M181 96C194.807 96 206 84.8071 206 71C206 84.8071 217.193 96 231 96C217.193 96 206 107.193 206 121C206 107.193 194.807 96 181 96Z" fill="#ECFEFF"/>
+  </g>
+
+  <path d="M340 205V82H368V180H427V205H340Z" fill="url(#word)"/>
+  <path d="M448 205V111H475V205H448ZM461.5 98C453.2 98 446.8 91.7 446.8 83.9C446.8 76.1 453.2 69.8 461.5 69.8C469.8 69.8 476.2 76.1 476.2 83.9C476.2 91.7 469.8 98 461.5 98Z" fill="url(#word)"/>
+  <path d="M543.8 207.4C516.5 207.4 496.2 186.9 496.2 158C496.2 129.1 516.5 108.6 543.8 108.6C571.1 108.6 591.4 129.1 591.4 158C591.4 186.9 571.1 207.4 543.8 207.4ZM543.8 183.8C556.2 183.8 564.2 173.6 564.2 158C564.2 142.4 556.2 132.2 543.8 132.2C531.4 132.2 523.4 142.4 523.4 158C523.4 173.6 531.4 183.8 543.8 183.8Z" fill="url(#word)"/>
+  <path d="M612 205V111H638.2V127.6C643.4 116.4 652.8 109.4 665.8 109.4C669.2 109.4 672.2 109.8 674.8 110.8V136.4C671.6 135.4 668.1 134.8 664.2 134.8C648.4 134.8 639 144.8 639 162.4V205H612Z" fill="url(#word)"/>
+  <path d="M731.2 207.4C704.6 207.4 684.6 186.8 684.6 158C684.6 128.9 704.2 108.6 732.2 108.6C758.2 108.6 776.6 127.2 776.6 154.8C776.6 158.5 776.3 162.1 775.7 165.8H711.2C713.4 178.6 722.1 185.8 735.2 185.8C745.4 185.8 752.6 181.8 757.7 174.4L773.4 190.2C764.4 201.6 750.1 207.4 731.2 207.4ZM711.4 148.4H750.8C749.4 137 742.5 130.2 732 130.2C721.1 130.2 713.8 136.8 711.4 148.4Z" fill="url(#word)"/>
+  <path d="M832.6 207.2C810.6 207.2 795.4 194.8 795.4 176.2C795.4 157.2 810.6 146.2 837.8 146.2H858V141.8C858 133.4 852.5 128.6 842.8 128.6C833.7 128.6 827.4 132.9 824 141.2L801.8 132.8C808.1 117.5 822.8 108.6 843.8 108.6C869.8 108.6 884.8 121.5 884.8 143.8V205H859.4V193.2C853.7 202.1 844.8 207.2 832.6 207.2ZM840.2 187.2C850.4 187.2 858 180.8 858 171.6V164.4H841.2C828.9 164.4 822.8 168.2 822.8 176C822.8 183 829.3 187.2 840.2 187.2Z" fill="url(#word)"/>
+
+  <text x="342" y="242" fill="#64748B" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="24" letter-spacing="2.5">PURE RUST + GPUI NATIVE UI</text>
+</svg>

@@ -195,3 +195,7 @@ Theme/config: Theme, Config, ContextExt, ElementExt, ColorPalette, Spacing, Radi
 - Support runtime icon changes, tooltip/visibility updates, checkbox state sync, separators, and recursive 2nd/3rd/N-level submenus.
 - Tray-enabled GPUI apps must use `QuitMode::Explicit` and retain the `LioraTray` handle for process lifetime.
 - Normal Gallery/Docs examples should preview config and command behavior without creating intrusive OS tray icons.
+
+## ADR — Root `assets/` for README-facing static resources (2026-06-19)
+
+README-facing static resources such as logos, social/SEO metadata notes, and other project presentation attachments live under the repository root `assets/` directory. Do not place these assets under `docs/`, because `docs/` may be cleaned as an AI-agent working/documentation area in future maintenance passes. README links should use stable `assets/...` paths.
