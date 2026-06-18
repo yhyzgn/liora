@@ -2,6 +2,10 @@
 name = "aura-components"
 version = "0.1.0"
 edition = "2024"
+description = "Enterprise-style native GPUI component library for Aura applications."
+license = "LicenseRef-Aura"
+repository = "https://github.com/yhyzgn/aura"
+publish = false
 
 [dependencies]
 gpui.workspace = true

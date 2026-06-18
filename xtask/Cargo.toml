@@ -2,6 +2,9 @@
 name = "xtask"
 version = "0.1.0"
 edition = "2024"
+description = "Repository automation commands for Aura development, packaging, and release readiness."
+license = "LicenseRef-Aura"
+repository = "https://github.com/yhyzgn/aura"
 publish = false
 
 [dependencies]

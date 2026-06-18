@@ -14,7 +14,7 @@
 | UI 框架 | GPUI 0.2.2 (git = "https://github.com/zed-industries/zed") |
 | 参考规范 | Element-Plus 2.x (https://element-plus.org/zh-CN/) |
 | 架构 | Cargo Workspace Monorepo |
-| 目标 | ~76+ 个企业级组件, 分阶段交付；P9 作为延后高级组件补全 backlog；P10 原生统计图组件；P11 系统托盘/进程常驻阶段；P12 原生安装器打包阶段；P13 高级控件扩展阶段；P14 延后高级组件补全阶段；P15 质量收口阶段；P16 对外采用准备阶段；P17 真实 Dashboard Dogfooding 阶段；P18 Dashboard Polish/API Ergonomics 阶段；P19 Dashboard State/Data Flow 阶段；P20 Theme/Interaction Polish 阶段 |
+| 目标 | ~76+ 个企业级组件, 分阶段交付；P9 作为延后高级组件补全 backlog；P10 原生统计图组件；P11 系统托盘/进程常驻阶段；P12 原生安装器打包阶段；P13 高级控件扩展阶段；P14 延后高级组件补全阶段；P15 质量收口阶段；P16 对外采用准备阶段；P17 真实 Dashboard Dogfooding 阶段；P18 Dashboard Polish/API Ergonomics 阶段；P19 Dashboard State/Data Flow 阶段；P20 Theme/Interaction Polish 阶段；P21 Release Candidate Readiness 阶段 |
 
 ---
 
@@ -23,6 +23,7 @@
 | 文档 | 路径 | 用途 |
 |------|------|------|
 | 架构设计 | `architecture-design.md` | 完整技术方案、组件清单、Token 体系、里程碑 |
+| Release Candidate Checklist | `docs/release-candidate-checklist.md` | P21 0.1.0 RC 本地 gate、metadata audit 与 protected release 边界 |
 | 工程结构 | `structure.txt` | Workspace 目录树速览 |
 | 初始调研 | `chat.txt` | Gemini 技术可行性分析 |
 | **记忆库** | `.memory/` | 当前状态、架构决策、组件清单、会话历史 |
@@ -34,11 +35,12 @@
 | **P13 高级控件扩展** | `.prompt/P13-component-expansion.md` | 已实现：二维码、代码编辑器、信号图、热力/比例条、拖动列表、Timer、Label/Operation，以及 BarChart 独立迷你柱样式与 Chart/Button/Tag/Radio/Checkbox 增强 |
 | **P14 延后高级组件补全** | `.prompt/P14-deferred-advanced.md` | 已完成：Carousel、Calendar、InputTag、Mention、Watermark、TreeSelect、Tour、VirtualizedTable、VirtualizedTree 全部补齐 |
 | **P15 质量收口** | `.prompt/P15-quality-hardening.md` | ✅ 已完成：CI/验证门禁、API 一致性、主题视觉、交互键盘、性能和 Docs 完整性 hardening |
-| **P16 对外采用准备** | `.prompt/P16-adoption-readiness.md` | ✅ 已完成：README、CONTRIBUTING、CHANGELOG、minimal app、Rustdoc 入口、Docs Adoption Guide、采用性回归测试 |
+| **P16 对外采用准备** | `.prompt/P16-adoption-readiness.md` | ✅ 已完成：README、CONTRIBUTING、CHANGELOG、minimal setup guidance、Rustdoc 入口、Docs Adoption Guide、采用性回归测试 |
 | **P17 Dashboard Dogfooding** | `.prompt/P17-dogfood-dashboard.md` | ✅ 已完成并回流：独立 dashboard app 已移除，真实组合/主题/过滤/toast 等能力进入 Gallery/Docs |
 | **P18 Dashboard Polish/API Ergonomics** | `.prompt/P18-dashboard-polish-and-api-ergonomics.md` | ✅ 已完成：Gallery shell polish、暗色主题切换、Dashboard Patterns 文档和回归测试；dashboard/sample 专用代码不进入核心组件库 |
 | **P19 Dashboard State/Data Flow** | `.prompt/P19-dashboard-state-and-data-flow.md` | ✅ 已完成：Dashboard 数据模型、过滤、刷新、状态分支、Dashboard State 文档和回归测试 |
 | **P20 Theme/Interaction Polish** | `.prompt/P20-theme-and-interaction-polish.md` | ✅ 已完成：System/Light/Dark 主题入口、dark subtle token、浮层/Loading mask token 化、Theme Gallery/Docs 页面和回归测试 |
+| **P21 Release Candidate Readiness** | `.prompt/P21-release-candidate-readiness.md` | ✅ 已完成：0.1.0 RC checklist、显式 package metadata、README/CHANGELOG/prompt/memory 同步和 release-boundary 回归测试 |
 
 ---
 
@@ -99,7 +101,8 @@ aura/
 │   ├── P17-dogfood-dashboard.md
 │   ├── P18-dashboard-polish-and-api-ergonomics.md
 │   ├── P19-dashboard-state-and-data-flow.md
-│   └── P20-theme-and-interaction-polish.md
+│   ├── P20-theme-and-interaction-polish.md
+│   └── P21-release-candidate-readiness.md
 ├── prompt.md                         # 📌 本文件 (AI 入口)
 ├── architecture-design.md
 └── structure.txt
@@ -134,6 +137,7 @@ aura/
 - P17 Dashboard Dogfooding 阶段已完成并已回流：原 `examples/dashboard-app` 独立样例已移除，其验证出的搜索/过滤、主题切换、toast、组合布局和状态说明融合进 Gallery/Docs。详见 `.prompt/P17-dogfood-dashboard.md`。
 - P18 Dashboard Polish/API Ergonomics 阶段；P19 Dashboard State/Data Flow 阶段已完成并已回流：Dashboard app-shell 能力放在 Gallery/Docs；dashboard/sample 专用 helper、业务 sample/model 不进入核心组件库；Docs 保留 `Dashboard Patterns`/`Dashboard State` 作为 app-layer 模式说明。详见 `.prompt/P18-dashboard-polish-and-api-ergonomics.md`。
 - P20 Theme/Interaction Polish 阶段已完成：System/Light/Dark 成为正式主题入口，dark subtle token 改为透明 overlay，Dialog/Drawer/Tour/Loading/CodeEditor/WindowFrame 等关键路径完成 token 化，并新增 Gallery Theme demo 与 Docs Theme 页面。详见 `.prompt/P20-theme-and-interaction-polish.md`。
+- P21 Release Candidate Readiness 阶段已完成：新增 `docs/release-candidate-checklist.md` 作为 0.1.0 RC source of truth，显式补齐 package metadata，刷新 README/CHANGELOG/prompt/memory，并用回归测试锁住 Gallery/Docs canonical app、LicenseRef-Aura、纯 Rust + GPUI native 和 protected release 边界。详见 `.prompt/P21-release-candidate-readiness.md`。
 
 ### 4.1.2 应用与示例边界红线
 
@@ -384,7 +388,7 @@ GitHub preview runner `27613242837` / commit `5a3615d` 已通过 Linux/macOS/Win
 1. **Signing / notarization**：macOS `codesign`/`notarytool`/`stapler`，Windows `signtool`/timestamp，CI secrets 与 unsigned fallback。
 2. **GitHub Release automation 后续增强**：基础自动 Release、push preview 构建、按提交类型分组 changelog 已接入；后续可补 release draft/prerelease 策略、非 tar 后端 artifact 命名清洗、按平台聚合 manifest。
 3. **Install / uninstall smoke**：已补 artifact smoke 与 `xtask package install-smoke --dry-run` plan-only gate；portable `.tar.gz` 支持显式 `--execute-install` 安全解压/删除验证。仍待在 dedicated runners 和明确 policy 下放开真正系统级 deb/rpm/AppImage/macOS/Windows 安装/卸载执行 gate。
-4. **License / metadata cleanup**：当前无明确 `LICENSE`，RPM 暂用 `LicenseRef-Aura`。
+4. **License / metadata cleanup**：`LICENSE.md` 已明确当前 `LicenseRef-Aura` 策略；Cargo package metadata、RPM/backend metadata 和 RC checklist 均保持一致。只有 owner 正式改为 OSS/commercial license 时才调整。
 5. **CI release-tag iteration**：preview runner 已通过；release tag 已校验为 `vX.Y.Z` 且匹配 packager version；仍需在真实 `v*` tag 上验证 release job、GitHub Release asset 上传与 Windows MSI。
 
 完整细节见 `.prompt/P12-packaging.md`。

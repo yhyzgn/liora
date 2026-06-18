@@ -4,7 +4,7 @@
   <name>Aura Docs</name>
   <summary>Native GPUI documentation app for Aura.</summary>
   <metadata_license>MIT</metadata_license>
-  <project_license>MIT</project_license>
+  <project_license>LicenseRef-Aura</project_license>
   <launchable type="desktop-id">aura-docs.desktop</launchable>
   <categories>
     <category>Development</category>

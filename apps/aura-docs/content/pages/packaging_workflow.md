@@ -203,6 +203,16 @@ P12 no longer treats signing, notarization, license policy, and real release val
 
 For a real public release, create a protected `vX.Y.Z` tag that matches `crates/aura-packager/Cargo.toml`, configure the documented signing secrets, and let `package.yml` publish the GitHub Release. Without those credentials the workflow intentionally stops instead of publishing unsigned release artifacts by accident.
 
+
+## Release Candidate Checklist
+
+The repository-owned release-candidate checklist lives at `docs/release-candidate-checklist.md`. It is the source of truth for the Aura `0.1.0` RC gate and covers:
+
+- local validation commands for formatting, workspace checks/tests, snippet checks, Rustdoc, packaging validation, release-readiness, dry-run packaging, install-smoke dry-run, and Gallery/Docs GUI smoke;
+- package metadata expectations such as `LicenseRef-Aura`, repository URL, and `publish = false`;
+- the canonical app boundary: Gallery and Docs only, with no standalone `minimal-app` or `dashboard-app`;
+- protected release-only work such as real `v0.1.0` tag publication, macOS notarization, Windows signing, and destructive system installer smoke tests.
+
 ## Downstream Project Guidance
 
 If another GPUI project wants to reuse this packaging approach, copy the structure and keep only the pieces that match its product policy:

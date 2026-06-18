@@ -4,7 +4,7 @@
   <name>Aura Gallery</name>
   <summary>Native GPUI component gallery for Aura.</summary>
   <metadata_license>MIT</metadata_license>
-  <project_license>MIT</project_license>
+  <project_license>LicenseRef-Aura</project_license>
   <launchable type="desktop-id">aura-gallery.desktop</launchable>
   <categories>
     <category>Development</category>

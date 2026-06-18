@@ -2,9 +2,9 @@
 
 ## Current Phase
 
-**P19 Dashboard State/Data Flow — Complete (2026-06-18)**
+**P21 Release Candidate Readiness — Complete (2026-06-18)**
 
-Local implementation phases are complete through P17. Current repository-owned status:
+Local implementation phases are complete through P21. Current repository-owned status:
 
 - P10 Native Charts: complete, including downsampling plus Line/Area/Bar/Pie/Ring hover hit testing.
 - P11 Native Tray: complete, including `aura-tray`, dynamic icons, nested/check menus, Gallery/Docs controls, and close-to-tray behavior.
@@ -16,9 +16,10 @@ Local implementation phases are complete through P17. Current repository-owned s
 - P17 Dashboard Dogfooding: complete; dashboard dogfooding has been folded into Gallery/Docs; standalone `examples/dashboard-app` was removed to avoid sample-app drift.
 - P18 Dashboard Polish/API Ergonomics: complete; Gallery now owns shell dogfooding such as search/filtering, theme switching, refresh status, toasts, and tray behavior; dashboard/sample-specific helpers remain app-local and are not exported from `aura-components`.
 - P19 Dashboard State/Data Flow: complete; state/data-flow guidance now lives in Docs and app-layer Gallery patterns; business sample models are not stored in `aura-components`.
+- P20 Theme/Interaction Polish: complete; System/Light/Dark theme mode, tokenized overlays/masks, custom window frame polish, and Theme docs/demo are in place.
+- P21 Release Candidate Readiness: complete; `docs/release-candidate-checklist.md`, explicit package metadata, updated README/CHANGELOG/prompt/memory state, and release-boundary regression tests lock the local `0.1.0` RC path.
 
-P12 external-policy items remain tracked but do not block local P17 dogfooding/adoption work. Do not mark P12 fully complete until signing/notarization, real system installs, license policy, and real `v*` release validation are satisfied or formally declared out of scope.
-
+P12/P21 external-policy items remain protected-environment work: real macOS notarization, Windows signing, destructive system-level installs, formal license replacement if any, and real `v*` release publication.
 
 
 ## P19 Dashboard State/Data Flow — 2026-06-18

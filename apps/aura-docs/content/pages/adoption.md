@@ -13,7 +13,7 @@ cargo run -p aura-docs
 ```
 
 3. Use Gallery to inspect component behavior and app-shell interactions such as menu search, theme switching, tray controls, toasts, and close-to-tray flow.
-4. Use Docs to copy the setup shape: `init_aura(cx, Theme::light())`, global service initialization, and component key binding registration.
+4. Use Docs to copy the setup shape: `init_aura_with_mode(cx, ThemeMode::System)`, global service initialization, and component key binding registration. `init_aura(cx, Theme::light())` remains available when a product wants an explicit fixed theme.
 5. Keep stateful controls as `Entity<T>` fields in your own app views.
 
 ## Canonical app surfaces
@@ -30,16 +30,21 @@ This avoids sample-only drift. If Gallery or Docs needs raw GPUI glue for a comm
 A downstream application still follows the same minimal setup:
 
 ```rust
-use aura_core::init_aura;
-use aura_theme::Theme;
+use aura_core::{ThemeMode, init_aura_with_mode};
 use gpui::App;
 
 fn main() {
     gpui_platform::application().run(|cx: &mut App| {
-        init_aura(cx, Theme::light());
+        init_aura_with_mode(cx, ThemeMode::System);
         aura_components::MessageManager::init(cx);
         aura_components::Input::register_key_bindings(cx);
+        aura_components::CodeBlock::register_key_bindings(cx);
+        aura_components::CodeEditor::register_key_bindings(cx);
+        aura_components::Preview::register_key_bindings(cx);
         aura_components::Text::register_key_bindings(cx);
+        aura_components::Paragraph::register_key_bindings(cx);
+        aura_components::Title::register_key_bindings(cx);
+        aura_components::Tour::register_key_bindings(cx);
         // open your product window here
     });
 }

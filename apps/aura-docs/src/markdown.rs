@@ -28,6 +28,7 @@ const INTRO_DOC: &str = include_str!("../content/pages/overview.md");
 const QUICK_START_DOC: &str = include_str!("../content/pages/quick_start.md");
 const ARCHITECTURE_DOC: &str = include_str!("../content/pages/architecture.md");
 const PACKAGING_WORKFLOW_DOC: &str = include_str!("../content/pages/packaging_workflow.md");
+const RELEASE_CANDIDATE_DOC: &str = include_str!("../../../docs/release-candidate-checklist.md");
 const ADOPTION_DOC: &str = include_str!("../content/pages/adoption.md");
 const DASHBOARD_APP_DOC: &str = include_str!("../content/pages/dashboard_app.md");
 const DASHBOARD_PATTERNS_DOC: &str = include_str!("../content/pages/dashboard_patterns.md");
@@ -146,6 +147,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Packaging Workflow",
         markdown: PACKAGING_WORKFLOW_DOC,
+    },
+    DocPage {
+        title: "Release Candidate",
+        markdown: RELEASE_CANDIDATE_DOC,
     },
     DocPage {
         title: "Adoption Guide",
@@ -7569,6 +7574,7 @@ mod tests {
     fn adoption_docs_cover_gallery_docs_public_entrypoints() {
         let titles = DOC_PAGES.iter().map(|page| page.title).collect::<Vec<_>>();
         assert!(titles.contains(&"Adoption Guide"));
+        assert!(titles.contains(&"Release Candidate"));
         assert!(ADOPTION_DOC.contains("cargo run -p aura-gallery"));
         assert!(ADOPTION_DOC.contains("cargo run -p aura-docs"));
         assert!(ADOPTION_DOC.contains("init_aura(cx, Theme::light())"));
@@ -7667,6 +7673,87 @@ mod tests {
         assert!(package.contains("AURA_REQUIRE_SIGNING"));
         assert!(package.contains("AURA_MACOS_CODESIGN_IDENTITY"));
         assert!(package.contains("AURA_WINDOWS_SIGNTOOL_CERT_PATH"));
+    }
+
+    #[test]
+    fn release_candidate_readiness_docs_cover_current_boundaries() {
+        let checklist = include_str!("../../../docs/release-candidate-checklist.md");
+        let readme = include_str!("../../../README.md");
+        let changelog = include_str!("../../../CHANGELOG.md");
+        let prompt = include_str!("../../../prompt.md");
+        let cargo = include_str!("../../../Cargo.toml");
+        let package_workflow = include_str!("../../../.github/workflows/package.yml");
+        let ci_workflow = include_str!("../../../.github/workflows/ci.yml");
+
+        for command in [
+            "cargo fmt --all --check",
+            "cargo check --workspace --all-targets",
+            "cargo test --workspace",
+            "cargo check -p aura-docs --bin check_snippets",
+            "cargo doc --workspace --no-deps",
+            "cargo run -p xtask -- package validate",
+            "cargo run -p xtask -- package release-readiness",
+            "cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build",
+            "cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run",
+            "timeout 10s cargo run -p aura-gallery",
+            "timeout 10s cargo run -p aura-docs",
+        ] {
+            assert!(
+                checklist.contains(command),
+                "RC checklist missing {command}"
+            );
+        }
+
+        assert!(checklist.contains("LicenseRef-Aura"));
+        assert!(checklist.contains("pure Rust + GPUI native"));
+        assert!(checklist.contains("apps/aura-gallery"));
+        assert!(checklist.contains("apps/aura-docs"));
+        assert!(checklist.contains("v0.1.0"));
+        assert!(!checklist.contains("Tauri runtime"));
+        assert!(checklist.contains("aura-minimal-app"));
+        assert!(checklist.contains("aura-dashboard-app"));
+        assert!(checklist.contains("do not re-add"));
+
+        assert!(readme.contains("docs/release-candidate-checklist.md"));
+        assert!(readme.contains("init_aura_with_mode(cx, ThemeMode::System)"));
+        assert!(changelog.contains("P21 release-candidate readiness"));
+        assert!(prompt.contains(".prompt/P21-release-candidate-readiness.md"));
+        assert!(!cargo.contains("examples/minimal-app"));
+        assert!(!cargo.contains("examples/dashboard-app"));
+        assert!(ci_workflow.contains("cargo run -p xtask -- package release-readiness"));
+        assert!(package_workflow.contains("release-assets"));
+    }
+
+    #[test]
+    fn workspace_package_manifests_have_rc_metadata() {
+        let manifests = [
+            include_str!("../../../crates/aura-core/Cargo.toml"),
+            include_str!("../../../crates/aura-theme/Cargo.toml"),
+            include_str!("../../../crates/aura-components/Cargo.toml"),
+            include_str!("../../../crates/aura-icons/Cargo.toml"),
+            include_str!("../../../crates/aura-icons-lucide/Cargo.toml"),
+            include_str!("../../../crates/aura-tray/Cargo.toml"),
+            include_str!("../../../crates/aura-packager/Cargo.toml"),
+            include_str!("../../../apps/aura-gallery/Cargo.toml"),
+            include_str!("../../../apps/aura-docs/Cargo.toml"),
+            include_str!("../../../xtask/Cargo.toml"),
+        ];
+
+        for manifest in manifests {
+            assert!(manifest.contains("license = \"LicenseRef-Aura\""));
+            assert!(manifest.contains("repository = \"https://github.com/yhyzgn/aura\""));
+            assert!(manifest.contains("publish = false"));
+            assert!(manifest.contains("description = \""));
+        }
+
+        assert!(
+            include_str!("../../../packaging/linux/aura-gallery.metainfo.xml")
+                .contains("<project_license>LicenseRef-Aura</project_license>")
+        );
+        assert!(
+            include_str!("../../../packaging/linux/aura-docs.metainfo.xml")
+                .contains("<project_license>LicenseRef-Aura</project_license>")
+        );
     }
 
     #[test]

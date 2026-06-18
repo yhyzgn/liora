@@ -2,6 +2,10 @@
 name = "aura-tray"
 version = "0.1.0"
 edition = "2024"
+description = "Cross-platform system tray facade for Aura native GPUI applications."
+license = "LicenseRef-Aura"
+repository = "https://github.com/yhyzgn/aura"
+publish = false
 
 [dependencies]
 gpui = { workspace = true }

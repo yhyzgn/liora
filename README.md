@@ -38,20 +38,27 @@ Gallery and Docs are the canonical native adoption surfaces. Linux app crates en
 A GPUI app using Aura should initialize the Aura theme/config, initialize global services that the selected components need, register component key bindings, then open a GPUI window:
 
 ```rust
-use aura_core::init_aura;
-use aura_theme::Theme;
+use aura_core::{ThemeMode, init_aura_with_mode};
 use gpui::App;
 
 fn main() {
     gpui_platform::application().run(|cx: &mut App| {
-        init_aura(cx, Theme::light());
+        init_aura_with_mode(cx, ThemeMode::System);
         aura_components::MessageManager::init(cx);
         aura_components::Input::register_key_bindings(cx);
+        aura_components::CodeBlock::register_key_bindings(cx);
+        aura_components::CodeEditor::register_key_bindings(cx);
+        aura_components::Preview::register_key_bindings(cx);
         aura_components::Text::register_key_bindings(cx);
+        aura_components::Paragraph::register_key_bindings(cx);
+        aura_components::Title::register_key_bindings(cx);
+        aura_components::Tour::register_key_bindings(cx);
         // cx.open_window(...)
     });
 }
 ```
+
+Prefer `init_aura_with_mode(cx, ThemeMode::System)` so the app follows the operating system by default. `init_aura(cx, Theme::light())` remains available for explicit compatibility/setup flows that need a fixed theme.
 
 Use `Entity<T>` for stateful controls such as `Input`, `Switch`, `Select`, or `CodeEditor` so focus and internal state survive re-rendering. Gallery and Docs are the maintained compile-checked examples for app shell setup, key binding registration, theme switching, tray behavior, toasts, and composition patterns.
 
@@ -83,9 +90,12 @@ cargo run -p xtask -- package install-smoke --all-apps --format platform-default
 - Dashboard State page: data modeling, filters, refresh, and state branches for real Aura screens
 - Component Gallery: `cargo run -p aura-gallery`
 - Packaging plan: `docs/packaging-installer-technical-plan.md`
+- Release candidate checklist: `docs/release-candidate-checklist.md`
 - Phase prompts and status: `.prompt/` and `.memory/`
 
-## Release boundary
+## Release candidate readiness
+
+P21 records the repository-owned `0.1.0` release-candidate checklist in `docs/release-candidate-checklist.md`. The checklist keeps the local gates, package metadata audit, canonical app boundary, and protected release-only items in one place.
 
 P12 repository-owned packaging readiness is complete. Formal public releases require owner-controlled credentials and protected release environments for macOS notarization, Windows signing, real system install/uninstall execution, and publishing a real `vX.Y.Z` GitHub Release. The repository includes gates so missing release credentials block formal release publishing instead of silently producing unsigned public artifacts.
 

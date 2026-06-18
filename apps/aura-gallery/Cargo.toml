@@ -2,6 +2,10 @@
 name = "aura-gallery"
 version = "0.1.0"
 edition = "2024"
+description = "Native GPUI component gallery and dogfooding application for Aura."
+license = "LicenseRef-Aura"
+repository = "https://github.com/yhyzgn/aura"
+publish = false
 
 [[bin]]
 name = "aura-gallery"

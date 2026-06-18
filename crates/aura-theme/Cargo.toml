@@ -2,6 +2,10 @@
 name = "aura-theme"
 version = "0.1.0"
 edition = "2024"
+description = "Aura design tokens and theme data for native GPUI components."
+license = "LicenseRef-Aura"
+repository = "https://github.com/yhyzgn/aura"
+publish = false
 
 [dependencies]
 gpui.workspace = true

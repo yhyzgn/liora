@@ -3622,3 +3622,26 @@
 
 ### Verification
 - Full verification executed before commit/push for this phase.
+
+## Session 2026-06-18 — P21 Release Candidate Readiness
+
+### Actions
+- Added `.prompt/P21-release-candidate-readiness.md` and `docs/release-candidate-checklist.md` as the `0.1.0` RC readiness contract.
+- Refreshed README, CHANGELOG, native Docs packaging/adoption pages, `prompt.md`, and memory state so they match the current Gallery/Docs-only adoption boundary.
+- Prepared package metadata/readiness coverage so manifests explicitly carry `LicenseRef-Aura`, repository URL, descriptions, and `publish = false` unless the owner changes publication policy.
+- Added release-boundary regression tests covering RC commands, canonical app boundaries, workflow roles, license metadata, and absence of removed sample apps.
+
+### Verification
+- `cargo test -p aura-docs -- --nocapture` passed: 39 tests, including P21 RC metadata/readiness coverage.
+- `cargo fmt --all --check` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo doc --workspace --no-deps` passed.
+- `cargo run -p xtask -- package validate` passed.
+- `cargo run -p xtask -- package release-readiness` passed with expected non-tag warning.
+- `cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build` passed.
+- `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run` passed.
+- `git diff --check -- . ':(exclude).omx'` passed.
+- Gallery GUI smoke passed: `timeout 10s cargo run -p aura-gallery` exited `124` after startup.
+- Docs GUI smoke passed: `timeout 10s cargo run -p aura-docs` exited `124` after startup.
