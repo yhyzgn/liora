@@ -31,7 +31,7 @@ P13 高级控件扩展和 P14 deferred backlog 已完成，P12 本地 runner-saf
 
 - [x] 新增通用 CI workflow：fmt、workspace check/test、docs snippet check、packaging validate、packaging dry-run、install-smoke dry-run。
 - [ ] 评估是否需要拆分 Linux GUI 依赖缓存和 workspace test matrix。
-- [ ] 将 release/package workflow 与 CI workflow 的职责边界写入 docs。
+- [x] 将 release/package workflow 与 CI workflow 的职责边界写入 docs。
 
 ## Track B — API Consistency Audit
 
@@ -256,6 +256,21 @@ Validation evidence for this slice:
 Validation evidence for this slice:
 - `cargo fmt --all --check` passed.
 - `cargo test -p aura-components tour::tests -- --nocapture` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `git diff --check` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+### 2026-06-18 — Track A CI/package workflow boundary docs
+
+- Documented the responsibility split between `.github/workflows/ci.yml` and `.github/workflows/package.yml` in the Packaging Workflow docs page.
+- Clarified that ordinary CI stops at validation/dry-run gates, while package workflow owns platform-specific packaging, raw binary staging, artifact upload, grouped changelog generation, and `v*` tag GitHub Release publishing.
+- Added a docs regression test so the workflow boundary and release-asset rule stay visible in the native docs app.
+
+Validation evidence for this slice:
+- `cargo fmt --all --check` passed.
+- `cargo test -p aura-docs markdown::tests::packaging_docs_explain_ci_and_release_workflow_boundaries -- --nocapture` passed.
 - `cargo check -p aura-docs --bin check_snippets` passed.
 - `cargo check --workspace --all-targets` passed.
 - `cargo test --workspace` passed.

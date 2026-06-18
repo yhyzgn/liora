@@ -3274,3 +3274,19 @@
 - `cargo test --workspace` passed.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+## Session 2026-06-18 — P15 Track A CI/Package Workflow Boundary Docs
+
+### Actions
+- Added Packaging Workflow docs explaining the boundary between ordinary quality CI and native app package/release workflow.
+- Marked the P15 Track A docs-boundary item complete.
+- Added a docs regression test that locks the CI/package workflow distinction and `v*` release-asset rule.
+
+### Verification
+- `cargo fmt --all --check` passed.
+- `cargo test -p aura-docs markdown::tests::packaging_docs_explain_ci_and_release_workflow_boundaries -- --nocapture` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `git diff --check` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.

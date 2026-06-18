@@ -15,6 +15,7 @@ The reusable packaging logic lives in:
 
 - `crates/aura-packager` — package metadata, format decisions, generated backend config, manifest/checksum helpers.
 - `xtask` — command-line entry point used locally and by CI.
+- `.github/workflows/ci.yml` — ordinary quality gate for every pull request and `main` push.
 - `.github/workflows/package.yml` — GitHub Actions preview/release pipeline.
 - `packaging/` — icons, desktop metadata, macOS/Windows/Linux package resources.
 
@@ -50,9 +51,20 @@ Build one application and one format:
 cargo run -p xtask -- package ci --app docs --format deb
 ```
 
+## Workflow Responsibilities
+
+Aura intentionally separates ordinary quality gates from packaging/release generation:
+
+| Workflow | Trigger | Responsibility | Should publish release assets? |
+| --- | --- | --- | --- |
+| `.github/workflows/ci.yml` | pull requests, `main` pushes, manual dispatch | Fast correctness gate: formatting, workspace check/test, docs snippets, packaging metadata validation, packaging dry-run, install-smoke dry-run. | No. It must not upload installers or mutate GitHub Releases. |
+| `.github/workflows/package.yml` | `main` pushes, `v*` tags, manual dispatch | Native app packaging matrix for Linux/macOS/Windows: build raw release binaries, generate installer/package artifacts, smoke package outputs, and plan install/uninstall checks. | Only `v*` tag runs publish GitHub Release assets. `main` runs produce preview Actions artifacts for QA. |
+
+Keep `ci.yml` small and dependency-light enough to run on every code change. Keep `package.yml` responsible for expensive platform-specific packaging, raw binary staging, artifact upload, grouped changelog generation, and release publishing. If a new package validation can run without real backend artifacts, add it to both workflows: `ci.yml` as a dry-run gate and `package.yml` before packaging. If a step builds installers, uploads artifacts, or calls `gh release`, it belongs only in `package.yml`.
+
 ## CI Pipeline Steps
 
-The GitHub Actions workflow runs on `push` to `main`, on `v*` tags, and by manual dispatch.
+The packaging workflow runs on `push` to `main`, on `v*` tags, and by manual dispatch. The ordinary quality workflow also runs on pull requests and `main` pushes, but it stops at validation/dry-run gates.
 
 ### 1. Checkout and Rust toolchain
 

@@ -542,3 +542,7 @@ Preview outside-click close policy is now discoverable in Docs, compile-checked 
 ## 2026-06-18 P15 Track D Tour close-policy docs/examples
 
 Tour overlay close-policy behavior is now covered in source-level tests, Gallery, Docs, compile-checked snippets, and the docs snippet loader. The controlled-close example disables both ESC and outside-click dismissal for critical guided flows. Validation passed: fmt, focused Tour tests, docs snippet check, workspace check/test, diff whitespace check, and Gallery/Docs GUI startup smoke.
+
+## 2026-06-18 P15 Track A CI/package workflow boundary docs
+
+Packaging Workflow docs now explicitly separate `.github/workflows/ci.yml` quality gates from `.github/workflows/package.yml` native packaging/release responsibilities. CI is documented as validation/dry-run only; package workflow owns platform-specific packaging, raw binaries, artifacts, changelog, and `v*` GitHub Release publishing. A docs regression test locks this boundary. Validation passed: fmt, focused docs test, docs snippet check, workspace check/test, diff whitespace check, and Gallery/Docs GUI startup smoke.

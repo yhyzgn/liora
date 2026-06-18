@@ -7413,6 +7413,17 @@ mod tests {
     }
 
     #[test]
+    fn packaging_docs_explain_ci_and_release_workflow_boundaries() {
+        assert!(PACKAGING_WORKFLOW_DOC.contains(".github/workflows/ci.yml"));
+        assert!(PACKAGING_WORKFLOW_DOC.contains(".github/workflows/package.yml"));
+        assert!(PACKAGING_WORKFLOW_DOC.contains("Should publish release assets?"));
+        assert!(
+            PACKAGING_WORKFLOW_DOC.contains("Only `v*` tag runs publish GitHub Release assets")
+        );
+        assert!(PACKAGING_WORKFLOW_DOC.contains("If a step builds installers, uploads artifacts, or calls `gh release`, it belongs only in `package.yml`."));
+    }
+
+    #[test]
     fn component_docs_cover_gallery_registry_order() {
         let docs_titles = DOC_PAGES.iter().map(|page| page.title).collect::<Vec<_>>();
         let gallery_keys = aura_gallery::demos::registry()
