@@ -217,3 +217,18 @@ Validation evidence for this slice:
 - `cargo test --workspace` passed.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+### 2026-06-18 — Track D Preview outside-close policy
+
+- Added `close_on_click_outside(...)` to Preview and ActiveImagePreview state so image preview overlays can opt out of backdrop click dismissal independently from ESC handling.
+- Preserved default outside-click close behavior and made the overlay click handler conditional on the policy flag.
+- Added source-level regression coverage for Preview outside-click policy.
+
+Validation evidence for this slice:
+- `cargo fmt --all --check` passed.
+- `cargo test -p aura-components overlay_escape_coverage_tests -- --nocapture` passed.
+- `cargo test -p aura-components preview::tests::preview_overlay_has_escape_close_action_and_image_sized_hitbox -- --nocapture` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test -p aura-components -- --nocapture` passed: 201 unit tests plus package integration tests.
+- `git diff --check` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.

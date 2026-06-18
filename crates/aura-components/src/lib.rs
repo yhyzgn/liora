@@ -306,6 +306,15 @@ mod overlay_escape_coverage_tests {
     }
 
     #[test]
+    fn preview_exposes_click_outside_close_policy() {
+        let source = include_str!("preview.rs");
+        assert!(source.contains("close_on_click_outside: true"));
+        assert!(source.contains("pub fn close_on_click_outside("));
+        assert!(source.contains(".when(close_on_click_outside"));
+        assert!(source.contains("preview.close_on_click_outside = self.close_on_click_outside"));
+    }
+
+    #[test]
     fn input_popups_expose_click_outside_close_policy() {
         for (name, source) in [
             ("select", include_str!("select.rs")),

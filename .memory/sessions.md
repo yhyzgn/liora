@@ -3227,3 +3227,19 @@
 - `cargo test --workspace` passed.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+## Session 2026-06-18 — P15 Track D Preview Outside Close
+
+### Actions
+- Added `close_on_click_outside(...)` to Preview and persisted the policy in ActiveImagePreview state.
+- Kept default backdrop click close behavior unchanged and made the overlay click handler conditional.
+- Added Preview-specific overlay policy regression coverage.
+
+### Verification
+- `cargo fmt --all --check` passed.
+- `cargo test -p aura-components overlay_escape_coverage_tests -- --nocapture` passed.
+- `cargo test -p aura-components preview::tests::preview_overlay_has_escape_close_action_and_image_sized_hitbox -- --nocapture` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test -p aura-components -- --nocapture` passed: 201 unit tests plus package integration tests.
+- `git diff --check` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.

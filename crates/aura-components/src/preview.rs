@@ -16,12 +16,14 @@ pub struct Preview {
     src: Option<ImageSource>,
     trigger: Option<AnyElement>,
     hover_effect: bool,
+    close_on_click_outside: bool,
     close_on_escape: bool,
 }
 
 pub struct ActiveImagePreview {
     image: Option<Arc<RenderImage>>,
     closing: bool,
+    close_on_click_outside: bool,
     close_on_escape: bool,
 }
 
@@ -33,6 +35,7 @@ impl Preview {
             src: Some(ImageSource::from_input(src)),
             trigger: None,
             hover_effect: true,
+            close_on_click_outside: true,
             close_on_escape: true,
         }
     }
@@ -42,6 +45,7 @@ impl Preview {
             src: None,
             trigger: None,
             hover_effect: true,
+            close_on_click_outside: true,
             close_on_escape: true,
         }
     }
@@ -80,6 +84,11 @@ impl Preview {
         self
     }
 
+    pub fn close_on_click_outside(mut self, close: bool) -> Self {
+        self.close_on_click_outside = close;
+        self
+    }
+
     pub fn source(&self) -> Option<&ImageSource> {
         self.src.as_ref()
     }
@@ -97,12 +106,16 @@ impl Preview {
 }
 
 pub fn render_image_preview(window: &mut Window, cx: &mut App) {
-    let Some((image, closing, close_on_escape)) =
+    let Some((image, closing, close_on_click_outside, close_on_escape)) =
         cx.try_global::<ActiveImagePreview>().and_then(|preview| {
-            preview
-                .image
-                .clone()
-                .map(|image| (image, preview.closing, preview.close_on_escape))
+            preview.image.clone().map(|image| {
+                (
+                    image,
+                    preview.closing,
+                    preview.close_on_click_outside,
+                    preview.close_on_escape,
+                )
+            })
         })
     else {
         return;
@@ -140,9 +153,11 @@ pub fn render_image_preview(window: &mut Window, cx: &mut App) {
                             close_active_preview(cx);
                         })
                     })
-                    .on_mouse_down(gpui::MouseButton::Left, |_, _, cx| {
-                        close_active_preview(cx);
-                        cx.stop_propagation();
+                    .when(close_on_click_outside, |s| {
+                        s.on_mouse_down(gpui::MouseButton::Left, |_, _, cx| {
+                            close_active_preview(cx);
+                            cx.stop_propagation();
+                        })
                     })
                     .child(pop_in(
                         if closing {
@@ -283,12 +298,14 @@ impl RenderOnce for Preview {
                         cx.set_global(ActiveImagePreview {
                             image: None,
                             closing: false,
+                            close_on_click_outside: self.close_on_click_outside,
                             close_on_escape: self.close_on_escape,
                         });
                     }
                     let preview = cx.global_mut::<ActiveImagePreview>();
                     preview.image = Some(image);
                     preview.closing = false;
+                    preview.close_on_click_outside = self.close_on_click_outside;
                     preview.close_on_escape = self.close_on_escape;
                     cx.refresh_windows();
                 }
@@ -342,6 +359,8 @@ mod tests {
         assert!(production.contains("cx.on_action(|_: &PreviewClose"));
         assert!(production.contains(".on_action(|_: &PreviewClose"));
         assert!(production.contains("fn close_active_preview"));
+        assert!(production.contains("close_on_click_outside"));
+        assert!(production.contains("pub fn close_on_click_outside("));
         assert!(production.contains("preview_close_duration"));
         assert!(production.contains("closing: bool"));
         assert!(production.contains("fn preview_image_box_size"));
