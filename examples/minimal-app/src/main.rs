@@ -38,9 +38,9 @@ impl Render for AppView {
             .size_full()
             .bg(theme.neutral.body)
             .flex()
-            .items_center()
-            .justify_center()
-            .p_6()
+            .items_start()
+            .justify_start()
+            .p_4()
             .child(
                 Card::new(
                     Space::new()
@@ -85,7 +85,7 @@ impl Render for AppView {
                                 .on_click(|_, _, _| toast_success!("Saved from {}", "minimal app")),
                         ),
                 )
-                .width(px(520.0)),
+                .width(px(680.0)),
             )
     }
 }
