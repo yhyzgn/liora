@@ -99,11 +99,11 @@ impl ThemeMode {
 
 /// Return startup bounds for a window that should appear maximized immediately.
 ///
-/// GPUI represents [`WindowBounds::Maximized`] as a restore bounds plus a later
-/// platform maximize request. On Linux that request can visibly arrive after the
-/// first mapped/configured surface, so use the display's visible bounds as the
-/// restore bounds as well. The first frame is therefore already screen-sized even
-/// before the window manager acknowledges maximization.
+/// Liora uses a patched GPUI build that carries `WindowBounds::Maximized` into
+/// the Linux platform window creation path, so Wayland requests maximization
+/// before the first `surface.commit()` and X11 sets `_NET_WM_STATE` before
+/// `MapWindow`. The bounds below remain the restore/fallback geometry for that
+/// maximized request.
 pub fn startup_maximized_window_bounds(
     cx: &App,
     fallback_size: gpui::Size<Pixels>,

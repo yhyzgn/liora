@@ -3815,3 +3815,39 @@ Validation evidence:
   - `git diff --check -- . ':(exclude).omx'`
   - `timeout 10s cargo run -p liora-gallery` reached expected status 124.
   - `timeout 10s cargo run -p liora-docs` reached expected status 124.
+
+## 2026-06-19 GPUI Linux initial maximized state root fix
+
+User confirmed the System dark first-frame issue was fixed but the startup maximized window still opened at a default size before becoming maximized. Re-investigated GPUI/Zed rather than continuing app-level option tuning.
+
+Root cause evidence:
+- GPUI `Window::new` converted `WindowBounds::Maximized(bounds)` into plain restore `WindowParams.bounds`, opened the platform window, and only afterward called `platform_window.zoom()`.
+- GPUI Linux/Wayland creates the xdg surface/toplevel and performs the first `surface.commit()` during platform window creation, before the post-open `zoom()` call can issue `xdg_toplevel.set_maximized()`.
+- GPUI Linux/X11 similarly needs `_NET_WM_STATE_MAXIMIZED_VERT/HORZ` set before `MapWindow`; post-map zoom can visibly show the restore/default size first.
+- `WindowParams.show` is not a Linux backend root solution because Linux still maps during GPUI window creation.
+
+Resolution:
+- Vendored the minimal patched GPUI/GPU Linux source under `third_party/zed` and patched root Cargo with `[patch."https://github.com/zed-industries/zed"]` so Liora uses the local GPUI/GPU Linux pair.
+- Added `InitialWindowState::{Windowed, Maximized, Fullscreen}` to GPUI `WindowParams` and derived it from `WindowBounds` before calling `cx.platform.open_window(...)`.
+- On Linux/FreeBSD, skipped the old post-open `platform_window.zoom()` / `toggle_fullscreen()` initial-state path.
+- Wayland now calls `toplevel.set_maximized()` / `set_fullscreen(None)` before the first `surface.commit()`.
+- X11 now sets initial `_NET_WM_STATE_MAXIMIZED_VERT/HORZ` or `_NET_WM_STATE_FULLSCREEN` before `MapWindow` and initializes the internal maximized/fullscreen flags accordingly.
+- Kept `startup_maximized_window_bounds` as the restore/fallback bounds helper, but updated docs to state the real Linux first-frame fix is the platform-layer initial state, not enlarged restore bounds.
+- Added `crates/liora-core/tests/gpui_startup_window_state.rs` source-level regression tests to lock the maximized/fullscreen state plumbing and Wayland/X11 ordering.
+
+Validation evidence:
+- `cargo test -p liora-core --test gpui_startup_window_state -- --nocapture` passed: 2 tests.
+- `cargo check --workspace --all-targets` passed after final third_party cleanup.
+- Full pre-submit gate passed and printed `FULL_GATE_PASS` before final doc-warning cleanup:
+  - `cargo test --workspace`
+  - `cargo check -p liora-docs --bin check_snippets`
+  - `cargo doc --workspace --no-deps`
+  - `cargo run -p xtask -- package validate`
+  - `cargo run -p xtask -- package release-readiness` passed with expected local non-tag warning only.
+  - `cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build`
+  - `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run`
+  - `git diff --check -- . ':(exclude).omx'`
+  - `timeout 10s cargo run -p liora-gallery` reached expected status 124.
+  - `timeout 10s cargo run -p liora-docs` reached expected status 124.
+- After trimming vendored examples/docs and allowing upstream GPUI rustdoc link warnings locally, `cargo doc --workspace --no-deps` passed with no warnings in captured output.
+- `third_party` was reduced from an accidental 1.3G build-output copy to about 3.1M / 112 source/resource files; `.omx` runtime files remain uncommitted.

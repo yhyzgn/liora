@@ -1,21 +1,30 @@
 [workspace]
 resolver = "2"
-default-members = ["apps/liora-gallery"]
 members = [
-    "crates/liora-core",
-    "crates/liora-theme",
-    "crates/liora-components",
-    "crates/liora-tray",
-    "crates/liora-packager",
-    "xtask",
-    "crates/liora-icons",
-    "crates/liora-icons-lucide",
-    "apps/liora-gallery",
-    "apps/liora-docs",
+    "crates/gpui",
+    "crates/gpui_linux",
 ]
+
+[workspace.package]
+publish = false
+edition = "2024"
 
 [workspace.lints.rust]
 unexpected_cfgs = { level = "allow" }
+
+[workspace.lints.clippy]
+dbg_macro = "deny"
+todo = "deny"
+declare_interior_mutable_const = "deny"
+redundant_clone = "deny"
+disallowed_methods = "deny"
+style = { level = "allow", priority = -1 }
+type_complexity = "allow"
+let_underscore_future = "allow"
+single_range_in_vec_init = "allow"
+too_many_arguments = "allow"
+large_enum_variant = "allow"
+nonminimal_bool = "allow"
 
 [workspace.dependencies]
 anyhow = "1.0.86"
@@ -35,7 +44,7 @@ derive_more = { version = "2.1.1", features = ["add", "add_assign", "deref", "de
 env_logger = "0.11"
 futures = "0.3.32"
 futures-concurrency = "7.7.1"
-gpui = { path = "third_party/zed/crates/gpui", default-features = false }
+gpui = { path = "crates/gpui" }
 gpui_macros = { git = "https://github.com/zed-industries/zed", rev = "c97ad4692f99df4cc5eaa0a83a91afaefb641076" }
 gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "c97ad4692f99df4cc5eaa0a83a91afaefb641076" }
 gpui_shared_string = { git = "https://github.com/zed-industries/zed", rev = "c97ad4692f99df4cc5eaa0a83a91afaefb641076" }
@@ -83,5 +92,5 @@ wasm-bindgen = "0.2.113"
 web-time = "1.1.0"
 
 [patch."https://github.com/zed-industries/zed"]
-gpui = { path = "third_party/zed/crates/gpui" }
-gpui_linux = { path = "third_party/zed/crates/gpui_linux" }
+gpui = { path = "crates/gpui" }
+gpui_linux = { path = "crates/gpui_linux" }
