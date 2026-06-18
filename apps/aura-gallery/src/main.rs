@@ -30,6 +30,8 @@ pub struct Gallery {
     demos: Vec<AnyView>,
     selected: usize,
     nav_filter: gpui::Entity<Input>,
+    nav_menu: Option<gpui::Entity<aura_components::Menu>>,
+    nav_query: String,
     dark_mode: gpui::Entity<Switch>,
     refresh_revision: u32,
 }
@@ -95,6 +97,8 @@ fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
             demos,
             selected: 0,
             nav_filter: cx.new(|cx| Input::new("", cx).placeholder("搜索组件 / Search demos")),
+            nav_menu: None,
+            nav_query: String::new(),
             dark_mode: cx.new(|cx| Switch::new(false, cx)),
             refresh_revision: 0,
         });
@@ -467,6 +471,8 @@ mod shell_tests {
         assert!(source.contains(".no_shrink()"));
         assert!(source.contains("Preview::register_key_bindings(cx)"));
         assert!(source.contains("nav_filter"));
+        assert!(source.contains("nav_menu: Option"));
+        assert!(source.contains("self.nav_menu = Some"));
         assert!(source.contains("Gallery theme switched"));
     }
 }
@@ -576,6 +582,13 @@ impl Gallery {
             .to_string()
             .trim()
             .to_lowercase();
+
+        if self.nav_query == query {
+            if let Some(nav_menu) = &self.nav_menu {
+                return nav_menu.clone();
+            }
+        }
+
         let items = self
             .entries
             .iter()
@@ -589,7 +602,10 @@ impl Gallery {
             .collect::<Vec<_>>();
 
         let gallery = cx.entity().downgrade();
-        cx.new(move |_| build_gallery_menu(items, selected, gallery))
+        let nav_menu = cx.new(move |_| build_gallery_menu(items, selected, gallery));
+        self.nav_query = query;
+        self.nav_menu = Some(nav_menu.clone());
+        nav_menu
     }
 
     fn wire_shell_controls(&self, cx: &mut Context<Self>) {
