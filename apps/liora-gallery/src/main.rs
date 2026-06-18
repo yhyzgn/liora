@@ -3,9 +3,9 @@ use gpui::{
     WindowOptions, div, prelude::*, px, size,
 };
 use liora_components::{
-    AppWindowFrame, Button, Card, Container, Input, Menu, MenuMode, Segmented, SegmentedOption,
-    Space, Switch, Tag, Text, WindowFrameMode, apply_window_frame_mode, frame_mode_switch_row,
-    init_liora, toast_info, toast_success,
+    AppWindowFrame, Button, Card, Checkbox, Container, Dialog, Input, Menu, MenuMode, Paragraph,
+    Segmented, SegmentedOption, Space, Switch, Tag, Text, Title, WindowFrameMode,
+    apply_window_frame_mode, frame_mode_switch_row, init_liora, toast_info, toast_success,
 };
 use liora_core::{Config, PassivePortal, Portal, ThemeMode, apply_theme_mode, sync_system_theme};
 use liora_gallery::demos;

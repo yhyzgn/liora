@@ -3703,3 +3703,21 @@ Validation evidence:
 - `cargo test -p liora-docs release_candidate_readiness_docs_cover_current_boundaries -- --nocapture` passed.
 - `cargo check -p liora-gallery -p liora-docs --bin check_snippets` passed.
 - `git diff --check -- . ':(exclude).omx'` passed.
+
+## 2026-06-19 post-commit full gate correction
+
+User correctly flagged that the unified init API commit was pushed after only focused tests/local checks, not the full pre-submit gate. A strict full-gate rerun first caught a real `liora-gallery` compile failure from over-pruned imports (`Dialog`, `Checkbox`, `Paragraph`, `Title`). Restored the required imports and reran the full P21 gate with `set -euo pipefail` plus explicit GUI timeout status handling.
+
+Validation evidence after fix:
+- `cargo fmt --all --check` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `cargo check -p liora-docs --bin check_snippets` passed.
+- `cargo doc --workspace --no-deps` passed.
+- `cargo run -p xtask -- package validate` passed.
+- `cargo run -p xtask -- package release-readiness` passed with expected local non-tag warning only.
+- `cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build` passed.
+- `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run` passed.
+- `git diff --check -- . ':(exclude).omx'` passed.
+- `timeout 10s cargo run -p liora-gallery` reached expected status 124 after native app startup.
+- `timeout 10s cargo run -p liora-docs` reached expected status 124 after native app startup.
