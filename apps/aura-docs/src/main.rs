@@ -10,7 +10,7 @@ use aura_theme::Theme;
 use aura_tray::{
     AuraTray, BundledTrayIconSet, BundledTrayIconState, MouseButton, MouseButtonState,
     TrayCloseAction, TrayCommand, TrayConfig, TrayControlCenter, TrayIconEvent, bundled_tray_icon,
-    default_aura_tray_menu,
+    default_aura_tray_menu, solid_icon,
 };
 use gpui::{App, AppContext, Bounds, Global, Window, WindowBounds, WindowOptions, px, size};
 use std::{
@@ -126,12 +126,14 @@ fn install_docs_tray(cx: &mut App) {
         }
     }));
 
-    match AuraTray::install(
-        TrayConfig::new("aura-docs")
-            .tooltip("Aura Docs")
-            .icon(docs_tray_icon("default"))
-            .menu(default_aura_tray_menu()),
-    ) {
+    let mut config = TrayConfig::new("aura-docs")
+        .tooltip("Aura Docs")
+        .menu(default_aura_tray_menu());
+    if let Some(icon) = docs_tray_icon("default") {
+        config = config.icon(icon);
+    }
+
+    match AuraTray::install(config) {
         Ok(tray) => {
             cx.set_global(DocsTrayState {
                 tray,
@@ -174,8 +176,10 @@ fn handle_docs_tray_command(command: TrayCommand, cx: &mut App) {
         TrayCommand::SetIcon(name) => {
             if cx.has_global::<DocsTrayState>() {
                 let state = cx.global_mut::<DocsTrayState>();
-                if let Err(error) = state.tray.set_icon(docs_tray_icon(&name)) {
-                    eprintln!("failed to update Aura Docs tray icon: {error}");
+                if let Some(icon) = docs_tray_icon(&name) {
+                    if let Err(error) = state.tray.set_icon(icon) {
+                        eprintln!("failed to update Aura Docs tray icon: {error}");
+                    }
                 }
                 let _ = state.tray.set_tooltip(Some(match name.as_str() {
                     "syncing" => "Aura Docs · Syncing",
@@ -405,12 +409,25 @@ fn show_docs_close_confirm(cx: &mut App) {
         .show(cx);
 }
 
-fn docs_tray_icon(name: &str) -> aura_tray::TrayIconImage {
-    bundled_tray_icon(
+fn docs_tray_icon(name: &str) -> Option<aura_tray::TrayIconImage> {
+    match bundled_tray_icon(
         BundledTrayIconSet::Docs,
         BundledTrayIconState::from_name(name),
-    )
-    .expect("bundled docs tray icon should be valid")
+    ) {
+        Ok(icon) => Some(icon),
+        Err(error) => {
+            eprintln!(
+                "failed to load bundled Aura Docs tray icon '{name}': {error}; using fallback icon"
+            );
+            match solid_icon([139, 92, 246, 255], 32) {
+                Ok(icon) => Some(icon),
+                Err(error) => {
+                    eprintln!("failed to create fallback Aura Docs tray icon: {error}");
+                    None
+                }
+            }
+        }
+    }
 }
 
 fn main() {

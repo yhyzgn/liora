@@ -3392,3 +3392,22 @@
 - `cargo check -p aura-docs --bin check_snippets` passed.
 - `git diff --check -- . ':(exclude).omx'` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+## Session 2026-06-18 — P15 Track B Tray Icon Fallback Hardening
+
+### Actions
+- Changed Gallery and Docs tray icon helpers to return `Option<TrayIconImage>` instead of panicking on bundled icon decode errors.
+- Added Gallery blue and Docs purple solid-icon fallbacks through `aura_tray::solid_icon`.
+- Made initial tray install and dynamic `SetIcon` handling tolerate icon load failures without crashing the app.
+
+### Verification
+- `cargo fmt --all --check` passed.
+- `cargo check -p aura-gallery --all-targets` passed.
+- `cargo check -p aura-docs --all-targets` passed.
+- `cargo test -p aura-gallery shell_tests::gallery_shell_uses_container_and_menu -- --nocapture` passed.
+- `cargo test -p aura-docs markdown::tests::docs_shell_registers_core_documentation_pages -- --nocapture` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `git diff --check -- . ':(exclude).omx'` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.

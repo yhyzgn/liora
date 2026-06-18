@@ -9,7 +9,7 @@ use aura_theme::Theme;
 use aura_tray::{
     AuraTray, BundledTrayIconSet, BundledTrayIconState, MouseButton, MouseButtonState,
     TrayCloseAction, TrayCommand, TrayConfig, TrayControlCenter, TrayIconEvent, bundled_tray_icon,
-    default_aura_tray_menu,
+    default_aura_tray_menu, solid_icon,
 };
 use gpui::{
     AnyView, App, Bounds, Component, Context, Global, Render, WeakEntity, Window, WindowBounds,
@@ -146,12 +146,14 @@ fn install_gallery_tray(cx: &mut App) {
         }
     }));
 
-    match AuraTray::install(
-        TrayConfig::new("aura-gallery")
-            .tooltip("Aura Gallery")
-            .icon(gallery_tray_icon("default"))
-            .menu(default_aura_tray_menu()),
-    ) {
+    let mut config = TrayConfig::new("aura-gallery")
+        .tooltip("Aura Gallery")
+        .menu(default_aura_tray_menu());
+    if let Some(icon) = gallery_tray_icon("default") {
+        config = config.icon(icon);
+    }
+
+    match AuraTray::install(config) {
         Ok(tray) => {
             cx.set_global(GalleryTrayState {
                 tray,
@@ -194,8 +196,10 @@ fn handle_gallery_tray_command(command: TrayCommand, cx: &mut App) {
         TrayCommand::SetIcon(name) => {
             if cx.has_global::<GalleryTrayState>() {
                 let state = cx.global_mut::<GalleryTrayState>();
-                if let Err(error) = state.tray.set_icon(gallery_tray_icon(&name)) {
-                    eprintln!("failed to update Aura Gallery tray icon: {error}");
+                if let Some(icon) = gallery_tray_icon(&name) {
+                    if let Err(error) = state.tray.set_icon(icon) {
+                        eprintln!("failed to update Aura Gallery tray icon: {error}");
+                    }
                 }
                 let _ = state.tray.set_tooltip(Some(match name.as_str() {
                     "syncing" => "Aura Gallery · Syncing",
@@ -426,12 +430,25 @@ fn show_gallery_close_confirm(cx: &mut App) {
         .show(cx);
 }
 
-fn gallery_tray_icon(name: &str) -> aura_tray::TrayIconImage {
-    bundled_tray_icon(
+fn gallery_tray_icon(name: &str) -> Option<aura_tray::TrayIconImage> {
+    match bundled_tray_icon(
         BundledTrayIconSet::Gallery,
         BundledTrayIconState::from_name(name),
-    )
-    .expect("bundled gallery tray icon should be valid")
+    ) {
+        Ok(icon) => Some(icon),
+        Err(error) => {
+            eprintln!(
+                "failed to load bundled Aura Gallery tray icon '{name}': {error}; using fallback icon"
+            );
+            match solid_icon([32, 96, 255, 255], 32) {
+                Ok(icon) => Some(icon),
+                Err(error) => {
+                    eprintln!("failed to create fallback Aura Gallery tray icon: {error}");
+                    None
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]
