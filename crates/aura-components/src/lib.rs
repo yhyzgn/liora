@@ -141,6 +141,7 @@ pub mod virtualized_list;
 pub mod virtualized_table;
 pub mod virtualized_tree;
 pub mod watermark;
+pub mod window_frame;
 
 pub use affix::*;
 pub use alert::*;
@@ -245,6 +246,7 @@ pub use virtualized_list::*;
 pub use virtualized_table::*;
 pub use virtualized_tree::*;
 pub use watermark::*;
+pub use window_frame::*;
 
 #[cfg(test)]
 mod motion_coverage_tests {

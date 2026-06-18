@@ -1,7 +1,8 @@
 use aura_components::{
-    Autocomplete, Button, Card, Cascader, Checkbox, CodeBlock, CodeEditor, ColorPicker, Container,
-    DatePicker, DateTimePicker, Dialog, Drawer, Input, Menu, MenuMode, MessageManager, Paragraph,
-    Popover, Preview, Radio, RadioGroup, Select, Space, Switch, Tag, Text, TimePicker, Title, Tour,
+    AppWindowFrame, Autocomplete, Button, Card, Cascader, Checkbox, CodeBlock, CodeEditor,
+    ColorPicker, Container, DatePicker, DateTimePicker, Dialog, Drawer, Input, Menu, MenuMode,
+    MessageManager, Paragraph, Popover, Preview, Radio, RadioGroup, Select, Space, Switch, Tag,
+    Text, TimePicker, Title, Tour, WindowFrameMode, apply_window_frame_mode, frame_mode_switch_row,
     toast_info, toast_success,
 };
 use aura_core::{Config, PassivePortal, Portal, init_aura};
@@ -33,6 +34,8 @@ pub struct Gallery {
     nav_menu: Option<gpui::Entity<aura_components::Menu>>,
     nav_query: String,
     dark_mode: gpui::Entity<Switch>,
+    frame_mode: WindowFrameMode,
+    frame_mode_switch: gpui::Entity<Switch>,
     refresh_revision: u32,
 }
 
@@ -44,6 +47,7 @@ struct GalleryTrayState {
     tray_visible: bool,
     auto_show: bool,
     close_dialog_open: bool,
+    frame_mode: WindowFrameMode,
 }
 
 impl Global for GalleryTrayState {}
@@ -89,7 +93,8 @@ fn run_gallery() {
 }
 
 fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
-    match cx.open_window(gallery_window_options(), |window, cx| {
+    let frame_mode = gallery_frame_mode(cx);
+    match cx.open_window(gallery_window_options(frame_mode), |window, cx| {
         let entries = demos::registry();
         let demos = entries.iter().map(|entry| (entry.render)(cx)).collect();
         let view = cx.new(|cx| Gallery {
@@ -100,6 +105,8 @@ fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
             nav_menu: None,
             nav_query: String::new(),
             dark_mode: cx.new(|cx| Switch::new(false, cx)),
+            frame_mode,
+            frame_mode_switch: cx.new(|cx| Switch::new(frame_mode.is_custom(), cx)),
             refresh_revision: 0,
         });
         window.on_window_should_close(cx, |window, cx| {
@@ -115,18 +122,21 @@ fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
     }
 }
 
-fn gallery_window_options() -> WindowOptions {
-    WindowOptions {
-        window_bounds: Some(WindowBounds::Maximized(Bounds {
-            origin: gpui::Point::default(),
-            size: size(px(1920.0), px(1080.0)),
-        })),
-        titlebar: Some(gpui::TitlebarOptions {
-            title: Some("Aura UI Gallery".into()),
+fn gallery_window_options(frame_mode: WindowFrameMode) -> WindowOptions {
+    apply_window_frame_mode(
+        WindowOptions {
+            window_bounds: Some(WindowBounds::Maximized(Bounds {
+                origin: gpui::Point::default(),
+                size: size(px(1920.0), px(1080.0)),
+            })),
+            titlebar: Some(gpui::TitlebarOptions {
+                title: Some("Aura UI Gallery".into()),
+                ..Default::default()
+            }),
             ..Default::default()
-        }),
-        ..Default::default()
-    }
+        },
+        frame_mode,
+    )
 }
 
 fn install_gallery_tray(cx: &mut App) {
@@ -172,6 +182,7 @@ fn install_gallery_tray(cx: &mut App) {
                 tray_visible: true,
                 auto_show: true,
                 close_dialog_open: false,
+                frame_mode: WindowFrameMode::System,
             });
             cx.set_global(TrayControlCenter::new(tx.clone()));
         }
@@ -194,6 +205,64 @@ fn install_gallery_tray(cx: &mut App) {
         }
     })
     .detach();
+}
+
+fn gallery_frame_mode(cx: &App) -> WindowFrameMode {
+    cx.has_global::<GalleryTrayState>()
+        .then(|| cx.global::<GalleryTrayState>().frame_mode)
+        .unwrap_or_default()
+}
+
+fn set_gallery_frame_mode(mode: WindowFrameMode, window: &mut Window, cx: &mut App) {
+    if cx.has_global::<GalleryTrayState>() {
+        let state = cx.global_mut::<GalleryTrayState>();
+        if state.frame_mode == mode {
+            return;
+        }
+        state.frame_mode = mode;
+        state.window = None;
+        state.window_visible = true;
+    }
+
+    toast_info!(
+        "Gallery window frame switched to {}",
+        if mode.is_custom() { "custom" } else { "system" }
+    );
+    window.remove_window();
+    cx.defer(move |cx| {
+        if let Some(handle) = open_gallery_window(cx)
+            && cx.has_global::<GalleryTrayState>()
+        {
+            let state = cx.global_mut::<GalleryTrayState>();
+            state.window = Some(handle);
+            state.window_visible = true;
+        }
+    });
+}
+
+fn request_gallery_window_close(window: &mut Window, cx: &mut App) {
+    if !cx.has_global::<GalleryTrayState>() || !cx.has_global::<TrayControlCenter>() {
+        window.remove_window();
+        return;
+    }
+
+    match cx
+        .global::<TrayControlCenter>()
+        .state
+        .remembered_close_action
+    {
+        TrayCloseAction::ExitProcess => cx.quit(),
+        TrayCloseAction::HideToTray => {
+            prepare_gallery_hide_to_tray(cx);
+            window.remove_window();
+        }
+        TrayCloseAction::Ask => {
+            if !cx.global::<GalleryTrayState>().close_dialog_open {
+                cx.global_mut::<GalleryTrayState>().close_dialog_open = true;
+                show_gallery_close_confirm(cx);
+            }
+        }
+    }
 }
 
 fn handle_gallery_tray_command(command: TrayCommand, cx: &mut App) {
@@ -473,6 +542,8 @@ mod shell_tests {
         assert!(source.contains("nav_filter"));
         assert!(source.contains("nav_menu: Option"));
         assert!(source.contains("self.nav_menu = Some"));
+        assert!(source.contains("frame_mode_switch"));
+        assert!(source.contains("AppWindowFrame::new"));
         assert!(source.contains("Gallery theme switched"));
     }
 }
@@ -527,7 +598,11 @@ impl Render for Gallery {
                             .gap_sm()
                             .child(Text::new("Dark"))
                             .child(self.dark_mode.clone()),
-                    ),
+                    )
+                    .child(frame_mode_switch_row(
+                        self.frame_mode_switch.clone(),
+                        self.frame_mode,
+                    )),
             );
 
         let content = Card::new(
@@ -554,7 +629,7 @@ impl Render for Gallery {
         aura_core::render_active_modal_in_window(_window, cx);
         aura_core::render_active_drawer_in_window(_window, cx);
 
-        Container::new()
+        let shell = Container::new()
             .header(header)
             .header_height_lg()
             .aside(
@@ -569,7 +644,12 @@ impl Render for Gallery {
             .main_scroll()
             .main_padding_xl()
             .child(content)
-            .overlay(PortalLayer)
+            .overlay(PortalLayer);
+
+        AppWindowFrame::new("Aura UI Gallery", shell)
+            .subtitle("Native component gallery")
+            .mode(self.frame_mode)
+            .on_close(request_gallery_window_close)
     }
 }
 
@@ -633,6 +713,12 @@ impl Gallery {
                     "Gallery theme switched to {}",
                     if enabled { "dark" } else { "light" }
                 );
+            });
+        });
+
+        cx.update_entity(&self.frame_mode_switch, |switch, _cx| {
+            switch.set_on_change(|enabled, window, cx| {
+                set_gallery_frame_mode(WindowFrameMode::from_custom(enabled), window, cx);
             });
         });
     }

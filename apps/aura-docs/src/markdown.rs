@@ -1,16 +1,17 @@
 use aura_components::{
-    Affix, AffixPosition, Alert, AlertType, Anchor, AnchorLink, AnchorTarget, Autocomplete,
-    AutocompleteItem, Avatar, Backtop, Badge, BadgeType, Button, ButtonColors, Card, Checkbox,
-    CheckboxGroup, CheckboxOptionStyle, CodeBlock as AuraCodeBlock, CodeDiagnostic, CodeEditor,
-    CodeLanguage, CodeTheme, Container, Dropdown, Flex, Form, FormItem, HorizontalList, Image,
-    Input, InputNumber, InputNumberControlsPosition, Link, Loading, Menu, MenuMode,
+    Affix, AffixPosition, Alert, AlertType, Anchor, AnchorLink, AnchorTarget, AppWindowFrame,
+    Autocomplete, AutocompleteItem, Avatar, Backtop, Badge, BadgeType, Button, ButtonColors, Card,
+    Checkbox, CheckboxGroup, CheckboxOptionStyle, CodeBlock as AuraCodeBlock, CodeDiagnostic,
+    CodeEditor, CodeLanguage, CodeTheme, Container, Dropdown, Flex, Form, FormItem, HorizontalList,
+    Image, Input, InputNumber, InputNumberControlsPosition, Link, Loading, Menu, MenuMode,
     NotificationType, Paragraph, Popconfirm, Popover, Preview, Progress, ProgressStatus, QrCode,
     QrEcLevel, QrFinderStyle, QrGradientDirection, QrModuleStyle, Radio, RadioGroup,
     RadioOptionStyle, Rate, Result as AuraResult, ResultStatus, Select, Skeleton, SkeletonItem,
     SkeletonVariant, Slider, Space, Statistic, Switch, Tag as AuraTag, Text, Textarea, Timer,
     TimerFormat, TimerUnit, Title, Transfer, TransferItem, Tree, TreeNode, Upload, UploadFile,
-    UploadStatus, VirtualizedList, VirtualizedTable, VirtualizedTree, show_notification,
-    toast_error, toast_info, toast_success, toast_warning,
+    UploadStatus, VirtualizedList, VirtualizedTable, VirtualizedTree, WindowFrameMode,
+    frame_mode_switch_row, show_notification, toast_error, toast_info, toast_success,
+    toast_warning,
 };
 use aura_core::{Config, PassivePortal, Placement, Portal, clear_popover};
 use aura_icons::Icon;
@@ -7093,11 +7094,20 @@ fn render_paragraph_with_id(
         .into_any_element()
 }
 
-pub fn render_docs_shell(cx: &mut App) -> Entity<DocsShell> {
-    cx.new(|_| DocsShell {
+pub fn render_docs_shell(
+    frame_mode: WindowFrameMode,
+    on_frame_mode_change: fn(WindowFrameMode, &mut Window, &mut App),
+    on_close: fn(&mut Window, &mut App),
+    cx: &mut App,
+) -> Entity<DocsShell> {
+    cx.new(|cx| DocsShell {
         selected: 0,
         nav_menu: None,
         page_views: vec![None; DOC_PAGES.len()],
+        frame_mode,
+        frame_mode_switch: cx.new(|cx| Switch::new(frame_mode.is_custom(), cx)),
+        on_frame_mode_change,
+        on_close,
     })
 }
 
@@ -7105,6 +7115,10 @@ pub struct DocsShell {
     selected: usize,
     nav_menu: Option<Entity<Menu>>,
     page_views: Vec<Option<Entity<DocsPageView>>>,
+    frame_mode: WindowFrameMode,
+    frame_mode_switch: Entity<Switch>,
+    on_frame_mode_change: fn(WindowFrameMode, &mut Window, &mut App),
+    on_close: fn(&mut Window, &mut App),
 }
 
 impl Render for DocsShell {
@@ -7116,15 +7130,27 @@ impl Render for DocsShell {
         let page = &DOC_PAGES[selected];
         let page_view = self.page_view(selected, cx);
         let theme = cx.global::<Config>().theme.clone();
+        self.wire_shell_controls(cx);
 
-        Container::new()
+        let shell = Container::new()
             .header(
-                Space::new()
-                    .vertical()
-                    .gap_xs()
-                    .child(Title::new("Aura Docs").h2())
-                    .child(Text::new(
-                        "Native Markdown · GPUI elements · Aura components",
+                div()
+                    .flex()
+                    .items_center()
+                    .justify_between()
+                    .gap_4()
+                    .child(
+                        Space::new()
+                            .vertical()
+                            .gap_xs()
+                            .child(Title::new("Aura Docs").h2())
+                            .child(Text::new(
+                                "Native Markdown · GPUI elements · Aura components",
+                            )),
+                    )
+                    .child(frame_mode_switch_row(
+                        self.frame_mode_switch.clone(),
+                        self.frame_mode,
                     )),
             )
             .header_height_lg()
@@ -7147,7 +7173,12 @@ impl Render for DocsShell {
                     .child(Title::new(page.title).h3())
                     .child(div().flex_1().min_h_0().child(page_view)),
             )
-            .overlay(DocsPortalLayer)
+            .overlay(DocsPortalLayer);
+
+        AppWindowFrame::new("Aura Docs", shell)
+            .subtitle("Native documentation")
+            .mode(self.frame_mode)
+            .on_close(self.on_close)
     }
 }
 
@@ -7293,6 +7324,15 @@ impl RenderOnce for DocsPortalLayer {
 }
 
 impl DocsShell {
+    fn wire_shell_controls(&self, cx: &mut Context<Self>) {
+        let on_frame_mode_change = self.on_frame_mode_change;
+        cx.update_entity(&self.frame_mode_switch, |switch, _cx| {
+            switch.set_on_change(move |enabled, window, cx| {
+                on_frame_mode_change(WindowFrameMode::from_custom(enabled), window, cx);
+            });
+        });
+    }
+
     fn page_view(&mut self, selected: usize, cx: &mut Context<Self>) -> Entity<DocsPageView> {
         if let Some(page_view) = self.page_views.get(selected).and_then(Clone::clone) {
             return page_view;
@@ -7968,6 +8008,8 @@ mod tests {
         let source = include_str!("markdown.rs");
 
         assert!(source.contains("Container::new()"));
+        assert!(source.contains("AppWindowFrame::new"));
+        assert!(source.contains("frame_mode_switch"));
         assert!(source.contains("Menu::new()"));
         assert!(source.contains(".aside_scroll()"));
         assert!(source.contains("VirtualizedList::new"));

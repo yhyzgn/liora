@@ -3,7 +3,8 @@ mod markdown;
 use aura_components::{
     Autocomplete, Button, Cascader, Checkbox, CodeBlock, CodeEditor, ColorPicker, DatePicker,
     DateTimePicker, Dialog, Drawer, Input, MessageManager, Paragraph, Popover, Preview, Radio,
-    RadioGroup, Select, Space, Switch, Text, TimePicker, Title, Tour,
+    RadioGroup, Select, Space, Switch, Text, TimePicker, Title, Tour, WindowFrameMode,
+    apply_window_frame_mode,
 };
 use aura_core::init_aura;
 use aura_theme::Theme;
@@ -30,6 +31,7 @@ struct DocsTrayState {
     tray_visible: bool,
     auto_show: bool,
     close_dialog_open: bool,
+    frame_mode: WindowFrameMode,
 }
 
 impl Global for DocsTrayState {}
@@ -73,8 +75,14 @@ fn run_docs() {
 }
 
 fn open_docs_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
-    match cx.open_window(docs_window_options(), |window, cx| {
-        let view = markdown::render_docs_shell(cx);
+    let frame_mode = docs_frame_mode(cx);
+    match cx.open_window(docs_window_options(frame_mode), |window, cx| {
+        let view = markdown::render_docs_shell(
+            frame_mode,
+            set_docs_frame_mode,
+            request_docs_window_close,
+            cx,
+        );
         window.on_window_should_close(cx, |window, cx| handle_docs_window_should_close(window, cx));
         view
     }) {
@@ -86,18 +94,21 @@ fn open_docs_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
     }
 }
 
-fn docs_window_options() -> WindowOptions {
-    WindowOptions {
-        window_bounds: Some(WindowBounds::Maximized(Bounds {
-            origin: gpui::Point::default(),
-            size: size(px(1680.0), px(1080.0)),
-        })),
-        titlebar: Some(gpui::TitlebarOptions {
-            title: Some("Aura Docs — Native Main Window".into()),
+fn docs_window_options(frame_mode: WindowFrameMode) -> WindowOptions {
+    apply_window_frame_mode(
+        WindowOptions {
+            window_bounds: Some(WindowBounds::Maximized(Bounds {
+                origin: gpui::Point::default(),
+                size: size(px(1680.0), px(1080.0)),
+            })),
+            titlebar: Some(gpui::TitlebarOptions {
+                title: Some("Aura Docs — Native Main Window".into()),
+                ..Default::default()
+            }),
             ..Default::default()
-        }),
-        ..Default::default()
-    }
+        },
+        frame_mode,
+    )
 }
 
 fn install_docs_tray(cx: &mut App) {
@@ -143,6 +154,7 @@ fn install_docs_tray(cx: &mut App) {
                 tray_visible: true,
                 auto_show: true,
                 close_dialog_open: false,
+                frame_mode: WindowFrameMode::System,
             });
             cx.set_global(TrayControlCenter::new(tx.clone()));
         }
@@ -165,6 +177,64 @@ fn install_docs_tray(cx: &mut App) {
         }
     })
     .detach();
+}
+
+fn docs_frame_mode(cx: &App) -> WindowFrameMode {
+    cx.has_global::<DocsTrayState>()
+        .then(|| cx.global::<DocsTrayState>().frame_mode)
+        .unwrap_or_default()
+}
+
+fn set_docs_frame_mode(mode: WindowFrameMode, window: &mut Window, cx: &mut App) {
+    if cx.has_global::<DocsTrayState>() {
+        let state = cx.global_mut::<DocsTrayState>();
+        if state.frame_mode == mode {
+            return;
+        }
+        state.frame_mode = mode;
+        state.window = None;
+        state.window_visible = true;
+    }
+
+    aura_components::toast_info!(
+        "Docs window frame switched to {}",
+        if mode.is_custom() { "custom" } else { "system" }
+    );
+    window.remove_window();
+    cx.defer(move |cx| {
+        if let Some(handle) = open_docs_window(cx)
+            && cx.has_global::<DocsTrayState>()
+        {
+            let state = cx.global_mut::<DocsTrayState>();
+            state.window = Some(handle);
+            state.window_visible = true;
+        }
+    });
+}
+
+fn request_docs_window_close(window: &mut Window, cx: &mut App) {
+    if !cx.has_global::<DocsTrayState>() || !cx.has_global::<TrayControlCenter>() {
+        window.remove_window();
+        return;
+    }
+
+    match cx
+        .global::<TrayControlCenter>()
+        .state
+        .remembered_close_action
+    {
+        TrayCloseAction::ExitProcess => cx.quit(),
+        TrayCloseAction::HideToTray => {
+            prepare_docs_hide_to_tray(cx);
+            window.remove_window();
+        }
+        TrayCloseAction::Ask => {
+            if !cx.global::<DocsTrayState>().close_dialog_open {
+                cx.global_mut::<DocsTrayState>().close_dialog_open = true;
+                show_docs_close_confirm(cx);
+            }
+        }
+    }
 }
 
 fn handle_docs_tray_command(command: TrayCommand, cx: &mut App) {
