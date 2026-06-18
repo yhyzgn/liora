@@ -8,13 +8,18 @@ Local implementation phases are complete through P14; P15 is complete for local 
 
 - P10 Native Charts: complete, including downsampling plus Line/Area/Bar/Pie/Ring hover hit testing.
 - P11 Native Tray: complete, including `aura-tray`, dynamic icons, nested/check menus, Gallery/Docs controls, and close-to-tray behavior.
-- P12 Native Packaging: runner-safe readiness complete; remaining work is external-policy/credential/runner gated (signing/notarization, real system install/uninstall, formal license policy, real `v*` release run).
+- P12 Native Packaging: repository-owned release readiness complete, including `release-readiness` gate, explicit `LicenseRef-Aura` policy, signing/notarization policy docs, CI dry-run gate, and strict `v*` release gate. Real credentials and destructive system-level installs remain protected-environment responsibilities.
 - P13 Component Expansion: implemented and documented.
 - P14 Deferred Advanced: complete; the P9 backlog has been migrated and delivered.
 - P15 Quality Hardening: complete; Track A CI gates, Track B API consistency/panic cleanup, Track C visual/theme token hardening, Track D overlay/keyboard close-policy coverage, Track E CodeBlock/cache performance hardening, and Track F docs/snippet completeness all passed the final local gate suite.
 
 P12 external-policy items remain tracked but do not block local P15 hardening work. Do not mark P12 fully complete until signing/notarization, real system installs, license policy, and real `v*` release validation are satisfied or formally declared out of scope.
 
+
+
+## P12 Final Closure — 2026-06-18
+
+P12 native packaging is complete for repository-owned scope. Added `cargo run -p xtask -- package release-readiness`, `LICENSE.md` with explicit `LicenseRef-Aura`, `packaging/signing-policy.md`, CI non-strict readiness checks, and package workflow strict `v*` release readiness checks. The release path now blocks missing macOS/Windows signing inputs when `AURA_REQUIRE_SIGNING=true` instead of silently publishing unsigned formal releases. Real signing credentials, notarization accounts, protected runner policy, destructive install/uninstall execution, and real public tag publishing remain owner-controlled release-environment actions, not missing local implementation.
 
 ## P15 Final Completion Audit — 2026-06-18
 
@@ -60,7 +65,7 @@ Non-blocking residuals: `MessageManager::init` panic is intentional usage-contra
 | P9 Deferred Advanced | ✅ Migrated to P14 | 9/9 | 9 |
 | P10 Native Charts | ✅ Done | 7/7 | 7 |
 | P11 Native Tray | ✅ Done | 1/1 | 1 |
-| P12 Native Packaging | 🔶 Readiness | local gates done | external-policy items remain |
+| P12 Native Packaging | ✅ Done | release readiness gate done | external credentials/protected runners gated |
 | P13 Component Expansion | ✅ Done | 18/18 | 18 |
 | P14 Deferred Advanced | ✅ Done | 9/9 | 9 |
 | P15 Quality Hardening | ✅ Done | final gate passed | CI gates + API consistency + visual/theme + overlay behavior + CodeBlock performance + docs completeness |

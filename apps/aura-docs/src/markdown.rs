@@ -7479,6 +7479,22 @@ mod tests {
     }
 
     #[test]
+    fn packaging_docs_and_workflows_include_release_readiness_gate() {
+        let ci = include_str!("../../../.github/workflows/ci.yml");
+        let package = include_str!("../../../.github/workflows/package.yml");
+
+        assert!(PACKAGING_WORKFLOW_DOC.contains("package release-readiness"));
+        assert!(PACKAGING_WORKFLOW_DOC.contains("packaging/signing-policy.md"));
+        assert!(PACKAGING_WORKFLOW_DOC.contains("AURA_REQUIRE_SIGNING=true"));
+        assert!(ci.contains("Release readiness dry-run policy check"));
+        assert!(ci.contains("cargo run -p xtask -- package release-readiness"));
+        assert!(package.contains("Check release readiness policy"));
+        assert!(package.contains("AURA_REQUIRE_SIGNING"));
+        assert!(package.contains("AURA_MACOS_CODESIGN_IDENTITY"));
+        assert!(package.contains("AURA_WINDOWS_SIGNTOOL_CERT_PATH"));
+    }
+
+    #[test]
     fn component_docs_cover_gallery_registry_order() {
         let docs_titles = DOC_PAGES.iter().map(|page| page.title).collect::<Vec<_>>();
         let gallery_keys = aura_gallery::demos::registry()

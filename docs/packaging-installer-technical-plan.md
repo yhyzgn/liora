@@ -1,7 +1,7 @@
 # Aura 程序安装器构建打包技术方案
 
-日期：2026-05-15  
-状态：Readiness / preview CI 全平台打包已通过；install-smoke plan 与 release tag validation 已补；签名、公证、真实系统安装/卸载执行待外部策略
+日期：2026-05-15
+状态：Complete for repository-owned release readiness；preview CI 全平台打包已通过；install-smoke plan、release tag validation、license policy、signing/notarization readiness gate 已补；真实签名凭据和系统级安装执行由受保护 release 环境提供
 适用范围：`aura-gallery`、`aura-docs` 以及后续所有纯 GPUI Aura 主程序
 
 ## 1. 目标
@@ -539,3 +539,15 @@ release-notes.md
 - `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults` 已新增。默认是 plan-only，不会安装系统包；它会复用 artifact discovery 与 `xtask package smoke`，校验产物后写出 `target/packages/install-smoke-plan.md`。
 - `--execute-install` 目前只允许 portable `.tar.gz` 走安全执行路径：解压到 `target/install-smoke/<package>`，验证 launcher 与 `bin/<binary>`，再删除目录。deb/rpm/AppImage/macOS/Windows 安装路径仍保持计划输出，避免 CI runner 或开发机被误安装/污染。
 - GitHub Actions package workflow 在 artifact smoke 后新增 plan-only install/uninstall smoke gate，保证每次 preview/release 包都有明确可审计的安装、启动 smoke、卸载命令。
+
+## 16. P12 Final Release Readiness Closure — 2026-06-18
+
+P12 的本地与仓库内可交付工作已完成。剩余的签名证书、Apple notarization 凭据、Windows 证书、受保护 runner、真实系统级安装/卸载权限不再作为“未实现代码”存在，而是被收敛为显式 gate：
+
+- `LICENSE.md` 明确当前 `LicenseRef-Aura` 策略，避免无意宣称 OSS license。
+- `packaging/signing-policy.md` 记录 macOS 与 Windows 签名/公证所需环境变量、CI secret 映射和执行顺序。
+- `cargo run -p xtask -- package release-readiness` 生成 `target/packages/release-readiness.md`，并检查 layout、license、tag/version、signing policy、release workflow wiring。
+- `.github/workflows/ci.yml` 在普通 CI 中以非严格模式运行 readiness gate。
+- `.github/workflows/package.yml` 在打包前运行 readiness gate；`v*` tag release 自动启用 `AURA_REQUIRE_SIGNING=true`，没有签名 secret 时会阻止正式发布。
+
+因此 P12 的完成标准是：仓库可以构建、打包、校验、上传 preview artifacts；正式 release path 有强 gate，避免在外部凭据缺失时误发 unsigned release。真正发布只需 owner 配置受保护 secrets 并推送匹配版本的 `vX.Y.Z` tag。

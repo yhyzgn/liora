@@ -3462,3 +3462,28 @@
 - `git diff --check -- . ':(exclude).omx'` passed.
 - Gallery GUI startup smoke passed via expected `timeout 10s` status `124`.
 - Docs GUI startup smoke passed via expected `timeout 10s` status `124`.
+
+## Session 2026-06-18 — P12 Release Readiness Closure
+
+### Actions
+- Added `cargo run -p xtask -- package release-readiness` to check packaging layout, license policy, tag/version policy, signing/notarization inputs, and GitHub Release workflow wiring.
+- Added `LICENSE.md` documenting current `LicenseRef-Aura` policy and `packaging/signing-policy.md` documenting macOS/Windows signing and notarization gates.
+- Added readiness checks to ordinary CI and strict `v*` release package workflow.
+- Updated P12 prompt, main prompt, native docs packaging workflow, technical packaging plan, and memory state to mark repository-owned P12 scope complete.
+
+### Verification
+- `cargo fmt --all --check` passed.
+- GitHub workflow YAML parse check passed for `.github/workflows/package.yml` and `.github/workflows/ci.yml`.
+- `cargo check -p xtask -p aura-packager` passed.
+- `cargo test -p xtask -p aura-packager` passed.
+- `cargo test -p aura-docs markdown::tests::packaging_docs_and_workflows_include_release_readiness_gate -- --nocapture` passed.
+- `cargo run -p xtask -- package validate` passed.
+- `cargo run -p xtask -- package release-readiness` passed with local non-tag warning only.
+- `AURA_PACKAGE_VERSION=0.1.0 GITHUB_REF_NAME=v0.1.0 AURA_REQUIRE_SIGNING=true cargo run -p xtask -- package release-readiness` passed on Linux simulated tag gate.
+- `cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build` passed.
+- `cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run` passed.
+- `cargo check -p aura-docs --bin check_snippets` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test --workspace` passed.
+- `git diff --check -- . ':(exclude).omx'` passed.
+- Gallery/Docs GUI startup smoke passed via expected `timeout 10s` status `124`.

@@ -27,6 +27,14 @@ Validate packaging resources before building installers:
 cargo run -p xtask -- package validate
 ```
 
+Check release readiness policy gates before publishing:
+
+```bash
+cargo run -p xtask -- package release-readiness
+```
+
+The readiness command writes `target/packages/release-readiness.md` and checks packaging layout, explicit license policy, release tag/version policy, signing/notarization input policy, and the GitHub Release workflow wiring.
+
 Build release binaries only:
 
 ```bash
@@ -99,10 +107,11 @@ CI runs:
 
 ```bash
 cargo run -p xtask -- package validate
+cargo run -p xtask -- package release-readiness
 cargo test -p aura-packager
 ```
 
-Validation catches missing icons, desktop metadata, package resources, or generated config prerequisites before the expensive package step.
+Validation catches missing icons, desktop metadata, package resources, generated config prerequisites, release policy gaps, and missing strict signing inputs before the expensive package step.
 
 ### 5. Build raw runnable binaries
 
@@ -181,6 +190,19 @@ The release notes include three sections:
 2. installer/package artifacts,
 3. raw runnable binaries with a clear note that they are Aura-project convenience outputs.
 
+
+### 10. Release readiness, signing, and notarization gates
+
+P12 no longer treats signing, notarization, license policy, and real release validation as loose TODO notes. They are represented by explicit repository gates:
+
+- `LICENSE.md` documents the current `LicenseRef-Aura` policy until the owner chooses a formal OSS or commercial license.
+- `packaging/signing-policy.md` documents macOS `codesign`/`notarytool`/`stapler` and Windows `signtool` inputs.
+- `cargo run -p xtask -- package release-readiness` checks layout, license policy, release tag/version matching, signing inputs, and package workflow release wiring.
+- `.github/workflows/ci.yml` runs the readiness gate in non-strict mode for ordinary validation.
+- `.github/workflows/package.yml` runs the readiness gate before package generation; tagged `v*` release runs set `AURA_REQUIRE_SIGNING=true`, so macOS/Windows releases fail unless their signing secrets are configured.
+
+For a real public release, create a protected `vX.Y.Z` tag that matches `crates/aura-packager/Cargo.toml`, configure the documented signing secrets, and let `package.yml` publish the GitHub Release. Without those credentials the workflow intentionally stops instead of publishing unsigned release artifacts by accident.
+
 ## Downstream Project Guidance
 
 If another GPUI project wants to reuse this packaging approach, copy the structure and keep only the pieces that match its product policy:
@@ -192,4 +214,3 @@ If another GPUI project wants to reuse this packaging approach, copy the structu
 5. Upload installer/package artifacts for QA and releases.
 6. Keep a neutral portable archive backend if users need a direct unpack-and-run fallback independent of distro package managers.
 7. Upload raw runnable binaries only if the project explicitly wants direct executable downloads or release debugging artifacts.
-

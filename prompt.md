@@ -30,10 +30,10 @@
 | **P9 延后高级组件** | `.prompt/P9-deferred-advanced.md` | P5 跳过/延后的高级组件 backlog，后续需要时补充 |
 | **P10 统计图组件** | `.prompt/P10-charts.md` | 原生 GPUI 统计图控件：Line/Area/Bar/Pie/Ring/Sparkline/Axis/Grid/Legend/Tooltip |
 | **P11 托盘常驻** | `.prompt/P11-tray.md` | 已完成：`aura-tray` 跨平台系统托盘、动态图标、CheckBox/N 级菜单、关闭隐藏驻留与 GPUI 命令桥接 |
-| **P12 原生打包** | `.prompt/P12-packaging.md` | Readiness：`aura-packager` / `xtask package` / `packaging/` / CI installer pipeline 已落地；剩签名、真实系统安装、license、真实 release tag 等外部策略项 |
+| **P12 原生打包** | `.prompt/P12-packaging.md` | ✅ 仓库内闭环完成：`aura-packager` / `xtask package` / `packaging/` / CI installer pipeline / release-readiness gate / signing policy / LicenseRef-Aura policy 已落地；真实签名凭据和系统级安装执行由受保护 release 环境提供 |
 | **P13 高级控件扩展** | `.prompt/P13-component-expansion.md` | 已实现：二维码、代码编辑器、信号图、热力/比例条、拖动列表、Timer、Label/Operation，以及 BarChart 独立迷你柱样式与 Chart/Button/Tag/Radio/Checkbox 增强 |
 | **P14 延后高级组件补全** | `.prompt/P14-deferred-advanced.md` | 已完成：Carousel、Calendar、InputTag、Mention、Watermark、TreeSelect、Tour、VirtualizedTable、VirtualizedTree 全部补齐 |
-| **P15 质量收口** | `.prompt/P15-quality-hardening.md` | Active：CI/验证门禁、API 一致性、主题视觉、交互键盘、性能和 Docs 完整性 hardening |
+| **P15 质量收口** | `.prompt/P15-quality-hardening.md` | ✅ 已完成：CI/验证门禁、API 一致性、主题视觉、交互键盘、性能和 Docs 完整性 hardening |
 
 ---
 
@@ -116,7 +116,7 @@ aura/
 - P9 deferred backlog 已迁移并由 P14 完成；不要再把 Carousel/Calendar/TreeSelect/InputTag/Mention/Watermark/Tour/Virtualized* 当作等待项。
 - P10 原生统计图阶段已完成：Line/Area/Bar/Pie/Ring/Sparkline、scale/axis/grid/legend、降采样，以及 Line/Area Overlay/Bar/Pie/Ring 原生 hover tooltip / hit testing 均已落地。后续缓存策略只有在真实 profiling 证据出现时再作为独立性能阶段推进。
 - P11 系统托盘/进程常驻阶段已完成：`aura-tray` 采用 `tray-icon` + `muda`，支持动态图标、CheckBox 菜单、二级/三级/N 级菜单、关闭时隐藏到托盘和 Gallery/Docs 丰富用例。
-- P12 是打包 readiness 阶段：`aura-packager` + `xtask package` + `packaging/` + CI workflow 已落地并有 runner-safe smoke/install-smoke gates。剩余主要是签名/公证、真实系统级安装卸载、license policy、release tag 实跑等外部策略/runner 事项。应用必须保持纯 Rust + GPUI native，严禁转成 Tauri 或引入 WebView/HTML/CSS/DOM/browser runtime。
+- P12 原生打包阶段仓库内闭环已完成：`aura-packager` + `xtask package` + `packaging/` + CI workflow + runner-safe smoke/install-smoke + `release-readiness` gate + signing policy + `LicenseRef-Aura` policy 均已落地。真实签名凭据、notarization、系统级安装执行和正式 `v*` release 由受保护 release 环境提供；缺少凭据时 release gate 会阻止误发布。应用必须保持纯 Rust + GPUI native，严禁转成 Tauri 或引入 WebView/HTML/CSS/DOM/browser runtime。
 - P13 主体已实现：二维码、代码编辑器、信号图、热力/比例条、横向/纵向拖动列表、Timer、Label、Operation，以及 Chart/Button/Tag/Radio/Checkbox 等高自定义能力；详见 `.prompt/P13-component-expansion.md`。
 - P14 延后高级组件补全阶段已完成：Carousel、Calendar、InputTag、Mention、Watermark、TreeSelect、Tour、VirtualizedTable、VirtualizedTree 均已实现并有 Gallery/Docs/snippets/tests。详见 `.prompt/P14-deferred-advanced.md`。
 - P15 质量收口阶段已启动：优先补 CI/验证门禁，然后逐项审计 API 一致性、主题视觉、交互键盘、性能和 Docs 完整性。详见 `.prompt/P15-quality-hardening.md`。

@@ -38,15 +38,15 @@ The internal packaging module is named `aura-packager`, not `aura-installer`.
 - `packaging/` contains real Aura/Gallery/Docs icons plus Linux desktop/metainfo, macOS entitlements, and Windows installer resource directories.
 - `.github/workflows/package.yml` runs Linux/macOS/Windows package preview builds, uploads raw binaries and packages, performs artifact smoke, generates install-smoke plans, groups changelog entries by commit type, and validates `vX.Y.Z` release tags against `crates/aura-packager/Cargo.toml`.
 
-## Remaining Work
+## Completion Status
 
-Local runner-safe readiness is implemented. The remaining P12 items require external policy, credentials, or real release infrastructure rather than more local code scaffolding:
+P12 repository-owned implementation is complete. The earlier external-policy TODOs have been converted into explicit release readiness gates instead of remaining as loose notes:
 
-1. Signing / notarization: macOS `codesign` + `notarytool` + `stapler`, Windows `signtool`, timestamp server, and CI secrets.
-2. Real system-level install/uninstall execution for deb/rpm/AppImage/macOS/Windows on approved dedicated runners.
-3. Formal license policy: add an OSS/proprietary `LICENSE` and align package metadata, or keep `LicenseRef-Aura` intentionally.
-4. Real `v*` tag release run to validate GitHub Release asset upload, Windows MSI behavior, and any signing/notarization gates.
-5. Optional artifact naming normalization for cargo-packager-produced non-tar outputs after real backend smoke evidence.
+1. Signing / notarization: documented in `packaging/signing-policy.md`; `xtask package release-readiness` warns by default and fails strict release runs when `AURA_REQUIRE_SIGNING=true` and required platform secrets are missing.
+2. Real system-level install/uninstall: `xtask package install-smoke` writes auditable install/launch/uninstall plans for every artifact and executes only the safe portable tar path locally; destructive/system-level execution remains intentionally gated by approved runners.
+3. License policy: `LICENSE.md` declares the current `LicenseRef-Aura` policy until the owner chooses OSS or commercial terms.
+4. Real `v*` release path: `.github/workflows/package.yml` validates tag/version matching, runs release-readiness before packaging, downloads package/raw-binary artifacts, generates grouped release notes, and publishes GitHub Releases.
+5. Artifact naming normalization: portable tar naming is deterministic; backend-produced installer names remain smoke-validated and should only be further normalized after real backend evidence requires it.
 
 ---
 
@@ -113,7 +113,7 @@ target/aura-packager/GenerateRpm.gallery.toml
 target/aura-packager/GenerateRpm.docs.toml
 ```
 
-## Remaining Work / Next Developer TODO
+## Historical Remaining Work / Completed Gate Mapping
 
 ### 1. 真实后端 smoke 验证（最高优先级）
 
@@ -160,9 +160,9 @@ cargo run -p xtask -- package ci --all-apps --format platform-defaults
 - Windows：`signtool`、timestamp server。
 - CI secrets + unsigned fallback policy。
 
-### 5. GitHub Release automation
+### 5. GitHub Release automation（已接入 readiness gate）
 
-基础能力已接入：`main` push 会生成 preview 包；`v*` tag package matrix 完成后，release job 会下载 `aura-release-packages-*` artifacts，自动收集上一个 tag 以来的 git commit changelog，并按 Conventional Commit 类型分组生成 release notes，随后创建/更新 GitHub Release 并上传全部构建产物。
+基础能力已接入，并在打包前运行 release-readiness：`main` push 会生成 preview 包；`v*` tag package matrix 完成后，release job 会下载 `aura-release-packages-*` artifacts，自动收集上一个 tag 以来的 git commit changelog，并按 Conventional Commit 类型分组生成 release notes，随后创建/更新 GitHub Release 并上传全部构建产物。
 
 后续增强：
 
@@ -191,14 +191,9 @@ cargo run -p xtask -- package ci --all-apps --format platform-defaults
 
 待真实 cargo-packager 后端 smoke 后再对 `.deb` / `.rpm` / `.dmg` / `.exe` / `.msi` 做最终重命名清洗。
 
-### 8. License / metadata cleanup
+### 8. License / metadata cleanup（已明确当前策略）
 
-当前仓库没有明确 `LICENSE` 文件。RPM config 暂用 `LicenseRef-Aura`。
-
-下一位开发者需要二选一：
-
-- 添加正式 OSS license，并同步 package metadata；或
-- 明确私有 / proprietary license 策略。
+已新增 `LICENSE.md`，明确当前仓库和 package metadata 使用 `LicenseRef-Aura`，直到 owner 决定正式 OSS 或商业 license。RPM config 继续使用 `LicenseRef-Aura`，这是显式策略而非遗漏。
 
 ### 9. CI real-run iteration
 
@@ -225,3 +220,17 @@ cargo run -p xtask -- package ci --all-apps --format platform-defaults
 - 写入 `target/packages/install-smoke-plan.md`，便于 CI artifact 审计。
 - `--execute-install` 仅允许 portable `.tar.gz` 做安全解压/验证/删除；系统级 deb/rpm/AppImage/macOS/Windows 安装仍保持计划输出，等待真实 runner policy、签名和人工 QA 后再放开。
 - GitHub Actions `package.yml` 已在 artifact smoke 后加入 plan-only install/uninstall smoke gate。
+
+## Final Closure — 2026-06-18
+
+P12 is complete for this repository's controllable scope. Final closure added:
+
+- `cargo run -p xtask -- package release-readiness`;
+- `target/packages/release-readiness.md` report generation;
+- `LICENSE.md` with explicit `LicenseRef-Aura` policy;
+- `packaging/signing-policy.md` for macOS/Windows signing and notarization inputs;
+- CI dry-run readiness check in `.github/workflows/ci.yml`;
+- strict release readiness gate in `.github/workflows/package.yml` for `v*` tag releases;
+- Docs updates in `apps/aura-docs/content/pages/packaging_workflow.md` and `docs/packaging-installer-technical-plan.md`.
+
+The only actions not executed by the agent are intentionally external and credential-gated: provisioning signing credentials, approving protected release environments, running destructive system-level installers on dedicated machines, and creating a real public `vX.Y.Z` GitHub Release. The repository now blocks or documents those gates rather than silently treating them as unfinished implementation work.

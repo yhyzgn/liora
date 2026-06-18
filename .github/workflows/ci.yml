@@ -90,6 +90,9 @@ jobs:
       - name: Packaging metadata validate
         run: cargo run -p xtask -- package validate
 
+      - name: Release readiness dry-run policy check
+        run: cargo run -p xtask -- package release-readiness
+
       - name: Packaging dry-run
         run: cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build
 
