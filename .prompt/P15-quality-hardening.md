@@ -176,3 +176,17 @@ Validation evidence for this slice:
 - `cargo test --workspace` passed.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+### 2026-06-18 — Track D input popup outside-close policy
+
+- Added `close_on_click_outside(...)` to Select and Autocomplete so common input popups can opt out of automatic outside-click close without losing ESC policy control.
+- Kept defaults unchanged (`true`) and bound outside-click handlers conditionally.
+- Added source-level regression coverage for input popup outside-close defaults, builders, and conditional bindings.
+
+Validation evidence for this slice:
+- `cargo fmt --all --check` passed.
+- `cargo test -p aura-components overlay_escape_coverage_tests -- --nocapture` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test -p aura-components -- --nocapture` passed: 200 unit tests plus package integration tests.
+- `git diff --check` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.

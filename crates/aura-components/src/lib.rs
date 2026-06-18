@@ -306,6 +306,27 @@ mod overlay_escape_coverage_tests {
     }
 
     #[test]
+    fn input_popups_expose_click_outside_close_policy() {
+        for (name, source) in [
+            ("select", include_str!("select.rs")),
+            ("autocomplete", include_str!("autocomplete.rs")),
+        ] {
+            assert!(
+                source.contains("close_on_click_outside: true"),
+                "{name} should default to click-outside close"
+            );
+            assert!(
+                source.contains("pub fn close_on_click_outside("),
+                "{name} should expose close_on_click_outside(...)"
+            );
+            assert!(
+                source.contains(".when(close_on_click_outside"),
+                "{name} should bind outside-click close conditionally"
+            );
+        }
+    }
+
+    #[test]
     fn popup_key_bindings_are_registered_by_apps() {
         let docs = include_str!("../../../apps/aura-docs/src/main.rs");
         let gallery = include_str!("../../../apps/aura-gallery/src/main.rs");
@@ -460,6 +481,7 @@ mod api_consistency_audit_tests {
             ("popconfirm", include_str!("popconfirm.rs")),
             ("tour", include_str!("tour.rs")),
             ("select", include_str!("select.rs")),
+            ("autocomplete", include_str!("autocomplete.rs")),
             ("date_picker", include_str!("date_picker.rs")),
             ("time_picker", include_str!("time_picker.rs")),
         ] {

@@ -3183,3 +3183,18 @@
 - `cargo test --workspace` passed.
 - `git diff --check` passed.
 - Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.
+
+## Session 2026-06-18 — P15 Track D Input Popup Outside Close
+
+### Actions
+- Added `close_on_click_outside(...)` builders to Select and Autocomplete.
+- Preserved default outside-click close behavior while making the handler conditional on the new policy flag.
+- Added source-level coverage for defaults, public builders, and conditional outside-click binding.
+
+### Verification
+- `cargo fmt --all --check` passed.
+- `cargo test -p aura-components overlay_escape_coverage_tests -- --nocapture` passed.
+- `cargo check --workspace --all-targets` passed.
+- `cargo test -p aura-components -- --nocapture` passed: 200 unit tests plus package integration tests.
+- `git diff --check` passed.
+- Gallery/Docs GUI smoke passed via expected `timeout 10s` startup runs.

@@ -24,6 +24,7 @@ pub struct Select {
     text_size: Option<Pixels>,
     text_color: Option<Hsla>,
     padding_x: Option<Pixels>,
+    close_on_click_outside: bool,
     close_on_escape: bool,
 }
 
@@ -48,6 +49,7 @@ impl Select {
             text_size: None,
             text_color: None,
             padding_x: None,
+            close_on_click_outside: true,
             close_on_escape: true,
         }
     }
@@ -188,6 +190,11 @@ impl Select {
 
     pub fn close_on_escape(mut self, close: bool) -> Self {
         self.close_on_escape = close;
+        self
+    }
+
+    pub fn close_on_click_outside(mut self, close: bool) -> Self {
+        self.close_on_click_outside = close;
         self
     }
 
@@ -449,6 +456,8 @@ impl Render for Select {
             }
         }
 
+        let close_on_click_outside = self.close_on_click_outside;
+
         el.child(trigger_content)
             .child(
                 gpui::div()
@@ -466,10 +475,12 @@ impl Render for Select {
                     this.toggle_open(window, cx);
                 }),
             )
-            .on_mouse_down_out(cx.listener(|this, _, _, cx| {
-                this.is_open = false;
-                cx.notify();
-            }))
+            .when(close_on_click_outside, |s| {
+                s.on_mouse_down_out(cx.listener(|this, _, _, cx| {
+                    this.is_open = false;
+                    cx.notify();
+                }))
+            })
             .on_action(cx.listener(Self::close_on_escape_action))
     }
 }

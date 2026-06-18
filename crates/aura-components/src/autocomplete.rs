@@ -46,6 +46,7 @@ pub struct Autocomplete {
     last_bounds: Option<Bounds<Pixels>>,
     focus_handle: FocusHandle,
     on_select: Option<Box<dyn Fn(AutocompleteItem, &mut Window, &mut App) + 'static>>,
+    close_on_click_outside: bool,
     close_on_escape: bool,
 }
 
@@ -69,6 +70,7 @@ impl Autocomplete {
             last_bounds: None,
             focus_handle: cx.focus_handle(),
             on_select: None,
+            close_on_click_outside: true,
             close_on_escape: true,
         }
     }
@@ -127,6 +129,11 @@ impl Autocomplete {
 
     pub fn close_on_escape(mut self, close: bool) -> Self {
         self.close_on_escape = close;
+        self
+    }
+
+    pub fn close_on_click_outside(mut self, close: bool) -> Self {
+        self.close_on_click_outside = close;
         self
     }
 
@@ -305,6 +312,7 @@ impl Render for Autocomplete {
             let trigger_bounds = self.last_bounds;
             let entity = cx.entity().clone();
             let theme_portal = theme.clone();
+            let close_on_click_outside = self.close_on_click_outside;
             push_portal(
                 move |_window, _cx| {
                     let (top, left, width) = trigger_bounds
@@ -322,8 +330,9 @@ impl Render for Autocomplete {
                         .rounded(px(theme.radius.md))
                         .border_1()
                         .border_color(theme.neutral.border)
-                        .shadow_lg()
-                        .on_mouse_down_out({
+                        .shadow_lg();
+                    panel = panel.when(close_on_click_outside, |panel| {
+                        panel.on_mouse_down_out({
                             let entity = entity.clone();
                             move |_, _, cx| {
                                 entity.update(cx, |this, cx| {
@@ -331,7 +340,8 @@ impl Render for Autocomplete {
                                     cx.notify();
                                 });
                             }
-                        });
+                        })
+                    });
 
                     if matches.is_empty() {
                         panel = panel.child(
