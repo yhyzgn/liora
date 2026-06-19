@@ -97,14 +97,12 @@ impl ThemeMode {
     }
 }
 
-/// Return startup bounds for a window that should appear maximized immediately.
+/// Return startup bounds for a window that should request GPUI maximized state.
 ///
-/// Liora uses a patched GPUI build that carries `WindowBounds::Maximized` into
-/// the Linux platform window creation path, so Wayland requests maximization
-/// before the first `surface.commit()` and X11 sets `_NET_WM_STATE` before
-/// `MapWindow`. The bounds below remain the restore/fallback geometry for that
-/// maximized request and intentionally use the stable GPUI display-bounds API so
-/// SDK crates remain compatible with crates.io `gpui`.
+/// This helper is intentionally limited to stable crates.io GPUI APIs. It
+/// preserves the caller's `WindowBounds::Maximized` intent and uses the primary
+/// display bounds as the restore/fallback geometry; exact first-frame behavior
+/// is decided by the GPUI backend selected by the application root.
 pub fn startup_maximized_window_bounds(
     cx: &App,
     fallback_size: gpui::Size<Pixels>,

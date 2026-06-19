@@ -204,6 +204,20 @@ Liora is more than a component catalog:
 | `apps/liora-docs/content/pages/` | Markdown source pages rendered by the native Docs app. |
 | `apps/liora-docs/content/snippets/` | External code snippets referenced by Markdown and checked by `check_snippets`. |
 
+## GPUI dependency and local patch policy
+
+Published Liora SDK crates intentionally depend on crates.io `open-gpui` / `open-gpui-platform`. They do not vendor, publish, or force the local `third_party/zed` patch, because GPUI backend overrides are application-root decisions.
+
+Gallery and Docs normally build the same way. For local Linux startup-window verification only, this repository keeps a small Zed-source patch under `third_party/zed`. To try it in this workspace, use a throwaway branch, temporarily change the root `[workspace.dependencies]` aliases so all Liora crates use Zed git `gpui` / `gpui_platform`, then add an app-root patch for that git source:
+
+```toml
+[patch."https://github.com/zed-industries/zed"]
+gpui = { path = "third_party/zed/crates/gpui" }
+gpui_linux = { path = "third_party/zed/crates/gpui_linux" }
+```
+
+Do not add that override to publishable Liora crate manifests. The vendored package names are upstream `gpui` / `gpui_linux`, so they cannot directly patch crates.io packages named `open-gpui` / `open-gpui-linux`; apps that stay on `open-gpui` need a renamed private fork instead.
+
 ## Native packaging
 
 Repository-owned packaging readiness is implemented through the published `liora-packager` library plus the repository-local `xtask` command wrapper:

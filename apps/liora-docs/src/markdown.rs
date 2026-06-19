@@ -7758,6 +7758,7 @@ mod tests {
             "Native packaging",
             "Quality gates",
             "Technical differentiators",
+            "GPUI dependency and local patch policy",
         ] {
             assert!(
                 readme.contains(required),
@@ -7774,12 +7775,53 @@ mod tests {
             "原生打包",
             "质量门禁",
             "技术创新点",
+            "GPUI 依赖与本地 patch 策略",
         ] {
             assert!(
                 readme_zh.contains(required),
                 "Chinese README missing {required}"
             );
         }
+    }
+
+    #[test]
+    fn gpui_patch_boundary_is_documented_and_not_published() {
+        let root_cargo = include_str!("../../../Cargo.toml");
+        let readme = include_str!("../../../README.md");
+        let readme_zh = include_str!("../../../README.zh-CN.md");
+        let patch_readme = include_str!("../../../third_party/zed/README.md");
+        let core_source = include_str!("../../../crates/liora-core/src/lib.rs");
+        let liora_package = include_str!("../../../crates/liora-core/Cargo.toml");
+
+        assert!(root_cargo.contains("package = \"open-gpui\""));
+        assert!(root_cargo.contains("package = \"open-gpui-platform\""));
+        assert!(!root_cargo.contains("[patch.crates-io]"));
+        assert!(!liora_package.contains("third_party/zed"));
+        assert!(!liora_package.contains("[patch"));
+
+        for doc in [
+            readme,
+            readme_zh,
+            ARCHITECTURE_DOC,
+            THEME_SYSTEM_DOC,
+            patch_readme,
+        ] {
+            assert!(doc.contains("open-gpui"));
+            assert!(doc.contains("third_party/zed"));
+            assert!(doc.contains("not") || doc.contains("不"));
+            assert!(doc.contains("[patch.\"https://github.com/zed-industries/zed\"]"));
+            assert!(
+                doc.contains("open-gpui-linux") || doc.contains("open-gpui` / `open-gpui-platform")
+            );
+        }
+
+        assert!(THEME_SYSTEM_DOC.contains("发布到 crates.io 的 Liora SDK 不耦合"));
+        assert!(ARCHITECTURE_DOC.contains("不能包含 `[patch.crates-io]`"));
+        assert!(
+            patch_readme.contains("cannot directly patch crates.io packages named `open-gpui`")
+        );
+        assert!(!THEME_SYSTEM_DOC.contains("Liora 的 patched GPUI 会"));
+        assert!(!core_source.contains("Liora uses a patched GPUI build"));
     }
 
     #[test]
@@ -7813,6 +7855,9 @@ mod tests {
         }
 
         assert!(checklist.contains("LicenseRef-Liora"));
+        assert!(checklist.contains("open-gpui"));
+        assert!(checklist.contains("third_party/zed"));
+        assert!(checklist.contains("must not contain `[patch.crates-io]`"));
         assert!(checklist.contains("pure Rust + GPUI native"));
         assert!(checklist.contains("apps/liora-gallery"));
         assert!(checklist.contains("apps/liora-docs"));
@@ -7832,12 +7877,21 @@ mod tests {
         assert!(readme.contains("Native packaging"));
         assert!(readme.contains("Quality gates"));
         assert!(readme.contains("Technical differentiators"));
+        assert!(readme.contains("GPUI dependency and local patch policy"));
+        assert!(
+            readme.contains(
+                "Published Liora SDK crates intentionally depend on crates.io `open-gpui`"
+            )
+        );
+        assert!(readme.contains("cannot directly patch crates.io packages named `open-gpui`"));
         let readme_zh = include_str!("../../../README.zh-CN.md");
         assert!(readme_zh.contains("纯 Rust + GPUI 原生"));
         assert!(readme_zh.contains("assets/liora-logo.svg"));
         assert!(readme_zh.contains("设计原则"));
         assert!(readme_zh.contains("运行时模型"));
         assert!(readme_zh.contains("技术创新点"));
+        assert!(readme_zh.contains("GPUI 依赖与本地 patch 策略"));
+        assert!(readme_zh.contains("不会 vendor、发布或强制使用本仓库 `third_party/zed` patch"));
         let repo_metadata = include_str!("../../../assets/github-repository-metadata.md");
         assert!(repo_metadata.contains("Pure Rust + GPUI native enterprise UI component library"));
         assert!(repo_metadata.contains("rust-desktop"));
@@ -7856,6 +7910,7 @@ mod tests {
         assert!(prompt.contains(".prompt/P21-release-candidate-readiness.md"));
         assert!(!cargo.contains("examples/minimal-app"));
         assert!(!cargo.contains("examples/dashboard-app"));
+        assert!(!cargo.contains("[patch.crates-io]"));
         assert!(ci_workflow.contains("cargo run -p xtask -- package release-readiness"));
         assert!(package_workflow.contains("release-assets"));
         assert!(package_workflow.contains("--app gallery --format"));

@@ -88,7 +88,10 @@ jobs:
                   "liora-packager",
               ],
           }
-          root = tomllib.loads(Path("Cargo.toml").read_text())
+          root_manifest = Path("Cargo.toml").read_text()
+          assert "[patch.crates-io]" not in root_manifest, "SDK workspace must not patch crates.io GPUI packages"
+          assert "[patch.\"https://github.com/zed-industries/zed\"]" not in root_manifest, "SDK workspace must not force local Zed GPUI patches"
+          root = tomllib.loads(root_manifest)
           gpui_dep = root["workspace"]["dependencies"]["gpui"]
           assert gpui_dep["package"] == "open-gpui", "published SDK must resolve GPUI through crates.io open-gpui"
           assert gpui_dep["version"] == "0.1.0", "unexpected open-gpui version"
