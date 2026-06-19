@@ -25,7 +25,7 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported steps direction modes and options.
+/// Options that control steps direction behavior.
 pub enum StepsDirection {
     #[default]
     /// Lays out content in the horizontal direction.
@@ -35,19 +35,19 @@ pub enum StepsDirection {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Enumerates the supported step status modes and options.
+/// Options that control step status behavior.
 pub enum StepStatus {
-    /// Uses the wait variant.
+    /// Marks the step as pending.
     Wait,
-    /// Uses the process variant.
+    /// Marks the step as currently active.
     Process,
-    /// Uses the finish variant.
+    /// Marks the step as completed.
     Finish,
     /// Reports a error failure.
     Error,
 }
 
-/// Public builder and render state for the Liora step item component.
+/// Data model used by step item rendering.
 pub struct StepItem {
     /// Primary heading or title text displayed by the component.
     pub title: SharedString,
@@ -55,11 +55,11 @@ pub struct StepItem {
     pub description: Option<SharedString>,
     /// Optional icon rendered with the item.
     pub icon: Option<IconName>,
-    /// Current status value for this component or operation.
+    /// Current lifecycle status shown by this item.
     pub status: Option<StepStatus>,
 }
 
-/// Public builder and render state for the Liora steps component.
+/// Fluent native GPUI component for rendering Liora steps.
 pub struct Steps {
     active: usize,
     direction: StepsDirection,
@@ -67,7 +67,7 @@ pub struct Steps {
 }
 
 impl StepItem {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `StepItem` initialized from the supplied title.
     pub fn new(title: impl Into<SharedString>) -> Self {
         Self {
             title: title.into(),
@@ -77,7 +77,7 @@ impl StepItem {
         }
     }
 
-    /// Configures the description option.
+    /// Sets secondary descriptive text shown below the primary label.
     pub fn description(mut self, d: impl Into<SharedString>) -> Self {
         self.description = Some(d.into());
         self
@@ -89,7 +89,7 @@ impl StepItem {
         self
     }
 
-    /// Configures the status option.
+    /// Sets the status value used by the component.
     pub fn status(mut self, s: StepStatus) -> Self {
         self.status = Some(s);
         self
@@ -97,7 +97,7 @@ impl StepItem {
 }
 
 impl Steps {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Steps` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self {
             active: 0,
@@ -106,19 +106,19 @@ impl Steps {
         }
     }
 
-    /// Configures the active option.
+    /// Sets the current active state.
     pub fn active(mut self, active: usize) -> Self {
         self.active = active;
         self
     }
 
-    /// Configures the direction option.
+    /// Selects the layout or animation direction.
     pub fn direction(mut self, d: StepsDirection) -> Self {
         self.direction = d;
         self
     }
 
-    /// Configures the step option.
+    /// Sets the increment used by numeric or time controls.
     pub fn step(mut self, item: StepItem) -> Self {
         self.items.push(item);
         self

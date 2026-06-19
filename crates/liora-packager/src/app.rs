@@ -1,11 +1,11 @@
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-/// Enumerates the supported known app modes and options.
+/// Options that control known app behavior.
 pub enum KnownApp {
-    /// Uses the gallery packaging case.
+    /// Identifies the Gallery application in packaging manifests.
     Gallery,
-    /// Uses the docs packaging case.
+    /// Identifies the Docs application in packaging manifests.
     Docs,
 }
 
@@ -63,7 +63,7 @@ impl KnownApp {
 pub struct AppId(String);
 
 impl AppId {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `AppId` initialized from the supplied id.
     pub fn new(id: impl Into<String>) -> Self {
         Self(id.into())
     }
@@ -79,19 +79,19 @@ impl AppId {
 pub struct AppMetadata {
     /// Application metadata associated with this package artifact.
     pub app: KnownApp,
-    /// Stable identifier used to connect rendered UI, callbacks, and external state.
+    /// Stable identifier used for GPUI state, callbacks, and automation.
     pub id: AppId,
-    /// Human-readable name used for display or package metadata.
+    /// Display name shown to users for this item.
     pub name: String,
-    /// Binary for this data model.
+    /// Executable binary name used by packaging backends.
     pub binary: String,
-    /// Package for this data model.
+    /// Package identifier used by installer metadata.
     pub package: String,
-    /// Category for this data model.
+    /// Desktop category used by Linux metadata and storefronts.
     pub category: String,
-    /// Short description for this data model.
+    /// Short package description shown by installer metadata.
     pub short_description: String,
-    /// Icon stem for this data model.
+    /// Base file name for the application icon resource.
     pub icon_stem: String,
 }
 

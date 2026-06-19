@@ -30,18 +30,18 @@ use std::collections::{BTreeMap, HashSet};
 use std::sync::Arc;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-/// Public builder and render state for the Liora calendar date component.
+/// Fluent native GPUI component for rendering Liora calendar date.
 pub struct CalendarDate {
-    /// Year for this data model.
+    /// Four-digit calendar year.
     pub year: i32,
-    /// Month for this data model.
+    /// One-based calendar month.
     pub month: u32,
-    /// Day for this data model.
+    /// One-based day within the month.
     pub day: u32,
 }
 
 impl CalendarDate {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `CalendarDate` initialized from the supplied year, month, and day.
     pub fn new(year: i32, month: u32, day: u32) -> Option<Self> {
         if !(1..=12).contains(&month) || day == 0 || day > days_in_month(year, month) {
             return None;
@@ -49,7 +49,7 @@ impl CalendarDate {
         Some(Self { year, month, day })
     }
 
-    /// Configures the today demo option.
+    /// Sets the today demo value used by the component.
     pub fn today_demo() -> Self {
         Self {
             year: 2026,
@@ -57,25 +57,25 @@ impl CalendarDate {
             day: 16,
         }
     }
-    /// Configures the format option.
+    /// Performs the format operation used by this component.
     pub fn format(&self) -> String {
         format!("{:04}-{:02}-{:02}", self.year, self.month, self.day)
     }
 }
 
 #[derive(Clone)]
-/// Public builder and render state for the Liora calendar event component.
+/// Fluent native GPUI component for rendering Liora calendar event.
 pub struct CalendarEvent {
-    /// Date for this data model.
+    /// Calendar date associated with this value.
     pub date: CalendarDate,
-    /// Human-readable label shown in the component UI.
+    /// User-facing label rendered for this item.
     pub label: SharedString,
     /// Color token or explicit color applied to the visual element.
     pub color: Option<Hsla>,
 }
 
 impl CalendarEvent {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `CalendarEvent` initialized from the supplied date, and label.
     pub fn new(date: CalendarDate, label: impl Into<SharedString>) -> Self {
         Self {
             date,
@@ -83,14 +83,14 @@ impl CalendarEvent {
             color: None,
         }
     }
-    /// Configures the color option.
+    /// Applies an explicit color instead of the theme-derived default.
     pub fn color(mut self, color: Hsla) -> Self {
         self.color = Some(color);
         self
     }
 }
 
-/// Public builder and render state for the Liora calendar component.
+/// Fluent native GPUI component for rendering Liora calendar.
 pub struct Calendar {
     year: i32,
     month: u32,
@@ -104,7 +104,7 @@ pub struct Calendar {
 }
 
 impl Calendar {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Calendar` initialized from the supplied year, and month.
     pub fn new(year: i32, month: u32) -> Self {
         let month = month.clamp(1, 12);
         Self {
@@ -120,24 +120,24 @@ impl Calendar {
         }
     }
 
-    /// Configures the selected option.
+    /// Sets the current selected state.
     pub fn selected(mut self, date: CalendarDate) -> Self {
         self.selected = Some(date);
         self
     }
-    /// Configures the range option.
+    /// Sets the range value used by the component.
     pub fn range(mut self, start: CalendarDate, end: CalendarDate) -> Self {
         let (a, b) = ordered_pair(start, end);
         self.range_start = Some(a);
         self.range_end = Some(b);
         self
     }
-    /// Configures the disabled dates option.
+    /// Sets the disabled dates value used by the component.
     pub fn disabled_dates(mut self, dates: impl IntoIterator<Item = CalendarDate>) -> Self {
         self.disabled_dates = dates.into_iter().collect();
         self
     }
-    /// Configures the events option.
+    /// Replaces the component events collection.
     pub fn events(mut self, events: impl IntoIterator<Item = CalendarEvent>) -> Self {
         self.events = events.into_iter().collect();
         self
@@ -152,7 +152,7 @@ impl Calendar {
         self.on_select = Some(Arc::new(cb));
         self
     }
-    /// Configures the cells option.
+    /// Performs the cells operation used by this component.
     pub fn cells(&self) -> Vec<CalendarDate> {
         calendar_cells(self.year, self.month)
     }

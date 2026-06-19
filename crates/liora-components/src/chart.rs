@@ -27,16 +27,16 @@ use liora_core::{Config, unique_id};
 use std::cell::Cell;
 use std::rc::Rc;
 
-/// Public builder and render state for the Liora chart bounds tracker component.
+/// Fluent native GPUI component for rendering Liora chart bounds tracker.
 pub struct ChartBoundsTracker {
-    /// Child for this data model.
+    /// Child element wrapped by this component.
     pub child: AnyElement,
-    /// Bounds for this data model.
+    /// Shared cell that receives the latest measured GPUI bounds.
     pub bounds: Rc<Cell<Bounds<Pixels>>>,
 }
 
 impl ChartBoundsTracker {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `ChartBoundsTracker` initialized from the supplied child, and bounds.
     pub fn new(child: impl IntoElement, bounds: Rc<Cell<Bounds<Pixels>>>) -> Self {
         Self {
             child: child.into_any_element(),
@@ -103,16 +103,16 @@ impl Element for ChartBoundsTracker {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-/// Public builder and render state for the Liora chart point component.
+/// Fluent native GPUI component for rendering Liora chart point.
 pub struct ChartPoint {
-    /// Human-readable label shown in the component UI.
+    /// User-facing label rendered for this item.
     pub label: SharedString,
-    /// Current value represented by this option or component state.
+    /// Machine-readable value represented by this item.
     pub value: f64,
 }
 
 impl ChartPoint {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `ChartPoint` initialized from the supplied label, and value.
     pub fn new(label: impl Into<SharedString>, value: f64) -> Self {
         Self {
             label: label.into(),
@@ -127,41 +127,41 @@ impl ChartPoint {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-/// Enumerates the supported chart line style modes and options.
+/// Options that control chart line style behavior.
 pub enum ChartLineStyle {
-    /// Uses the solid variant.
+    /// Uses an uninterrupted stroke or fill.
     Solid,
-    /// Uses the dashed variant.
+    /// Uses a dashed stroke pattern.
     Dashed,
-    /// Uses the dotted variant.
+    /// Uses a dotted stroke pattern.
     Dotted,
 }
 
 #[derive(Clone, Debug)]
-/// Public builder and render state for the Liora chart series component.
+/// Fluent native GPUI component for rendering Liora chart series.
 pub struct ChartSeries {
-    /// Human-readable name used for display or package metadata.
+    /// Display name shown to users for this item.
     pub name: SharedString,
-    /// Points for this data model.
+    /// Ordered data points rendered by a chart series.
     pub points: Vec<ChartPoint>,
     /// Color token or explicit color applied to the visual element.
     pub color: Option<Hsla>,
-    /// Fill color for this data model.
+    /// Optional area fill color for chart rendering.
     pub fill_color: Option<Hsla>,
-    /// Stroke color for this data model.
+    /// Optional line or outline color for chart rendering.
     pub stroke_color: Option<Hsla>,
-    /// Stroke width for this data model.
+    /// Line width used when stroking chart geometry.
     pub stroke_width: Option<Pixels>,
-    /// Line style for this data model.
+    /// Stroke style used for chart paths.
     pub line_style: Option<ChartLineStyle>,
-    /// Dash pattern for this data model.
+    /// Dash pattern used for dashed chart paths.
     pub dash_pattern: Option<Vec<Pixels>>,
-    /// Smooth for this data model.
+    /// Whether the series should use smoothed curve interpolation.
     pub smooth: Option<bool>,
 }
 
 impl ChartSeries {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `ChartSeries` with default theme-driven styling and no optional callbacks attached.
     pub fn new(
         name: impl Into<SharedString>,
         points: impl IntoIterator<Item = ChartPoint>,
@@ -179,52 +179,52 @@ impl ChartSeries {
         }
     }
 
-    /// Configures the color option.
+    /// Applies an explicit color instead of the theme-derived default.
     pub fn color(mut self, color: Hsla) -> Self {
         self.color = Some(color);
         self
     }
 
-    /// Configures the fill color option.
+    /// Sets the optional fill color used by the chart series.
     pub fn fill_color(mut self, color: Hsla) -> Self {
         self.fill_color = Some(color);
         self
     }
 
-    /// Configures the stroke color option.
+    /// Sets the optional stroke color used by the chart series.
     pub fn stroke_color(mut self, color: Hsla) -> Self {
         self.stroke_color = Some(color);
         self
     }
 
-    /// Configures the stroke width option.
+    /// Sets the stroke width used for rendered chart paths.
     pub fn stroke_width(mut self, width: impl Into<Pixels>) -> Self {
         self.stroke_width = Some(width.into());
         self
     }
 
-    /// Configures the line style option.
+    /// Selects solid, dashed, or dotted stroke rendering.
     pub fn line_style(mut self, style: ChartLineStyle) -> Self {
         self.line_style = Some(style);
         self
     }
 
-    /// Configures the dashed option.
+    /// Applies the dashed preset.
     pub fn dashed(self) -> Self {
         self.line_style(ChartLineStyle::Dashed)
     }
 
-    /// Configures the dotted option.
+    /// Applies the dotted preset.
     pub fn dotted(self) -> Self {
         self.line_style(ChartLineStyle::Dotted)
     }
 
-    /// Configures the solid option.
+    /// Applies the solid preset.
     pub fn solid(self) -> Self {
         self.line_style(ChartLineStyle::Solid)
     }
 
-    /// Configures the dash pattern option.
+    /// Sets the custom dash pattern for chart strokes.
     pub fn dash_pattern(mut self, pattern: impl IntoIterator<Item = impl Into<Pixels>>) -> Self {
         self.dash_pattern = Some(
             pattern
@@ -236,23 +236,23 @@ impl ChartSeries {
         self
     }
 
-    /// Configures the smooth option.
+    /// Toggles smoothed curve interpolation for line and area paths.
     pub fn smooth(mut self, enabled: bool) -> Self {
         self.smooth = Some(enabled);
         self
     }
 
-    /// Configures the resolved fill color option.
+    /// Performs the resolved fill color operation used by this component.
     pub fn resolved_fill_color(&self, fallback: Hsla) -> Hsla {
         self.fill_color.or(self.color).unwrap_or(fallback)
     }
 
-    /// Configures the resolved stroke color option.
+    /// Performs the resolved stroke color operation used by this component.
     pub fn resolved_stroke_color(&self, fallback: Hsla) -> Hsla {
         self.stroke_color.or(self.color).unwrap_or(fallback)
     }
 
-    /// Configures the finite points option.
+    /// Performs the finite points operation used by this component.
     pub fn finite_points(&self) -> impl Iterator<Item = &ChartPoint> {
         self.points.iter().filter(|point| point.is_finite())
     }
@@ -264,15 +264,15 @@ impl ChartSeries {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-/// Public builder and render state for the Liora chart padding component.
+/// Fluent native GPUI component for rendering Liora chart padding.
 pub struct ChartPadding {
-    /// Top for this data model.
+    /// Top edge padding in pixels.
     pub top: Pixels,
-    /// Right for this data model.
+    /// Right edge padding in pixels.
     pub right: Pixels,
-    /// Bottom for this data model.
+    /// Bottom edge padding in pixels.
     pub bottom: Pixels,
-    /// Left for this data model.
+    /// Left edge padding in pixels.
     pub left: Pixels,
 }
 
@@ -288,15 +288,15 @@ impl Default for ChartPadding {
 }
 
 #[derive(Clone, Debug)]
-/// Public builder and render state for the Liora chart palette component.
+/// Fluent native GPUI component for rendering Liora chart palette.
 pub struct ChartPalette {
-    /// Series for this data model.
+    /// Chart series rendered inside the plotting area.
     pub series: Vec<Hsla>,
-    /// Axis for this data model.
+    /// Axis configuration used to label the plotting area.
     pub axis: Hsla,
-    /// Grid for this data model.
+    /// Grid configuration used behind chart data.
     pub grid: Hsla,
-    /// Human-readable label shown in the component UI.
+    /// User-facing label rendered for this item.
     pub label: Hsla,
 }
 
@@ -321,7 +321,7 @@ impl ChartPalette {
         }
     }
 
-    /// Configures the series color option.
+    /// Performs the series color operation used by this component.
     pub fn series_color(&self, index: usize) -> Hsla {
         self.series
             .get(index % self.series.len().max(1))
@@ -331,43 +331,43 @@ impl ChartPalette {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-/// Enumerates the supported chart value label content modes and options.
+/// Options that control chart value label content behavior.
 pub enum ChartValueLabelContent {
-    /// Uses the value variant.
+    /// Shows the raw numeric value in chart labels.
     Value,
-    /// Uses the percentage variant.
+    /// Shows each mark as a percentage of the chart total.
     Percentage,
-    /// Uses the value and percentage variant.
+    /// Shows both the raw value and computed percentage.
     ValueAndPercentage,
-    /// Uses the value over total variant.
+    /// Shows the raw value alongside the aggregate total.
     ValueOverTotal,
-    /// Uses the value over total and percentage variant.
+    /// Shows raw value, aggregate total, and percentage together.
     ValueOverTotalAndPercentage,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-/// Enumerates the supported chart value label placement modes and options.
+/// Options that control chart value label placement behavior.
 pub enum ChartValueLabelPlacement {
-    /// Uses the auto variant.
+    /// Lets the chart choose inside or outside label placement based on available space.
     Auto,
-    /// Uses the inside variant.
+    /// Places indicators inside the carousel frame.
     Inside,
-    /// Uses the outside free variant.
+    /// Draws value labels outside the mark without alignment columns.
     OutsideFree,
-    /// Uses the outside aligned variant.
+    /// Draws outside labels aligned to side columns with leader lines.
     OutsideAligned,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-/// Public builder and render state for the Liora chart value label options component.
+/// Configuration options for chart value label options rendering and interaction behavior.
 pub struct ChartValueLabelOptions {
     /// Content rendered inside the component body.
     pub content: ChartValueLabelContent,
-    /// Placement for this data model.
+    /// Preferred placement relative to the trigger or anchor.
     pub placement: ChartValueLabelPlacement,
-    /// Percentage decimals for this data model.
+    /// Number of fractional digits shown for percentages.
     pub percentage_decimals: usize,
-    /// Outside threshold degrees for this data model.
+    /// Smallest slice angle that still receives an inside label.
     pub outside_threshold_degrees: u16,
 }
 
@@ -383,39 +383,39 @@ impl Default for ChartValueLabelOptions {
 }
 
 #[derive(Clone)]
-/// Public builder and render state for the Liora chart options component.
+/// Configuration options for chart options rendering and interaction behavior.
 pub struct ChartOptions {
-    /// Stable identifier used to connect rendered UI, callbacks, and external state.
+    /// Stable identifier used for GPUI state, callbacks, and automation.
     pub id: SharedString,
-    /// Configured height used during layout.
+    /// Height used by layout or hit-testing calculations.
     pub height: Pixels,
-    /// Padding for this data model.
+    /// Inner padding between the content and outer frame.
     pub padding: ChartPadding,
-    /// Show grid for this data model.
+    /// Whether chart grid lines are rendered.
     pub show_grid: bool,
-    /// Show axis for this data model.
+    /// Whether chart axes are rendered.
     pub show_axis: bool,
-    /// Show legend for this data model.
+    /// Whether the legend is rendered.
     pub show_legend: bool,
-    /// Y domain for this data model.
+    /// Optional explicit y-axis domain overriding automatic bounds.
     pub y_domain: Option<(f64, f64)>,
-    /// Y tick count for this data model.
+    /// Number of y-axis tick labels requested by the chart.
     pub y_tick_count: usize,
-    /// Y format for this data model.
+    /// Formatter used for y-axis values.
     pub y_format: Option<fn(f64) -> SharedString>,
-    /// Show value labels for this data model.
+    /// Whether value labels are drawn next to data marks.
     pub show_value_labels: bool,
-    /// Value label options for this data model.
+    /// Detailed configuration for chart value labels.
     pub value_label_options: ChartValueLabelOptions,
-    /// Max render points for this data model.
+    /// Maximum number of points rendered after downsampling.
     pub max_render_points: Option<usize>,
-    /// Max axis labels for this data model.
+    /// Maximum number of axis labels rendered to avoid crowding.
     pub max_axis_labels: usize,
-    /// Max value labels for this data model.
+    /// Maximum number of value labels rendered to avoid clutter.
     pub max_value_labels: usize,
-    /// Show tooltip for this data model.
+    /// Whether pointer hover tooltips are enabled.
     pub show_tooltip: bool,
-    /// Tooltip hit radius for this data model.
+    /// Maximum pointer distance for chart tooltip hit testing.
     pub tooltip_hit_radius: Pixels,
 }
 
@@ -443,27 +443,27 @@ impl Default for ChartOptions {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-/// Public builder and render state for the Liora chart hit point component.
+/// Fluent native GPUI component for rendering Liora chart hit point.
 pub struct ChartHitPoint {
-    /// Series index for this data model.
+    /// Index of the series associated with a chart hit target.
     pub series_index: usize,
-    /// Point index for this data model.
+    /// Index of the point associated with a chart hit target.
     pub point_index: usize,
-    /// Series name for this data model.
+    /// Display name of the chart series associated with a hit target.
     pub series_name: SharedString,
-    /// Human-readable label shown in the component UI.
+    /// User-facing label rendered for this item.
     pub label: SharedString,
-    /// Current value represented by this option or component state.
+    /// Machine-readable value represented by this item.
     pub value: f64,
-    /// X for this data model.
+    /// X coordinate in chart-local pixels.
     pub x: f32,
-    /// Y for this data model.
+    /// Y coordinate in chart-local pixels.
     pub y: f32,
-    /// Distance for this data model.
+    /// Distance in pixels between the pointer and hit target.
     pub distance: f32,
 }
 
-/// Configures the nearest cartesian hit point option.
+/// Finds the nearest cartesian hit point for pointer interaction.
 pub fn nearest_cartesian_hit_point(
     series: &[ChartSeries],
     domain: (f64, f64),
@@ -554,7 +554,7 @@ pub fn nearest_cartesian_hit_point(
     best
 }
 
-/// Configures the format hit tooltip option.
+/// Formats hit tooltip for display.
 pub fn format_hit_tooltip(
     hit: &ChartHitPoint,
     formatter: Option<fn(f64) -> SharedString>,
@@ -569,7 +569,7 @@ pub fn format_hit_tooltip(
     .into()
 }
 
-/// Configures the default y format used before user interaction changes state.
+/// Sets the initial y-format value used before user interaction.
 pub fn default_y_format(value: f64) -> SharedString {
     if value.abs() >= 1000.0 {
         format!("{value:.0}").into()
@@ -580,7 +580,7 @@ pub fn default_y_format(value: f64) -> SharedString {
     }
 }
 
-/// Configures the format value label option.
+/// Formats value label for display.
 pub fn format_value_label(
     value: f64,
     total: f64,
@@ -614,7 +614,7 @@ pub fn format_value_label(
     }
 }
 
-/// Configures the series total option.
+/// Performs the series total operation used by this component.
 pub fn series_total(series: &ChartSeries) -> f64 {
     series
         .finite_points()
@@ -622,7 +622,7 @@ pub fn series_total(series: &ChartSeries) -> f64 {
         .sum()
 }
 
-/// Configures the finite domain option.
+/// Performs the finite domain operation used by this component.
 pub fn finite_domain(series: &[ChartSeries]) -> Option<(f64, f64)> {
     let mut min = f64::INFINITY;
     let mut max = f64::NEG_INFINITY;
@@ -640,12 +640,12 @@ pub fn finite_domain(series: &[ChartSeries]) -> Option<(f64, f64)> {
     }
 }
 
-/// Configures the normalized domain option.
+/// Performs the normalized domain operation used by this component.
 pub fn normalized_domain(domain: Option<(f64, f64)>, series: &[ChartSeries]) -> (f64, f64) {
     normalized_domain_with_baseline(domain, series, true)
 }
 
-/// Configures the normalized domain with baseline option.
+/// Performs the normalized domain with baseline operation used by this component.
 pub fn normalized_domain_with_baseline(
     domain: Option<(f64, f64)>,
     series: &[ChartSeries],
@@ -671,7 +671,7 @@ pub fn normalized_domain_with_baseline(
     (min, max)
 }
 
-/// Configures the stacked domain option.
+/// Performs the stacked domain operation used by this component.
 pub fn stacked_domain(series: &[ChartSeries]) -> Option<(f64, f64)> {
     let labels_len = label_domain_len(series);
     if labels_len == 0 {
@@ -707,16 +707,16 @@ pub fn stacked_domain(series: &[ChartSeries]) -> Option<(f64, f64)> {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-/// Public builder and render state for the Liora chart axis label component.
+/// Fluent native GPUI component for rendering Liora chart axis label.
 pub struct ChartAxisLabel {
-    /// Index for this data model.
+    /// Stable item index used by render callbacks and keyboard navigation.
     pub index: usize,
-    /// Human-readable label shown in the component UI.
+    /// User-facing label rendered for this item.
     pub label: SharedString,
 }
 
 impl ChartAxisLabel {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `ChartAxisLabel` initialized from the supplied index, and label.
     pub fn new(index: usize, label: impl Into<SharedString>) -> Self {
         Self {
             index,
@@ -725,7 +725,7 @@ impl ChartAxisLabel {
     }
 }
 
-/// Configures the collect labels option.
+/// Performs the collect labels operation used by this component.
 pub fn collect_labels(series: &[ChartSeries]) -> Vec<SharedString> {
     series
         .iter()
@@ -740,7 +740,7 @@ pub fn collect_labels(series: &[ChartSeries]) -> Vec<SharedString> {
         .unwrap_or_default()
 }
 
-/// Configures the label domain len option.
+/// Performs the label domain len operation used by this component.
 pub fn label_domain_len(series: &[ChartSeries]) -> usize {
     series
         .iter()
@@ -749,7 +749,7 @@ pub fn label_domain_len(series: &[ChartSeries]) -> usize {
         .unwrap_or(0)
 }
 
-/// Configures the collect axis labels option.
+/// Performs the collect axis labels operation used by this component.
 pub fn collect_axis_labels(series: &[ChartSeries], max_labels: usize) -> Vec<ChartAxisLabel> {
     let Some(longest) = series.iter().max_by_key(|series| series.points.len()) else {
         return Vec::new();
@@ -757,7 +757,7 @@ pub fn collect_axis_labels(series: &[ChartSeries], max_labels: usize) -> Vec<Cha
     sparse_axis_labels(&longest.points, max_labels)
 }
 
-/// Configures the sparse indices option.
+/// Performs the sparse indices operation used by this component.
 pub fn sparse_indices(len: usize, max_count: usize) -> Vec<usize> {
     if len == 0 {
         return Vec::new();
@@ -787,7 +787,7 @@ pub fn sparse_indices(len: usize, max_count: usize) -> Vec<usize> {
     indices
 }
 
-/// Configures the sparse axis labels option.
+/// Performs the sparse axis labels operation used by this component.
 pub fn sparse_axis_labels(points: &[ChartPoint], max_labels: usize) -> Vec<ChartAxisLabel> {
     sparse_indices(points.len(), max_labels)
         .into_iter()
@@ -918,7 +918,7 @@ where
     sampled
 }
 
-/// Configures the downsample indexed values option.
+/// Performs the downsample indexed values operation used by this component.
 pub fn downsample_indexed_values<T, F>(
     items: &[T],
     value: F,

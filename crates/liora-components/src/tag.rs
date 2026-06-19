@@ -29,44 +29,44 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported tag type modes and options.
+/// Options that control tag type behavior.
 pub enum TagType {
     #[default]
-    /// Uses the info semantic button variant.
+    /// Uses informational semantic color tokens.
     Info,
-    /// Uses the success semantic button variant.
+    /// Uses success semantic color tokens.
     Success,
-    /// Uses the warning semantic button variant.
+    /// Uses warning semantic color tokens.
     Warning,
-    /// Uses the danger semantic button variant.
+    /// Uses danger semantic color tokens.
     Danger,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported tag size modes and options.
+/// Options that control tag size behavior.
 pub enum TagSize {
-    /// Uses the small component size preset.
+    /// Uses compact sizing metrics.
     Small,
     #[default]
-    /// Uses the default semantic button variant.
+    /// Uses the default neutral treatment.
     Default,
-    /// Uses the large component size preset.
+    /// Uses expanded sizing metrics.
     Large,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported tag effect modes and options.
+/// Options that control tag effect behavior.
 pub enum TagEffect {
-    /// Uses the dark theme mode.
+    /// Uses the `Dark` option for `TagEffect`.
     Dark,
     #[default]
-    /// Uses the light theme mode.
+    /// Uses the `Light` option for `TagEffect`.
     Light,
-    /// Uses the plain variant.
+    /// Uses the `Plain` option for `TagEffect`.
     Plain,
 }
 
-/// Public builder and render state for the Liora tag component.
+/// Fluent native GPUI component for rendering Liora tag.
 pub struct Tag {
     label: SharedString,
     tag_type: TagType,
@@ -78,7 +78,7 @@ pub struct Tag {
 }
 
 impl Tag {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Tag` initialized from the supplied label.
     pub fn new(label: impl Into<SharedString>) -> Self {
         Self {
             label: label.into(),
@@ -91,31 +91,31 @@ impl Tag {
         }
     }
 
-    /// Configures the tag type option.
+    /// Sets the tag type value used by the component.
     pub fn tag_type(mut self, t: TagType) -> Self {
         self.tag_type = t;
         self
     }
 
-    /// Configures the success option.
+    /// Applies the success semantic visual variant.
     pub fn success(mut self) -> Self {
         self.tag_type = TagType::Success;
         self
     }
 
-    /// Configures the warning option.
+    /// Applies the warning semantic visual variant.
     pub fn warning(mut self) -> Self {
         self.tag_type = TagType::Warning;
         self
     }
 
-    /// Configures the danger option.
+    /// Applies the danger semantic visual variant.
     pub fn danger(mut self) -> Self {
         self.tag_type = TagType::Danger;
         self
     }
 
-    /// Configures the info option.
+    /// Applies the informational semantic visual variant.
     pub fn info(mut self) -> Self {
         self.tag_type = TagType::Info;
         self
@@ -127,19 +127,19 @@ impl Tag {
         self
     }
 
-    /// Configures the small option.
+    /// Uses the compact size preset.
     pub fn small(mut self) -> Self {
         self.size = TagSize::Small;
         self
     }
 
-    /// Configures the large option.
+    /// Uses the large size preset.
     pub fn large(mut self) -> Self {
         self.size = TagSize::Large;
         self
     }
 
-    /// Configures the effect option.
+    /// Sets the effect value used by the component.
     pub fn effect(mut self, e: TagEffect) -> Self {
         self.effect = e;
         self
@@ -151,19 +151,19 @@ impl Tag {
         self
     }
 
-    /// Configures the plain option.
+    /// Sets the plain value used by the component.
     pub fn plain(mut self) -> Self {
         self.effect = TagEffect::Plain;
         self
     }
 
-    /// Configures the closable option.
+    /// Shows the close affordance.
     pub fn closable(mut self, c: bool) -> Self {
         self.closable = c;
         self
     }
 
-    /// Configures the round option.
+    /// Toggles round behavior.
     pub fn round(mut self, r: bool) -> Self {
         self.round = r;
         self
@@ -259,18 +259,18 @@ impl IntoElement for Tag {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported tag flow align modes and options.
+/// Options that control tag flow align behavior.
 pub enum TagFlowAlign {
     #[default]
-    /// Uses the start variant.
+    /// Aligns content using the start position.
     Start,
-    /// Uses the center variant.
+    /// Aligns content using the center position.
     Center,
-    /// Uses the end variant.
+    /// Aligns content using the end position.
     End,
 }
 
-/// Public builder and render state for the Liora tag flow component.
+/// Fluent native GPUI component for rendering Liora tag flow.
 pub struct TagFlow {
     tags: Vec<AnyElement>,
     gap: Pixels,
@@ -282,7 +282,7 @@ pub struct TagFlow {
 }
 
 impl TagFlow {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `TagFlow` with default theme-driven styling and no optional callbacks attached.
     pub fn new(tags: impl IntoIterator<Item = Tag>) -> Self {
         Self {
             tags: tags.into_iter().map(|tag| tag.into_any_element()).collect(),
@@ -308,53 +308,53 @@ impl TagFlow {
         }
     }
 
-    /// Configures the gap option.
+    /// Sets the spacing between child elements.
     pub fn gap(mut self, gap: impl Into<Pixels>) -> Self {
         self.gap = gap.into().max(px(0.0));
         self
     }
 
-    /// Configures the align option.
+    /// Sets cross-axis alignment for child content.
     pub fn align(mut self, align: TagFlowAlign) -> Self {
         self.align = align;
         self
     }
 
-    /// Configures the center option.
+    /// Centers content on both layout axes.
     pub fn center(self) -> Self {
         self.align(TagFlowAlign::Center)
     }
 
-    /// Configures the end option.
+    /// Sets the end value used by the component.
     pub fn end(self) -> Self {
         self.align(TagFlowAlign::End)
     }
 
-    /// Configures the max rows option.
+    /// Sets the maximum rows limit.
     pub fn max_rows(mut self, rows: usize) -> Self {
         self.max_rows = Some(rows.max(1));
         self.collapsed = true;
         self
     }
 
-    /// Configures the estimated items per row option.
+    /// Sets the estimated items per row value used by the component.
     pub fn estimated_items_per_row(mut self, count: usize) -> Self {
         self.estimated_items_per_row = count.max(1);
         self
     }
 
-    /// Configures the collapsed option.
+    /// Sets the collapsed value used by the component.
     pub fn collapsed(mut self, collapsed: bool) -> Self {
         self.collapsed = collapsed;
         self
     }
 
-    /// Configures the expanded option.
+    /// Sets the expanded value used by the component.
     pub fn expanded(self) -> Self {
         self.collapsed(false)
     }
 
-    /// Configures the overflow indicator option.
+    /// Sets the overflow indicator value used by the component.
     pub fn overflow_indicator(mut self, label: impl Into<SharedString>) -> Self {
         self.overflow_indicator = Some(label.into());
         self

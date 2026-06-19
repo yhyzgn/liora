@@ -105,7 +105,7 @@ pub struct TrayControlCenter {
 impl Global for TrayControlCenter {}
 
 impl TrayControlCenter {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `TrayControlCenter` initialized from the supplied sender.
     pub fn new(sender: mpsc::Sender<TrayCommand>) -> Self {
         Self {
             sender,
@@ -168,7 +168,7 @@ pub enum TrayCommand {
 }
 
 impl TrayCommand {
-    /// Returns the stable tray command identifier used for menu event routing.
+    /// Returns the stable command or element id exposed by this value.
     pub fn id(&self) -> String {
         match self {
             Self::Show => "show".into(),
@@ -272,7 +272,7 @@ impl TrayMenuItemSpec {
 #[derive(Clone)]
 /// Platform tray configuration supplied by the host application.
 pub struct TrayConfig {
-    /// Stable identifier used to connect rendered UI, callbacks, and external state.
+    /// Stable identifier used for GPUI state, callbacks, and automation.
     pub id: String,
     /// Tooltip text shown by the operating-system tray area.
     pub tooltip: Option<String>,
@@ -289,7 +289,7 @@ pub struct TrayConfig {
 }
 
 impl TrayConfig {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `TrayConfig` initialized from the supplied id.
     pub fn new(id: impl Into<String>) -> Self {
         Self {
             id: id.into(),
@@ -514,7 +514,7 @@ pub fn solid_icon(color: [u8; 4], size: u32) -> Result<TrayIconImage> {
     icon_from_rgba(rgba, size, size)
 }
 
-/// Configures the default liora tray menu used before user interaction changes state.
+/// Builds the default tray menu entries used by Liora apps.
 pub fn default_liora_tray_menu() -> Vec<TrayMenuItemSpec> {
     vec![
         TrayMenuItemSpec::action("显示窗口", TrayCommand::Show),

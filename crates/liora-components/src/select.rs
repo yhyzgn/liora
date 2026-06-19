@@ -37,7 +37,7 @@ actions!(
     ]
 );
 
-/// Public builder and render state for the Liora select component.
+/// Fluent native GPUI component for rendering Liora select.
 pub struct Select {
     options: Vec<SharedString>,
     selected_idx: Option<usize>,
@@ -58,7 +58,7 @@ pub struct Select {
 }
 
 impl Select {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Select` with default theme-driven styling and no optional callbacks attached.
     pub fn new(
         options: Vec<impl Into<SharedString>>,
         selected_idx: Option<usize>,
@@ -84,27 +84,27 @@ impl Select {
         }
     }
 
-    /// Configures the borderless option.
+    /// Removes the visible border treatment.
     pub fn borderless(mut self) -> Self {
         self.border_none = true;
         self
     }
-    /// Configures the radius none option.
+    /// Sets the radius none value used by the component.
     pub fn radius_none(mut self) -> Self {
         self.radius_none = true;
         self
     }
-    /// Configures the radius left none option.
+    /// Sets the radius left none value used by the component.
     pub fn radius_left_none(mut self) -> Self {
         self.radius_left_none = true;
         self
     }
-    /// Configures the radius right none option.
+    /// Sets the radius right none value used by the component.
     pub fn radius_right_none(mut self) -> Self {
         self.radius_right_none = true;
         self
     }
-    /// Returns the width token used for component sizing.
+    /// Sets the component width token used during GPUI layout.
     pub fn width(mut self, w: impl Into<Pixels>) -> Self {
         self.width = Some(w.into());
         self
@@ -115,7 +115,7 @@ impl Select {
         self.width(gpui::px(90.0))
     }
 
-    /// Configures the text size option.
+    /// Sets the font size used for text content.
     pub fn text_size(mut self, s: impl Into<Pixels>) -> Self {
         self.text_size = Some(s.into());
         self
@@ -125,12 +125,12 @@ impl Select {
     pub fn text_sm(self) -> Self {
         self.text_size(gpui::px(14.0))
     }
-    /// Configures the text color option.
+    /// Applies the foreground text color.
     pub fn text_color(mut self, c: Hsla) -> Self {
         self.text_color = Some(c);
         self
     }
-    /// Returns the padding x token used for component sizing.
+    /// Sets the component horizontal padding token used during GPUI layout.
     pub fn padding_x(mut self, p: impl Into<Pixels>) -> Self {
         self.padding_x = Some(p.into());
         self
@@ -239,19 +239,19 @@ impl Select {
         cx.notify();
     }
 
-    /// Configures the close on escape option.
+    /// Toggles whether the popup closes when escape occurs.
     pub fn close_on_escape(mut self, close: bool) -> Self {
         self.close_on_escape = close;
         self
     }
 
-    /// Configures the close on click outside option.
+    /// Toggles whether the popup closes when click outside occurs.
     pub fn close_on_click_outside(mut self, close: bool) -> Self {
         self.close_on_click_outside = close;
         self
     }
 
-    /// Configures the register key bindings option.
+    /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([gpui::KeyBinding::new("escape", SelectClose, None)]);
     }
@@ -274,7 +274,7 @@ impl Select {
         self.on_change = Some(Box::new(cb));
     }
 
-    /// Configures the selected index option.
+    /// Returns the currently selected item index, if any.
     pub fn selected_index(&self) -> Option<usize> {
         self.selected_idx
     }

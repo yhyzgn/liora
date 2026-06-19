@@ -23,7 +23,7 @@ use gpui::{AnyElement, App, IntoElement, RenderOnce, SharedString, Window, div, 
 use liora_core::Config;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported descriptions direction modes and options.
+/// Options that control descriptions direction behavior.
 pub enum DescriptionsDirection {
     #[default]
     /// Lays out content in the horizontal direction.
@@ -32,17 +32,17 @@ pub enum DescriptionsDirection {
     Vertical,
 }
 
-/// Public builder and render state for the Liora description item component.
+/// Data model used by description item rendering.
 pub struct DescriptionItem {
-    /// Human-readable label shown in the component UI.
+    /// User-facing label rendered for this item.
     pub label: SharedString,
-    /// Current value represented by this option or component state.
+    /// Machine-readable value represented by this item.
     pub value: AnyElement,
-    /// Span for this data model.
+    /// Number of columns occupied by this descriptions item.
     pub span: u32,
 }
 
-/// Public builder and render state for the Liora descriptions component.
+/// Fluent native GPUI component for rendering Liora descriptions.
 pub struct Descriptions {
     title: Option<SharedString>,
     extra: Option<AnyElement>,
@@ -53,7 +53,7 @@ pub struct Descriptions {
 }
 
 impl Descriptions {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Descriptions` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self {
             title: None,
@@ -65,37 +65,37 @@ impl Descriptions {
         }
     }
 
-    /// Configures the title option.
+    /// Sets the primary title text displayed by the component.
     pub fn title(mut self, title: impl Into<SharedString>) -> Self {
         self.title = Some(title.into());
         self
     }
 
-    /// Configures the extra option.
+    /// Sets the extra value used by the component.
     pub fn extra(mut self, extra: impl IntoElement) -> Self {
         self.extra = Some(extra.into_any_element());
         self
     }
 
-    /// Configures the column option.
+    /// Sets the column value used by the component.
     pub fn column(mut self, c: u32) -> Self {
         self.column = c.max(1);
         self
     }
 
-    /// Configures the direction option.
+    /// Selects the layout or animation direction.
     pub fn direction(mut self, d: DescriptionsDirection) -> Self {
         self.direction = d;
         self
     }
 
-    /// Configures the border option.
+    /// Toggles or applies the component border treatment.
     pub fn border(mut self, b: bool) -> Self {
         self.border = b;
         self
     }
 
-    /// Configures the item option.
+    /// Performs the item operation used by this component.
     pub fn item(
         mut self,
         label: impl Into<SharedString>,

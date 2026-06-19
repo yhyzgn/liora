@@ -59,7 +59,7 @@ pub struct VirtualizedTable {
 }
 
 impl VirtualizedTable {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `VirtualizedTable` with default theme-driven styling and no optional callbacks attached.
     pub fn new(
         columns: Vec<TableColumn>,
         row_count: usize,
@@ -85,13 +85,13 @@ impl VirtualizedTable {
         }
     }
 
-    /// Returns the stable tray command identifier used for menu event routing.
+    /// Assigns a stable element id used by GPUI state, hit testing, and automated interaction tests.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
-    /// Returns the height token used for component sizing.
+    /// Sets the component height token used during GPUI layout.
     pub fn height(mut self, height: impl Into<Pixels>) -> Self {
         self.height = height.into();
         self
@@ -102,14 +102,14 @@ impl VirtualizedTable {
         self.height(px(360.0))
     }
 
-    /// Configures the row height option.
+    /// Sets the fixed row height used by virtualized layout.
     pub fn row_height(mut self, height: impl Into<Pixels>) -> Self {
         self.row_height = height.into();
         self.list_state.reset(self.row_count);
         self
     }
 
-    /// Configures the overdraw option.
+    /// Sets how many extra virtual rows are rendered outside the viewport.
     pub fn overdraw(mut self, overdraw: impl Into<Pixels>) -> Self {
         let overdraw = overdraw.into();
         self.overdraw = overdraw;
@@ -117,31 +117,31 @@ impl VirtualizedTable {
         self
     }
 
-    /// Configures the border option.
+    /// Toggles or applies the component border treatment.
     pub fn border(mut self, border: bool) -> Self {
         self.border = border;
         self
     }
 
-    /// Configures the stripe option.
+    /// Sets the stripe value used by the component.
     pub fn stripe(mut self, stripe: bool) -> Self {
         self.stripe = stripe;
         self
     }
 
-    /// Configures the loading option.
+    /// Toggles the loading state and associated spinner treatment.
     pub fn loading(mut self, loading: bool) -> Self {
         self.loading = loading;
         self
     }
 
-    /// Configures the empty text option.
+    /// Sets the message displayed when no rows are available.
     pub fn empty_text(mut self, text: impl Into<SharedString>) -> Self {
         self.empty_text = text.into();
         self
     }
 
-    /// Configures the sort option.
+    /// Sets the sort value used by the component.
     pub fn sort(mut self, key: impl Into<SharedString>, order: Option<TableSortOrder>) -> Self {
         self.sort_key = Some(key.into());
         self.sort_order = order;
@@ -157,12 +157,12 @@ impl VirtualizedTable {
         self
     }
 
-    /// Configures the list state option.
+    /// Performs the list state operation used by this component.
     pub fn list_state(&self) -> ListState {
         self.list_state.clone()
     }
 
-    /// Configures the row count option.
+    /// Performs the row count operation used by this component.
     pub fn row_count(&self) -> usize {
         self.row_count
     }

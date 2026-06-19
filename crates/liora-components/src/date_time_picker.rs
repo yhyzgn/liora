@@ -41,26 +41,26 @@ actions!(
 use crate::{DateValue, TimeValue};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-/// Public builder and render state for the Liora date time value component.
+/// Fluent native GPUI component for rendering Liora date time value.
 pub struct DateTimeValue {
-    /// Date for this data model.
+    /// Calendar date associated with this value.
     pub date: DateValue,
-    /// Time for this data model.
+    /// Clock time associated with this value.
     pub time: TimeValue,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported date time picker type modes and options.
+/// Options that control date time picker type behavior.
 pub enum DateTimePickerType {
     #[default]
-    /// Uses the date time variant.
+    /// Selects a single date and time value.
     DateTime,
-    /// Uses the date time range variant.
+    /// Selects a start and end date-time value.
     DateTimeRange,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Enumerates the supported date time picker selection modes and options.
+/// Options that control date time picker selection behavior.
 pub enum DateTimePickerSelection {
     /// Stores a single selection value.
     Single(Option<DateTimeValue>),
@@ -79,7 +79,7 @@ enum RangeEndpoint {
     End,
 }
 
-/// Public builder and render state for the Liora date time picker component.
+/// Fluent native GPUI component for rendering Liora date time picker.
 pub struct DateTimePicker {
     id: SharedString,
     picker_type: DateTimePickerType,
@@ -112,7 +112,7 @@ pub struct DateTimePicker {
 }
 
 impl DateTimeValue {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `DateTimeValue` with default theme-driven styling and no optional callbacks attached.
     pub fn new(
         year: i32,
         month: u32,
@@ -132,14 +132,14 @@ impl DateTimeValue {
         Self { date, time }
     }
 
-    /// Configures the format option.
+    /// Performs the format operation used by this component.
     pub fn format(&self) -> String {
         format!("{} {}", self.date.format(), self.time.format())
     }
 }
 
 impl DateTimePicker {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `DateTimePicker` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         let default_date = DateValue {
             year: 2026,
@@ -180,13 +180,13 @@ impl DateTimePicker {
         }
     }
 
-    /// Returns the stable tray command identifier used for menu event routing.
+    /// Assigns a stable element id used by GPUI state, hit testing, and automated interaction tests.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
-    /// Configures the picker type option.
+    /// Selects single-date or range picking behavior.
     pub fn picker_type(mut self, picker_type: DateTimePickerType) -> Self {
         self.picker_type = picker_type;
         if picker_type.is_range() && self.placeholder == SharedString::from("请选择日期时间")
@@ -196,12 +196,12 @@ impl DateTimePicker {
         self
     }
 
-    /// Configures the date time option.
+    /// Sets the date time value used by the component.
     pub fn date_time(self) -> Self {
         self.picker_type(DateTimePickerType::DateTime)
     }
 
-    /// Configures the date time range option.
+    /// Sets the date time range value used by the component.
     pub fn date_time_range(self) -> Self {
         self.picker_type(DateTimePickerType::DateTimeRange)
     }
@@ -216,7 +216,7 @@ impl DateTimePicker {
         self
     }
 
-    /// Configures the range option.
+    /// Sets the range value used by the component.
     pub fn range(mut self, start: DateTimeValue, end: DateTimeValue) -> Self {
         let (start, end) = ordered_pair(start, end);
         self.view_year = start.date.year;
@@ -229,25 +229,25 @@ impl DateTimePicker {
         self
     }
 
-    /// Configures the placeholder option.
+    /// Uses the supplied placeholder text when the value is empty.
     pub fn placeholder(mut self, placeholder: impl Into<SharedString>) -> Self {
         self.placeholder = placeholder.into();
         self
     }
 
-    /// Configures the format option.
+    /// Sets the format displayed or consumed by the component.
     pub fn format(mut self, format: impl Into<SharedString>) -> Self {
         self.display_format = format.into();
         self
     }
 
-    /// Configures the range separator option.
+    /// Sets the text displayed between range endpoints.
     pub fn range_separator(mut self, separator: impl Into<SharedString>) -> Self {
         self.range_separator = separator.into();
         self
     }
 
-    /// Returns the width token used for component sizing.
+    /// Sets the component width token used during GPUI layout.
     pub fn width(mut self, width: impl Into<Pixels>) -> Self {
         self.width = Some(width.into());
         self
@@ -263,44 +263,44 @@ impl DateTimePicker {
         self.width(px(460.0))
     }
 
-    /// Configures the disabled option.
+    /// Toggles the disabled state and suppresses user interaction when enabled.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
     }
 
-    /// Configures the minute step option.
+    /// Sets minute increments shown by the picker.
     pub fn minute_step(mut self, step: u32) -> Self {
         self.minute_step = step.clamp(1, 60);
         self
     }
 
-    /// Configures the second step option.
+    /// Sets second increments shown by the picker.
     pub fn second_step(mut self, step: u32) -> Self {
         self.second_step = step.clamp(1, 60);
         self
     }
 
-    /// Configures the without seconds option.
+    /// Hides seconds from the time selection UI.
     pub fn without_seconds(mut self) -> Self {
         self.show_seconds = false;
         self.display_format = "YYYY-MM-DD HH:mm".into();
         self
     }
 
-    /// Configures the close on escape option.
+    /// Toggles whether the popup closes when escape occurs.
     pub fn close_on_escape(mut self, close: bool) -> Self {
         self.close_on_escape = close;
         self
     }
 
-    /// Configures the close on click outside option.
+    /// Toggles whether the popup closes when click outside occurs.
     pub fn close_on_click_outside(mut self, close: bool) -> Self {
         self.close_on_click_outside = close;
         self
     }
 
-    /// Configures the register key bindings option.
+    /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([gpui::KeyBinding::new("escape", DateTimePickerClose, None)]);
     }
@@ -343,12 +343,12 @@ impl DateTimePicker {
         self
     }
 
-    /// Configures the value ref option.
+    /// Performs the value ref operation used by this component.
     pub fn value_ref(&self) -> Option<DateTimeValue> {
         self.value
     }
 
-    /// Configures the range ref option.
+    /// Performs the range ref operation used by this component.
     pub fn range_ref(&self) -> (Option<DateTimeValue>, Option<DateTimeValue>) {
         (self.range_start, self.range_end)
     }

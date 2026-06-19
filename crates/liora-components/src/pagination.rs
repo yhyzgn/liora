@@ -25,7 +25,7 @@ use liora_core::Config;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
-/// Public builder and render state for the Liora pagination component.
+/// Fluent native GPUI component for rendering Liora pagination.
 pub struct Pagination {
     id: SharedString,
     total: usize,
@@ -40,7 +40,7 @@ pub struct Pagination {
 }
 
 impl Pagination {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Pagination` initialized from the supplied total.
     pub fn new(total: usize) -> Self {
         Self {
             id: liora_core::unique_id("pagination"),
@@ -56,37 +56,37 @@ impl Pagination {
         }
     }
 
-    /// Returns the stable tray command identifier used for menu event routing.
+    /// Assigns a stable element id used by GPUI state, hit testing, and automated interaction tests.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
-    /// Configures the page size option.
+    /// Sets the page size value used by the component.
     pub fn page_size(mut self, size: usize) -> Self {
         self.page_size = size.max(1);
         self
     }
 
-    /// Configures the current page option.
+    /// Sets the current page value used by the component.
     pub fn current_page(mut self, page: usize) -> Self {
         self.current_page = page.max(1);
         self
     }
 
-    /// Configures the background option.
+    /// Toggles or applies the component background treatment.
     pub fn background(mut self, bg: bool) -> Self {
         self.background = bg;
         self
     }
 
-    /// Configures the layout option.
+    /// Selects the layout used by the component.
     pub fn layout(mut self, l: impl Into<SharedString>) -> Self {
         self.layout = l.into();
         self
     }
 
-    /// Configures the page sizes option.
+    /// Sets the page sizes value used by the component.
     pub fn page_sizes(mut self, sizes: impl Into<Vec<usize>>) -> Self {
         self.page_sizes = sizes.into().into_iter().map(|s| s.max(1)).collect();
         self.page_sizes.sort_unstable();

@@ -26,26 +26,26 @@ use liora_core::Config;
 use liora_icons::{Icon, IntoIconPath};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Enumerates the supported statistic layout modes and options.
+/// Options that control statistic layout behavior.
 pub enum StatisticLayout {
     /// Lays out content in the vertical direction.
     Vertical,
-    /// Uses the horizontal compact variant.
+    /// Uses compact horizontal metric layout.
     HorizontalCompact,
-    /// Uses the horizontal between variant.
+    /// Uses horizontal layout with value and title separated.
     HorizontalBetween,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Enumerates the supported statistic icon position modes and options.
+/// Options that control statistic icon position behavior.
 pub enum StatisticIconPosition {
-    /// Uses the left variant.
+    /// Places the overlay to the left of the anchor.
     Left,
-    /// Uses the right variant.
+    /// Places the overlay to the right of the anchor.
     Right,
 }
 
-/// Public builder and render state for the Liora statistic component.
+/// Fluent native GPUI component for rendering Liora statistic.
 pub struct Statistic {
     title: SharedString,
     value: SharedString,
@@ -59,7 +59,7 @@ pub struct Statistic {
 }
 
 impl Statistic {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Statistic` initialized from the supplied title, and value.
     pub fn new(title: impl Into<SharedString>, value: impl Into<SharedString>) -> Self {
         Self {
             title: title.into(),
@@ -74,19 +74,19 @@ impl Statistic {
         }
     }
 
-    /// Configures the prefix option.
+    /// Sets the prefix value used by the component.
     pub fn prefix(mut self, prefix: impl IntoElement) -> Self {
         self.prefix = Some(prefix.into_any_element());
         self
     }
 
-    /// Configures the suffix option.
+    /// Sets the suffix value used by the component.
     pub fn suffix(mut self, suffix: impl IntoElement) -> Self {
         self.suffix = Some(suffix.into_any_element());
         self
     }
 
-    /// Configures the value color option.
+    /// Sets the value color used by the rendered component.
     pub fn value_color(mut self, color: Hsla) -> Self {
         self.value_color = Some(color);
         self
@@ -98,50 +98,50 @@ impl Statistic {
         self
     }
 
-    /// Configures the icon position option.
+    /// Sets the icon position rendered by the component.
     pub fn icon_position(mut self, position: StatisticIconPosition) -> Self {
         self.icon_position = position;
         self
     }
 
-    /// Configures the icon left option.
+    /// Sets the icon left rendered by the component.
     pub fn icon_left(self) -> Self {
         self.icon_position(StatisticIconPosition::Left)
     }
 
-    /// Configures the icon right option.
+    /// Sets the icon right rendered by the component.
     pub fn icon_right(self) -> Self {
         self.icon_position(StatisticIconPosition::Right)
     }
 
-    /// Configures the icon color option.
+    /// Sets the icon color used by the rendered component.
     pub fn icon_color(mut self, color: Hsla) -> Self {
         self.icon_color = Some(color);
         self
     }
 
-    /// Configures the layout option.
+    /// Selects the layout used by the component.
     pub fn layout(mut self, layout: StatisticLayout) -> Self {
         self.layout = layout;
         self
     }
 
-    /// Configures the vertical option.
+    /// Uses vertical orientation or gradient direction.
     pub fn vertical(self) -> Self {
         self.layout(StatisticLayout::Vertical)
     }
 
-    /// Configures the horizontal option.
+    /// Uses horizontal orientation or gradient direction.
     pub fn horizontal(self) -> Self {
         self.horizontal_compact()
     }
 
-    /// Configures the horizontal compact option.
+    /// Sets the horizontal compact value used by the component.
     pub fn horizontal_compact(self) -> Self {
         self.layout(StatisticLayout::HorizontalCompact)
     }
 
-    /// Configures the horizontal between option.
+    /// Sets the horizontal between value used by the component.
     pub fn horizontal_between(self) -> Self {
         self.layout(StatisticLayout::HorizontalBetween)
     }

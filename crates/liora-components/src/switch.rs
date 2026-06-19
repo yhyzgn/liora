@@ -44,7 +44,7 @@ gpui::actions!(
     ]
 );
 
-/// Public builder and render state for the Liora switch component.
+/// Fluent native GPUI component for rendering Liora switch.
 pub struct Switch {
     checked: bool,
     thumb_from_checked: bool,
@@ -54,7 +54,7 @@ pub struct Switch {
 }
 
 impl Switch {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Switch` initialized from the supplied checked.
     pub fn new(checked: bool, cx: &mut Context<Self>) -> Self {
         Self {
             checked,
@@ -65,7 +65,7 @@ impl Switch {
         }
     }
 
-    /// Configures the disabled option.
+    /// Toggles the disabled state and suppresses user interaction when enabled.
     pub fn disabled(mut self, d: bool) -> Self {
         self.disabled = d;
         self
@@ -81,12 +81,12 @@ impl Switch {
         self.on_change = Some(Box::new(cb));
     }
 
-    /// Configures the checked option.
+    /// Returns whether checked is currently enabled or available.
     pub fn checked(&self) -> bool {
         self.checked
     }
 
-    /// Configures the register key bindings option.
+    /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([
             KeyBinding::new("space", SwitchToggle, None),

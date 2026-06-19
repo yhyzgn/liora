@@ -26,7 +26,7 @@ use gpui::{
 };
 use liora_core::Config;
 
-/// Public builder and render state for the Liora paragraph component.
+/// Fluent native GPUI component for rendering Liora paragraph.
 pub struct Paragraph {
     children: Vec<Text>,
     selectable: bool,
@@ -34,7 +34,7 @@ pub struct Paragraph {
 }
 
 impl Paragraph {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Paragraph` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self {
             children: Vec::new(),
@@ -43,7 +43,7 @@ impl Paragraph {
         }
     }
 
-    /// Creates a value configured with the supplied text.
+    /// Applies the text preset.
     pub fn with_text(text: impl Into<SharedString>) -> Self {
         Self {
             children: vec![Text::new(text)],
@@ -52,31 +52,31 @@ impl Paragraph {
         }
     }
 
-    /// Configures the child option.
+    /// Adds a child element to the component body.
     pub fn child(mut self, child: Text) -> Self {
         self.children.push(child);
         self
     }
 
-    /// Configures the children option.
+    /// Replaces or appends child elements rendered by the component.
     pub fn children(mut self, children: impl IntoIterator<Item = Text>) -> Self {
         self.children.extend(children);
         self
     }
 
-    /// Configures the selectable option.
+    /// Toggles whether the rendered text can be selected.
     pub fn selectable(mut self, selectable: bool) -> Self {
         self.selectable = selectable;
         self
     }
 
-    /// Returns the stable tray command identifier used for menu event routing.
+    /// Assigns a stable element id used by GPUI state, hit testing, and automated interaction tests.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
-    /// Configures the register key bindings option.
+    /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(cx: &mut App) {
         SelectableText::register_key_bindings(cx);
     }

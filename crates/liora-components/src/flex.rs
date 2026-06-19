@@ -45,7 +45,7 @@ enum MainAlign {
     Between,
 }
 
-/// Public builder and render state for the Liora flex component.
+/// Fluent native GPUI component for rendering Liora flex.
 pub struct Flex {
     children: Vec<AnyElement>,
     direction: Option<FlexDirection>,
@@ -81,7 +81,7 @@ pub struct Flex {
 }
 
 impl Flex {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Flex` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self {
             children: Vec::new(),
@@ -118,25 +118,25 @@ impl Flex {
         }
     }
 
-    /// Configures the row option.
+    /// Sets the row value used by the component.
     pub fn row(mut self) -> Self {
         self.direction = Some(FlexDirection::Row);
         self
     }
 
-    /// Configures the column option.
+    /// Sets the column value used by the component.
     pub fn column(mut self) -> Self {
         self.direction = Some(FlexDirection::Column);
         self
     }
 
-    /// Configures the wrap option.
+    /// Allows child content to wrap onto additional lines.
     pub fn wrap(mut self) -> Self {
         self.wrap = true;
         self
     }
 
-    /// Configures the gap px option.
+    /// Sets gap using raw pixel units.
     pub fn gap_px(mut self, gap: f32) -> Self {
         self.gap = Some(px(gap));
         self
@@ -162,7 +162,7 @@ impl Flex {
         self.gap_px(24.0)
     }
 
-    /// Configures the padding px option.
+    /// Sets padding using raw pixel units.
     pub fn padding_px(mut self, padding: f32) -> Self {
         self.padding = Some(px(padding));
         self
@@ -183,30 +183,30 @@ impl Flex {
         self.padding_px(24.0)
     }
 
-    /// Configures the padding x px option.
+    /// Sets padding x using raw pixel units.
     pub fn padding_x_px(mut self, padding: f32) -> Self {
         self.padding_x = Some(px(padding));
         self
     }
 
-    /// Configures the padding x units option.
+    /// Sets padding x using design-system unit values.
     pub fn padding_x_units(self, padding: f32) -> Self {
         self.padding_x_px(padding)
     }
 
-    /// Configures the padding y px option.
+    /// Sets padding y using raw pixel units.
     pub fn padding_y_px(mut self, padding: f32) -> Self {
         self.padding_y = Some(px(padding));
         self
     }
 
-    /// Configures the margin y px option.
+    /// Sets margin y using raw pixel units.
     pub fn margin_y_px(mut self, margin: f32) -> Self {
         self.margin_y = Some(px(margin));
         self
     }
 
-    /// Configures the margin y units option.
+    /// Sets margin y using design-system unit values.
     pub fn margin_y_units(self, margin: f32) -> Self {
         self.margin_y_px(margin)
     }
@@ -234,13 +234,13 @@ impl Flex {
         self
     }
 
-    /// Configures the h full option.
+    /// Sets the h full value used by the component.
     pub fn h_full(mut self) -> Self {
         self.h_full = true;
         self
     }
 
-    /// Configures the w full option.
+    /// Sets the w full value used by the component.
     pub fn w_full(mut self) -> Self {
         self.w_full = true;
         self
@@ -252,37 +252,37 @@ impl Flex {
         self
     }
 
-    /// Configures the flex 1 option.
+    /// Sets the flex 1 value used by the component.
     pub fn flex_1(mut self) -> Self {
         self.flex_1 = true;
         self
     }
 
-    /// Configures the flex none option.
+    /// Sets the flex none value used by the component.
     pub fn flex_none(mut self) -> Self {
         self.flex_none = true;
         self
     }
 
-    /// Configures the min h 0 option.
+    /// Sets the minimum h 0 limit.
     pub fn min_h_0(mut self) -> Self {
         self.min_h_0 = true;
         self
     }
 
-    /// Configures the bg option.
+    /// Sets the bg used by the rendered component.
     pub fn bg(mut self, color: Hsla) -> Self {
         self.bg = Some(color);
         self
     }
 
-    /// Configures the text color option.
+    /// Applies the foreground text color.
     pub fn text_color(mut self, color: Hsla) -> Self {
         self.text_color = Some(color);
         self
     }
 
-    /// Configures the text size px option.
+    /// Sets text size using raw pixel units.
     pub fn text_size_px(mut self, size: f32) -> Self {
         self.text_size = Some(px(size));
         self
@@ -298,31 +298,31 @@ impl Flex {
         self.text_size_px(14.0)
     }
 
-    /// Configures the bold option.
+    /// Applies bold font weight.
     pub fn bold(mut self) -> Self {
         self.bold = true;
         self
     }
 
-    /// Configures the border option.
+    /// Toggles or applies the component border treatment.
     pub fn border(mut self) -> Self {
         self.border = true;
         self
     }
 
-    /// Configures the border color option.
+    /// Sets the default border color.
     pub fn border_color(mut self, color: Hsla) -> Self {
         self.border_color = Some(color);
         self
     }
 
-    /// Configures the rounded px option.
+    /// Sets rounded using raw pixel units.
     pub fn rounded_px(mut self, radius: f32) -> Self {
         self.rounded = Some(px(radius));
         self
     }
 
-    /// Configures the rounded units option.
+    /// Sets rounded using design-system unit values.
     pub fn rounded_units(self, radius: f32) -> Self {
         self.rounded_px(radius)
     }
@@ -333,96 +333,96 @@ impl Flex {
         self
     }
 
-    /// Configures the rounded pill option.
+    /// Sets the rounded pill value used by the component.
     pub fn rounded_pill(mut self) -> Self {
         self.rounded = Some(px(999.0));
         self
     }
 
-    /// Configures the relative option.
+    /// Sets the relative value used by the component.
     pub fn relative(mut self) -> Self {
         self.relative = true;
         self
     }
 
-    /// Configures the overflow hidden option.
+    /// Sets the overflow hidden value used by the component.
     pub fn overflow_hidden(mut self) -> Self {
         self.overflow_hidden = true;
         self
     }
 
-    /// Configures the overflow y scroll option.
+    /// Sets the overflow y-scroll value used by the component.
     pub fn overflow_y_scroll(mut self) -> Self {
         self.overflow_y_scroll = true;
         self
     }
 
-    /// Returns the stable tray command identifier used for menu event routing.
+    /// Assigns a stable element id used by GPUI state, hit testing, and automated interaction tests.
     pub fn id(mut self, id: impl Into<ElementId>) -> Self {
         self.id = Some(id.into());
         self
     }
 
-    /// Configures the track scroll option.
+    /// Sets the track scroll value used by the component.
     pub fn track_scroll(mut self, handle: &ScrollHandle) -> Self {
         self.scroll_handle = Some(handle.clone());
         self
     }
 
-    /// Configures the align start option.
+    /// Sets the align start value used by the component.
     pub fn align_start(mut self) -> Self {
         self.align = Some(CrossAlign::Start);
         self
     }
 
-    /// Configures the align center option.
+    /// Sets the align center value used by the component.
     pub fn align_center(mut self) -> Self {
         self.align = Some(CrossAlign::Center);
         self
     }
 
-    /// Configures the align end option.
+    /// Sets the align end value used by the component.
     pub fn align_end(mut self) -> Self {
         self.align = Some(CrossAlign::End);
         self
     }
 
-    /// Configures the justify start option.
+    /// Sets the justify start value used by the component.
     pub fn justify_start(mut self) -> Self {
         self.justify = Some(MainAlign::Start);
         self
     }
 
-    /// Configures the justify center option.
+    /// Sets the justify center value used by the component.
     pub fn justify_center(mut self) -> Self {
         self.justify = Some(MainAlign::Center);
         self
     }
 
-    /// Configures the justify end option.
+    /// Sets the justify end value used by the component.
     pub fn justify_end(mut self) -> Self {
         self.justify = Some(MainAlign::End);
         self
     }
 
-    /// Configures the justify between option.
+    /// Sets the justify between value used by the component.
     pub fn justify_between(mut self) -> Self {
         self.justify = Some(MainAlign::Between);
         self
     }
 
-    /// Configures the center option.
+    /// Centers content on both layout axes.
     pub fn center(self) -> Self {
         self.align_center().justify_center()
     }
 
-    /// Configures the child option.
+    /// Adds a child element to the component body.
     pub fn child(mut self, child: impl IntoElement) -> Self {
         self.children.push(child.into_any_element());
         self
     }
 
-    /// Configures the children option.
+    /// Replaces or appends child elements rendered by the component.
     pub fn children(mut self, children: impl IntoIterator<Item = impl IntoElement>) -> Self {
         self.children
             .extend(children.into_iter().map(|child| child.into_any_element()));

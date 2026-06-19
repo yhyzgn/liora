@@ -25,14 +25,14 @@ use liora_core::Config;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
-/// Public builder and render state for the Liora loading component.
+/// Fluent native GPUI component for rendering Liora loading.
 pub struct Loading {
     text: Option<SharedString>,
     full_screen: bool,
 }
 
 impl Loading {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Loading` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self {
             text: None,
@@ -40,13 +40,13 @@ impl Loading {
         }
     }
 
-    /// Configures the text option.
+    /// Applies the text-only visual variant.
     pub fn text(mut self, text: impl Into<SharedString>) -> Self {
         self.text = Some(text.into());
         self
     }
 
-    /// Configures the full screen option.
+    /// Sets the full screen value used by the component.
     pub fn full_screen(mut self) -> Self {
         self.full_screen = true;
         self

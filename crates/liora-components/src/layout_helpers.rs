@@ -22,7 +22,7 @@
 use crate::{Paragraph, Space, Title};
 use gpui::IntoElement;
 
-/// Configures the page option.
+/// Performs the page operation used by this component.
 pub fn page(
     title: &'static str,
     description: &'static str,
@@ -35,7 +35,7 @@ pub fn page(
         .child(body)
 }
 
-/// Configures the section option.
+/// Performs the section operation used by this component.
 pub fn section(
     title: &'static str,
     description: &'static str,
@@ -48,7 +48,7 @@ pub fn section(
         .child(body)
 }
 
-/// Configures the header option.
+/// Performs the header operation used by this component.
 pub fn header(title: &'static str, description: &'static str) -> impl IntoElement {
     Space::new()
         .vertical()
@@ -57,7 +57,7 @@ pub fn header(title: &'static str, description: &'static str) -> impl IntoElemen
         .child(Paragraph::with_text(description))
 }
 
-/// Configures the row option.
+/// Performs the row operation used by this component.
 pub fn row(children: Vec<impl IntoElement>) -> impl IntoElement {
     Space::new().wrap().gap_lg().children(children)
 }

@@ -30,7 +30,7 @@ pub enum DragAxis {
     Horizontal,
     /// Lays out content in the vertical direction.
     Vertical,
-    /// Uses the free variant.
+    /// Uses the `Free` option for `DragAxis`.
     Free,
 }
 
@@ -51,12 +51,12 @@ pub struct DragState {
 }
 
 impl DragState {
-    /// Configures the start option.
+    /// Performs the start operation used by this component.
     pub fn start(&mut self, index: usize, position: Point<Pixels>) {
         self.start_at(index, position, None);
     }
 
-    /// Configures the start at option.
+    /// Performs the start at operation used by this component.
     pub fn start_at(
         &mut self,
         index: usize,
@@ -72,7 +72,7 @@ impl DragState {
             bounds.map(|bounds| point(position.x - bounds.origin.x, position.y - bounds.origin.y));
     }
 
-    /// Configures the update position option.
+    /// Performs the update position operation used by this component.
     pub fn update_position(&mut self, position: Point<Pixels>) {
         if self.active_index.is_some() {
             self.current_position = Some(position);
@@ -86,14 +86,14 @@ impl DragState {
         }
     }
 
-    /// Configures the move active to option.
+    /// Performs the move active to operation used by this component.
     pub fn move_active_to(&mut self, index: usize) {
         self.active_index = Some(index);
         self.over_index = Some(index);
         self.start_position = self.current_position;
     }
 
-    /// Configures the finish option.
+    /// Performs the finish operation used by this component.
     pub fn finish(&mut self) -> Option<(usize, usize)> {
         let origin = self.origin_index.take()?;
         let active = self.active_index.take()?;
@@ -104,7 +104,7 @@ impl DragState {
         Some((origin, target))
     }
 
-    /// Configures the cancel option.
+    /// Performs the cancel operation used by this component.
     pub fn cancel(&mut self) {
         self.origin_index = None;
         self.active_index = None;
@@ -114,17 +114,17 @@ impl DragState {
         self.grab_offset = None;
     }
 
-    /// Configures the active index option.
+    /// Performs the active index operation used by this component.
     pub fn active_index(&self) -> Option<usize> {
         self.active_index
     }
 
-    /// Configures the origin index option.
+    /// Performs the origin index operation used by this component.
     pub fn origin_index(&self) -> Option<usize> {
         self.origin_index
     }
 
-    /// Configures the over index option.
+    /// Performs the over index operation used by this component.
     pub fn over_index(&self) -> Option<usize> {
         self.over_index
     }
@@ -139,7 +139,7 @@ impl DragState {
         self.over_index == Some(index) && self.active_index != Some(index)
     }
 
-    /// Configures the offset option.
+    /// Performs the offset operation used by this component.
     pub fn offset(&self, axis: DragAxis) -> (Pixels, Pixels) {
         let Some(start) = self.start_position else {
             return (px(0.0), px(0.0));

@@ -1,31 +1,31 @@
 use gpui::{AnyElement, App, Bounds, Global, Pixels, Point, SharedString, Window};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Enumerates the supported placement modes and options.
+/// Options that control placement behavior.
 pub enum Placement {
-    /// Uses the top placement or runtime mode.
+    /// Places the overlay above the anchor.
     Top,
-    /// Uses the top start placement or runtime mode.
+    /// Places the overlay above the anchor aligned to the start edge.
     TopStart,
-    /// Uses the top end placement or runtime mode.
+    /// Places the overlay above the anchor aligned to the end edge.
     TopEnd,
-    /// Uses the bottom placement or runtime mode.
+    /// Places the overlay below the anchor.
     Bottom,
-    /// Uses the bottom start placement or runtime mode.
+    /// Places the overlay below the anchor aligned to the start edge.
     BottomStart,
-    /// Uses the bottom end placement or runtime mode.
+    /// Places the overlay below the anchor aligned to the end edge.
     BottomEnd,
-    /// Uses the left placement or runtime mode.
+    /// Places the overlay to the left of the anchor.
     Left,
-    /// Uses the left start placement or runtime mode.
+    /// Places the overlay to the left aligned to the start edge.
     LeftStart,
-    /// Uses the left end placement or runtime mode.
+    /// Places the overlay to the left aligned to the end edge.
     LeftEnd,
-    /// Uses the right placement or runtime mode.
+    /// Places the overlay to the right of the anchor.
     Right,
-    /// Uses the right start placement or runtime mode.
+    /// Places the overlay to the right aligned to the start edge.
     RightStart,
-    /// Uses the right end placement or runtime mode.
+    /// Places the overlay to the right aligned to the end edge.
     RightEnd,
 }
 
@@ -52,26 +52,26 @@ impl Placement {
 /// Type alias for portal render values used by the popper API.
 pub type PortalRender = Box<dyn FnOnce(&mut Window, &mut App) -> AnyElement>;
 
-/// Runtime state or data container for Liora portal entry behavior.
+/// Runtime state used by Liora portal entry behavior.
 pub struct PortalEntry {
-    /// Stable identifier used to connect rendered UI, callbacks, and external state.
+    /// Stable identifier used for GPUI state, callbacks, and automation.
     pub id: u64,
-    /// Render for this data model.
+    /// One-shot closure that produces the portal element.
     pub render: PortalRender,
 }
 
-/// Runtime state or data container for Liora portal behavior.
+/// Runtime state used by Liora portal behavior.
 pub struct Portal {
-    /// Entries for this data model.
+    /// Queued portal entries waiting to be rendered.
     pub entries: Vec<PortalEntry>,
     next_id: u64,
 }
 
 impl Global for Portal {}
 
-/// Runtime state or data container for Liora passive portal behavior.
+/// Runtime state used by Liora passive portal behavior.
 pub struct PassivePortal {
-    /// Entries for this data model.
+    /// Queued portal entries waiting to be rendered.
     pub entries: Vec<PortalEntry>,
     next_id: u64,
 }
@@ -134,15 +134,15 @@ pub fn clear_portals(cx: &mut App) {
     }
 }
 
-/// Runtime state or data container for Liora zindex stack behavior.
+/// Runtime state used by Liora zindex stack behavior.
 pub struct ZIndexStack {
-    /// Base semantic color for the token family.
+    /// Base value for the z-index stack.
     pub base: u32,
-    /// Popup for this data model.
+    /// Z-index assigned to popup-style overlays.
     pub popup: u32,
     /// Modal panel background color.
     pub modal: u32,
-    /// Notification for this data model.
+    /// Z-index assigned to notification overlays.
     pub notification: u32,
     /// Tooltip text shown by the operating-system tray area.
     pub tooltip: u32,
@@ -163,21 +163,21 @@ impl Default for ZIndexStack {
 impl Global for ZIndexStack {}
 
 #[derive(Clone)]
-/// Runtime state or data container for Liora tooltip data behavior.
+/// Runtime state used by Liora tooltip data behavior.
 pub struct TooltipData {
-    /// Stable identifier used to connect rendered UI, callbacks, and external state.
+    /// Stable identifier used for GPUI state, callbacks, and automation.
     pub id: SharedString,
     /// Content rendered inside the component body.
     pub content: SharedString,
-    /// Anchor bounds for this data model.
+    /// Bounds of the trigger element used for popper positioning.
     pub anchor_bounds: Bounds<Pixels>,
-    /// Placement for this data model.
+    /// Preferred placement relative to the trigger or anchor.
     pub placement: Placement,
-    /// Offset for this data model.
+    /// Pixel offset applied after popper placement is resolved.
     pub offset: Pixels,
 }
 
-/// Runtime state or data container for Liora active tooltip behavior.
+/// Runtime state used by Liora active tooltip behavior.
 pub struct ActiveTooltip(pub Vec<TooltipData>);
 impl Global for ActiveTooltip {}
 
@@ -204,15 +204,15 @@ pub fn clear_active_tooltip(cx: &mut App) {
 }
 
 #[derive(Clone)]
-/// Runtime state or data container for Liora active overlay entry behavior.
+/// Runtime state used by Liora active overlay entry behavior.
 pub struct ActiveOverlayEntry {
-    /// Stable identifier used to connect rendered UI, callbacks, and external state.
+    /// Stable identifier used for GPUI state, callbacks, and automation.
     pub id: SharedString,
-    /// View for this data model.
+    /// Entity view rendered inside a portal.
     pub view: gpui::AnyView,
 }
 
-/// Runtime state or data container for Liora active popover behavior.
+/// Runtime state used by Liora active popover behavior.
 pub struct ActivePopover(pub Vec<ActiveOverlayEntry>);
 impl Global for ActivePopover {}
 
@@ -246,7 +246,7 @@ pub fn clear_active_popover(cx: &mut App) {
     cx.global_mut::<ActivePopover>().0.clear();
 }
 
-/// Runtime state or data container for Liora active modal behavior.
+/// Runtime state used by Liora active modal behavior.
 pub struct ActiveModal(pub Vec<ActiveOverlayEntry>);
 impl Global for ActiveModal {}
 
@@ -272,7 +272,7 @@ pub fn clear_active_modal(cx: &mut App) {
     cx.global_mut::<ActiveModal>().0.clear();
 }
 
-/// Runtime state or data container for Liora active drawer behavior.
+/// Runtime state used by Liora active drawer behavior.
 pub struct ActiveDrawer(pub Vec<ActiveOverlayEntry>);
 impl Global for ActiveDrawer {}
 
@@ -298,13 +298,13 @@ pub fn clear_active_drawer(cx: &mut App) {
     cx.global_mut::<ActiveDrawer>().0.clear();
 }
 
-/// Runtime state or data container for Liora popper behavior.
+/// Runtime state used by Liora popper behavior.
 pub struct Popper {
-    /// Anchor bounds for this data model.
+    /// Bounds of the trigger element used for popper positioning.
     pub anchor_bounds: Bounds<Pixels>,
-    /// Placement for this data model.
+    /// Preferred placement relative to the trigger or anchor.
     pub placement: Placement,
-    /// Offset for this data model.
+    /// Pixel offset applied after popper placement is resolved.
     pub offset: Pixels,
 }
 

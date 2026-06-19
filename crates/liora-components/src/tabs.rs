@@ -30,46 +30,46 @@ use liora_icons_lucide::IconName;
 use std::sync::Arc;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported tab position modes and options.
+/// Options that control tab position behavior.
 pub enum TabPosition {
     #[default]
-    /// Uses the top variant.
+    /// Places the overlay above the anchor.
     Top,
-    /// Uses the bottom variant.
+    /// Places the overlay below the anchor.
     Bottom,
-    /// Uses the left variant.
+    /// Places the overlay to the left of the anchor.
     Left,
-    /// Uses the right variant.
+    /// Places the overlay to the right of the anchor.
     Right,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported tab type modes and options.
+/// Options that control tab type behavior.
 pub enum TabType {
     #[default]
-    /// Uses the standard variant.
+    /// Uses the standard tab type treatment.
     Standard,
-    /// Uses the card variant.
+    /// Uses the card tab type treatment.
     Card,
-    /// Uses the border card variant.
+    /// Uses the border card tab type treatment.
     BorderCard,
 }
 
-/// Public builder and render state for the Liora tab pane component.
+/// Fluent native GPUI component for rendering Liora tab pane.
 pub struct TabPane {
-    /// Human-readable name used for display or package metadata.
+    /// Display name shown to users for this item.
     pub name: SharedString,
-    /// Human-readable label shown in the component UI.
+    /// User-facing label rendered for this item.
     pub label: SharedString,
     /// Content rendered inside the component body.
     pub content: Arc<dyn Fn(&mut Window, &mut Context<Tabs>) -> AnyElement + 'static>,
-    /// Closable for this data model.
+    /// Whether the tab shows a close affordance.
     pub closable: bool,
     /// Optional icon rendered with the item.
     pub icon: Option<IconName>,
 }
 
-/// Public builder and render state for the Liora tabs component.
+/// Fluent native GPUI component for rendering Liora tabs.
 pub struct Tabs {
     id: SharedString,
     active_name: SharedString,
@@ -84,7 +84,7 @@ pub struct Tabs {
 }
 
 impl Tabs {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Tabs` initialized from the supplied active name.
     pub fn new(active_name: impl Into<SharedString>) -> Self {
         let name = active_name.into();
         Self {
@@ -101,31 +101,31 @@ impl Tabs {
         }
     }
 
-    /// Returns the stable tray command identifier used for menu event routing.
+    /// Assigns a stable element id used by GPUI state, hit testing, and automated interaction tests.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
-    /// Configures the position option.
+    /// Selects the edge or anchor position used by layout.
     pub fn position(mut self, pos: TabPosition) -> Self {
         self.position = pos;
         self
     }
 
-    /// Configures the type option.
+    /// Selects the type used by the component.
     pub fn type_(mut self, t: TabType) -> Self {
         self.tab_type = t;
         self
     }
 
-    /// Configures the editable option.
+    /// Sets the editable value used by the component.
     pub fn editable(mut self, e: bool) -> Self {
         self.editable = e;
         self
     }
 
-    /// Configures the stretch option.
+    /// Lets items stretch to fill the available cross-axis space.
     pub fn stretch(mut self, stretch: bool) -> Self {
         self.stretch = stretch;
         self
@@ -155,7 +155,7 @@ impl Tabs {
         self
     }
 
-    /// Configures the pane option.
+    /// Performs the pane operation used by this component.
     pub fn pane<F, E>(
         mut self,
         name: impl Into<SharedString>,

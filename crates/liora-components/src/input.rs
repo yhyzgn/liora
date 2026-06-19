@@ -78,15 +78,15 @@ actions!(
 );
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Enumerates the supported input type modes and options.
+/// Options that control input type behavior.
 pub enum InputType {
-    /// Uses the text semantic button variant.
+    /// Accepts plain text input.
     Text,
-    /// Uses the password variant.
+    /// Masks input text until password visibility is toggled.
     Password,
 }
 
-/// Public builder and render state for the Liora input component.
+/// Fluent native GPUI component for rendering Liora input.
 pub struct Input {
     value: SharedString,
     placeholder: SharedString,
@@ -113,14 +113,14 @@ pub struct Input {
     width: Option<Pixels>,
     height: Option<Pixels>,
     text_align: gpui::TextAlign,
-    /// Min rows for this data model.
+    /// Minimum number of text rows reserved by a multiline input.
     pub min_rows: usize,
     on_enter: Option<Box<dyn Fn(&mut Self, &str, &mut Window, &mut Context<Self>) + 'static>>,
     on_change: Option<Box<dyn Fn(&str, &mut Context<Self>) + 'static>>,
 }
 
 impl Input {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Input` initialized from the supplied value.
     pub fn new(value: impl Into<SharedString>, cx: &mut Context<Self>) -> Self {
         Self {
             value: value.into(),
@@ -153,27 +153,27 @@ impl Input {
             on_change: None,
         }
     }
-    /// Configures the placeholder option.
+    /// Uses the supplied placeholder text when the value is empty.
     pub fn placeholder(mut self, p: impl Into<SharedString>) -> Self {
         self.placeholder = p.into();
         self
     }
-    /// Configures the disabled option.
+    /// Toggles the disabled state and suppresses user interaction when enabled.
     pub fn disabled(mut self, d: bool) -> Self {
         self.disabled = d;
         self
     }
-    /// Configures the clearable option.
+    /// Toggles whether the component renders a clear affordance.
     pub fn clearable(mut self, c: bool) -> Self {
         self.clearable = c;
         self
     }
-    /// Configures the icon prefix option.
+    /// Sets the icon rendered before the main input content.
     pub fn icon_prefix(mut self, icon: IconName) -> Self {
         self.icon_prefix = Some(icon);
         self
     }
-    /// Configures the icon suffix option.
+    /// Sets the icon rendered after the main input content.
     pub fn icon_suffix(mut self, icon: IconName) -> Self {
         self.icon_suffix = Some(icon);
         self
@@ -194,37 +194,37 @@ impl Input {
         self.clearable = clearable;
         cx.notify();
     }
-    /// Configures the filter option.
+    /// Returns whether filter is currently enabled or available.
     pub fn filter(mut self, f: impl Fn(&str) -> bool + 'static) -> Self {
         self.filter = Some(Box::new(f));
         self
     }
-    /// Configures the max length option.
+    /// Limits the number of characters accepted by the input.
     pub fn max_length(mut self, max: usize) -> Self {
         self.max_length = Some(max);
         self
     }
-    /// Configures the password option.
+    /// Sets the password value used by the component.
     pub fn password(mut self) -> Self {
         self.input_type = InputType::Password;
         self
     }
-    /// Configures the mask char option.
+    /// Sets the mask char value used by the component.
     pub fn mask_char(mut self, c: char) -> Self {
         self.mask_char = c;
         self
     }
-    /// Configures the min rows option.
+    /// Sets the minimum rows limit.
     pub fn min_rows(mut self, rows: usize) -> Self {
         self.min_rows = rows;
         self
     }
-    /// Returns the height token used for component sizing.
+    /// Sets the component height token used during GPUI layout.
     pub fn height(mut self, h: impl Into<Pixels>) -> Self {
         self.height = Some(h.into());
         self
     }
-    /// Returns the width token used for component sizing.
+    /// Sets the component width token used during GPUI layout.
     pub fn width(mut self, w: impl Into<Pixels>) -> Self {
         self.width = Some(w.into());
         self
@@ -242,7 +242,7 @@ impl Input {
     pub fn set_width_sm(&mut self, cx: &mut Context<Self>) {
         self.set_width(px(96.0), cx);
     }
-    /// Configures the text align option.
+    /// Sets the text align value used by the component.
     pub fn text_align(mut self, align: gpui::TextAlign) -> Self {
         self.text_align = align;
         self
@@ -331,17 +331,17 @@ impl Input {
         self.value.clone()
     }
 
-    /// Configures the selected range option.
+    /// Performs the selected range operation used by this component.
     pub fn selected_range(&self) -> Range<usize> {
         self.selected_range.clone()
     }
 
-    /// Configures the insert text option.
+    /// Performs the insert text operation used by this component.
     pub fn insert_text(&mut self, text: &str, cx: &mut Context<Self>) {
         self.internal_replace(text, cx);
     }
 
-    /// Configures the indent selection option.
+    /// Performs the indent selection operation used by this component.
     pub fn indent_selection(&mut self, indent: &str, cx: &mut Context<Self>) {
         if indent.is_empty() {
             return;
@@ -353,12 +353,12 @@ impl Input {
         self.reindent_selected_lines(indent, true, cx);
     }
 
-    /// Configures the outdent selection option.
+    /// Performs the outdent selection operation used by this component.
     pub fn outdent_selection(&mut self, indent: &str, cx: &mut Context<Self>) {
         self.reindent_selected_lines(indent, false, cx);
     }
 
-    /// Configures the register key bindings option.
+    /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([
             KeyBinding::new("backspace", Backspace, None),
@@ -840,7 +840,7 @@ impl Input {
         self.input_type == InputType::Password && !self.password_visible
     }
 
-    /// Configures the prepend option.
+    /// Performs the prepend operation used by this component.
     pub fn prepend(
         mut self,
         render: impl Fn(&mut Window, &mut App) -> AnyElement + 'static,
@@ -849,7 +849,7 @@ impl Input {
         self
     }
 
-    /// Configures the prepend text option.
+    /// Sets the prepend text value used by the component.
     pub fn prepend_text(self, text: impl Into<SharedString>) -> Self {
         let text = text.into();
         self.prepend(move |_, _| {
@@ -862,7 +862,7 @@ impl Input {
         })
     }
 
-    /// Configures the prepend icon option.
+    /// Sets the prepend icon rendered by the component.
     pub fn prepend_icon(self, icon: IconName) -> Self {
         self.prepend(move |_, _| {
             gpui::div()
@@ -875,7 +875,7 @@ impl Input {
         })
     }
 
-    /// Configures the append option.
+    /// Performs the append operation used by this component.
     pub fn append(
         mut self,
         render: impl Fn(&mut Window, &mut App) -> AnyElement + 'static,
@@ -884,7 +884,7 @@ impl Input {
         self
     }
 
-    /// Configures the append text option.
+    /// Sets the append text value used by the component.
     pub fn append_text(self, text: impl Into<SharedString>) -> Self {
         let text = text.into();
         self.append(move |_, _| {

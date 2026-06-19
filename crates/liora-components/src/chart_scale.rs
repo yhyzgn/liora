@@ -22,19 +22,19 @@
 use gpui::SharedString;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-/// Public builder and render state for the Liora scale linear component.
+/// Fluent native GPUI component for rendering Liora scale linear.
 pub struct ScaleLinear {
     domain: (f64, f64),
     range: (f32, f32),
 }
 
 impl ScaleLinear {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `ScaleLinear` initialized from the supplied domain, and range.
     pub fn new(domain: (f64, f64), range: (f32, f32)) -> Self {
         Self { domain, range }
     }
 
-    /// Configures the tick option.
+    /// Maps a numeric scale value into the configured pixel range.
     pub fn tick(&self, value: f64) -> f32 {
         let span = self.domain.1 - self.domain.0;
         if !value.is_finite() || span.abs() < f64::EPSILON {
@@ -44,7 +44,7 @@ impl ScaleLinear {
         self.range.0 + (self.range.1 - self.range.0) * t
     }
 
-    /// Configures the ticks option.
+    /// Performs the ticks operation used by this component.
     pub fn ticks(&self, count: usize) -> Vec<(f64, f32)> {
         let count = count.max(2);
         let step = (self.domain.1 - self.domain.0) / (count - 1) as f64;
@@ -58,7 +58,7 @@ impl ScaleLinear {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-/// Public builder and render state for the Liora scale point component.
+/// Fluent native GPUI component for rendering Liora scale point.
 pub struct ScalePoint {
     domain: Vec<SharedString>,
     domain_len: usize,
@@ -66,7 +66,7 @@ pub struct ScalePoint {
 }
 
 impl ScalePoint {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `ScalePoint` initialized from the supplied domain, and range.
     pub fn new(domain: Vec<SharedString>, range: (f32, f32)) -> Self {
         let domain_len = domain.len();
         Self {
@@ -88,7 +88,7 @@ impl ScalePoint {
         }
     }
 
-    /// Configures the tick index option.
+    /// Returns the visual index for a point-scale domain value.
     pub fn tick_index(&self, index: usize) -> Option<f32> {
         if self.domain_len == 0 || index >= self.domain_len {
             return None;
@@ -100,7 +100,7 @@ impl ScalePoint {
         Some(self.range.0 + step * index as f32)
     }
 
-    /// Configures the tick option.
+    /// Maps a numeric scale value into the configured pixel range.
     pub fn tick(&self, value: &SharedString) -> Option<f32> {
         self.domain
             .iter()
@@ -110,7 +110,7 @@ impl ScalePoint {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-/// Public builder and render state for the Liora scale band component.
+/// Fluent native GPUI component for rendering Liora scale band.
 pub struct ScaleBand {
     domain: Vec<SharedString>,
     range: (f32, f32),
@@ -119,7 +119,7 @@ pub struct ScaleBand {
 }
 
 impl ScaleBand {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `ScaleBand` initialized from the supplied domain, and range.
     pub fn new(domain: Vec<SharedString>, range: (f32, f32)) -> Self {
         Self {
             domain,
@@ -129,19 +129,19 @@ impl ScaleBand {
         }
     }
 
-    /// Configures the padding inner option.
+    /// Sets the padding inner value used by the component.
     pub fn padding_inner(mut self, padding: f32) -> Self {
         self.padding_inner = padding.clamp(0.0, 0.95);
         self
     }
 
-    /// Configures the padding outer option.
+    /// Sets the padding outer value used by the component.
     pub fn padding_outer(mut self, padding: f32) -> Self {
         self.padding_outer = padding.max(0.0);
         self
     }
 
-    /// Configures the step option.
+    /// Performs the step operation used by this component.
     pub fn step(&self) -> f32 {
         if self.domain.is_empty() {
             return 0.0;
@@ -154,12 +154,12 @@ impl ScaleBand {
         }
     }
 
-    /// Configures the band width option.
+    /// Performs the band width operation used by this component.
     pub fn band_width(&self) -> f32 {
         self.step() * (1.0 - self.padding_inner)
     }
 
-    /// Configures the tick index option.
+    /// Returns the visual index for a point-scale domain value.
     pub fn tick_index(&self, index: usize) -> Option<f32> {
         if self.domain.is_empty() || index >= self.domain.len() {
             return None;

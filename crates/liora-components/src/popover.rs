@@ -40,7 +40,7 @@ actions!(
     ]
 );
 
-/// Public builder and render state for the Liora popover component.
+/// Fluent native GPUI component for rendering Liora popover.
 pub struct Popover {
     trigger: AnyElement,
     content: Arc<dyn Fn(&mut Window, &mut Context<PopoverView>) -> AnyElement + 'static>,
@@ -51,7 +51,7 @@ pub struct Popover {
     trigger_id: Option<ElementId>,
 }
 
-/// Public builder and render state for the Liora popover view component.
+/// Fluent native GPUI component for rendering Liora popover view.
 pub struct PopoverView {
     content: Arc<dyn Fn(&mut Window, &mut Context<Self>) -> AnyElement + 'static>,
     anchor_bounds: Bounds<Pixels>,
@@ -64,7 +64,7 @@ pub struct PopoverView {
 }
 
 impl PopoverView {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `PopoverView` with default theme-driven styling and no optional callbacks attached.
     pub fn new(
         content: Arc<dyn Fn(&mut Window, &mut Context<Self>) -> AnyElement + 'static>,
         anchor_bounds: Bounds<Pixels>,
@@ -220,7 +220,7 @@ fn popover_anchor_corner(placement: Placement) -> gpui::Corner {
 }
 
 impl Popover {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Popover` initialized from the supplied trigger.
     pub fn new(trigger: impl IntoElement) -> Self {
         Self {
             trigger: trigger.into_any_element(),
@@ -233,7 +233,7 @@ impl Popover {
         }
     }
 
-    /// Configures the content option.
+    /// Sets the rendered content element or text for this component.
     pub fn content<F, E>(mut self, f: F) -> Self
     where
         F: Fn(&mut Window, &mut Context<PopoverView>) -> E + 'static,
@@ -243,13 +243,13 @@ impl Popover {
         self
     }
 
-    /// Configures the placement option.
+    /// Selects the popup, label, or overlay placement.
     pub fn placement(mut self, placement: Placement) -> Self {
         self.placement = placement;
         self
     }
 
-    /// Configures the offset option.
+    /// Sets the pixel offset used when positioning the component.
     pub fn offset(mut self, offset: impl Into<Pixels>) -> Self {
         self.offset = offset.into();
         self
@@ -260,24 +260,24 @@ impl Popover {
         self.offset(px(20.0))
     }
 
-    /// Configures the close on click outside option.
+    /// Toggles whether the popup closes when click outside occurs.
     pub fn close_on_click_outside(mut self, c: bool) -> Self {
         self.close_on_click_outside = c;
         self
     }
 
-    /// Configures the close on escape option.
+    /// Toggles whether the popup closes when escape occurs.
     pub fn close_on_escape(mut self, c: bool) -> Self {
         self.close_on_escape = c;
         self
     }
 
-    /// Configures the register key bindings option.
+    /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([KeyBinding::new("escape", PopoverClose, None)]);
     }
 
-    /// Returns the stable tray command identifier used for menu event routing.
+    /// Assigns a stable element id used by GPUI state, hit testing, and automated interaction tests.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.trigger_id = Some(ElementId::from(id.into()));
         self

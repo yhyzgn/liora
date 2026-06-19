@@ -24,70 +24,70 @@ use liora_icons::Icon;
 use std::{f32::consts::TAU, time::Duration};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Enumerates the supported motion duration modes and options.
+/// Options that control motion duration behavior.
 pub enum MotionDuration {
-    /// Uses the fast variant.
+    /// Uses the `Fast` option for `MotionDuration`.
     Fast,
-    /// Uses the normal variant.
+    /// Uses the `Normal` option for `MotionDuration`.
     Normal,
-    /// Uses the slow variant.
+    /// Uses the `Slow` option for `MotionDuration`.
     Slow,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Enumerates the supported motion easing modes and options.
+/// Options that control motion easing behavior.
 pub enum MotionEasing {
-    /// Uses the linear variant.
+    /// Uses the `Linear` option for `MotionEasing`.
     Linear,
-    /// Uses the ease in out variant.
+    /// Uses the `EaseInOut` option for `MotionEasing`.
     EaseInOut,
-    /// Uses the ease out variant.
+    /// Uses the `EaseOut` option for `MotionEasing`.
     EaseOut,
-    /// Uses the elastic variant.
+    /// Uses the `Elastic` option for `MotionEasing`.
     Elastic,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Enumerates the supported motion preset modes and options.
+/// Options that control motion preset behavior.
 pub enum MotionPreset {
-    /// Uses the fade in variant.
+    /// Uses the `FadeIn` option for `MotionPreset`.
     FadeIn,
-    /// Uses the fade out variant.
+    /// Uses the `FadeOut` option for `MotionPreset`.
     FadeOut,
-    /// Uses the pop in variant.
+    /// Uses the `PopIn` option for `MotionPreset`.
     PopIn,
-    /// Uses the pulse variant.
+    /// Uses the `Pulse` option for `MotionPreset`.
     Pulse,
-    /// Uses the spin variant.
+    /// Uses the `Spin` option for `MotionPreset`.
     Spin,
-    /// Uses the elastic slide variant.
+    /// Uses the `ElasticSlide` option for `MotionPreset`.
     ElasticSlide,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Enumerates the supported motion curve modes and options.
+/// Options that control motion curve behavior.
 pub enum MotionCurve {
-    /// Uses the linear variant.
+    /// Uses the `Linear` option for `MotionCurve`.
     Linear,
-    /// Uses the ease in out variant.
+    /// Uses the `EaseInOut` option for `MotionCurve`.
     EaseInOut,
-    /// Uses the ease out variant.
+    /// Uses the `EaseOut` option for `MotionCurve`.
     EaseOut,
-    /// Uses the elastic snap variant.
+    /// Uses the `ElasticSnap` option for `MotionCurve`.
     ElasticSnap,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Enumerates the supported fade direction modes and options.
+/// Options that control fade direction behavior.
 pub enum FadeDirection {
-    /// Uses the in variant.
+    /// Uses the in direction.
     In,
-    /// Uses the out variant.
+    /// Uses the out direction.
     Out,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-/// Public builder and render state for the Liora interpolator component.
+/// Fluent native GPUI component for rendering Liora interpolator.
 pub struct Interpolator {
     from: f32,
     to: f32,
@@ -105,48 +105,48 @@ impl MotionDuration {
 }
 
 impl Interpolator {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Interpolator` initialized from the supplied from, and to.
     pub fn new(from: f32, to: f32) -> Self {
         Self { from, to }
     }
 
-    /// Configures the from option.
+    /// Performs the from operation used by this component.
     pub fn from(&self) -> f32 {
         self.from
     }
 
-    /// Configures the to option.
+    /// Performs the to operation used by this component.
     pub fn to(&self) -> f32 {
         self.to
     }
 
-    /// Configures the sample option.
+    /// Performs the sample operation used by this component.
     pub fn sample(&self, delta: f32) -> f32 {
         self.sample_with(delta, MotionCurve::Linear)
     }
 
-    /// Configures the sample with option.
+    /// Performs the sample with operation used by this component.
     pub fn sample_with(&self, delta: f32, curve: MotionCurve) -> f32 {
         self.from + (self.to - self.from) * curve_progress(delta, curve)
     }
 
-    /// Configures the map option.
+    /// Performs the map operation used by this component.
     pub fn map(&self, delta: f32, mapper: impl FnOnce(f32) -> f32) -> f32 {
         self.from + (self.to - self.from) * mapper(delta.clamp(0.0, 1.0))
     }
 }
 
-/// Configures the motion animation option.
+/// Performs the motion animation operation used by this component.
 pub fn motion_animation(duration: MotionDuration, easing: MotionEasing) -> Animation {
     Animation::new(duration.as_duration()).with_easing(move |delta| ease(delta, easing))
 }
 
-/// Configures the repeating motion animation option.
+/// Performs the repeating motion animation operation used by this component.
 pub fn repeating_motion_animation(duration: MotionDuration, easing: MotionEasing) -> Animation {
     motion_animation(duration, easing).repeat()
 }
 
-/// Configures the fade option.
+/// Performs the fade operation used by this component.
 pub fn fade<E>(
     id: impl Into<ElementId>,
     direction: FadeDirection,
@@ -168,7 +168,7 @@ where
     )
 }
 
-/// Configures the fade in option.
+/// Performs the fade in operation used by this component.
 pub fn fade_in<E>(id: impl Into<ElementId>, element: E) -> AnimationElement<E>
 where
     E: Styled + IntoElement + 'static,
@@ -176,7 +176,7 @@ where
     fade(id, FadeDirection::In, element)
 }
 
-/// Configures the fade out option.
+/// Performs the fade out operation used by this component.
 pub fn fade_out<E>(id: impl Into<ElementId>, element: E) -> AnimationElement<E>
 where
     E: Styled + IntoElement + 'static,
@@ -184,7 +184,7 @@ where
     fade(id, FadeDirection::Out, element)
 }
 
-/// Configures the pop in option.
+/// Performs the pop in operation used by this component.
 pub fn pop_in<E>(id: impl Into<ElementId>, element: E) -> AnimationElement<E>
 where
     E: Styled + IntoElement + 'static,
@@ -196,7 +196,7 @@ where
     )
 }
 
-/// Configures the pulse option.
+/// Performs the pulse operation used by this component.
 pub fn pulse<E>(id: impl Into<ElementId>, element: E) -> AnimationElement<E>
 where
     E: Styled + IntoElement + 'static,
@@ -208,7 +208,7 @@ where
     )
 }
 
-/// Configures the spin icon option.
+/// Performs the spin icon operation used by this component.
 pub fn spin_icon(id: impl Into<ElementId>, icon: Icon) -> AnimationElement<Icon> {
     icon.with_animation(
         ElementId::from(id.into()),
@@ -217,7 +217,7 @@ pub fn spin_icon(id: impl Into<ElementId>, icon: Icon) -> AnimationElement<Icon>
     )
 }
 
-/// Configures the elastic slide option.
+/// Performs the elastic slide operation used by this component.
 pub fn elastic_slide(delta: f32) -> f32 {
     let t = delta.clamp(0.0, 1.0);
     let c1 = 1.35;
@@ -225,7 +225,7 @@ pub fn elastic_slide(delta: f32) -> f32 {
     1.0 + c3 * (t - 1.0).powi(3) + c1 * (t - 1.0).powi(2)
 }
 
-/// Configures the elastic snap option.
+/// Performs the elastic snap operation used by this component.
 pub fn elastic_snap(delta: f32) -> f32 {
     let eased = gpui::ease_in_out(delta.clamp(0.0, 1.0));
     let snap_start = 0.62;
@@ -238,7 +238,7 @@ pub fn elastic_snap(delta: f32) -> f32 {
     }
 }
 
-/// Configures the slide snap option.
+/// Performs the slide snap operation used by this component.
 pub fn slide_snap(from: f32, to: f32, delta: f32) -> f32 {
     Interpolator::new(from, to).sample_with(delta, MotionCurve::ElasticSnap)
 }

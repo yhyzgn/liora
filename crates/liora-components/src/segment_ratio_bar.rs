@@ -27,21 +27,21 @@ use gpui::{
 use liora_core::Config;
 
 #[derive(Clone, Debug)]
-/// Public builder and render state for the Liora segment ratio item component.
+/// Data model used by segment ratio item rendering.
 pub struct SegmentRatioItem {
-    /// Human-readable label shown in the component UI.
+    /// User-facing label rendered for this item.
     pub label: SharedString,
-    /// Current value represented by this option or component state.
+    /// Machine-readable value represented by this item.
     pub value: f64,
     /// Color token or explicit color applied to the visual element.
     pub color: Hsla,
-    /// Label pattern for this data model.
+    /// Pattern used to format segment labels.
     pub label_pattern: Option<SharedString>,
-    /// Value pattern for this data model.
+    /// Pattern used to format segment values.
     pub value_pattern: Option<SharedString>,
 }
 impl SegmentRatioItem {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `SegmentRatioItem` initialized from the supplied label, value, and color.
     pub fn new(label: impl Into<SharedString>, value: f64, color: Hsla) -> Self {
         Self {
             label: label.into(),
@@ -51,12 +51,12 @@ impl SegmentRatioItem {
             value_pattern: None,
         }
     }
-    /// Configures the label pattern option.
+    /// Sets the label pattern value used by the component.
     pub fn label_pattern(mut self, pattern: impl Into<SharedString>) -> Self {
         self.label_pattern = Some(pattern.into());
         self
     }
-    /// Configures the value pattern option.
+    /// Sets the value pattern value used by the component.
     pub fn value_pattern(mut self, pattern: impl Into<SharedString>) -> Self {
         self.value_pattern = Some(pattern.into());
         self
@@ -64,21 +64,21 @@ impl SegmentRatioItem {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported segment legend position modes and options.
+/// Options that control segment legend position behavior.
 pub enum SegmentLegendPosition {
-    /// Uses the top variant.
+    /// Places the overlay above the anchor.
     Top,
     #[default]
-    /// Uses the bottom variant.
+    /// Places the overlay below the anchor.
     Bottom,
-    /// Uses the both variant.
+    /// Shows segment legends above and below the bar.
     Both,
-    /// Uses the hidden variant.
+    /// Hides segment legends.
     Hidden,
 }
 
 #[derive(Clone)]
-/// Public builder and render state for the Liora segment ratio bar component.
+/// Fluent native GPUI component for rendering Liora segment ratio bar.
 pub struct SegmentRatioBar {
     items: Vec<SegmentRatioItem>,
     height: Pixels,
@@ -91,7 +91,7 @@ pub struct SegmentRatioBar {
 }
 
 impl SegmentRatioBar {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `SegmentRatioBar` that renders the supplied items collection.
     pub fn new(items: impl IntoIterator<Item = SegmentRatioItem>) -> Self {
         Self {
             items: items.into_iter().collect(),
@@ -104,42 +104,42 @@ impl SegmentRatioBar {
             legend_inset_x: px(6.0),
         }
     }
-    /// Returns the height token used for component sizing.
+    /// Sets the component height token used during GPUI layout.
     pub fn height(mut self, height: impl Into<Pixels>) -> Self {
         self.height = height.into().max(px(4.0));
         self
     }
-    /// Configures the radius option.
+    /// Sets the corner radius used by the rendered frame.
     pub fn radius(mut self, radius: impl Into<Pixels>) -> Self {
         self.radius = radius.into().max(px(0.0));
         self
     }
 
-    /// Configures the segment radius option.
+    /// Sets the segment radius value used by the component.
     pub fn segment_radius(mut self, radius: impl Into<Pixels>) -> Self {
         self.segment_radius = radius.into().max(px(0.0));
         self
     }
 
-    /// Configures the rounded segments option.
+    /// Sets the rounded segments value used by the component.
     pub fn rounded_segments(self, radius: impl Into<Pixels>) -> Self {
         self.segment_radius(radius)
     }
 
-    /// Configures the legend position option.
+    /// Sets the legend position value used by the component.
     pub fn legend_position(mut self, position: SegmentLegendPosition) -> Self {
         self.legend_position = position;
         self
     }
-    /// Configures the legend top option.
+    /// Sets the legend top value used by the component.
     pub fn legend_top(self) -> Self {
         self.legend_position(SegmentLegendPosition::Top)
     }
-    /// Configures the legend bottom option.
+    /// Sets the legend bottom value used by the component.
     pub fn legend_bottom(self) -> Self {
         self.legend_position(SegmentLegendPosition::Bottom)
     }
-    /// Configures the legend both option.
+    /// Sets the legend both value used by the component.
     pub fn legend_both(self) -> Self {
         self.legend_position(SegmentLegendPosition::Both)
     }
@@ -147,24 +147,24 @@ impl SegmentRatioBar {
     pub fn hide_legend(self) -> Self {
         self.legend_position(SegmentLegendPosition::Hidden)
     }
-    /// Configures the percentage decimals option.
+    /// Sets the number of fractional digits used for percentage labels.
     pub fn percentage_decimals(mut self, decimals: usize) -> Self {
         self.percentage_decimals = decimals.min(4);
         self
     }
-    /// Configures the split legend option.
+    /// Sets the split legend value used by the component.
     pub fn split_legend(mut self, split: bool) -> Self {
         self.split_legend = split;
         self
     }
 
-    /// Configures the legend inset x option.
+    /// Sets the legend inset x value used by the component.
     pub fn legend_inset_x(mut self, inset: impl Into<Pixels>) -> Self {
         self.legend_inset_x = inset.into().max(px(0.0));
         self
     }
 
-    /// Configures the legend text inset option.
+    /// Sets the legend text inset value used by the component.
     pub fn legend_text_inset(self, inset: impl Into<Pixels>) -> Self {
         self.legend_inset_x(inset)
     }

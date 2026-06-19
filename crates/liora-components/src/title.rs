@@ -26,7 +26,7 @@ use gpui::{
 };
 use liora_core::Config;
 
-/// Public builder and render state for the Liora title component.
+/// Fluent native GPUI component for rendering Liora title.
 pub struct Title {
     content: SharedString,
     level: u8,
@@ -35,7 +35,7 @@ pub struct Title {
 }
 
 impl Title {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Title` initialized from the supplied content.
     pub fn new(content: impl Into<SharedString>) -> Self {
         Self {
             content: content.into(),
@@ -45,50 +45,50 @@ impl Title {
         }
     }
 
-    /// Configures the h1 option.
+    /// Sets the h1 value used by the component.
     pub fn h1(mut self) -> Self {
         self.level = 1;
         self
     }
-    /// Configures the h2 option.
+    /// Sets the h2 value used by the component.
     pub fn h2(mut self) -> Self {
         self.level = 2;
         self
     }
-    /// Configures the h3 option.
+    /// Sets the h3 value used by the component.
     pub fn h3(mut self) -> Self {
         self.level = 3;
         self
     }
-    /// Configures the h4 option.
+    /// Sets the h4 value used by the component.
     pub fn h4(mut self) -> Self {
         self.level = 4;
         self
     }
-    /// Configures the h5 option.
+    /// Sets the h5 value used by the component.
     pub fn h5(mut self) -> Self {
         self.level = 5;
         self
     }
-    /// Configures the h6 option.
+    /// Sets the h6 value used by the component.
     pub fn h6(mut self) -> Self {
         self.level = 6;
         self
     }
 
-    /// Configures the selectable option.
+    /// Toggles whether the rendered text can be selected.
     pub fn selectable(mut self, selectable: bool) -> Self {
         self.selectable = selectable;
         self
     }
 
-    /// Returns the stable tray command identifier used for menu event routing.
+    /// Assigns a stable element id used by GPUI state, hit testing, and automated interaction tests.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
-    /// Configures the register key bindings option.
+    /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(cx: &mut App) {
         SelectableText::register_key_bindings(cx);
     }

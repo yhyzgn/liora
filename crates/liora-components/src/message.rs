@@ -31,36 +31,36 @@ use liora_theme::Theme;
 use std::{cell::RefCell, time::Duration};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Enumerates the supported message type modes and options.
+/// Options that control message type behavior.
 pub enum MessageType {
-    /// Uses the info semantic button variant.
+    /// Uses informational semantic color tokens.
     Info,
-    /// Uses the success semantic button variant.
+    /// Uses success semantic color tokens.
     Success,
-    /// Uses the warning semantic button variant.
+    /// Uses warning semantic color tokens.
     Warning,
     /// Reports a error failure.
     Error,
 }
 
 #[derive(Clone)]
-/// Public builder and render state for the Liora message item component.
+/// Data model used by message item rendering.
 pub struct MessageItem {
-    /// Stable identifier used to connect rendered UI, callbacks, and external state.
+    /// Stable identifier used for GPUI state, callbacks, and automation.
     pub id: usize,
     /// Content rendered inside the component body.
     pub content: SharedString,
-    /// Msg type for this data model.
+    /// Semantic message type used to choose icon and color tokens.
     pub msg_type: MessageType,
 }
 
-/// Public builder and render state for the Liora message manager component.
+/// Fluent native GPUI component for rendering Liora message manager.
 pub struct MessageManager {
     messages: Vec<MessageItem>,
     next_id: usize,
 }
 
-/// Public builder and render state for the Liora message manager global component.
+/// Fluent native GPUI component for rendering Liora message manager global.
 pub struct MessageManagerGlobal(pub Entity<MessageManager>);
 impl Global for MessageManagerGlobal {}
 
@@ -97,7 +97,7 @@ impl ToastDispatcherGlobal {
 }
 
 impl MessageManager {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `MessageManager` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self {
             messages: vec![],
@@ -105,7 +105,7 @@ impl MessageManager {
         }
     }
 
-    /// Configures the init option.
+    /// Performs the init operation used by this component.
     pub fn init(cx: &mut App) {
         if !cx.has_global::<MessageManagerGlobal>() {
             let manager = cx.new(|_| Self::new());
@@ -120,7 +120,7 @@ impl MessageManager {
         });
     }
 
-    /// Configures the show option.
+    /// Performs the show operation used by this component.
     pub fn show(content: impl Into<SharedString>, msg_type: MessageType, cx: &mut App) {
         Self::init(cx);
         let manager = cx.global::<MessageManagerGlobal>().0.clone();
@@ -209,32 +209,32 @@ pub fn show_message(content: impl Into<SharedString>, msg_type: MessageType, cx:
     MessageManager::show(content, msg_type, cx);
 }
 
-/// Configures the toast option.
+/// Performs the toast operation used by this component.
 pub fn toast(content: impl Into<SharedString>, msg_type: MessageType, cx: &mut App) {
     show_message(content, msg_type, cx);
 }
 
-/// Configures the toast info option.
+/// Performs the toast info operation used by this component.
 pub fn toast_info(content: impl Into<SharedString>, cx: &mut App) {
     toast(content, MessageType::Info, cx);
 }
 
-/// Configures the toast success option.
+/// Performs the toast success operation used by this component.
 pub fn toast_success(content: impl Into<SharedString>, cx: &mut App) {
     toast(content, MessageType::Success, cx);
 }
 
-/// Configures the toast warning option.
+/// Performs the toast warning operation used by this component.
 pub fn toast_warning(content: impl Into<SharedString>, cx: &mut App) {
     toast(content, MessageType::Warning, cx);
 }
 
-/// Configures the toast error option.
+/// Performs the toast error operation used by this component.
 pub fn toast_error(content: impl Into<SharedString>, cx: &mut App) {
     toast(content, MessageType::Error, cx);
 }
 
-/// Configures the dispatch toast option.
+/// Performs the dispatch toast operation used by this component.
 pub fn dispatch_toast(content: impl Into<SharedString>, msg_type: MessageType) {
     let content = content.into();
     TOAST_DISPATCHER.with(|dispatcher| {
@@ -245,22 +245,22 @@ pub fn dispatch_toast(content: impl Into<SharedString>, msg_type: MessageType) {
     });
 }
 
-/// Configures the dispatch toast info option.
+/// Performs the dispatch toast info operation used by this component.
 pub fn dispatch_toast_info(content: impl Into<SharedString>) {
     dispatch_toast(content, MessageType::Info);
 }
 
-/// Configures the dispatch toast success option.
+/// Performs the dispatch toast success operation used by this component.
 pub fn dispatch_toast_success(content: impl Into<SharedString>) {
     dispatch_toast(content, MessageType::Success);
 }
 
-/// Configures the dispatch toast warning option.
+/// Performs the dispatch toast warning operation used by this component.
 pub fn dispatch_toast_warning(content: impl Into<SharedString>) {
     dispatch_toast(content, MessageType::Warning);
 }
 
-/// Configures the dispatch toast error option.
+/// Performs the dispatch toast error operation used by this component.
 pub fn dispatch_toast_error(content: impl Into<SharedString>) {
     dispatch_toast(content, MessageType::Error);
 }

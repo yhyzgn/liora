@@ -38,7 +38,7 @@ actions!(
     ]
 );
 
-/// Public builder and render state for the Liora dialog component.
+/// Fluent native GPUI component for rendering Liora dialog.
 pub struct Dialog {
     id: SharedString,
     title: SharedString,
@@ -47,7 +47,7 @@ pub struct Dialog {
     close_on_escape: bool,
 }
 
-/// Public builder and render state for the Liora dialog view component.
+/// Fluent native GPUI component for rendering Liora dialog view.
 pub struct DialogView {
     id: SharedString,
     title: SharedString,
@@ -176,12 +176,12 @@ mod motion_tests {
 }
 
 impl Dialog {
-    /// Configures the register key bindings option.
+    /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([KeyBinding::new("escape", DialogClose, None)]);
     }
 
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Dialog` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self {
             id: liora_core::unique_id("dialog"),
@@ -192,31 +192,31 @@ impl Dialog {
         }
     }
 
-    /// Returns the stable tray command identifier used for menu event routing.
+    /// Assigns a stable element id used by GPUI state, hit testing, and automated interaction tests.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
-    /// Configures the title option.
+    /// Sets the primary title text displayed by the component.
     pub fn title(mut self, title: impl Into<SharedString>) -> Self {
         self.title = title.into();
         self
     }
 
-    /// Configures the close on click outside option.
+    /// Toggles whether the popup closes when click outside occurs.
     pub fn close_on_click_outside(mut self, c: bool) -> Self {
         self.close_on_click_outside = c;
         self
     }
 
-    /// Configures the close on escape option.
+    /// Toggles whether the popup closes when escape occurs.
     pub fn close_on_escape(mut self, c: bool) -> Self {
         self.close_on_escape = c;
         self
     }
 
-    /// Configures the content option.
+    /// Sets the rendered content element or text for this component.
     pub fn content<F, E>(mut self, f: F) -> Self
     where
         F: Fn(&mut Window, &mut Context<DialogView>) -> E + 'static,
@@ -226,7 +226,7 @@ impl Dialog {
         self
     }
 
-    /// Configures the show option.
+    /// Performs the show operation used by this component.
     pub fn show(self, cx: &mut App) {
         let id = self.id;
         let title = self.title;
@@ -251,12 +251,12 @@ impl Dialog {
         liora_core::set_active_modal(id, view.into(), cx);
     }
 
-    /// Configures the close option.
+    /// Performs the close operation used by this component.
     pub fn close(cx: &mut App) {
         liora_core::clear_active_modal(cx);
     }
 
-    /// Configures the close id option.
+    /// Performs the close id operation used by this component.
     pub fn close_id(id: impl Into<SharedString>, cx: &mut App) {
         let id = id.into();
         liora_core::clear_modal(&id, cx);

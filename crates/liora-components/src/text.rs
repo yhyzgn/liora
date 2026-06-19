@@ -28,7 +28,7 @@ use gpui::{
 use liora_core::Config;
 
 #[derive(Clone)]
-/// Public builder and render state for the Liora text component.
+/// Fluent native GPUI component for rendering Liora text.
 pub struct Text {
     pub(crate) content: SharedString,
     pub(crate) color: Option<Hsla>,
@@ -46,7 +46,7 @@ pub struct Text {
 }
 
 impl Text {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Text` initialized from the supplied content.
     pub fn new(content: impl Into<SharedString>) -> Self {
         Self {
             content: content.into(),
@@ -65,13 +65,13 @@ impl Text {
         }
     }
 
-    /// Configures the text color option.
+    /// Applies the foreground text color.
     pub fn text_color(mut self, color: Hsla) -> Self {
         self.color = Some(color);
         self
     }
 
-    /// Configures the bg option.
+    /// Sets the bg used by the rendered component.
     pub fn bg(mut self, bg: Hsla) -> Self {
         self.bg = Some(bg);
         self
@@ -83,53 +83,53 @@ impl Text {
         self
     }
 
-    /// Configures the xs option.
+    /// Sets the xs value used by the component.
     pub fn xs(self) -> Self {
         self.size(px(12.0))
     }
 
-    /// Configures the sm option.
+    /// Sets the sm value used by the component.
     pub fn sm(self) -> Self {
         self.size(px(14.0))
     }
 
-    /// Configures the weight option.
+    /// Sets the weight value used by the component.
     pub fn weight(mut self, weight: FontWeight) -> Self {
         self.weight = Some(weight);
         self
     }
 
-    /// Configures the bold option.
+    /// Applies bold font weight.
     pub fn bold(mut self) -> Self {
         self.weight = Some(FontWeight::BOLD);
         self
     }
 
-    /// Configures the font style option.
+    /// Sets the font style value used by the component.
     pub fn font_style(mut self, style: FontStyle) -> Self {
         self.style = Some(style);
         self
     }
 
-    /// Configures the italic option.
+    /// Sets the italic value used by the component.
     pub fn italic(mut self) -> Self {
         self.style = Some(FontStyle::Italic);
         self
     }
 
-    /// Configures the underline option.
+    /// Sets the underline value used by the component.
     pub fn underline(mut self) -> Self {
         self.underline = true;
         self
     }
 
-    /// Configures the strikethrough option.
+    /// Sets the strikethrough value used by the component.
     pub fn strikethrough(mut self) -> Self {
         self.strikethrough = true;
         self
     }
 
-    /// Configures the font family option.
+    /// Sets the font family value used by the component.
     pub fn font_family(mut self, family: impl Into<SharedString>) -> Self {
         self.font_family = Some(family.into());
         self
@@ -154,13 +154,13 @@ impl Text {
         self
     }
 
-    /// Configures the selectable option.
+    /// Toggles whether the rendered text can be selected.
     pub fn selectable(mut self, selectable: bool) -> Self {
         self.selectable = selectable;
         self
     }
 
-    /// Returns the stable tray command identifier used for menu event routing.
+    /// Assigns a stable element id used by GPUI state, hit testing, and automated interaction tests.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
@@ -217,7 +217,7 @@ impl Text {
             .to_run(self.content.len())
     }
 
-    /// Configures the register key bindings option.
+    /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(cx: &mut App) {
         SelectableText::register_key_bindings(cx);
     }

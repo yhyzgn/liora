@@ -36,9 +36,9 @@ use std::cell::Cell;
 use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-/// Public builder and render state for the Liora pie chart label options component.
+/// Configuration options for pie chart label options rendering and interaction behavior.
 pub struct PieChartLabelOptions {
-    /// Current value represented by this option or component state.
+    /// Machine-readable value represented by this item.
     pub value: ChartValueLabelOptions,
 }
 
@@ -56,7 +56,7 @@ impl Default for PieChartLabelOptions {
 }
 
 #[derive(Clone)]
-/// Public builder and render state for the Liora pie chart component.
+/// Fluent native GPUI component for rendering Liora pie chart.
 pub struct PieChart {
     slices: Vec<ChartSeries>,
     id: SharedString,
@@ -69,7 +69,7 @@ pub struct PieChart {
 }
 
 #[derive(Clone)]
-/// Public builder and render state for the Liora ring chart component.
+/// Fluent native GPUI component for rendering Liora ring chart.
 pub struct RingChart {
     slices: Vec<ChartSeries>,
     id: SharedString,
@@ -84,7 +84,7 @@ pub struct RingChart {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-/// Enumerates the supported ring external legend layout modes and options.
+/// Options that control ring external legend layout behavior.
 pub enum RingExternalLegendLayout {
     /// Lays out content in the vertical direction.
     Vertical,
@@ -93,36 +93,36 @@ pub enum RingExternalLegendLayout {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-/// Enumerates the supported ring external legend side modes and options.
+/// Options that control ring external legend side behavior.
 pub enum RingExternalLegendSide {
-    /// Uses the left variant.
+    /// Places the overlay to the left of the anchor.
     Left,
-    /// Uses the right variant.
+    /// Places the overlay to the right of the anchor.
     Right,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-/// Public builder and render state for the Liora pie slice hit region component.
+/// Fluent native GPUI component for rendering Liora pie slice hit region.
 pub struct PieSliceHitRegion {
-    /// Series index for this data model.
+    /// Index of the series associated with a chart hit target.
     pub series_index: usize,
-    /// Series name for this data model.
+    /// Display name of the chart series associated with a hit target.
     pub series_name: SharedString,
-    /// Human-readable label shown in the component UI.
+    /// User-facing label rendered for this item.
     pub label: SharedString,
-    /// Current value represented by this option or component state.
+    /// Machine-readable value represented by this item.
     pub value: f64,
-    /// Start deg for this data model.
+    /// Starting angle of a pie or ring slice in degrees.
     pub start_deg: f32,
-    /// End deg for this data model.
+    /// Ending angle of a pie or ring slice in degrees.
     pub end_deg: f32,
-    /// Inner radius for this data model.
+    /// Inner radius of a ring slice in pixels.
     pub inner_radius: f32,
-    /// Outer radius for this data model.
+    /// Outer radius of a pie or ring slice in pixels.
     pub outer_radius: f32,
 }
 
-/// Configures the pie slice hit regions option.
+/// Performs the pie slice hit regions operation used by this component.
 pub fn pie_slice_hit_regions(
     slices: &[ChartSeries],
     inner_ratio: f32,
@@ -166,7 +166,7 @@ pub fn pie_slice_hit_regions(
     regions
 }
 
-/// Configures the nearest pie slice hit point option.
+/// Finds the nearest pie slice hit point for pointer interaction.
 pub fn nearest_pie_slice_hit_point(
     slices: &[ChartSeries],
     inner_ratio: f32,
@@ -238,7 +238,7 @@ pub fn nearest_pie_slice_hit_point(
 }
 
 #[derive(Clone, Debug, PartialEq)]
-/// Public builder and render state for the Liora ring external legend options component.
+/// Configuration options for ring external legend options rendering and interaction behavior.
 pub struct RingExternalLegendOptions {
     layout: RingExternalLegendLayout,
     side: RingExternalLegendSide,
@@ -260,7 +260,7 @@ impl Default for RingExternalLegendOptions {
 }
 
 impl PieChart {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `PieChart` that renders the supplied slices collection.
     pub fn new(slices: impl IntoIterator<Item = ChartSeries>) -> Self {
         Self {
             slices: slices.into_iter().collect(),
@@ -274,13 +274,13 @@ impl PieChart {
         }
     }
 
-    /// Returns the stable tray command identifier used for menu event routing.
+    /// Assigns a stable element id used by GPUI state, hit testing, and automated interaction tests.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
-    /// Returns the height token used for component sizing.
+    /// Sets the component height token used during GPUI layout.
     pub fn height(mut self, height: impl Into<Pixels>) -> Self {
         self.height = height.into();
         self
@@ -304,7 +304,7 @@ impl PieChart {
         self
     }
 
-    /// Configures the tooltip hit radius option.
+    /// Sets the pointer distance used when resolving chart tooltip hits.
     pub fn tooltip_hit_radius(mut self, radius: impl Into<Pixels>) -> Self {
         self.tooltip_hit_radius = radius.into().max(px(0.0));
         self
@@ -320,43 +320,43 @@ impl PieChart {
         self
     }
 
-    /// Configures the value label content option.
+    /// Chooses whether value labels show raw values, percentages, or both.
     pub fn value_label_content(mut self, content: ChartValueLabelContent) -> Self {
         self.label_options.value.content = content;
         self
     }
 
-    /// Configures the value label placement option.
+    /// Chooses where value labels are positioned relative to chart marks.
     pub fn value_label_placement(mut self, placement: ChartValueLabelPlacement) -> Self {
         self.label_options.value.placement = placement;
         self
     }
 
-    /// Configures the percentage decimals option.
+    /// Sets the number of fractional digits used for percentage labels.
     pub fn percentage_decimals(mut self, decimals: usize) -> Self {
         self.label_options.value.percentage_decimals = decimals.min(4);
         self
     }
 
-    /// Configures the outside label threshold degrees option.
+    /// Sets the outside label threshold degrees value used by the component.
     pub fn outside_label_threshold_degrees(mut self, degrees: u16) -> Self {
         self.label_options.value.outside_threshold_degrees = degrees.min(120);
         self
     }
 
-    /// Configures the label options option.
+    /// Returns the label configuration currently used by the chart.
     pub fn label_options(&self) -> &PieChartLabelOptions {
         &self.label_options
     }
 
-    /// Configures the slices option.
+    /// Returns the immutable slice data rendered by the chart.
     pub fn slices(&self) -> &[ChartSeries] {
         &self.slices
     }
 }
 
 impl RingChart {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `RingChart` that renders the supplied slices collection.
     pub fn new(slices: impl IntoIterator<Item = ChartSeries>) -> Self {
         Self {
             slices: slices.into_iter().collect(),
@@ -372,13 +372,13 @@ impl RingChart {
         }
     }
 
-    /// Returns the stable tray command identifier used for menu event routing.
+    /// Assigns a stable element id used by GPUI state, hit testing, and automated interaction tests.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
-    /// Returns the height token used for component sizing.
+    /// Sets the component height token used during GPUI layout.
     pub fn height(mut self, height: impl Into<Pixels>) -> Self {
         self.height = height.into();
         self
@@ -402,7 +402,7 @@ impl RingChart {
         self
     }
 
-    /// Configures the tooltip hit radius option.
+    /// Sets the pointer distance used when resolving chart tooltip hits.
     pub fn tooltip_hit_radius(mut self, radius: impl Into<Pixels>) -> Self {
         self.tooltip_hit_radius = radius.into().max(px(0.0));
         self
@@ -418,42 +418,42 @@ impl RingChart {
         self
     }
 
-    /// Configures the value label content option.
+    /// Chooses whether value labels show raw values, percentages, or both.
     pub fn value_label_content(mut self, content: ChartValueLabelContent) -> Self {
         self.label_options.value.content = content;
         self
     }
 
-    /// Configures the value label placement option.
+    /// Chooses where value labels are positioned relative to chart marks.
     pub fn value_label_placement(mut self, placement: ChartValueLabelPlacement) -> Self {
         self.label_options.value.placement = placement;
         self
     }
 
-    /// Configures the percentage decimals option.
+    /// Sets the number of fractional digits used for percentage labels.
     pub fn percentage_decimals(mut self, decimals: usize) -> Self {
         self.label_options.value.percentage_decimals = decimals.min(4);
         self
     }
 
-    /// Configures the outside label threshold degrees option.
+    /// Sets the outside label threshold degrees value used by the component.
     pub fn outside_label_threshold_degrees(mut self, degrees: u16) -> Self {
         self.label_options.value.outside_threshold_degrees = degrees.min(120);
         self
     }
 
-    /// Configures the label options option.
+    /// Returns the label configuration currently used by the chart.
     pub fn label_options(&self) -> &PieChartLabelOptions {
         &self.label_options
     }
 
-    /// Configures the inner ratio option.
+    /// Sets the inner ratio value used by the component.
     pub fn inner_ratio(mut self, ratio: f32) -> Self {
         self.inner_ratio = ratio.clamp(0.2, 0.9);
         self
     }
 
-    /// Configures the external legend option.
+    /// Sets the external legend value used by the component.
     pub fn external_legend(mut self, options: RingExternalLegendOptions) -> Self {
         self.external_legend = Some(options);
         self.show_value_labels = false;
@@ -461,19 +461,19 @@ impl RingChart {
         self
     }
 
-    /// Configures the external vertical legend option.
+    /// Sets the external vertical legend value used by the component.
     pub fn external_vertical_legend(self) -> Self {
         self.external_legend(RingExternalLegendOptions::default())
     }
 
-    /// Configures the external horizontal legend option.
+    /// Sets the external horizontal legend value used by the component.
     pub fn external_horizontal_legend(self) -> Self {
         self.external_legend(
             RingExternalLegendOptions::default().layout(RingExternalLegendLayout::Horizontal),
         )
     }
 
-    /// Configures the external legend side option.
+    /// Sets the external legend side value used by the component.
     pub fn external_legend_side(mut self, side: RingExternalLegendSide) -> Self {
         let mut options = self.external_legend.unwrap_or_default();
         options.side = side;
@@ -481,17 +481,17 @@ impl RingChart {
         self
     }
 
-    /// Configures the external legend left option.
+    /// Sets the external legend left value used by the component.
     pub fn external_legend_left(self) -> Self {
         self.external_legend_side(RingExternalLegendSide::Left)
     }
 
-    /// Configures the external legend right option.
+    /// Sets the external legend right value used by the component.
     pub fn external_legend_right(self) -> Self {
         self.external_legend_side(RingExternalLegendSide::Right)
     }
 
-    /// Configures the external legend max items option.
+    /// Sets the external legend max items value used by the component.
     pub fn external_legend_max_items(mut self, max_items: usize) -> Self {
         let mut options = self.external_legend.unwrap_or_default();
         options.max_items = Some(max_items.max(1));
@@ -499,7 +499,7 @@ impl RingChart {
         self
     }
 
-    /// Configures the external legend content option.
+    /// Sets the external legend content value used by the component.
     pub fn external_legend_content(mut self, content: ChartValueLabelContent) -> Self {
         let mut options = self.external_legend.unwrap_or_default();
         options.content = content;
@@ -507,7 +507,7 @@ impl RingChart {
         self
     }
 
-    /// Configures the external legend percentage decimals option.
+    /// Sets the external legend percentage decimals value used by the component.
     pub fn external_legend_percentage_decimals(mut self, decimals: usize) -> Self {
         let mut options = self.external_legend.unwrap_or_default();
         options.percentage_decimals = decimals.min(4);
@@ -515,63 +515,63 @@ impl RingChart {
         self
     }
 
-    /// Configures the slices option.
+    /// Returns the immutable slice data rendered by the chart.
     pub fn slices(&self) -> &[ChartSeries] {
         &self.slices
     }
 }
 
 impl RingExternalLegendOptions {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `RingExternalLegendOptions` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Configures the layout option.
+    /// Selects the layout used by the component.
     pub fn layout(mut self, layout: RingExternalLegendLayout) -> Self {
         self.layout = layout;
         self
     }
 
-    /// Configures the vertical option.
+    /// Uses vertical orientation or gradient direction.
     pub fn vertical(self) -> Self {
         self.layout(RingExternalLegendLayout::Vertical)
     }
 
-    /// Configures the horizontal option.
+    /// Uses horizontal orientation or gradient direction.
     pub fn horizontal(self) -> Self {
         self.layout(RingExternalLegendLayout::Horizontal)
     }
 
-    /// Configures the side option.
+    /// Sets the side value used by the component.
     pub fn side(mut self, side: RingExternalLegendSide) -> Self {
         self.side = side;
         self
     }
 
-    /// Configures the left option.
+    /// Applies the left preset.
     pub fn left(self) -> Self {
         self.side(RingExternalLegendSide::Left)
     }
 
-    /// Configures the right option.
+    /// Applies the right preset.
     pub fn right(self) -> Self {
         self.side(RingExternalLegendSide::Right)
     }
 
-    /// Configures the content option.
+    /// Sets the rendered content element or text for this component.
     pub fn content(mut self, content: ChartValueLabelContent) -> Self {
         self.content = content;
         self
     }
 
-    /// Configures the percentage decimals option.
+    /// Sets the number of fractional digits used for percentage labels.
     pub fn percentage_decimals(mut self, decimals: usize) -> Self {
         self.percentage_decimals = decimals.min(4);
         self
     }
 
-    /// Configures the max items option.
+    /// Sets the maximum items limit.
     pub fn max_items(mut self, max_items: usize) -> Self {
         self.max_items = Some(max_items.max(1));
         self

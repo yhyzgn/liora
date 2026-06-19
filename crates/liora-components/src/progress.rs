@@ -32,27 +32,27 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported progress type modes and options.
+/// Options that control progress type behavior.
 pub enum ProgressType {
     #[default]
-    /// Uses the line variant.
+    /// Renders progress as a horizontal line.
     Line,
-    /// Uses the circle variant.
+    /// Uses circular geometry.
     Circle,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Enumerates the supported progress status modes and options.
+/// Options that control progress status behavior.
 pub enum ProgressStatus {
-    /// Uses the success semantic button variant.
+    /// Uses success semantic color tokens.
     Success,
-    /// Uses the warning semantic button variant.
+    /// Uses warning semantic color tokens.
     Warning,
-    /// Uses the exception variant.
+    /// Marks progress with exception/error styling.
     Exception,
 }
 
-/// Public builder and render state for the Liora progress component.
+/// Fluent native GPUI component for rendering Liora progress.
 pub struct Progress {
     percentage: f32,
     type_: ProgressType,
@@ -75,7 +75,7 @@ pub struct Progress {
 }
 
 impl Progress {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Progress` initialized from the supplied percentage.
     pub fn new(percentage: f32) -> Self {
         Self {
             percentage: percentage.clamp(0.0, 100.0),
@@ -99,48 +99,48 @@ impl Progress {
         }
     }
 
-    /// Configures the type option.
+    /// Selects the type used by the component.
     pub fn type_(mut self, t: ProgressType) -> Self {
         self.type_ = t;
         self
     }
 
-    /// Configures the line option.
+    /// Sets the line value used by the component.
     pub fn line(mut self) -> Self {
         self.type_ = ProgressType::Line;
         self
     }
 
-    /// Configures the circle option.
+    /// Uses circular shape or clipping.
     pub fn circle(mut self) -> Self {
         self.type_ = ProgressType::Circle;
         self.stroke_width = px(8.0);
         self
     }
 
-    /// Configures the stroke width option.
+    /// Sets the stroke width used for rendered chart paths.
     pub fn stroke_width(mut self, w: impl Into<Pixels>) -> Self {
         self.stroke_width = w.into();
         self
     }
 
-    /// Configures the ring width option.
+    /// Sets the ring width value used by the component.
     pub fn ring_width(self, width: impl Into<Pixels>) -> Self {
         self.stroke_width(width)
     }
 
-    /// Configures the thick option.
+    /// Sets the thick value used by the component.
     pub fn thick(self) -> Self {
         self.stroke_width(px(20.0))
     }
 
-    /// Configures the status option.
+    /// Sets the status value used by the component.
     pub fn status(mut self, s: ProgressStatus) -> Self {
         self.status = Some(s);
         self
     }
 
-    /// Configures the color option.
+    /// Applies an explicit color instead of the theme-derived default.
     pub fn color(mut self, c: Hsla) -> Self {
         self.color = Some(c);
         self.gradient = None;
@@ -148,7 +148,7 @@ impl Progress {
         self
     }
 
-    /// Configures the primary option.
+    /// Applies the primary semantic visual variant.
     pub fn primary(mut self) -> Self {
         self.color = None;
         self.gradient = None;
@@ -157,7 +157,7 @@ impl Progress {
         self
     }
 
-    /// Configures the gradient option.
+    /// Sets the gradient value used by the component.
     pub fn gradient(mut self, colors: Vec<Hsla>) -> Self {
         self.gradient = if colors.is_empty() {
             None
@@ -168,7 +168,7 @@ impl Progress {
         self
     }
 
-    /// Configures the complete color option.
+    /// Sets the complete color used by the rendered component.
     pub fn complete_color(mut self, color: Hsla) -> Self {
         self.complete_color = Some(color);
         self
@@ -180,88 +180,88 @@ impl Progress {
         self
     }
 
-    /// Configures the text inside option.
+    /// Sets the text inside value used by the component.
     pub fn text_inside(mut self, inside: bool) -> Self {
         self.text_inside = inside;
         self
     }
 
-    /// Configures the text inside center option.
+    /// Sets the text inside center value used by the component.
     pub fn text_inside_center(mut self, center: bool) -> Self {
         self.text_inside_center = center;
         self
     }
 
-    /// Configures the text inside centered option.
+    /// Sets the text inside centered value used by the component.
     pub fn text_inside_centered(mut self) -> Self {
         self.text_inside = true;
         self.text_inside_center = true;
         self
     }
 
-    /// Configures the animated option.
+    /// Enables animation for progress or motion visuals.
     pub fn animated(mut self, animated: bool) -> Self {
         self.animated = animated;
         self
     }
 
-    /// Configures the circle size option.
+    /// Sets the circle size value used by the component.
     pub fn circle_size(mut self, size: impl Into<Pixels>) -> Self {
         self.circle_size = size.into();
         self
     }
 
-    /// Configures the track color option.
+    /// Sets the track color used by the rendered component.
     pub fn track_color(mut self, color: Hsla) -> Self {
         self.track_color = Some(color);
         self
     }
 
-    /// Configures the ring color option.
+    /// Sets the ring color used by the rendered component.
     pub fn ring_color(self, color: Hsla) -> Self {
         self.track_color(color)
     }
 
-    /// Configures the progress color option.
+    /// Sets the progress color used by the rendered component.
     pub fn progress_color(self, color: Hsla) -> Self {
         self.color(color)
     }
 
-    /// Configures the circle inner color option.
+    /// Sets the circle inner color used by the rendered component.
     pub fn circle_inner_color(mut self, color: Hsla) -> Self {
         self.circle_inner_color = Some(color);
         self
     }
 
-    /// Configures the inner color option.
+    /// Sets the inner color used by the rendered component.
     pub fn inner_color(self, color: Hsla) -> Self {
         self.circle_inner_color(color)
     }
 
-    /// Configures the text option.
+    /// Applies the text-only visual variant.
     pub fn text(mut self, text: impl Into<SharedString>) -> Self {
         self.text = Some(text.into());
         self
     }
 
-    /// Configures the center text option.
+    /// Sets the center text value used by the component.
     pub fn center_text(self, text: impl Into<SharedString>) -> Self {
         self.text(text)
     }
 
-    /// Configures the text color option.
+    /// Applies the foreground text color.
     pub fn text_color(mut self, color: Hsla) -> Self {
         self.text_color = Some(color);
         self
     }
 
-    /// Configures the text size option.
+    /// Sets the font size used for text content.
     pub fn text_size(mut self, size: impl Into<Pixels>) -> Self {
         self.text_size = Some(size.into());
         self
     }
 
-    /// Configures the text weight option.
+    /// Sets the text weight value used by the component.
     pub fn text_weight(mut self, weight: FontWeight) -> Self {
         self.text_weight = weight;
         self

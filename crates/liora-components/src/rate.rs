@@ -26,7 +26,7 @@ use liora_core::Config;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
-/// Public builder and render state for the Liora rate component.
+/// Fluent native GPUI component for rendering Liora rate.
 pub struct Rate {
     value: f32,
     max: usize,
@@ -37,7 +37,7 @@ pub struct Rate {
 }
 
 impl Rate {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Rate` initialized from the supplied value.
     pub fn new(value: f32, cx: &mut Context<Self>) -> Self {
         Self {
             value,
@@ -49,12 +49,12 @@ impl Rate {
         }
     }
 
-    /// Configures the max option.
+    /// Sets the upper numeric boundary.
     pub fn max(mut self, max: usize) -> Self {
         self.max = max;
         self
     }
-    /// Configures the disabled option.
+    /// Toggles the disabled state and suppresses user interaction when enabled.
     pub fn disabled(mut self, d: bool) -> Self {
         self.disabled = d;
         self

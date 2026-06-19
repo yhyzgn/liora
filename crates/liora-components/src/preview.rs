@@ -40,7 +40,7 @@ actions!(
     ]
 );
 
-/// Public builder and render state for the Liora preview component.
+/// Fluent native GPUI component for rendering Liora preview.
 pub struct Preview {
     src: Option<ImageSource>,
     trigger: Option<AnyElement>,
@@ -49,7 +49,7 @@ pub struct Preview {
     close_on_escape: bool,
 }
 
-/// Public builder and render state for the Liora active image preview component.
+/// Fluent native GPUI component for rendering Liora active image preview.
 pub struct ActiveImagePreview {
     image: Option<Arc<RenderImage>>,
     closing: bool,
@@ -60,7 +60,7 @@ pub struct ActiveImagePreview {
 impl Global for ActiveImagePreview {}
 
 impl Preview {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Preview` initialized from the supplied src.
     pub fn new(src: impl Into<SharedString>) -> Self {
         Self {
             src: Some(ImageSource::from_input(src)),
@@ -71,7 +71,7 @@ impl Preview {
         }
     }
 
-    /// Configures the empty option.
+    /// Creates or applies an empty-state visual treatment.
     pub fn empty() -> Self {
         Self {
             src: None,
@@ -82,7 +82,7 @@ impl Preview {
         }
     }
 
-    /// Configures the src option.
+    /// Sets the image or preview source.
     pub fn src(mut self, src: impl Into<SharedString>) -> Self {
         self.src = Some(ImageSource::from_input(src));
         self
@@ -99,36 +99,36 @@ impl Preview {
         self
     }
 
-    /// Configures the local option.
+    /// Creates a component source from a local file path.
     pub fn local(path: impl Into<PathBuf>) -> Self {
         Self::empty().file(path)
     }
 
-    /// Configures the child option.
+    /// Adds a child element to the component body.
     pub fn child(mut self, trigger: impl IntoElement) -> Self {
         self.trigger = Some(trigger.into_any_element());
         self
     }
 
-    /// Configures the hover effect option.
+    /// Sets the hover effect value used by the component.
     pub fn hover_effect(mut self, enabled: bool) -> Self {
         self.hover_effect = enabled;
         self
     }
 
-    /// Configures the close on escape option.
+    /// Toggles whether the popup closes when escape occurs.
     pub fn close_on_escape(mut self, close: bool) -> Self {
         self.close_on_escape = close;
         self
     }
 
-    /// Configures the close on click outside option.
+    /// Toggles whether the popup closes when click outside occurs.
     pub fn close_on_click_outside(mut self, close: bool) -> Self {
         self.close_on_click_outside = close;
         self
     }
 
-    /// Configures the source option.
+    /// Returns the configured image source, if one is available.
     pub fn source(&self) -> Option<&ImageSource> {
         self.src.as_ref()
     }
@@ -138,7 +138,7 @@ impl Preview {
         self.trigger.is_some()
     }
 
-    /// Configures the register key bindings option.
+    /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([KeyBinding::new("escape", PreviewClose, None)]);
         cx.on_action(|_: &PreviewClose, cx| {

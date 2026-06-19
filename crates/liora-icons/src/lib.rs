@@ -38,7 +38,7 @@ pub struct Icon {
 }
 
 impl Icon {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Icon` initialized from the supplied path.
     pub fn new(path: impl IntoIconPath) -> Self {
         Self {
             size: None,

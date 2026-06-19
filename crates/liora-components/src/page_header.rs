@@ -24,7 +24,7 @@ use liora_core::Config;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
-/// Public builder and render state for the Liora page header component.
+/// Fluent native GPUI component for rendering Liora page header.
 pub struct PageHeader {
     title: SharedString,
     sub_title: Option<SharedString>,
@@ -36,7 +36,7 @@ pub struct PageHeader {
 }
 
 impl PageHeader {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `PageHeader` initialized from the supplied title.
     pub fn new(title: impl Into<SharedString>) -> Self {
         Self {
             title: title.into(),
@@ -49,13 +49,13 @@ impl PageHeader {
         }
     }
 
-    /// Configures the sub title option.
+    /// Sets the sub title displayed or consumed by the component.
     pub fn sub_title(mut self, sub_title: impl Into<SharedString>) -> Self {
         self.sub_title = Some(sub_title.into());
         self
     }
 
-    /// Configures the back icon option.
+    /// Sets the back icon rendered by the component.
     pub fn back_icon(mut self, icon: IconName) -> Self {
         self.back_icon = Some(icon);
         self
@@ -67,7 +67,7 @@ impl PageHeader {
         self
     }
 
-    /// Configures the extra option.
+    /// Sets the extra value used by the component.
     pub fn extra<F>(mut self, f: F) -> Self
     where
         F: Fn(&mut Window, &mut App) -> AnyElement + 'static,
@@ -76,7 +76,7 @@ impl PageHeader {
         self
     }
 
-    /// Configures the content option.
+    /// Sets the rendered content element or text for this component.
     pub fn content<F>(mut self, f: F) -> Self
     where
         F: Fn(&mut Window, &mut App) -> AnyElement + 'static,
@@ -85,7 +85,7 @@ impl PageHeader {
         self
     }
 
-    /// Configures the footer option.
+    /// Sets the footer value used by the component.
     pub fn footer<F>(mut self, f: F) -> Self
     where
         F: Fn(&mut Window, &mut App) -> AnyElement + 'static,

@@ -24,26 +24,26 @@ use gpui::{AnyElement, App, DefiniteLength, IntoElement, RenderOnce, Window, div
 use liora_core::Config;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported skeleton variant modes and options.
+/// Options that control skeleton variant behavior.
 pub enum SkeletonVariant {
     #[default]
-    /// Uses the paragraph variant.
+    /// Renders a paragraph-shaped skeleton placeholder.
     Paragraph,
-    /// Uses the circle variant.
+    /// Uses circular geometry.
     Circle,
-    /// Uses the square variant.
+    /// Uses square geometry.
     Square,
     /// Reports a image failure.
     Image,
 }
 
-/// Public builder and render state for the Liora skeleton item component.
+/// Data model used by skeleton item rendering.
 pub struct SkeletonItem {
     variant: SkeletonVariant,
     width: Option<DefiniteLength>,
 }
 
-/// Public builder and render state for the Liora skeleton component.
+/// Fluent native GPUI component for rendering Liora skeleton.
 pub struct Skeleton {
     loading: bool,
     rows: u32,
@@ -53,7 +53,7 @@ pub struct Skeleton {
 }
 
 impl SkeletonItem {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `SkeletonItem` initialized from the supplied variant.
     pub fn new(variant: SkeletonVariant) -> Self {
         Self {
             variant,
@@ -61,7 +61,7 @@ impl SkeletonItem {
         }
     }
 
-    /// Returns the width token used for component sizing.
+    /// Sets the component width token used during GPUI layout.
     pub fn width(mut self, width: impl Into<DefiniteLength>) -> Self {
         self.width = Some(width.into());
         self
@@ -74,7 +74,7 @@ impl SkeletonItem {
 }
 
 impl Skeleton {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Skeleton` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self {
             loading: true,
@@ -85,25 +85,25 @@ impl Skeleton {
         }
     }
 
-    /// Configures the loading option.
+    /// Toggles the loading state and associated spinner treatment.
     pub fn loading(mut self, l: bool) -> Self {
         self.loading = l;
         self
     }
 
-    /// Configures the rows option.
+    /// Sets the visible row count for editor-like controls.
     pub fn rows(mut self, r: u32) -> Self {
         self.rows = r;
         self
     }
 
-    /// Configures the animated option.
+    /// Enables animation for progress or motion visuals.
     pub fn animated(mut self, a: bool) -> Self {
         self.animated = a;
         self
     }
 
-    /// Configures the template option.
+    /// Sets the template value used by the component.
     pub fn template<F>(mut self, f: F) -> Self
     where
         F: Fn(&mut Window, &mut App) -> AnyElement + 'static,
@@ -112,7 +112,7 @@ impl Skeleton {
         self
     }
 
-    /// Configures the child option.
+    /// Adds a child element to the component body.
     pub fn child(mut self, child: impl IntoElement) -> Self {
         self.child = Some(child.into_any_element());
         self

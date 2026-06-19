@@ -24,7 +24,7 @@ use crate::gpui_compat::PixelsExt;
 use gpui::{PathBuilder, PathStyle, Pixels, Point, StrokeOptions, point, px};
 use lyon_tessellation::{LineCap, LineJoin};
 
-/// Configures the finite line points option.
+/// Performs the finite line points operation used by this component.
 pub fn finite_line_points(points: impl IntoIterator<Item = (f32, f32)>) -> Vec<Point<Pixels>> {
     points
         .into_iter()
@@ -72,7 +72,7 @@ pub fn smooth_line_path(
     smooth_line_path_with_style(points, stroke_width, ChartLineStyle::Solid, None)
 }
 
-/// Configures the smooth line path with style option.
+/// Performs the smooth line path with style operation used by this component.
 pub fn smooth_line_path_with_style(
     points: &[Point<Pixels>],
     stroke_width: Pixels,
@@ -172,7 +172,7 @@ pub fn line_soft_edge_path(
     line_soft_edge_path_with_style(points, soft_width, smooth, ChartLineStyle::Solid, None)
 }
 
-/// Configures the line soft edge path with style option.
+/// Performs the line soft edge path with style operation used by this component.
 pub fn line_soft_edge_path_with_style(
     points: &[Point<Pixels>],
     stroke_width: Pixels,
@@ -192,7 +192,7 @@ pub fn line_path(points: &[Point<Pixels>], stroke_width: Pixels) -> Option<gpui:
     line_path_with_style(points, stroke_width, ChartLineStyle::Solid, None)
 }
 
-/// Configures the line path with style option.
+/// Performs the line path with style operation used by this component.
 pub fn line_path_with_style(
     points: &[Point<Pixels>],
     stroke_width: Pixels,

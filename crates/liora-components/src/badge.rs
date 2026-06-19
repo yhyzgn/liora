@@ -25,22 +25,22 @@ use gpui::{
 use liora_core::Config;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported badge type modes and options.
+/// Options that control badge type behavior.
 pub enum BadgeType {
     #[default]
-    /// Uses the danger semantic button variant.
+    /// Uses danger semantic color tokens.
     Danger,
-    /// Uses the primary semantic button variant.
+    /// Uses the primary brand-accent treatment.
     Primary,
-    /// Uses the success semantic button variant.
+    /// Uses success semantic color tokens.
     Success,
-    /// Uses the warning semantic button variant.
+    /// Uses warning semantic color tokens.
     Warning,
-    /// Uses the info semantic button variant.
+    /// Uses informational semantic color tokens.
     Info,
 }
 
-/// Public builder and render state for the Liora badge component.
+/// Fluent native GPUI component for rendering Liora badge.
 pub struct Badge {
     child: AnyElement,
     value: Option<SharedString>,
@@ -51,7 +51,7 @@ pub struct Badge {
 }
 
 impl Badge {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Badge` initialized from the supplied child.
     pub fn new(child: impl IntoElement) -> Self {
         Self {
             child: child.into_any_element(),
@@ -69,7 +69,7 @@ impl Badge {
         self
     }
 
-    /// Configures the max option.
+    /// Sets the upper numeric boundary.
     pub fn max(mut self, max: i32) -> Self {
         self.max = Some(max);
         self
@@ -81,13 +81,13 @@ impl Badge {
         self
     }
 
-    /// Configures the hidden option.
+    /// Toggles hidden behavior.
     pub fn hidden(mut self, hidden: bool) -> Self {
         self.hidden = hidden;
         self
     }
 
-    /// Configures the badge type option.
+    /// Sets the badge type value used by the component.
     pub fn badge_type(mut self, t: BadgeType) -> Self {
         self.badge_type = t;
         self

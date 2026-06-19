@@ -5,14 +5,14 @@ use crate::known_apps;
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// Validation failures that can be reported by packaging layout checks.
 pub enum ValidationError {
-    /// Uses the missing path packaging case.
+    /// Reports a required packaging path that does not exist.
     MissingPath {
         /// Human-readable label for the required packaging resource.
         label: String,
         /// Expected filesystem path that was missing.
         path: PathBuf,
     },
-    /// Uses the invalid asset packaging case.
+    /// Reports a packaging asset that exists but fails validation.
     InvalidAsset {
         /// Human-readable label for the invalid packaging resource.
         label: String,

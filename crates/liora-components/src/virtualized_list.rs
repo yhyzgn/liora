@@ -53,7 +53,7 @@ pub struct VirtualizedList {
 }
 
 impl VirtualizedList {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `VirtualizedList` with default theme-driven styling and no optional callbacks attached.
     pub fn new(
         item_count: usize,
         _cx: &mut Context<Self>,
@@ -86,7 +86,7 @@ impl VirtualizedList {
         cx.new(|cx| Self::new(item_count, cx, render_item))
     }
 
-    /// Configures the list state option.
+    /// Performs the list state operation used by this component.
     pub fn list_state(&self) -> ListState {
         self.list_state.clone()
     }
@@ -158,7 +158,7 @@ impl VirtualizedList {
         self.on_reorder = Some(Arc::new(callback));
     }
 
-    /// Configures the order option.
+    /// Performs the order operation used by this component.
     pub fn order(&self) -> &[usize] {
         &self.order
     }

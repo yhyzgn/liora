@@ -56,23 +56,23 @@ actions!(
 );
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-/// Enumerates the supported code language modes and options.
+/// Options that control code language behavior.
 pub enum CodeLanguage {
-    /// Uses the plain text variant.
+    /// Treats code content as plain text without language-specific highlighting.
     PlainText,
-    /// Uses the rust variant.
+    /// Treats code content as Rust source for labeling and highlighting.
     Rust,
-    /// Uses the toml variant.
+    /// Treats code content as TOML configuration.
     Toml,
     /// Reports a json failure.
     Json,
-    /// Uses the markdown variant.
+    /// Treats code content as Markdown prose.
     Markdown,
-    /// Uses the shell variant.
+    /// Treats code content as shell commands.
     Shell,
-    /// Uses the type script variant.
+    /// Treats code content as TypeScript source.
     TypeScript,
-    /// Uses the java script variant.
+    /// Treats code content as JavaScript source.
     JavaScript,
 }
 
@@ -132,43 +132,43 @@ impl From<String> for CodeLanguage {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Enumerates the supported code format modes and options.
+/// Options that control code format behavior.
 pub enum CodeFormat {
-    /// Uses the block variant.
+    /// Uses the `Block` option for `CodeFormat`.
     Block,
-    /// Uses the inline variant.
+    /// Uses the `Inline` option for `CodeFormat`.
     Inline,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-/// Enumerates the supported code highlighter modes and options.
+/// Options that control code highlighter behavior.
 pub enum CodeHighlighter {
-    /// Uses the syntect variant.
+    /// Uses the `Syntect` option for `CodeHighlighter`.
     Syntect,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-/// Enumerates the supported code theme modes and options.
+/// Options that control code theme behavior.
 pub enum CodeTheme {
-    /// Uses the auto variant.
+    /// Resolves the code theme from the active Liora theme mode.
     Auto,
-    /// Uses the light theme mode.
+    /// Uses a neutral light syntax theme.
     Light,
-    /// Uses the dark theme mode.
+    /// Uses a neutral dark syntax theme.
     Dark,
-    /// Uses the liora light variant.
+    /// Uses Liora’s branded light syntax palette.
     LioraLight,
-    /// Uses the liora dark variant.
+    /// Uses Liora’s branded dark syntax palette.
     LioraDark,
-    /// Uses the git hub light variant.
+    /// Uses a GitHub-inspired light syntax palette.
     GitHubLight,
-    /// Uses the git hub dark variant.
+    /// Uses a GitHub-inspired dark syntax palette.
     GitHubDark,
-    /// Uses the one dark variant.
+    /// Uses an Atom One Dark inspired syntax palette.
     OneDark,
-    /// Uses the nord variant.
+    /// Uses a Nord-inspired syntax palette.
     Nord,
-    /// Uses the dracula variant.
+    /// Uses a Dracula-inspired syntax palette.
     Dracula,
 }
 
@@ -224,7 +224,7 @@ impl CodeTheme {
     }
 }
 
-/// Public builder and render state for the Liora code block component.
+/// Fluent native GPUI component for rendering Liora code block.
 pub struct CodeBlock {
     code: SharedString,
     language: CodeLanguage,
@@ -240,7 +240,7 @@ pub struct CodeBlock {
 type CodeCopyCallback = dyn Fn(&str, &mut Window, &mut App) + 'static;
 
 impl CodeBlock {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `CodeBlock` initialized from the supplied code.
     pub fn new(code: impl Into<SharedString>) -> Self {
         Self {
             code: code.into(),
@@ -255,128 +255,128 @@ impl CodeBlock {
         }
     }
 
-    /// Configures the language option.
+    /// Sets the language identifier used for code display.
     pub fn language(mut self, language: impl Into<CodeLanguage>) -> Self {
         self.language = language.into();
         self
     }
 
-    /// Configures the rust option.
+    /// Sets the rust value used by the component.
     pub fn rust(self) -> Self {
         self.language(CodeLanguage::Rust)
     }
 
-    /// Configures the toml option.
+    /// Sets the toml value used by the component.
     pub fn toml(self) -> Self {
         self.language(CodeLanguage::Toml)
     }
 
-    /// Configures the json option.
+    /// Sets the json value used by the component.
     pub fn json(self) -> Self {
         self.language(CodeLanguage::Json)
     }
 
-    /// Configures the markdown option.
+    /// Sets the markdown value used by the component.
     pub fn markdown(self) -> Self {
         self.language(CodeLanguage::Markdown)
     }
 
-    /// Configures the shell option.
+    /// Sets the shell value used by the component.
     pub fn shell(self) -> Self {
         self.language(CodeLanguage::Shell)
     }
 
-    /// Configures the typescript option.
+    /// Sets the typescript value used by the component.
     pub fn typescript(self) -> Self {
         self.language(CodeLanguage::TypeScript)
     }
 
-    /// Configures the javascript option.
+    /// Sets the javascript value used by the component.
     pub fn javascript(self) -> Self {
         self.language(CodeLanguage::JavaScript)
     }
 
-    /// Configures the format option.
+    /// Sets the format displayed or consumed by the component.
     pub fn format(mut self, format: CodeFormat) -> Self {
         self.format = format;
         self
     }
 
-    /// Configures the inline option.
+    /// Renders the code block with inline metrics instead of a block frame.
     pub fn inline(mut self) -> Self {
         self.format = CodeFormat::Inline;
         self.copyable = false;
         self
     }
 
-    /// Configures the highlighter option.
+    /// Sets the highlighter value used by the component.
     pub fn highlighter(mut self, highlighter: CodeHighlighter) -> Self {
         self.highlighter = highlighter;
         self
     }
 
-    /// Configures the syntect option.
+    /// Sets the syntect value used by the component.
     pub fn syntect(self) -> Self {
         self.highlighter(CodeHighlighter::Syntect)
     }
 
-    /// Configures the theme option.
+    /// Applies an explicit theme or theme mode.
     pub fn theme(mut self, theme: CodeTheme) -> Self {
         self.theme = theme;
         self
     }
 
-    /// Configures the auto theme option.
+    /// Sets the auto theme value used by the component.
     pub fn auto_theme(self) -> Self {
         self.theme(CodeTheme::Auto)
     }
 
-    /// Configures the light theme option.
+    /// Sets the light theme value used by the component.
     pub fn light_theme(self) -> Self {
         self.theme(CodeTheme::Light)
     }
 
-    /// Configures the dark theme option.
+    /// Sets the dark theme value used by the component.
     pub fn dark_theme(self) -> Self {
         self.theme(CodeTheme::Dark)
     }
 
-    /// Configures the liora light theme option.
+    /// Sets the liora light theme value used by the component.
     pub fn liora_light_theme(self) -> Self {
         self.theme(CodeTheme::LioraLight)
     }
 
-    /// Configures the liora dark theme option.
+    /// Sets the liora dark theme value used by the component.
     pub fn liora_dark_theme(self) -> Self {
         self.theme(CodeTheme::LioraDark)
     }
 
-    /// Configures the github light theme option.
+    /// Sets the github light theme value used by the component.
     pub fn github_light_theme(self) -> Self {
         self.theme(CodeTheme::GitHubLight)
     }
 
-    /// Configures the github dark theme option.
+    /// Sets the github dark theme value used by the component.
     pub fn github_dark_theme(self) -> Self {
         self.theme(CodeTheme::GitHubDark)
     }
 
-    /// Configures the one dark theme option.
+    /// Sets the one dark theme value used by the component.
     pub fn one_dark_theme(self) -> Self {
         self.theme(CodeTheme::OneDark)
     }
 
-    /// Configures the nord theme option.
+    /// Sets the nord theme value used by the component.
     pub fn nord_theme(self) -> Self {
         self.theme(CodeTheme::Nord)
     }
 
-    /// Configures the dracula theme option.
+    /// Sets the dracula theme value used by the component.
     pub fn dracula_theme(self) -> Self {
         self.theme(CodeTheme::Dracula)
     }
 
-    /// Configures the copyable option.
+    /// Toggles whether a copy-to-clipboard affordance is rendered.
     pub fn copyable(mut self, copyable: bool) -> Self {
         self.copyable = copyable;
         self
@@ -388,13 +388,13 @@ impl CodeBlock {
         self
     }
 
-    /// Configures the selectable option.
+    /// Toggles whether the rendered text can be selected.
     pub fn selectable(mut self, selectable: bool) -> Self {
         self.selectable = selectable;
         self
     }
 
-    /// Configures the register key bindings option.
+    /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([
             gpui::KeyBinding::new("cmd-a", CodeSelectAll, Some("CodeBlock")),
@@ -405,7 +405,7 @@ impl CodeBlock {
         Self::prewarm_highlighter();
     }
 
-    /// Configures the prewarm highlighter option.
+    /// Performs the prewarm highlighter operation used by this component.
     pub fn prewarm_highlighter() {
         let _ = syntax_set();
         let themes = theme_set();
@@ -422,7 +422,7 @@ impl CodeBlock {
         }
     }
 
-    /// Returns the stable tray command identifier used for menu event routing.
+    /// Assigns a stable element id used by GPUI state, hit testing, and automated interaction tests.
     pub fn id(mut self, id: impl Into<ElementId>) -> Self {
         self.id = Some(id.into());
         self

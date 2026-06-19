@@ -24,7 +24,7 @@ use gpui::{App, Context, Entity, Render, SharedString, Window, div, prelude::*, 
 use liora_core::Config;
 use std::collections::HashSet;
 
-/// Public builder and render state for the Liora input tag component.
+/// Fluent native GPUI component for rendering Liora input tag.
 pub struct InputTag {
     tags: Vec<SharedString>,
     input: Entity<Input>,
@@ -36,7 +36,7 @@ pub struct InputTag {
 }
 
 impl InputTag {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `InputTag` with default theme-driven styling and no optional callbacks attached.
     pub fn new(tags: Vec<impl Into<SharedString>>, cx: &mut Context<Self>) -> Self {
         Self {
             tags: tags.into_iter().map(Into::into).collect(),
@@ -53,22 +53,22 @@ impl InputTag {
     pub fn entity(tags: Vec<impl Into<SharedString>>, cx: &mut App) -> Entity<Self> {
         cx.new(|cx| Self::new(tags, cx))
     }
-    /// Configures the placeholder option.
+    /// Uses the supplied placeholder text when the value is empty.
     pub fn placeholder(mut self, placeholder: impl Into<SharedString>) -> Self {
         self.placeholder = placeholder.into();
         self
     }
-    /// Configures the max tags option.
+    /// Sets the maximum tags limit.
     pub fn max_tags(mut self, max: usize) -> Self {
         self.max_tags = Some(max);
         self
     }
-    /// Configures the allow duplicates option.
+    /// Sets the allow duplicates value used by the component.
     pub fn allow_duplicates(mut self, allow: bool) -> Self {
         self.allow_duplicates = allow;
         self
     }
-    /// Configures the disabled option.
+    /// Toggles the disabled state and suppresses user interaction when enabled.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
@@ -81,7 +81,7 @@ impl InputTag {
         self.on_change = Some(Box::new(cb));
         self
     }
-    /// Configures the tags option.
+    /// Performs the tags operation used by this component.
     pub fn tags(&self) -> &[SharedString] {
         &self.tags
     }
@@ -209,7 +209,7 @@ impl Render for InputTag {
     }
 }
 
-/// Configures the normalize tags option.
+/// Performs the normalize tags operation used by this component.
 pub fn normalize_tags(
     tags: impl IntoIterator<Item = impl Into<SharedString>>,
     allow_duplicates: bool,

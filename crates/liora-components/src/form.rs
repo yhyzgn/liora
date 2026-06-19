@@ -22,7 +22,7 @@
 use gpui::{AnyElement, App, Component, Pixels, SharedString, Window, div, prelude::*, px};
 use liora_core::Config;
 
-/// Public builder and render state for the Liora form component.
+/// Fluent native GPUI component for rendering Liora form.
 pub struct Form {
     _label_width: Option<Pixels>,
     inline: bool,
@@ -30,7 +30,7 @@ pub struct Form {
 }
 
 impl Form {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Form` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self {
             _label_width: None,
@@ -39,17 +39,17 @@ impl Form {
         }
     }
 
-    /// Configures the label width option.
+    /// Sets the reserved label column width.
     pub fn label_width(mut self, width: impl Into<Pixels>) -> Self {
         self._label_width = Some(width.into());
         self
     }
-    /// Configures the inline option.
+    /// Renders the code block with inline metrics instead of a block frame.
     pub fn inline(mut self, inline: bool) -> Self {
         self.inline = inline;
         self
     }
-    /// Configures the child option.
+    /// Adds a child element to the component body.
     pub fn child(mut self, child: impl IntoElement) -> Self {
         self.children.push(child.into_any_element());
         self
@@ -73,7 +73,7 @@ impl RenderOnce for Form {
     }
 }
 
-/// Public builder and render state for the Liora form item component.
+/// Data model used by form item rendering.
 pub struct FormItem {
     label: Option<SharedString>,
     label_width: Option<Pixels>,
@@ -83,7 +83,7 @@ pub struct FormItem {
 }
 
 impl FormItem {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `FormItem` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self {
             label: None,
@@ -99,23 +99,23 @@ impl FormItem {
         self.label = Some(label.into());
         self
     }
-    /// Configures the label width option.
+    /// Sets the reserved label column width.
     pub fn label_width(mut self, width: impl Into<Pixels>) -> Self {
         self.label_width = Some(width.into());
         self
     }
-    /// Configures the required option.
+    /// Sets the required value used by the component.
     pub fn required(mut self, r: bool) -> Self {
         self.required = r;
         self
     }
-    /// Configures the error option.
+    /// Sets the error value used by the component.
     pub fn error(mut self, e: impl Into<SharedString>) -> Self {
         self.error = Some(e.into());
         self
     }
 
-    /// Configures the child option.
+    /// Adds a child element to the component body.
     pub fn child(mut self, child: impl IntoElement) -> Self {
         self.content = Some(child.into_any_element());
         self

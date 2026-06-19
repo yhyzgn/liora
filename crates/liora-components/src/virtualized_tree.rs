@@ -37,13 +37,13 @@ type NodeCallback = dyn Fn(SharedString, &mut Window, &mut App) + 'static;
 /// Visible tree row produced from the expanded tree model.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VirtualTreeItem {
-    /// Stable identifier used to connect rendered UI, callbacks, and external state.
+    /// Stable identifier used for GPUI state, callbacks, and automation.
     pub id: SharedString,
-    /// Human-readable label shown in the component UI.
+    /// User-facing label rendered for this item.
     pub label: SharedString,
-    /// Depth for this data model.
+    /// Tree depth used for indentation.
     pub depth: u32,
-    /// Has children for this data model.
+    /// Whether the tree node has child nodes or can expand.
     pub has_children: bool,
 }
 
@@ -68,7 +68,7 @@ pub struct VirtualizedTree {
 }
 
 impl VirtualizedTree {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `VirtualizedTree` that renders the supplied data collection.
     pub fn new(data: Vec<TreeNode>, _cx: &mut Context<Self>) -> Self {
         let flattened = flatten_visible(&data, &HashSet::new());
         let overdraw = px(640.0);
@@ -94,33 +94,33 @@ impl VirtualizedTree {
         cx.new(|cx| Self::new(data, cx))
     }
 
-    /// Returns the height token used for component sizing.
+    /// Sets the component height token used during GPUI layout.
     pub fn height(mut self, height: impl Into<Pixels>) -> Self {
         self.height = height.into();
         self
     }
 
-    /// Configures the row height option.
+    /// Sets the fixed row height used by virtualized layout.
     pub fn row_height(mut self, height: impl Into<Pixels>) -> Self {
         self.row_height = height.into();
         self.list_state.reset(self.flattened.len());
         self
     }
 
-    /// Configures the indent option.
+    /// Sets the layout indent.
     pub fn indent(mut self, indent: impl Into<Pixels>) -> Self {
         self.indent = indent.into();
         self
     }
 
-    /// Configures the overdraw option.
+    /// Sets how many extra virtual rows are rendered outside the viewport.
     pub fn overdraw(mut self, overdraw: impl Into<Pixels>) -> Self {
         self.overdraw = overdraw.into();
         self.rebuild_list_state();
         self
     }
 
-    /// Configures the multiple option.
+    /// Enables multi-selection behavior.
     pub fn multiple(mut self, multiple: bool) -> Self {
         self.multiple = multiple;
         self
@@ -132,20 +132,20 @@ impl VirtualizedTree {
         self
     }
 
-    /// Configures the default expanded keys used before user interaction changes state.
+    /// Sets which tree nodes start expanded.
     pub fn default_expanded_keys(mut self, keys: impl IntoIterator<Item = SharedString>) -> Self {
         self.expanded_keys = keys.into_iter().collect();
         self.rebuild_flattened();
         self
     }
 
-    /// Configures the default selected keys used before user interaction changes state.
+    /// Sets which tree nodes start selected.
     pub fn default_selected_keys(mut self, keys: impl IntoIterator<Item = SharedString>) -> Self {
         self.selected_keys = keys.into_iter().collect();
         self
     }
 
-    /// Configures the expand all option.
+    /// Sets the expand all value used by the component.
     pub fn expand_all(mut self) -> Self {
         let mut keys = HashSet::new();
         collect_parent_keys(&self.data, &mut keys);
@@ -163,7 +163,7 @@ impl VirtualizedTree {
         self
     }
 
-    /// Configures the visible len option.
+    /// Performs the visible len operation used by this component.
     pub fn visible_len(&self) -> usize {
         self.flattened.len()
     }
@@ -178,7 +178,7 @@ impl VirtualizedTree {
         self.selected_keys.contains(id)
     }
 
-    /// Configures the list state option.
+    /// Performs the list state operation used by this component.
     pub fn list_state(&self) -> ListState {
         self.list_state.clone()
     }
@@ -361,7 +361,7 @@ impl Render for VirtualizedTree {
     }
 }
 
-/// Configures the flatten visible option.
+/// Performs the flatten visible operation used by this component.
 pub fn flatten_visible(
     data: &[TreeNode],
     expanded_keys: &HashSet<SharedString>,

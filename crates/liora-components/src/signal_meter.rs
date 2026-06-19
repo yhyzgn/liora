@@ -27,33 +27,33 @@ use gpui::{
 use liora_core::Config;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported signal meter kind modes and options.
+/// Options that control signal meter kind behavior.
 pub enum SignalMeterKind {
     #[default]
-    /// Uses the mobile variant.
+    /// Renders cellular signal-style bars.
     Mobile,
-    /// Uses the wifi variant.
+    /// Renders Wi-Fi signal-style arcs.
     Wifi,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-/// Public builder and render state for the Liora signal level color component.
+/// Fluent native GPUI component for rendering Liora signal level color.
 pub struct SignalLevelColor {
-    /// Level for this data model.
+    /// Signal or progress level represented by this item.
     pub level: usize,
     /// Color token or explicit color applied to the visual element.
     pub color: Hsla,
 }
 
 impl SignalLevelColor {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `SignalLevelColor` initialized from the supplied level, and color.
     pub fn new(level: usize, color: Hsla) -> Self {
         Self { level, color }
     }
 }
 
 #[derive(Clone)]
-/// Public builder and render state for the Liora signal meter component.
+/// Fluent native GPUI component for rendering Liora signal meter.
 pub struct SignalMeter {
     level: usize,
     max_level: usize,
@@ -68,7 +68,7 @@ pub struct SignalMeter {
 }
 
 impl SignalMeter {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `SignalMeter` initialized from the supplied level.
     pub fn new(level: usize) -> Self {
         Self {
             level,
@@ -83,55 +83,55 @@ impl SignalMeter {
             height: px(32.0),
         }
     }
-    /// Configures the max level option.
+    /// Sets the maximum level limit.
     pub fn max_level(mut self, max_level: usize) -> Self {
         self.max_level = max_level.max(1);
         self.level = self.level.min(self.max_level);
         self
     }
 
-    /// Configures the total signals option.
+    /// Sets the total signals value used by the component.
     pub fn total_signals(self, total: usize) -> Self {
         self.max_level(total)
     }
 
-    /// Configures the signal count option.
+    /// Sets the signal count value used by the component.
     pub fn signal_count(self, count: usize) -> Self {
         self.max_level(count)
     }
-    /// Configures the wifi option.
+    /// Sets the wifi value used by the component.
     pub fn wifi(mut self) -> Self {
         self.kind = SignalMeterKind::Wifi;
         self
     }
-    /// Configures the mobile option.
+    /// Sets the mobile value used by the component.
     pub fn mobile(mut self) -> Self {
         self.kind = SignalMeterKind::Mobile;
         self
     }
-    /// Configures the active color option.
+    /// Sets the active color used by the rendered component.
     pub fn active_color(mut self, color: Hsla) -> Self {
         self.active_color = Some(color);
         self
     }
-    /// Configures the inactive color option.
+    /// Sets the inactive color used by the rendered component.
     pub fn inactive_color(mut self, color: Hsla) -> Self {
         self.inactive_color = Some(color);
         self
     }
 
-    /// Configures the level colors option.
+    /// Sets the level colors value used by the component.
     pub fn level_colors(mut self, colors: impl IntoIterator<Item = Hsla>) -> Self {
         self.level_colors = colors.into_iter().collect();
         self
     }
 
-    /// Configures the signal colors option.
+    /// Sets the signal colors value used by the component.
     pub fn signal_colors(self, colors: impl IntoIterator<Item = Hsla>) -> Self {
         self.level_colors(colors)
     }
 
-    /// Configures the threshold colors option.
+    /// Sets the threshold colors value used by the component.
     pub fn threshold_colors(mut self, colors: impl IntoIterator<Item = SignalLevelColor>) -> Self {
         self.threshold_colors = colors.into_iter().collect();
         self.threshold_colors
@@ -139,7 +139,7 @@ impl SignalMeter {
         self
     }
 
-    /// Configures the level threshold colors option.
+    /// Performs the level threshold colors operation used by this component.
     pub fn level_threshold_colors(
         self,
         colors: impl IntoIterator<Item = SignalLevelColor>,
@@ -147,7 +147,7 @@ impl SignalMeter {
         self.threshold_colors(colors)
     }
 
-    /// Configures the level color option.
+    /// Sets the level color used by the rendered component.
     pub fn level_color(mut self, level: usize, color: Hsla) -> Self {
         self.threshold_colors
             .push(SignalLevelColor::new(level, color));
@@ -155,17 +155,17 @@ impl SignalMeter {
             .sort_by_key(|threshold| threshold.level);
         self
     }
-    /// Configures the bar width option.
+    /// Sets a fixed bar width instead of automatic band sizing.
     pub fn bar_width(mut self, width: impl Into<Pixels>) -> Self {
         self.bar_width = width.into().max(px(2.0));
         self
     }
-    /// Configures the gap option.
+    /// Sets the spacing between child elements.
     pub fn gap(mut self, gap: impl Into<Pixels>) -> Self {
         self.gap = gap.into().max(px(0.0));
         self
     }
-    /// Returns the height token used for component sizing.
+    /// Sets the component height token used during GPUI layout.
     pub fn height(mut self, height: impl Into<Pixels>) -> Self {
         self.height = height.into().max(px(12.0));
         self

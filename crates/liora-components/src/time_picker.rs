@@ -39,17 +39,17 @@ actions!(
 );
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-/// Public builder and render state for the Liora time value component.
+/// Fluent native GPUI component for rendering Liora time value.
 pub struct TimeValue {
-    /// Hour for this data model.
+    /// Hour component in 24-hour time.
     pub hour: u32,
-    /// Minute for this data model.
+    /// Minute component within the hour.
     pub minute: u32,
-    /// Second for this data model.
+    /// Second component within the minute.
     pub second: u32,
 }
 
-/// Public builder and render state for the Liora time picker component.
+/// Fluent native GPUI component for rendering Liora time picker.
 pub struct TimePicker {
     id: SharedString,
     value: Option<TimeValue>,
@@ -68,7 +68,7 @@ pub struct TimePicker {
 }
 
 impl TimeValue {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `TimeValue` initialized from the supplied hour, minute, and second.
     pub fn new(hour: u32, minute: u32, second: u32) -> Option<Self> {
         if hour > 23 || minute > 59 || second > 59 {
             return None;
@@ -80,14 +80,14 @@ impl TimeValue {
         })
     }
 
-    /// Configures the format option.
+    /// Performs the format operation used by this component.
     pub fn format(&self) -> String {
         format!("{:02}:{:02}:{:02}", self.hour, self.minute, self.second)
     }
 }
 
 impl TimePicker {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `TimePicker` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self {
             id: liora_core::unique_id("time-picker"),
@@ -107,7 +107,7 @@ impl TimePicker {
         }
     }
 
-    /// Returns the stable tray command identifier used for menu event routing.
+    /// Assigns a stable element id used by GPUI state, hit testing, and automated interaction tests.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
@@ -119,19 +119,19 @@ impl TimePicker {
         self
     }
 
-    /// Configures the placeholder option.
+    /// Uses the supplied placeholder text when the value is empty.
     pub fn placeholder(mut self, placeholder: impl Into<SharedString>) -> Self {
         self.placeholder = placeholder.into();
         self
     }
 
-    /// Configures the format option.
+    /// Sets the format displayed or consumed by the component.
     pub fn format(mut self, format: impl Into<SharedString>) -> Self {
         self.display_format = format.into();
         self
     }
 
-    /// Returns the width token used for component sizing.
+    /// Sets the component width token used during GPUI layout.
     pub fn width(mut self, width: impl Into<Pixels>) -> Self {
         self.width = Some(width.into());
         self
@@ -147,44 +147,44 @@ impl TimePicker {
         self.width(px(280.0))
     }
 
-    /// Configures the disabled option.
+    /// Toggles the disabled state and suppresses user interaction when enabled.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
     }
 
-    /// Configures the minute step option.
+    /// Sets minute increments shown by the picker.
     pub fn minute_step(mut self, step: u32) -> Self {
         self.minute_step = step.clamp(1, 60);
         self
     }
 
-    /// Configures the second step option.
+    /// Sets second increments shown by the picker.
     pub fn second_step(mut self, step: u32) -> Self {
         self.second_step = step.clamp(1, 60);
         self
     }
 
-    /// Configures the without seconds option.
+    /// Hides seconds from the time selection UI.
     pub fn without_seconds(mut self) -> Self {
         self.show_seconds = false;
         self.display_format = "HH:mm".into();
         self
     }
 
-    /// Configures the close on escape option.
+    /// Toggles whether the popup closes when escape occurs.
     pub fn close_on_escape(mut self, close: bool) -> Self {
         self.close_on_escape = close;
         self
     }
 
-    /// Configures the close on click outside option.
+    /// Toggles whether the popup closes when click outside occurs.
     pub fn close_on_click_outside(mut self, close: bool) -> Self {
         self.close_on_click_outside = close;
         self
     }
 
-    /// Configures the register key bindings option.
+    /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([gpui::KeyBinding::new("escape", TimePickerClose, None)]);
     }
@@ -224,7 +224,7 @@ impl TimePicker {
         cx.notify();
     }
 
-    /// Configures the value ref option.
+    /// Performs the value ref operation used by this component.
     pub fn value_ref(&self) -> Option<TimeValue> {
         self.value
     }

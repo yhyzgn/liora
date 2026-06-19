@@ -22,21 +22,21 @@
 use crate::Row;
 use gpui::{App, Component, IntoElement, RenderOnce, Window, prelude::*};
 
-/// Public builder and render state for the Liora col component.
+/// Fluent native GPUI component for rendering Liora col.
 pub struct Col {
     span: u8,
     children: Vec<gpui::AnyElement>,
 }
 
 impl Col {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Col` initialized from the supplied span.
     pub fn new(span: u8) -> Self {
         Self {
             span: span.min(24),
             children: vec![],
         }
     }
-    /// Configures the child option.
+    /// Adds a child element to the component body.
     pub fn child(mut self, child: impl IntoElement) -> Self {
         self.children.push(child.into_any_element());
         self

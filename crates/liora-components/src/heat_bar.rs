@@ -28,17 +28,17 @@ use gpui::{
 use liora_core::Config;
 
 #[derive(Clone, Debug)]
-/// Public builder and render state for the Liora heat bar item component.
+/// Data model used by heat bar item rendering.
 pub struct HeatBarItem {
-    /// Human-readable label shown in the component UI.
+    /// User-facing label rendered for this item.
     pub label: SharedString,
-    /// Current value represented by this option or component state.
+    /// Machine-readable value represented by this item.
     pub value: f64,
     /// Color token or explicit color applied to the visual element.
     pub color: Hsla,
 }
 impl HeatBarItem {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `HeatBarItem` initialized from the supplied label, value, and color.
     pub fn new(label: impl Into<SharedString>, value: f64, color: Hsla) -> Self {
         Self {
             label: label.into(),
@@ -49,17 +49,17 @@ impl HeatBarItem {
 }
 
 #[derive(Clone, Debug)]
-/// Public builder and render state for the Liora heat bar legend component.
+/// Fluent native GPUI component for rendering Liora heat bar legend.
 pub struct HeatBarLegend {
-    /// Human-readable label shown in the component UI.
+    /// User-facing label rendered for this item.
     pub label: SharedString,
-    /// Count for this data model.
+    /// Count displayed by this legend item.
     pub count: usize,
     /// Color token or explicit color applied to the visual element.
     pub color: Hsla,
 }
 impl HeatBarLegend {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `HeatBarLegend` initialized from the supplied label, count, and color.
     pub fn new(label: impl Into<SharedString>, count: usize, color: Hsla) -> Self {
         Self {
             label: label.into(),
@@ -70,28 +70,28 @@ impl HeatBarLegend {
 }
 
 #[derive(Clone, Debug)]
-/// Public builder and render state for the Liora heat bar color range component.
+/// Fluent native GPUI component for rendering Liora heat bar color range.
 pub struct HeatBarColorRange {
-    /// Min for this data model.
+    /// Lower bound of the numeric range.
     pub min: f64,
-    /// Max for this data model.
+    /// Upper bound of the numeric range.
     pub max: f64,
     /// Color token or explicit color applied to the visual element.
     pub color: Hsla,
 }
 
 impl HeatBarColorRange {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `HeatBarColorRange` initialized from the supplied min, max, and color.
     pub fn new(min: f64, max: f64, color: Hsla) -> Self {
         Self { min, max, color }
     }
 
-    /// Configures the up to option.
+    /// Sets the up to value used by the component.
     pub fn up_to(max: f64, color: Hsla) -> Self {
         Self::new(f64::NEG_INFINITY, max, color)
     }
 
-    /// Configures the above option.
+    /// Sets the above value used by the component.
     pub fn above(min: f64, color: Hsla) -> Self {
         Self::new(min, f64::INFINITY, color)
     }
@@ -102,7 +102,7 @@ impl HeatBarColorRange {
 }
 
 #[derive(Clone)]
-/// Public builder and render state for the Liora heat bar component.
+/// Fluent native GPUI component for rendering Liora heat bar.
 pub struct HeatBar {
     items: Vec<HeatBarItem>,
     legends: Vec<HeatBarLegend>,
@@ -116,7 +116,7 @@ pub struct HeatBar {
 }
 
 impl HeatBar {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `HeatBar` that renders the supplied items collection.
     pub fn new(items: impl IntoIterator<Item = HeatBarItem>) -> Self {
         Self {
             items: items.into_iter().collect(),
@@ -130,32 +130,32 @@ impl HeatBar {
             x_labels: Vec::new(),
         }
     }
-    /// Configures the legends option.
+    /// Sets the legends value used by the component.
     pub fn legends(mut self, legends: impl IntoIterator<Item = HeatBarLegend>) -> Self {
         self.legends = legends.into_iter().collect();
         self
     }
-    /// Configures the color ranges option.
+    /// Sets the color ranges value used by the component.
     pub fn color_ranges(mut self, ranges: impl IntoIterator<Item = HeatBarColorRange>) -> Self {
         self.color_ranges = ranges.into_iter().collect();
         self
     }
-    /// Returns the height token used for component sizing.
+    /// Sets the component height token used during GPUI layout.
     pub fn height(mut self, height: impl Into<Pixels>) -> Self {
         self.height = height.into().max(px(60.0));
         self
     }
-    /// Configures the bar width option.
+    /// Sets a fixed bar width instead of automatic band sizing.
     pub fn bar_width(mut self, width: impl Into<Pixels>) -> Self {
         self.bar_width = width.into().max(px(1.0));
         self
     }
-    /// Configures the gap option.
+    /// Sets the spacing between child elements.
     pub fn gap(mut self, gap: impl Into<Pixels>) -> Self {
         self.gap = gap.into().max(px(0.0));
         self
     }
-    /// Configures the max value option.
+    /// Sets the maximum value limit.
     pub fn max_value(mut self, value: f64) -> Self {
         self.max_value = value.is_finite().then_some(value.max(1.0));
         self
@@ -165,7 +165,7 @@ impl HeatBar {
         self.show_axis = show;
         self
     }
-    /// Configures the x labels option.
+    /// Sets the x labels value used by the component.
     pub fn x_labels(mut self, labels: impl IntoIterator<Item = impl Into<SharedString>>) -> Self {
         self.x_labels = labels.into_iter().map(Into::into).collect();
         self

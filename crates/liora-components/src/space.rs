@@ -23,7 +23,7 @@ use gpui::{
     AnyElement, App, Component, DefiniteLength, IntoElement, RenderOnce, Window, prelude::*, px,
 };
 
-/// Public builder and render state for the Liora space component.
+/// Fluent native GPUI component for rendering Liora space.
 pub struct Space {
     children: Vec<AnyElement>,
     vertical: bool,
@@ -34,18 +34,18 @@ pub struct Space {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Enumerates the supported space align modes and options.
+/// Options that control space align behavior.
 pub enum SpaceAlign {
-    /// Uses the start variant.
+    /// Aligns content using the start position.
     Start,
-    /// Uses the center variant.
+    /// Aligns content using the center position.
     Center,
-    /// Uses the end variant.
+    /// Aligns content using the end position.
     End,
 }
 
 impl Space {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Space` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self {
             children: Vec::new(),
@@ -57,13 +57,13 @@ impl Space {
         }
     }
 
-    /// Configures the vertical option.
+    /// Uses vertical orientation or gradient direction.
     pub fn vertical(mut self) -> Self {
         self.vertical = true;
         self
     }
 
-    /// Configures the gap option.
+    /// Sets the spacing between child elements.
     pub fn gap(mut self, gap: impl Into<DefiniteLength>) -> Self {
         self.gap = Some(gap.into());
         self
@@ -94,46 +94,46 @@ impl Space {
         self.gap(px(24.0))
     }
 
-    /// Configures the wrap option.
+    /// Allows child content to wrap onto additional lines.
     pub fn wrap(mut self) -> Self {
         self.wrap = true;
         self
     }
 
-    /// Configures the align option.
+    /// Sets cross-axis alignment for child content.
     pub fn align(mut self, align: SpaceAlign) -> Self {
         self.align = Some(align);
         self
     }
 
-    /// Configures the align start option.
+    /// Sets the align start value used by the component.
     pub fn align_start(self) -> Self {
         self.align(SpaceAlign::Start)
     }
 
-    /// Configures the align center option.
+    /// Sets the align center value used by the component.
     pub fn align_center(self) -> Self {
         self.align(SpaceAlign::Center)
     }
 
-    /// Configures the align end option.
+    /// Sets the align end value used by the component.
     pub fn align_end(self) -> Self {
         self.align(SpaceAlign::End)
     }
 
-    /// Configures the grow option.
+    /// Sets the grow value used by the component.
     pub fn grow(mut self) -> Self {
         self.grow = true;
         self
     }
 
-    /// Configures the child option.
+    /// Adds a child element to the component body.
     pub fn child(mut self, child: impl IntoElement) -> Self {
         self.children.push(child.into_any_element());
         self
     }
 
-    /// Configures the children option.
+    /// Replaces or appends child elements rendered by the component.
     pub fn children(mut self, children: impl IntoIterator<Item = impl IntoElement>) -> Self {
         self.children
             .extend(children.into_iter().map(|c| c.into_any_element()));

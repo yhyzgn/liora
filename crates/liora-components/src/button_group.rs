@@ -22,20 +22,20 @@
 use crate::Button;
 use gpui::{App, Component, IntoElement, RenderOnce, Window, div, prelude::*};
 
-/// Public builder and render state for the Liora button group component.
+/// Fluent native GPUI component for rendering Liora button group.
 pub struct ButtonGroup {
     buttons: Vec<Button>,
 }
 
 impl ButtonGroup {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `ButtonGroup` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self {
             buttons: Vec::new(),
         }
     }
 
-    /// Configures the button option.
+    /// Adds the supplied button to the component.
     pub fn button(mut self, button: Button) -> Self {
         self.buttons.push(button);
         self

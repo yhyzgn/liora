@@ -24,18 +24,18 @@ use crate::motion::pop_in;
 use gpui::{App, Context, IntoElement, Render, SharedString, Window, div, prelude::*, px};
 use liora_core::Config;
 
-/// Public builder and render state for the Liora segmented option component.
+/// Fluent native GPUI component for rendering Liora segmented option.
 pub struct SegmentedOption {
-    /// Human-readable label shown in the component UI.
+    /// User-facing label rendered for this item.
     pub label: SharedString,
-    /// Current value represented by this option or component state.
+    /// Machine-readable value represented by this item.
     pub value: SharedString,
     /// Whether user interaction is disabled for this item.
     pub disabled: bool,
 }
 
 impl SegmentedOption {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `SegmentedOption` initialized from the supplied label, and value.
     pub fn new(label: impl Into<SharedString>, value: impl Into<SharedString>) -> Self {
         Self {
             label: label.into(),
@@ -44,14 +44,14 @@ impl SegmentedOption {
         }
     }
 
-    /// Configures the disabled option.
+    /// Toggles the disabled state and suppresses user interaction when enabled.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
     }
 }
 
-/// Public builder and render state for the Liora segmented component.
+/// Fluent native GPUI component for rendering Liora segmented.
 pub struct Segmented {
     id: SharedString,
     options: Vec<SegmentedOption>,
@@ -61,7 +61,7 @@ pub struct Segmented {
 }
 
 impl Segmented {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Segmented` that renders the supplied options collection.
     pub fn new(options: Vec<SegmentedOption>) -> Self {
         let first_value = options.first().map(|o| o.value.clone());
         Self {
@@ -73,7 +73,7 @@ impl Segmented {
         }
     }
 
-    /// Returns the stable tray command identifier used for menu event routing.
+    /// Assigns a stable element id used by GPUI state, hit testing, and automated interaction tests.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
@@ -85,7 +85,7 @@ impl Segmented {
         self
     }
 
-    /// Configures the block option.
+    /// Makes the component occupy the available inline width.
     pub fn block(mut self, block: bool) -> Self {
         self.block = block;
         self

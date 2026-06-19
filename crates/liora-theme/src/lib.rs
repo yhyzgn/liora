@@ -54,7 +54,7 @@ fn darken(base: Hsla, factor: f32) -> Hsla {
 #[derive(Clone)]
 /// Semantic color family containing base, state, and subtle background tokens.
 pub struct ColorFamily {
-    /// Base semantic color for the token family.
+    /// Base value for the z-index stack.
     pub base: Hsla,
     /// Color used for hover affordances.
     pub hover: Hsla,
@@ -215,13 +215,13 @@ pub struct SecondaryColors {
 #[derive(Clone)]
 /// Complete Liora visual token set for one color mode.
 pub struct Theme {
-    /// Human-readable name used for display or package metadata.
+    /// Display name shown to users for this item.
     pub name: String,
-    /// Spacing for this data model.
+    /// Spacing token group used throughout Liora components.
     pub spacing: Spacing,
-    /// Radius for this data model.
+    /// Corner radius applied to the rendered control.
     pub radius: Radius,
-    /// Font size for this data model.
+    /// Font-size token group used throughout Liora components.
     pub font_size: FontSize,
 
     // Semantic color families
@@ -611,23 +611,23 @@ impl Theme {
 // ---------------------------------------------------------------------------
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Enumerates the supported button variant modes and options.
+/// Options that control button variant behavior.
 pub enum ButtonVariant {
-    /// Uses the default visual style.
+    /// Uses the neutral default button treatment.
     Default,
-    /// Uses the tertiary visual style.
+    /// Uses a low-emphasis tertiary button treatment.
     Tertiary,
-    /// Uses the text visual style.
+    /// Uses a text-only button treatment without a filled container.
     Text,
-    /// Uses the primary visual style.
+    /// Uses the primary brand-accent button treatment.
     Primary,
-    /// Uses the info visual style.
+    /// Uses the informational semantic color family.
     Info,
-    /// Uses the success visual style.
+    /// Uses the success semantic color family.
     Success,
-    /// Uses the warning visual style.
+    /// Uses the warning semantic color family.
     Warning,
-    /// Uses the danger visual style.
+    /// Uses the danger semantic color family.
     Danger,
 }
 
@@ -650,18 +650,18 @@ pub struct ButtonVariantColors {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Enumerates the supported button size modes and options.
+/// Options that control button size behavior.
 pub enum ButtonSize {
-    /// Uses the small visual style.
+    /// Uses compact button metrics for dense layouts.
     Small,
-    /// Uses the default visual style.
+    /// Uses the standard button metrics for normal layouts.
     Default,
-    /// Uses the large visual style.
+    /// Uses larger button metrics for prominent actions.
     Large,
 }
 
 impl ButtonSize {
-    /// Returns the height token used for component sizing.
+    /// Returns the numeric height token consumed by Liora component layout.
     pub fn height(&self) -> f32 {
         match self {
             ButtonSize::Small => 28.0,   // NaiveUI heightSmall
@@ -670,7 +670,7 @@ impl ButtonSize {
         }
     }
 
-    /// Returns the padding x token used for component sizing.
+    /// Returns the numeric horizontal padding token consumed by Liora component layout.
     pub fn padding_x(&self) -> f32 {
         match self {
             ButtonSize::Small => 12.0,   // NaiveUI: 0 12px

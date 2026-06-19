@@ -31,7 +31,7 @@ use gpui::{
 use liora_core::{Config, unique_id};
 
 #[derive(Clone, Debug)]
-/// Public builder and render state for the Liora sparkline component.
+/// Fluent native GPUI component for rendering Liora sparkline.
 pub struct Sparkline {
     id: SharedString,
     values: Vec<f64>,
@@ -55,7 +55,7 @@ pub struct Sparkline {
 }
 
 impl Sparkline {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Sparkline` with default theme-driven styling and no optional callbacks attached.
     pub fn new(values: impl IntoIterator<Item = f64>) -> Self {
         Self {
             id: unique_id("sparkline"),
@@ -85,82 +85,82 @@ impl Sparkline {
         Self::new(points.into_iter().map(|point| point.value))
     }
 
-    /// Returns the stable tray command identifier used for menu event routing.
+    /// Assigns a stable element id used by GPUI state, hit testing, and automated interaction tests.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
-    /// Returns the height token used for component sizing.
+    /// Sets the component height token used during GPUI layout.
     pub fn height(mut self, height: impl Into<Pixels>) -> Self {
         self.height = height.into().max(px(12.0));
         self
     }
 
-    /// Returns the width token used for component sizing.
+    /// Sets the component width token used during GPUI layout.
     pub fn width(mut self, width: impl Into<Pixels>) -> Self {
         self.width = Some(width.into().max(px(12.0)));
         self
     }
 
-    /// Configures the padding option.
+    /// Sets inner padding on all sides of the component.
     pub fn padding(mut self, padding: impl Into<Pixels>) -> Self {
         self.padding = padding.into().max(px(0.0));
         self
     }
 
-    /// Configures the color option.
+    /// Applies an explicit color instead of the theme-derived default.
     pub fn color(mut self, color: Hsla) -> Self {
         self.color = Some(color);
         self
     }
 
-    /// Configures the positive color option.
+    /// Sets the positive color used by the rendered component.
     pub fn positive_color(mut self, color: Hsla) -> Self {
         self.positive_color = Some(color);
         self
     }
 
-    /// Configures the negative color option.
+    /// Sets the negative color used by the rendered component.
     pub fn negative_color(mut self, color: Hsla) -> Self {
         self.negative_color = Some(color);
         self
     }
 
-    /// Configures the trend colors option.
+    /// Sets the trend colors value used by the component.
     pub fn trend_colors(mut self, positive: Hsla, negative: Hsla) -> Self {
         self.positive_color = Some(positive);
         self.negative_color = Some(negative);
         self
     }
 
-    /// Configures the fill color option.
+    /// Sets the optional fill color used by the chart series.
     pub fn fill_color(mut self, color: Hsla) -> Self {
         self.fill_color = Some(color);
         self.area_fill = true;
         self
     }
 
-    /// Configures the baseline color option.
+    /// Sets the baseline color used by the rendered component.
     pub fn baseline_color(mut self, color: Hsla) -> Self {
         self.baseline_color = Some(color);
         self.show_baseline = true;
         self
     }
 
-    /// Configures the stroke width option.
+    /// Sets the stroke width used for rendered chart paths.
     pub fn stroke_width(mut self, width: impl Into<Pixels>) -> Self {
         self.stroke_width = width.into().max(px(0.5));
         self
     }
 
-    /// Configures the smooth option.
+    /// Toggles smoothed curve interpolation for line and area paths.
     pub fn smooth(mut self, smooth: bool) -> Self {
         self.smooth = smooth;
         self
     }
 
-    /// Configures the area fill option.
+    /// Sets the area fill value used by the component.
     pub fn area_fill(mut self, enabled: bool) -> Self {
         self.area_fill = enabled;
         self
@@ -178,13 +178,13 @@ impl Sparkline {
         self
     }
 
-    /// Configures the y domain option.
+    /// Overrides automatic y-axis bounds with an explicit numeric domain.
     pub fn y_domain(mut self, min: f64, max: f64) -> Self {
         self.y_domain = Some((min, max));
         self
     }
 
-    /// Configures the line style option.
+    /// Selects solid, dashed, or dotted stroke rendering.
     pub fn line_style(mut self, style: ChartLineStyle) -> Self {
         self.line_style = style;
         if !matches!(style, ChartLineStyle::Dashed) {
@@ -193,19 +193,19 @@ impl Sparkline {
         self
     }
 
-    /// Configures the dashed option.
+    /// Applies the dashed preset.
     pub fn dashed(mut self) -> Self {
         self.line_style = ChartLineStyle::Dashed;
         self
     }
 
-    /// Configures the dotted option.
+    /// Applies the dotted preset.
     pub fn dotted(mut self) -> Self {
         self.line_style = ChartLineStyle::Dotted;
         self
     }
 
-    /// Configures the dash pattern option.
+    /// Sets the custom dash pattern for chart strokes.
     pub fn dash_pattern(mut self, pattern: impl IntoIterator<Item = Pixels>) -> Self {
         self.dash_pattern = Some(
             pattern
@@ -217,29 +217,29 @@ impl Sparkline {
         self
     }
 
-    /// Configures the max render points option.
+    /// Caps the number of rendered chart points after downsampling.
     pub fn max_render_points(mut self, max_points: usize) -> Self {
         self.max_render_points = Some(max_points.max(3));
         self
     }
 
-    /// Configures the disable downsampling option.
+    /// Disables chart point downsampling for exact rendering.
     pub fn disable_downsampling(mut self) -> Self {
         self.max_render_points = None;
         self
     }
 
-    /// Configures the values option.
+    /// Performs the values operation used by this component.
     pub fn values(&self) -> &[f64] {
         &self.values
     }
 
-    /// Configures the trend delta option.
+    /// Performs the trend delta operation used by this component.
     pub fn trend_delta(&self) -> Option<f64> {
         trend_delta(&self.values)
     }
 
-    /// Configures the resolved domain option.
+    /// Performs the resolved domain operation used by this component.
     pub fn resolved_domain(&self) -> Option<(f64, f64)> {
         finite_stats(&self.values).and_then(|stats| sparkline_domain(self.y_domain, stats))
     }

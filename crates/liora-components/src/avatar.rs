@@ -27,28 +27,28 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported avatar shape modes and options.
+/// Options that control avatar shape behavior.
 pub enum AvatarShape {
     #[default]
-    /// Uses the circle variant.
+    /// Uses circular geometry.
     Circle,
-    /// Uses the square variant.
+    /// Uses square geometry.
     Square,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported avatar size modes and options.
+/// Options that control avatar size behavior.
 pub enum AvatarSize {
-    /// Uses the small component size preset.
+    /// Uses compact sizing metrics.
     Small,
     #[default]
-    /// Uses the default semantic button variant.
+    /// Uses the default neutral treatment.
     Default,
-    /// Uses the large component size preset.
+    /// Uses expanded sizing metrics.
     Large,
 }
 
-/// Public builder and render state for the Liora avatar component.
+/// Fluent native GPUI component for rendering Liora avatar.
 pub struct Avatar {
     src: Option<SharedString>,
     icon: Option<IconName>,
@@ -59,7 +59,7 @@ pub struct Avatar {
 }
 
 impl Avatar {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Avatar` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self {
             src: None,
@@ -71,7 +71,7 @@ impl Avatar {
         }
     }
 
-    /// Configures the src option.
+    /// Sets the image or preview source.
     pub fn src(mut self, src: impl Into<SharedString>) -> Self {
         self.src = Some(src.into());
         self
@@ -89,37 +89,37 @@ impl Avatar {
         self
     }
 
-    /// Configures the small option.
+    /// Uses the compact size preset.
     pub fn small(mut self) -> Self {
         self.size = AvatarSize::Small;
         self
     }
 
-    /// Configures the large option.
+    /// Uses the large size preset.
     pub fn large(mut self) -> Self {
         self.size = AvatarSize::Large;
         self
     }
 
-    /// Configures the shape option.
+    /// Selects the avatar or image shape.
     pub fn shape(mut self, shape: AvatarShape) -> Self {
         self.shape = shape;
         self
     }
 
-    /// Configures the square option.
+    /// Uses square shape or clipping.
     pub fn square(mut self) -> Self {
         self.shape = AvatarShape::Square;
         self
     }
 
-    /// Configures the alt option.
+    /// Sets alternate text used when an image source is unavailable.
     pub fn alt(mut self, alt: impl Into<SharedString>) -> Self {
         self.alt = Some(alt.into());
         self
     }
 
-    /// Configures the background option.
+    /// Toggles or applies the component background treatment.
     pub fn background(mut self, background: Hsla) -> Self {
         self.background = Some(background);
         self

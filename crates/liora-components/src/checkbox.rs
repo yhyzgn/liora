@@ -46,7 +46,7 @@ gpui::actions!(
     ]
 );
 
-/// Public builder and render state for the Liora checkbox component.
+/// Fluent native GPUI component for rendering Liora checkbox.
 pub struct Checkbox {
     checked: bool,
     disabled: bool,
@@ -56,13 +56,13 @@ pub struct Checkbox {
 }
 
 #[derive(Clone, Copy)]
-/// Public builder and render state for the Liora checkbox changed component.
+/// Fluent native GPUI component for rendering Liora checkbox changed.
 pub struct CheckboxChanged(pub bool);
 
 impl EventEmitter<CheckboxChanged> for Checkbox {}
 
 impl Checkbox {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Checkbox` initialized from the supplied checked.
     pub fn new(checked: bool, cx: &mut Context<Self>) -> Self {
         Self {
             checked,
@@ -73,7 +73,7 @@ impl Checkbox {
         }
     }
 
-    /// Configures the disabled option.
+    /// Toggles the disabled state and suppresses user interaction when enabled.
     pub fn disabled(mut self, d: bool) -> Self {
         self.disabled = d;
         self
@@ -95,7 +95,7 @@ impl Checkbox {
         cx.notify();
     }
 
-    /// Configures the register key bindings option.
+    /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([
             KeyBinding::new("space", CheckboxToggle, None),

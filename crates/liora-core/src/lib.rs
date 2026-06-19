@@ -58,14 +58,14 @@ pub use popper::*;
 pub use liora_theme::Theme;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported theme modes and options.
+/// Options that control theme mode behavior.
 pub enum ThemeMode {
     #[default]
-    /// Uses the system theme mode.
+    /// Follows the operating system appearance when resolving the active theme.
     System,
-    /// Uses the light theme mode.
+    /// Forces the light Liora theme regardless of system appearance.
     Light,
-    /// Uses the dark theme mode.
+    /// Forces the dark Liora theme regardless of system appearance.
     Dark,
 }
 
@@ -256,13 +256,13 @@ pub fn theme_for_window_appearance(appearance: WindowAppearance) -> Theme {
     }
 }
 
-/// Runtime state or data container for Liora config behavior.
+/// Runtime state used by Liora config behavior.
 pub struct Config {
-    /// Theme for this data model.
+    /// Active Liora theme tokens stored in GPUI global state.
     pub theme: Theme,
-    /// Theme mode for this data model.
+    /// Configured theme mode used to resolve light or dark tokens.
     pub theme_mode: ThemeMode,
-    /// Z index base for this data model.
+    /// Base z-index offset for overlay layering.
     pub z_index_base: u32,
 }
 

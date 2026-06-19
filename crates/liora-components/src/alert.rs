@@ -25,20 +25,20 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported alert type modes and options.
+/// Options that control alert type behavior.
 pub enum AlertType {
     #[default]
-    /// Uses the info semantic button variant.
+    /// Uses informational semantic color tokens.
     Info,
-    /// Uses the success semantic button variant.
+    /// Uses success semantic color tokens.
     Success,
-    /// Uses the warning semantic button variant.
+    /// Uses warning semantic color tokens.
     Warning,
     /// Reports a error failure.
     Error,
 }
 
-/// Public builder and render state for the Liora alert component.
+/// Fluent native GPUI component for rendering Liora alert.
 pub struct Alert {
     title: SharedString,
     description: Option<SharedString>,
@@ -49,7 +49,7 @@ pub struct Alert {
 }
 
 impl Alert {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Alert` initialized from the supplied title.
     pub fn new(title: impl Into<SharedString>) -> Self {
         Self {
             title: title.into(),
@@ -61,19 +61,19 @@ impl Alert {
         }
     }
 
-    /// Configures the description option.
+    /// Sets secondary descriptive text shown below the primary label.
     pub fn description(mut self, desc: impl Into<SharedString>) -> Self {
         self.description = Some(desc.into());
         self
     }
 
-    /// Configures the alert type option.
+    /// Selects the alert semantic tone used for color and icon styling.
     pub fn alert_type(mut self, t: AlertType) -> Self {
         self.alert_type = t;
         self
     }
 
-    /// Configures the closable option.
+    /// Shows the close affordance.
     pub fn closable(mut self, c: bool) -> Self {
         self.closable = c;
         self

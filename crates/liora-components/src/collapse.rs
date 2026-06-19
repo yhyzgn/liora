@@ -28,9 +28,9 @@ use liora_icons_lucide::IconName;
 use std::collections::HashSet;
 use std::sync::Arc;
 
-/// Public builder and render state for the Liora collapse item component.
+/// Data model used by collapse item rendering.
 pub struct CollapseItem {
-    /// Human-readable name used for display or package metadata.
+    /// Display name shown to users for this item.
     pub name: SharedString,
     /// Primary heading or title text displayed by the component.
     pub title: SharedString,
@@ -38,7 +38,7 @@ pub struct CollapseItem {
     pub content: Arc<dyn Fn(&mut Window, &mut Context<Collapse>) -> AnyElement + 'static>,
 }
 
-/// Public builder and render state for the Liora collapse component.
+/// Fluent native GPUI component for rendering Liora collapse.
 pub struct Collapse {
     items: Vec<CollapseItem>,
     active_names: HashSet<SharedString>,
@@ -47,7 +47,7 @@ pub struct Collapse {
 }
 
 impl Collapse {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Collapse` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self {
             items: vec![],
@@ -57,19 +57,19 @@ impl Collapse {
         }
     }
 
-    /// Configures the accordion option.
+    /// Sets the accordion value used by the component.
     pub fn accordion(mut self) -> Self {
         self.accordion = true;
         self
     }
 
-    /// Returns the stable tray command identifier used for menu event routing.
+    /// Assigns a stable element id used by GPUI state, hit testing, and automated interaction tests.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
-    /// Configures the item option.
+    /// Performs the item operation used by this component.
     pub fn item<F, E>(
         mut self,
         name: impl Into<SharedString>,

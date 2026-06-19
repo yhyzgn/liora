@@ -29,10 +29,10 @@ use liora_core::Config;
 use liora_icons_lucide::IconName;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported window frame modes and options.
+/// Options that control window frame mode behavior.
 pub enum WindowFrameMode {
     #[default]
-    /// Uses the system theme mode.
+    /// Uses the platform/system window-frame behavior.
     System,
     /// Emits the custom tray command.
     Custom,
@@ -91,7 +91,7 @@ pub fn frame_mode_switch_row(switch: impl IntoElement, mode: WindowFrameMode) ->
         .child(Text::new(mode.label()).size(px(12.0)))
 }
 
-/// Public builder and render state for the Liora app window frame component.
+/// Fluent native GPUI component for rendering Liora app window frame.
 pub struct AppWindowFrame {
     title: SharedString,
     subtitle: Option<SharedString>,
@@ -102,7 +102,7 @@ pub struct AppWindowFrame {
 }
 
 impl AppWindowFrame {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `AppWindowFrame` initialized from the supplied title, and content.
     pub fn new(title: impl Into<SharedString>, content: impl IntoElement) -> Self {
         Self {
             title: title.into(),
@@ -114,13 +114,13 @@ impl AppWindowFrame {
         }
     }
 
-    /// Configures the subtitle option.
+    /// Sets the subtitle value used by the component.
     pub fn subtitle(mut self, subtitle: impl Into<SharedString>) -> Self {
         self.subtitle = Some(subtitle.into());
         self
     }
 
-    /// Configures the mode option.
+    /// Selects the rendering mode used by this component.
     pub fn mode(mut self, mode: WindowFrameMode) -> Self {
         self.mode = mode;
         self
@@ -132,7 +132,7 @@ impl AppWindowFrame {
         self
     }
 
-    /// Configures the actions option.
+    /// Sets the actions value used by the component.
     pub fn actions(mut self, actions: impl IntoIterator<Item = impl IntoElement>) -> Self {
         self.actions
             .extend(actions.into_iter().map(IntoElement::into_any_element));

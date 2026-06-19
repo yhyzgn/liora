@@ -30,67 +30,67 @@ use liora_icons_lucide::IconName;
 use std::sync::Arc;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported table align modes and options.
+/// Options that control table align behavior.
 pub enum TableAlign {
     #[default]
-    /// Uses the left variant.
+    /// Places the overlay to the left of the anchor.
     Left,
-    /// Uses the center variant.
+    /// Aligns content using the center position.
     Center,
-    /// Uses the right variant.
+    /// Places the overlay to the right of the anchor.
     Right,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Enumerates the supported table sort order modes and options.
+/// Options that control table sort order behavior.
 pub enum TableSortOrder {
-    /// Uses the ascending variant.
+    /// Sorts table rows in ascending order.
     Ascending,
-    /// Uses the descending variant.
+    /// Sorts table rows in descending order.
     Descending,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-/// Public builder and render state for the Liora table sort state component.
+/// Fluent native GPUI component for rendering Liora table sort state.
 pub struct TableSortState {
     /// Stable key used to identify this entry in collections and callbacks.
     pub key: SharedString,
-    /// Order for this data model.
+    /// Current sort order for this column, if sorting is enabled.
     pub order: Option<TableSortOrder>,
 }
 
-/// Public builder and render state for the Liora table column component.
+/// Data model used by table column rendering.
 pub struct TableColumn {
     /// Stable key used to identify this entry in collections and callbacks.
     pub key: SharedString,
-    /// Human-readable label shown in the component UI.
+    /// User-facing label rendered for this item.
     pub label: SharedString,
-    /// Header for this data model.
+    /// Custom header element rendered instead of a text label.
     pub header: Option<AnyElement>,
-    /// Configured width used during layout.
+    /// Width used by layout or hit-testing calculations.
     pub width: Option<Pixels>,
-    /// Min width for this data model.
+    /// Minimum column width requested by table layout.
     pub min_width: Pixels,
-    /// Align for this data model.
+    /// Horizontal alignment for cell content.
     pub align: TableAlign,
-    /// Sortable for this data model.
+    /// Whether the column can be toggled through sort states.
     pub sortable: bool,
 }
 
-/// Public builder and render state for the Liora table cell component.
+/// Data model used by table cell rendering.
 pub struct TableCell {
     /// Stable key used to identify this entry in collections and callbacks.
     pub key: SharedString,
-    /// Current value represented by this option or component state.
+    /// Machine-readable value represented by this item.
     pub value: AnyElement,
 }
 
-/// Public builder and render state for the Liora table row component.
+/// Data model used by table row rendering.
 pub struct TableRow {
     cells: Vec<TableCell>,
 }
 
-/// Public builder and render state for the Liora table component.
+/// Fluent native GPUI component for rendering Liora table.
 pub struct Table {
     id: SharedString,
     columns: Vec<TableColumn>,
@@ -107,7 +107,7 @@ pub struct Table {
 }
 
 impl TableColumn {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `TableColumn` initialized from the supplied key, and label.
     pub fn new(key: impl Into<SharedString>, label: impl Into<SharedString>) -> Self {
         Self {
             key: key.into(),
@@ -120,13 +120,13 @@ impl TableColumn {
         }
     }
 
-    /// Configures the header option.
+    /// Sets the header value used by the component.
     pub fn header(mut self, header: impl IntoElement) -> Self {
         self.header = Some(header.into_any_element());
         self
     }
 
-    /// Returns the width token used for component sizing.
+    /// Sets the component width token used during GPUI layout.
     pub fn width(mut self, width: impl Into<Pixels>) -> Self {
         self.width = Some(width.into());
         self
@@ -137,7 +137,7 @@ impl TableColumn {
         self.width(px(120.0))
     }
 
-    /// Configures the min width option.
+    /// Sets the minimum width limit.
     pub fn min_width(mut self, width: impl Into<Pixels>) -> Self {
         self.min_width = width.into();
         self
@@ -148,13 +148,13 @@ impl TableColumn {
         self.min_width(px(260.0))
     }
 
-    /// Configures the align option.
+    /// Sets cross-axis alignment for child content.
     pub fn align(mut self, align: TableAlign) -> Self {
         self.align = align;
         self
     }
 
-    /// Configures the sortable option.
+    /// Toggles sortable behavior.
     pub fn sortable(mut self) -> Self {
         self.sortable = true;
         self
@@ -162,12 +162,12 @@ impl TableColumn {
 }
 
 impl TableRow {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `TableRow` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self { cells: vec![] }
     }
 
-    /// Configures the cell option.
+    /// Adds the supplied cell to the component.
     pub fn cell(mut self, key: impl Into<SharedString>, value: impl IntoElement) -> Self {
         self.cells.push(TableCell {
             key: key.into(),
@@ -185,7 +185,7 @@ impl TableRow {
 }
 
 impl Table {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Table` that renders the supplied columns collection.
     pub fn new(columns: Vec<TableColumn>) -> Self {
         Self {
             id: liora_core::unique_id("table"),
@@ -203,49 +203,49 @@ impl Table {
         }
     }
 
-    /// Returns the stable tray command identifier used for menu event routing.
+    /// Assigns a stable element id used by GPUI state, hit testing, and automated interaction tests.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
-    /// Configures the row option.
+    /// Sets the row value used by the component.
     pub fn row(mut self, row: TableRow) -> Self {
         self.rows.push(row);
         self
     }
 
-    /// Configures the rows option.
+    /// Sets the visible row count for editor-like controls.
     pub fn rows(mut self, rows: impl IntoIterator<Item = TableRow>) -> Self {
         self.rows.extend(rows);
         self
     }
 
-    /// Configures the border option.
+    /// Toggles or applies the component border treatment.
     pub fn border(mut self, border: bool) -> Self {
         self.border = border;
         self
     }
 
-    /// Configures the stripe option.
+    /// Sets the stripe value used by the component.
     pub fn stripe(mut self, stripe: bool) -> Self {
         self.stripe = stripe;
         self
     }
 
-    /// Configures the loading option.
+    /// Toggles the loading state and associated spinner treatment.
     pub fn loading(mut self, loading: bool) -> Self {
         self.loading = loading;
         self
     }
 
-    /// Configures the fixed header option.
+    /// Sets the fixed header value used by the component.
     pub fn fixed_header(mut self, fixed_header: bool) -> Self {
         self.fixed_header = fixed_header;
         self
     }
 
-    /// Returns the height token used for component sizing.
+    /// Sets the component height token used during GPUI layout.
     pub fn height(mut self, height: impl Into<Pixels>) -> Self {
         self.height = Some(height.into());
         self
@@ -256,13 +256,13 @@ impl Table {
         self.height(px(260.0))
     }
 
-    /// Configures the empty text option.
+    /// Sets the message displayed when no rows are available.
     pub fn empty_text(mut self, text: impl Into<SharedString>) -> Self {
         self.empty_text = text.into();
         self
     }
 
-    /// Configures the sort option.
+    /// Sets the sort value used by the component.
     pub fn sort(mut self, key: impl Into<SharedString>, order: Option<TableSortOrder>) -> Self {
         self.sort_key = Some(key.into());
         self.sort_order = order;

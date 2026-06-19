@@ -29,43 +29,43 @@ use liora_icons_lucide::IconName;
 use std::time::Duration;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Enumerates the supported notification type modes and options.
+/// Options that control notification type behavior.
 pub enum NotificationType {
-    /// Uses the info semantic button variant.
+    /// Uses informational semantic color tokens.
     Info,
-    /// Uses the success semantic button variant.
+    /// Uses success semantic color tokens.
     Success,
-    /// Uses the warning semantic button variant.
+    /// Uses warning semantic color tokens.
     Warning,
     /// Reports a error failure.
     Error,
 }
 
 #[derive(Clone)]
-/// Public builder and render state for the Liora notification item component.
+/// Data model used by notification item rendering.
 pub struct NotificationItem {
-    /// Stable identifier used to connect rendered UI, callbacks, and external state.
+    /// Stable identifier used for GPUI state, callbacks, and automation.
     pub id: usize,
     /// Primary heading or title text displayed by the component.
     pub title: SharedString,
     /// Supporting descriptive text shown near the primary label.
     pub description: Option<SharedString>,
-    /// Msg type for this data model.
+    /// Semantic message type used to choose icon and color tokens.
     pub msg_type: NotificationType,
 }
 
-/// Public builder and render state for the Liora notification manager component.
+/// Fluent native GPUI component for rendering Liora notification manager.
 pub struct NotificationManager {
     notifications: Vec<NotificationItem>,
     next_id: usize,
 }
 
-/// Public builder and render state for the Liora notification manager global component.
+/// Fluent native GPUI component for rendering Liora notification manager global.
 pub struct NotificationManagerGlobal(pub Entity<NotificationManager>);
 impl Global for NotificationManagerGlobal {}
 
 impl NotificationManager {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `NotificationManager` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self {
             notifications: vec![],
@@ -73,7 +73,7 @@ impl NotificationManager {
         }
     }
 
-    /// Configures the init option.
+    /// Performs the init operation used by this component.
     pub fn init(cx: &mut App) {
         if !cx.has_global::<NotificationManagerGlobal>() {
             let manager = cx.new(|_| Self::new());
@@ -81,7 +81,7 @@ impl NotificationManager {
         }
     }
 
-    /// Configures the show option.
+    /// Performs the show operation used by this component.
     pub fn show(
         title: impl Into<SharedString>,
         description: Option<SharedString>,

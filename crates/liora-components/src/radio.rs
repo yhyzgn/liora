@@ -44,7 +44,7 @@ gpui::actions!(
     ]
 );
 
-/// Public builder and render state for the Liora radio component.
+/// Fluent native GPUI component for rendering Liora radio.
 pub struct Radio {
     checked: bool,
     disabled: bool,
@@ -54,7 +54,7 @@ pub struct Radio {
 }
 
 impl Radio {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Radio` initialized from the supplied checked.
     pub fn new(checked: bool, cx: &mut Context<Self>) -> Self {
         Self {
             checked,
@@ -65,7 +65,7 @@ impl Radio {
         }
     }
 
-    /// Configures the disabled option.
+    /// Toggles the disabled state and suppresses user interaction when enabled.
     pub fn disabled(mut self, d: bool) -> Self {
         self.disabled = d;
         self
@@ -81,7 +81,7 @@ impl Radio {
         self
     }
 
-    /// Configures the register key bindings option.
+    /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([
             KeyBinding::new("space", RadioSelect, None),

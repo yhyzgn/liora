@@ -26,32 +26,32 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-/// Enumerates the supported breadcrumb separator modes and options.
+/// Options that control breadcrumb separator behavior.
 pub enum BreadcrumbSeparator {
-    /// Uses the string variant.
+    /// Stores the separator as text.
     String(SharedString),
-    /// Uses the icon variant.
+    /// Stores the separator or button content as an icon.
     Icon(IconName),
 }
 
-/// Public builder and render state for the Liora breadcrumb item component.
+/// Data model used by breadcrumb item rendering.
 pub struct BreadcrumbItem {
-    /// Human-readable label shown in the component UI.
+    /// User-facing label rendered for this item.
     pub label: SharedString,
     /// Optional icon rendered with the item.
     pub icon: Option<IconName>,
-    /// On click for this data model.
+    /// Callback invoked when the component is activated by pointer or keyboard input.
     pub on_click: Option<Box<dyn Fn(&mut Window, &mut App) + 'static>>,
 }
 
-/// Public builder and render state for the Liora breadcrumb component.
+/// Fluent native GPUI component for rendering Liora breadcrumb.
 pub struct Breadcrumb {
     separator: BreadcrumbSeparator,
     items: Vec<BreadcrumbItem>,
 }
 
 impl BreadcrumbItem {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `BreadcrumbItem` initialized from the supplied label.
     pub fn new(label: impl Into<SharedString>) -> Self {
         Self {
             label: label.into(),
@@ -74,7 +74,7 @@ impl BreadcrumbItem {
 }
 
 impl Breadcrumb {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Breadcrumb` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self {
             separator: BreadcrumbSeparator::String("/".into()),
@@ -88,13 +88,13 @@ impl Breadcrumb {
         self
     }
 
-    /// Configures the separator icon option.
+    /// Uses an icon element as the breadcrumb separator.
     pub fn separator_icon(mut self, icon: IconName) -> Self {
         self.separator = BreadcrumbSeparator::Icon(icon);
         self
     }
 
-    /// Configures the item option.
+    /// Adds the supplied item to the component.
     pub fn item(mut self, item: BreadcrumbItem) -> Self {
         self.items.push(item);
         self

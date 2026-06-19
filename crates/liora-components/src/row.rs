@@ -22,7 +22,7 @@
 use crate::Col;
 use gpui::{App, Component, IntoElement, RenderOnce, Window, prelude::*};
 
-/// Public builder and render state for the Liora row component.
+/// Data model used by row rendering.
 pub struct Row {
     justify: Option<RowJustify>,
     align: Option<RowAlign>,
@@ -30,32 +30,32 @@ pub struct Row {
 }
 
 #[derive(Clone, Copy)]
-/// Enumerates the supported row justify modes and options.
+/// Options that control row justify behavior.
 pub enum RowJustify {
-    /// Uses the start variant.
+    /// Packs row children at the start edge.
     Start,
-    /// Uses the center variant.
+    /// Centers row children on the main axis.
     Center,
-    /// Uses the end variant.
+    /// Packs row children at the end edge.
     End,
-    /// Uses the space between variant.
+    /// Distributes row children with space between items.
     SpaceBetween,
-    /// Uses the space around variant.
+    /// Distributes row children with space around items.
     SpaceAround,
 }
 #[derive(Clone, Copy)]
-/// Enumerates the supported row align modes and options.
+/// Options that control row align behavior.
 pub enum RowAlign {
-    /// Uses the top variant.
+    /// Places the overlay above the anchor.
     Top,
-    /// Uses the middle variant.
+    /// Aligns row children to the vertical center.
     Middle,
-    /// Uses the bottom variant.
+    /// Places the overlay below the anchor.
     Bottom,
 }
 
 impl Row {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Row` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self {
             justify: None,
@@ -63,17 +63,17 @@ impl Row {
             children: vec![],
         }
     }
-    /// Configures the justify option.
+    /// Sets main-axis distribution for child content.
     pub fn justify(mut self, j: RowJustify) -> Self {
         self.justify = Some(j);
         self
     }
-    /// Configures the align option.
+    /// Sets cross-axis alignment for child content.
     pub fn align(mut self, a: RowAlign) -> Self {
         self.align = Some(a);
         self
     }
-    /// Configures the child option.
+    /// Adds a child element to the component body.
     pub fn child(mut self, child: impl IntoElement) -> Self {
         self.children.push(child.into_any_element());
         self

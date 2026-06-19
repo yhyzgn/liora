@@ -26,7 +26,7 @@ use gpui::{
 use liora_core::Config;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported watermark placement modes and options.
+/// Options that control watermark placement behavior.
 pub enum WatermarkPlacement {
     #[default]
     /// Places the watermark in the cover region.
@@ -37,7 +37,7 @@ pub enum WatermarkPlacement {
     Footer,
 }
 
-/// Public builder and render state for the Liora watermark component.
+/// Fluent native GPUI component for rendering Liora watermark.
 pub struct Watermark {
     content: AnyElement,
     text: SharedString,
@@ -53,7 +53,7 @@ pub struct Watermark {
 }
 
 impl Watermark {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Watermark` initialized from the supplied content, and text.
     pub fn new(content: impl IntoElement, text: impl Into<SharedString>) -> Self {
         Self {
             content: content.into_any_element(),
@@ -70,52 +70,52 @@ impl Watermark {
         }
     }
 
-    /// Configures the placement option.
+    /// Selects the popup, label, or overlay placement.
     pub fn placement(mut self, placement: WatermarkPlacement) -> Self {
         self.placement = placement;
         self
     }
-    /// Configures the header option.
+    /// Sets the header value used by the component.
     pub fn header(self) -> Self {
         self.placement(WatermarkPlacement::Header)
     }
-    /// Configures the footer option.
+    /// Sets the footer value used by the component.
     pub fn footer(self) -> Self {
         self.placement(WatermarkPlacement::Footer)
     }
-    /// Configures the opacity option.
+    /// Sets the opacity value used by the component.
     pub fn opacity(mut self, opacity: f32) -> Self {
         self.opacity = opacity.clamp(0.0, 1.0);
         self
     }
-    /// Configures the color option.
+    /// Applies an explicit color instead of the theme-derived default.
     pub fn color(mut self, color: Hsla) -> Self {
         self.color = Some(color);
         self
     }
-    /// Configures the gap option.
+    /// Sets the spacing between child elements.
     pub fn gap(mut self, x: impl Into<Pixels>, y: impl Into<Pixels>) -> Self {
         self.gap_x = x.into().max(px(8.0));
         self.gap_y = y.into().max(px(8.0));
         self
     }
-    /// Configures the rotate option.
+    /// Sets the rotate value used by the component.
     pub fn rotate(mut self, degrees: f32) -> Self {
         self.rotate_degrees = degrees;
         self
     }
-    /// Configures the density option.
+    /// Sets the density value used by the component.
     pub fn density(mut self, rows: usize, columns: usize) -> Self {
         self.rows = rows.max(1);
         self.columns = columns.max(1);
         self
     }
-    /// Configures the z index option.
+    /// Sets the z index value used by the component.
     pub fn z_index(mut self, z: i32) -> Self {
         self.z_index = z;
         self
     }
-    /// Configures the tile count option.
+    /// Performs the tile count operation used by this component.
     pub fn tile_count(&self) -> usize {
         match self.placement {
             WatermarkPlacement::Cover => self.rows * self.columns,

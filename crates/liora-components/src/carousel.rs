@@ -28,7 +28,7 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported carousel direction modes and options.
+/// Options that control carousel direction behavior.
 pub enum CarouselDirection {
     #[default]
     /// Lays out content in the horizontal direction.
@@ -38,18 +38,18 @@ pub enum CarouselDirection {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported carousel indicator position modes and options.
+/// Options that control carousel indicator position behavior.
 pub enum CarouselIndicatorPosition {
     #[default]
-    /// Uses the inside variant.
+    /// Places indicators inside the carousel frame.
     Inside,
-    /// Uses the outside variant.
+    /// Places indicators outside the carousel frame.
     Outside,
-    /// Uses the none variant.
+    /// Disables the optional visual affordance.
     None,
 }
 
-/// Public builder and render state for the Liora carousel item component.
+/// Data model used by carousel item rendering.
 pub struct CarouselItem {
     title: SharedString,
     description: Option<SharedString>,
@@ -58,7 +58,7 @@ pub struct CarouselItem {
 }
 
 impl CarouselItem {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `CarouselItem` initialized from the supplied title.
     pub fn new(title: impl Into<SharedString>) -> Self {
         Self {
             title: title.into(),
@@ -68,26 +68,26 @@ impl CarouselItem {
         }
     }
 
-    /// Configures the description option.
+    /// Sets secondary descriptive text shown below the primary label.
     pub fn description(mut self, description: impl Into<SharedString>) -> Self {
         self.description = Some(description.into());
         self
     }
 
-    /// Configures the accent option.
+    /// Sets the accent used by the rendered component.
     pub fn accent(mut self, color: Hsla) -> Self {
         self.accent = Some(color);
         self
     }
 
-    /// Configures the content option.
+    /// Sets the rendered content element or text for this component.
     pub fn content(mut self, content: impl IntoElement) -> Self {
         self.content = Some(content.into_any_element());
         self
     }
 }
 
-/// Public builder and render state for the Liora carousel component.
+/// Fluent native GPUI component for rendering Liora carousel.
 pub struct Carousel {
     items: Vec<CarouselItem>,
     active_index: usize,
@@ -102,7 +102,7 @@ pub struct Carousel {
 }
 
 impl Carousel {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Carousel` that renders the supplied items collection.
     pub fn new(items: Vec<CarouselItem>) -> Self {
         Self {
             items,
@@ -118,30 +118,30 @@ impl Carousel {
         }
     }
 
-    /// Configures the active index option.
+    /// Sets the current active index state.
     pub fn active_index(mut self, index: usize) -> Self {
         self.active_index = index;
         self
     }
-    /// Configures the direction option.
+    /// Selects the layout or animation direction.
     pub fn direction(mut self, direction: CarouselDirection) -> Self {
         self.direction = direction;
         self
     }
-    /// Configures the vertical option.
+    /// Uses vertical orientation or gradient direction.
     pub fn vertical(self) -> Self {
         self.direction(CarouselDirection::Vertical)
     }
-    /// Configures the horizontal option.
+    /// Uses horizontal orientation or gradient direction.
     pub fn horizontal(self) -> Self {
         self.direction(CarouselDirection::Horizontal)
     }
-    /// Configures the indicator position option.
+    /// Sets the indicator position value used by the component.
     pub fn indicator_position(mut self, position: CarouselIndicatorPosition) -> Self {
         self.indicator_position = position;
         self
     }
-    /// Configures the indicators outside option.
+    /// Places carousel indicators outside the item frame.
     pub fn indicators_outside(self) -> Self {
         self.indicator_position(CarouselIndicatorPosition::Outside)
     }
@@ -149,17 +149,17 @@ impl Carousel {
     pub fn hide_indicators(self) -> Self {
         self.indicator_position(CarouselIndicatorPosition::None)
     }
-    /// Returns the height token used for component sizing.
+    /// Sets the component height token used during GPUI layout.
     pub fn height(mut self, height: impl Into<Pixels>) -> Self {
         self.height = height.into();
         self
     }
-    /// Configures the autoplay option.
+    /// Enables automatic carousel advancement.
     pub fn autoplay(mut self, enabled: bool) -> Self {
         self.autoplay = enabled;
         self
     }
-    /// Configures the interval ms option.
+    /// Sets the interval ms value used by the component.
     pub fn interval_ms(mut self, ms: u64) -> Self {
         self.interval_ms = ms.max(250);
         self
@@ -169,7 +169,7 @@ impl Carousel {
         self.show_arrows = show;
         self
     }
-    /// Configures the pause on hover option.
+    /// Pauses automatic behavior while the pointer is hovering.
     pub fn pause_on_hover(mut self, pause: bool) -> Self {
         self.pause_on_hover = pause;
         self
@@ -179,20 +179,20 @@ impl Carousel {
         self.on_change = Some(Box::new(cb));
         self
     }
-    /// Configures the item count option.
+    /// Performs the item count operation used by this component.
     pub fn item_count(&self) -> usize {
         self.items.len()
     }
-    /// Configures the resolved active index option.
+    /// Returns the active carousel index after clamping it to available items.
     pub fn resolved_active_index(&self) -> Option<usize> {
         (!self.items.is_empty()).then(|| self.active_index.min(self.items.len() - 1))
     }
-    /// Configures the next index option.
+    /// Returns the carousel index reached by moving one item forward.
     pub fn next_index(&self) -> Option<usize> {
         self.resolved_active_index()
             .map(|idx| (idx + 1) % self.items.len())
     }
-    /// Configures the previous index option.
+    /// Returns the carousel index reached by moving one item backward.
     pub fn previous_index(&self) -> Option<usize> {
         self.resolved_active_index().map(|idx| {
             if idx == 0 {

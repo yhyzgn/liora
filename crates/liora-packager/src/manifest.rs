@@ -12,7 +12,7 @@ pub struct PackageArtifact {
     pub app: String,
     /// Version string associated with this package, release, or update.
     pub version: String,
-    /// Target platform for the artifact or update operation.
+    /// Platform targeted by this package, artifact, or update plan.
     pub platform: Platform,
     /// Rust target triple used to build the artifact.
     pub target_triple: String,

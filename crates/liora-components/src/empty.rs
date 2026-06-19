@@ -24,7 +24,7 @@ use liora_core::Config;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
-/// Public builder and render state for the Liora empty component.
+/// Fluent native GPUI component for rendering Liora empty.
 pub struct Empty {
     image: Option<AnyElement>,
     description: SharedString,
@@ -32,7 +32,7 @@ pub struct Empty {
 }
 
 impl Empty {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Empty` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self {
             image: None,
@@ -41,19 +41,19 @@ impl Empty {
         }
     }
 
-    /// Configures the image option.
+    /// Sets the image value used by the component.
     pub fn image(mut self, image: impl IntoElement) -> Self {
         self.image = Some(image.into_any_element());
         self
     }
 
-    /// Configures the description option.
+    /// Sets secondary descriptive text shown below the primary label.
     pub fn description(mut self, d: impl Into<SharedString>) -> Self {
         self.description = d.into();
         self
     }
 
-    /// Configures the extra option.
+    /// Sets the extra value used by the component.
     pub fn extra<F>(mut self, f: F) -> Self
     where
         F: Fn(&mut Window, &mut App) -> AnyElement + 'static,

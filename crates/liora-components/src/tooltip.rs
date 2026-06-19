@@ -27,7 +27,7 @@ use liora_core::{Placement, TooltipData, clear_tooltip, set_active_tooltip, stab
 use std::cell::Cell;
 use std::rc::Rc;
 
-/// Public builder and render state for the Liora tooltip component.
+/// Fluent native GPUI component for rendering Liora tooltip.
 pub struct Tooltip {
     trigger: AnyElement,
     content: SharedString,
@@ -37,7 +37,7 @@ pub struct Tooltip {
 }
 
 impl Tooltip {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Tooltip` initialized from the supplied trigger.
     pub fn new(trigger: impl IntoElement) -> Self {
         Self {
             trigger: trigger.into_any_element(),
@@ -48,25 +48,25 @@ impl Tooltip {
         }
     }
 
-    /// Configures the content option.
+    /// Sets the rendered content element or text for this component.
     pub fn content(mut self, content: impl Into<SharedString>) -> Self {
         self.content = content.into();
         self
     }
 
-    /// Configures the placement option.
+    /// Selects the popup, label, or overlay placement.
     pub fn placement(mut self, placement: Placement) -> Self {
         self.placement = placement;
         self
     }
 
-    /// Configures the offset option.
+    /// Sets the pixel offset used when positioning the component.
     pub fn offset(mut self, offset: impl Into<Pixels>) -> Self {
         self.offset = offset.into();
         self
     }
 
-    /// Returns the stable tray command identifier used for menu event routing.
+    /// Assigns a stable element id used by GPUI state, hit testing, and automated interaction tests.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = Some(id.into());
         self

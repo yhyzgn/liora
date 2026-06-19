@@ -27,7 +27,7 @@ use liora_core::Config;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
-/// Public builder and render state for the Liora label component.
+/// Fluent native GPUI component for rendering Liora label.
 pub struct Label {
     text: SharedString,
     icon: Option<IconName>,
@@ -38,7 +38,7 @@ pub struct Label {
 }
 
 impl Label {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Label` initialized from the supplied text.
     pub fn new(text: impl Into<SharedString>) -> Self {
         Self {
             text: text.into(),
@@ -55,17 +55,17 @@ impl Label {
         self.icon = Some(icon);
         self
     }
-    /// Configures the custom icon option.
+    /// Sets the custom icon rendered by the component.
     pub fn custom_icon(mut self, icon: impl IntoElement) -> Self {
         self.custom_icon = Some(icon.into_any_element());
         self
     }
-    /// Configures the gap option.
+    /// Sets the spacing between child elements.
     pub fn gap(mut self, gap: impl Into<Pixels>) -> Self {
         self.gap = gap.into().max(px(0.0));
         self
     }
-    /// Configures the color option.
+    /// Applies an explicit color instead of the theme-derived default.
     pub fn color(mut self, color: Hsla) -> Self {
         self.color = Some(color);
         self

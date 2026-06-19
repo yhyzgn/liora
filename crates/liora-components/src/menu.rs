@@ -30,7 +30,7 @@ use liora_icons_lucide::IconName;
 use std::collections::HashSet;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported menu modes and options.
+/// Options that control menu mode behavior.
 pub enum MenuMode {
     #[default]
     /// Lays out content in the vertical direction.
@@ -39,31 +39,31 @@ pub enum MenuMode {
     Horizontal,
 }
 
-/// Enumerates the supported menu node modes and options.
+/// Options that control menu node behavior.
 pub enum MenuNode {
-    /// Uses the item variant.
+    /// Uses the `Item` option for `MenuNode`.
     Item(MenuItem),
-    /// Uses the sub menu variant.
+    /// Uses the `SubMenu` option for `MenuNode`.
     SubMenu(SubMenu),
-    /// Uses the group variant.
+    /// Uses the `Group` option for `MenuNode`.
     Group(MenuItemGroup),
 }
 
-/// Public builder and render state for the Liora menu item component.
+/// Data model used by menu item rendering.
 pub struct MenuItem {
-    /// Stable identifier used to connect rendered UI, callbacks, and external state.
+    /// Stable identifier used for GPUI state, callbacks, and automation.
     pub id: SharedString,
-    /// Human-readable label shown in the component UI.
+    /// User-facing label rendered for this item.
     pub label: SharedString,
     /// Optional icon rendered with the item.
     pub icon: Option<IconName>,
 }
 
-/// Public builder and render state for the Liora sub menu component.
+/// Fluent native GPUI component for rendering Liora sub menu.
 pub struct SubMenu {
-    /// Stable identifier used to connect rendered UI, callbacks, and external state.
+    /// Stable identifier used for GPUI state, callbacks, and automation.
     pub id: SharedString,
-    /// Human-readable label shown in the component UI.
+    /// User-facing label rendered for this item.
     pub label: SharedString,
     /// Optional icon rendered with the item.
     pub icon: Option<IconName>,
@@ -71,7 +71,7 @@ pub struct SubMenu {
     pub children: Vec<MenuNode>,
 }
 
-/// Public builder and render state for the Liora menu item group component.
+/// Fluent native GPUI component for rendering Liora menu item group.
 pub struct MenuItemGroup {
     /// Primary heading or title text displayed by the component.
     pub title: SharedString,
@@ -79,7 +79,7 @@ pub struct MenuItemGroup {
     pub children: Vec<MenuNode>,
 }
 
-/// Public builder and render state for the Liora menu component.
+/// Fluent native GPUI component for rendering Liora menu.
 pub struct Menu {
     id: SharedString,
     mode: MenuMode,
@@ -92,7 +92,7 @@ pub struct Menu {
 }
 
 impl Menu {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Menu` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self {
             id: liora_core::unique_id("menu"),
@@ -106,25 +106,25 @@ impl Menu {
         }
     }
 
-    /// Returns the stable tray command identifier used for menu event routing.
+    /// Assigns a stable element id used by GPUI state, hit testing, and automated interaction tests.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
-    /// Configures the mode option.
+    /// Selects the rendering mode used by this component.
     pub fn mode(mut self, mode: MenuMode) -> Self {
         self.mode = mode;
         self
     }
 
-    /// Configures the collapse option.
+    /// Sets the collapse value used by the component.
     pub fn collapse(mut self, collapsed: bool) -> Self {
         self.is_collapsed = collapsed;
         self
     }
 
-    /// Configures the default active used before user interaction changes state.
+    /// Sets the initially active menu item.
     pub fn default_active(mut self, index: impl Into<SharedString>) -> Self {
         self.active_index = Some(index.into());
         self
@@ -136,13 +136,13 @@ impl Menu {
         self
     }
 
-    /// Configures the close on escape option.
+    /// Toggles whether the popup closes when escape occurs.
     pub fn close_on_escape(mut self, close: bool) -> Self {
         self.close_on_escape = close;
         self
     }
 
-    /// Configures the item option.
+    /// Performs the item operation used by this component.
     pub fn item(
         mut self,
         id: impl Into<SharedString>,
@@ -184,7 +184,7 @@ impl Menu {
         self
     }
 
-    /// Configures the group option.
+    /// Sets the group value used by the component.
     pub fn group<F>(mut self, title: impl Into<SharedString>, f: F) -> Self
     where
         F: FnOnce(MenuGroupBuilder) -> MenuGroupBuilder,
@@ -703,11 +703,11 @@ impl Menu {
     }
 }
 
-/// Public builder and render state for the Liora sub menu builder component.
+/// Fluent native GPUI component for rendering Liora sub menu builder.
 pub struct SubMenuBuilder {
-    /// Stable identifier used to connect rendered UI, callbacks, and external state.
+    /// Stable identifier used for GPUI state, callbacks, and automation.
     pub id: SharedString,
-    /// Human-readable label shown in the component UI.
+    /// User-facing label rendered for this item.
     pub label: SharedString,
     /// Optional icon rendered with the item.
     pub icon: Option<IconName>,
@@ -716,7 +716,7 @@ pub struct SubMenuBuilder {
 }
 
 impl SubMenuBuilder {
-    /// Configures the item option.
+    /// Performs the item operation used by this component.
     pub fn item(
         mut self,
         id: impl Into<SharedString>,
@@ -758,7 +758,7 @@ impl SubMenuBuilder {
         self
     }
 
-    /// Configures the group option.
+    /// Sets the group value used by the component.
     pub fn group<F>(mut self, title: impl Into<SharedString>, f: F) -> Self
     where
         F: FnOnce(MenuGroupBuilder) -> MenuGroupBuilder,
@@ -776,7 +776,7 @@ impl SubMenuBuilder {
     }
 }
 
-/// Public builder and render state for the Liora menu group builder component.
+/// Fluent native GPUI component for rendering Liora menu group builder.
 pub struct MenuGroupBuilder {
     /// Primary heading or title text displayed by the component.
     pub title: SharedString,
@@ -785,7 +785,7 @@ pub struct MenuGroupBuilder {
 }
 
 impl MenuGroupBuilder {
-    /// Configures the item option.
+    /// Performs the item operation used by this component.
     pub fn item(
         mut self,
         id: impl Into<SharedString>,

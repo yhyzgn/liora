@@ -26,7 +26,7 @@ use gpui::{
 };
 use liora_core::Config;
 
-/// Public builder and render state for the Liora operation component.
+/// Fluent native GPUI component for rendering Liora operation.
 pub struct Operation {
     label: AnyElement,
     action: AnyElement,
@@ -39,7 +39,7 @@ pub struct Operation {
 }
 
 impl Operation {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Operation` initialized from the supplied label, and action.
     pub fn new(label: impl IntoElement, action: impl IntoElement) -> Self {
         Self {
             label: label.into_any_element(),
@@ -53,48 +53,48 @@ impl Operation {
         }
     }
 
-    /// Creates a value configured with the supplied text.
+    /// Applies the text preset.
     pub fn with_text(text: impl Into<gpui::SharedString>, action: impl IntoElement) -> Self {
         Self::new(Label::new(text), action)
     }
-    /// Configures the gap option.
+    /// Sets the spacing between child elements.
     pub fn gap(mut self, gap: impl Into<Pixels>) -> Self {
         self.gap = gap.into().max(px(0.0));
         self
     }
-    /// Configures the description option.
+    /// Sets secondary descriptive text shown below the primary label.
     pub fn description(mut self, description: impl Into<SharedString>) -> Self {
         self.description = Some(description.into());
         self
     }
-    /// Configures the status option.
+    /// Sets the status value used by the component.
     pub fn status(mut self, status: impl Into<SharedString>) -> Self {
         self.status = Some(status.into());
         self
     }
-    /// Configures the status color option.
+    /// Sets the status color used by the rendered component.
     pub fn status_color(mut self, color: Hsla) -> Self {
         self.status_color = Some(color);
         self
     }
-    /// Configures the success option.
+    /// Applies the success semantic visual variant.
     pub fn success(self) -> Self {
         self.status("正常").status_color(gpui::green())
     }
-    /// Configures the warning option.
+    /// Applies the warning semantic visual variant.
     pub fn warning(self) -> Self {
         self.status("注意").status_color(gpui::yellow())
     }
-    /// Configures the danger option.
+    /// Applies the danger semantic visual variant.
     pub fn danger(self) -> Self {
         self.status("异常").status_color(gpui::red())
     }
-    /// Configures the disabled option.
+    /// Toggles the disabled state and suppresses user interaction when enabled.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
     }
-    /// Configures the no padding option.
+    /// Disables padding rendering or behavior.
     pub fn no_padding(mut self) -> Self {
         self.padded = false;
         self

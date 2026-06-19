@@ -21,14 +21,14 @@
 
 use gpui::{App, Component, IntoElement, RenderOnce, Window, prelude::*, px};
 
-/// Public builder and render state for the Liora divider component.
+/// Fluent native GPUI component for rendering Liora divider.
 pub struct Divider {
     vertical: bool,
     label: Option<String>,
 }
 
 impl Divider {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Divider` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self {
             vertical: false,
@@ -36,7 +36,7 @@ impl Divider {
         }
     }
 
-    /// Configures the vertical option.
+    /// Uses vertical orientation or gradient direction.
     pub fn vertical(mut self) -> Self {
         self.vertical = true;
         self

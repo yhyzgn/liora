@@ -27,63 +27,63 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported timeline modes and options.
+/// Options that control timeline mode behavior.
 pub enum TimelineMode {
     #[default]
-    /// Uses the left variant.
+    /// Places the overlay to the left of the anchor.
     Left,
-    /// Uses the right variant.
+    /// Places the overlay to the right of the anchor.
     Right,
-    /// Uses the alternate variant.
+    /// Uses alternate rendering for `TimelineMode`.
     Alternate,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Enumerates the supported timeline tone modes and options.
+/// Options that control timeline tone behavior.
 pub enum TimelineTone {
-    /// Uses the primary semantic button variant.
+    /// Uses the primary brand-accent treatment.
     Primary,
-    /// Uses the success semantic button variant.
+    /// Uses success semantic color tokens.
     Success,
-    /// Uses the warning semantic button variant.
+    /// Uses warning semantic color tokens.
     Warning,
-    /// Uses the danger semantic button variant.
+    /// Uses danger semantic color tokens.
     Danger,
-    /// Uses the info semantic button variant.
+    /// Uses informational semantic color tokens.
     Info,
 }
 
-/// Public builder and render state for the Liora timeline item component.
+/// Data model used by timeline item rendering.
 pub struct TimelineItem {
-    /// Timestamp for this data model.
+    /// Timestamp text displayed alongside a timeline item.
     pub timestamp: Option<SharedString>,
     /// Content rendered inside the component body.
     pub content: AnyElement,
     /// Color token or explicit color applied to the visual element.
     pub color: Option<Hsla>,
-    /// Tone for this data model.
+    /// Semantic tone used for item marker and accent colors.
     pub tone: Option<TimelineTone>,
     /// Optional icon rendered with the item.
     pub icon: Option<IconName>,
-    /// Hollow for this data model.
+    /// Whether the timeline marker is rendered as a hollow dot.
     pub hollow: bool,
-    /// Hide timestamp for this data model.
+    /// Whether timestamp text is hidden for this item.
     pub hide_timestamp: bool,
-    /// Placement for this data model.
+    /// Preferred placement relative to the trigger or anchor.
     pub placement: TimelinePlacement,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported timeline placement modes and options.
+/// Options that control timeline placement behavior.
 pub enum TimelinePlacement {
     #[default]
-    /// Uses the top variant.
+    /// Places the overlay above the anchor.
     Top,
-    /// Uses the bottom variant.
+    /// Places the overlay below the anchor.
     Bottom,
 }
 
-/// Public builder and render state for the Liora timeline component.
+/// Fluent native GPUI component for rendering Liora timeline.
 pub struct Timeline {
     items: Vec<TimelineItem>,
     reverse: bool,
@@ -91,7 +91,7 @@ pub struct Timeline {
 }
 
 impl TimelineItem {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `TimelineItem` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self {
             timestamp: None,
@@ -105,53 +105,53 @@ impl TimelineItem {
         }
     }
 
-    /// Configures the timestamp option.
+    /// Sets the timestamp value used by the component.
     pub fn timestamp(mut self, t: impl Into<SharedString>) -> Self {
         self.timestamp = Some(t.into());
         self
     }
 
-    /// Configures the content option.
+    /// Sets the rendered content element or text for this component.
     pub fn content(mut self, content: impl IntoElement) -> Self {
         self.content = content.into_any_element();
         self
     }
 
-    /// Configures the color option.
+    /// Applies an explicit color instead of the theme-derived default.
     pub fn color(mut self, c: Hsla) -> Self {
         self.color = Some(c);
         self.tone = None;
         self
     }
 
-    /// Configures the tone option.
+    /// Sets the tone value used by the component.
     pub fn tone(mut self, tone: TimelineTone) -> Self {
         self.tone = Some(tone);
         self.color = None;
         self
     }
 
-    /// Configures the primary option.
+    /// Applies the primary semantic visual variant.
     pub fn primary(self) -> Self {
         self.tone(TimelineTone::Primary)
     }
 
-    /// Configures the success option.
+    /// Applies the success semantic visual variant.
     pub fn success(self) -> Self {
         self.tone(TimelineTone::Success)
     }
 
-    /// Configures the warning option.
+    /// Applies the warning semantic visual variant.
     pub fn warning(self) -> Self {
         self.tone(TimelineTone::Warning)
     }
 
-    /// Configures the danger option.
+    /// Applies the danger semantic visual variant.
     pub fn danger(self) -> Self {
         self.tone(TimelineTone::Danger)
     }
 
-    /// Configures the info option.
+    /// Applies the informational semantic visual variant.
     pub fn info(self) -> Self {
         self.tone(TimelineTone::Info)
     }
@@ -162,13 +162,13 @@ impl TimelineItem {
         self
     }
 
-    /// Configures the hollow option.
+    /// Sets the hollow value used by the component.
     pub fn hollow(mut self, h: bool) -> Self {
         self.hollow = h;
         self
     }
 
-    /// Configures the placement option.
+    /// Selects the popup, label, or overlay placement.
     pub fn placement(mut self, p: TimelinePlacement) -> Self {
         self.placement = p;
         self
@@ -182,7 +182,7 @@ impl TimelineItem {
 }
 
 impl Timeline {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Timeline` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self {
             items: vec![],
@@ -191,19 +191,19 @@ impl Timeline {
         }
     }
 
-    /// Configures the reverse option.
+    /// Sets the reverse value used by the component.
     pub fn reverse(mut self, r: bool) -> Self {
         self.reverse = r;
         self
     }
 
-    /// Configures the mode option.
+    /// Selects the rendering mode used by this component.
     pub fn mode(mut self, m: TimelineMode) -> Self {
         self.mode = m;
         self
     }
 
-    /// Configures the item option.
+    /// Adds the supplied item to the component.
     pub fn item(mut self, item: TimelineItem) -> Self {
         self.items.push(item);
         self

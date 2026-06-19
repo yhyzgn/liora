@@ -22,7 +22,7 @@
 use gpui::{AnyElement, App, Component, IntoElement, Pixels, RenderOnce, Window, prelude::*, px};
 use liora_core::stable_unique_id;
 
-/// Public builder and render state for the Liora container component.
+/// Fluent native GPUI component for rendering Liora container.
 pub struct Container {
     header: Option<AnyElement>,
     aside: Option<AnyElement>,
@@ -39,7 +39,7 @@ pub struct Container {
 }
 
 impl Container {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Container` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self {
             header: None,
@@ -57,38 +57,38 @@ impl Container {
         }
     }
 
-    /// Configures the header option.
+    /// Sets the header value used by the component.
     pub fn header(mut self, el: impl IntoElement) -> Self {
         self.header = Some(el.into_any_element());
         self
     }
-    /// Configures the aside option.
+    /// Sets the aside value used by the component.
     pub fn aside(mut self, el: impl IntoElement) -> Self {
         self.aside = Some(el.into_any_element());
         self
     }
-    /// Configures the aside right option.
+    /// Sets the aside right value used by the component.
     pub fn aside_right(mut self) -> Self {
         self.aside_right = true;
         self
     }
-    /// Configures the footer option.
+    /// Sets the footer value used by the component.
     pub fn footer(mut self, el: impl IntoElement) -> Self {
         self.footer = Some(el.into_any_element());
         self
     }
-    /// Configures the child option.
+    /// Adds a child element to the component body.
     pub fn child(mut self, el: impl IntoElement) -> Self {
         self.main.push(el.into_any_element());
         self
     }
-    /// Configures the overlay option.
+    /// Uses overlay chart rendering where series share the same baseline.
     pub fn overlay(mut self, el: impl IntoElement) -> Self {
         self.overlays.push(el.into_any_element());
         self
     }
 
-    /// Configures the header height option.
+    /// Sets the header height value used by the component.
     pub fn header_height(mut self, height: impl Into<Pixels>) -> Self {
         self.header_height = height.into();
         self
@@ -99,13 +99,13 @@ impl Container {
         self.header_height(px(84.0))
     }
 
-    /// Configures the footer height option.
+    /// Sets the footer height value used by the component.
     pub fn footer_height(mut self, height: impl Into<Pixels>) -> Self {
         self.footer_height = height.into();
         self
     }
 
-    /// Configures the aside width option.
+    /// Sets the aside width value used by the component.
     pub fn aside_width(mut self, width: impl Into<Pixels>) -> Self {
         self.aside_width = width.into();
         self
@@ -116,19 +116,19 @@ impl Container {
         self.aside_width(px(280.0))
     }
 
-    /// Configures the aside scroll option.
+    /// Sets the aside scroll value used by the component.
     pub fn aside_scroll(mut self) -> Self {
         self.aside_scroll = true;
         self
     }
 
-    /// Configures the main scroll option.
+    /// Sets the main scroll value used by the component.
     pub fn main_scroll(mut self) -> Self {
         self.main_scroll = true;
         self
     }
 
-    /// Configures the main padding option.
+    /// Sets the main padding value used by the component.
     pub fn main_padding(mut self, padding: impl Into<Pixels>) -> Self {
         self.main_padding = Some(padding.into());
         self

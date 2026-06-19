@@ -39,36 +39,36 @@ actions!(
 );
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-/// Public builder and render state for the Liora date value component.
+/// Fluent native GPUI component for rendering Liora date value.
 pub struct DateValue {
-    /// Year for this data model.
+    /// Four-digit calendar year.
     pub year: i32,
-    /// Month for this data model.
+    /// One-based calendar month.
     pub month: u32,
-    /// Day for this data model.
+    /// One-based day within the month.
     pub day: u32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported date picker type modes and options.
+/// Options that control date picker type behavior.
 pub enum DatePickerType {
     #[default]
-    /// Uses the date variant.
+    /// Selects a single calendar date.
     Date,
-    /// Uses the date range variant.
+    /// Selects a start and end calendar date.
     DateRange,
-    /// Uses the month variant.
+    /// Selects a single month.
     Month,
-    /// Uses the month range variant.
+    /// Selects a start and end month.
     MonthRange,
-    /// Uses the year variant.
+    /// Selects a single year.
     Year,
-    /// Uses the year range variant.
+    /// Selects a start and end year.
     YearRange,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Enumerates the supported date picker selection modes and options.
+/// Options that control date picker selection behavior.
 pub enum DatePickerSelection {
     /// Stores a single selection value.
     Single(Option<DateValue>),
@@ -81,7 +81,7 @@ pub enum DatePickerSelection {
     },
 }
 
-/// Public builder and render state for the Liora date picker component.
+/// Fluent native GPUI component for rendering Liora date picker.
 pub struct DatePicker {
     id: SharedString,
     picker_type: DatePickerType,
@@ -106,7 +106,7 @@ pub struct DatePicker {
 }
 
 impl DateValue {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `DateValue` initialized from the supplied year, month, and day.
     pub fn new(year: i32, month: u32, day: u32) -> Option<Self> {
         if !(1..=12).contains(&month) || day == 0 || day > days_in_month(year, month) {
             return None;
@@ -114,14 +114,14 @@ impl DateValue {
         Some(Self { year, month, day })
     }
 
-    /// Configures the format option.
+    /// Performs the format operation used by this component.
     pub fn format(&self) -> String {
         format!("{:04}-{:02}-{:02}", self.year, self.month, self.day)
     }
 }
 
 impl DatePicker {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `DatePicker` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self {
             id: liora_core::unique_id("date-picker"),
@@ -146,13 +146,13 @@ impl DatePicker {
         }
     }
 
-    /// Returns the stable tray command identifier used for menu event routing.
+    /// Assigns a stable element id used by GPUI state, hit testing, and automated interaction tests.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
-    /// Configures the picker type option.
+    /// Selects single-date or range picking behavior.
     pub fn picker_type(mut self, picker_type: DatePickerType) -> Self {
         self.picker_type = picker_type;
         if self.placeholder == SharedString::from("请选择日期") {
@@ -161,32 +161,32 @@ impl DatePicker {
         self
     }
 
-    /// Configures the date option.
+    /// Sets the date value used by the component.
     pub fn date(self) -> Self {
         self.picker_type(DatePickerType::Date)
     }
 
-    /// Configures the date range option.
+    /// Sets the date range value used by the component.
     pub fn date_range(self) -> Self {
         self.picker_type(DatePickerType::DateRange)
     }
 
-    /// Configures the month option.
+    /// Sets the month value used by the component.
     pub fn month(self) -> Self {
         self.picker_type(DatePickerType::Month)
     }
 
-    /// Configures the month range option.
+    /// Sets the month range value used by the component.
     pub fn month_range(self) -> Self {
         self.picker_type(DatePickerType::MonthRange)
     }
 
-    /// Configures the year option.
+    /// Sets the year value used by the component.
     pub fn year(self) -> Self {
         self.picker_type(DatePickerType::Year)
     }
 
-    /// Configures the year range option.
+    /// Sets the year range value used by the component.
     pub fn year_range(self) -> Self {
         self.picker_type(DatePickerType::YearRange)
     }
@@ -199,7 +199,7 @@ impl DatePicker {
         self
     }
 
-    /// Configures the range option.
+    /// Sets the range value used by the component.
     pub fn range(mut self, start: DateValue, end: DateValue) -> Self {
         let (start, end) = ordered_pair(
             normalize_value(start, self.picker_type),
@@ -212,25 +212,25 @@ impl DatePicker {
         self
     }
 
-    /// Configures the placeholder option.
+    /// Uses the supplied placeholder text when the value is empty.
     pub fn placeholder(mut self, placeholder: impl Into<SharedString>) -> Self {
         self.placeholder = placeholder.into();
         self
     }
 
-    /// Configures the format option.
+    /// Sets the format displayed or consumed by the component.
     pub fn format(mut self, format: impl Into<SharedString>) -> Self {
         self.display_format = Some(format.into());
         self
     }
 
-    /// Configures the range separator option.
+    /// Sets the text displayed between range endpoints.
     pub fn range_separator(mut self, separator: impl Into<SharedString>) -> Self {
         self.range_separator = separator.into();
         self
     }
 
-    /// Returns the width token used for component sizing.
+    /// Sets the component width token used during GPUI layout.
     pub fn width(mut self, width: impl Into<Pixels>) -> Self {
         self.width = Some(width.into());
         self
@@ -246,25 +246,25 @@ impl DatePicker {
         self.width(px(320.0))
     }
 
-    /// Configures the disabled option.
+    /// Toggles the disabled state and suppresses user interaction when enabled.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
     }
 
-    /// Configures the close on escape option.
+    /// Toggles whether the popup closes when escape occurs.
     pub fn close_on_escape(mut self, close: bool) -> Self {
         self.close_on_escape = close;
         self
     }
 
-    /// Configures the close on click outside option.
+    /// Toggles whether the popup closes when click outside occurs.
     pub fn close_on_click_outside(mut self, close: bool) -> Self {
         self.close_on_click_outside = close;
         self
     }
 
-    /// Configures the register key bindings option.
+    /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([gpui::KeyBinding::new("escape", DatePickerClose, None)]);
     }
@@ -370,12 +370,12 @@ impl DatePicker {
         cx.notify();
     }
 
-    /// Configures the value ref option.
+    /// Performs the value ref operation used by this component.
     pub fn value_ref(&self) -> Option<DateValue> {
         self.value
     }
 
-    /// Configures the range ref option.
+    /// Performs the range ref operation used by this component.
     pub fn range_ref(&self) -> (Option<DateValue>, Option<DateValue>) {
         (self.range_start, self.range_end)
     }

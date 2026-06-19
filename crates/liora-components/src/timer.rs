@@ -31,35 +31,35 @@ use std::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported timer direction modes and options.
+/// Options that control timer direction behavior.
 pub enum TimerDirection {
     #[default]
-    /// Uses the count up variant.
+    /// Measures elapsed time upward from the starting duration.
     CountUp,
-    /// Uses the count down variant.
+    /// Counts down toward zero from the supplied duration.
     CountDown,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported timer unit modes and options.
+/// Options that control timer unit behavior.
 pub enum TimerUnit {
-    /// Uses the milliseconds variant.
+    /// Uses the `Milliseconds` option for `TimerUnit`.
     Milliseconds,
     #[default]
-    /// Uses the seconds variant.
+    /// Uses the `Seconds` option for `TimerUnit`.
     Seconds,
-    /// Uses the minutes variant.
+    /// Uses the `Minutes` option for `TimerUnit`.
     Minutes,
-    /// Uses the hours variant.
+    /// Uses the `Hours` option for `TimerUnit`.
     Hours,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Enumerates the supported timer format modes and options.
+/// Options that control timer format behavior.
 pub enum TimerFormat {
-    /// Uses the unit variant.
+    /// Uses the `Unit` option for `TimerFormat`.
     Unit,
-    /// Uses the clock variant.
+    /// Uses the `Clock` option for `TimerFormat`.
     Clock,
 }
 
@@ -70,30 +70,30 @@ impl Default for TimerFormat {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Public builder and render state for the Liora timer snapshot component.
+/// Fluent native GPUI component for rendering Liora timer snapshot.
 pub struct TimerSnapshot {
-    /// Elapsed for this data model.
+    /// Elapsed duration tracked by a timer.
     pub elapsed: Duration,
-    /// Remaining for this data model.
+    /// Remaining duration before a timer completes.
     pub remaining: Option<Duration>,
-    /// Finished for this data model.
+    /// Whether a countdown timer has reached completion.
     pub finished: bool,
 }
 
 impl TimerSnapshot {
-    /// Configures the elapsed as option.
+    /// Performs the elapsed as operation used by this component.
     pub fn elapsed_as(self, unit: TimerUnit) -> f64 {
         duration_as(self.elapsed, unit)
     }
 
-    /// Configures the remaining as option.
+    /// Performs the remaining as operation used by this component.
     pub fn remaining_as(self, unit: TimerUnit) -> Option<f64> {
         self.remaining.map(|remaining| duration_as(remaining, unit))
     }
 }
 
 #[derive(Clone)]
-/// Public builder and render state for the Liora timer component.
+/// Fluent native GPUI component for rendering Liora timer.
 pub struct Timer {
     id: SharedString,
     elapsed: Duration,
@@ -112,17 +112,17 @@ pub struct Timer {
 }
 
 impl Timer {
-    /// Configures the count up option.
+    /// Sets the count up value used by the component.
     pub fn count_up(elapsed: Duration) -> Self {
         Self::new(TimerDirection::CountUp, elapsed, None)
     }
 
-    /// Configures the count down option.
+    /// Sets the count down value used by the component.
     pub fn count_down(duration: Duration, elapsed: Duration) -> Self {
         Self::new(TimerDirection::CountDown, elapsed, Some(duration))
     }
 
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Timer` initialized from the supplied direction, elapsed, and duration.
     pub fn new(direction: TimerDirection, elapsed: Duration, duration: Option<Duration>) -> Self {
         Self {
             id: liora_core::unique_id("timer"),
@@ -142,56 +142,56 @@ impl Timer {
         }
     }
 
-    /// Returns the stable tray command identifier used for menu event routing.
+    /// Assigns a stable element id used by GPUI state, hit testing, and automated interaction tests.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
-    /// Configures the elapsed option.
+    /// Sets the elapsed value used by the component.
     pub fn elapsed(mut self, elapsed: Duration) -> Self {
         self.elapsed = elapsed;
         self
     }
 
-    /// Configures the duration option.
+    /// Sets the duration value used by the component.
     pub fn duration(mut self, duration: Duration) -> Self {
         self.duration = Some(duration);
         self
     }
 
-    /// Configures the direction option.
+    /// Selects the layout or animation direction.
     pub fn direction(mut self, direction: TimerDirection) -> Self {
         self.direction = direction;
         self
     }
 
-    /// Configures the countup option.
+    /// Sets the countup value used by the component.
     pub fn countup(mut self) -> Self {
         self.direction = TimerDirection::CountUp;
         self
     }
 
-    /// Configures the countdown option.
+    /// Sets the countdown value used by the component.
     pub fn countdown(mut self) -> Self {
         self.direction = TimerDirection::CountDown;
         self
     }
 
-    /// Configures the display unit option.
+    /// Sets the display unit value used by the component.
     pub fn display_unit(mut self, unit: TimerUnit) -> Self {
         self.display_unit = unit;
         self.format = TimerFormat::Unit;
         self
     }
 
-    /// Configures the format option.
+    /// Sets the format displayed or consumed by the component.
     pub fn format(mut self, format: TimerFormat) -> Self {
         self.format = format;
         self
     }
 
-    /// Configures the clock format option.
+    /// Sets the clock format value used by the component.
     pub fn clock_format(mut self) -> Self {
         self.format = TimerFormat::Clock;
         self
@@ -203,31 +203,31 @@ impl Timer {
         self
     }
 
-    /// Configures the title option.
+    /// Sets the primary title text displayed by the component.
     pub fn title(mut self, title: impl Into<SharedString>) -> Self {
         self.title = Some(title.into());
         self
     }
 
-    /// Configures the prefix option.
+    /// Sets the prefix value used by the component.
     pub fn prefix(mut self, prefix: impl Into<SharedString>) -> Self {
         self.prefix = Some(prefix.into());
         self
     }
 
-    /// Configures the suffix option.
+    /// Sets the suffix value used by the component.
     pub fn suffix(mut self, suffix: impl Into<SharedString>) -> Self {
         self.suffix = Some(suffix.into());
         self
     }
 
-    /// Configures the compact option.
+    /// Sets the compact value used by the component.
     pub fn compact(mut self) -> Self {
         self.compact = true;
         self
     }
 
-    /// Configures the running option.
+    /// Sets the running value used by the component.
     pub fn running(mut self, running: bool) -> Self {
         self.running = running;
         if running && self.started_at.is_none() {
@@ -236,17 +236,17 @@ impl Timer {
         self
     }
 
-    /// Configures the start option.
+    /// Sets the start value used by the component.
     pub fn start(self) -> Self {
         self.running(true)
     }
 
-    /// Configures the paused option.
+    /// Sets the paused value used by the component.
     pub fn paused(self) -> Self {
         self.running(false)
     }
 
-    /// Configures the tick interval option.
+    /// Sets the tick interval value used by the component.
     pub fn tick_interval(mut self, interval: Duration) -> Self {
         self.tick_interval = interval.max(Duration::from_millis(16));
         self
@@ -262,7 +262,7 @@ impl Timer {
         }
     }
 
-    /// Configures the snapshot option.
+    /// Performs the snapshot operation used by this component.
     pub fn snapshot(&self) -> TimerSnapshot {
         let remaining = self
             .duration
@@ -275,12 +275,12 @@ impl Timer {
         }
     }
 
-    /// Configures the elapsed as option.
+    /// Performs the elapsed as operation used by this component.
     pub fn elapsed_as(&self, unit: TimerUnit) -> f64 {
         self.snapshot().elapsed_as(unit)
     }
 
-    /// Configures the remaining as option.
+    /// Performs the remaining as operation used by this component.
     pub fn remaining_as(&self, unit: TimerUnit) -> Option<f64> {
         self.snapshot().remaining_as(unit)
     }
@@ -446,7 +446,7 @@ impl IntoElement for Timer {
     }
 }
 
-/// Configures the duration as option.
+/// Performs the duration as operation used by this component.
 pub fn duration_as(duration: Duration, unit: TimerUnit) -> f64 {
     match unit {
         TimerUnit::Milliseconds => duration.as_secs_f64() * 1000.0,
@@ -456,7 +456,7 @@ pub fn duration_as(duration: Duration, unit: TimerUnit) -> f64 {
     }
 }
 
-/// Configures the format duration option.
+/// Formats duration for display.
 pub fn format_duration(duration: Duration, unit: TimerUnit, show_unit: bool) -> SharedString {
     let value = duration_as(duration, unit);
     let text = match unit {
@@ -472,7 +472,7 @@ pub fn format_duration(duration: Duration, unit: TimerUnit, show_unit: bool) -> 
     }
 }
 
-/// Configures the format clock option.
+/// Formats clock for display.
 pub fn format_clock(duration: Duration) -> SharedString {
     let total_seconds = duration.as_secs();
     let hours = total_seconds / 3600;

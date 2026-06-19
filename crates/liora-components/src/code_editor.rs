@@ -45,11 +45,11 @@ actions!(
 );
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-/// Enumerates the supported code diagnostic severity modes and options.
+/// Options that control code diagnostic severity behavior.
 pub enum CodeDiagnosticSeverity {
-    /// Uses the info semantic button variant.
+    /// Uses informational semantic color tokens.
     Info,
-    /// Uses the warning semantic button variant.
+    /// Uses warning semantic color tokens.
     Warning,
     /// Reports a error failure.
     Error,
@@ -74,20 +74,20 @@ impl CodeDiagnosticSeverity {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-/// Public builder and render state for the Liora code diagnostic component.
+/// Fluent native GPUI component for rendering Liora code diagnostic.
 pub struct CodeDiagnostic {
-    /// Line for this data model.
+    /// One-based source line for diagnostics.
     pub line: usize,
-    /// Column for this data model.
+    /// One-based source column for diagnostics.
     pub column: usize,
-    /// Severity for this data model.
+    /// Diagnostic severity used to choose color and icon treatment.
     pub severity: CodeDiagnosticSeverity,
     /// User-facing message associated with this item.
     pub message: SharedString,
 }
 
 impl CodeDiagnostic {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `CodeDiagnostic` with default theme-driven styling and no optional callbacks attached.
     pub fn new(
         line: usize,
         column: usize,
@@ -102,17 +102,17 @@ impl CodeDiagnostic {
         }
     }
 
-    /// Configures the info option.
+    /// Applies the informational semantic visual variant.
     pub fn info(line: usize, column: usize, message: impl Into<SharedString>) -> Self {
         Self::new(line, column, CodeDiagnosticSeverity::Info, message)
     }
 
-    /// Configures the warning option.
+    /// Applies the warning semantic visual variant.
     pub fn warning(line: usize, column: usize, message: impl Into<SharedString>) -> Self {
         Self::new(line, column, CodeDiagnosticSeverity::Warning, message)
     }
 
-    /// Configures the error option.
+    /// Sets the error value used by the component.
     pub fn error(line: usize, column: usize, message: impl Into<SharedString>) -> Self {
         Self::new(line, column, CodeDiagnosticSeverity::Error, message)
     }
@@ -141,7 +141,7 @@ pub struct CodeEditor {
 }
 
 impl CodeEditor {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `CodeEditor` initialized from the supplied value.
     pub fn new(value: impl Into<SharedString>, cx: &mut Context<Self>) -> Self {
         let value = value.into();
         let rows = line_count(value.as_ref()).max(8);
@@ -189,7 +189,7 @@ impl CodeEditor {
         cx.notify();
     }
 
-    /// Configures the language option.
+    /// Sets the language identifier used for code display.
     pub fn language(mut self, language: impl Into<CodeLanguage>) -> Self {
         self.language = language.into();
         self
@@ -204,49 +204,49 @@ impl CodeEditor {
         }
     }
 
-    /// Configures the theme option.
+    /// Applies an explicit theme or theme mode.
     pub fn theme(mut self, theme: CodeTheme) -> Self {
         self.theme = theme;
         self
     }
 
-    /// Configures the line numbers option.
+    /// Sets the line numbers value used by the component.
     pub fn line_numbers(mut self, enabled: bool) -> Self {
         self.line_numbers = enabled;
         self
     }
 
-    /// Configures the tab size option.
+    /// Sets the tab size value used by the component.
     pub fn tab_size(mut self, size: usize) -> Self {
         self.tab_size = size.max(1);
         self
     }
 
-    /// Configures the soft tabs option.
+    /// Sets the soft tabs value used by the component.
     pub fn soft_tabs(mut self, enabled: bool) -> Self {
         self.soft_tabs = enabled;
         self
     }
 
-    /// Configures the rows option.
+    /// Sets the visible row count for editor-like controls.
     pub fn rows(mut self, rows: usize) -> Self {
         self.rows = rows.max(1);
         self
     }
 
-    /// Returns the height token used for component sizing.
+    /// Sets the component height token used during GPUI layout.
     pub fn height(mut self, height: impl Into<Pixels>) -> Self {
         self.height = Some(height.into());
         self
     }
 
-    /// Configures the preview option.
+    /// Sets the preview value used by the component.
     pub fn preview(mut self, preview: bool) -> Self {
         self.preview = preview;
         self
     }
 
-    /// Configures the diagnostics option.
+    /// Sets the diagnostics value used by the component.
     pub fn diagnostics(mut self, diagnostics: impl IntoIterator<Item = CodeDiagnostic>) -> Self {
         self.diagnostics = diagnostics.into_iter().collect();
         self
@@ -262,7 +262,7 @@ impl CodeEditor {
         cx.notify();
     }
 
-    /// Configures the diagnostics provider option.
+    /// Performs the diagnostics provider operation used by this component.
     pub fn diagnostics_provider(
         mut self,
         provider: impl Fn(&str) -> Vec<CodeDiagnostic> + 'static,
@@ -307,7 +307,7 @@ impl CodeEditor {
         cx.notify();
     }
 
-    /// Configures the indent unit option.
+    /// Performs the indent unit operation used by this component.
     pub fn indent_unit(&self) -> String {
         if self.soft_tabs {
             " ".repeat(self.tab_size)
@@ -316,7 +316,7 @@ impl CodeEditor {
         }
     }
 
-    /// Configures the register key bindings option.
+    /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([
             KeyBinding::new("tab", CodeIndent, None),

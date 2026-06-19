@@ -26,7 +26,7 @@ use gpui::{
 use liora_core::{Config, Placement, clear_popover};
 use std::sync::Arc;
 
-/// Public builder and render state for the Liora popconfirm component.
+/// Fluent native GPUI component for rendering Liora popconfirm.
 pub struct Popconfirm {
     trigger: AnyElement,
     title: SharedString,
@@ -41,7 +41,7 @@ pub struct Popconfirm {
 }
 
 impl Popconfirm {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Popconfirm` initialized from the supplied trigger.
     pub fn new(trigger: impl IntoElement) -> Self {
         Self {
             trigger: trigger.into_any_element(),
@@ -57,19 +57,19 @@ impl Popconfirm {
         }
     }
 
-    /// Configures the title option.
+    /// Sets the primary title text displayed by the component.
     pub fn title(mut self, title: impl Into<SharedString>) -> Self {
         self.title = title.into();
         self
     }
 
-    /// Configures the confirm text option.
+    /// Sets the confirm text value used by the component.
     pub fn confirm_text(mut self, text: impl Into<SharedString>) -> Self {
         self.confirm_text = text.into();
         self
     }
 
-    /// Configures the cancel text option.
+    /// Sets the cancel text value used by the component.
     pub fn cancel_text(mut self, text: impl Into<SharedString>) -> Self {
         self.cancel_text = text.into();
         self
@@ -87,25 +87,25 @@ impl Popconfirm {
         self
     }
 
-    /// Configures the placement option.
+    /// Selects the popup, label, or overlay placement.
     pub fn placement(mut self, placement: Placement) -> Self {
         self.placement = placement;
         self
     }
 
-    /// Returns the stable tray command identifier used for menu event routing.
+    /// Assigns a stable element id used by GPUI state, hit testing, and automated interaction tests.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.trigger_id = Some(id.into());
         self
     }
 
-    /// Configures the close on escape option.
+    /// Toggles whether the popup closes when escape occurs.
     pub fn close_on_escape(mut self, close: bool) -> Self {
         self.close_on_escape = close;
         self
     }
 
-    /// Configures the close on click outside option.
+    /// Toggles whether the popup closes when click outside occurs.
     pub fn close_on_click_outside(mut self, close: bool) -> Self {
         self.close_on_click_outside = close;
         self

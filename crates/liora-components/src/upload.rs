@@ -33,40 +33,40 @@ use std::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Enumerates the supported upload status modes and options.
+/// Options that control upload status behavior.
 pub enum UploadStatus {
-    /// Uses the ready variant.
+    /// Marks an upload file as ready but not yet uploading.
     Ready,
-    /// Uses the uploading variant.
+    /// Marks an upload file as currently uploading.
     Uploading,
-    /// Uses the success semantic button variant.
+    /// Uses success semantic color tokens.
     Success,
     /// Reports a error failure.
     Error,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported upload list type modes and options.
+/// Options that control upload list type behavior.
 pub enum UploadListType {
     #[default]
-    /// Uses the text semantic button variant.
+    /// Accepts plain text input.
     Text,
-    /// Uses the picture card variant.
+    /// Renders upload items as picture-card tiles.
     PictureCard,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-/// Public builder and render state for the Liora upload file component.
+/// Fluent native GPUI component for rendering Liora upload file.
 pub struct UploadFile {
-    /// Stable identifier used to connect rendered UI, callbacks, and external state.
+    /// Stable identifier used for GPUI state, callbacks, and automation.
     pub id: SharedString,
-    /// Human-readable name used for display or package metadata.
+    /// Display name shown to users for this item.
     pub name: SharedString,
-    /// Configured visual size for this component or artifact.
+    /// File size in bytes reported by GitHub release metadata.
     pub size: Option<u64>,
-    /// Current status value for this component or operation.
+    /// Current lifecycle status shown by this item.
     pub status: UploadStatus,
-    /// Progress for this data model.
+    /// Upload progress as a normalized percentage.
     pub progress: u8,
     /// Supporting descriptive text shown near the primary label.
     pub description: Option<SharedString>,
@@ -75,17 +75,17 @@ pub struct UploadFile {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-/// Enumerates the supported upload reject reason modes and options.
+/// Options that control upload reject reason behavior.
 pub enum UploadRejectReason {
-    /// Uses the type mismatch variant.
+    /// Uses the `TypeMismatch` option for `UploadRejectReason`.
     TypeMismatch,
-    /// Uses the too large variant.
+    /// Uses the `TooLarge` option for `UploadRejectReason`.
     TooLarge,
-    /// Uses the metadata unavailable variant.
+    /// Uses the `MetadataUnavailable` option for `UploadRejectReason`.
     MetadataUnavailable,
 }
 
-/// Public builder and render state for the Liora upload component.
+/// Fluent native GPUI component for rendering Liora upload.
 pub struct Upload {
     id: SharedString,
     files: Vec<UploadFile>,
@@ -107,7 +107,7 @@ pub struct Upload {
 }
 
 impl UploadFile {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `UploadFile` initialized from the supplied id, and name.
     pub fn new(id: impl Into<SharedString>, name: impl Into<SharedString>) -> Self {
         Self {
             id: id.into(),
@@ -126,25 +126,25 @@ impl UploadFile {
         self
     }
 
-    /// Configures the status option.
+    /// Sets the status value used by the component.
     pub fn status(mut self, status: UploadStatus) -> Self {
         self.status = status;
         self
     }
 
-    /// Configures the progress option.
+    /// Sets the progress value used by the component.
     pub fn progress(mut self, progress: u8) -> Self {
         self.progress = progress.min(100);
         self
     }
 
-    /// Configures the description option.
+    /// Sets secondary descriptive text shown below the primary label.
     pub fn description(mut self, description: impl Into<SharedString>) -> Self {
         self.description = Some(description.into());
         self
     }
 
-    /// Configures the path option.
+    /// Uses a local path as the component source.
     pub fn path(mut self, path: impl Into<PathBuf>) -> Self {
         self.path = Some(path.into());
         self
@@ -152,7 +152,7 @@ impl UploadFile {
 }
 
 impl Upload {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Upload` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self {
             id: liora_core::unique_id("upload"),
@@ -174,13 +174,13 @@ impl Upload {
         }
     }
 
-    /// Returns the stable tray command identifier used for menu event routing.
+    /// Assigns a stable element id used by GPUI state, hit testing, and automated interaction tests.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
-    /// Configures the files option.
+    /// Sets the files value used by the component.
     pub fn files(mut self, files: impl IntoIterator<Item = UploadFile>) -> Self {
         self.files = files.into_iter().collect();
         self
@@ -192,66 +192,66 @@ impl Upload {
         self
     }
 
-    /// Configures the list type option.
+    /// Sets the list type value used by the component.
     pub fn list_type(mut self, list_type: UploadListType) -> Self {
         self.list_type = list_type;
         self
     }
 
-    /// Configures the picture card option.
+    /// Sets the picture card value used by the component.
     pub fn picture_card(self) -> Self {
         self.list_type(UploadListType::PictureCard)
     }
 
-    /// Configures the drag option.
+    /// Sets the drag value used by the component.
     pub fn drag(mut self, drag: bool) -> Self {
         self.drag = drag;
         self
     }
 
-    /// Configures the disabled option.
+    /// Toggles the disabled state and suppresses user interaction when enabled.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
     }
 
-    /// Configures the multiple option.
+    /// Enables multi-selection behavior.
     pub fn multiple(mut self, multiple: bool) -> Self {
         self.multiple = multiple;
         self
     }
 
-    /// Configures the limit option.
+    /// Sets the limit value used by the component.
     pub fn limit(mut self, limit: usize) -> Self {
         self.limit = Some(limit);
         self
     }
 
-    /// Configures the accept option.
+    /// Sets the accept value used by the component.
     pub fn accept(mut self, accept: impl Into<SharedString>) -> Self {
         self.accept = Some(accept.into());
         self
     }
 
-    /// Configures the max size option.
+    /// Sets the maximum size limit.
     pub fn max_size(mut self, bytes: u64) -> Self {
         self.max_size = Some(bytes);
         self
     }
 
-    /// Configures the button text option.
+    /// Sets the button text value used by the component.
     pub fn button_text(mut self, text: impl Into<SharedString>) -> Self {
         self.button_text = text.into();
         self
     }
 
-    /// Configures the tip option.
+    /// Sets the tip value used by the component.
     pub fn tip(mut self, tip: impl Into<SharedString>) -> Self {
         self.tip = Some(tip.into());
         self
     }
 
-    /// Returns the width token used for component sizing.
+    /// Sets the component width token used during GPUI layout.
     pub fn width(mut self, width: impl Into<Pixels>) -> Self {
         self.width = Some(width.into());
         self
@@ -283,7 +283,7 @@ impl Upload {
         cx.notify();
     }
 
-    /// Configures the push file option.
+    /// Performs the push file operation used by this component.
     pub fn push_file(&mut self, file: UploadFile, cx: &mut Context<Self>) {
         if !Self::can_accept_more_len(self.files.len(), self.limit, self.disabled) {
             return;
@@ -292,12 +292,12 @@ impl Upload {
         cx.notify();
     }
 
-    /// Configures the file count option.
+    /// Performs the file count operation used by this component.
     pub fn file_count(&self) -> usize {
         self.files.len()
     }
 
-    /// Configures the files ref option.
+    /// Performs the files ref operation used by this component.
     pub fn files_ref(&self) -> &[UploadFile] {
         &self.files
     }
@@ -315,7 +315,7 @@ impl Upload {
         !disabled && !limit.is_some_and(|limit| current_len >= limit)
     }
 
-    /// Configures the matches accept name option.
+    /// Returns whether matches accept name is currently enabled or available.
     pub fn matches_accept_name(name: &str, accept: Option<&str>) -> bool {
         let Some(accept) = accept else {
             return true;
@@ -350,7 +350,7 @@ impl Upload {
             })
     }
 
-    /// Configures the validate file name size option.
+    /// Performs the validate file name size operation used by this component.
     pub fn validate_file_name_size(
         name: &str,
         size: Option<u64>,

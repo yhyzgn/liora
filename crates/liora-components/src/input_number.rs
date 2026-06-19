@@ -28,15 +28,15 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Enumerates the supported input number controls position modes and options.
+/// Options that control input number controls position behavior.
 pub enum InputNumberControlsPosition {
     /// Lays out content in the horizontal direction.
     Horizontal,
-    /// Uses the right variant.
+    /// Places the overlay to the right of the anchor.
     Right,
 }
 
-/// Public builder and render state for the Liora input number component.
+/// Fluent native GPUI component for rendering Liora input number.
 pub struct InputNumber {
     value: f64,
     min: f64,
@@ -51,7 +51,7 @@ pub struct InputNumber {
 }
 
 impl InputNumber {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `InputNumber` initialized from the supplied value.
     pub fn new(value: f64, cx: &mut Context<Self>) -> Self {
         let input = cx.new(|cx| {
             Input::new(format!("{:.*}", 0, value), cx).filter(|text| {
@@ -91,27 +91,27 @@ impl InputNumber {
         }
     }
 
-    /// Configures the min option.
+    /// Sets the lower numeric boundary.
     pub fn min(mut self, min: f64) -> Self {
         self.min = min;
         self
     }
-    /// Configures the max option.
+    /// Sets the upper numeric boundary.
     pub fn max(mut self, max: f64) -> Self {
         self.max = max;
         self
     }
-    /// Configures the step option.
+    /// Sets the increment used by numeric or time controls.
     pub fn step(mut self, step: f64) -> Self {
         self.step = step;
         self
     }
-    /// Configures the precision option.
+    /// Sets the precision value used by the component.
     pub fn precision(mut self, p: usize) -> Self {
         self.precision = p;
         self
     }
-    /// Configures the disabled option.
+    /// Toggles the disabled state and suppresses user interaction when enabled.
     pub fn disabled(mut self, d: bool, cx: &mut Context<Self>) -> Self {
         self.disabled = d;
         self.input.update(cx, |input, cx| {
@@ -119,7 +119,7 @@ impl InputNumber {
         });
         self
     }
-    /// Configures the controls position option.
+    /// Sets the controls position value used by the component.
     pub fn controls_position(mut self, pos: InputNumberControlsPosition) -> Self {
         self.controls_position = pos;
         self

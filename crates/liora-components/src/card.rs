@@ -25,7 +25,7 @@ use gpui::{
 };
 use liora_core::{Config, stable_unique_id};
 
-/// Public builder and render state for the Liora card component.
+/// Fluent native GPUI component for rendering Liora card.
 pub struct Card {
     title: Option<SharedString>,
     header: Option<AnyElement>,
@@ -38,7 +38,7 @@ pub struct Card {
 }
 
 impl Card {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Card` initialized from the supplied body.
     pub fn new(body: impl IntoElement) -> Self {
         Self {
             title: None,
@@ -52,37 +52,37 @@ impl Card {
         }
     }
 
-    /// Configures the title option.
+    /// Sets the primary title text displayed by the component.
     pub fn title(mut self, title: impl Into<SharedString>) -> Self {
         self.title = Some(title.into());
         self
     }
 
-    /// Configures the header option.
+    /// Sets the header value used by the component.
     pub fn header(mut self, header: impl IntoElement) -> Self {
         self.header = Some(header.into_any_element());
         self
     }
 
-    /// Configures the footer option.
+    /// Sets the footer value used by the component.
     pub fn footer(mut self, footer: impl IntoElement) -> Self {
         self.footer = Some(footer.into_any_element());
         self
     }
 
-    /// Configures the hoverable option.
+    /// Enables hover styling for the component frame.
     pub fn hoverable(mut self) -> Self {
         self.hoverable = true;
         self
     }
 
-    /// Configures the no shadow option.
+    /// Disables the default card shadow.
     pub fn no_shadow(mut self) -> Self {
         self.shadow = false;
         self
     }
 
-    /// Returns the width token used for component sizing.
+    /// Sets the component width token used during GPUI layout.
     pub fn width(mut self, width: impl Into<Pixels>) -> Self {
         self.width = Some(width.into());
         self
@@ -98,7 +98,7 @@ impl Card {
         self.width(px(400.0))
     }
 
-    /// Configures the no shrink option.
+    /// Prevents the component from shrinking in flex layouts.
     pub fn no_shrink(mut self) -> Self {
         self.shrink = false;
         self

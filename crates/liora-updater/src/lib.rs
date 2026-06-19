@@ -26,11 +26,11 @@ use std::{
 };
 use thiserror::Error;
 
-/// Stable default owner constant used by the liora updater API.
+/// Default GitHub owner queried by official Liora update checks.
 pub const DEFAULT_OWNER: &str = "yhyzgn";
-/// Stable default repo constant used by the liora updater API.
+/// Default GitHub repository queried by official Liora update checks.
 pub const DEFAULT_REPO: &str = "liora";
-/// Stable default api base constant used by the liora updater API.
+/// Default GitHub REST API base URL used when no custom endpoint is configured.
 pub const DEFAULT_API_BASE: &str = "https://api.github.com";
 /// Stable checksums asset constant used by the liora updater API.
 pub const CHECKSUMS_ASSET: &str = "SHA256SUMS.txt";
@@ -42,9 +42,9 @@ const DEFAULT_USER_AGENT: &str = concat!("liora-updater/", env!("CARGO_PKG_VERSI
 /// directly instead of this preset enum.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum LioraApp {
-    /// Matches the docs update case.
+    /// Targets the official Liora Docs application release assets.
     Docs,
-    /// Matches the gallery update case.
+    /// Targets the official Liora Gallery application release assets.
     Gallery,
 }
 
@@ -67,11 +67,11 @@ impl From<LioraApp> for String {
 /// Common desktop platforms encoded in release asset names.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Platform {
-    /// Matches the linux x64 update case.
+    /// Targets Linux x86_64 release assets.
     LinuxX64,
-    /// Matches the macos arm64 update case.
+    /// Targets macOS Apple Silicon release assets.
     MacosArm64,
-    /// Matches the windows x64 update case.
+    /// Targets Windows x86_64 release assets.
     WindowsX64,
 }
 
@@ -119,11 +119,11 @@ pub enum AssetKind {
 /// A GitHub release asset relevant to updates.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReleaseAsset {
-    /// Human-readable name used for display or package metadata.
+    /// Display name shown to users for this item.
     pub name: String,
     /// Direct GitHub asset download URL.
     pub download_url: String,
-    /// Configured visual size for this component or artifact.
+    /// File size in bytes reported by GitHub release metadata.
     pub size: u64,
 }
 
@@ -132,7 +132,7 @@ pub struct ReleaseAsset {
 pub struct Release {
     /// Git tag that identifies the release.
     pub tag: String,
-    /// Human-readable name used for display or package metadata.
+    /// Display name shown to users for this item.
     pub name: Option<String>,
     /// Whether the GitHub release is marked as a prerelease.
     pub prerelease: bool,
@@ -351,7 +351,7 @@ pub struct UpdateRequest {
     pub current_tag: String,
     /// Whether prerelease GitHub releases are eligible update candidates.
     pub include_prerelease: bool,
-    /// Target platform for the artifact or update operation.
+    /// Platform targeted by this package, artifact, or update plan.
     pub platform: Platform,
     /// Asset-selection strategy used to choose the downloadable artifact.
     pub selector: AssetSelector,
@@ -360,7 +360,7 @@ pub struct UpdateRequest {
 }
 
 impl UpdateRequest {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `UpdateRequest` with default theme-driven styling and no optional callbacks attached.
     pub fn new(
         app_name: impl Into<String>,
         current_tag: impl Into<String>,
@@ -416,7 +416,7 @@ impl PreparedUpdate {
 pub struct InstallPlan {
     /// Application name prefix used when selecting release assets.
     pub app_name: String,
-    /// Target platform for the artifact or update operation.
+    /// Platform targeted by this package, artifact, or update plan.
     pub platform: Platform,
     /// Class of artifact selected for installation.
     pub asset_kind: AssetKind,
@@ -448,7 +448,7 @@ impl InstallPlan {
 #[derive(Debug)]
 /// Exit status returned after executing an installer-style update action.
 pub struct InstallOutcome {
-    /// Current status value for this component or operation.
+    /// Current lifecycle status shown by this item.
     pub status: ExitStatus,
 }
 
@@ -512,7 +512,7 @@ impl Default for Updater {
 }
 
 impl Updater {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Updater` initialized from the supplied owner, and repo.
     pub fn new(owner: impl Into<String>, repo: impl Into<String>) -> Self {
         Self {
             owner: owner.into(),
@@ -524,19 +524,19 @@ impl Updater {
         }
     }
 
-    /// Creates a value configured with the supplied api base.
+    /// Sets the api base value used by the component.
     pub fn with_api_base(mut self, api_base: impl Into<String>) -> Self {
         self.api_base = api_base.into();
         self
     }
 
-    /// Creates a value configured with the supplied user agent.
+    /// Sets the user agent value used by the component.
     pub fn with_user_agent(mut self, user_agent: impl Into<String>) -> Self {
         self.user_agent = user_agent.into();
         self
     }
 
-    /// Creates a value configured with the supplied timeout.
+    /// Sets the timeout value used by the component.
     pub fn with_timeout(mut self, timeout: Duration) -> Self {
         self.timeout = timeout;
         self

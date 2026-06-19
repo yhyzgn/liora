@@ -36,7 +36,7 @@ pub const LINUX_RPM_RUNTIME_DEPENDENCIES: &[(&str, &str)] = &[
 pub struct CargoPackagerPlan {
     /// Application metadata associated with this package artifact.
     pub app: AppMetadata,
-    /// Target platform for the artifact or update operation.
+    /// Platform targeted by this package, artifact, or update plan.
     pub platform: Platform,
     /// Package formats that should be generated for this plan.
     pub formats: Vec<PackageFormat>,

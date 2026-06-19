@@ -55,7 +55,7 @@ pub struct HorizontalList {
 }
 
 impl HorizontalList {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `HorizontalList` initialized from the supplied item count, and render item.
     pub fn new(item_count: usize, render_item: impl Fn(usize) -> AnyElement + 'static) -> Self {
         Self {
             item_count,
@@ -151,24 +151,24 @@ impl HorizontalList {
         self.height = height;
     }
 
-    /// Configures the order option.
+    /// Performs the order operation used by this component.
     pub fn order(&self) -> &[usize] {
         &self.order
     }
 
-    /// Configures the draggable option.
+    /// Sets the draggable value used by the component.
     pub fn draggable(mut self, draggable: bool) -> Self {
         self.set_draggable(draggable);
         self
     }
 
-    /// Configures the disabled option.
+    /// Toggles the disabled state and suppresses user interaction when enabled.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.set_disabled(disabled);
         self
     }
 
-    /// Configures the divider option.
+    /// Sets the divider value used by the component.
     pub fn divider(mut self, divider: impl Fn(usize) -> AnyElement + 'static) -> Self {
         self.set_divider(divider);
         self
@@ -183,19 +183,19 @@ impl HorizontalList {
         self
     }
 
-    /// Configures the item gap option.
+    /// Sets the item gap value used by the component.
     pub fn item_gap(mut self, gap: impl Into<Pixels>) -> Self {
         self.set_item_gap(gap);
         self
     }
 
-    /// Configures the padding option.
+    /// Sets inner padding on all sides of the component.
     pub fn padding(mut self, padding: impl Into<Pixels>) -> Self {
         self.set_padding(padding);
         self
     }
 
-    /// Returns the height token used for component sizing.
+    /// Sets the component height token used during GPUI layout.
     pub fn height(mut self, height: impl Into<Pixels>) -> Self {
         self.set_height(Some(height.into()));
         self

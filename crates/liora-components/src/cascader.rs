@@ -40,23 +40,23 @@ actions!(
 );
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-/// Public builder and render state for the Liora cascader option component.
+/// Fluent native GPUI component for rendering Liora cascader option.
 pub struct CascaderOption {
-    /// Current value represented by this option or component state.
+    /// Machine-readable value represented by this item.
     pub value: SharedString,
-    /// Human-readable label shown in the component UI.
+    /// User-facing label rendered for this item.
     pub label: SharedString,
     /// Nested child items rendered beneath this item.
     pub children: Vec<CascaderOption>,
     /// Whether user interaction is disabled for this item.
     pub disabled: bool,
-    /// Loading for this data model.
+    /// Whether this cascader option is currently loading lazy children.
     pub loading: bool,
-    /// Leaf for this data model.
+    /// Whether this cascader option is known to have no children.
     pub leaf: bool,
 }
 
-/// Public builder and render state for the Liora cascader component.
+/// Fluent native GPUI component for rendering Liora cascader.
 pub struct Cascader {
     id: SharedString,
     options: Vec<CascaderOption>,
@@ -84,7 +84,7 @@ pub struct Cascader {
 }
 
 impl CascaderOption {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `CascaderOption` initialized from the supplied value, and label.
     pub fn new(value: impl Into<SharedString>, label: impl Into<SharedString>) -> Self {
         Self {
             value: value.into(),
@@ -96,31 +96,31 @@ impl CascaderOption {
         }
     }
 
-    /// Configures the child option.
+    /// Adds a child element to the component body.
     pub fn child(mut self, child: CascaderOption) -> Self {
         self.children.push(child);
         self
     }
 
-    /// Configures the children option.
+    /// Replaces or appends child elements rendered by the component.
     pub fn children(mut self, children: impl IntoIterator<Item = CascaderOption>) -> Self {
         self.children.extend(children);
         self
     }
 
-    /// Configures the disabled option.
+    /// Toggles the disabled state and suppresses user interaction when enabled.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
     }
 
-    /// Configures the loading option.
+    /// Toggles the loading state and associated spinner treatment.
     pub fn loading(mut self, loading: bool) -> Self {
         self.loading = loading;
         self
     }
 
-    /// Configures the leaf option.
+    /// Sets the leaf value used by the component.
     pub fn leaf(mut self, leaf: bool) -> Self {
         self.leaf = leaf;
         self
@@ -132,7 +132,7 @@ impl CascaderOption {
 }
 
 impl Cascader {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `Cascader` that renders the supplied options collection.
     pub fn new(options: Vec<CascaderOption>, cx: &mut Context<Self>) -> Self {
         Self {
             id: liora_core::unique_id("cascader"),
@@ -157,13 +157,13 @@ impl Cascader {
         }
     }
 
-    /// Returns the stable tray command identifier used for menu event routing.
+    /// Assigns a stable element id used by GPUI state, hit testing, and automated interaction tests.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
-    /// Configures the popup item id option.
+    /// Performs the popup item id operation used by this component.
     pub fn popup_item_id(prefix: impl AsRef<str>, path: &[SharedString]) -> SharedString {
         let mut id = prefix.as_ref().to_string();
         id.push_str("-item");
@@ -184,7 +184,7 @@ impl Cascader {
         self
     }
 
-    /// Configures the placeholder option.
+    /// Uses the supplied placeholder text when the value is empty.
     pub fn placeholder(mut self, placeholder: impl Into<SharedString>) -> Self {
         self.placeholder = placeholder.into();
         self
@@ -196,31 +196,31 @@ impl Cascader {
         self
     }
 
-    /// Configures the disabled option.
+    /// Toggles the disabled state and suppresses user interaction when enabled.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
     }
 
-    /// Configures the clearable option.
+    /// Toggles whether the component renders a clear affordance.
     pub fn clearable(mut self, clearable: bool) -> Self {
         self.clearable = clearable;
         self
     }
 
-    /// Configures the filterable option.
+    /// Enables built-in filtering behavior.
     pub fn filterable(mut self, filterable: bool) -> Self {
         self.filterable = filterable;
         self
     }
 
-    /// Configures the search query option.
+    /// Sets the search query value used by the component.
     pub fn search_query(mut self, query: impl Into<SharedString>) -> Self {
         self.search_query = query.into();
         self
     }
 
-    /// Returns the width token used for component sizing.
+    /// Sets the component width token used during GPUI layout.
     pub fn width(mut self, width: impl Into<Pixels>) -> Self {
         self.width = Some(width.into());
         self
@@ -231,25 +231,25 @@ impl Cascader {
         self.width(px(360.0))
     }
 
-    /// Configures the lazy option.
+    /// Enables lazy loading for child data.
     pub fn lazy(mut self, lazy: bool) -> Self {
         self.lazy = lazy;
         self
     }
 
-    /// Configures the close on escape option.
+    /// Toggles whether the popup closes when escape occurs.
     pub fn close_on_escape(mut self, close: bool) -> Self {
         self.close_on_escape = close;
         self
     }
 
-    /// Configures the close on click outside option.
+    /// Toggles whether the popup closes when click outside occurs.
     pub fn close_on_click_outside(mut self, close: bool) -> Self {
         self.close_on_click_outside = close;
         self
     }
 
-    /// Configures the register key bindings option.
+    /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([KeyBinding::new("escape", CascaderClose, None)]);
     }
@@ -381,7 +381,7 @@ impl Cascader {
             && (option.leaf || (!lazy && option.children.is_empty()))
     }
 
-    /// Configures the should lazy load option option.
+    /// Returns whether the cascader option should request lazy children.
     pub fn should_lazy_load_option(option: &CascaderOption, lazy: bool) -> bool {
         lazy && !option.disabled && !option.loading && !option.leaf && option.children.is_empty()
     }

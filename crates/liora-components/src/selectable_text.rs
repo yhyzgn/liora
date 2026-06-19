@@ -45,11 +45,11 @@ actions!(
 );
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Enumerates the supported selectable text wrap modes and options.
+/// Options that control selectable text wrap behavior.
 pub enum SelectableTextWrap {
-    /// Uses the normal variant.
+    /// Allows selectable text to wrap normally.
     Normal,
-    /// Uses the no wrap variant.
+    /// Keeps selectable text on one line.
     NoWrap,
 }
 
@@ -63,30 +63,30 @@ impl SelectableTextWrap {
 }
 
 #[derive(Clone)]
-/// Public builder and render state for the Liora selectable text options component.
+/// Configuration options for selectable text options rendering and interaction behavior.
 pub struct SelectableTextOptions {
-    /// Stable identifier used to connect rendered UI, callbacks, and external state.
+    /// Stable identifier used for GPUI state, callbacks, and automation.
     pub id: ElementId,
     /// Foreground text color used in the normal state.
     pub text: SharedString,
-    /// Runs for this data model.
+    /// Text runs with per-range styling metadata.
     pub runs: Vec<TextRun>,
-    /// Font size for this data model.
+    /// Font-size token group used throughout Liora components.
     pub font_size: Pixels,
-    /// Line height for this data model.
+    /// Line height used for wrapped text layout.
     pub line_height: Pixels,
-    /// Text color for this data model.
+    /// Foreground text color for the normal state.
     pub text_color: gpui::Hsla,
-    /// Wrap for this data model.
+    /// Wrapping policy applied to selectable text.
     pub wrap: SelectableTextWrap,
-    /// Key context for this data model.
+    /// Keyboard context name used for GPUI key bindings.
     pub key_context: &'static str,
-    /// Fill width for this data model.
+    /// Whether text should occupy the full available width.
     pub fill_width: bool,
 }
 
 impl SelectableTextOptions {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `SelectableTextOptions` initialized from the supplied id, and text.
     pub fn new(id: impl Into<ElementId>, text: impl Into<SharedString>) -> Self {
         Self {
             id: id.into(),
@@ -102,11 +102,11 @@ impl SelectableTextOptions {
     }
 }
 
-/// Public builder and render state for the Liora selectable text component.
+/// Fluent native GPUI component for rendering Liora selectable text.
 pub struct SelectableText;
 
 impl SelectableText {
-    /// Configures the register key bindings option.
+    /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([
             gpui::KeyBinding::new("cmd-a", SelectableTextSelectAll, Some("SelectableText")),
@@ -116,7 +116,7 @@ impl SelectableText {
         ]);
     }
 
-    /// Configures the view option.
+    /// Performs the view operation used by this component.
     pub fn view(
         options: SelectableTextOptions,
         window: &mut Window,

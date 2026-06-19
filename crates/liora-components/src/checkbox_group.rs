@@ -39,26 +39,26 @@ fn rgba(r: u8, g: u8, b: u8, a: f32) -> Hsla {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported checkbox group layout modes and options.
+/// Options that control checkbox group layout behavior.
 pub enum CheckboxGroupLayout {
     #[default]
     /// Lays out content in the vertical direction.
     Vertical,
     /// Lays out content in the horizontal direction.
     Horizontal,
-    /// Uses the button variant.
+    /// Uses button rendering for `CheckboxGroupLayout`.
     Button,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Enumerates the supported checkbox group size modes and options.
+/// Options that control checkbox group size behavior.
 pub enum CheckboxGroupSize {
-    /// Uses the large component size preset.
+    /// Uses expanded sizing metrics.
     Large,
     #[default]
-    /// Uses the default semantic button variant.
+    /// Uses the default neutral treatment.
     Default,
-    /// Uses the small component size preset.
+    /// Uses compact sizing metrics.
     Small,
 }
 
@@ -89,129 +89,129 @@ impl CheckboxGroupSize {
 }
 
 #[derive(Clone, Debug, Default)]
-/// Public builder and render state for the Liora checkbox option style component.
+/// Fluent native GPUI component for rendering Liora checkbox option style.
 pub struct CheckboxOptionStyle {
     /// Base background color used in the normal state.
     pub bg: Option<Hsla>,
-    /// Selected bg for this data model.
+    /// Background color for the selected state.
     pub selected_bg: Option<Hsla>,
     /// Background color used while the control is hovered.
     pub hover_bg: Option<Hsla>,
-    /// Text color for this data model.
+    /// Foreground text color for the normal state.
     pub text_color: Option<Hsla>,
-    /// Selected text color for this data model.
+    /// Foreground text color for the selected state.
     pub selected_text_color: Option<Hsla>,
-    /// Border color for this data model.
+    /// Border color for the normal state.
     pub border_color: Option<Hsla>,
-    /// Selected border color for this data model.
+    /// Border color for the selected state.
     pub selected_border_color: Option<Hsla>,
-    /// Radius for this data model.
+    /// Corner radius applied to the rendered control.
     pub radius: Option<Pixels>,
-    /// Padding x for this data model.
+    /// Horizontal padding applied inside the control.
     pub padding_x: Option<Pixels>,
-    /// Padding y for this data model.
+    /// Vertical padding applied inside the control.
     pub padding_y: Option<Pixels>,
-    /// Gap for this data model.
+    /// Gap between adjacent child elements.
     pub gap: Option<Pixels>,
-    /// Show indicator for this data model.
+    /// Whether the selection indicator is rendered.
     pub show_indicator: Option<bool>,
-    /// Show selected icon for this data model.
+    /// Whether a selected-state icon is rendered.
     pub show_selected_icon: Option<bool>,
 }
 
 impl CheckboxOptionStyle {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `CheckboxOptionStyle` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Configures the bg option.
+    /// Sets the bg used by the rendered component.
     pub fn bg(mut self, color: Hsla) -> Self {
         self.bg = Some(color);
         self
     }
 
-    /// Configures the selected bg option.
+    /// Sets the background color used by selected options.
     pub fn selected_bg(mut self, color: Hsla) -> Self {
         self.selected_bg = Some(color);
         self
     }
 
-    /// Configures the hover bg option.
+    /// Sets the background color shown while an option is hovered.
     pub fn hover_bg(mut self, color: Hsla) -> Self {
         self.hover_bg = Some(color);
         self
     }
 
-    /// Configures the text color option.
+    /// Applies the foreground text color.
     pub fn text_color(mut self, color: Hsla) -> Self {
         self.text_color = Some(color);
         self
     }
 
-    /// Configures the selected text color option.
+    /// Sets the foreground color used by selected options.
     pub fn selected_text_color(mut self, color: Hsla) -> Self {
         self.selected_text_color = Some(color);
         self
     }
 
-    /// Configures the border color option.
+    /// Sets the default border color.
     pub fn border_color(mut self, color: Hsla) -> Self {
         self.border_color = Some(color);
         self
     }
 
-    /// Configures the selected border color option.
+    /// Sets the selected-state border color.
     pub fn selected_border_color(mut self, color: Hsla) -> Self {
         self.selected_border_color = Some(color);
         self
     }
 
-    /// Configures the radius option.
+    /// Sets the corner radius used by the rendered frame.
     pub fn radius(mut self, radius: impl Into<Pixels>) -> Self {
         self.radius = Some(radius.into());
         self
     }
 
-    /// Configures the radius px option.
+    /// Sets radius using raw pixel units.
     pub fn radius_px(self, radius: f32) -> Self {
         self.radius(px(radius))
     }
 
-    /// Configures the radius units option.
+    /// Sets radius using design-system unit values.
     pub fn radius_units(self, radius: f32) -> Self {
         self.radius_px(radius)
     }
 
-    /// Configures the padding option.
+    /// Sets inner padding on all sides of the component.
     pub fn padding(mut self, x: impl Into<Pixels>, y: impl Into<Pixels>) -> Self {
         self.padding_x = Some(x.into());
         self.padding_y = Some(y.into());
         self
     }
 
-    /// Configures the padding px option.
+    /// Sets padding using raw pixel units.
     pub fn padding_px(self, x: f32, y: f32) -> Self {
         self.padding(px(x), px(y))
     }
 
-    /// Configures the padding units option.
+    /// Sets padding using design-system unit values.
     pub fn padding_units(self, x: f32, y: f32) -> Self {
         self.padding_px(x, y)
     }
 
-    /// Configures the gap option.
+    /// Sets the spacing between child elements.
     pub fn gap(mut self, gap: impl Into<Pixels>) -> Self {
         self.gap = Some(gap.into());
         self
     }
 
-    /// Configures the gap px option.
+    /// Sets gap using raw pixel units.
     pub fn gap_px(self, gap: f32) -> Self {
         self.gap(px(gap))
     }
 
-    /// Configures the gap units option.
+    /// Sets gap using design-system unit values.
     pub fn gap_units(self, gap: f32) -> Self {
         self.gap_px(gap)
     }
@@ -229,7 +229,7 @@ impl CheckboxOptionStyle {
     }
 }
 
-/// Public builder and render state for the Liora checkbox group component.
+/// Fluent native GPUI component for rendering Liora checkbox group.
 pub struct CheckboxGroup {
     selected: Vec<usize>,
     disabled: bool,
@@ -245,11 +245,11 @@ pub struct CheckboxGroup {
 }
 
 #[derive(Clone, Debug)]
-/// Public builder and render state for the Liora checkbox option render context component.
+/// Fluent native GPUI component for rendering Liora checkbox option render context.
 pub struct CheckboxOptionRenderContext {
-    /// Index for this data model.
+    /// Stable item index used by render callbacks and keyboard navigation.
     pub index: usize,
-    /// Human-readable label shown in the component UI.
+    /// User-facing label rendered for this item.
     pub label: SharedString,
     /// Whether the item is currently selected.
     pub selected: bool,
@@ -258,7 +258,7 @@ pub struct CheckboxOptionRenderContext {
 }
 
 impl CheckboxGroup {
-    /// Creates a new value with the required baseline configuration.
+    /// Creates `CheckboxGroup` with default theme-driven styling and no optional callbacks attached.
     pub fn new(
         options: Vec<impl Into<SharedString>>,
         selected: Vec<usize>,
@@ -298,7 +298,7 @@ impl CheckboxGroup {
         }
     }
 
-    /// Configures the disabled option.
+    /// Toggles the disabled state and suppresses user interaction when enabled.
     pub fn disabled(mut self, d: bool, cx: &mut Context<Self>) -> Self {
         self.disabled = d;
         for cb in &self.checkboxes {
@@ -315,25 +315,25 @@ impl CheckboxGroup {
         self
     }
 
-    /// Configures the layout option.
+    /// Selects the layout used by the component.
     pub fn layout(mut self, layout: CheckboxGroupLayout) -> Self {
         self.layout = layout;
         self
     }
 
-    /// Configures the vertical option.
+    /// Uses vertical orientation or gradient direction.
     pub fn vertical(mut self) -> Self {
         self.layout = CheckboxGroupLayout::Vertical;
         self
     }
 
-    /// Configures the horizontal option.
+    /// Uses horizontal orientation or gradient direction.
     pub fn horizontal(mut self) -> Self {
         self.layout = CheckboxGroupLayout::Horizontal;
         self
     }
 
-    /// Configures the button option.
+    /// Adds the supplied button to the component.
     pub fn button(mut self) -> Self {
         self.layout = CheckboxGroupLayout::Button;
         self
@@ -345,36 +345,36 @@ impl CheckboxGroup {
         self
     }
 
-    /// Configures the large option.
+    /// Uses the large size preset.
     pub fn large(mut self) -> Self {
         self.size = CheckboxGroupSize::Large;
         self
     }
 
-    /// Configures the small option.
+    /// Uses the compact size preset.
     pub fn small(mut self) -> Self {
         self.size = CheckboxGroupSize::Small;
         self
     }
 
-    /// Configures the stretch option.
+    /// Lets items stretch to fill the available cross-axis space.
     pub fn stretch(mut self, stretch: bool) -> Self {
         self.stretch = stretch;
         self
     }
 
-    /// Configures the block option.
+    /// Makes the component occupy the available inline width.
     pub fn block(self, block: bool) -> Self {
         self.stretch(block)
     }
 
-    /// Configures the option style option.
+    /// Applies a reusable style preset to rendered options.
     pub fn option_style(mut self, style: CheckboxOptionStyle) -> Self {
         self.option_style = Some(style);
         self
     }
 
-    /// Configures the option renderer option.
+    /// Performs the option renderer operation used by this component.
     pub fn option_renderer(
         mut self,
         renderer: impl Fn(CheckboxOptionRenderContext) -> AnyElement + 'static,
@@ -383,7 +383,7 @@ impl CheckboxGroup {
         self
     }
 
-    /// Configures the card options option.
+    /// Switches option rendering to card-style controls.
     pub fn card_options(mut self) -> Self {
         self.option_style = Some(
             CheckboxOptionStyle::new()
@@ -398,7 +398,7 @@ impl CheckboxGroup {
         self.stretch
     }
 
-    /// Configures the layout kind option.
+    /// Performs the layout kind operation used by this component.
     pub fn layout_kind(&self) -> CheckboxGroupLayout {
         self.layout
     }
@@ -408,7 +408,7 @@ impl CheckboxGroup {
         self.size
     }
 
-    /// Configures the register key bindings option.
+    /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(_cx: &mut App) {}
 
     fn update_selection(&mut self, idx: usize, checked: bool, cx: &mut Context<Self>) {
