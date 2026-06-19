@@ -29,21 +29,27 @@ use liora_core::Config;
 use liora_icons_lucide::IconName;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported window frame modes and options.
 pub enum WindowFrameMode {
     #[default]
+    /// Uses the system theme mode.
     System,
+    /// Emits the custom tray command.
     Custom,
 }
 
 impl WindowFrameMode {
+    /// Returns whether custom is currently true for this value.
     pub fn is_custom(self) -> bool {
         matches!(self, Self::Custom)
     }
 
+    /// Creates this value from custom.
     pub fn from_custom(custom: bool) -> Self {
         if custom { Self::Custom } else { Self::System }
     }
 
+    /// Returns the stable user-facing label for this value.
     pub fn label(self) -> &'static str {
         match self {
             Self::System => "System frame",
@@ -85,6 +91,7 @@ pub fn frame_mode_switch_row(switch: impl IntoElement, mode: WindowFrameMode) ->
         .child(Text::new(mode.label()).size(px(12.0)))
 }
 
+/// Public builder and render state for the Liora app window frame component.
 pub struct AppWindowFrame {
     title: SharedString,
     subtitle: Option<SharedString>,
@@ -95,6 +102,7 @@ pub struct AppWindowFrame {
 }
 
 impl AppWindowFrame {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(title: impl Into<SharedString>, content: impl IntoElement) -> Self {
         Self {
             title: title.into(),
@@ -106,27 +114,32 @@ impl AppWindowFrame {
         }
     }
 
+    /// Configures the subtitle option.
     pub fn subtitle(mut self, subtitle: impl Into<SharedString>) -> Self {
         self.subtitle = Some(subtitle.into());
         self
     }
 
+    /// Configures the mode option.
     pub fn mode(mut self, mode: WindowFrameMode) -> Self {
         self.mode = mode;
         self
     }
 
+    /// Creates a tray menu action item specification.
     pub fn action(mut self, action: impl IntoElement) -> Self {
         self.actions.push(action.into_any_element());
         self
     }
 
+    /// Configures the actions option.
     pub fn actions(mut self, actions: impl IntoIterator<Item = impl IntoElement>) -> Self {
         self.actions
             .extend(actions.into_iter().map(IntoElement::into_any_element));
         self
     }
 
+    /// Registers a callback that runs when close occurs.
     pub fn on_close(mut self, close: impl Fn(&mut Window, &mut App) + 'static) -> Self {
         self.on_close = Some(Box::new(close));
         self

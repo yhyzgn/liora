@@ -30,15 +30,26 @@ use liora_core::{Config, push_portal};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
-actions!(time_picker, [TimePickerClose]);
+actions!(
+    time_picker,
+    [
+        #[doc = "Keyboard action that closes the active time picker popup."]
+        TimePickerClose
+    ]
+);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+/// Public builder and render state for the Liora time value component.
 pub struct TimeValue {
+    /// Hour for this data model.
     pub hour: u32,
+    /// Minute for this data model.
     pub minute: u32,
+    /// Second for this data model.
     pub second: u32,
 }
 
+/// Public builder and render state for the Liora time picker component.
 pub struct TimePicker {
     id: SharedString,
     value: Option<TimeValue>,
@@ -57,6 +68,7 @@ pub struct TimePicker {
 }
 
 impl TimeValue {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(hour: u32, minute: u32, second: u32) -> Option<Self> {
         if hour > 23 || minute > 59 || second > 59 {
             return None;
@@ -68,12 +80,14 @@ impl TimeValue {
         })
     }
 
+    /// Configures the format option.
     pub fn format(&self) -> String {
         format!("{:02}:{:02}:{:02}", self.hour, self.minute, self.second)
     }
 }
 
 impl TimePicker {
+    /// Creates a new value with the required baseline configuration.
     pub fn new() -> Self {
         Self {
             id: liora_core::unique_id("time-picker"),
@@ -93,70 +107,84 @@ impl TimePicker {
         }
     }
 
+    /// Returns the stable tray command identifier used for menu event routing.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
+    /// Returns the serialized value used by forms, configuration, or persistence.
     pub fn value(mut self, value: TimeValue) -> Self {
         self.value = Some(value);
         self
     }
 
+    /// Configures the placeholder option.
     pub fn placeholder(mut self, placeholder: impl Into<SharedString>) -> Self {
         self.placeholder = placeholder.into();
         self
     }
 
+    /// Configures the format option.
     pub fn format(mut self, format: impl Into<SharedString>) -> Self {
         self.display_format = format.into();
         self
     }
 
+    /// Returns the width token used for component sizing.
     pub fn width(mut self, width: impl Into<Pixels>) -> Self {
         self.width = Some(width.into());
         self
     }
 
+    /// Applies the predefined width md sizing preset.
     pub fn width_md(self) -> Self {
         self.width(px(240.0))
     }
 
+    /// Applies the predefined width lg sizing preset.
     pub fn width_lg(self) -> Self {
         self.width(px(280.0))
     }
 
+    /// Configures the disabled option.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
     }
 
+    /// Configures the minute step option.
     pub fn minute_step(mut self, step: u32) -> Self {
         self.minute_step = step.clamp(1, 60);
         self
     }
 
+    /// Configures the second step option.
     pub fn second_step(mut self, step: u32) -> Self {
         self.second_step = step.clamp(1, 60);
         self
     }
 
+    /// Configures the without seconds option.
     pub fn without_seconds(mut self) -> Self {
         self.show_seconds = false;
         self.display_format = "HH:mm".into();
         self
     }
 
+    /// Configures the close on escape option.
     pub fn close_on_escape(mut self, close: bool) -> Self {
         self.close_on_escape = close;
         self
     }
 
+    /// Configures the close on click outside option.
     pub fn close_on_click_outside(mut self, close: bool) -> Self {
         self.close_on_click_outside = close;
         self
     }
 
+    /// Configures the register key bindings option.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([gpui::KeyBinding::new("escape", TimePickerClose, None)]);
     }
@@ -172,6 +200,7 @@ impl TimePicker {
         }
     }
 
+    /// Registers a callback that runs when change occurs.
     pub fn on_change(
         mut self,
         f: impl Fn(Option<TimeValue>, &mut Window, &mut App) + 'static,
@@ -180,6 +209,7 @@ impl TimePicker {
         self
     }
 
+    /// Updates the stored on change value and keeps the existing component identity.
     pub fn set_on_change(
         &mut self,
         f: impl Fn(Option<TimeValue>, &mut Window, &mut App) + 'static,
@@ -188,11 +218,13 @@ impl TimePicker {
         self.on_change = Some(Box::new(f));
     }
 
+    /// Updates the stored value value and keeps the existing component identity.
     pub fn set_value(&mut self, value: Option<TimeValue>, cx: &mut Context<Self>) {
         self.value = value;
         cx.notify();
     }
 
+    /// Configures the value ref option.
     pub fn value_ref(&self) -> Option<TimeValue> {
         self.value
     }

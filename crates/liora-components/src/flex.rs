@@ -45,6 +45,7 @@ enum MainAlign {
     Between,
 }
 
+/// Public builder and render state for the Liora flex component.
 pub struct Flex {
     children: Vec<AnyElement>,
     direction: Option<FlexDirection>,
@@ -80,6 +81,7 @@ pub struct Flex {
 }
 
 impl Flex {
+    /// Creates a new value with the required baseline configuration.
     pub fn new() -> Self {
         Self {
             children: Vec::new(),
@@ -116,257 +118,311 @@ impl Flex {
         }
     }
 
+    /// Configures the row option.
     pub fn row(mut self) -> Self {
         self.direction = Some(FlexDirection::Row);
         self
     }
 
+    /// Configures the column option.
     pub fn column(mut self) -> Self {
         self.direction = Some(FlexDirection::Column);
         self
     }
 
+    /// Configures the wrap option.
     pub fn wrap(mut self) -> Self {
         self.wrap = true;
         self
     }
 
+    /// Configures the gap px option.
     pub fn gap_px(mut self, gap: f32) -> Self {
         self.gap = Some(px(gap));
         self
     }
 
+    /// Applies the predefined gap sm sizing preset.
     pub fn gap_sm(self) -> Self {
         self.gap_px(8.0)
     }
 
+    /// Applies the predefined gap md sizing preset.
     pub fn gap_md(self) -> Self {
         self.gap_px(12.0)
     }
 
+    /// Applies the predefined gap lg sizing preset.
     pub fn gap_lg(self) -> Self {
         self.gap_px(16.0)
     }
 
+    /// Applies the predefined gap xl sizing preset.
     pub fn gap_xl(self) -> Self {
         self.gap_px(24.0)
     }
 
+    /// Configures the padding px option.
     pub fn padding_px(mut self, padding: f32) -> Self {
         self.padding = Some(px(padding));
         self
     }
 
+    /// Applies the predefined padding sm sizing preset.
     pub fn padding_sm(self) -> Self {
         self.padding_px(8.0)
     }
 
+    /// Applies the predefined padding md sizing preset.
     pub fn padding_md(self) -> Self {
         self.padding_px(16.0)
     }
 
+    /// Applies the predefined padding lg sizing preset.
     pub fn padding_lg(self) -> Self {
         self.padding_px(24.0)
     }
 
+    /// Configures the padding x px option.
     pub fn padding_x_px(mut self, padding: f32) -> Self {
         self.padding_x = Some(px(padding));
         self
     }
 
+    /// Configures the padding x units option.
     pub fn padding_x_units(self, padding: f32) -> Self {
         self.padding_x_px(padding)
     }
 
+    /// Configures the padding y px option.
     pub fn padding_y_px(mut self, padding: f32) -> Self {
         self.padding_y = Some(px(padding));
         self
     }
 
+    /// Configures the margin y px option.
     pub fn margin_y_px(mut self, margin: f32) -> Self {
         self.margin_y = Some(px(margin));
         self
     }
 
+    /// Configures the margin y units option.
     pub fn margin_y_units(self, margin: f32) -> Self {
         self.margin_y_px(margin)
     }
 
+    /// Applies the predefined height px sizing preset.
     pub fn height_px(mut self, height: f32) -> Self {
         self.height = Some(px(height));
         self
     }
 
+    /// Applies the predefined height units sizing preset.
     pub fn height_units(self, height: f32) -> Self {
         self.height_px(height)
     }
 
+    /// Applies the predefined width px sizing preset.
     pub fn width_px(mut self, width: f32) -> Self {
         self.width = Some(px(width));
         self
     }
 
+    /// Applies the predefined width percent sizing preset.
     pub fn width_percent(mut self, percent: f32) -> Self {
         self.width_percent = Some((percent / 100.0).clamp(0.0, 1.0));
         self
     }
 
+    /// Configures the h full option.
     pub fn h_full(mut self) -> Self {
         self.h_full = true;
         self
     }
 
+    /// Configures the w full option.
     pub fn w_full(mut self) -> Self {
         self.w_full = true;
         self
     }
 
+    /// Applies the predefined size full sizing preset.
     pub fn size_full(mut self) -> Self {
         self.size_full = true;
         self
     }
 
+    /// Configures the flex 1 option.
     pub fn flex_1(mut self) -> Self {
         self.flex_1 = true;
         self
     }
 
+    /// Configures the flex none option.
     pub fn flex_none(mut self) -> Self {
         self.flex_none = true;
         self
     }
 
+    /// Configures the min h 0 option.
     pub fn min_h_0(mut self) -> Self {
         self.min_h_0 = true;
         self
     }
 
+    /// Configures the bg option.
     pub fn bg(mut self, color: Hsla) -> Self {
         self.bg = Some(color);
         self
     }
 
+    /// Configures the text color option.
     pub fn text_color(mut self, color: Hsla) -> Self {
         self.text_color = Some(color);
         self
     }
 
+    /// Configures the text size px option.
     pub fn text_size_px(mut self, size: f32) -> Self {
         self.text_size = Some(px(size));
         self
     }
 
+    /// Applies the predefined `text_xs` sizing preset.
     pub fn text_xs(self) -> Self {
         self.text_size_px(12.0)
     }
 
+    /// Applies the predefined text sm sizing preset.
     pub fn text_sm(self) -> Self {
         self.text_size_px(14.0)
     }
 
+    /// Configures the bold option.
     pub fn bold(mut self) -> Self {
         self.bold = true;
         self
     }
 
+    /// Configures the border option.
     pub fn border(mut self) -> Self {
         self.border = true;
         self
     }
 
+    /// Configures the border color option.
     pub fn border_color(mut self, color: Hsla) -> Self {
         self.border_color = Some(color);
         self
     }
 
+    /// Configures the rounded px option.
     pub fn rounded_px(mut self, radius: f32) -> Self {
         self.rounded = Some(px(radius));
         self
     }
 
+    /// Configures the rounded units option.
     pub fn rounded_units(self, radius: f32) -> Self {
         self.rounded_px(radius)
     }
 
+    /// Applies the predefined rounded md sizing preset.
     pub fn rounded_md(mut self) -> Self {
         self.rounded = Some(px(8.0));
         self
     }
 
+    /// Configures the rounded pill option.
     pub fn rounded_pill(mut self) -> Self {
         self.rounded = Some(px(999.0));
         self
     }
 
+    /// Configures the relative option.
     pub fn relative(mut self) -> Self {
         self.relative = true;
         self
     }
 
+    /// Configures the overflow hidden option.
     pub fn overflow_hidden(mut self) -> Self {
         self.overflow_hidden = true;
         self
     }
 
+    /// Configures the overflow y scroll option.
     pub fn overflow_y_scroll(mut self) -> Self {
         self.overflow_y_scroll = true;
         self
     }
 
+    /// Returns the stable tray command identifier used for menu event routing.
     pub fn id(mut self, id: impl Into<ElementId>) -> Self {
         self.id = Some(id.into());
         self
     }
 
+    /// Configures the track scroll option.
     pub fn track_scroll(mut self, handle: &ScrollHandle) -> Self {
         self.scroll_handle = Some(handle.clone());
         self
     }
 
+    /// Configures the align start option.
     pub fn align_start(mut self) -> Self {
         self.align = Some(CrossAlign::Start);
         self
     }
 
+    /// Configures the align center option.
     pub fn align_center(mut self) -> Self {
         self.align = Some(CrossAlign::Center);
         self
     }
 
+    /// Configures the align end option.
     pub fn align_end(mut self) -> Self {
         self.align = Some(CrossAlign::End);
         self
     }
 
+    /// Configures the justify start option.
     pub fn justify_start(mut self) -> Self {
         self.justify = Some(MainAlign::Start);
         self
     }
 
+    /// Configures the justify center option.
     pub fn justify_center(mut self) -> Self {
         self.justify = Some(MainAlign::Center);
         self
     }
 
+    /// Configures the justify end option.
     pub fn justify_end(mut self) -> Self {
         self.justify = Some(MainAlign::End);
         self
     }
 
+    /// Configures the justify between option.
     pub fn justify_between(mut self) -> Self {
         self.justify = Some(MainAlign::Between);
         self
     }
 
+    /// Configures the center option.
     pub fn center(self) -> Self {
         self.align_center().justify_center()
     }
 
+    /// Configures the child option.
     pub fn child(mut self, child: impl IntoElement) -> Self {
         self.children.push(child.into_any_element());
         self
     }
 
+    /// Configures the children option.
     pub fn children(mut self, children: impl IntoIterator<Item = impl IntoElement>) -> Self {
         self.children
             .extend(children.into_iter().map(|child| child.into_any_element()));

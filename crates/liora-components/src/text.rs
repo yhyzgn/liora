@@ -28,6 +28,7 @@ use gpui::{
 use liora_core::Config;
 
 #[derive(Clone)]
+/// Public builder and render state for the Liora text component.
 pub struct Text {
     pub(crate) content: SharedString,
     pub(crate) color: Option<Hsla>,
@@ -45,6 +46,7 @@ pub struct Text {
 }
 
 impl Text {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(content: impl Into<SharedString>) -> Self {
         Self {
             content: content.into(),
@@ -63,59 +65,71 @@ impl Text {
         }
     }
 
+    /// Configures the text color option.
     pub fn text_color(mut self, color: Hsla) -> Self {
         self.color = Some(color);
         self
     }
 
+    /// Configures the bg option.
     pub fn bg(mut self, bg: Hsla) -> Self {
         self.bg = Some(bg);
         self
     }
 
+    /// Sets an explicit icon size while preserving the default color behavior.
     pub fn size(mut self, size: impl Into<Pixels>) -> Self {
         self.size = Some(size.into());
         self
     }
 
+    /// Configures the xs option.
     pub fn xs(self) -> Self {
         self.size(px(12.0))
     }
 
+    /// Configures the sm option.
     pub fn sm(self) -> Self {
         self.size(px(14.0))
     }
 
+    /// Configures the weight option.
     pub fn weight(mut self, weight: FontWeight) -> Self {
         self.weight = Some(weight);
         self
     }
 
+    /// Configures the bold option.
     pub fn bold(mut self) -> Self {
         self.weight = Some(FontWeight::BOLD);
         self
     }
 
+    /// Configures the font style option.
     pub fn font_style(mut self, style: FontStyle) -> Self {
         self.style = Some(style);
         self
     }
 
+    /// Configures the italic option.
     pub fn italic(mut self) -> Self {
         self.style = Some(FontStyle::Italic);
         self
     }
 
+    /// Configures the underline option.
     pub fn underline(mut self) -> Self {
         self.underline = true;
         self
     }
 
+    /// Configures the strikethrough option.
     pub fn strikethrough(mut self) -> Self {
         self.strikethrough = true;
         self
     }
 
+    /// Configures the font family option.
     pub fn font_family(mut self, family: impl Into<SharedString>) -> Self {
         self.font_family = Some(family.into());
         self
@@ -140,11 +154,13 @@ impl Text {
         self
     }
 
+    /// Configures the selectable option.
     pub fn selectable(mut self, selectable: bool) -> Self {
         self.selectable = selectable;
         self
     }
 
+    /// Returns the stable tray command identifier used for menu event routing.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
@@ -201,6 +217,7 @@ impl Text {
             .to_run(self.content.len())
     }
 
+    /// Configures the register key bindings option.
     pub fn register_key_bindings(cx: &mut App) {
         SelectableText::register_key_bindings(cx);
     }

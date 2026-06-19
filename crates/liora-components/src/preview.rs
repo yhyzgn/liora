@@ -32,8 +32,15 @@ use gpui::{
 use liora_core::{Config, push_portal};
 use std::{path::PathBuf, sync::Arc, time::Duration};
 
-actions!(preview, [PreviewClose]);
+actions!(
+    preview,
+    [
+        #[doc = "Keyboard action that closes the active image preview overlay."]
+        PreviewClose
+    ]
+);
 
+/// Public builder and render state for the Liora preview component.
 pub struct Preview {
     src: Option<ImageSource>,
     trigger: Option<AnyElement>,
@@ -42,6 +49,7 @@ pub struct Preview {
     close_on_escape: bool,
 }
 
+/// Public builder and render state for the Liora active image preview component.
 pub struct ActiveImagePreview {
     image: Option<Arc<RenderImage>>,
     closing: bool,
@@ -52,6 +60,7 @@ pub struct ActiveImagePreview {
 impl Global for ActiveImagePreview {}
 
 impl Preview {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(src: impl Into<SharedString>) -> Self {
         Self {
             src: Some(ImageSource::from_input(src)),
@@ -62,6 +71,7 @@ impl Preview {
         }
     }
 
+    /// Configures the empty option.
     pub fn empty() -> Self {
         Self {
             src: None,
@@ -72,6 +82,7 @@ impl Preview {
         }
     }
 
+    /// Configures the src option.
     pub fn src(mut self, src: impl Into<SharedString>) -> Self {
         self.src = Some(ImageSource::from_input(src));
         self
@@ -82,43 +93,52 @@ impl Preview {
         self
     }
 
+    /// Returns the bundled SVG file name for this Lucide icon.
     pub fn file(mut self, path: impl Into<PathBuf>) -> Self {
         self.src = Some(ImageSource::File(path.into()));
         self
     }
 
+    /// Configures the local option.
     pub fn local(path: impl Into<PathBuf>) -> Self {
         Self::empty().file(path)
     }
 
+    /// Configures the child option.
     pub fn child(mut self, trigger: impl IntoElement) -> Self {
         self.trigger = Some(trigger.into_any_element());
         self
     }
 
+    /// Configures the hover effect option.
     pub fn hover_effect(mut self, enabled: bool) -> Self {
         self.hover_effect = enabled;
         self
     }
 
+    /// Configures the close on escape option.
     pub fn close_on_escape(mut self, close: bool) -> Self {
         self.close_on_escape = close;
         self
     }
 
+    /// Configures the close on click outside option.
     pub fn close_on_click_outside(mut self, close: bool) -> Self {
         self.close_on_click_outside = close;
         self
     }
 
+    /// Configures the source option.
     pub fn source(&self) -> Option<&ImageSource> {
         self.src.as_ref()
     }
 
+    /// Returns whether this value currently has trigger.
     pub fn has_trigger(&self) -> bool {
         self.trigger.is_some()
     }
 
+    /// Configures the register key bindings option.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([KeyBinding::new("escape", PreviewClose, None)]);
         cx.on_action(|_: &PreviewClose, cx| {
@@ -127,6 +147,7 @@ impl Preview {
     }
 }
 
+/// Renders the render image preview layer into native GPUI elements.
 pub fn render_image_preview(window: &mut Window, cx: &mut App) {
     let Some((image, closing, close_on_click_outside, close_on_escape)) =
         cx.try_global::<ActiveImagePreview>().and_then(|preview| {
@@ -376,7 +397,10 @@ mod tests {
         let source = include_str!("preview.rs");
         let production = source.split("#[cfg(test)]").next().unwrap();
 
-        assert!(production.contains("actions!(preview, [PreviewClose])"));
+        assert!(production.contains("PreviewClose"));
+        assert!(
+            production.contains("Keyboard action that closes the active image preview overlay")
+        );
         assert!(production.contains("KeyBinding::new(\"escape\", PreviewClose, None)"));
         assert!(production.contains("cx.on_action(|_: &PreviewClose"));
         assert!(production.contains(".on_action(|_: &PreviewClose"));

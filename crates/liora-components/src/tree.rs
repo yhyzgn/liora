@@ -31,12 +31,17 @@ use liora_icons_lucide::IconName;
 use std::collections::HashSet;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Public builder and render state for the Liora tree node component.
 pub struct TreeNode {
+    /// Stable identifier used to connect rendered UI, callbacks, and external state.
     pub id: SharedString,
+    /// Human-readable label shown in the component UI.
     pub label: SharedString,
+    /// Nested child items rendered beneath this item.
     pub children: Vec<TreeNode>,
 }
 
+/// Public builder and render state for the Liora tree component.
 pub struct Tree {
     data: Vec<TreeNode>,
     expanded_keys: HashSet<SharedString>,
@@ -48,6 +53,7 @@ pub struct Tree {
 }
 
 impl TreeNode {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(id: impl Into<SharedString>, label: impl Into<SharedString>) -> Self {
         Self {
             id: id.into(),
@@ -56,6 +62,7 @@ impl TreeNode {
         }
     }
 
+    /// Configures the child option.
     pub fn child(mut self, child: TreeNode) -> Self {
         self.children.push(child);
         self
@@ -63,6 +70,7 @@ impl TreeNode {
 }
 
 impl Tree {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(data: Vec<TreeNode>) -> Self {
         Self {
             data,
@@ -75,21 +83,25 @@ impl Tree {
         }
     }
 
+    /// Configures the indent option.
     pub fn indent(mut self, indent: impl Into<Pixels>) -> Self {
         self.indent = indent.into();
         self
     }
 
+    /// Configures whether checkbox is visible in the rendered component.
     pub fn show_checkbox(mut self, show: bool) -> Self {
         self.show_checkbox = show;
         self
     }
 
+    /// Configures the multiple option.
     pub fn multiple(mut self, multiple: bool) -> Self {
         self.multiple = multiple;
         self
     }
 
+    /// Registers a callback that runs when node click occurs.
     pub fn on_node_click(
         mut self,
         f: impl Fn(SharedString, &mut Window, &mut App) + 'static,

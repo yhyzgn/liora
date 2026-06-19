@@ -36,8 +36,15 @@ fn rgba(r: u8, g: u8, b: u8, a: f32) -> Hsla {
     .into()
 }
 
-gpui::actions!(switch, [SwitchToggle]);
+gpui::actions!(
+    switch,
+    [
+        #[doc = "Keyboard action that toggles the focused switch."]
+        SwitchToggle
+    ]
+);
 
+/// Public builder and render state for the Liora switch component.
 pub struct Switch {
     checked: bool,
     thumb_from_checked: bool,
@@ -47,6 +54,7 @@ pub struct Switch {
 }
 
 impl Switch {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(checked: bool, cx: &mut Context<Self>) -> Self {
         Self {
             checked,
@@ -57,23 +65,28 @@ impl Switch {
         }
     }
 
+    /// Configures the disabled option.
     pub fn disabled(mut self, d: bool) -> Self {
         self.disabled = d;
         self
     }
+    /// Registers a callback that runs when change occurs.
     pub fn on_change(mut self, cb: impl Fn(bool, &mut Window, &mut App) + 'static) -> Self {
         self.on_change = Some(Box::new(cb));
         self
     }
 
+    /// Updates the stored on change value and keeps the existing component identity.
     pub fn set_on_change(&mut self, cb: impl Fn(bool, &mut Window, &mut App) + 'static) {
         self.on_change = Some(Box::new(cb));
     }
 
+    /// Configures the checked option.
     pub fn checked(&self) -> bool {
         self.checked
     }
 
+    /// Configures the register key bindings option.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([
             KeyBinding::new("space", SwitchToggle, None),

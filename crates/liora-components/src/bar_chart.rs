@@ -40,34 +40,50 @@ use std::cell::Cell;
 use std::rc::Rc;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+/// Enumerates the supported bar chart modes and options.
 pub enum BarChartMode {
+    /// Uses the grouped variant.
     Grouped,
+    /// Uses the stacked variant.
     Stacked,
 }
 
 #[derive(Clone, Debug, PartialEq)]
+/// Public builder and render state for the Liora bar chart hit box component.
 pub struct BarChartHitBox {
+    /// Series index for this data model.
     pub series_index: usize,
+    /// Point index for this data model.
     pub point_index: usize,
+    /// Series name for this data model.
     pub series_name: SharedString,
+    /// Human-readable label shown in the component UI.
     pub label: SharedString,
+    /// Current value represented by this option or component state.
     pub value: f64,
+    /// X for this data model.
     pub x: f32,
+    /// Y for this data model.
     pub y: f32,
+    /// Configured width used during layout.
     pub width: f32,
+    /// Configured height used during layout.
     pub height: f32,
 }
 
 impl BarChartHitBox {
+    /// Configures the center x option.
     pub fn center_x(&self) -> f32 {
         self.x + self.width / 2.0
     }
 
+    /// Configures the center y option.
     pub fn center_y(&self) -> f32 {
         self.y + self.height / 2.0
     }
 }
 
+/// Configures the bar chart hit boxes option.
 pub fn bar_chart_hit_boxes(
     series: &[ChartSeries],
     mode: BarChartMode,
@@ -107,6 +123,7 @@ pub fn bar_chart_hit_boxes(
     }
 }
 
+/// Configures the nearest bar chart hit point option.
 pub fn nearest_bar_chart_hit_point(
     series: &[ChartSeries],
     mode: BarChartMode,
@@ -282,20 +299,26 @@ fn stacked_bar_hit_boxes(
 }
 
 #[derive(Clone, Debug, PartialEq)]
+/// Enumerates the supported bar chart fill modes and options.
 pub enum BarChartFill {
+    /// Uses the solid variant.
     Solid(Hsla),
+    /// Uses the gradient variant.
     Gradient(BarChartGradient),
 }
 
 impl BarChartFill {
+    /// Configures the solid option.
     pub fn solid(color: Hsla) -> Self {
         Self::Solid(color)
     }
 
+    /// Configures the vertical gradient option.
     pub fn vertical_gradient(from: Hsla, to: Hsla) -> Self {
         Self::Gradient(BarChartGradient::vertical(from, to))
     }
 
+    /// Configures the horizontal gradient option.
     pub fn horizontal_gradient(from: Hsla, to: Hsla) -> Self {
         Self::Gradient(BarChartGradient::horizontal(from, to))
     }
@@ -315,12 +338,16 @@ impl From<Hsla> for BarChartFill {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+/// Public builder and render state for the Liora bar chart gradient component.
 pub struct BarChartGradient {
+    /// Gradient angle in degrees.
     pub angle: f32,
+    /// Stops for this data model.
     pub stops: Vec<(Hsla, f32)>,
 }
 
 impl BarChartGradient {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(angle: f32, stops: impl IntoIterator<Item = (Hsla, f32)>) -> Self {
         let mut stops = stops
             .into_iter()
@@ -332,10 +359,12 @@ impl BarChartGradient {
         Self { angle, stops }
     }
 
+    /// Configures the vertical option.
     pub fn vertical(from: Hsla, to: Hsla) -> Self {
         Self::new(180.0, [(from, 0.0), (to, 1.0)])
     }
 
+    /// Configures the horizontal option.
     pub fn horizontal(from: Hsla, to: Hsla) -> Self {
         Self::new(90.0, [(from, 0.0), (to, 1.0)])
     }
@@ -353,13 +382,18 @@ impl BarChartGradient {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+/// Public builder and render state for the Liora bar chart value fill range component.
 pub struct BarChartValueFillRange {
+    /// Min for this data model.
     pub min: f64,
+    /// Max for this data model.
     pub max: f64,
+    /// Fill for this data model.
     pub fill: BarChartFill,
 }
 
 impl BarChartValueFillRange {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(min: f64, max: f64, fill: impl Into<BarChartFill>) -> Self {
         Self {
             min,
@@ -374,13 +408,18 @@ impl BarChartValueFillRange {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
+/// Public builder and render state for the Liora bar chart value color range component.
 pub struct BarChartValueColorRange {
+    /// Min for this data model.
     pub min: f64,
+    /// Max for this data model.
     pub max: f64,
+    /// Color token or explicit color applied to the visual element.
     pub color: Hsla,
 }
 
 impl BarChartValueColorRange {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(min: f64, max: f64, color: Hsla) -> Self {
         Self { min, max, color }
     }
@@ -391,6 +430,7 @@ impl BarChartValueColorRange {
 }
 
 #[derive(Clone)]
+/// Public builder and render state for the Liora bar chart component.
 pub struct BarChart {
     series: Vec<ChartSeries>,
     options: ChartOptions,
@@ -405,6 +445,7 @@ pub struct BarChart {
 }
 
 impl BarChart {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(series: impl IntoIterator<Item = ChartSeries>) -> Self {
         Self {
             series: series.into_iter().collect(),
@@ -423,86 +464,103 @@ impl BarChart {
         }
     }
 
+    /// Returns the stable tray command identifier used for menu event routing.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.options.id = id.into();
         self
     }
 
+    /// Returns the height token used for component sizing.
     pub fn height(mut self, height: impl Into<Pixels>) -> Self {
         self.options.height = height.into();
         self
     }
 
+    /// Configures whether grid is visible in the rendered component.
     pub fn show_grid(mut self, show: bool) -> Self {
         self.options.show_grid = show;
         self
     }
 
+    /// Configures whether axis is visible in the rendered component.
     pub fn show_axis(mut self, show: bool) -> Self {
         self.options.show_axis = show;
         self
     }
 
+    /// Configures whether legend is visible in the rendered component.
     pub fn show_legend(mut self, show: bool) -> Self {
         self.options.show_legend = show;
         self
     }
 
+    /// Configures the y domain option.
     pub fn y_domain(mut self, min: f64, max: f64) -> Self {
         self.options.y_domain = Some((min, max));
         self
     }
 
+    /// Configures the y format option.
     pub fn y_format(mut self, formatter: fn(f64) -> SharedString) -> Self {
         self.options.y_format = Some(formatter);
         self
     }
 
+    /// Configures whether value labels is visible in the rendered component.
     pub fn show_value_labels(mut self, show: bool) -> Self {
         self.options.show_value_labels = show;
         self
     }
 
+    /// Configures whether tooltip is visible in the rendered component.
     pub fn show_tooltip(mut self, show: bool) -> Self {
         self.options.show_tooltip = show;
         self
     }
 
+    /// Configures the tooltip hit radius option.
     pub fn tooltip_hit_radius(mut self, radius: impl Into<Pixels>) -> Self {
         self.options.tooltip_hit_radius = radius.into().max(px(0.0));
         self
     }
 
+    /// Configures the value label content option.
     pub fn value_label_content(mut self, content: ChartValueLabelContent) -> Self {
         self.options.value_label_options.content = content;
         self
     }
 
+    /// Configures the value label placement option.
     pub fn value_label_placement(mut self, placement: ChartValueLabelPlacement) -> Self {
         self.options.value_label_options.placement = placement;
         self
     }
 
+    /// Configures the percentage decimals option.
     pub fn percentage_decimals(mut self, decimals: usize) -> Self {
         self.options.value_label_options.percentage_decimals = decimals.min(4);
         self
     }
 
+    /// Configures the bar gap ratio option.
     pub fn bar_gap_ratio(mut self, ratio: f32) -> Self {
         self.bar_gap_ratio = ratio.clamp(0.0, 0.8);
         self
     }
 
+    /// Configures the max axis labels option.
     pub fn max_axis_labels(mut self, max_labels: usize) -> Self {
         self.options.max_axis_labels = max_labels.max(2);
         self
     }
 
+    /// Configures the max value labels option.
     pub fn max_value_labels(mut self, max_labels: usize) -> Self {
         self.options.max_value_labels = max_labels.max(2);
         self
     }
 
+    /// Configures the standalone option.
     pub fn standalone(mut self) -> Self {
         self.standalone = true;
         self.options.show_grid = false;
@@ -520,21 +578,25 @@ impl BarChart {
         self
     }
 
+    /// Configures the bar radius option.
     pub fn bar_radius(mut self, radius: impl Into<Pixels>) -> Self {
         self.bar_radius = radius.into().max(px(0.0));
         self
     }
 
+    /// Configures the bar width option.
     pub fn bar_width(mut self, width: impl Into<Pixels>) -> Self {
         self.bar_width = Some(width.into().max(px(1.0)));
         self
     }
 
+    /// Configures the bar gap option.
     pub fn bar_gap(mut self, gap: impl Into<Pixels>) -> Self {
         self.bar_gap = Some(gap.into().max(px(0.0)));
         self
     }
 
+    /// Configures the value color ranges option.
     pub fn value_color_ranges(
         mut self,
         ranges: impl IntoIterator<Item = BarChartValueColorRange>,
@@ -546,6 +608,7 @@ impl BarChart {
         self
     }
 
+    /// Configures the value fill ranges option.
     pub fn value_fill_ranges(
         mut self,
         ranges: impl IntoIterator<Item = BarChartValueFillRange>,
@@ -554,55 +617,67 @@ impl BarChart {
         self
     }
 
+    /// Configures the bar fills option.
     pub fn bar_fills(mut self, fills: impl IntoIterator<Item = impl Into<BarChartFill>>) -> Self {
         self.bar_fills = fills.into_iter().map(Into::into).collect();
         self
     }
 
+    /// Configures the bar vertical gradient option.
     pub fn bar_vertical_gradient(mut self, from: Hsla, to: Hsla) -> Self {
         self.bar_fills = vec![BarChartFill::vertical_gradient(from, to)];
         self
     }
 
+    /// Configures the grouped option.
     pub fn grouped(mut self) -> Self {
         self.mode = BarChartMode::Grouped;
         self
     }
 
+    /// Configures the stacked option.
     pub fn stacked(mut self) -> Self {
         self.mode = BarChartMode::Stacked;
         self
     }
 
+    /// Configures the mode option.
     pub fn mode(mut self, mode: BarChartMode) -> Self {
         self.mode = mode;
         self
     }
 
+    /// Configures the series option.
     pub fn series(&self) -> &[ChartSeries] {
         &self.series
     }
 
+    /// Configures the options option.
     pub fn options(&self) -> &ChartOptions {
         &self.options
     }
 
+    /// Configures the bar mode option.
     pub fn bar_mode(&self) -> BarChartMode {
         self.mode
     }
 
+    /// Returns whether standalone is currently true for this value.
     pub fn is_standalone(&self) -> bool {
         self.standalone
     }
 
+    /// Configures the bar radius value option.
     pub fn bar_radius_value(&self) -> Pixels {
         self.bar_radius
     }
 
+    /// Configures the value fill ranges config option.
     pub fn value_fill_ranges_config(&self) -> &[BarChartValueFillRange] {
         &self.value_fill_ranges
     }
 
+    /// Configures the bar fills config option.
     pub fn bar_fills_config(&self) -> &[BarChartFill] {
         &self.bar_fills
     }

@@ -11,7 +11,9 @@ use gpui::{
 use liora_core::Config;
 use std::borrow::Cow;
 
+/// Converts icon identifiers into SVG asset paths that `Icon` can render.
 pub trait IntoIconPath {
+    /// Returns the SVG asset path used by the icon renderer.
     fn icon_path(&self) -> Cow<'static, str>;
 }
 
@@ -26,6 +28,7 @@ impl IntoIconPath for String {
     }
 }
 
+/// Native GPUI SVG icon element with size, color, hover, and rotation controls.
 pub struct Icon {
     size: Option<DefiniteLength>,
     color: Option<Hsla>,
@@ -35,6 +38,7 @@ pub struct Icon {
 }
 
 impl Icon {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(path: impl IntoIconPath) -> Self {
         Self {
             size: None,
@@ -45,23 +49,28 @@ impl Icon {
         }
     }
 
+    /// Sets an explicit icon size while preserving the default color behavior.
     pub fn size(mut self, sz: impl Into<DefiniteLength>) -> Self {
         self.size = Some(sz.into());
         self
     }
 
+    /// Applies the predefined size xs sizing preset.
     pub fn size_xs(self) -> Self {
         self.size(px(12.0))
     }
 
+    /// Applies the predefined size md sizing preset.
     pub fn size_md(self) -> Self {
         self.size(px(18.0))
     }
 
+    /// Applies the predefined size lg sizing preset.
     pub fn size_lg(self) -> Self {
         self.size(px(24.0))
     }
 
+    /// Applies the predefined size xl sizing preset.
     pub fn size_xl(self) -> Self {
         self.size(px(32.0))
     }

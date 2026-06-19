@@ -24,6 +24,7 @@ use crate::gpui_compat::PixelsExt;
 use gpui::{PathBuilder, PathStyle, Pixels, Point, StrokeOptions, point, px};
 use lyon_tessellation::{LineCap, LineJoin};
 
+/// Configures the finite line points option.
 pub fn finite_line_points(points: impl IntoIterator<Item = (f32, f32)>) -> Vec<Point<Pixels>> {
     points
         .into_iter()
@@ -32,6 +33,7 @@ pub fn finite_line_points(points: impl IntoIterator<Item = (f32, f32)>) -> Vec<P
         .collect()
 }
 
+/// Returns the filesystem path for the area resource.
 pub fn area_path(points: &[Point<Pixels>], baseline_y: Pixels) -> Option<gpui::Path<Pixels>> {
     let first = *points.first()?;
     let last = *points.last()?;
@@ -46,6 +48,7 @@ pub fn area_path(points: &[Point<Pixels>], baseline_y: Pixels) -> Option<gpui::P
     builder.build().ok()
 }
 
+/// Returns the filesystem path for the smooth area resource.
 pub fn smooth_area_path(
     points: &[Point<Pixels>],
     baseline_y: Pixels,
@@ -61,6 +64,7 @@ pub fn smooth_area_path(
     builder.build().ok()
 }
 
+/// Returns the filesystem path for the smooth line resource.
 pub fn smooth_line_path(
     points: &[Point<Pixels>],
     stroke_width: Pixels,
@@ -68,6 +72,7 @@ pub fn smooth_line_path(
     smooth_line_path_with_style(points, stroke_width, ChartLineStyle::Solid, None)
 }
 
+/// Configures the smooth line path with style option.
 pub fn smooth_line_path_with_style(
     points: &[Point<Pixels>],
     stroke_width: Pixels,
@@ -157,6 +162,7 @@ fn catmull_rom_controls(
     )
 }
 
+/// Returns the filesystem path for the line soft edge resource.
 pub fn line_soft_edge_path(
     points: &[Point<Pixels>],
     stroke_width: Pixels,
@@ -166,6 +172,7 @@ pub fn line_soft_edge_path(
     line_soft_edge_path_with_style(points, soft_width, smooth, ChartLineStyle::Solid, None)
 }
 
+/// Configures the line soft edge path with style option.
 pub fn line_soft_edge_path_with_style(
     points: &[Point<Pixels>],
     stroke_width: Pixels,
@@ -180,10 +187,12 @@ pub fn line_soft_edge_path_with_style(
     }
 }
 
+/// Returns the filesystem path for the line resource.
 pub fn line_path(points: &[Point<Pixels>], stroke_width: Pixels) -> Option<gpui::Path<Pixels>> {
     line_path_with_style(points, stroke_width, ChartLineStyle::Solid, None)
 }
 
+/// Configures the line path with style option.
 pub fn line_path_with_style(
     points: &[Point<Pixels>],
     stroke_width: Pixels,

@@ -27,6 +27,7 @@ use liora_core::{Placement, TooltipData, clear_tooltip, set_active_tooltip, stab
 use std::cell::Cell;
 use std::rc::Rc;
 
+/// Public builder and render state for the Liora tooltip component.
 pub struct Tooltip {
     trigger: AnyElement,
     content: SharedString,
@@ -36,6 +37,7 @@ pub struct Tooltip {
 }
 
 impl Tooltip {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(trigger: impl IntoElement) -> Self {
         Self {
             trigger: trigger.into_any_element(),
@@ -46,21 +48,25 @@ impl Tooltip {
         }
     }
 
+    /// Configures the content option.
     pub fn content(mut self, content: impl Into<SharedString>) -> Self {
         self.content = content.into();
         self
     }
 
+    /// Configures the placement option.
     pub fn placement(mut self, placement: Placement) -> Self {
         self.placement = placement;
         self
     }
 
+    /// Configures the offset option.
     pub fn offset(mut self, offset: impl Into<Pixels>) -> Self {
         self.offset = offset.into();
         self
     }
 
+    /// Returns the stable tray command identifier used for menu event routing.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = Some(id.into());
         self

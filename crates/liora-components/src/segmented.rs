@@ -24,13 +24,18 @@ use crate::motion::pop_in;
 use gpui::{App, Context, IntoElement, Render, SharedString, Window, div, prelude::*, px};
 use liora_core::Config;
 
+/// Public builder and render state for the Liora segmented option component.
 pub struct SegmentedOption {
+    /// Human-readable label shown in the component UI.
     pub label: SharedString,
+    /// Current value represented by this option or component state.
     pub value: SharedString,
+    /// Whether user interaction is disabled for this item.
     pub disabled: bool,
 }
 
 impl SegmentedOption {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(label: impl Into<SharedString>, value: impl Into<SharedString>) -> Self {
         Self {
             label: label.into(),
@@ -39,12 +44,14 @@ impl SegmentedOption {
         }
     }
 
+    /// Configures the disabled option.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
     }
 }
 
+/// Public builder and render state for the Liora segmented component.
 pub struct Segmented {
     id: SharedString,
     options: Vec<SegmentedOption>,
@@ -54,6 +61,7 @@ pub struct Segmented {
 }
 
 impl Segmented {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(options: Vec<SegmentedOption>) -> Self {
         let first_value = options.first().map(|o| o.value.clone());
         Self {
@@ -65,26 +73,31 @@ impl Segmented {
         }
     }
 
+    /// Returns the stable tray command identifier used for menu event routing.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
+    /// Returns the serialized value used by forms, configuration, or persistence.
     pub fn value(mut self, val: impl Into<SharedString>) -> Self {
         self.value = Some(val.into());
         self
     }
 
+    /// Configures the block option.
     pub fn block(mut self, block: bool) -> Self {
         self.block = block;
         self
     }
 
+    /// Registers a callback that runs when change occurs.
     pub fn on_change(mut self, f: impl Fn(SharedString, &mut Window, &mut App) + 'static) -> Self {
         self.on_change = Some(Box::new(f));
         self
     }
 
+    /// Updates the stored on change value and keeps the existing component identity.
     pub fn set_on_change(&mut self, f: impl Fn(SharedString, &mut Window, &mut App) + 'static) {
         self.on_change = Some(Box::new(f));
     }

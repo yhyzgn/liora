@@ -22,6 +22,7 @@
 use gpui::{AnyElement, App, Component, IntoElement, Pixels, RenderOnce, Window, prelude::*, px};
 use liora_core::stable_unique_id;
 
+/// Public builder and render state for the Liora container component.
 pub struct Container {
     header: Option<AnyElement>,
     aside: Option<AnyElement>,
@@ -38,6 +39,7 @@ pub struct Container {
 }
 
 impl Container {
+    /// Creates a new value with the required baseline configuration.
     pub fn new() -> Self {
         Self {
             header: None,
@@ -55,69 +57,84 @@ impl Container {
         }
     }
 
+    /// Configures the header option.
     pub fn header(mut self, el: impl IntoElement) -> Self {
         self.header = Some(el.into_any_element());
         self
     }
+    /// Configures the aside option.
     pub fn aside(mut self, el: impl IntoElement) -> Self {
         self.aside = Some(el.into_any_element());
         self
     }
+    /// Configures the aside right option.
     pub fn aside_right(mut self) -> Self {
         self.aside_right = true;
         self
     }
+    /// Configures the footer option.
     pub fn footer(mut self, el: impl IntoElement) -> Self {
         self.footer = Some(el.into_any_element());
         self
     }
+    /// Configures the child option.
     pub fn child(mut self, el: impl IntoElement) -> Self {
         self.main.push(el.into_any_element());
         self
     }
+    /// Configures the overlay option.
     pub fn overlay(mut self, el: impl IntoElement) -> Self {
         self.overlays.push(el.into_any_element());
         self
     }
 
+    /// Configures the header height option.
     pub fn header_height(mut self, height: impl Into<Pixels>) -> Self {
         self.header_height = height.into();
         self
     }
 
+    /// Applies the predefined header height lg sizing preset.
     pub fn header_height_lg(self) -> Self {
         self.header_height(px(84.0))
     }
 
+    /// Configures the footer height option.
     pub fn footer_height(mut self, height: impl Into<Pixels>) -> Self {
         self.footer_height = height.into();
         self
     }
 
+    /// Configures the aside width option.
     pub fn aside_width(mut self, width: impl Into<Pixels>) -> Self {
         self.aside_width = width.into();
         self
     }
 
+    /// Applies the predefined aside width lg sizing preset.
     pub fn aside_width_lg(self) -> Self {
         self.aside_width(px(280.0))
     }
 
+    /// Configures the aside scroll option.
     pub fn aside_scroll(mut self) -> Self {
         self.aside_scroll = true;
         self
     }
 
+    /// Configures the main scroll option.
     pub fn main_scroll(mut self) -> Self {
         self.main_scroll = true;
         self
     }
 
+    /// Configures the main padding option.
     pub fn main_padding(mut self, padding: impl Into<Pixels>) -> Self {
         self.main_padding = Some(padding.into());
         self
     }
 
+    /// Applies the predefined main padding xl sizing preset.
     pub fn main_padding_xl(self) -> Self {
         self.main_padding(px(32.0))
     }

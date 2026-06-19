@@ -28,12 +28,17 @@ use gpui::{
 use liora_core::Config;
 
 #[derive(Clone, Debug)]
+/// Public builder and render state for the Liora heat bar item component.
 pub struct HeatBarItem {
+    /// Human-readable label shown in the component UI.
     pub label: SharedString,
+    /// Current value represented by this option or component state.
     pub value: f64,
+    /// Color token or explicit color applied to the visual element.
     pub color: Hsla,
 }
 impl HeatBarItem {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(label: impl Into<SharedString>, value: f64, color: Hsla) -> Self {
         Self {
             label: label.into(),
@@ -44,12 +49,17 @@ impl HeatBarItem {
 }
 
 #[derive(Clone, Debug)]
+/// Public builder and render state for the Liora heat bar legend component.
 pub struct HeatBarLegend {
+    /// Human-readable label shown in the component UI.
     pub label: SharedString,
+    /// Count for this data model.
     pub count: usize,
+    /// Color token or explicit color applied to the visual element.
     pub color: Hsla,
 }
 impl HeatBarLegend {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(label: impl Into<SharedString>, count: usize, color: Hsla) -> Self {
         Self {
             label: label.into(),
@@ -60,21 +70,28 @@ impl HeatBarLegend {
 }
 
 #[derive(Clone, Debug)]
+/// Public builder and render state for the Liora heat bar color range component.
 pub struct HeatBarColorRange {
+    /// Min for this data model.
     pub min: f64,
+    /// Max for this data model.
     pub max: f64,
+    /// Color token or explicit color applied to the visual element.
     pub color: Hsla,
 }
 
 impl HeatBarColorRange {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(min: f64, max: f64, color: Hsla) -> Self {
         Self { min, max, color }
     }
 
+    /// Configures the up to option.
     pub fn up_to(max: f64, color: Hsla) -> Self {
         Self::new(f64::NEG_INFINITY, max, color)
     }
 
+    /// Configures the above option.
     pub fn above(min: f64, color: Hsla) -> Self {
         Self::new(min, f64::INFINITY, color)
     }
@@ -85,6 +102,7 @@ impl HeatBarColorRange {
 }
 
 #[derive(Clone)]
+/// Public builder and render state for the Liora heat bar component.
 pub struct HeatBar {
     items: Vec<HeatBarItem>,
     legends: Vec<HeatBarLegend>,
@@ -98,6 +116,7 @@ pub struct HeatBar {
 }
 
 impl HeatBar {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(items: impl IntoIterator<Item = HeatBarItem>) -> Self {
         Self {
             items: items.into_iter().collect(),
@@ -111,34 +130,42 @@ impl HeatBar {
             x_labels: Vec::new(),
         }
     }
+    /// Configures the legends option.
     pub fn legends(mut self, legends: impl IntoIterator<Item = HeatBarLegend>) -> Self {
         self.legends = legends.into_iter().collect();
         self
     }
+    /// Configures the color ranges option.
     pub fn color_ranges(mut self, ranges: impl IntoIterator<Item = HeatBarColorRange>) -> Self {
         self.color_ranges = ranges.into_iter().collect();
         self
     }
+    /// Returns the height token used for component sizing.
     pub fn height(mut self, height: impl Into<Pixels>) -> Self {
         self.height = height.into().max(px(60.0));
         self
     }
+    /// Configures the bar width option.
     pub fn bar_width(mut self, width: impl Into<Pixels>) -> Self {
         self.bar_width = width.into().max(px(1.0));
         self
     }
+    /// Configures the gap option.
     pub fn gap(mut self, gap: impl Into<Pixels>) -> Self {
         self.gap = gap.into().max(px(0.0));
         self
     }
+    /// Configures the max value option.
     pub fn max_value(mut self, value: f64) -> Self {
         self.max_value = value.is_finite().then_some(value.max(1.0));
         self
     }
+    /// Configures whether axis is visible in the rendered component.
     pub fn show_axis(mut self, show: bool) -> Self {
         self.show_axis = show;
         self
     }
+    /// Configures the x labels option.
     pub fn x_labels(mut self, labels: impl IntoIterator<Item = impl Into<SharedString>>) -> Self {
         self.x_labels = labels.into_iter().map(Into::into).collect();
         self

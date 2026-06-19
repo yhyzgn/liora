@@ -25,15 +25,22 @@ use gpui::{
 use liora_core::Config;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported badge type modes and options.
 pub enum BadgeType {
     #[default]
+    /// Uses the danger semantic button variant.
     Danger,
+    /// Uses the primary semantic button variant.
     Primary,
+    /// Uses the success semantic button variant.
     Success,
+    /// Uses the warning semantic button variant.
     Warning,
+    /// Uses the info semantic button variant.
     Info,
 }
 
+/// Public builder and render state for the Liora badge component.
 pub struct Badge {
     child: AnyElement,
     value: Option<SharedString>,
@@ -44,6 +51,7 @@ pub struct Badge {
 }
 
 impl Badge {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(child: impl IntoElement) -> Self {
         Self {
             child: child.into_any_element(),
@@ -55,26 +63,31 @@ impl Badge {
         }
     }
 
+    /// Returns the serialized value used by forms, configuration, or persistence.
     pub fn value(mut self, value: impl Into<SharedString>) -> Self {
         self.value = Some(value.into());
         self
     }
 
+    /// Configures the max option.
     pub fn max(mut self, max: i32) -> Self {
         self.max = Some(max);
         self
     }
 
+    /// Returns whether dot is currently true for this value.
     pub fn is_dot(mut self, is_dot: bool) -> Self {
         self.is_dot = is_dot;
         self
     }
 
+    /// Configures the hidden option.
     pub fn hidden(mut self, hidden: bool) -> Self {
         self.hidden = hidden;
         self
     }
 
+    /// Configures the badge type option.
     pub fn badge_type(mut self, t: BadgeType) -> Self {
         self.badge_type = t;
         self

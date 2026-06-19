@@ -27,6 +27,7 @@ use liora_core::Config;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
+/// Public builder and render state for the Liora label component.
 pub struct Label {
     text: SharedString,
     icon: Option<IconName>,
@@ -37,6 +38,7 @@ pub struct Label {
 }
 
 impl Label {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(text: impl Into<SharedString>) -> Self {
         Self {
             text: text.into(),
@@ -48,22 +50,27 @@ impl Label {
         }
     }
 
+    /// Sets the tray icon configuration value.
     pub fn icon(mut self, icon: IconName) -> Self {
         self.icon = Some(icon);
         self
     }
+    /// Configures the custom icon option.
     pub fn custom_icon(mut self, icon: impl IntoElement) -> Self {
         self.custom_icon = Some(icon.into_any_element());
         self
     }
+    /// Configures the gap option.
     pub fn gap(mut self, gap: impl Into<Pixels>) -> Self {
         self.gap = gap.into().max(px(0.0));
         self
     }
+    /// Configures the color option.
     pub fn color(mut self, color: Hsla) -> Self {
         self.color = Some(color);
         self
     }
+    /// Sets an explicit icon size while preserving the default color behavior.
     pub fn size(mut self, size: impl Into<Pixels>) -> Self {
         self.size = size.into().max(px(8.0));
         self

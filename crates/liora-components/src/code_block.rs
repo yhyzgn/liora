@@ -45,21 +45,39 @@ use syntect::{
 };
 use two_face::theme::{EmbeddedLazyThemeSet, EmbeddedThemeName};
 
-actions!(code_block_actions, [CodeSelectAll, CodeCopy]);
+actions!(
+    code_block_actions,
+    [
+        #[doc = "Keyboard action that selects all code in the active code block."]
+        CodeSelectAll,
+        #[doc = "Keyboard action that copies the selected code block text."]
+        CodeCopy
+    ]
+);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// Enumerates the supported code language modes and options.
 pub enum CodeLanguage {
+    /// Uses the plain text variant.
     PlainText,
+    /// Uses the rust variant.
     Rust,
+    /// Uses the toml variant.
     Toml,
+    /// Reports a json failure.
     Json,
+    /// Uses the markdown variant.
     Markdown,
+    /// Uses the shell variant.
     Shell,
+    /// Uses the type script variant.
     TypeScript,
+    /// Uses the java script variant.
     JavaScript,
 }
 
 impl CodeLanguage {
+    /// Returns the stable user-facing label for this value.
     pub fn label(self) -> &'static str {
         match self {
             Self::PlainText => "text",
@@ -86,6 +104,7 @@ impl CodeLanguage {
         }
     }
 
+    /// Creates this value from label.
     pub fn from_label(label: &str) -> Self {
         match label.trim().to_ascii_lowercase().as_str() {
             "rs" | "rust" => Self::Rust,
@@ -113,27 +132,43 @@ impl From<String> for CodeLanguage {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Enumerates the supported code format modes and options.
 pub enum CodeFormat {
+    /// Uses the block variant.
     Block,
+    /// Uses the inline variant.
     Inline,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// Enumerates the supported code highlighter modes and options.
 pub enum CodeHighlighter {
+    /// Uses the syntect variant.
     Syntect,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// Enumerates the supported code theme modes and options.
 pub enum CodeTheme {
+    /// Uses the auto variant.
     Auto,
+    /// Uses the light theme mode.
     Light,
+    /// Uses the dark theme mode.
     Dark,
+    /// Uses the liora light variant.
     LioraLight,
+    /// Uses the liora dark variant.
     LioraDark,
+    /// Uses the git hub light variant.
     GitHubLight,
+    /// Uses the git hub dark variant.
     GitHubDark,
+    /// Uses the one dark variant.
     OneDark,
+    /// Uses the nord variant.
     Nord,
+    /// Uses the dracula variant.
     Dracula,
 }
 
@@ -150,6 +185,7 @@ struct ResolvedCodeTheme {
 }
 
 impl CodeTheme {
+    /// Returns the stable user-facing label for this value.
     pub fn label(self) -> &'static str {
         match self {
             Self::Auto => "auto",
@@ -188,6 +224,7 @@ impl CodeTheme {
     }
 }
 
+/// Public builder and render state for the Liora code block component.
 pub struct CodeBlock {
     code: SharedString,
     language: CodeLanguage,
@@ -203,6 +240,7 @@ pub struct CodeBlock {
 type CodeCopyCallback = dyn Fn(&str, &mut Window, &mut App) + 'static;
 
 impl CodeBlock {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(code: impl Into<SharedString>) -> Self {
         Self {
             code: code.into(),
@@ -217,119 +255,146 @@ impl CodeBlock {
         }
     }
 
+    /// Configures the language option.
     pub fn language(mut self, language: impl Into<CodeLanguage>) -> Self {
         self.language = language.into();
         self
     }
 
+    /// Configures the rust option.
     pub fn rust(self) -> Self {
         self.language(CodeLanguage::Rust)
     }
 
+    /// Configures the toml option.
     pub fn toml(self) -> Self {
         self.language(CodeLanguage::Toml)
     }
 
+    /// Configures the json option.
     pub fn json(self) -> Self {
         self.language(CodeLanguage::Json)
     }
 
+    /// Configures the markdown option.
     pub fn markdown(self) -> Self {
         self.language(CodeLanguage::Markdown)
     }
 
+    /// Configures the shell option.
     pub fn shell(self) -> Self {
         self.language(CodeLanguage::Shell)
     }
 
+    /// Configures the typescript option.
     pub fn typescript(self) -> Self {
         self.language(CodeLanguage::TypeScript)
     }
 
+    /// Configures the javascript option.
     pub fn javascript(self) -> Self {
         self.language(CodeLanguage::JavaScript)
     }
 
+    /// Configures the format option.
     pub fn format(mut self, format: CodeFormat) -> Self {
         self.format = format;
         self
     }
 
+    /// Configures the inline option.
     pub fn inline(mut self) -> Self {
         self.format = CodeFormat::Inline;
         self.copyable = false;
         self
     }
 
+    /// Configures the highlighter option.
     pub fn highlighter(mut self, highlighter: CodeHighlighter) -> Self {
         self.highlighter = highlighter;
         self
     }
 
+    /// Configures the syntect option.
     pub fn syntect(self) -> Self {
         self.highlighter(CodeHighlighter::Syntect)
     }
 
+    /// Configures the theme option.
     pub fn theme(mut self, theme: CodeTheme) -> Self {
         self.theme = theme;
         self
     }
 
+    /// Configures the auto theme option.
     pub fn auto_theme(self) -> Self {
         self.theme(CodeTheme::Auto)
     }
 
+    /// Configures the light theme option.
     pub fn light_theme(self) -> Self {
         self.theme(CodeTheme::Light)
     }
 
+    /// Configures the dark theme option.
     pub fn dark_theme(self) -> Self {
         self.theme(CodeTheme::Dark)
     }
 
+    /// Configures the liora light theme option.
     pub fn liora_light_theme(self) -> Self {
         self.theme(CodeTheme::LioraLight)
     }
 
+    /// Configures the liora dark theme option.
     pub fn liora_dark_theme(self) -> Self {
         self.theme(CodeTheme::LioraDark)
     }
 
+    /// Configures the github light theme option.
     pub fn github_light_theme(self) -> Self {
         self.theme(CodeTheme::GitHubLight)
     }
 
+    /// Configures the github dark theme option.
     pub fn github_dark_theme(self) -> Self {
         self.theme(CodeTheme::GitHubDark)
     }
 
+    /// Configures the one dark theme option.
     pub fn one_dark_theme(self) -> Self {
         self.theme(CodeTheme::OneDark)
     }
 
+    /// Configures the nord theme option.
     pub fn nord_theme(self) -> Self {
         self.theme(CodeTheme::Nord)
     }
 
+    /// Configures the dracula theme option.
     pub fn dracula_theme(self) -> Self {
         self.theme(CodeTheme::Dracula)
     }
 
+    /// Configures the copyable option.
     pub fn copyable(mut self, copyable: bool) -> Self {
         self.copyable = copyable;
         self
     }
 
+    /// Registers a callback that runs when copy occurs.
     pub fn on_copy(mut self, callback: impl Fn(&str, &mut Window, &mut App) + 'static) -> Self {
         self.on_copy = Some(Arc::new(callback));
         self
     }
 
+    /// Configures the selectable option.
     pub fn selectable(mut self, selectable: bool) -> Self {
         self.selectable = selectable;
         self
     }
 
+    /// Configures the register key bindings option.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([
             gpui::KeyBinding::new("cmd-a", CodeSelectAll, Some("CodeBlock")),
@@ -340,6 +405,7 @@ impl CodeBlock {
         Self::prewarm_highlighter();
     }
 
+    /// Configures the prewarm highlighter option.
     pub fn prewarm_highlighter() {
         let _ = syntax_set();
         let themes = theme_set();
@@ -356,6 +422,7 @@ impl CodeBlock {
         }
     }
 
+    /// Returns the stable tray command identifier used for menu event routing.
     pub fn id(mut self, id: impl Into<ElementId>) -> Self {
         self.id = Some(id.into());
         self

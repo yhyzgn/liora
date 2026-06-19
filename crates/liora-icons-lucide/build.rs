@@ -38,20 +38,40 @@ fn try_main() -> io::Result<()> {
     let generated = out_dir.join("generated.rs");
     let mut f = fs::File::create(&generated)?;
     writeln!(f, "// Auto-generated — {} icons", entries.len())?;
+    writeln!(
+        f,
+        "/// Strongly typed names for the bundled Lucide SVG icon assets."
+    )?;
+    writeln!(f, "///")?;
+    writeln!(
+        f,
+        "/// Pass a variant to `liora_icons::Icon::new(...)` to render that asset as"
+    )?;
+    writeln!(
+        f,
+        "/// a native GPUI SVG element without hard-coding asset paths."
+    )?;
     writeln!(f, "#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]")?;
     writeln!(f, "pub enum IconName {{")?;
-    for (v, _) in &entries {
+    for (v, file) in &entries {
+        let kebab = file.strip_suffix(".svg").unwrap_or(file);
+        writeln!(f, "    /// The `{}` Lucide icon asset.", kebab)?;
         writeln!(f, "    {},", v)?;
     }
     writeln!(f, "}}")?;
+    writeln!(f, "impl IconName {{")?;
     writeln!(
         f,
-        "impl IconName {{ pub fn file(&self) -> &'static str {{ match self {{"
+        "    /// Returns the bundled SVG file name for this Lucide icon."
     )?;
+    writeln!(f, "    pub fn file(&self) -> &'static str {{")?;
+    writeln!(f, "        match self {{")?;
     for (v, file) in &entries {
         writeln!(f, "    IconName::{} => \"{}\",", v, file)?;
     }
-    writeln!(f, "}} }} }}")?;
+    writeln!(f, "        }}")?;
+    writeln!(f, "    }}")?;
+    writeln!(f, "}}")?;
     println!("cargo:rerun-if-changed=assets/svgs/");
     Ok(())
 }

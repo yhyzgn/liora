@@ -36,8 +36,15 @@ fn rgba(r: u8, g: u8, b: u8, a: f32) -> Hsla {
     .into()
 }
 
-gpui::actions!(radio, [RadioSelect]);
+gpui::actions!(
+    radio,
+    [
+        #[doc = "Keyboard action that selects the focused radio option."]
+        RadioSelect
+    ]
+);
 
+/// Public builder and render state for the Liora radio component.
 pub struct Radio {
     checked: bool,
     disabled: bool,
@@ -47,6 +54,7 @@ pub struct Radio {
 }
 
 impl Radio {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(checked: bool, cx: &mut Context<Self>) -> Self {
         Self {
             checked,
@@ -57,19 +65,23 @@ impl Radio {
         }
     }
 
+    /// Configures the disabled option.
     pub fn disabled(mut self, d: bool) -> Self {
         self.disabled = d;
         self
     }
+    /// Returns the stable user-facing label for this value.
     pub fn label(mut self, text: impl Into<SharedString>) -> Self {
         self.label = Some(text.into());
         self
     }
+    /// Registers a callback that runs when change occurs.
     pub fn on_change(mut self, cb: impl Fn(&mut Window, &mut App) + 'static) -> Self {
         self.on_change = Some(Box::new(cb));
         self
     }
 
+    /// Configures the register key bindings option.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([
             KeyBinding::new("space", RadioSelect, None),

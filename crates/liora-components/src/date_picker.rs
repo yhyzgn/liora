@@ -30,35 +30,58 @@ use liora_core::{Config, push_portal};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
-actions!(date_picker, [DatePickerClose]);
+actions!(
+    date_picker,
+    [
+        #[doc = "Keyboard action that closes the active date picker popup."]
+        DatePickerClose
+    ]
+);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+/// Public builder and render state for the Liora date value component.
 pub struct DateValue {
+    /// Year for this data model.
     pub year: i32,
+    /// Month for this data model.
     pub month: u32,
+    /// Day for this data model.
     pub day: u32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported date picker type modes and options.
 pub enum DatePickerType {
     #[default]
+    /// Uses the date variant.
     Date,
+    /// Uses the date range variant.
     DateRange,
+    /// Uses the month variant.
     Month,
+    /// Uses the month range variant.
     MonthRange,
+    /// Uses the year variant.
     Year,
+    /// Uses the year range variant.
     YearRange,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Enumerates the supported date picker selection modes and options.
 pub enum DatePickerSelection {
+    /// Stores a single selection value.
     Single(Option<DateValue>),
+    /// Stores a range selection value.
     Range {
+        /// Inclusive start date for the selected range.
         start: Option<DateValue>,
+        /// Inclusive end date for the selected range.
         end: Option<DateValue>,
     },
 }
 
+/// Public builder and render state for the Liora date picker component.
 pub struct DatePicker {
     id: SharedString,
     picker_type: DatePickerType,
@@ -83,6 +106,7 @@ pub struct DatePicker {
 }
 
 impl DateValue {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(year: i32, month: u32, day: u32) -> Option<Self> {
         if !(1..=12).contains(&month) || day == 0 || day > days_in_month(year, month) {
             return None;
@@ -90,12 +114,14 @@ impl DateValue {
         Some(Self { year, month, day })
     }
 
+    /// Configures the format option.
     pub fn format(&self) -> String {
         format!("{:04}-{:02}-{:02}", self.year, self.month, self.day)
     }
 }
 
 impl DatePicker {
+    /// Creates a new value with the required baseline configuration.
     pub fn new() -> Self {
         Self {
             id: liora_core::unique_id("date-picker"),
@@ -120,11 +146,13 @@ impl DatePicker {
         }
     }
 
+    /// Returns the stable tray command identifier used for menu event routing.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
+    /// Configures the picker type option.
     pub fn picker_type(mut self, picker_type: DatePickerType) -> Self {
         self.picker_type = picker_type;
         if self.placeholder == SharedString::from("请选择日期") {
@@ -133,30 +161,37 @@ impl DatePicker {
         self
     }
 
+    /// Configures the date option.
     pub fn date(self) -> Self {
         self.picker_type(DatePickerType::Date)
     }
 
+    /// Configures the date range option.
     pub fn date_range(self) -> Self {
         self.picker_type(DatePickerType::DateRange)
     }
 
+    /// Configures the month option.
     pub fn month(self) -> Self {
         self.picker_type(DatePickerType::Month)
     }
 
+    /// Configures the month range option.
     pub fn month_range(self) -> Self {
         self.picker_type(DatePickerType::MonthRange)
     }
 
+    /// Configures the year option.
     pub fn year(self) -> Self {
         self.picker_type(DatePickerType::Year)
     }
 
+    /// Configures the year range option.
     pub fn year_range(self) -> Self {
         self.picker_type(DatePickerType::YearRange)
     }
 
+    /// Returns the serialized value used by forms, configuration, or persistence.
     pub fn value(mut self, value: DateValue) -> Self {
         self.view_year = value.year;
         self.view_month = value.month;
@@ -164,6 +199,7 @@ impl DatePicker {
         self
     }
 
+    /// Configures the range option.
     pub fn range(mut self, start: DateValue, end: DateValue) -> Self {
         let (start, end) = ordered_pair(
             normalize_value(start, self.picker_type),
@@ -176,49 +212,59 @@ impl DatePicker {
         self
     }
 
+    /// Configures the placeholder option.
     pub fn placeholder(mut self, placeholder: impl Into<SharedString>) -> Self {
         self.placeholder = placeholder.into();
         self
     }
 
+    /// Configures the format option.
     pub fn format(mut self, format: impl Into<SharedString>) -> Self {
         self.display_format = Some(format.into());
         self
     }
 
+    /// Configures the range separator option.
     pub fn range_separator(mut self, separator: impl Into<SharedString>) -> Self {
         self.range_separator = separator.into();
         self
     }
 
+    /// Returns the width token used for component sizing.
     pub fn width(mut self, width: impl Into<Pixels>) -> Self {
         self.width = Some(width.into());
         self
     }
 
+    /// Applies the predefined width md sizing preset.
     pub fn width_md(self) -> Self {
         self.width(px(260.0))
     }
 
+    /// Applies the predefined width lg sizing preset.
     pub fn width_lg(self) -> Self {
         self.width(px(320.0))
     }
 
+    /// Configures the disabled option.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
     }
 
+    /// Configures the close on escape option.
     pub fn close_on_escape(mut self, close: bool) -> Self {
         self.close_on_escape = close;
         self
     }
 
+    /// Configures the close on click outside option.
     pub fn close_on_click_outside(mut self, close: bool) -> Self {
         self.close_on_click_outside = close;
         self
     }
 
+    /// Configures the register key bindings option.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([gpui::KeyBinding::new("escape", DatePickerClose, None)]);
     }
@@ -234,6 +280,7 @@ impl DatePicker {
         }
     }
 
+    /// Registers a callback that runs when change occurs.
     pub fn on_change(
         mut self,
         f: impl Fn(Option<DateValue>, &mut Window, &mut App) + 'static,
@@ -242,6 +289,7 @@ impl DatePicker {
         self
     }
 
+    /// Registers a callback that runs when range change occurs.
     pub fn on_range_change(
         mut self,
         f: impl Fn(Option<DateValue>, Option<DateValue>, &mut Window, &mut App) + 'static,
@@ -250,6 +298,7 @@ impl DatePicker {
         self
     }
 
+    /// Registers a callback that runs when selection change occurs.
     pub fn on_selection_change(
         mut self,
         f: impl Fn(DatePickerSelection, &mut Window, &mut App) + 'static,
@@ -258,6 +307,7 @@ impl DatePicker {
         self
     }
 
+    /// Updates the stored on change value and keeps the existing component identity.
     pub fn set_on_change(
         &mut self,
         f: impl Fn(Option<DateValue>, &mut Window, &mut App) + 'static,
@@ -266,6 +316,7 @@ impl DatePicker {
         self.on_change = Some(Box::new(f));
     }
 
+    /// Updates the stored on range change value and keeps the existing component identity.
     pub fn set_on_range_change(
         &mut self,
         f: impl Fn(Option<DateValue>, Option<DateValue>, &mut Window, &mut App) + 'static,
@@ -274,6 +325,7 @@ impl DatePicker {
         self.on_range_change = Some(Box::new(f));
     }
 
+    /// Updates the stored on selection change value and keeps the existing component identity.
     pub fn set_on_selection_change(
         &mut self,
         f: impl Fn(DatePickerSelection, &mut Window, &mut App) + 'static,
@@ -282,6 +334,7 @@ impl DatePicker {
         self.on_selection_change = Some(Box::new(f));
     }
 
+    /// Updates the stored value value and keeps the existing component identity.
     pub fn set_value(&mut self, value: Option<DateValue>, cx: &mut Context<Self>) {
         self.value = value.map(|value| normalize_value(value, self.picker_type));
         if let Some(value) = self.value {
@@ -291,6 +344,7 @@ impl DatePicker {
         cx.notify();
     }
 
+    /// Updates the stored range value and keeps the existing component identity.
     pub fn set_range(
         &mut self,
         start: Option<DateValue>,
@@ -316,10 +370,12 @@ impl DatePicker {
         cx.notify();
     }
 
+    /// Configures the value ref option.
     pub fn value_ref(&self) -> Option<DateValue> {
         self.value
     }
 
+    /// Configures the range ref option.
     pub fn range_ref(&self) -> (Option<DateValue>, Option<DateValue>) {
         (self.range_start, self.range_end)
     }

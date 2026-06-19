@@ -29,15 +29,29 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 use std::sync::Arc;
 
+/// Type alias for code editor change callback values used by the code editor API.
 pub type CodeEditorChangeCallback = dyn Fn(&str, &mut Context<CodeEditor>) + 'static;
+/// Type alias for code diagnostics provider values used by the code editor API.
 pub type CodeDiagnosticsProvider = dyn Fn(&str) -> Vec<CodeDiagnostic> + 'static;
 
-actions!(code_editor, [CodeIndent, CodeOutdent]);
+actions!(
+    code_editor,
+    [
+        #[doc = "Keyboard action that indents the selected code editor lines."]
+        CodeIndent,
+        #[doc = "Keyboard action that outdents the selected code editor lines."]
+        CodeOutdent
+    ]
+);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+/// Enumerates the supported code diagnostic severity modes and options.
 pub enum CodeDiagnosticSeverity {
+    /// Uses the info semantic button variant.
     Info,
+    /// Uses the warning semantic button variant.
     Warning,
+    /// Reports a error failure.
     Error,
 }
 
@@ -60,14 +74,20 @@ impl CodeDiagnosticSeverity {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+/// Public builder and render state for the Liora code diagnostic component.
 pub struct CodeDiagnostic {
+    /// Line for this data model.
     pub line: usize,
+    /// Column for this data model.
     pub column: usize,
+    /// Severity for this data model.
     pub severity: CodeDiagnosticSeverity,
+    /// User-facing message associated with this item.
     pub message: SharedString,
 }
 
 impl CodeDiagnostic {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(
         line: usize,
         column: usize,
@@ -82,14 +102,17 @@ impl CodeDiagnostic {
         }
     }
 
+    /// Configures the info option.
     pub fn info(line: usize, column: usize, message: impl Into<SharedString>) -> Self {
         Self::new(line, column, CodeDiagnosticSeverity::Info, message)
     }
 
+    /// Configures the warning option.
     pub fn warning(line: usize, column: usize, message: impl Into<SharedString>) -> Self {
         Self::new(line, column, CodeDiagnosticSeverity::Warning, message)
     }
 
+    /// Configures the error option.
     pub fn error(line: usize, column: usize, message: impl Into<SharedString>) -> Self {
         Self::new(line, column, CodeDiagnosticSeverity::Error, message)
     }
@@ -118,6 +141,7 @@ pub struct CodeEditor {
 }
 
 impl CodeEditor {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(value: impl Into<SharedString>, cx: &mut Context<Self>) -> Self {
         let value = value.into();
         let rows = line_count(value.as_ref()).max(8);
@@ -147,26 +171,31 @@ impl CodeEditor {
         }
     }
 
+    /// Creates a GPUI entity that owns this component state across render passes.
     pub fn entity(value: impl Into<SharedString>, cx: &mut App) -> Entity<Self> {
         let value = value.into();
         cx.new(|cx| Self::new(value, cx))
     }
 
+    /// Returns the serialized value used by forms, configuration, or persistence.
     pub fn value(&self, cx: &App) -> SharedString {
         self.input.read(cx).value()
     }
 
+    /// Updates the stored value value and keeps the existing component identity.
     pub fn set_value(&mut self, value: impl Into<SharedString>, cx: &mut Context<Self>) {
         self.input
             .update(cx, |input, cx| input.set_value(value, cx));
         cx.notify();
     }
 
+    /// Configures the language option.
     pub fn language(mut self, language: impl Into<CodeLanguage>) -> Self {
         self.language = language.into();
         self
     }
 
+    /// Updates the stored language value and keeps the existing component identity.
     pub fn set_language(&mut self, language: impl Into<CodeLanguage>, cx: &mut Context<Self>) {
         let language = language.into();
         if self.language != language {
@@ -175,46 +204,55 @@ impl CodeEditor {
         }
     }
 
+    /// Configures the theme option.
     pub fn theme(mut self, theme: CodeTheme) -> Self {
         self.theme = theme;
         self
     }
 
+    /// Configures the line numbers option.
     pub fn line_numbers(mut self, enabled: bool) -> Self {
         self.line_numbers = enabled;
         self
     }
 
+    /// Configures the tab size option.
     pub fn tab_size(mut self, size: usize) -> Self {
         self.tab_size = size.max(1);
         self
     }
 
+    /// Configures the soft tabs option.
     pub fn soft_tabs(mut self, enabled: bool) -> Self {
         self.soft_tabs = enabled;
         self
     }
 
+    /// Configures the rows option.
     pub fn rows(mut self, rows: usize) -> Self {
         self.rows = rows.max(1);
         self
     }
 
+    /// Returns the height token used for component sizing.
     pub fn height(mut self, height: impl Into<Pixels>) -> Self {
         self.height = Some(height.into());
         self
     }
 
+    /// Configures the preview option.
     pub fn preview(mut self, preview: bool) -> Self {
         self.preview = preview;
         self
     }
 
+    /// Configures the diagnostics option.
     pub fn diagnostics(mut self, diagnostics: impl IntoIterator<Item = CodeDiagnostic>) -> Self {
         self.diagnostics = diagnostics.into_iter().collect();
         self
     }
 
+    /// Updates the stored diagnostics value and keeps the existing component identity.
     pub fn set_diagnostics(
         &mut self,
         diagnostics: impl IntoIterator<Item = CodeDiagnostic>,
@@ -224,6 +262,7 @@ impl CodeEditor {
         cx.notify();
     }
 
+    /// Configures the diagnostics provider option.
     pub fn diagnostics_provider(
         mut self,
         provider: impl Fn(&str) -> Vec<CodeDiagnostic> + 'static,
@@ -232,6 +271,7 @@ impl CodeEditor {
         self
     }
 
+    /// Updates the stored diagnostics provider value and keeps the existing component identity.
     pub fn set_diagnostics_provider(
         &mut self,
         provider: impl Fn(&str) -> Vec<CodeDiagnostic> + 'static,
@@ -242,11 +282,13 @@ impl CodeEditor {
         cx.notify();
     }
 
+    /// Clears the current diagnostics provider state.
     pub fn clear_diagnostics_provider(&mut self, cx: &mut Context<Self>) {
         self.diagnostics_provider = None;
         cx.notify();
     }
 
+    /// Registers a callback that runs when change occurs.
     pub fn on_change(
         mut self,
         callback: impl Fn(&str, &mut Context<CodeEditor>) + 'static,
@@ -255,6 +297,7 @@ impl CodeEditor {
         self
     }
 
+    /// Updates the stored on change value and keeps the existing component identity.
     pub fn set_on_change(
         &mut self,
         callback: impl Fn(&str, &mut Context<CodeEditor>) + 'static,
@@ -264,6 +307,7 @@ impl CodeEditor {
         cx.notify();
     }
 
+    /// Configures the indent unit option.
     pub fn indent_unit(&self) -> String {
         if self.soft_tabs {
             " ".repeat(self.tab_size)
@@ -272,6 +316,7 @@ impl CodeEditor {
         }
     }
 
+    /// Configures the register key bindings option.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([
             KeyBinding::new("tab", CodeIndent, None),

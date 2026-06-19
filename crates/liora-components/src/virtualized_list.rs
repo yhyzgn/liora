@@ -53,6 +53,7 @@ pub struct VirtualizedList {
 }
 
 impl VirtualizedList {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(
         item_count: usize,
         _cx: &mut Context<Self>,
@@ -76,6 +77,7 @@ impl VirtualizedList {
         }
     }
 
+    /// Creates a GPUI entity that owns this component state across render passes.
     pub fn entity(
         item_count: usize,
         cx: &mut App,
@@ -84,10 +86,12 @@ impl VirtualizedList {
         cx.new(|cx| Self::new(item_count, cx, render_item))
     }
 
+    /// Configures the list state option.
     pub fn list_state(&self) -> ListState {
         self.list_state.clone()
     }
 
+    /// Updates the stored item count value and keeps the existing component identity.
     pub fn set_item_count(&mut self, item_count: usize) {
         if self.item_count == item_count {
             return;
@@ -100,6 +104,7 @@ impl VirtualizedList {
         self.list_state = Self::new_list_state(item_count, self.overdraw, self.measure_all_items);
     }
 
+    /// Updates the stored render item value and keeps the existing component identity.
     pub fn set_render_item(
         &mut self,
         render_item: impl Fn(usize, &mut Window, &mut App) -> AnyElement + 'static,
@@ -107,6 +112,7 @@ impl VirtualizedList {
         self.render_item = Arc::new(render_item);
     }
 
+    /// Updates the stored item spacing value and keeps the existing component identity.
     pub fn set_item_spacing(&mut self, spacing: impl Into<Pixels>) {
         let spacing = spacing.into();
         if self.item_spacing == spacing {
@@ -116,6 +122,7 @@ impl VirtualizedList {
         self.list_state.reset(self.item_count);
     }
 
+    /// Updates the stored overdraw value and keeps the existing component identity.
     pub fn set_overdraw(&mut self, overdraw: impl Into<Pixels>) {
         let overdraw = overdraw.into();
         if self.overdraw == overdraw {
@@ -125,6 +132,7 @@ impl VirtualizedList {
         self.list_state = Self::new_list_state(self.item_count, overdraw, self.measure_all_items);
     }
 
+    /// Updates the stored height value and keeps the existing component identity.
     pub fn set_height(&mut self, height: Option<Pixels>) {
         if self.height == height {
             return;
@@ -133,6 +141,7 @@ impl VirtualizedList {
         self.list_state.reset(self.item_count);
     }
 
+    /// Updates the stored draggable value and keeps the existing component identity.
     pub fn set_draggable(&mut self, draggable: bool) {
         self.draggable = draggable;
         if !draggable {
@@ -141,6 +150,7 @@ impl VirtualizedList {
         }
     }
 
+    /// Updates the stored on reorder value and keeps the existing component identity.
     pub fn set_on_reorder(
         &mut self,
         callback: impl Fn(usize, usize, &mut Window, &mut App) + 'static,
@@ -148,6 +158,7 @@ impl VirtualizedList {
         self.on_reorder = Some(Arc::new(callback));
     }
 
+    /// Configures the order option.
     pub fn order(&self) -> &[usize] {
         &self.order
     }

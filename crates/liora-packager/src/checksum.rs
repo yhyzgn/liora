@@ -5,11 +5,15 @@ use std::{
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Checksum digest for a packaged or downloaded artifact.
 pub struct Checksum {
+    /// Checksum algorithm used to produce the digest.
     pub algorithm: &'static str,
+    /// Lowercase hexadecimal checksum digest.
     pub hex: String,
 }
 
+/// Computes the SHA-256 checksum for a file by streaming its bytes from disk.
 pub fn sha256_file(path: &Path) -> io::Result<Checksum> {
     let mut file = File::open(path)?;
     let mut hasher = Sha256::new();

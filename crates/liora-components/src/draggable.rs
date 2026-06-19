@@ -26,8 +26,11 @@ use liora_icons_lucide::IconName;
 /// Axis used by Liora's native drag helpers.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum DragAxis {
+    /// Lays out content in the horizontal direction.
     Horizontal,
+    /// Lays out content in the vertical direction.
     Vertical,
+    /// Uses the free variant.
     Free,
 }
 
@@ -48,10 +51,12 @@ pub struct DragState {
 }
 
 impl DragState {
+    /// Configures the start option.
     pub fn start(&mut self, index: usize, position: Point<Pixels>) {
         self.start_at(index, position, None);
     }
 
+    /// Configures the start at option.
     pub fn start_at(
         &mut self,
         index: usize,
@@ -67,24 +72,28 @@ impl DragState {
             bounds.map(|bounds| point(position.x - bounds.origin.x, position.y - bounds.origin.y));
     }
 
+    /// Configures the update position option.
     pub fn update_position(&mut self, position: Point<Pixels>) {
         if self.active_index.is_some() {
             self.current_position = Some(position);
         }
     }
 
+    /// Updates the stored over value and keeps the existing component identity.
     pub fn set_over(&mut self, index: usize) {
         if self.active_index.is_some() {
             self.over_index = Some(index);
         }
     }
 
+    /// Configures the move active to option.
     pub fn move_active_to(&mut self, index: usize) {
         self.active_index = Some(index);
         self.over_index = Some(index);
         self.start_position = self.current_position;
     }
 
+    /// Configures the finish option.
     pub fn finish(&mut self) -> Option<(usize, usize)> {
         let origin = self.origin_index.take()?;
         let active = self.active_index.take()?;
@@ -95,6 +104,7 @@ impl DragState {
         Some((origin, target))
     }
 
+    /// Configures the cancel option.
     pub fn cancel(&mut self) {
         self.origin_index = None;
         self.active_index = None;
@@ -104,26 +114,32 @@ impl DragState {
         self.grab_offset = None;
     }
 
+    /// Configures the active index option.
     pub fn active_index(&self) -> Option<usize> {
         self.active_index
     }
 
+    /// Configures the origin index option.
     pub fn origin_index(&self) -> Option<usize> {
         self.origin_index
     }
 
+    /// Configures the over index option.
     pub fn over_index(&self) -> Option<usize> {
         self.over_index
     }
 
+    /// Returns whether active is currently true for this value.
     pub fn is_active(&self, index: usize) -> bool {
         self.active_index == Some(index)
     }
 
+    /// Returns whether over is currently true for this value.
     pub fn is_over(&self, index: usize) -> bool {
         self.over_index == Some(index) && self.active_index != Some(index)
     }
 
+    /// Configures the offset option.
     pub fn offset(&self, axis: DragAxis) -> (Pixels, Pixels) {
         let Some(start) = self.start_position else {
             return (px(0.0), px(0.0));

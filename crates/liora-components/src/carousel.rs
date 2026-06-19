@@ -28,20 +28,28 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported carousel direction modes and options.
 pub enum CarouselDirection {
     #[default]
+    /// Lays out content in the horizontal direction.
     Horizontal,
+    /// Lays out content in the vertical direction.
     Vertical,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported carousel indicator position modes and options.
 pub enum CarouselIndicatorPosition {
     #[default]
+    /// Uses the inside variant.
     Inside,
+    /// Uses the outside variant.
     Outside,
+    /// Uses the none variant.
     None,
 }
 
+/// Public builder and render state for the Liora carousel item component.
 pub struct CarouselItem {
     title: SharedString,
     description: Option<SharedString>,
@@ -50,6 +58,7 @@ pub struct CarouselItem {
 }
 
 impl CarouselItem {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(title: impl Into<SharedString>) -> Self {
         Self {
             title: title.into(),
@@ -59,22 +68,26 @@ impl CarouselItem {
         }
     }
 
+    /// Configures the description option.
     pub fn description(mut self, description: impl Into<SharedString>) -> Self {
         self.description = Some(description.into());
         self
     }
 
+    /// Configures the accent option.
     pub fn accent(mut self, color: Hsla) -> Self {
         self.accent = Some(color);
         self
     }
 
+    /// Configures the content option.
     pub fn content(mut self, content: impl IntoElement) -> Self {
         self.content = Some(content.into_any_element());
         self
     }
 }
 
+/// Public builder and render state for the Liora carousel component.
 pub struct Carousel {
     items: Vec<CarouselItem>,
     active_index: usize,
@@ -89,6 +102,7 @@ pub struct Carousel {
 }
 
 impl Carousel {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(items: Vec<CarouselItem>) -> Self {
         Self {
             items,
@@ -104,64 +118,81 @@ impl Carousel {
         }
     }
 
+    /// Configures the active index option.
     pub fn active_index(mut self, index: usize) -> Self {
         self.active_index = index;
         self
     }
+    /// Configures the direction option.
     pub fn direction(mut self, direction: CarouselDirection) -> Self {
         self.direction = direction;
         self
     }
+    /// Configures the vertical option.
     pub fn vertical(self) -> Self {
         self.direction(CarouselDirection::Vertical)
     }
+    /// Configures the horizontal option.
     pub fn horizontal(self) -> Self {
         self.direction(CarouselDirection::Horizontal)
     }
+    /// Configures the indicator position option.
     pub fn indicator_position(mut self, position: CarouselIndicatorPosition) -> Self {
         self.indicator_position = position;
         self
     }
+    /// Configures the indicators outside option.
     pub fn indicators_outside(self) -> Self {
         self.indicator_position(CarouselIndicatorPosition::Outside)
     }
+    /// Configures whether indicators is hidden in the rendered component.
     pub fn hide_indicators(self) -> Self {
         self.indicator_position(CarouselIndicatorPosition::None)
     }
+    /// Returns the height token used for component sizing.
     pub fn height(mut self, height: impl Into<Pixels>) -> Self {
         self.height = height.into();
         self
     }
+    /// Configures the autoplay option.
     pub fn autoplay(mut self, enabled: bool) -> Self {
         self.autoplay = enabled;
         self
     }
+    /// Configures the interval ms option.
     pub fn interval_ms(mut self, ms: u64) -> Self {
         self.interval_ms = ms.max(250);
         self
     }
+    /// Configures whether arrows is visible in the rendered component.
     pub fn show_arrows(mut self, show: bool) -> Self {
         self.show_arrows = show;
         self
     }
+    /// Configures the pause on hover option.
     pub fn pause_on_hover(mut self, pause: bool) -> Self {
         self.pause_on_hover = pause;
         self
     }
+    /// Registers a callback that runs when change occurs.
     pub fn on_change(mut self, cb: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
         self.on_change = Some(Box::new(cb));
         self
     }
+    /// Configures the item count option.
     pub fn item_count(&self) -> usize {
         self.items.len()
     }
+    /// Configures the resolved active index option.
     pub fn resolved_active_index(&self) -> Option<usize> {
         (!self.items.is_empty()).then(|| self.active_index.min(self.items.len() - 1))
     }
+    /// Configures the next index option.
     pub fn next_index(&self) -> Option<usize> {
         self.resolved_active_index()
             .map(|idx| (idx + 1) % self.items.len())
     }
+    /// Configures the previous index option.
     pub fn previous_index(&self) -> Option<usize> {
         self.resolved_active_index().map(|idx| {
             if idx == 0 {

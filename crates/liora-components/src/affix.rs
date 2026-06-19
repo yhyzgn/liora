@@ -26,12 +26,16 @@ use gpui::{
 use liora_core::push_passive_portal;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported affix position modes and options.
 pub enum AffixPosition {
     #[default]
+    /// Uses the top variant.
     Top,
+    /// Uses the bottom variant.
     Bottom,
 }
 
+/// Public builder and render state for the Liora affix component.
 pub struct Affix {
     offset: Pixels,
     position: AffixPosition,
@@ -44,6 +48,7 @@ pub struct Affix {
 use std::sync::Arc;
 
 impl Affix {
+    /// Creates a new value with the required baseline configuration.
     pub fn new() -> Self {
         Self {
             offset: px(0.0),
@@ -55,29 +60,35 @@ impl Affix {
         }
     }
 
+    /// Configures the offset option.
     pub fn offset(mut self, offset: impl Into<Pixels>) -> Self {
         self.offset = offset.into();
         self
     }
 
+    /// Applies the predefined offset md sizing preset.
     pub fn offset_md(self) -> Self {
         self.offset(px(20.0))
     }
 
+    /// Applies the predefined offset lg sizing preset.
     pub fn offset_lg(self) -> Self {
         self.offset(px(80.0))
     }
 
+    /// Configures the position option.
     pub fn position(mut self, pos: AffixPosition) -> Self {
         self.position = pos;
         self
     }
 
+    /// Registers a callback that runs when change occurs.
     pub fn on_change(mut self, f: impl Fn(bool, &mut Window, &mut App) + 'static) -> Self {
         self.on_change = Some(Box::new(f));
         self
     }
 
+    /// Configures the content option.
     pub fn content<F>(mut self, f: F) -> Self
     where
         F: Fn(&mut Window, &mut Context<Affix>) -> AnyElement + 'static,

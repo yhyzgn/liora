@@ -27,40 +27,63 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported timeline modes and options.
 pub enum TimelineMode {
     #[default]
+    /// Uses the left variant.
     Left,
+    /// Uses the right variant.
     Right,
+    /// Uses the alternate variant.
     Alternate,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Enumerates the supported timeline tone modes and options.
 pub enum TimelineTone {
+    /// Uses the primary semantic button variant.
     Primary,
+    /// Uses the success semantic button variant.
     Success,
+    /// Uses the warning semantic button variant.
     Warning,
+    /// Uses the danger semantic button variant.
     Danger,
+    /// Uses the info semantic button variant.
     Info,
 }
 
+/// Public builder and render state for the Liora timeline item component.
 pub struct TimelineItem {
+    /// Timestamp for this data model.
     pub timestamp: Option<SharedString>,
+    /// Content rendered inside the component body.
     pub content: AnyElement,
+    /// Color token or explicit color applied to the visual element.
     pub color: Option<Hsla>,
+    /// Tone for this data model.
     pub tone: Option<TimelineTone>,
+    /// Optional icon rendered with the item.
     pub icon: Option<IconName>,
+    /// Hollow for this data model.
     pub hollow: bool,
+    /// Hide timestamp for this data model.
     pub hide_timestamp: bool,
+    /// Placement for this data model.
     pub placement: TimelinePlacement,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported timeline placement modes and options.
 pub enum TimelinePlacement {
     #[default]
+    /// Uses the top variant.
     Top,
+    /// Uses the bottom variant.
     Bottom,
 }
 
+/// Public builder and render state for the Liora timeline component.
 pub struct Timeline {
     items: Vec<TimelineItem>,
     reverse: bool,
@@ -68,6 +91,7 @@ pub struct Timeline {
 }
 
 impl TimelineItem {
+    /// Creates a new value with the required baseline configuration.
     pub fn new() -> Self {
         Self {
             timestamp: None,
@@ -81,63 +105,76 @@ impl TimelineItem {
         }
     }
 
+    /// Configures the timestamp option.
     pub fn timestamp(mut self, t: impl Into<SharedString>) -> Self {
         self.timestamp = Some(t.into());
         self
     }
 
+    /// Configures the content option.
     pub fn content(mut self, content: impl IntoElement) -> Self {
         self.content = content.into_any_element();
         self
     }
 
+    /// Configures the color option.
     pub fn color(mut self, c: Hsla) -> Self {
         self.color = Some(c);
         self.tone = None;
         self
     }
 
+    /// Configures the tone option.
     pub fn tone(mut self, tone: TimelineTone) -> Self {
         self.tone = Some(tone);
         self.color = None;
         self
     }
 
+    /// Configures the primary option.
     pub fn primary(self) -> Self {
         self.tone(TimelineTone::Primary)
     }
 
+    /// Configures the success option.
     pub fn success(self) -> Self {
         self.tone(TimelineTone::Success)
     }
 
+    /// Configures the warning option.
     pub fn warning(self) -> Self {
         self.tone(TimelineTone::Warning)
     }
 
+    /// Configures the danger option.
     pub fn danger(self) -> Self {
         self.tone(TimelineTone::Danger)
     }
 
+    /// Configures the info option.
     pub fn info(self) -> Self {
         self.tone(TimelineTone::Info)
     }
 
+    /// Sets the tray icon configuration value.
     pub fn icon(mut self, icon: IconName) -> Self {
         self.icon = Some(icon);
         self
     }
 
+    /// Configures the hollow option.
     pub fn hollow(mut self, h: bool) -> Self {
         self.hollow = h;
         self
     }
 
+    /// Configures the placement option.
     pub fn placement(mut self, p: TimelinePlacement) -> Self {
         self.placement = p;
         self
     }
 
+    /// Configures whether timestamp is hidden in the rendered component.
     pub fn hide_timestamp(mut self, hide: bool) -> Self {
         self.hide_timestamp = hide;
         self
@@ -145,6 +182,7 @@ impl TimelineItem {
 }
 
 impl Timeline {
+    /// Creates a new value with the required baseline configuration.
     pub fn new() -> Self {
         Self {
             items: vec![],
@@ -153,16 +191,19 @@ impl Timeline {
         }
     }
 
+    /// Configures the reverse option.
     pub fn reverse(mut self, r: bool) -> Self {
         self.reverse = r;
         self
     }
 
+    /// Configures the mode option.
     pub fn mode(mut self, m: TimelineMode) -> Self {
         self.mode = m;
         self
     }
 
+    /// Configures the item option.
     pub fn item(mut self, item: TimelineItem) -> Self {
         self.items.push(item);
         self

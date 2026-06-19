@@ -26,6 +26,7 @@ use liora_core::Config;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
+/// Public builder and render state for the Liora rate component.
 pub struct Rate {
     value: f32,
     max: usize,
@@ -36,6 +37,7 @@ pub struct Rate {
 }
 
 impl Rate {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(value: f32, cx: &mut Context<Self>) -> Self {
         Self {
             value,
@@ -47,15 +49,18 @@ impl Rate {
         }
     }
 
+    /// Configures the max option.
     pub fn max(mut self, max: usize) -> Self {
         self.max = max;
         self
     }
+    /// Configures the disabled option.
     pub fn disabled(mut self, d: bool) -> Self {
         self.disabled = d;
         self
     }
 
+    /// Registers a callback that runs when change occurs.
     pub fn on_change(mut self, cb: impl Fn(f32, &mut Window, &mut App) + 'static) -> Self {
         self.on_change = Some(Box::new(cb));
         self

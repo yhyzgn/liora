@@ -59,6 +59,7 @@ pub struct VirtualizedTable {
 }
 
 impl VirtualizedTable {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(
         columns: Vec<TableColumn>,
         row_count: usize,
@@ -84,26 +85,31 @@ impl VirtualizedTable {
         }
     }
 
+    /// Returns the stable tray command identifier used for menu event routing.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
+    /// Returns the height token used for component sizing.
     pub fn height(mut self, height: impl Into<Pixels>) -> Self {
         self.height = height.into();
         self
     }
 
+    /// Applies the predefined height md sizing preset.
     pub fn height_md(self) -> Self {
         self.height(px(360.0))
     }
 
+    /// Configures the row height option.
     pub fn row_height(mut self, height: impl Into<Pixels>) -> Self {
         self.row_height = height.into();
         self.list_state.reset(self.row_count);
         self
     }
 
+    /// Configures the overdraw option.
     pub fn overdraw(mut self, overdraw: impl Into<Pixels>) -> Self {
         let overdraw = overdraw.into();
         self.overdraw = overdraw;
@@ -111,32 +117,38 @@ impl VirtualizedTable {
         self
     }
 
+    /// Configures the border option.
     pub fn border(mut self, border: bool) -> Self {
         self.border = border;
         self
     }
 
+    /// Configures the stripe option.
     pub fn stripe(mut self, stripe: bool) -> Self {
         self.stripe = stripe;
         self
     }
 
+    /// Configures the loading option.
     pub fn loading(mut self, loading: bool) -> Self {
         self.loading = loading;
         self
     }
 
+    /// Configures the empty text option.
     pub fn empty_text(mut self, text: impl Into<SharedString>) -> Self {
         self.empty_text = text.into();
         self
     }
 
+    /// Configures the sort option.
     pub fn sort(mut self, key: impl Into<SharedString>, order: Option<TableSortOrder>) -> Self {
         self.sort_key = Some(key.into());
         self.sort_order = order;
         self
     }
 
+    /// Registers a callback that runs when sort change occurs.
     pub fn on_sort_change(
         mut self,
         callback: impl Fn(TableSortState, &mut Window, &mut App) + 'static,
@@ -145,10 +157,12 @@ impl VirtualizedTable {
         self
     }
 
+    /// Configures the list state option.
     pub fn list_state(&self) -> ListState {
         self.list_state.clone()
     }
 
+    /// Configures the row count option.
     pub fn row_count(&self) -> usize {
         self.row_count
     }

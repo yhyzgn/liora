@@ -37,9 +37,13 @@ type NodeCallback = dyn Fn(SharedString, &mut Window, &mut App) + 'static;
 /// Visible tree row produced from the expanded tree model.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VirtualTreeItem {
+    /// Stable identifier used to connect rendered UI, callbacks, and external state.
     pub id: SharedString,
+    /// Human-readable label shown in the component UI.
     pub label: SharedString,
+    /// Depth for this data model.
     pub depth: u32,
+    /// Has children for this data model.
     pub has_children: bool,
 }
 
@@ -64,6 +68,7 @@ pub struct VirtualizedTree {
 }
 
 impl VirtualizedTree {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(data: Vec<TreeNode>, _cx: &mut Context<Self>) -> Self {
         let flattened = flatten_visible(&data, &HashSet::new());
         let overdraw = px(640.0);
@@ -84,53 +89,63 @@ impl VirtualizedTree {
         }
     }
 
+    /// Creates a GPUI entity that owns this component state across render passes.
     pub fn entity(data: Vec<TreeNode>, cx: &mut App) -> Entity<Self> {
         cx.new(|cx| Self::new(data, cx))
     }
 
+    /// Returns the height token used for component sizing.
     pub fn height(mut self, height: impl Into<Pixels>) -> Self {
         self.height = height.into();
         self
     }
 
+    /// Configures the row height option.
     pub fn row_height(mut self, height: impl Into<Pixels>) -> Self {
         self.row_height = height.into();
         self.list_state.reset(self.flattened.len());
         self
     }
 
+    /// Configures the indent option.
     pub fn indent(mut self, indent: impl Into<Pixels>) -> Self {
         self.indent = indent.into();
         self
     }
 
+    /// Configures the overdraw option.
     pub fn overdraw(mut self, overdraw: impl Into<Pixels>) -> Self {
         self.overdraw = overdraw.into();
         self.rebuild_list_state();
         self
     }
 
+    /// Configures the multiple option.
     pub fn multiple(mut self, multiple: bool) -> Self {
         self.multiple = multiple;
         self
     }
 
+    /// Configures whether checkbox is visible in the rendered component.
     pub fn show_checkbox(mut self, show: bool) -> Self {
         self.show_checkbox = show;
         self
     }
 
+    /// Configures the default expanded keys used before user interaction changes state.
     pub fn default_expanded_keys(mut self, keys: impl IntoIterator<Item = SharedString>) -> Self {
         self.expanded_keys = keys.into_iter().collect();
         self.rebuild_flattened();
         self
     }
 
+    /// Configures the default selected keys used before user interaction changes state.
     pub fn default_selected_keys(mut self, keys: impl IntoIterator<Item = SharedString>) -> Self {
         self.selected_keys = keys.into_iter().collect();
         self
     }
 
+    /// Configures the expand all option.
     pub fn expand_all(mut self) -> Self {
         let mut keys = HashSet::new();
         collect_parent_keys(&self.data, &mut keys);
@@ -139,6 +154,7 @@ impl VirtualizedTree {
         self
     }
 
+    /// Registers a callback that runs when node click occurs.
     pub fn on_node_click(
         mut self,
         callback: impl Fn(SharedString, &mut Window, &mut App) + 'static,
@@ -147,18 +163,22 @@ impl VirtualizedTree {
         self
     }
 
+    /// Configures the visible len option.
     pub fn visible_len(&self) -> usize {
         self.flattened.len()
     }
 
+    /// Returns whether expanded is currently true for this value.
     pub fn is_expanded(&self, id: &SharedString) -> bool {
         self.expanded_keys.contains(id)
     }
 
+    /// Returns whether selected is currently true for this value.
     pub fn is_selected(&self, id: &SharedString) -> bool {
         self.selected_keys.contains(id)
     }
 
+    /// Configures the list state option.
     pub fn list_state(&self) -> ListState {
         self.list_state.clone()
     }
@@ -341,6 +361,7 @@ impl Render for VirtualizedTree {
     }
 }
 
+/// Configures the flatten visible option.
 pub fn flatten_visible(
     data: &[TreeNode],
     expanded_keys: &HashSet<SharedString>,

@@ -31,8 +31,15 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 use std::sync::Arc;
 
-actions!(color_picker, [ColorPickerClose]);
+actions!(
+    color_picker,
+    [
+        #[doc = "Keyboard action that closes the active color picker popup."]
+        ColorPickerClose
+    ]
+);
 
+/// Public builder and render state for the Liora color picker component.
 pub struct ColorPicker {
     id: SharedString,
     value: SharedString,
@@ -56,6 +63,7 @@ pub struct ColorPicker {
 }
 
 impl ColorPicker {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(value: impl Into<SharedString>) -> Self {
         let value = value.into();
         Self {
@@ -81,11 +89,13 @@ impl ColorPicker {
         }
     }
 
+    /// Returns the stable tray command identifier used for menu event routing.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
+    /// Returns the serialized value used by forms, configuration, or persistence.
     pub fn value(mut self, value: impl AsRef<str>) -> Self {
         if let Some(value) = Self::normalize_hex(value.as_ref()) {
             self.value = value;
@@ -93,16 +103,19 @@ impl ColorPicker {
         self
     }
 
+    /// Configures the alpha option.
     pub fn alpha(mut self, alpha: f32) -> Self {
         self.alpha = alpha.clamp(0.0, 1.0);
         self
     }
 
+    /// Configures the hue option.
     pub fn hue(mut self, hue: f32) -> Self {
         self.hue = normalize_hue(hue);
         self
     }
 
+    /// Configures the presets option.
     pub fn presets(mut self, presets: impl IntoIterator<Item = impl Into<SharedString>>) -> Self {
         self.presets = presets
             .into_iter()
@@ -114,35 +127,42 @@ impl ColorPicker {
         self
     }
 
+    /// Configures the disabled option.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
     }
 
+    /// Configures whether label is visible in the rendered component.
     pub fn show_label(mut self, show_label: bool) -> Self {
         self.show_label = show_label;
         self
     }
 
+    /// Returns the width token used for component sizing.
     pub fn width(mut self, width: impl Into<Pixels>) -> Self {
         self.width = Some(width.into());
         self
     }
 
+    /// Applies the predefined width md sizing preset.
     pub fn width_md(self) -> Self {
         self.width(px(360.0))
     }
 
+    /// Configures the close on escape option.
     pub fn close_on_escape(mut self, close: bool) -> Self {
         self.close_on_escape = close;
         self
     }
 
+    /// Configures the close on click outside option.
     pub fn close_on_click_outside(mut self, close: bool) -> Self {
         self.close_on_click_outside = close;
         self
     }
 
+    /// Configures the register key bindings option.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([gpui::KeyBinding::new("escape", ColorPickerClose, None)]);
     }
@@ -159,11 +179,13 @@ impl ColorPicker {
         }
     }
 
+    /// Registers a callback that runs when change occurs.
     pub fn on_change(mut self, f: impl Fn(SharedString, &mut Window, &mut App) + 'static) -> Self {
         self.on_change = Some(Arc::new(f));
         self
     }
 
+    /// Configures the normalize hex option.
     pub fn normalize_hex(input: &str) -> Option<SharedString> {
         let trimmed = input.trim();
         let raw = trimmed.strip_prefix('#').unwrap_or(trimmed);
@@ -178,6 +200,7 @@ impl ColorPicker {
         Some(format!("#{}", expanded.to_ascii_uppercase()).into())
     }
 
+    /// Configures the rainbow palette option.
     pub fn rainbow_palette() -> Vec<SharedString> {
         [
             "#FF0000", "#FF3B00", "#FF7A00", "#FFB800", "#FFFF00", "#B8FF00", "#7AFF00", "#3BFF00",
@@ -190,16 +213,19 @@ impl ColorPicker {
         .collect()
     }
 
+    /// Configures the rgba display option.
     pub fn rgba_display(input: &str, alpha: f32) -> Option<SharedString> {
         let (r, g, b) = Self::hex_rgb(input)?;
         Some(format!("rgba({}, {}, {}, {:.2})", r, g, b, alpha.clamp(0.0, 1.0)).into())
     }
 
+    /// Configures the hex from hsv option.
     pub fn hex_from_hsv(hue: f32, saturation: f32, value: f32) -> SharedString {
         let (r, g, b) = hsv_to_rgb(hue, saturation, value);
         format!("#{:02X}{:02X}{:02X}", r, g, b).into()
     }
 
+    /// Configures the hex rgb option.
     pub fn hex_rgb(input: &str) -> Option<(u8, u8, u8)> {
         let normalized = Self::normalize_hex(input)?;
         let raw = normalized.as_ref().trim_start_matches('#');

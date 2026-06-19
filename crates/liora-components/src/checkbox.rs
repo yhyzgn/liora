@@ -38,8 +38,15 @@ fn rgba(r: u8, g: u8, b: u8, a: f32) -> Hsla {
     .into()
 }
 
-gpui::actions!(checkbox, [CheckboxToggle]);
+gpui::actions!(
+    checkbox,
+    [
+        #[doc = "Keyboard action that toggles the focused checkbox."]
+        CheckboxToggle
+    ]
+);
 
+/// Public builder and render state for the Liora checkbox component.
 pub struct Checkbox {
     checked: bool,
     disabled: bool,
@@ -49,11 +56,13 @@ pub struct Checkbox {
 }
 
 #[derive(Clone, Copy)]
+/// Public builder and render state for the Liora checkbox changed component.
 pub struct CheckboxChanged(pub bool);
 
 impl EventEmitter<CheckboxChanged> for Checkbox {}
 
 impl Checkbox {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(checked: bool, cx: &mut Context<Self>) -> Self {
         Self {
             checked,
@@ -64,24 +73,29 @@ impl Checkbox {
         }
     }
 
+    /// Configures the disabled option.
     pub fn disabled(mut self, d: bool) -> Self {
         self.disabled = d;
         self
     }
+    /// Returns the stable user-facing label for this value.
     pub fn label(mut self, text: impl Into<SharedString>) -> Self {
         self.label = Some(text.into());
         self
     }
+    /// Registers a callback that runs when change occurs.
     pub fn on_change(mut self, cb: impl Fn(bool, &mut Window, &mut App) + 'static) -> Self {
         self.on_change = Some(Box::new(cb));
         self
     }
 
+    /// Updates the stored disabled value and keeps the existing component identity.
     pub fn set_disabled(&mut self, d: bool, cx: &mut Context<Self>) {
         self.disabled = d;
         cx.notify();
     }
 
+    /// Configures the register key bindings option.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([
             KeyBinding::new("space", CheckboxToggle, None),

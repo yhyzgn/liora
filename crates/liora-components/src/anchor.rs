@@ -27,12 +27,17 @@ use gpui::{
 use liora_core::Config;
 use std::collections::HashMap;
 
+/// Public builder and render state for the Liora anchor link component.
 pub struct AnchorLink {
+    /// Primary heading or title text displayed by the component.
     pub title: SharedString,
+    /// Href for this data model.
     pub href: SharedString,
+    /// Nested child items rendered beneath this item.
     pub children: Vec<AnchorLink>,
 }
 
+/// Public builder and render state for the Liora anchor component.
 pub struct Anchor {
     scroll_handle: ScrollHandle,
     active_link: Option<SharedString>,
@@ -42,6 +47,7 @@ pub struct Anchor {
 }
 
 impl AnchorLink {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(title: impl Into<SharedString>, href: impl Into<SharedString>) -> Self {
         Self {
             title: title.into(),
@@ -50,6 +56,7 @@ impl AnchorLink {
         }
     }
 
+    /// Configures the child option.
     pub fn child(mut self, link: AnchorLink) -> Self {
         self.children.push(link);
         self
@@ -57,6 +64,7 @@ impl AnchorLink {
 }
 
 impl Anchor {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(scroll_handle: ScrollHandle) -> Self {
         Self {
             scroll_handle,
@@ -67,15 +75,18 @@ impl Anchor {
         }
     }
 
+    /// Configures the offset option.
     pub fn offset(mut self, offset: impl Into<Pixels>) -> Self {
         self.offset = offset.into();
         self
     }
 
+    /// Applies the predefined offset sm sizing preset.
     pub fn offset_sm(self) -> Self {
         self.offset(px(20.0))
     }
 
+    /// Configures the link option.
     pub fn link(mut self, link: AnchorLink) -> Self {
         self.links.push(link);
         self
@@ -197,6 +208,7 @@ impl Render for Anchor {
     }
 }
 
+/// Public builder and render state for the Liora anchor target component.
 pub struct AnchorTarget {
     id: SharedString,
     anchor: Entity<Anchor>,
@@ -204,6 +216,7 @@ pub struct AnchorTarget {
 }
 
 impl AnchorTarget {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(
         id: impl Into<SharedString>,
         anchor: Entity<Anchor>,

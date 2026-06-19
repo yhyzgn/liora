@@ -426,6 +426,22 @@ mod application_init_api_tests {
                 !source.contains("代目"),
                 "{path} docs must be English, not draft text"
             );
+            for forbidden in [
+                "Configuration and state type for",
+                "value used by this public",
+                "Sets or returns",
+                "Selects the ",
+                "mode for this API",
+                "Represents the ",
+                "option for the ",
+                "Configures or computes",
+                "associated with this public",
+            ] {
+                assert!(
+                    !source.contains(forbidden),
+                    "{path} rustdoc should be specific, not template phrase: {forbidden}"
+                );
+            }
         }
     }
 

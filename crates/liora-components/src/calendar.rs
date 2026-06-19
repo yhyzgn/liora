@@ -30,13 +30,18 @@ use std::collections::{BTreeMap, HashSet};
 use std::sync::Arc;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+/// Public builder and render state for the Liora calendar date component.
 pub struct CalendarDate {
+    /// Year for this data model.
     pub year: i32,
+    /// Month for this data model.
     pub month: u32,
+    /// Day for this data model.
     pub day: u32,
 }
 
 impl CalendarDate {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(year: i32, month: u32, day: u32) -> Option<Self> {
         if !(1..=12).contains(&month) || day == 0 || day > days_in_month(year, month) {
             return None;
@@ -44,6 +49,7 @@ impl CalendarDate {
         Some(Self { year, month, day })
     }
 
+    /// Configures the today demo option.
     pub fn today_demo() -> Self {
         Self {
             year: 2026,
@@ -51,19 +57,25 @@ impl CalendarDate {
             day: 16,
         }
     }
+    /// Configures the format option.
     pub fn format(&self) -> String {
         format!("{:04}-{:02}-{:02}", self.year, self.month, self.day)
     }
 }
 
 #[derive(Clone)]
+/// Public builder and render state for the Liora calendar event component.
 pub struct CalendarEvent {
+    /// Date for this data model.
     pub date: CalendarDate,
+    /// Human-readable label shown in the component UI.
     pub label: SharedString,
+    /// Color token or explicit color applied to the visual element.
     pub color: Option<Hsla>,
 }
 
 impl CalendarEvent {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(date: CalendarDate, label: impl Into<SharedString>) -> Self {
         Self {
             date,
@@ -71,12 +83,14 @@ impl CalendarEvent {
             color: None,
         }
     }
+    /// Configures the color option.
     pub fn color(mut self, color: Hsla) -> Self {
         self.color = Some(color);
         self
     }
 }
 
+/// Public builder and render state for the Liora calendar component.
 pub struct Calendar {
     year: i32,
     month: u32,
@@ -90,6 +104,7 @@ pub struct Calendar {
 }
 
 impl Calendar {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(year: i32, month: u32) -> Self {
         let month = month.clamp(1, 12);
         Self {
@@ -105,32 +120,39 @@ impl Calendar {
         }
     }
 
+    /// Configures the selected option.
     pub fn selected(mut self, date: CalendarDate) -> Self {
         self.selected = Some(date);
         self
     }
+    /// Configures the range option.
     pub fn range(mut self, start: CalendarDate, end: CalendarDate) -> Self {
         let (a, b) = ordered_pair(start, end);
         self.range_start = Some(a);
         self.range_end = Some(b);
         self
     }
+    /// Configures the disabled dates option.
     pub fn disabled_dates(mut self, dates: impl IntoIterator<Item = CalendarDate>) -> Self {
         self.disabled_dates = dates.into_iter().collect();
         self
     }
+    /// Configures the events option.
     pub fn events(mut self, events: impl IntoIterator<Item = CalendarEvent>) -> Self {
         self.events = events.into_iter().collect();
         self
     }
+    /// Configures whether adjacent months is visible in the rendered component.
     pub fn show_adjacent_months(mut self, show: bool) -> Self {
         self.show_adjacent_months = show;
         self
     }
+    /// Registers a callback that runs when select occurs.
     pub fn on_select(mut self, cb: impl Fn(CalendarDate, &mut Window, &mut App) + 'static) -> Self {
         self.on_select = Some(Arc::new(cb));
         self
     }
+    /// Configures the cells option.
     pub fn cells(&self) -> Vec<CalendarDate> {
         calendar_cells(self.year, self.month)
     }

@@ -27,6 +27,7 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 use std::collections::{HashMap, HashSet};
 
+/// Public builder and render state for the Liora tree select component.
 pub struct TreeSelect {
     nodes: Vec<TreeSelectNode>,
     selected_keys: HashSet<SharedString>,
@@ -42,13 +43,18 @@ pub struct TreeSelect {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+/// Public builder and render state for the Liora tree select node component.
 pub struct TreeSelectNode {
+    /// Stable identifier used to connect rendered UI, callbacks, and external state.
     pub id: SharedString,
+    /// Human-readable label shown in the component UI.
     pub label: SharedString,
+    /// Nested child items rendered beneath this item.
     pub children: Vec<TreeSelectNode>,
 }
 
 impl TreeSelectNode {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(id: impl Into<SharedString>, label: impl Into<SharedString>) -> Self {
         Self {
             id: id.into(),
@@ -57,6 +63,7 @@ impl TreeSelectNode {
         }
     }
 
+    /// Configures the child option.
     pub fn child(mut self, child: TreeSelectNode) -> Self {
         self.children.push(child);
         self
@@ -64,6 +71,7 @@ impl TreeSelectNode {
 }
 
 impl TreeSelect {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(nodes: Vec<TreeSelectNode>, cx: &mut Context<Self>) -> Self {
         Self {
             nodes,
@@ -80,40 +88,48 @@ impl TreeSelect {
         }
     }
 
+    /// Creates a GPUI entity that owns this component state across render passes.
     pub fn entity(nodes: Vec<TreeSelectNode>, cx: &mut App) -> Entity<Self> {
         cx.new(|cx| Self::new(nodes, cx))
     }
 
+    /// Configures the selected option.
     pub fn selected(mut self, ids: impl IntoIterator<Item = impl Into<SharedString>>) -> Self {
         self.selected_keys = ids.into_iter().map(Into::into).collect();
         self
     }
 
+    /// Configures the disabled keys option.
     pub fn disabled_keys(mut self, ids: impl IntoIterator<Item = impl Into<SharedString>>) -> Self {
         self.disabled_keys = ids.into_iter().map(Into::into).collect();
         self
     }
 
+    /// Configures the multiple option.
     pub fn multiple(mut self, multiple: bool) -> Self {
         self.multiple = multiple;
         self
     }
 
+    /// Configures the filterable option.
     pub fn filterable(mut self, filterable: bool) -> Self {
         self.filterable = filterable;
         self
     }
 
+    /// Configures the placeholder option.
     pub fn placeholder(mut self, placeholder: impl Into<SharedString>) -> Self {
         self.placeholder = placeholder.into();
         self
     }
 
+    /// Configures the max panel height option.
     pub fn max_panel_height(mut self, height: impl Into<gpui::Pixels>) -> Self {
         self.max_panel_height = height.into().max(px(120.0));
         self
     }
 
+    /// Registers a callback that runs when change occurs.
     pub fn on_change(
         mut self,
         cb: impl Fn(Vec<SharedString>, &mut Window, &mut App) + 'static,
@@ -122,12 +138,14 @@ impl TreeSelect {
         self
     }
 
+    /// Configures the selected keys option.
     pub fn selected_keys(&self) -> Vec<SharedString> {
         let mut keys = self.selected_keys.iter().cloned().collect::<Vec<_>>();
         keys.sort();
         keys
     }
 
+    /// Updates the stored filter query value and keeps the existing component identity.
     pub fn set_filter_query(&mut self, query: impl Into<SharedString>, cx: &mut Context<Self>) {
         let query = query.into();
         if self.filter_query == query {
@@ -354,6 +372,7 @@ impl Render for TreeSelect {
     }
 }
 
+/// Configures the node label map option.
 pub fn node_label_map(nodes: &[TreeSelectNode]) -> HashMap<SharedString, String> {
     let mut map = HashMap::new();
     fn walk(node: &TreeSelectNode, map: &mut HashMap<SharedString, String>) {
@@ -368,6 +387,7 @@ pub fn node_label_map(nodes: &[TreeSelectNode]) -> HashMap<SharedString, String>
     map
 }
 
+/// Configures the node matches filter option.
 pub fn node_matches_filter(node: &TreeSelectNode, query: &str) -> bool {
     if query.trim().is_empty() {
         return true;

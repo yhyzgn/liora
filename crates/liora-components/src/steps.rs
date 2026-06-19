@@ -25,27 +25,41 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported steps direction modes and options.
 pub enum StepsDirection {
     #[default]
+    /// Lays out content in the horizontal direction.
     Horizontal,
+    /// Lays out content in the vertical direction.
     Vertical,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Enumerates the supported step status modes and options.
 pub enum StepStatus {
+    /// Uses the wait variant.
     Wait,
+    /// Uses the process variant.
     Process,
+    /// Uses the finish variant.
     Finish,
+    /// Reports a error failure.
     Error,
 }
 
+/// Public builder and render state for the Liora step item component.
 pub struct StepItem {
+    /// Primary heading or title text displayed by the component.
     pub title: SharedString,
+    /// Supporting descriptive text shown near the primary label.
     pub description: Option<SharedString>,
+    /// Optional icon rendered with the item.
     pub icon: Option<IconName>,
+    /// Current status value for this component or operation.
     pub status: Option<StepStatus>,
 }
 
+/// Public builder and render state for the Liora steps component.
 pub struct Steps {
     active: usize,
     direction: StepsDirection,
@@ -53,6 +67,7 @@ pub struct Steps {
 }
 
 impl StepItem {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(title: impl Into<SharedString>) -> Self {
         Self {
             title: title.into(),
@@ -62,16 +77,19 @@ impl StepItem {
         }
     }
 
+    /// Configures the description option.
     pub fn description(mut self, d: impl Into<SharedString>) -> Self {
         self.description = Some(d.into());
         self
     }
 
+    /// Sets the tray icon configuration value.
     pub fn icon(mut self, icon: IconName) -> Self {
         self.icon = Some(icon);
         self
     }
 
+    /// Configures the status option.
     pub fn status(mut self, s: StepStatus) -> Self {
         self.status = Some(s);
         self
@@ -79,6 +97,7 @@ impl StepItem {
 }
 
 impl Steps {
+    /// Creates a new value with the required baseline configuration.
     pub fn new() -> Self {
         Self {
             active: 0,
@@ -87,16 +106,19 @@ impl Steps {
         }
     }
 
+    /// Configures the active option.
     pub fn active(mut self, active: usize) -> Self {
         self.active = active;
         self
     }
 
+    /// Configures the direction option.
     pub fn direction(mut self, d: StepsDirection) -> Self {
         self.direction = d;
         self
     }
 
+    /// Configures the step option.
     pub fn step(mut self, item: StepItem) -> Self {
         self.items.push(item);
         self

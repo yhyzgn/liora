@@ -30,36 +30,56 @@ use liora_icons_lucide::IconName;
 use std::collections::HashSet;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported menu modes and options.
 pub enum MenuMode {
     #[default]
+    /// Lays out content in the vertical direction.
     Vertical,
+    /// Lays out content in the horizontal direction.
     Horizontal,
 }
 
+/// Enumerates the supported menu node modes and options.
 pub enum MenuNode {
+    /// Uses the item variant.
     Item(MenuItem),
+    /// Uses the sub menu variant.
     SubMenu(SubMenu),
+    /// Uses the group variant.
     Group(MenuItemGroup),
 }
 
+/// Public builder and render state for the Liora menu item component.
 pub struct MenuItem {
+    /// Stable identifier used to connect rendered UI, callbacks, and external state.
     pub id: SharedString,
+    /// Human-readable label shown in the component UI.
     pub label: SharedString,
+    /// Optional icon rendered with the item.
     pub icon: Option<IconName>,
 }
 
+/// Public builder and render state for the Liora sub menu component.
 pub struct SubMenu {
+    /// Stable identifier used to connect rendered UI, callbacks, and external state.
     pub id: SharedString,
+    /// Human-readable label shown in the component UI.
     pub label: SharedString,
+    /// Optional icon rendered with the item.
     pub icon: Option<IconName>,
+    /// Nested child items rendered beneath this item.
     pub children: Vec<MenuNode>,
 }
 
+/// Public builder and render state for the Liora menu item group component.
 pub struct MenuItemGroup {
+    /// Primary heading or title text displayed by the component.
     pub title: SharedString,
+    /// Nested child items rendered beneath this item.
     pub children: Vec<MenuNode>,
 }
 
+/// Public builder and render state for the Liora menu component.
 pub struct Menu {
     id: SharedString,
     mode: MenuMode,
@@ -72,6 +92,7 @@ pub struct Menu {
 }
 
 impl Menu {
+    /// Creates a new value with the required baseline configuration.
     pub fn new() -> Self {
         Self {
             id: liora_core::unique_id("menu"),
@@ -85,36 +106,43 @@ impl Menu {
         }
     }
 
+    /// Returns the stable tray command identifier used for menu event routing.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
+    /// Configures the mode option.
     pub fn mode(mut self, mode: MenuMode) -> Self {
         self.mode = mode;
         self
     }
 
+    /// Configures the collapse option.
     pub fn collapse(mut self, collapsed: bool) -> Self {
         self.is_collapsed = collapsed;
         self
     }
 
+    /// Configures the default active used before user interaction changes state.
     pub fn default_active(mut self, index: impl Into<SharedString>) -> Self {
         self.active_index = Some(index.into());
         self
     }
 
+    /// Registers a callback that runs when select occurs.
     pub fn on_select(mut self, f: impl Fn(SharedString, &mut Window, &mut App) + 'static) -> Self {
         self.on_select = Some(Box::new(f));
         self
     }
 
+    /// Configures the close on escape option.
     pub fn close_on_escape(mut self, close: bool) -> Self {
         self.close_on_escape = close;
         self
     }
 
+    /// Configures the item option.
     pub fn item(
         mut self,
         id: impl Into<SharedString>,
@@ -129,6 +157,7 @@ impl Menu {
         self
     }
 
+    /// Creates a tray menu submenu item specification.
     pub fn submenu<F>(
         mut self,
         id: impl Into<SharedString>,
@@ -155,6 +184,7 @@ impl Menu {
         self
     }
 
+    /// Configures the group option.
     pub fn group<F>(mut self, title: impl Into<SharedString>, f: F) -> Self
     where
         F: FnOnce(MenuGroupBuilder) -> MenuGroupBuilder,
@@ -673,14 +703,20 @@ impl Menu {
     }
 }
 
+/// Public builder and render state for the Liora sub menu builder component.
 pub struct SubMenuBuilder {
+    /// Stable identifier used to connect rendered UI, callbacks, and external state.
     pub id: SharedString,
+    /// Human-readable label shown in the component UI.
     pub label: SharedString,
+    /// Optional icon rendered with the item.
     pub icon: Option<IconName>,
+    /// Nested child items rendered beneath this item.
     pub children: Vec<MenuNode>,
 }
 
 impl SubMenuBuilder {
+    /// Configures the item option.
     pub fn item(
         mut self,
         id: impl Into<SharedString>,
@@ -695,6 +731,7 @@ impl SubMenuBuilder {
         self
     }
 
+    /// Creates a tray menu submenu item specification.
     pub fn submenu<F>(
         mut self,
         id: impl Into<SharedString>,
@@ -721,6 +758,7 @@ impl SubMenuBuilder {
         self
     }
 
+    /// Configures the group option.
     pub fn group<F>(mut self, title: impl Into<SharedString>, f: F) -> Self
     where
         F: FnOnce(MenuGroupBuilder) -> MenuGroupBuilder,
@@ -738,12 +776,16 @@ impl SubMenuBuilder {
     }
 }
 
+/// Public builder and render state for the Liora menu group builder component.
 pub struct MenuGroupBuilder {
+    /// Primary heading or title text displayed by the component.
     pub title: SharedString,
+    /// Nested child items rendered beneath this item.
     pub children: Vec<MenuNode>,
 }
 
 impl MenuGroupBuilder {
+    /// Configures the item option.
     pub fn item(
         mut self,
         id: impl Into<SharedString>,
@@ -758,6 +800,7 @@ impl MenuGroupBuilder {
         self
     }
 
+    /// Creates a tray menu submenu item specification.
     pub fn submenu<F>(
         mut self,
         id: impl Into<SharedString>,

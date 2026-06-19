@@ -25,12 +25,14 @@ use liora_core::Config;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
+/// Public builder and render state for the Liora loading component.
 pub struct Loading {
     text: Option<SharedString>,
     full_screen: bool,
 }
 
 impl Loading {
+    /// Creates a new value with the required baseline configuration.
     pub fn new() -> Self {
         Self {
             text: None,
@@ -38,11 +40,13 @@ impl Loading {
         }
     }
 
+    /// Configures the text option.
     pub fn text(mut self, text: impl Into<SharedString>) -> Self {
         self.text = Some(text.into());
         self
     }
 
+    /// Configures the full screen option.
     pub fn full_screen(mut self) -> Self {
         self.full_screen = true;
         self

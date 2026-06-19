@@ -25,6 +25,7 @@ use gpui::{
 };
 use liora_core::{Config, stable_unique_id};
 
+/// Public builder and render state for the Liora card component.
 pub struct Card {
     title: Option<SharedString>,
     header: Option<AnyElement>,
@@ -37,6 +38,7 @@ pub struct Card {
 }
 
 impl Card {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(body: impl IntoElement) -> Self {
         Self {
             title: None,
@@ -50,44 +52,53 @@ impl Card {
         }
     }
 
+    /// Configures the title option.
     pub fn title(mut self, title: impl Into<SharedString>) -> Self {
         self.title = Some(title.into());
         self
     }
 
+    /// Configures the header option.
     pub fn header(mut self, header: impl IntoElement) -> Self {
         self.header = Some(header.into_any_element());
         self
     }
 
+    /// Configures the footer option.
     pub fn footer(mut self, footer: impl IntoElement) -> Self {
         self.footer = Some(footer.into_any_element());
         self
     }
 
+    /// Configures the hoverable option.
     pub fn hoverable(mut self) -> Self {
         self.hoverable = true;
         self
     }
 
+    /// Configures the no shadow option.
     pub fn no_shadow(mut self) -> Self {
         self.shadow = false;
         self
     }
 
+    /// Returns the width token used for component sizing.
     pub fn width(mut self, width: impl Into<Pixels>) -> Self {
         self.width = Some(width.into());
         self
     }
 
+    /// Applies the predefined width md sizing preset.
     pub fn width_md(self) -> Self {
         self.width(px(300.0))
     }
 
+    /// Applies the predefined width lg sizing preset.
     pub fn width_lg(self) -> Self {
         self.width(px(400.0))
     }
 
+    /// Configures the no shrink option.
     pub fn no_shrink(mut self) -> Self {
         self.shrink = false;
         self

@@ -30,44 +30,67 @@ use liora_icons_lucide::IconName;
 use std::sync::Arc;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported table align modes and options.
 pub enum TableAlign {
     #[default]
+    /// Uses the left variant.
     Left,
+    /// Uses the center variant.
     Center,
+    /// Uses the right variant.
     Right,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Enumerates the supported table sort order modes and options.
 pub enum TableSortOrder {
+    /// Uses the ascending variant.
     Ascending,
+    /// Uses the descending variant.
     Descending,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Public builder and render state for the Liora table sort state component.
 pub struct TableSortState {
+    /// Stable key used to identify this entry in collections and callbacks.
     pub key: SharedString,
+    /// Order for this data model.
     pub order: Option<TableSortOrder>,
 }
 
+/// Public builder and render state for the Liora table column component.
 pub struct TableColumn {
+    /// Stable key used to identify this entry in collections and callbacks.
     pub key: SharedString,
+    /// Human-readable label shown in the component UI.
     pub label: SharedString,
+    /// Header for this data model.
     pub header: Option<AnyElement>,
+    /// Configured width used during layout.
     pub width: Option<Pixels>,
+    /// Min width for this data model.
     pub min_width: Pixels,
+    /// Align for this data model.
     pub align: TableAlign,
+    /// Sortable for this data model.
     pub sortable: bool,
 }
 
+/// Public builder and render state for the Liora table cell component.
 pub struct TableCell {
+    /// Stable key used to identify this entry in collections and callbacks.
     pub key: SharedString,
+    /// Current value represented by this option or component state.
     pub value: AnyElement,
 }
 
+/// Public builder and render state for the Liora table row component.
 pub struct TableRow {
     cells: Vec<TableCell>,
 }
 
+/// Public builder and render state for the Liora table component.
 pub struct Table {
     id: SharedString,
     columns: Vec<TableColumn>,
@@ -84,6 +107,7 @@ pub struct Table {
 }
 
 impl TableColumn {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(key: impl Into<SharedString>, label: impl Into<SharedString>) -> Self {
         Self {
             key: key.into(),
@@ -96,34 +120,41 @@ impl TableColumn {
         }
     }
 
+    /// Configures the header option.
     pub fn header(mut self, header: impl IntoElement) -> Self {
         self.header = Some(header.into_any_element());
         self
     }
 
+    /// Returns the width token used for component sizing.
     pub fn width(mut self, width: impl Into<Pixels>) -> Self {
         self.width = Some(width.into());
         self
     }
 
+    /// Applies the predefined width sm sizing preset.
     pub fn width_sm(self) -> Self {
         self.width(px(120.0))
     }
 
+    /// Configures the min width option.
     pub fn min_width(mut self, width: impl Into<Pixels>) -> Self {
         self.min_width = width.into();
         self
     }
 
+    /// Applies the predefined min width lg sizing preset.
     pub fn min_width_lg(self) -> Self {
         self.min_width(px(260.0))
     }
 
+    /// Configures the align option.
     pub fn align(mut self, align: TableAlign) -> Self {
         self.align = align;
         self
     }
 
+    /// Configures the sortable option.
     pub fn sortable(mut self) -> Self {
         self.sortable = true;
         self
@@ -131,10 +162,12 @@ impl TableColumn {
 }
 
 impl TableRow {
+    /// Creates a new value with the required baseline configuration.
     pub fn new() -> Self {
         Self { cells: vec![] }
     }
 
+    /// Configures the cell option.
     pub fn cell(mut self, key: impl Into<SharedString>, value: impl IntoElement) -> Self {
         self.cells.push(TableCell {
             key: key.into(),
@@ -152,6 +185,7 @@ impl TableRow {
 }
 
 impl Table {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(columns: Vec<TableColumn>) -> Self {
         Self {
             id: liora_core::unique_id("table"),
@@ -169,61 +203,73 @@ impl Table {
         }
     }
 
+    /// Returns the stable tray command identifier used for menu event routing.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
+    /// Configures the row option.
     pub fn row(mut self, row: TableRow) -> Self {
         self.rows.push(row);
         self
     }
 
+    /// Configures the rows option.
     pub fn rows(mut self, rows: impl IntoIterator<Item = TableRow>) -> Self {
         self.rows.extend(rows);
         self
     }
 
+    /// Configures the border option.
     pub fn border(mut self, border: bool) -> Self {
         self.border = border;
         self
     }
 
+    /// Configures the stripe option.
     pub fn stripe(mut self, stripe: bool) -> Self {
         self.stripe = stripe;
         self
     }
 
+    /// Configures the loading option.
     pub fn loading(mut self, loading: bool) -> Self {
         self.loading = loading;
         self
     }
 
+    /// Configures the fixed header option.
     pub fn fixed_header(mut self, fixed_header: bool) -> Self {
         self.fixed_header = fixed_header;
         self
     }
 
+    /// Returns the height token used for component sizing.
     pub fn height(mut self, height: impl Into<Pixels>) -> Self {
         self.height = Some(height.into());
         self
     }
 
+    /// Applies the predefined height md sizing preset.
     pub fn height_md(self) -> Self {
         self.height(px(260.0))
     }
 
+    /// Configures the empty text option.
     pub fn empty_text(mut self, text: impl Into<SharedString>) -> Self {
         self.empty_text = text.into();
         self
     }
 
+    /// Configures the sort option.
     pub fn sort(mut self, key: impl Into<SharedString>, order: Option<TableSortOrder>) -> Self {
         self.sort_key = Some(key.into());
         self.sort_order = order;
         self
     }
 
+    /// Registers a callback that runs when sort change occurs.
     pub fn on_sort_change(
         mut self,
         f: impl Fn(TableSortState, &mut Window, &mut App) + 'static,

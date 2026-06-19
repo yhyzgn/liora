@@ -34,35 +34,59 @@ use std::ops::{Add, Range};
 actions!(
     input,
     [
+        #[doc = "Keyboard action that deletes the character before the caret."]
         Backspace,
+        #[doc = "Keyboard action that deletes the character after the caret."]
         Delete,
+        #[doc = "Keyboard action that moves the caret one position left."]
         Left,
+        #[doc = "Keyboard action that moves the caret one position right."]
         Right,
+        #[doc = "Keyboard action that moves the caret to the start of the input."]
         Home,
+        #[doc = "Keyboard action that moves the caret to the end of the input."]
         End,
+        #[doc = "Keyboard action that selects the full input value."]
         SelectAll,
+        #[doc = "Keyboard action that commits the current input value."]
         Enter,
+        #[doc = "Keyboard action that moves input-associated popup focus upward."]
         InputUp,
+        #[doc = "Keyboard action that moves input-associated popup focus downward."]
         InputDown,
+        #[doc = "Keyboard action that copies the selected input text."]
         Copy,
+        #[doc = "Keyboard action that pastes clipboard text into the input."]
         Paste,
+        #[doc = "Keyboard action that cuts the selected input text."]
         Cut,
+        #[doc = "Keyboard action that extends selection one position left."]
         SelectLeft,
+        #[doc = "Keyboard action that extends selection one position right."]
         SelectRight,
+        #[doc = "Keyboard action that extends selection to the previous logical line."]
         SelectUp,
+        #[doc = "Keyboard action that extends selection to the next logical line."]
         SelectDown,
+        #[doc = "Keyboard action that extends selection to the start of the input."]
         SelectHome,
+        #[doc = "Keyboard action that extends selection to the end of the input."]
         SelectEnd,
-        TogglePassword
+        #[doc = "Keyboard action that toggles password visibility for password inputs."]
+        TogglePassword,
     ]
 );
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Enumerates the supported input type modes and options.
 pub enum InputType {
+    /// Uses the text semantic button variant.
     Text,
+    /// Uses the password variant.
     Password,
 }
 
+/// Public builder and render state for the Liora input component.
 pub struct Input {
     value: SharedString,
     placeholder: SharedString,
@@ -89,12 +113,14 @@ pub struct Input {
     width: Option<Pixels>,
     height: Option<Pixels>,
     text_align: gpui::TextAlign,
+    /// Min rows for this data model.
     pub min_rows: usize,
     on_enter: Option<Box<dyn Fn(&mut Self, &str, &mut Window, &mut Context<Self>) + 'static>>,
     on_change: Option<Box<dyn Fn(&str, &mut Context<Self>) + 'static>>,
 }
 
 impl Input {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(value: impl Into<SharedString>, cx: &mut Context<Self>) -> Self {
         Self {
             value: value.into(),
@@ -127,26 +153,32 @@ impl Input {
             on_change: None,
         }
     }
+    /// Configures the placeholder option.
     pub fn placeholder(mut self, p: impl Into<SharedString>) -> Self {
         self.placeholder = p.into();
         self
     }
+    /// Configures the disabled option.
     pub fn disabled(mut self, d: bool) -> Self {
         self.disabled = d;
         self
     }
+    /// Configures the clearable option.
     pub fn clearable(mut self, c: bool) -> Self {
         self.clearable = c;
         self
     }
+    /// Configures the icon prefix option.
     pub fn icon_prefix(mut self, icon: IconName) -> Self {
         self.icon_prefix = Some(icon);
         self
     }
+    /// Configures the icon suffix option.
     pub fn icon_suffix(mut self, icon: IconName) -> Self {
         self.icon_suffix = Some(icon);
         self
     }
+    /// Updates the stored icon suffix value and keeps the existing component identity.
     pub fn set_icon_suffix(&mut self, icon: Option<IconName>, cx: &mut Context<Self>) {
         if self.icon_suffix == icon {
             return;
@@ -154,6 +186,7 @@ impl Input {
         self.icon_suffix = icon;
         cx.notify();
     }
+    /// Updates the stored clearable value and keeps the existing component identity.
     pub fn set_clearable(&mut self, clearable: bool, cx: &mut Context<Self>) {
         if self.clearable == clearable {
             return;
@@ -161,48 +194,60 @@ impl Input {
         self.clearable = clearable;
         cx.notify();
     }
+    /// Configures the filter option.
     pub fn filter(mut self, f: impl Fn(&str) -> bool + 'static) -> Self {
         self.filter = Some(Box::new(f));
         self
     }
+    /// Configures the max length option.
     pub fn max_length(mut self, max: usize) -> Self {
         self.max_length = Some(max);
         self
     }
+    /// Configures the password option.
     pub fn password(mut self) -> Self {
         self.input_type = InputType::Password;
         self
     }
+    /// Configures the mask char option.
     pub fn mask_char(mut self, c: char) -> Self {
         self.mask_char = c;
         self
     }
+    /// Configures the min rows option.
     pub fn min_rows(mut self, rows: usize) -> Self {
         self.min_rows = rows;
         self
     }
+    /// Returns the height token used for component sizing.
     pub fn height(mut self, h: impl Into<Pixels>) -> Self {
         self.height = Some(h.into());
         self
     }
+    /// Returns the width token used for component sizing.
     pub fn width(mut self, w: impl Into<Pixels>) -> Self {
         self.width = Some(w.into());
         self
     }
+    /// Applies the predefined width sm sizing preset.
     pub fn width_sm(self) -> Self {
         self.width(px(96.0))
     }
+    /// Updates the stored width value and keeps the existing component identity.
     pub fn set_width(&mut self, w: impl Into<Pixels>, cx: &mut Context<Self>) {
         self.width = Some(w.into());
         cx.notify();
     }
+    /// Updates the stored width sm value and keeps the existing component identity.
     pub fn set_width_sm(&mut self, cx: &mut Context<Self>) {
         self.set_width(px(96.0), cx);
     }
+    /// Configures the text align option.
     pub fn text_align(mut self, align: gpui::TextAlign) -> Self {
         self.text_align = align;
         self
     }
+    /// Registers a callback that runs when enter occurs.
     pub fn on_enter(
         mut self,
         f: impl Fn(&mut Self, &str, &mut Window, &mut Context<Self>) + 'static,
@@ -211,6 +256,7 @@ impl Input {
         self
     }
 
+    /// Updates the stored on enter value and keeps the existing component identity.
     pub fn set_on_enter(
         &mut self,
         f: impl Fn(&mut Self, &str, &mut Window, &mut Context<Self>) + 'static,
@@ -220,15 +266,18 @@ impl Input {
         cx.notify();
     }
 
+    /// Registers a callback that runs when change occurs.
     pub fn on_change(mut self, f: impl Fn(&str, &mut Context<Self>) + 'static) -> Self {
         self.on_change = Some(Box::new(f));
         self
     }
 
+    /// Updates the stored on change value and keeps the existing component identity.
     pub fn set_on_change(&mut self, f: impl Fn(&str, &mut Context<Self>) + 'static) {
         self.on_change = Some(Box::new(f));
     }
 
+    /// Clears the current on change state.
     pub fn clear_on_change(&mut self) {
         self.on_change = None;
     }
@@ -241,6 +290,7 @@ impl Input {
         }
     }
 
+    /// Updates the stored placeholder value and keeps the existing component identity.
     pub fn set_placeholder(&mut self, p: impl Into<SharedString>, cx: &mut Context<Self>) {
         let p = p.into();
         if self.placeholder == p {
@@ -250,6 +300,7 @@ impl Input {
         cx.notify();
     }
 
+    /// Updates the stored disabled value and keeps the existing component identity.
     pub fn set_disabled(&mut self, d: bool, cx: &mut Context<Self>) {
         if self.disabled == d {
             return;
@@ -258,6 +309,7 @@ impl Input {
         cx.notify();
     }
 
+    /// Updates the stored value value and keeps the existing component identity.
     pub fn set_value(&mut self, value: impl Into<SharedString>, cx: &mut Context<Self>) {
         let value = value.into();
         if self.value == value {
@@ -268,23 +320,28 @@ impl Input {
         cx.notify();
     }
 
+    /// Updates the stored min rows value and keeps the existing component identity.
     pub fn set_min_rows(&mut self, rows: usize, cx: &mut Context<Self>) {
         self.min_rows = rows;
         cx.notify();
     }
 
+    /// Returns the serialized value used by forms, configuration, or persistence.
     pub fn value(&self) -> SharedString {
         self.value.clone()
     }
 
+    /// Configures the selected range option.
     pub fn selected_range(&self) -> Range<usize> {
         self.selected_range.clone()
     }
 
+    /// Configures the insert text option.
     pub fn insert_text(&mut self, text: &str, cx: &mut Context<Self>) {
         self.internal_replace(text, cx);
     }
 
+    /// Configures the indent selection option.
     pub fn indent_selection(&mut self, indent: &str, cx: &mut Context<Self>) {
         if indent.is_empty() {
             return;
@@ -296,10 +353,12 @@ impl Input {
         self.reindent_selected_lines(indent, true, cx);
     }
 
+    /// Configures the outdent selection option.
     pub fn outdent_selection(&mut self, indent: &str, cx: &mut Context<Self>) {
         self.reindent_selected_lines(indent, false, cx);
     }
 
+    /// Configures the register key bindings option.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([
             KeyBinding::new("backspace", Backspace, None),
@@ -328,6 +387,7 @@ impl Input {
         ]);
     }
 
+    /// Clears the currently stored state or selection.
     pub fn clear(&mut self, cx: &mut Context<Self>) {
         self.value = SharedString::default();
         self.selected_range = 0..0;
@@ -780,6 +840,7 @@ impl Input {
         self.input_type == InputType::Password && !self.password_visible
     }
 
+    /// Configures the prepend option.
     pub fn prepend(
         mut self,
         render: impl Fn(&mut Window, &mut App) -> AnyElement + 'static,
@@ -788,6 +849,7 @@ impl Input {
         self
     }
 
+    /// Configures the prepend text option.
     pub fn prepend_text(self, text: impl Into<SharedString>) -> Self {
         let text = text.into();
         self.prepend(move |_, _| {
@@ -800,6 +862,7 @@ impl Input {
         })
     }
 
+    /// Configures the prepend icon option.
     pub fn prepend_icon(self, icon: IconName) -> Self {
         self.prepend(move |_, _| {
             gpui::div()
@@ -812,6 +875,7 @@ impl Input {
         })
     }
 
+    /// Configures the append option.
     pub fn append(
         mut self,
         render: impl Fn(&mut Window, &mut App) -> AnyElement + 'static,
@@ -820,6 +884,7 @@ impl Input {
         self
     }
 
+    /// Configures the append text option.
     pub fn append_text(self, text: impl Into<SharedString>) -> Self {
         let text = text.into();
         self.append(move |_, _| {

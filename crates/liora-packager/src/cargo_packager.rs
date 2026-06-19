@@ -34,15 +34,22 @@ pub const LINUX_RPM_RUNTIME_DEPENDENCIES: &[(&str, &str)] = &[
 /// A generated cargo-packager invocation plan for one Liora app.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CargoPackagerPlan {
+    /// Application metadata associated with this package artifact.
     pub app: AppMetadata,
+    /// Target platform for the artifact or update operation.
     pub platform: Platform,
+    /// Package formats that should be generated for this plan.
     pub formats: Vec<PackageFormat>,
+    /// Path where the generated cargo-packager configuration is written.
     pub config_path: PathBuf,
+    /// Directory where package artifacts are expected to be produced.
     pub out_dir: PathBuf,
+    /// Directory containing release-mode binaries to package.
     pub binaries_dir: PathBuf,
 }
 
 impl CargoPackagerPlan {
+    /// Builds the `cargo packager` command-line arguments for this package plan.
     pub fn command_args(&self) -> Vec<String> {
         let mut args = vec![
             "packager".to_string(),
@@ -86,12 +93,14 @@ pub fn supplemental_formats(formats: &[PackageFormat]) -> Vec<PackageFormat> {
         .collect()
 }
 
+/// Returns the path for the generated cargo-packager configuration file.
 pub fn generated_config_path(root: &Path, app: &AppMetadata) -> PathBuf {
     root.join("target")
         .join("liora-packager")
         .join(format!("Packager.{}.toml", app.app.key()))
 }
 
+/// Returns the directory where package artifacts for an app and platform are written.
 pub fn package_out_dir(root: &Path, app: &AppMetadata, platform: Platform) -> PathBuf {
     root.join("target")
         .join("packages")
@@ -99,16 +108,19 @@ pub fn package_out_dir(root: &Path, app: &AppMetadata, platform: Platform) -> Pa
         .join(platform.as_str())
 }
 
+/// Returns the staging directory used for release-mode raw binaries.
 pub fn release_binaries_dir(root: &Path) -> PathBuf {
     root.join("target").join("release")
 }
 
+/// Returns the generated RPM metadata path for the selected app.
 pub fn generated_rpm_config_path(root: &Path, app: &AppMetadata) -> PathBuf {
     root.join("target")
         .join("liora-packager")
         .join(format!("GenerateRpm.{}.toml", app.app.key()))
 }
 
+/// Renders the render generate rpm config layer into native GPUI elements.
 pub fn render_generate_rpm_config(root: &Path, app: &AppMetadata) -> String {
     let mut out = String::new();
     line(
@@ -181,6 +193,7 @@ fn rpm_asset(out: &mut String, source: &Path, dest: &str, mode: &str) {
     out.push_str("\" },\n");
 }
 
+/// Renders the render cargo packager config layer into native GPUI elements.
 pub fn render_cargo_packager_config(
     root: &Path,
     app: &AppMetadata,

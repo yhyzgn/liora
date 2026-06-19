@@ -28,12 +28,17 @@ use liora_icons_lucide::IconName;
 use std::collections::HashSet;
 use std::sync::Arc;
 
+/// Public builder and render state for the Liora collapse item component.
 pub struct CollapseItem {
+    /// Human-readable name used for display or package metadata.
     pub name: SharedString,
+    /// Primary heading or title text displayed by the component.
     pub title: SharedString,
+    /// Content rendered inside the component body.
     pub content: Arc<dyn Fn(&mut Window, &mut Context<Collapse>) -> AnyElement + 'static>,
 }
 
+/// Public builder and render state for the Liora collapse component.
 pub struct Collapse {
     items: Vec<CollapseItem>,
     active_names: HashSet<SharedString>,
@@ -42,6 +47,7 @@ pub struct Collapse {
 }
 
 impl Collapse {
+    /// Creates a new value with the required baseline configuration.
     pub fn new() -> Self {
         Self {
             items: vec![],
@@ -51,16 +57,19 @@ impl Collapse {
         }
     }
 
+    /// Configures the accordion option.
     pub fn accordion(mut self) -> Self {
         self.accordion = true;
         self
     }
 
+    /// Returns the stable tray command identifier used for menu event routing.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
+    /// Configures the item option.
     pub fn item<F, E>(
         mut self,
         name: impl Into<SharedString>,

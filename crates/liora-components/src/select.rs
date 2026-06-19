@@ -29,8 +29,15 @@ use liora_core::{Config, push_portal};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
-actions!(select, [SelectClose]);
+actions!(
+    select,
+    [
+        #[doc = "Keyboard action that closes the active select popup."]
+        SelectClose
+    ]
+);
 
+/// Public builder and render state for the Liora select component.
 pub struct Select {
     options: Vec<SharedString>,
     selected_idx: Option<usize>,
@@ -51,6 +58,7 @@ pub struct Select {
 }
 
 impl Select {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(
         options: Vec<impl Into<SharedString>>,
         selected_idx: Option<usize>,
@@ -76,52 +84,64 @@ impl Select {
         }
     }
 
+    /// Configures the borderless option.
     pub fn borderless(mut self) -> Self {
         self.border_none = true;
         self
     }
+    /// Configures the radius none option.
     pub fn radius_none(mut self) -> Self {
         self.radius_none = true;
         self
     }
+    /// Configures the radius left none option.
     pub fn radius_left_none(mut self) -> Self {
         self.radius_left_none = true;
         self
     }
+    /// Configures the radius right none option.
     pub fn radius_right_none(mut self) -> Self {
         self.radius_right_none = true;
         self
     }
+    /// Returns the width token used for component sizing.
     pub fn width(mut self, w: impl Into<Pixels>) -> Self {
         self.width = Some(w.into());
         self
     }
 
+    /// Applies the predefined width xs sizing preset.
     pub fn width_xs(self) -> Self {
         self.width(gpui::px(90.0))
     }
 
+    /// Configures the text size option.
     pub fn text_size(mut self, s: impl Into<Pixels>) -> Self {
         self.text_size = Some(s.into());
         self
     }
 
+    /// Applies the predefined text sm sizing preset.
     pub fn text_sm(self) -> Self {
         self.text_size(gpui::px(14.0))
     }
+    /// Configures the text color option.
     pub fn text_color(mut self, c: Hsla) -> Self {
         self.text_color = Some(c);
         self
     }
+    /// Returns the padding x token used for component sizing.
     pub fn padding_x(mut self, p: impl Into<Pixels>) -> Self {
         self.padding_x = Some(p.into());
         self
     }
 
+    /// Applies the predefined padding x sm sizing preset.
     pub fn padding_x_sm(self) -> Self {
         self.padding_x(gpui::px(8.0))
     }
 
+    /// Updates the stored borderless value and keeps the existing component identity.
     pub fn set_borderless(&mut self, b: bool, cx: &mut Context<Self>) {
         if self.border_none == b {
             return;
@@ -130,6 +150,7 @@ impl Select {
         cx.notify();
     }
 
+    /// Updates the stored radius none value and keeps the existing component identity.
     pub fn set_radius_none(&mut self, r: bool, cx: &mut Context<Self>) {
         if self.radius_none == r {
             return;
@@ -138,6 +159,7 @@ impl Select {
         cx.notify();
     }
 
+    /// Updates the stored radius left none value and keeps the existing component identity.
     pub fn set_radius_left_none(&mut self, r: bool, cx: &mut Context<Self>) {
         if self.radius_left_none == r {
             return;
@@ -146,6 +168,7 @@ impl Select {
         cx.notify();
     }
 
+    /// Updates the stored radius right none value and keeps the existing component identity.
     pub fn set_radius_right_none(&mut self, r: bool, cx: &mut Context<Self>) {
         if self.radius_right_none == r {
             return;
@@ -154,6 +177,7 @@ impl Select {
         cx.notify();
     }
 
+    /// Updates the stored width value and keeps the existing component identity.
     pub fn set_width(&mut self, w: impl Into<Pixels>, cx: &mut Context<Self>) {
         let w = w.into();
         if self.width == Some(w) {
@@ -163,6 +187,7 @@ impl Select {
         cx.notify();
     }
 
+    /// Updates the stored text size value and keeps the existing component identity.
     pub fn set_text_size(&mut self, s: impl Into<Pixels>, cx: &mut Context<Self>) {
         let s = s.into();
         if self.text_size == Some(s) {
@@ -172,6 +197,7 @@ impl Select {
         cx.notify();
     }
 
+    /// Updates the stored text color value and keeps the existing component identity.
     pub fn set_text_color(&mut self, c: Hsla, cx: &mut Context<Self>) {
         if self.text_color == Some(c) {
             return;
@@ -180,6 +206,7 @@ impl Select {
         cx.notify();
     }
 
+    /// Updates the stored padding x value and keeps the existing component identity.
     pub fn set_padding_x(&mut self, p: impl Into<Pixels>, cx: &mut Context<Self>) {
         let p = p.into();
         if self.padding_x == Some(p) {
@@ -189,6 +216,7 @@ impl Select {
         cx.notify();
     }
 
+    /// Updates the stored options value and keeps the existing component identity.
     pub fn set_options(&mut self, options: Vec<SharedString>, cx: &mut Context<Self>) {
         if self.options == options {
             return;
@@ -202,6 +230,7 @@ impl Select {
         cx.notify();
     }
 
+    /// Updates the stored selected idx value and keeps the existing component identity.
     pub fn set_selected_idx(&mut self, idx: Option<usize>, cx: &mut Context<Self>) {
         if self.selected_idx == idx {
             return;
@@ -210,16 +239,19 @@ impl Select {
         cx.notify();
     }
 
+    /// Configures the close on escape option.
     pub fn close_on_escape(mut self, close: bool) -> Self {
         self.close_on_escape = close;
         self
     }
 
+    /// Configures the close on click outside option.
     pub fn close_on_click_outside(mut self, close: bool) -> Self {
         self.close_on_click_outside = close;
         self
     }
 
+    /// Configures the register key bindings option.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([gpui::KeyBinding::new("escape", SelectClose, None)]);
     }
@@ -231,15 +263,18 @@ impl Select {
         }
     }
 
+    /// Registers a callback that runs when change occurs.
     pub fn on_change(mut self, cb: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
         self.on_change = Some(Box::new(cb));
         self
     }
 
+    /// Updates the stored on change value and keeps the existing component identity.
     pub fn set_on_change(&mut self, cb: impl Fn(usize, &mut Window, &mut App) + 'static) {
         self.on_change = Some(Box::new(cb));
     }
 
+    /// Configures the selected index option.
     pub fn selected_index(&self) -> Option<usize> {
         self.selected_idx
     }

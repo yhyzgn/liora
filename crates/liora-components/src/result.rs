@@ -25,14 +25,20 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported result status modes and options.
 pub enum ResultStatus {
     #[default]
+    /// Uses the info semantic button variant.
     Info,
+    /// Uses the success semantic button variant.
     Success,
+    /// Uses the warning semantic button variant.
     Warning,
+    /// Reports a error failure.
     Error,
 }
 
+/// Public builder and render state for the Liora result component.
 pub struct Result {
     status: ResultStatus,
     title: SharedString,
@@ -42,6 +48,7 @@ pub struct Result {
 }
 
 impl Result {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(title: impl Into<SharedString>) -> Self {
         Self {
             status: ResultStatus::Info,
@@ -52,21 +59,25 @@ impl Result {
         }
     }
 
+    /// Configures the status option.
     pub fn status(mut self, s: ResultStatus) -> Self {
         self.status = s;
         self
     }
 
+    /// Configures the sub title option.
     pub fn sub_title(mut self, sub: impl Into<SharedString>) -> Self {
         self.sub_title = Some(sub.into());
         self
     }
 
+    /// Sets the tray icon configuration value.
     pub fn icon(mut self, icon: impl IntoElement) -> Self {
         self.icon = Some(icon.into_any_element());
         self
     }
 
+    /// Configures the extra option.
     pub fn extra<F>(mut self, f: F) -> Self
     where
         F: Fn(&mut Window, &mut App) -> AnyElement + 'static,

@@ -25,6 +25,7 @@ use liora_core::Config;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
+/// Public builder and render state for the Liora pagination component.
 pub struct Pagination {
     id: SharedString,
     total: usize,
@@ -39,6 +40,7 @@ pub struct Pagination {
 }
 
 impl Pagination {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(total: usize) -> Self {
         Self {
             id: liora_core::unique_id("pagination"),
@@ -54,31 +56,37 @@ impl Pagination {
         }
     }
 
+    /// Returns the stable tray command identifier used for menu event routing.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
+    /// Configures the page size option.
     pub fn page_size(mut self, size: usize) -> Self {
         self.page_size = size.max(1);
         self
     }
 
+    /// Configures the current page option.
     pub fn current_page(mut self, page: usize) -> Self {
         self.current_page = page.max(1);
         self
     }
 
+    /// Configures the background option.
     pub fn background(mut self, bg: bool) -> Self {
         self.background = bg;
         self
     }
 
+    /// Configures the layout option.
     pub fn layout(mut self, l: impl Into<SharedString>) -> Self {
         self.layout = l.into();
         self
     }
 
+    /// Configures the page sizes option.
     pub fn page_sizes(mut self, sizes: impl Into<Vec<usize>>) -> Self {
         self.page_sizes = sizes.into().into_iter().map(|s| s.max(1)).collect();
         self.page_sizes.sort_unstable();
@@ -86,11 +94,13 @@ impl Pagination {
         self
     }
 
+    /// Registers a callback that runs when change occurs.
     pub fn on_change(mut self, f: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
         self.on_change = Some(Box::new(f));
         self
     }
 
+    /// Registers a callback that runs when page size change occurs.
     pub fn on_page_size_change(
         mut self,
         f: impl Fn(usize, &mut Window, &mut App) + 'static,

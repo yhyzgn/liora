@@ -26,23 +26,32 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Enumerates the supported breadcrumb separator modes and options.
 pub enum BreadcrumbSeparator {
+    /// Uses the string variant.
     String(SharedString),
+    /// Uses the icon variant.
     Icon(IconName),
 }
 
+/// Public builder and render state for the Liora breadcrumb item component.
 pub struct BreadcrumbItem {
+    /// Human-readable label shown in the component UI.
     pub label: SharedString,
+    /// Optional icon rendered with the item.
     pub icon: Option<IconName>,
+    /// On click for this data model.
     pub on_click: Option<Box<dyn Fn(&mut Window, &mut App) + 'static>>,
 }
 
+/// Public builder and render state for the Liora breadcrumb component.
 pub struct Breadcrumb {
     separator: BreadcrumbSeparator,
     items: Vec<BreadcrumbItem>,
 }
 
 impl BreadcrumbItem {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(label: impl Into<SharedString>) -> Self {
         Self {
             label: label.into(),
@@ -51,11 +60,13 @@ impl BreadcrumbItem {
         }
     }
 
+    /// Sets the tray icon configuration value.
     pub fn icon(mut self, icon: IconName) -> Self {
         self.icon = Some(icon);
         self
     }
 
+    /// Registers a callback that runs when click occurs.
     pub fn on_click(mut self, f: impl Fn(&mut Window, &mut App) + 'static) -> Self {
         self.on_click = Some(Box::new(f));
         self
@@ -63,6 +74,7 @@ impl BreadcrumbItem {
 }
 
 impl Breadcrumb {
+    /// Creates a new value with the required baseline configuration.
     pub fn new() -> Self {
         Self {
             separator: BreadcrumbSeparator::String("/".into()),
@@ -70,16 +82,19 @@ impl Breadcrumb {
         }
     }
 
+    /// Creates a tray menu separator item specification.
     pub fn separator(mut self, s: impl Into<SharedString>) -> Self {
         self.separator = BreadcrumbSeparator::String(s.into());
         self
     }
 
+    /// Configures the separator icon option.
     pub fn separator_icon(mut self, icon: IconName) -> Self {
         self.separator = BreadcrumbSeparator::Icon(icon);
         self
     }
 
+    /// Configures the item option.
     pub fn item(mut self, item: BreadcrumbItem) -> Self {
         self.items.push(item);
         self

@@ -27,13 +27,18 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+/// Public builder and render state for the Liora mention item component.
 pub struct MentionItem {
+    /// Current value represented by this option or component state.
     pub value: SharedString,
+    /// Human-readable label shown in the component UI.
     pub label: SharedString,
+    /// Supporting descriptive text shown near the primary label.
     pub description: Option<SharedString>,
 }
 
 impl MentionItem {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(value: impl Into<SharedString>, label: impl Into<SharedString>) -> Self {
         Self {
             value: value.into(),
@@ -41,12 +46,14 @@ impl MentionItem {
             description: None,
         }
     }
+    /// Configures the description option.
     pub fn description(mut self, description: impl Into<SharedString>) -> Self {
         self.description = Some(description.into());
         self
     }
 }
 
+/// Public builder and render state for the Liora mention component.
 pub struct Mention {
     input: Entity<Input>,
     trigger: char,
@@ -59,6 +66,7 @@ pub struct Mention {
 }
 
 impl Mention {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(suggestions: Vec<MentionItem>, cx: &mut Context<Self>) -> Self {
         Self {
             input: cx.new(|cx| Input::new("", cx)),
@@ -71,35 +79,44 @@ impl Mention {
             on_select: None,
         }
     }
+    /// Creates a GPUI entity that owns this component state across render passes.
     pub fn entity(suggestions: Vec<MentionItem>, cx: &mut App) -> Entity<Self> {
         cx.new(|cx| Self::new(suggestions, cx))
     }
+    /// Configures the trigger option.
     pub fn trigger(mut self, trigger: char) -> Self {
         self.trigger = trigger;
         self
     }
+    /// Configures the placeholder option.
     pub fn placeholder(mut self, placeholder: impl Into<SharedString>) -> Self {
         self.placeholder = placeholder.into();
         self
     }
+    /// Configures the max suggestions option.
     pub fn max_suggestions(mut self, max: usize) -> Self {
         self.max_suggestions = max.max(1);
         self
     }
+    /// Configures the disabled option.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
     }
+    /// Registers a callback that runs when select occurs.
     pub fn on_select(mut self, cb: impl Fn(MentionItem, &mut Window, &mut App) + 'static) -> Self {
         self.on_select = Some(std::sync::Arc::new(cb));
         self
     }
+    /// Configures the input option.
     pub fn input(&self) -> Entity<Input> {
         self.input.clone()
     }
+    /// Configures the query for text option.
     pub fn query_for_text(text: &str, trigger: char) -> Option<&str> {
         mention_query(text, trigger)
     }
+    /// Configures the filtered suggestions option.
     pub fn filtered_suggestions(&self, query: &str) -> Vec<MentionItem> {
         filter_suggestions(&self.suggestions, query, self.max_suggestions)
     }

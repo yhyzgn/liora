@@ -30,28 +30,45 @@ use liora_core::{Config, push_portal};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
-actions!(date_time_picker, [DateTimePickerClose]);
+actions!(
+    date_time_picker,
+    [
+        #[doc = "Keyboard action that closes the active date-time picker popup."]
+        DateTimePickerClose
+    ]
+);
 
 use crate::{DateValue, TimeValue};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+/// Public builder and render state for the Liora date time value component.
 pub struct DateTimeValue {
+    /// Date for this data model.
     pub date: DateValue,
+    /// Time for this data model.
     pub time: TimeValue,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported date time picker type modes and options.
 pub enum DateTimePickerType {
     #[default]
+    /// Uses the date time variant.
     DateTime,
+    /// Uses the date time range variant.
     DateTimeRange,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Enumerates the supported date time picker selection modes and options.
 pub enum DateTimePickerSelection {
+    /// Stores a single selection value.
     Single(Option<DateTimeValue>),
+    /// Stores a range selection value.
     Range {
+        /// Inclusive start date-time for the selected range.
         start: Option<DateTimeValue>,
+        /// Inclusive end date-time for the selected range.
         end: Option<DateTimeValue>,
     },
 }
@@ -62,6 +79,7 @@ enum RangeEndpoint {
     End,
 }
 
+/// Public builder and render state for the Liora date time picker component.
 pub struct DateTimePicker {
     id: SharedString,
     picker_type: DateTimePickerType,
@@ -94,6 +112,7 @@ pub struct DateTimePicker {
 }
 
 impl DateTimeValue {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(
         year: i32,
         month: u32,
@@ -108,16 +127,19 @@ impl DateTimeValue {
         })
     }
 
+    /// Creates this value from parts.
     pub fn from_parts(date: DateValue, time: TimeValue) -> Self {
         Self { date, time }
     }
 
+    /// Configures the format option.
     pub fn format(&self) -> String {
         format!("{} {}", self.date.format(), self.time.format())
     }
 }
 
 impl DateTimePicker {
+    /// Creates a new value with the required baseline configuration.
     pub fn new() -> Self {
         let default_date = DateValue {
             year: 2026,
@@ -158,11 +180,13 @@ impl DateTimePicker {
         }
     }
 
+    /// Returns the stable tray command identifier used for menu event routing.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
+    /// Configures the picker type option.
     pub fn picker_type(mut self, picker_type: DateTimePickerType) -> Self {
         self.picker_type = picker_type;
         if picker_type.is_range() && self.placeholder == SharedString::from("请选择日期时间")
@@ -172,14 +196,17 @@ impl DateTimePicker {
         self
     }
 
+    /// Configures the date time option.
     pub fn date_time(self) -> Self {
         self.picker_type(DateTimePickerType::DateTime)
     }
 
+    /// Configures the date time range option.
     pub fn date_time_range(self) -> Self {
         self.picker_type(DateTimePickerType::DateTimeRange)
     }
 
+    /// Returns the serialized value used by forms, configuration, or persistence.
     pub fn value(mut self, value: DateTimeValue) -> Self {
         self.view_year = value.date.year;
         self.view_month = value.date.month;
@@ -189,6 +216,7 @@ impl DateTimePicker {
         self
     }
 
+    /// Configures the range option.
     pub fn range(mut self, start: DateTimeValue, end: DateTimeValue) -> Self {
         let (start, end) = ordered_pair(start, end);
         self.view_year = start.date.year;
@@ -201,65 +229,78 @@ impl DateTimePicker {
         self
     }
 
+    /// Configures the placeholder option.
     pub fn placeholder(mut self, placeholder: impl Into<SharedString>) -> Self {
         self.placeholder = placeholder.into();
         self
     }
 
+    /// Configures the format option.
     pub fn format(mut self, format: impl Into<SharedString>) -> Self {
         self.display_format = format.into();
         self
     }
 
+    /// Configures the range separator option.
     pub fn range_separator(mut self, separator: impl Into<SharedString>) -> Self {
         self.range_separator = separator.into();
         self
     }
 
+    /// Returns the width token used for component sizing.
     pub fn width(mut self, width: impl Into<Pixels>) -> Self {
         self.width = Some(width.into());
         self
     }
 
+    /// Applies the predefined width md sizing preset.
     pub fn width_md(self) -> Self {
         self.width(px(280.0))
     }
 
+    /// Applies the predefined width lg sizing preset.
     pub fn width_lg(self) -> Self {
         self.width(px(460.0))
     }
 
+    /// Configures the disabled option.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
     }
 
+    /// Configures the minute step option.
     pub fn minute_step(mut self, step: u32) -> Self {
         self.minute_step = step.clamp(1, 60);
         self
     }
 
+    /// Configures the second step option.
     pub fn second_step(mut self, step: u32) -> Self {
         self.second_step = step.clamp(1, 60);
         self
     }
 
+    /// Configures the without seconds option.
     pub fn without_seconds(mut self) -> Self {
         self.show_seconds = false;
         self.display_format = "YYYY-MM-DD HH:mm".into();
         self
     }
 
+    /// Configures the close on escape option.
     pub fn close_on_escape(mut self, close: bool) -> Self {
         self.close_on_escape = close;
         self
     }
 
+    /// Configures the close on click outside option.
     pub fn close_on_click_outside(mut self, close: bool) -> Self {
         self.close_on_click_outside = close;
         self
     }
 
+    /// Configures the register key bindings option.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([gpui::KeyBinding::new("escape", DateTimePickerClose, None)]);
     }
@@ -275,6 +316,7 @@ impl DateTimePicker {
         }
     }
 
+    /// Registers a callback that runs when change occurs.
     pub fn on_change(
         mut self,
         f: impl Fn(Option<DateTimeValue>, &mut Window, &mut App) + 'static,
@@ -283,6 +325,7 @@ impl DateTimePicker {
         self
     }
 
+    /// Registers a callback that runs when range change occurs.
     pub fn on_range_change(
         mut self,
         f: impl Fn(Option<DateTimeValue>, Option<DateTimeValue>, &mut Window, &mut App) + 'static,
@@ -291,6 +334,7 @@ impl DateTimePicker {
         self
     }
 
+    /// Registers a callback that runs when selection change occurs.
     pub fn on_selection_change(
         mut self,
         f: impl Fn(DateTimePickerSelection, &mut Window, &mut App) + 'static,
@@ -299,10 +343,12 @@ impl DateTimePicker {
         self
     }
 
+    /// Configures the value ref option.
     pub fn value_ref(&self) -> Option<DateTimeValue> {
         self.value
     }
 
+    /// Configures the range ref option.
     pub fn range_ref(&self) -> (Option<DateTimeValue>, Option<DateTimeValue>) {
         (self.range_start, self.range_end)
     }

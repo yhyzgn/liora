@@ -28,15 +28,25 @@ use gpui::{
 use liora_core::{Config, push_portal};
 use liora_icons_lucide::IconName;
 
-actions!(autocomplete, [AutocompleteClose]);
+actions!(
+    autocomplete,
+    [
+        #[doc = "Keyboard action that closes the active autocomplete popup."]
+        AutocompleteClose
+    ]
+);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Public builder and render state for the Liora autocomplete item component.
 pub struct AutocompleteItem {
+    /// Current value represented by this option or component state.
     pub value: SharedString,
+    /// Human-readable label shown in the component UI.
     pub label: SharedString,
 }
 
 impl AutocompleteItem {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(value: impl Into<SharedString>) -> Self {
         let value = value.into();
         Self {
@@ -45,6 +55,7 @@ impl AutocompleteItem {
         }
     }
 
+    /// Configures the labeled option.
     pub fn labeled(value: impl Into<SharedString>, label: impl Into<SharedString>) -> Self {
         Self {
             value: value.into(),
@@ -53,6 +64,7 @@ impl AutocompleteItem {
     }
 }
 
+/// Public builder and render state for the Liora autocomplete component.
 pub struct Autocomplete {
     input: Entity<Input>,
     items: Vec<AutocompleteItem>,
@@ -72,6 +84,7 @@ pub struct Autocomplete {
 }
 
 impl Autocomplete {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(items: Vec<AutocompleteItem>, cx: &mut Context<Self>) -> Self {
         Self {
             input: cx.new(|cx| {
@@ -96,68 +109,82 @@ impl Autocomplete {
         }
     }
 
+    /// Creates this value from values.
     pub fn from_values(values: Vec<impl Into<SharedString>>, cx: &mut Context<Self>) -> Self {
         Self::new(values.into_iter().map(AutocompleteItem::new).collect(), cx)
     }
 
+    /// Configures the placeholder option.
     pub fn placeholder(mut self, placeholder: impl Into<SharedString>) -> Self {
         self.placeholder = placeholder.into();
         self
     }
 
+    /// Configures the disabled option.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
     }
 
+    /// Configures the clearable option.
     pub fn clearable(mut self, clearable: bool) -> Self {
         self.clearable = clearable;
         self
     }
 
+    /// Configures the suffix icon option.
     pub fn suffix_icon(mut self, icon: IconName) -> Self {
         self.suffix_icon = Some(icon);
         self
     }
 
+    /// Configures the no suffix icon option.
     pub fn no_suffix_icon(mut self) -> Self {
         self.suffix_icon = None;
         self
     }
 
+    /// Configures the suffix icon value option.
     pub fn suffix_icon_value(&self) -> Option<IconName> {
         self.suffix_icon
     }
 
+    /// Returns the width token used for component sizing.
     pub fn width(mut self, width: impl Into<Pixels>) -> Self {
         self.width = Some(width.into());
         self
     }
 
+    /// Applies the predefined width lg sizing preset.
     pub fn width_lg(self) -> Self {
         self.width(px(320.0))
     }
 
+    /// Configures the max suggestions option.
     pub fn max_suggestions(mut self, max: usize) -> Self {
         self.max_suggestions = max.max(1);
         self
     }
 
+    /// Configures the trigger on focus option.
     pub fn trigger_on_focus(mut self, trigger: bool) -> Self {
         self.trigger_on_focus = trigger;
         self
     }
 
+    /// Configures the close on escape option.
     pub fn close_on_escape(mut self, close: bool) -> Self {
         self.close_on_escape = close;
         self
     }
 
+    /// Configures the close on click outside option.
     pub fn close_on_click_outside(mut self, close: bool) -> Self {
         self.close_on_click_outside = close;
         self
     }
 
+    /// Configures the register key bindings option.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([gpui::KeyBinding::new("escape", AutocompleteClose, None)]);
     }
@@ -174,6 +201,7 @@ impl Autocomplete {
         }
     }
 
+    /// Registers a callback that runs when select occurs.
     pub fn on_select(
         mut self,
         cb: impl Fn(AutocompleteItem, &mut Window, &mut App) + 'static,
@@ -182,10 +210,12 @@ impl Autocomplete {
         self
     }
 
+    /// Returns the serialized value used by forms, configuration, or persistence.
     pub fn value(&self, cx: &App) -> SharedString {
         self.input.read(cx).value()
     }
 
+    /// Updates the stored items value and keeps the existing component identity.
     pub fn set_items(&mut self, items: Vec<AutocompleteItem>, cx: &mut Context<Self>) {
         if self.items == items {
             return;
@@ -194,6 +224,7 @@ impl Autocomplete {
         cx.notify();
     }
 
+    /// Configures the matching items for option.
     pub fn matching_items_for(
         items: &[AutocompleteItem],
         query: &str,

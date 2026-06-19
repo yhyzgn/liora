@@ -26,6 +26,7 @@ use gpui::{
 };
 use liora_core::Config;
 
+/// Public builder and render state for the Liora slider component.
 pub struct Slider {
     value: f64,
     min: f64,
@@ -39,6 +40,7 @@ pub struct Slider {
 }
 
 impl Slider {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(value: f64, cx: &mut Context<Self>) -> Self {
         Self {
             value,
@@ -53,23 +55,28 @@ impl Slider {
         }
     }
 
+    /// Configures the min option.
     pub fn min(mut self, min: f64) -> Self {
         self.min = min;
         self
     }
+    /// Configures the max option.
     pub fn max(mut self, max: f64) -> Self {
         self.max = max;
         self
     }
+    /// Configures the step option.
     pub fn step(mut self, step: f64) -> Self {
         self.step = step;
         self
     }
+    /// Configures the disabled option.
     pub fn disabled(mut self, d: bool) -> Self {
         self.disabled = d;
         self
     }
 
+    /// Registers a callback that runs when change occurs.
     pub fn on_change(mut self, cb: impl Fn(f64, &mut Window, &mut App) + 'static) -> Self {
         self.on_change = Some(Box::new(cb));
         self

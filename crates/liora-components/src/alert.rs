@@ -25,14 +25,20 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported alert type modes and options.
 pub enum AlertType {
     #[default]
+    /// Uses the info semantic button variant.
     Info,
+    /// Uses the success semantic button variant.
     Success,
+    /// Uses the warning semantic button variant.
     Warning,
+    /// Reports a error failure.
     Error,
 }
 
+/// Public builder and render state for the Liora alert component.
 pub struct Alert {
     title: SharedString,
     description: Option<SharedString>,
@@ -43,6 +49,7 @@ pub struct Alert {
 }
 
 impl Alert {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(title: impl Into<SharedString>) -> Self {
         Self {
             title: title.into(),
@@ -54,26 +61,31 @@ impl Alert {
         }
     }
 
+    /// Configures the description option.
     pub fn description(mut self, desc: impl Into<SharedString>) -> Self {
         self.description = Some(desc.into());
         self
     }
 
+    /// Configures the alert type option.
     pub fn alert_type(mut self, t: AlertType) -> Self {
         self.alert_type = t;
         self
     }
 
+    /// Configures the closable option.
     pub fn closable(mut self, c: bool) -> Self {
         self.closable = c;
         self
     }
 
+    /// Configures whether icon is visible in the rendered component.
     pub fn show_icon(mut self, s: bool) -> Self {
         self.show_icon = s;
         self
     }
 
+    /// Registers a callback that runs when close occurs.
     pub fn on_close(mut self, f: impl Fn(&mut Window, &mut App) + 'static) -> Self {
         self.on_close = Some(Box::new(f));
         self

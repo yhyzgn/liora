@@ -16,35 +16,52 @@ pub use tray_icon::{Icon as TrayIconImage, MouseButton, MouseButtonState, TrayIc
 use tray_icon::{TrayIcon, TrayIconBuilder};
 
 #[derive(Debug, thiserror::Error)]
+/// Errors raised while creating or updating platform tray integrations.
 pub enum LioraTrayError {
     #[error("tray icon error: {0}")]
+    /// Reports a tray failure.
     Tray(#[from] tray_icon::Error),
     #[error("bad tray icon: {0}")]
+    /// Reports a bad icon failure.
     BadIcon(#[from] tray_icon::BadIcon),
     #[error("menu error: {0}")]
+    /// Reports a menu failure.
     Menu(#[from] tray_icon::menu::Error),
     #[error("image error: {0}")]
+    /// Reports a image failure.
     Image(#[from] image::ImageError),
     #[error("failed to initialize tray platform runtime: {0}")]
+    /// Reports a platform init failure.
     PlatformInit(String),
     #[error("invalid rgba icon buffer {width}x{height}: expected {expected} bytes, got {actual}")]
+    /// Reports a invalid rgba failure.
     InvalidRgba {
+        /// Icon width in pixels.
         width: u32,
+        /// Icon height in pixels.
         height: u32,
+        /// Required number of RGBA bytes for the provided dimensions.
         expected: usize,
+        /// Actual number of bytes provided by the caller.
         actual: usize,
     },
 }
 
+/// Type alias for result values used by the liora tray API.
 pub type Result<T> = std::result::Result<T, LioraTrayError>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Close-window policy used by resident tray applications.
 pub enum TrayCloseAction {
+    /// Handles the ask tray case.
     Ask,
+    /// Handles the exit process tray case.
     ExitProcess,
+    /// Handles the hide to tray tray case.
     HideToTray,
 }
 
+/// Creates a tray icon from encoded PNG bytes.
 pub fn icon_from_png_bytes(bytes: &[u8]) -> Result<TrayIconImage> {
     let image = image::load_from_memory(bytes)?.into_rgba8();
     let (width, height) = image.dimensions();
@@ -52,11 +69,17 @@ pub fn icon_from_png_bytes(bytes: &[u8]) -> Result<TrayIconImage> {
 }
 
 #[derive(Debug, Clone)]
+/// Mutable state model for resident tray behavior.
 pub struct TrayControlState {
+    /// Icon that should currently be shown in the system tray.
     pub active_icon: String,
+    /// Whether the application should continue running after closing its window.
     pub resident_enabled: bool,
+    /// Whether a tray icon is currently installed and visible.
     pub tray_visible: bool,
+    /// Whether the application should automatically show the window for tray events.
     pub auto_show: bool,
+    /// Last close behavior chosen by the user or host application.
     pub remembered_close_action: TrayCloseAction,
 }
 
@@ -72,14 +95,17 @@ impl Default for TrayControlState {
     }
 }
 
+/// Command dispatcher for tray lifecycle and close behavior decisions.
 pub struct TrayControlCenter {
     sender: mpsc::Sender<TrayCommand>,
+    /// Mutable tray control state shared by the host application.
     pub state: TrayControlState,
 }
 
 impl Global for TrayControlCenter {}
 
 impl TrayControlCenter {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(sender: mpsc::Sender<TrayCommand>) -> Self {
         Self {
             sender,
@@ -87,14 +113,17 @@ impl TrayControlCenter {
         }
     }
 
+    /// Applies a tray command to the mutable control state and returns the requested close behavior.
     pub fn dispatch(&self, command: TrayCommand) {
         let _ = self.sender.send(command);
     }
 
+    /// Updates the stored active icon value and keeps the existing component identity.
     pub fn set_active_icon(&mut self, name: impl Into<String>) {
         self.state.active_icon = name.into();
     }
 
+    /// Updates the stored resident enabled value and keeps the existing component identity.
     pub fn set_resident_enabled(&mut self, enabled: bool) {
         self.state.resident_enabled = enabled;
         if !enabled {
@@ -102,6 +131,7 @@ impl TrayControlCenter {
         }
     }
 
+    /// Updates the stored tray visible value and keeps the existing component identity.
     pub fn set_tray_visible(&mut self, visible: bool) {
         self.state.tray_visible = visible;
         if visible {
@@ -109,26 +139,36 @@ impl TrayControlCenter {
         }
     }
 
+    /// Updates the stored auto show value and keeps the existing component identity.
     pub fn set_auto_show(&mut self, enabled: bool) {
         self.state.auto_show = enabled;
     }
 
+    /// Updates the stored remembered close action value and keeps the existing component identity.
     pub fn set_remembered_close_action(&mut self, action: TrayCloseAction) {
         self.state.remembered_close_action = action;
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+/// High-level command emitted by tray menu items and events.
 pub enum TrayCommand {
+    /// Emits the show tray command.
     Show,
+    /// Emits the hide tray command.
     Hide,
+    /// Emits the toggle tray command.
     Toggle,
+    /// Emits the quit tray command.
     Quit,
+    /// Emits the set icon tray command.
     SetIcon(String),
+    /// Emits the custom tray command.
     Custom(String),
 }
 
 impl TrayCommand {
+    /// Returns the stable tray command identifier used for menu event routing.
     pub fn id(&self) -> String {
         match self {
             Self::Show => "show".into(),
@@ -140,6 +180,7 @@ impl TrayCommand {
         }
     }
 
+    /// Creates this value from id.
     pub fn from_id(id: &str) -> Option<Self> {
         match id {
             "show" => Some(Self::Show),
@@ -158,27 +199,43 @@ impl TrayCommand {
 }
 
 #[derive(Clone)]
+/// Declarative tray menu item tree consumed by platform tray backends.
 pub enum TrayMenuItemSpec {
+    /// Handles the action tray case.
     Action {
+        /// Label displayed for the tray menu item.
         label: String,
+        /// Command emitted when the tray item is activated.
         command: TrayCommand,
+        /// Whether the tray menu item is enabled.
         enabled: bool,
     },
+    /// Handles the check tray case.
     Check {
+        /// Label displayed for the tray menu item.
         label: String,
+        /// Command emitted when the tray item is activated.
         command: TrayCommand,
+        /// Whether the checkable tray item is currently checked.
         checked: bool,
+        /// Whether the tray menu item is enabled.
         enabled: bool,
     },
+    /// Handles the submenu tray case.
     Submenu {
+        /// Label displayed for the tray menu item.
         label: String,
+        /// Whether the tray menu item is enabled.
         enabled: bool,
+        /// Nested menu items displayed under this submenu.
         children: Vec<TrayMenuItemSpec>,
     },
+    /// Handles the separator tray case.
     Separator,
 }
 
 impl TrayMenuItemSpec {
+    /// Creates a tray menu action item specification.
     pub fn action(label: impl Into<String>, command: TrayCommand) -> Self {
         Self::Action {
             label: label.into(),
@@ -187,6 +244,7 @@ impl TrayMenuItemSpec {
         }
     }
 
+    /// Creates a tray menu check item specification.
     pub fn check(label: impl Into<String>, command: TrayCommand, checked: bool) -> Self {
         Self::Check {
             label: label.into(),
@@ -196,6 +254,7 @@ impl TrayMenuItemSpec {
         }
     }
 
+    /// Creates a tray menu submenu item specification.
     pub fn submenu(label: impl Into<String>, children: Vec<TrayMenuItemSpec>) -> Self {
         Self::Submenu {
             label: label.into(),
@@ -204,23 +263,33 @@ impl TrayMenuItemSpec {
         }
     }
 
+    /// Creates a tray menu separator item specification.
     pub fn separator() -> Self {
         Self::Separator
     }
 }
 
 #[derive(Clone)]
+/// Platform tray configuration supplied by the host application.
 pub struct TrayConfig {
+    /// Stable identifier used to connect rendered UI, callbacks, and external state.
     pub id: String,
+    /// Tooltip text shown by the operating-system tray area.
     pub tooltip: Option<String>,
+    /// Optional icon rendered with the item.
     pub icon: Option<TrayIconImage>,
+    /// Whether the tray icon should be treated as a platform template image.
     pub icon_is_template: bool,
+    /// Whether a left-click should open the tray menu.
     pub menu_on_left_click: bool,
+    /// Whether a right-click should open the tray menu.
     pub menu_on_right_click: bool,
+    /// Menu tree rendered by the tray backend.
     pub menu: Vec<TrayMenuItemSpec>,
 }
 
 impl TrayConfig {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(id: impl Into<String>) -> Self {
         Self {
             id: id.into(),
@@ -233,27 +302,32 @@ impl TrayConfig {
         }
     }
 
+    /// Sets the tray tooltip configuration value.
     pub fn tooltip(mut self, tooltip: impl Into<String>) -> Self {
         self.tooltip = Some(tooltip.into());
         self
     }
 
+    /// Sets the tray icon configuration value.
     pub fn icon(mut self, icon: TrayIconImage) -> Self {
         self.icon = Some(icon);
         self
     }
 
+    /// Sets whether the tray icon should be treated as a platform template image.
     pub fn icon_is_template(mut self, is_template: bool) -> Self {
         self.icon_is_template = is_template;
         self
     }
 
+    /// Sets the tray menu configuration value.
     pub fn menu(mut self, menu: Vec<TrayMenuItemSpec>) -> Self {
         self.menu = menu;
         self
     }
 }
 
+/// Installed tray integration handle owned by the host application.
 pub struct LioraTray {
     tray: TrayIcon,
     command_by_id: HashMap<String, TrayCommand>,
@@ -261,6 +335,7 @@ pub struct LioraTray {
 }
 
 impl LioraTray {
+    /// Executes installer-style update actions and returns the process exit status.
     pub fn install(config: TrayConfig) -> Result<Self> {
         init_platform_tray_runtime()?;
         let (menu, command_by_id, check_by_id) = build_menu(&config.menu)?;
@@ -285,42 +360,51 @@ impl LioraTray {
         })
     }
 
+    /// Finds the tray command associated with a menu item identifier.
     pub fn command_for_menu_id(&self, id: &MenuId) -> Option<&TrayCommand> {
         self.command_by_id.get(&id.0)
     }
 
+    /// Maps a raw tray event into a high-level tray command when possible.
     pub fn command_for_event(&self, event: &MenuEvent) -> Option<&TrayCommand> {
         self.command_for_menu_id(event.id())
     }
 
+    /// Updates the stored icon value and keeps the existing component identity.
     pub fn set_icon(&self, icon: TrayIconImage) -> Result<()> {
         self.tray.set_icon(Some(icon))?;
         Ok(())
     }
 
+    /// Clears the active platform tray icon from the installed tray handle.
     pub fn clear_icon(&self) -> Result<()> {
         self.tray.set_icon(None)?;
         Ok(())
     }
 
+    /// Updates the stored icon from rgba value and keeps the existing component identity.
     pub fn set_icon_from_rgba(&self, rgba: Vec<u8>, width: u32, height: u32) -> Result<()> {
         self.set_icon(icon_from_rgba(rgba, width, height)?)
     }
 
+    /// Updates the stored icon from path value and keeps the existing component identity.
     pub fn set_icon_from_path(&self, path: impl AsRef<Path>) -> Result<()> {
         self.set_icon(icon_from_path(path)?)
     }
 
+    /// Updates the stored tooltip value and keeps the existing component identity.
     pub fn set_tooltip(&self, tooltip: Option<&str>) -> Result<()> {
         self.tray.set_tooltip(tooltip)?;
         Ok(())
     }
 
+    /// Updates the stored visible value and keeps the existing component identity.
     pub fn set_visible(&self, visible: bool) -> Result<()> {
         self.tray.set_visible(visible)?;
         Ok(())
     }
 
+    /// Updates the stored check state value and keeps the existing component identity.
     pub fn set_check_state(&self, command: &TrayCommand, checked: bool) -> bool {
         let id = command.id();
         if let Some(item) = self.check_by_id.get(&id) {
@@ -331,6 +415,7 @@ impl LioraTray {
         }
     }
 
+    /// Returns whether checked is currently true for this value.
     pub fn is_checked(&self, command: &TrayCommand) -> Option<bool> {
         self.check_by_id
             .get(&command.id())
@@ -398,6 +483,7 @@ fn init_platform_tray_runtime() -> Result<()> {
     Ok(())
 }
 
+/// Creates a tray icon from raw RGBA pixel data.
 pub fn icon_from_rgba(rgba: Vec<u8>, width: u32, height: u32) -> Result<TrayIconImage> {
     let expected = width as usize * height as usize * 4;
     let actual = rgba.len();
@@ -412,12 +498,14 @@ pub fn icon_from_rgba(rgba: Vec<u8>, width: u32, height: u32) -> Result<TrayIcon
     Ok(TrayIconImage::from_rgba(rgba, width, height)?)
 }
 
+/// Loads a tray icon from an image path on disk.
 pub fn icon_from_path(path: impl AsRef<Path>) -> Result<TrayIconImage> {
     let image = image::open(path)?.into_rgba8();
     let (width, height) = image.dimensions();
     icon_from_rgba(image.into_raw(), width, height)
 }
 
+/// Creates a solid-color RGBA tray icon for tests and simple placeholders.
 pub fn solid_icon(color: [u8; 4], size: u32) -> Result<TrayIconImage> {
     let mut rgba = Vec::with_capacity(size as usize * size as usize * 4);
     for _ in 0..size * size {
@@ -426,6 +514,7 @@ pub fn solid_icon(color: [u8; 4], size: u32) -> Result<TrayIconImage> {
     icon_from_rgba(rgba, size, size)
 }
 
+/// Configures the default liora tray menu used before user interaction changes state.
 pub fn default_liora_tray_menu() -> Vec<TrayMenuItemSpec> {
     vec![
         TrayMenuItemSpec::action("显示窗口", TrayCommand::Show),

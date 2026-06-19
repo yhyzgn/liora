@@ -26,18 +26,26 @@ use liora_core::Config;
 use liora_icons::{Icon, IntoIconPath};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Enumerates the supported statistic layout modes and options.
 pub enum StatisticLayout {
+    /// Lays out content in the vertical direction.
     Vertical,
+    /// Uses the horizontal compact variant.
     HorizontalCompact,
+    /// Uses the horizontal between variant.
     HorizontalBetween,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Enumerates the supported statistic icon position modes and options.
 pub enum StatisticIconPosition {
+    /// Uses the left variant.
     Left,
+    /// Uses the right variant.
     Right,
 }
 
+/// Public builder and render state for the Liora statistic component.
 pub struct Statistic {
     title: SharedString,
     value: SharedString,
@@ -51,6 +59,7 @@ pub struct Statistic {
 }
 
 impl Statistic {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(title: impl Into<SharedString>, value: impl Into<SharedString>) -> Self {
         Self {
             title: title.into(),
@@ -65,61 +74,74 @@ impl Statistic {
         }
     }
 
+    /// Configures the prefix option.
     pub fn prefix(mut self, prefix: impl IntoElement) -> Self {
         self.prefix = Some(prefix.into_any_element());
         self
     }
 
+    /// Configures the suffix option.
     pub fn suffix(mut self, suffix: impl IntoElement) -> Self {
         self.suffix = Some(suffix.into_any_element());
         self
     }
 
+    /// Configures the value color option.
     pub fn value_color(mut self, color: Hsla) -> Self {
         self.value_color = Some(color);
         self
     }
 
+    /// Sets the tray icon configuration value.
     pub fn icon(mut self, icon: impl IntoIconPath) -> Self {
         self.icon = Some(icon.icon_path().into_owned());
         self
     }
 
+    /// Configures the icon position option.
     pub fn icon_position(mut self, position: StatisticIconPosition) -> Self {
         self.icon_position = position;
         self
     }
 
+    /// Configures the icon left option.
     pub fn icon_left(self) -> Self {
         self.icon_position(StatisticIconPosition::Left)
     }
 
+    /// Configures the icon right option.
     pub fn icon_right(self) -> Self {
         self.icon_position(StatisticIconPosition::Right)
     }
 
+    /// Configures the icon color option.
     pub fn icon_color(mut self, color: Hsla) -> Self {
         self.icon_color = Some(color);
         self
     }
 
+    /// Configures the layout option.
     pub fn layout(mut self, layout: StatisticLayout) -> Self {
         self.layout = layout;
         self
     }
 
+    /// Configures the vertical option.
     pub fn vertical(self) -> Self {
         self.layout(StatisticLayout::Vertical)
     }
 
+    /// Configures the horizontal option.
     pub fn horizontal(self) -> Self {
         self.horizontal_compact()
     }
 
+    /// Configures the horizontal compact option.
     pub fn horizontal_compact(self) -> Self {
         self.layout(StatisticLayout::HorizontalCompact)
     }
 
+    /// Configures the horizontal between option.
     pub fn horizontal_between(self) -> Self {
         self.layout(StatisticLayout::HorizontalBetween)
     }

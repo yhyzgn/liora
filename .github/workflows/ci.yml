@@ -64,6 +64,25 @@ jobs:
       - name: Docs snippet check
         run: cargo check -p liora-docs --bin check_snippets
 
+      - name: SDK rustdoc coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk_crates=(
+            liora
+            liora-core
+            liora-theme
+            liora-icons
+            liora-icons-lucide
+            liora-components
+            liora-tray
+            liora-updater
+            liora-packager
+          )
+          for crate in "${sdk_crates[@]}"; do
+            RUSTDOCFLAGS="-D missing_docs" cargo doc -p "$crate" --no-deps
+          done
+
   packaging-dry-run:
     name: packaging validate and dry-run
     runs-on: ubuntu-24.04

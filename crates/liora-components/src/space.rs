@@ -23,6 +23,7 @@ use gpui::{
     AnyElement, App, Component, DefiniteLength, IntoElement, RenderOnce, Window, prelude::*, px,
 };
 
+/// Public builder and render state for the Liora space component.
 pub struct Space {
     children: Vec<AnyElement>,
     vertical: bool,
@@ -33,13 +34,18 @@ pub struct Space {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Enumerates the supported space align modes and options.
 pub enum SpaceAlign {
+    /// Uses the start variant.
     Start,
+    /// Uses the center variant.
     Center,
+    /// Uses the end variant.
     End,
 }
 
 impl Space {
+    /// Creates a new value with the required baseline configuration.
     pub fn new() -> Self {
         Self {
             children: Vec::new(),
@@ -51,68 +57,83 @@ impl Space {
         }
     }
 
+    /// Configures the vertical option.
     pub fn vertical(mut self) -> Self {
         self.vertical = true;
         self
     }
 
+    /// Configures the gap option.
     pub fn gap(mut self, gap: impl Into<DefiniteLength>) -> Self {
         self.gap = Some(gap.into());
         self
     }
 
+    /// Applies the predefined `gap_xs` sizing preset.
     pub fn gap_xs(self) -> Self {
         self.gap(px(4.0))
     }
 
+    /// Applies the predefined gap sm sizing preset.
     pub fn gap_sm(self) -> Self {
         self.gap(px(8.0))
     }
 
+    /// Applies the predefined gap md sizing preset.
     pub fn gap_md(self) -> Self {
         self.gap(px(12.0))
     }
 
+    /// Applies the predefined gap lg sizing preset.
     pub fn gap_lg(self) -> Self {
         self.gap(px(16.0))
     }
 
+    /// Applies the predefined gap xl sizing preset.
     pub fn gap_xl(self) -> Self {
         self.gap(px(24.0))
     }
 
+    /// Configures the wrap option.
     pub fn wrap(mut self) -> Self {
         self.wrap = true;
         self
     }
 
+    /// Configures the align option.
     pub fn align(mut self, align: SpaceAlign) -> Self {
         self.align = Some(align);
         self
     }
 
+    /// Configures the align start option.
     pub fn align_start(self) -> Self {
         self.align(SpaceAlign::Start)
     }
 
+    /// Configures the align center option.
     pub fn align_center(self) -> Self {
         self.align(SpaceAlign::Center)
     }
 
+    /// Configures the align end option.
     pub fn align_end(self) -> Self {
         self.align(SpaceAlign::End)
     }
 
+    /// Configures the grow option.
     pub fn grow(mut self) -> Self {
         self.grow = true;
         self
     }
 
+    /// Configures the child option.
     pub fn child(mut self, child: impl IntoElement) -> Self {
         self.children.push(child.into_any_element());
         self
     }
 
+    /// Configures the children option.
     pub fn children(mut self, children: impl IntoIterator<Item = impl IntoElement>) -> Self {
         self.children
             .extend(children.into_iter().map(|c| c.into_any_element()));

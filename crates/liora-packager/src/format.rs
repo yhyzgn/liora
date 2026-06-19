@@ -1,11 +1,16 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// Operating-system target supported by Liora packaging and update selection.
 pub enum Platform {
+    /// Selects the linux package format.
     Linux,
+    /// Selects the macos package format.
     Macos,
+    /// Selects the windows package format.
     Windows,
 }
 
 impl Platform {
+    /// Returns the platform or environment value for the current target.
     pub fn current() -> Self {
         if cfg!(target_os = "macos") {
             Self::Macos
@@ -16,6 +21,7 @@ impl Platform {
         }
     }
 
+    /// Returns the stable string representation for this value.
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Linux => "linux",
@@ -26,19 +32,30 @@ impl Platform {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// Native package and installer formats supported by the release pipeline.
 pub enum PackageFormat {
+    /// Selects the app image package format.
     AppImage,
+    /// Selects the deb package format.
     Deb,
+    /// Selects the rpm package format.
     Rpm,
+    /// Selects the tar gz package format.
     TarGz,
+    /// Selects the app package format.
     App,
+    /// Selects the dmg package format.
     Dmg,
+    /// Selects the nsis package format.
     Nsis,
+    /// Selects the msi package format.
     Msi,
+    /// Selects the platform defaults package format.
     PlatformDefaults,
 }
 
 impl PackageFormat {
+    /// Returns the stable string representation for this value.
     pub fn as_str(self) -> &'static str {
         match self {
             Self::AppImage => "appimage",
@@ -53,6 +70,7 @@ impl PackageFormat {
         }
     }
 
+    /// Returns the package formats normally built for the target platform.
     pub fn defaults_for(platform: Platform) -> &'static [Self] {
         match platform {
             Platform::Linux => &[Self::AppImage, Self::Deb, Self::Rpm, Self::TarGz],
@@ -61,6 +79,7 @@ impl PackageFormat {
         }
     }
 
+    /// Returns the cargo-packager backend name for formats handled by cargo-packager.
     pub fn cargo_packager_format(self) -> Option<&'static str> {
         match self {
             Self::AppImage => Some("appimage"),
@@ -74,6 +93,7 @@ impl PackageFormat {
         }
     }
 
+    /// Creates this value from artifact path.
     pub fn from_artifact_path(path: &std::path::Path) -> Option<Self> {
         let file_name = path.file_name()?.to_string_lossy().to_ascii_lowercase();
         let extension = path.extension()?.to_string_lossy().to_ascii_lowercase();

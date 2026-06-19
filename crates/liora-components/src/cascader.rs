@@ -31,18 +31,32 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 use std::sync::Arc;
 
-actions!(cascader, [CascaderClose]);
+actions!(
+    cascader,
+    [
+        #[doc = "Keyboard action that closes the active cascader popup."]
+        CascaderClose
+    ]
+);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Public builder and render state for the Liora cascader option component.
 pub struct CascaderOption {
+    /// Current value represented by this option or component state.
     pub value: SharedString,
+    /// Human-readable label shown in the component UI.
     pub label: SharedString,
+    /// Nested child items rendered beneath this item.
     pub children: Vec<CascaderOption>,
+    /// Whether user interaction is disabled for this item.
     pub disabled: bool,
+    /// Loading for this data model.
     pub loading: bool,
+    /// Leaf for this data model.
     pub leaf: bool,
 }
 
+/// Public builder and render state for the Liora cascader component.
 pub struct Cascader {
     id: SharedString,
     options: Vec<CascaderOption>,
@@ -70,6 +84,7 @@ pub struct Cascader {
 }
 
 impl CascaderOption {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(value: impl Into<SharedString>, label: impl Into<SharedString>) -> Self {
         Self {
             value: value.into(),
@@ -81,26 +96,31 @@ impl CascaderOption {
         }
     }
 
+    /// Configures the child option.
     pub fn child(mut self, child: CascaderOption) -> Self {
         self.children.push(child);
         self
     }
 
+    /// Configures the children option.
     pub fn children(mut self, children: impl IntoIterator<Item = CascaderOption>) -> Self {
         self.children.extend(children);
         self
     }
 
+    /// Configures the disabled option.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
     }
 
+    /// Configures the loading option.
     pub fn loading(mut self, loading: bool) -> Self {
         self.loading = loading;
         self
     }
 
+    /// Configures the leaf option.
     pub fn leaf(mut self, leaf: bool) -> Self {
         self.leaf = leaf;
         self
@@ -112,6 +132,7 @@ impl CascaderOption {
 }
 
 impl Cascader {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(options: Vec<CascaderOption>, cx: &mut Context<Self>) -> Self {
         Self {
             id: liora_core::unique_id("cascader"),
@@ -136,11 +157,13 @@ impl Cascader {
         }
     }
 
+    /// Returns the stable tray command identifier used for menu event routing.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
+    /// Configures the popup item id option.
     pub fn popup_item_id(prefix: impl AsRef<str>, path: &[SharedString]) -> SharedString {
         let mut id = prefix.as_ref().to_string();
         id.push_str("-item");
@@ -151,6 +174,7 @@ impl Cascader {
         id.into()
     }
 
+    /// Returns the filesystem path for the selected resource.
     pub fn selected_path(
         mut self,
         path: impl IntoIterator<Item = impl Into<SharedString>>,
@@ -160,60 +184,72 @@ impl Cascader {
         self
     }
 
+    /// Configures the placeholder option.
     pub fn placeholder(mut self, placeholder: impl Into<SharedString>) -> Self {
         self.placeholder = placeholder.into();
         self
     }
 
+    /// Creates a tray menu separator item specification.
     pub fn separator(mut self, separator: impl Into<SharedString>) -> Self {
         self.separator = separator.into();
         self
     }
 
+    /// Configures the disabled option.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
     }
 
+    /// Configures the clearable option.
     pub fn clearable(mut self, clearable: bool) -> Self {
         self.clearable = clearable;
         self
     }
 
+    /// Configures the filterable option.
     pub fn filterable(mut self, filterable: bool) -> Self {
         self.filterable = filterable;
         self
     }
 
+    /// Configures the search query option.
     pub fn search_query(mut self, query: impl Into<SharedString>) -> Self {
         self.search_query = query.into();
         self
     }
 
+    /// Returns the width token used for component sizing.
     pub fn width(mut self, width: impl Into<Pixels>) -> Self {
         self.width = Some(width.into());
         self
     }
 
+    /// Applies the predefined width md sizing preset.
     pub fn width_md(self) -> Self {
         self.width(px(360.0))
     }
 
+    /// Configures the lazy option.
     pub fn lazy(mut self, lazy: bool) -> Self {
         self.lazy = lazy;
         self
     }
 
+    /// Configures the close on escape option.
     pub fn close_on_escape(mut self, close: bool) -> Self {
         self.close_on_escape = close;
         self
     }
 
+    /// Configures the close on click outside option.
     pub fn close_on_click_outside(mut self, close: bool) -> Self {
         self.close_on_click_outside = close;
         self
     }
 
+    /// Configures the register key bindings option.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([KeyBinding::new("escape", CascaderClose, None)]);
     }
@@ -230,6 +266,7 @@ impl Cascader {
         }
     }
 
+    /// Registers a callback that runs when change occurs.
     pub fn on_change(
         mut self,
         f: impl Fn(Vec<SharedString>, &mut Window, &mut App) + 'static,
@@ -238,6 +275,7 @@ impl Cascader {
         self
     }
 
+    /// Registers a callback that runs when lazy load occurs.
     pub fn on_lazy_load(
         mut self,
         f: impl Fn(&mut Cascader, Vec<SharedString>, &mut Window, &mut Context<Cascader>) + 'static,
@@ -246,6 +284,7 @@ impl Cascader {
         self
     }
 
+    /// Updates the stored on lazy load value and keeps the existing component identity.
     pub fn set_on_lazy_load(
         &mut self,
         f: impl Fn(&mut Cascader, Vec<SharedString>, &mut Window, &mut Context<Cascader>) + 'static,
@@ -255,6 +294,7 @@ impl Cascader {
         cx.notify();
     }
 
+    /// Updates the stored options value and keeps the existing component identity.
     pub fn set_options(&mut self, options: Vec<CascaderOption>, cx: &mut Context<Self>) {
         self.options = options;
         if !Self::is_selectable_path(&self.options, &self.selected_path) {
@@ -264,6 +304,7 @@ impl Cascader {
         cx.notify();
     }
 
+    /// Updates the stored children at path value and keeps the existing component identity.
     pub fn set_children_at_path(
         &mut self,
         path: &[SharedString],
@@ -278,6 +319,7 @@ impl Cascader {
         changed
     }
 
+    /// Updates the stored loading at path value and keeps the existing component identity.
     pub fn set_loading_at_path(
         &mut self,
         path: &[SharedString],
@@ -291,6 +333,7 @@ impl Cascader {
         changed
     }
 
+    /// Updates the stored selected path value and keeps the existing component identity.
     pub fn set_selected_path(
         &mut self,
         path: impl IntoIterator<Item = impl Into<SharedString>>,
@@ -301,11 +344,13 @@ impl Cascader {
         cx.notify();
     }
 
+    /// Updates the stored search query value and keeps the existing component identity.
     pub fn set_search_query(&mut self, query: impl Into<SharedString>, cx: &mut Context<Self>) {
         self.search_query = query.into();
         cx.notify();
     }
 
+    /// Returns the filesystem path for the labels for resource.
     pub fn labels_for_path(options: &[CascaderOption], path: &[SharedString]) -> Vec<SharedString> {
         let mut labels = Vec::new();
         let mut siblings = options;
@@ -321,6 +366,7 @@ impl Cascader {
         labels
     }
 
+    /// Returns whether selectable path is currently true for this value.
     pub fn is_selectable_path(options: &[CascaderOption], path: &[SharedString]) -> bool {
         let Some(option) = Self::option_for_path(options, path) else {
             return false;
@@ -328,16 +374,19 @@ impl Cascader {
         Self::is_selectable_option(option, false)
     }
 
+    /// Returns whether selectable option is currently true for this value.
     pub fn is_selectable_option(option: &CascaderOption, lazy: bool) -> bool {
         !option.disabled
             && !option.loading
             && (option.leaf || (!lazy && option.children.is_empty()))
     }
 
+    /// Configures the should lazy load option option.
     pub fn should_lazy_load_option(option: &CascaderOption, lazy: bool) -> bool {
         lazy && !option.disabled && !option.loading && !option.leaf && option.children.is_empty()
     }
 
+    /// Updates the stored children in options value and keeps the existing component identity.
     pub fn set_children_in_options(
         options: &mut [CascaderOption],
         path: &[SharedString],
@@ -351,6 +400,7 @@ impl Cascader {
         true
     }
 
+    /// Updates the stored loading in options value and keeps the existing component identity.
     pub fn set_loading_in_options(
         options: &mut [CascaderOption],
         path: &[SharedString],

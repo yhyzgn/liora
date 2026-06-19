@@ -27,11 +27,15 @@ use gpui::{
 use liora_core::{Config, Placement, clear_popover, stable_unique_id};
 use std::sync::Arc;
 
+/// Public builder and render state for the Liora dropdown item component.
 pub struct DropdownItem {
+    /// Human-readable label shown in the component UI.
     pub label: SharedString,
+    /// On click for this data model.
     pub on_click: Arc<dyn Fn(&mut Window, &mut App) + 'static>,
 }
 
+/// Public builder and render state for the Liora dropdown component.
 pub struct Dropdown {
     trigger: AnyElement,
     items: Vec<DropdownItem>,
@@ -42,6 +46,7 @@ pub struct Dropdown {
 }
 
 impl Dropdown {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(trigger: impl IntoElement) -> Self {
         Self {
             trigger: trigger.into_any_element(),
@@ -53,6 +58,7 @@ impl Dropdown {
         }
     }
 
+    /// Configures the item option.
     pub fn item(
         mut self,
         label: impl Into<SharedString>,
@@ -65,21 +71,25 @@ impl Dropdown {
         self
     }
 
+    /// Configures the placement option.
     pub fn placement(mut self, p: Placement) -> Self {
         self.placement = p;
         self
     }
 
+    /// Returns the stable tray command identifier used for menu event routing.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = Some(id.into());
         self
     }
 
+    /// Configures the close on escape option.
     pub fn close_on_escape(mut self, close: bool) -> Self {
         self.close_on_escape = close;
         self
     }
 
+    /// Configures the close on click outside option.
     pub fn close_on_click_outside(mut self, close: bool) -> Self {
         self.close_on_click_outside = close;
         self

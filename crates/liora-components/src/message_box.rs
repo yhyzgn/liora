@@ -23,6 +23,7 @@ use crate::{Button, Dialog};
 use gpui::{App, SharedString, Window, div, prelude::*};
 use std::sync::Arc;
 
+/// Public builder and render state for the Liora message box component.
 pub struct MessageBox {
     title: SharedString,
     content: SharedString,
@@ -31,6 +32,7 @@ pub struct MessageBox {
 }
 
 impl MessageBox {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(title: impl Into<SharedString>, content: impl Into<SharedString>) -> Self {
         Self {
             title: title.into(),
@@ -40,16 +42,19 @@ impl MessageBox {
         }
     }
 
+    /// Configures the close on click outside option.
     pub fn close_on_click_outside(mut self, c: bool) -> Self {
         self.close_on_click_outside = c;
         self
     }
 
+    /// Configures the close on escape option.
     pub fn close_on_escape(mut self, c: bool) -> Self {
         self.close_on_escape = c;
         self
     }
 
+    /// Configures the alert option.
     pub fn alert(self, cx: &mut App) {
         let content = self.content.clone();
         Dialog::new()
@@ -74,6 +79,7 @@ impl MessageBox {
             .show(cx);
     }
 
+    /// Configures the confirm option.
     pub fn confirm(self, on_confirm: impl Fn(&mut Window, &mut App) + 'static, cx: &mut App) {
         let content = self.content.clone();
         let on_confirm = Arc::new(on_confirm);
@@ -108,19 +114,23 @@ impl MessageBox {
             .show(cx);
     }
 
+    /// Configures the close option.
     pub fn close(cx: &mut App) {
         Dialog::close(cx);
     }
 }
 
+/// Configures the close option.
 pub fn close(cx: &mut App) {
     MessageBox::close(cx);
 }
 
+/// Configures the alert option.
 pub fn alert(title: impl Into<SharedString>, content: impl Into<SharedString>, cx: &mut App) {
     MessageBox::new(title, content).alert(cx);
 }
 
+/// Configures the confirm option.
 pub fn confirm(
     title: impl Into<SharedString>,
     content: impl Into<SharedString>,

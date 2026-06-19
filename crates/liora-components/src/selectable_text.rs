@@ -36,12 +36,20 @@ use std::{
 
 actions!(
     selectable_text_actions,
-    [SelectableTextSelectAll, SelectableTextCopy]
+    [
+        #[doc = "Keyboard action that selects the full selectable text content."]
+        SelectableTextSelectAll,
+        #[doc = "Keyboard action that copies the active selectable text range."]
+        SelectableTextCopy,
+    ]
 );
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Enumerates the supported selectable text wrap modes and options.
 pub enum SelectableTextWrap {
+    /// Uses the normal variant.
     Normal,
+    /// Uses the no wrap variant.
     NoWrap,
 }
 
@@ -55,19 +63,30 @@ impl SelectableTextWrap {
 }
 
 #[derive(Clone)]
+/// Public builder and render state for the Liora selectable text options component.
 pub struct SelectableTextOptions {
+    /// Stable identifier used to connect rendered UI, callbacks, and external state.
     pub id: ElementId,
+    /// Foreground text color used in the normal state.
     pub text: SharedString,
+    /// Runs for this data model.
     pub runs: Vec<TextRun>,
+    /// Font size for this data model.
     pub font_size: Pixels,
+    /// Line height for this data model.
     pub line_height: Pixels,
+    /// Text color for this data model.
     pub text_color: gpui::Hsla,
+    /// Wrap for this data model.
     pub wrap: SelectableTextWrap,
+    /// Key context for this data model.
     pub key_context: &'static str,
+    /// Fill width for this data model.
     pub fill_width: bool,
 }
 
 impl SelectableTextOptions {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(id: impl Into<ElementId>, text: impl Into<SharedString>) -> Self {
         Self {
             id: id.into(),
@@ -83,9 +102,11 @@ impl SelectableTextOptions {
     }
 }
 
+/// Public builder and render state for the Liora selectable text component.
 pub struct SelectableText;
 
 impl SelectableText {
+    /// Configures the register key bindings option.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([
             gpui::KeyBinding::new("cmd-a", SelectableTextSelectAll, Some("SelectableText")),
@@ -95,6 +116,7 @@ impl SelectableText {
         ]);
     }
 
+    /// Configures the view option.
     pub fn view(
         options: SelectableTextOptions,
         window: &mut Window,

@@ -30,8 +30,15 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 use std::sync::Arc;
 
-actions!(dialog, [DialogClose]);
+actions!(
+    dialog,
+    [
+        #[doc = "Keyboard action that closes the active dialog when dismissal is allowed."]
+        DialogClose
+    ]
+);
 
+/// Public builder and render state for the Liora dialog component.
 pub struct Dialog {
     id: SharedString,
     title: SharedString,
@@ -40,6 +47,7 @@ pub struct Dialog {
     close_on_escape: bool,
 }
 
+/// Public builder and render state for the Liora dialog view component.
 pub struct DialogView {
     id: SharedString,
     title: SharedString,
@@ -168,10 +176,12 @@ mod motion_tests {
 }
 
 impl Dialog {
+    /// Configures the register key bindings option.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([KeyBinding::new("escape", DialogClose, None)]);
     }
 
+    /// Creates a new value with the required baseline configuration.
     pub fn new() -> Self {
         Self {
             id: liora_core::unique_id("dialog"),
@@ -182,26 +192,31 @@ impl Dialog {
         }
     }
 
+    /// Returns the stable tray command identifier used for menu event routing.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
+    /// Configures the title option.
     pub fn title(mut self, title: impl Into<SharedString>) -> Self {
         self.title = title.into();
         self
     }
 
+    /// Configures the close on click outside option.
     pub fn close_on_click_outside(mut self, c: bool) -> Self {
         self.close_on_click_outside = c;
         self
     }
 
+    /// Configures the close on escape option.
     pub fn close_on_escape(mut self, c: bool) -> Self {
         self.close_on_escape = c;
         self
     }
 
+    /// Configures the content option.
     pub fn content<F, E>(mut self, f: F) -> Self
     where
         F: Fn(&mut Window, &mut Context<DialogView>) -> E + 'static,
@@ -211,6 +226,7 @@ impl Dialog {
         self
     }
 
+    /// Configures the show option.
     pub fn show(self, cx: &mut App) {
         let id = self.id;
         let title = self.title;
@@ -235,10 +251,12 @@ impl Dialog {
         liora_core::set_active_modal(id, view.into(), cx);
     }
 
+    /// Configures the close option.
     pub fn close(cx: &mut App) {
         liora_core::clear_active_modal(cx);
     }
 
+    /// Configures the close id option.
     pub fn close_id(id: impl Into<SharedString>, cx: &mut App) {
         let id = id.into();
         liora_core::clear_modal(&id, cx);

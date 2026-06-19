@@ -55,6 +55,7 @@ pub struct HorizontalList {
 }
 
 impl HorizontalList {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(item_count: usize, render_item: impl Fn(usize) -> AnyElement + 'static) -> Self {
         Self {
             item_count,
@@ -73,6 +74,7 @@ impl HorizontalList {
         }
     }
 
+    /// Creates a GPUI entity that owns this component state across render passes.
     pub fn entity(
         item_count: usize,
         cx: &mut App,
@@ -81,6 +83,7 @@ impl HorizontalList {
         cx.new(|_| Self::new(item_count, render_item))
     }
 
+    /// Updates the stored item count value and keeps the existing component identity.
     pub fn set_item_count(&mut self, item_count: usize) {
         if self.item_count == item_count {
             return;
@@ -92,18 +95,22 @@ impl HorizontalList {
         self.drag_reference_bounds = vec![None; item_count];
     }
 
+    /// Updates the stored render item value and keeps the existing component identity.
     pub fn set_render_item(&mut self, render_item: impl Fn(usize) -> AnyElement + 'static) {
         self.render_item = Arc::new(render_item);
     }
 
+    /// Updates the stored divider value and keeps the existing component identity.
     pub fn set_divider(&mut self, divider: impl Fn(usize) -> AnyElement + 'static) {
         self.render_divider = Some(Arc::new(divider));
     }
 
+    /// Clears the current divider state.
     pub fn clear_divider(&mut self) {
         self.render_divider = None;
     }
 
+    /// Updates the stored draggable value and keeps the existing component identity.
     pub fn set_draggable(&mut self, draggable: bool) {
         self.draggable = draggable;
         if !draggable {
@@ -112,6 +119,7 @@ impl HorizontalList {
         }
     }
 
+    /// Updates the stored disabled value and keeps the existing component identity.
     pub fn set_disabled(&mut self, disabled: bool) {
         self.disabled = disabled;
         if disabled {
@@ -120,6 +128,7 @@ impl HorizontalList {
         }
     }
 
+    /// Updates the stored on reorder value and keeps the existing component identity.
     pub fn set_on_reorder(
         &mut self,
         callback: impl Fn(usize, usize, &mut Window, &mut Context<HorizontalList>) + 'static,
@@ -127,37 +136,45 @@ impl HorizontalList {
         self.on_reorder = Some(Arc::new(callback));
     }
 
+    /// Updates the stored item gap value and keeps the existing component identity.
     pub fn set_item_gap(&mut self, gap: impl Into<Pixels>) {
         self.item_gap = gap.into().max(px(0.0));
     }
 
+    /// Updates the stored padding value and keeps the existing component identity.
     pub fn set_padding(&mut self, padding: impl Into<Pixels>) {
         self.padding = padding.into().max(px(0.0));
     }
 
+    /// Updates the stored height value and keeps the existing component identity.
     pub fn set_height(&mut self, height: Option<Pixels>) {
         self.height = height;
     }
 
+    /// Configures the order option.
     pub fn order(&self) -> &[usize] {
         &self.order
     }
 
+    /// Configures the draggable option.
     pub fn draggable(mut self, draggable: bool) -> Self {
         self.set_draggable(draggable);
         self
     }
 
+    /// Configures the disabled option.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.set_disabled(disabled);
         self
     }
 
+    /// Configures the divider option.
     pub fn divider(mut self, divider: impl Fn(usize) -> AnyElement + 'static) -> Self {
         self.set_divider(divider);
         self
     }
 
+    /// Registers a callback that runs when reorder occurs.
     pub fn on_reorder(
         mut self,
         callback: impl Fn(usize, usize, &mut Window, &mut Context<HorizontalList>) + 'static,
@@ -166,16 +183,19 @@ impl HorizontalList {
         self
     }
 
+    /// Configures the item gap option.
     pub fn item_gap(mut self, gap: impl Into<Pixels>) -> Self {
         self.set_item_gap(gap);
         self
     }
 
+    /// Configures the padding option.
     pub fn padding(mut self, padding: impl Into<Pixels>) -> Self {
         self.set_padding(padding);
         self
     }
 
+    /// Returns the height token used for component sizing.
     pub fn height(mut self, height: impl Into<Pixels>) -> Self {
         self.set_height(Some(height.into()));
         self

@@ -29,6 +29,7 @@ use liora_core::Config;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
+/// Public builder and render state for the Liora backtop component.
 pub struct Backtop {
     id: gpui::SharedString,
     scroll_handle: ScrollHandle,
@@ -40,6 +41,7 @@ pub struct Backtop {
 }
 
 impl Backtop {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(scroll_handle: ScrollHandle) -> Self {
         Self {
             id: liora_core::unique_id("backtop"),
@@ -52,34 +54,41 @@ impl Backtop {
         }
     }
 
+    /// Returns the stable tray command identifier used for menu event routing.
     pub fn id(mut self, id: impl Into<gpui::SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
+    /// Configures the visibility height option.
     pub fn visibility_height(mut self, h: impl Into<Pixels>) -> Self {
         self.visibility_height = h.into();
         self
     }
 
+    /// Applies the predefined visibility height sm sizing preset.
     pub fn visibility_height_sm(self) -> Self {
         self.visibility_height(px(100.0))
     }
 
+    /// Configures the right option.
     pub fn right(mut self, r: impl Into<Pixels>) -> Self {
         self.right = r.into();
         self
     }
 
+    /// Applies the predefined right lg sizing preset.
     pub fn right_lg(self) -> Self {
         self.right(px(100.0))
     }
 
+    /// Configures the bottom option.
     pub fn bottom(mut self, b: impl Into<Pixels>) -> Self {
         self.bottom = b.into();
         self
     }
 
+    /// Configures the content option.
     pub fn content<F>(mut self, f: F) -> Self
     where
         F: Fn(&mut Window, &mut Context<Backtop>) -> AnyElement + 'static,

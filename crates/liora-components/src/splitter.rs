@@ -21,6 +21,7 @@
 
 use gpui::{App, Component, IntoElement, RenderOnce, Window, prelude::*, px};
 
+/// Public builder and render state for the Liora splitter component.
 pub struct Splitter {
     left: Option<gpui::AnyElement>,
     right: Option<gpui::AnyElement>,
@@ -29,6 +30,7 @@ pub struct Splitter {
 }
 
 impl Splitter {
+    /// Creates a new value with the required baseline configuration.
     pub fn new() -> Self {
         Self {
             left: None,
@@ -37,24 +39,29 @@ impl Splitter {
             bordered: false,
         }
     }
+    /// Configures the left option.
     pub fn left(mut self, el: impl IntoElement) -> Self {
         self.left = Some(el.into_any_element());
         self
     }
+    /// Configures the right option.
     pub fn right(mut self, el: impl IntoElement) -> Self {
         self.right = Some(el.into_any_element());
         self
     }
 
+    /// Returns the height token used for component sizing.
     pub fn height(mut self, height: impl Into<gpui::Pixels>) -> Self {
         self.height = Some(height.into());
         self
     }
 
+    /// Applies the predefined height md sizing preset.
     pub fn height_md(self) -> Self {
         self.height(px(200.0))
     }
 
+    /// Configures the bordered option.
     pub fn bordered(mut self) -> Self {
         self.bordered = true;
         self

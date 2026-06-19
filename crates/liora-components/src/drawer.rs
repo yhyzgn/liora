@@ -30,17 +30,29 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 use std::sync::Arc;
 
-actions!(drawer, [DrawerClose]);
+actions!(
+    drawer,
+    [
+        #[doc = "Keyboard action that closes the active drawer when dismissal is allowed."]
+        DrawerClose
+    ]
+);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported drawer placement modes and options.
 pub enum DrawerPlacement {
     #[default]
+    /// Uses the right variant.
     Right,
+    /// Uses the left variant.
     Left,
+    /// Uses the top variant.
     Top,
+    /// Uses the bottom variant.
     Bottom,
 }
 
+/// Public builder and render state for the Liora drawer component.
 pub struct Drawer {
     id: SharedString,
     title: SharedString,
@@ -52,6 +64,7 @@ pub struct Drawer {
     close_on_escape: bool,
 }
 
+/// Public builder and render state for the Liora drawer view component.
 pub struct DrawerView {
     id: SharedString,
     title: SharedString,
@@ -211,10 +224,12 @@ impl Render for DrawerView {
 }
 
 impl Drawer {
+    /// Configures the register key bindings option.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([KeyBinding::new("escape", DrawerClose, None)]);
     }
 
+    /// Creates a new value with the required baseline configuration.
     pub fn new() -> Self {
         Self {
             id: liora_core::unique_id("drawer"),
@@ -228,53 +243,64 @@ impl Drawer {
         }
     }
 
+    /// Returns the stable tray command identifier used for menu event routing.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
+    /// Configures the title option.
     pub fn title(mut self, title: impl Into<SharedString>) -> Self {
         self.title = title.into();
         self
     }
 
+    /// Configures the placement option.
     pub fn placement(mut self, p: DrawerPlacement) -> Self {
         self.placement = p;
         self
     }
 
+    /// Returns the width token used for component sizing.
     pub fn width(mut self, w: impl Into<Pixels>) -> Self {
         self.width = w.into();
         self
     }
 
+    /// Applies the predefined width lg sizing preset.
     pub fn width_lg(self) -> Self {
         self.width(px(480.0))
     }
 
+    /// Returns the height token used for component sizing.
     pub fn height(mut self, h: impl Into<Pixels>) -> Self {
         self.height = h.into();
         self
     }
 
+    /// Applies the predefined height sm sizing preset.
     pub fn height_sm(self) -> Self {
         self.height(px(200.0))
     }
 
+    /// Applies the predefined height lg sizing preset.
     pub fn height_lg(self) -> Self {
         self.height(px(360.0))
     }
 
+    /// Configures the close on click outside option.
     pub fn close_on_click_outside(mut self, c: bool) -> Self {
         self.close_on_click_outside = c;
         self
     }
 
+    /// Configures the close on escape option.
     pub fn close_on_escape(mut self, c: bool) -> Self {
         self.close_on_escape = c;
         self
     }
 
+    /// Configures the content option.
     pub fn content<F, E>(mut self, f: F) -> Self
     where
         F: Fn(&mut Window, &mut Context<DrawerView>) -> E + 'static,
@@ -284,6 +310,7 @@ impl Drawer {
         self
     }
 
+    /// Configures the show option.
     pub fn show(self, cx: &mut App) {
         let id = self.id;
         let title = self.title;
@@ -314,10 +341,12 @@ impl Drawer {
         liora_core::set_active_drawer(id, view.into(), cx);
     }
 
+    /// Configures the close option.
     pub fn close(cx: &mut App) {
         liora_core::clear_active_drawer(cx);
     }
 
+    /// Configures the close id option.
     pub fn close_id(id: impl Into<SharedString>, cx: &mut App) {
         let id = id.into();
         liora_core::clear_drawer(&id, cx);

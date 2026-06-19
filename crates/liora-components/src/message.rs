@@ -31,25 +31,36 @@ use liora_theme::Theme;
 use std::{cell::RefCell, time::Duration};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Enumerates the supported message type modes and options.
 pub enum MessageType {
+    /// Uses the info semantic button variant.
     Info,
+    /// Uses the success semantic button variant.
     Success,
+    /// Uses the warning semantic button variant.
     Warning,
+    /// Reports a error failure.
     Error,
 }
 
 #[derive(Clone)]
+/// Public builder and render state for the Liora message item component.
 pub struct MessageItem {
+    /// Stable identifier used to connect rendered UI, callbacks, and external state.
     pub id: usize,
+    /// Content rendered inside the component body.
     pub content: SharedString,
+    /// Msg type for this data model.
     pub msg_type: MessageType,
 }
 
+/// Public builder and render state for the Liora message manager component.
 pub struct MessageManager {
     messages: Vec<MessageItem>,
     next_id: usize,
 }
 
+/// Public builder and render state for the Liora message manager global component.
 pub struct MessageManagerGlobal(pub Entity<MessageManager>);
 impl Global for MessageManagerGlobal {}
 
@@ -86,6 +97,7 @@ impl ToastDispatcherGlobal {
 }
 
 impl MessageManager {
+    /// Creates a new value with the required baseline configuration.
     pub fn new() -> Self {
         Self {
             messages: vec![],
@@ -93,6 +105,7 @@ impl MessageManager {
         }
     }
 
+    /// Configures the init option.
     pub fn init(cx: &mut App) {
         if !cx.has_global::<MessageManagerGlobal>() {
             let manager = cx.new(|_| Self::new());
@@ -107,6 +120,7 @@ impl MessageManager {
         });
     }
 
+    /// Configures the show option.
     pub fn show(content: impl Into<SharedString>, msg_type: MessageType, cx: &mut App) {
         Self::init(cx);
         let manager = cx.global::<MessageManagerGlobal>().0.clone();
@@ -190,30 +204,37 @@ impl Render for MessageManager {
     }
 }
 
+/// Configures whether message is visible in the rendered component.
 pub fn show_message(content: impl Into<SharedString>, msg_type: MessageType, cx: &mut App) {
     MessageManager::show(content, msg_type, cx);
 }
 
+/// Configures the toast option.
 pub fn toast(content: impl Into<SharedString>, msg_type: MessageType, cx: &mut App) {
     show_message(content, msg_type, cx);
 }
 
+/// Configures the toast info option.
 pub fn toast_info(content: impl Into<SharedString>, cx: &mut App) {
     toast(content, MessageType::Info, cx);
 }
 
+/// Configures the toast success option.
 pub fn toast_success(content: impl Into<SharedString>, cx: &mut App) {
     toast(content, MessageType::Success, cx);
 }
 
+/// Configures the toast warning option.
 pub fn toast_warning(content: impl Into<SharedString>, cx: &mut App) {
     toast(content, MessageType::Warning, cx);
 }
 
+/// Configures the toast error option.
 pub fn toast_error(content: impl Into<SharedString>, cx: &mut App) {
     toast(content, MessageType::Error, cx);
 }
 
+/// Configures the dispatch toast option.
 pub fn dispatch_toast(content: impl Into<SharedString>, msg_type: MessageType) {
     let content = content.into();
     TOAST_DISPATCHER.with(|dispatcher| {
@@ -224,22 +245,27 @@ pub fn dispatch_toast(content: impl Into<SharedString>, msg_type: MessageType) {
     });
 }
 
+/// Configures the dispatch toast info option.
 pub fn dispatch_toast_info(content: impl Into<SharedString>) {
     dispatch_toast(content, MessageType::Info);
 }
 
+/// Configures the dispatch toast success option.
 pub fn dispatch_toast_success(content: impl Into<SharedString>) {
     dispatch_toast(content, MessageType::Success);
 }
 
+/// Configures the dispatch toast warning option.
 pub fn dispatch_toast_warning(content: impl Into<SharedString>) {
     dispatch_toast(content, MessageType::Warning);
 }
 
+/// Configures the dispatch toast error option.
 pub fn dispatch_toast_error(content: impl Into<SharedString>) {
     dispatch_toast(content, MessageType::Error);
 }
 
+/// Renders the render messages layer into native GPUI elements.
 pub fn render_messages(cx: &mut App) {
     if cx.has_global::<MessageManagerGlobal>() {
         let manager = cx.global::<MessageManagerGlobal>().0.clone();
@@ -284,6 +310,7 @@ macro_rules! __liora_toast_dispatch {
 }
 
 #[macro_export]
+/// Generates the item helper used by Liora applications and examples.
 macro_rules! toast_info {
     ($($arg:tt)*) => {{
         $crate::__liora_toast_dispatch!($crate::dispatch_toast_info, $($arg)*);
@@ -291,6 +318,7 @@ macro_rules! toast_info {
 }
 
 #[macro_export]
+/// Generates the item helper used by Liora applications and examples.
 macro_rules! toast_success {
     ($($arg:tt)*) => {{
         $crate::__liora_toast_dispatch!($crate::dispatch_toast_success, $($arg)*);
@@ -298,6 +326,7 @@ macro_rules! toast_success {
 }
 
 #[macro_export]
+/// Generates the item helper used by Liora applications and examples.
 macro_rules! toast_warning {
     ($($arg:tt)*) => {{
         $crate::__liora_toast_dispatch!($crate::dispatch_toast_warning, $($arg)*);
@@ -305,6 +334,7 @@ macro_rules! toast_warning {
 }
 
 #[macro_export]
+/// Generates the item helper used by Liora applications and examples.
 macro_rules! toast_error {
     ($($arg:tt)*) => {{
         $crate::__liora_toast_dispatch!($crate::dispatch_toast_error, $($arg)*);

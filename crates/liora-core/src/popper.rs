@@ -1,22 +1,36 @@
 use gpui::{AnyElement, App, Bounds, Global, Pixels, Point, SharedString, Window};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Enumerates the supported placement modes and options.
 pub enum Placement {
+    /// Uses the top placement or runtime mode.
     Top,
+    /// Uses the top start placement or runtime mode.
     TopStart,
+    /// Uses the top end placement or runtime mode.
     TopEnd,
+    /// Uses the bottom placement or runtime mode.
     Bottom,
+    /// Uses the bottom start placement or runtime mode.
     BottomStart,
+    /// Uses the bottom end placement or runtime mode.
     BottomEnd,
+    /// Uses the left placement or runtime mode.
     Left,
+    /// Uses the left start placement or runtime mode.
     LeftStart,
+    /// Uses the left end placement or runtime mode.
     LeftEnd,
+    /// Uses the right placement or runtime mode.
     Right,
+    /// Uses the right start placement or runtime mode.
     RightStart,
+    /// Uses the right end placement or runtime mode.
     RightEnd,
 }
 
 impl Placement {
+    /// Returns the opposite placement used when a popper would overflow its viewport.
     pub fn flip(&self) -> Self {
         match self {
             Placement::Top => Placement::Bottom,
@@ -35,27 +49,36 @@ impl Placement {
     }
 }
 
+/// Type alias for portal render values used by the popper API.
 pub type PortalRender = Box<dyn FnOnce(&mut Window, &mut App) -> AnyElement>;
 
+/// Runtime state or data container for Liora portal entry behavior.
 pub struct PortalEntry {
+    /// Stable identifier used to connect rendered UI, callbacks, and external state.
     pub id: u64,
+    /// Render for this data model.
     pub render: PortalRender,
 }
 
+/// Runtime state or data container for Liora portal behavior.
 pub struct Portal {
+    /// Entries for this data model.
     pub entries: Vec<PortalEntry>,
     next_id: u64,
 }
 
 impl Global for Portal {}
 
+/// Runtime state or data container for Liora passive portal behavior.
 pub struct PassivePortal {
+    /// Entries for this data model.
     pub entries: Vec<PortalEntry>,
     next_id: u64,
 }
 
 impl Global for PassivePortal {}
 
+/// Adds a one-shot portal render entry and returns its id.
 pub fn push_portal(
     render: impl FnOnce(&mut Window, &mut App) -> AnyElement + 'static,
     cx: &mut App,
@@ -76,6 +99,7 @@ pub fn push_portal(
     id
 }
 
+/// Adds a passive portal render entry and returns its id.
 pub fn push_passive_portal(
     render: impl FnOnce(&mut Window, &mut App) -> AnyElement + 'static,
     cx: &mut App,
@@ -96,23 +120,31 @@ pub fn push_passive_portal(
     id
 }
 
+/// Removes the matching portal from the component state.
 pub fn remove_portal(id: u64, cx: &mut App) {
     if cx.has_global::<Portal>() {
         cx.global_mut::<Portal>().entries.retain(|e| e.id != id);
     }
 }
 
+/// Clears the current portals state.
 pub fn clear_portals(cx: &mut App) {
     if cx.has_global::<Portal>() {
         cx.global_mut::<Portal>().entries.clear();
     }
 }
 
+/// Runtime state or data container for Liora zindex stack behavior.
 pub struct ZIndexStack {
+    /// Base semantic color for the token family.
     pub base: u32,
+    /// Popup for this data model.
     pub popup: u32,
+    /// Modal panel background color.
     pub modal: u32,
+    /// Notification for this data model.
     pub notification: u32,
+    /// Tooltip text shown by the operating-system tray area.
     pub tooltip: u32,
 }
 
@@ -131,17 +163,25 @@ impl Default for ZIndexStack {
 impl Global for ZIndexStack {}
 
 #[derive(Clone)]
+/// Runtime state or data container for Liora tooltip data behavior.
 pub struct TooltipData {
+    /// Stable identifier used to connect rendered UI, callbacks, and external state.
     pub id: SharedString,
+    /// Content rendered inside the component body.
     pub content: SharedString,
+    /// Anchor bounds for this data model.
     pub anchor_bounds: Bounds<Pixels>,
+    /// Placement for this data model.
     pub placement: Placement,
+    /// Offset for this data model.
     pub offset: Pixels,
 }
 
+/// Runtime state or data container for Liora active tooltip behavior.
 pub struct ActiveTooltip(pub Vec<TooltipData>);
 impl Global for ActiveTooltip {}
 
+/// Updates the stored active tooltip value and keeps the existing component identity.
 pub fn set_active_tooltip(data: TooltipData, cx: &mut App) {
     let tooltips = &mut cx.global_mut::<ActiveTooltip>().0;
     if let Some(existing) = tooltips.iter_mut().find(|tooltip| tooltip.id == data.id) {
@@ -151,25 +191,32 @@ pub fn set_active_tooltip(data: TooltipData, cx: &mut App) {
     }
 }
 
+/// Clears the current tooltip state.
 pub fn clear_tooltip(id: &SharedString, cx: &mut App) {
     cx.global_mut::<ActiveTooltip>()
         .0
         .retain(|tooltip| &tooltip.id != id);
 }
 
+/// Clears the current active tooltip state.
 pub fn clear_active_tooltip(cx: &mut App) {
     cx.global_mut::<ActiveTooltip>().0.clear();
 }
 
 #[derive(Clone)]
+/// Runtime state or data container for Liora active overlay entry behavior.
 pub struct ActiveOverlayEntry {
+    /// Stable identifier used to connect rendered UI, callbacks, and external state.
     pub id: SharedString,
+    /// View for this data model.
     pub view: gpui::AnyView,
 }
 
+/// Runtime state or data container for Liora active popover behavior.
 pub struct ActivePopover(pub Vec<ActiveOverlayEntry>);
 impl Global for ActivePopover {}
 
+/// Returns whether popover active is currently true for this value.
 pub fn is_popover_active(id: &SharedString, cx: &App) -> bool {
     cx.global::<ActivePopover>()
         .0
@@ -177,6 +224,7 @@ pub fn is_popover_active(id: &SharedString, cx: &App) -> bool {
         .any(|entry| &entry.id == id)
 }
 
+/// Updates the stored active popover value and keeps the existing component identity.
 pub fn set_active_popover(id: SharedString, view: gpui::AnyView, cx: &mut App) {
     let popovers = &mut cx.global_mut::<ActivePopover>().0;
     if let Some(existing) = popovers.iter_mut().find(|entry| entry.id == id) {
@@ -186,19 +234,23 @@ pub fn set_active_popover(id: SharedString, view: gpui::AnyView, cx: &mut App) {
     }
 }
 
+/// Clears the current popover state.
 pub fn clear_popover(id: &SharedString, cx: &mut App) {
     cx.global_mut::<ActivePopover>()
         .0
         .retain(|entry| &entry.id != id);
 }
 
+/// Clears the current active popover state.
 pub fn clear_active_popover(cx: &mut App) {
     cx.global_mut::<ActivePopover>().0.clear();
 }
 
+/// Runtime state or data container for Liora active modal behavior.
 pub struct ActiveModal(pub Vec<ActiveOverlayEntry>);
 impl Global for ActiveModal {}
 
+/// Updates the stored active modal value and keeps the existing component identity.
 pub fn set_active_modal(id: SharedString, view: gpui::AnyView, cx: &mut App) {
     let modals = &mut cx.global_mut::<ActiveModal>().0;
     if let Some(existing) = modals.iter_mut().find(|entry| entry.id == id) {
@@ -208,19 +260,23 @@ pub fn set_active_modal(id: SharedString, view: gpui::AnyView, cx: &mut App) {
     }
 }
 
+/// Clears the current modal state.
 pub fn clear_modal(id: &SharedString, cx: &mut App) {
     cx.global_mut::<ActiveModal>()
         .0
         .retain(|entry| &entry.id != id);
 }
 
+/// Clears the current active modal state.
 pub fn clear_active_modal(cx: &mut App) {
     cx.global_mut::<ActiveModal>().0.clear();
 }
 
+/// Runtime state or data container for Liora active drawer behavior.
 pub struct ActiveDrawer(pub Vec<ActiveOverlayEntry>);
 impl Global for ActiveDrawer {}
 
+/// Updates the stored active drawer value and keeps the existing component identity.
 pub fn set_active_drawer(id: SharedString, view: gpui::AnyView, cx: &mut App) {
     let drawers = &mut cx.global_mut::<ActiveDrawer>().0;
     if let Some(existing) = drawers.iter_mut().find(|entry| entry.id == id) {
@@ -230,23 +286,30 @@ pub fn set_active_drawer(id: SharedString, view: gpui::AnyView, cx: &mut App) {
     }
 }
 
+/// Clears the current drawer state.
 pub fn clear_drawer(id: &SharedString, cx: &mut App) {
     cx.global_mut::<ActiveDrawer>()
         .0
         .retain(|entry| &entry.id != id);
 }
 
+/// Clears the current active drawer state.
 pub fn clear_active_drawer(cx: &mut App) {
     cx.global_mut::<ActiveDrawer>().0.clear();
 }
 
+/// Runtime state or data container for Liora popper behavior.
 pub struct Popper {
+    /// Anchor bounds for this data model.
     pub anchor_bounds: Bounds<Pixels>,
+    /// Placement for this data model.
     pub placement: Placement,
+    /// Offset for this data model.
     pub offset: Pixels,
 }
 
 impl Popper {
+    /// Calculates the floating element origin for the configured anchor and placement.
     pub fn calculate_position(&self, content_size: gpui::Size<Pixels>) -> Point<Pixels> {
         self.calculate_position_with_placement(self.placement, content_size)
     }
@@ -305,6 +368,7 @@ impl Popper {
         Point { x, y }
     }
 
+    /// Calculates the floating element origin and flips placement when needed to fit the viewport.
     pub fn calculate_position_with_flip(
         &self,
         content_size: gpui::Size<Pixels>,

@@ -29,30 +29,43 @@ use liora_icons_lucide::IconName;
 use std::time::Duration;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Enumerates the supported notification type modes and options.
 pub enum NotificationType {
+    /// Uses the info semantic button variant.
     Info,
+    /// Uses the success semantic button variant.
     Success,
+    /// Uses the warning semantic button variant.
     Warning,
+    /// Reports a error failure.
     Error,
 }
 
 #[derive(Clone)]
+/// Public builder and render state for the Liora notification item component.
 pub struct NotificationItem {
+    /// Stable identifier used to connect rendered UI, callbacks, and external state.
     pub id: usize,
+    /// Primary heading or title text displayed by the component.
     pub title: SharedString,
+    /// Supporting descriptive text shown near the primary label.
     pub description: Option<SharedString>,
+    /// Msg type for this data model.
     pub msg_type: NotificationType,
 }
 
+/// Public builder and render state for the Liora notification manager component.
 pub struct NotificationManager {
     notifications: Vec<NotificationItem>,
     next_id: usize,
 }
 
+/// Public builder and render state for the Liora notification manager global component.
 pub struct NotificationManagerGlobal(pub Entity<NotificationManager>);
 impl Global for NotificationManagerGlobal {}
 
 impl NotificationManager {
+    /// Creates a new value with the required baseline configuration.
     pub fn new() -> Self {
         Self {
             notifications: vec![],
@@ -60,6 +73,7 @@ impl NotificationManager {
         }
     }
 
+    /// Configures the init option.
     pub fn init(cx: &mut App) {
         if !cx.has_global::<NotificationManagerGlobal>() {
             let manager = cx.new(|_| Self::new());
@@ -67,6 +81,7 @@ impl NotificationManager {
         }
     }
 
+    /// Configures the show option.
     pub fn show(
         title: impl Into<SharedString>,
         description: Option<SharedString>,
@@ -180,6 +195,7 @@ mod tests {
     }
 }
 
+/// Configures whether notification is visible in the rendered component.
 pub fn show_notification(
     title: impl Into<SharedString>,
     description: Option<SharedString>,
@@ -189,6 +205,7 @@ pub fn show_notification(
     NotificationManager::show(title, description, msg_type, cx);
 }
 
+/// Renders the render notifications layer into native GPUI elements.
 pub fn render_notifications(cx: &mut App) {
     if cx.has_global::<NotificationManagerGlobal>() {
         let manager = cx.global::<NotificationManagerGlobal>().0.clone();

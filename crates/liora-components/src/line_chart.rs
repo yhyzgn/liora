@@ -43,6 +43,7 @@ use std::cell::Cell;
 use std::rc::Rc;
 
 #[derive(Clone)]
+/// Public builder and render state for the Liora line chart component.
 pub struct LineChart {
     series: Vec<ChartSeries>,
     options: ChartOptions,
@@ -53,6 +54,7 @@ pub struct LineChart {
 }
 
 impl LineChart {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(series: impl IntoIterator<Item = ChartSeries>) -> Self {
         Self {
             series: series.into_iter().collect(),
@@ -67,115 +69,138 @@ impl LineChart {
         }
     }
 
+    /// Returns the stable tray command identifier used for menu event routing.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.options.id = id.into();
         self
     }
 
+    /// Returns the height token used for component sizing.
     pub fn height(mut self, height: impl Into<Pixels>) -> Self {
         self.options.height = height.into();
         self
     }
 
+    /// Configures whether grid is visible in the rendered component.
     pub fn show_grid(mut self, show: bool) -> Self {
         self.options.show_grid = show;
         self
     }
 
+    /// Configures whether axis is visible in the rendered component.
     pub fn show_axis(mut self, show: bool) -> Self {
         self.options.show_axis = show;
         self
     }
 
+    /// Configures whether legend is visible in the rendered component.
     pub fn show_legend(mut self, show: bool) -> Self {
         self.options.show_legend = show;
         self
     }
 
+    /// Configures the y domain option.
     pub fn y_domain(mut self, min: f64, max: f64) -> Self {
         self.options.y_domain = Some((min, max));
         self
     }
 
+    /// Configures the y format option.
     pub fn y_format(mut self, formatter: fn(f64) -> SharedString) -> Self {
         self.options.y_format = Some(formatter);
         self
     }
 
+    /// Configures the point markers option.
     pub fn point_markers(mut self, enabled: bool) -> Self {
         self.point_markers = enabled;
         self
     }
 
+    /// Configures the smooth option.
     pub fn smooth(mut self, enabled: bool) -> Self {
         self.smooth = enabled;
         self
     }
 
+    /// Configures the area fill option.
     pub fn area_fill(mut self, enabled: bool) -> Self {
         self.area_fill = enabled;
         self
     }
 
+    /// Configures whether value labels is visible in the rendered component.
     pub fn show_value_labels(mut self, show: bool) -> Self {
         self.options.show_value_labels = show;
         self
     }
 
+    /// Configures whether tooltip is visible in the rendered component.
     pub fn show_tooltip(mut self, show: bool) -> Self {
         self.options.show_tooltip = show;
         self
     }
 
+    /// Configures the tooltip hit radius option.
     pub fn tooltip_hit_radius(mut self, radius: impl Into<Pixels>) -> Self {
         self.options.tooltip_hit_radius = radius.into().max(px(0.0));
         self
     }
 
+    /// Configures the value label content option.
     pub fn value_label_content(mut self, content: ChartValueLabelContent) -> Self {
         self.options.value_label_options.content = content;
         self
     }
 
+    /// Configures the value label placement option.
     pub fn value_label_placement(mut self, placement: ChartValueLabelPlacement) -> Self {
         self.options.value_label_options.placement = placement;
         self
     }
 
+    /// Configures the percentage decimals option.
     pub fn percentage_decimals(mut self, decimals: usize) -> Self {
         self.options.value_label_options.percentage_decimals = decimals.min(4);
         self
     }
 
+    /// Configures the stroke width option.
     pub fn stroke_width(mut self, width: impl Into<Pixels>) -> Self {
         self.stroke_width = width.into();
         self
     }
 
+    /// Configures the max render points option.
     pub fn max_render_points(mut self, max_points: usize) -> Self {
         self.options.max_render_points = Some(max_points.max(3));
         self
     }
 
+    /// Configures the max axis labels option.
     pub fn max_axis_labels(mut self, max_labels: usize) -> Self {
         self.options.max_axis_labels = max_labels.max(2);
         self
     }
 
+    /// Configures the max value labels option.
     pub fn max_value_labels(mut self, max_labels: usize) -> Self {
         self.options.max_value_labels = max_labels.max(2);
         self
     }
 
+    /// Configures the disable downsampling option.
     pub fn disable_downsampling(mut self) -> Self {
         self.options.max_render_points = None;
         self
     }
 
+    /// Configures the series option.
     pub fn series(&self) -> &[ChartSeries] {
         &self.series
     }
 
+    /// Configures the options option.
     pub fn options(&self) -> &ChartOptions {
         &self.options
     }

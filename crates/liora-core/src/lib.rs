@@ -1,3 +1,11 @@
+//! Core runtime primitives for Liora native GPUI applications.
+//!
+//! This crate owns application-wide theme configuration, system-theme
+//! synchronization, overlay/portal registries, z-index policy, and small
+//! helpers shared by every Liora component crate. Applications normally call
+//! `liora_components::init_liora` or `liora::init_liora`; use this crate
+//! directly when building lower-level integrations or custom component crates.
+
 use gpui::{
     Animation, AnimationExt, App, Bounds, Context, Global, Hsla, Pixels, TextRun, Window,
     WindowAppearance, WindowBounds, prelude::*, px,
@@ -42,6 +50,7 @@ pub fn stable_unique_id(
         .clone()
 }
 
+/// Documents and exposes the popper module APIs.
 pub mod popper;
 
 pub use popper::*;
@@ -49,14 +58,19 @@ pub use popper::*;
 pub use liora_theme::Theme;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported theme modes and options.
 pub enum ThemeMode {
     #[default]
+    /// Uses the system theme mode.
     System,
+    /// Uses the light theme mode.
     Light,
+    /// Uses the dark theme mode.
     Dark,
 }
 
 impl ThemeMode {
+    /// Returns the stable user-facing label for this value.
     pub fn label(self) -> &'static str {
         match self {
             Self::System => "System",
@@ -65,6 +79,7 @@ impl ThemeMode {
         }
     }
 
+    /// Returns the serialized value used by forms, configuration, or persistence.
     pub fn value(self) -> &'static str {
         match self {
             Self::System => "system",
@@ -73,6 +88,7 @@ impl ThemeMode {
         }
     }
 
+    /// Parses a serialized value into the corresponding strongly typed option.
     pub fn from_value(value: &str) -> Option<Self> {
         match value {
             "system" => Some(Self::System),
@@ -82,6 +98,7 @@ impl ThemeMode {
         }
     }
 
+    /// Resolves this mode into a concrete light or dark theme.
     pub fn resolve(self, appearance: WindowAppearance) -> Theme {
         match self {
             Self::System => theme_for_window_appearance(appearance),
@@ -90,6 +107,7 @@ impl ThemeMode {
         }
     }
 
+    /// Creates this value from theme.
     pub fn from_theme(theme: &Theme) -> Self {
         match theme.name.as_str() {
             "dark" => Self::Dark,
@@ -230,6 +248,7 @@ fn appearance_from_theme_name(theme: &str) -> Option<WindowAppearance> {
     }
 }
 
+/// Maps a GPUI window appearance to the matching Liora theme.
 pub fn theme_for_window_appearance(appearance: WindowAppearance) -> Theme {
     match appearance {
         WindowAppearance::Light | WindowAppearance::VibrantLight => Theme::light(),
@@ -237,20 +256,26 @@ pub fn theme_for_window_appearance(appearance: WindowAppearance) -> Theme {
     }
 }
 
+/// Runtime state or data container for Liora config behavior.
 pub struct Config {
+    /// Theme for this data model.
     pub theme: Theme,
+    /// Theme mode for this data model.
     pub theme_mode: ThemeMode,
+    /// Z index base for this data model.
     pub z_index_base: u32,
 }
 
 impl Global for Config {}
 
 impl Config {
+    /// Updates the stored theme mode value and keeps the existing component identity.
     pub fn set_theme_mode(&mut self, mode: ThemeMode, appearance: WindowAppearance) {
         self.theme_mode = mode;
         self.theme = mode.resolve(appearance);
     }
 
+    /// Synchronizes the active theme from the current system/window appearance.
     pub fn sync_system_theme(&mut self, appearance: WindowAppearance) -> bool {
         if self.theme_mode != ThemeMode::System {
             return false;
@@ -262,6 +287,7 @@ impl Config {
     }
 }
 
+/// Initializes Liora core state with an explicit concrete theme.
 pub fn init_liora(cx: &mut App, theme: Theme) {
     let theme_mode = ThemeMode::from_theme(&theme);
     cx.set_global(Config {
@@ -276,6 +302,7 @@ pub fn init_liora(cx: &mut App, theme: Theme) {
     cx.set_global(crate::popper::ActiveDrawer(Vec::new()));
 }
 
+/// Initializes Liora core state from a theme mode, including system mode resolution.
 pub fn init_liora_with_mode(cx: &mut App, mode: ThemeMode) {
     let appearance = startup_system_appearance(cx);
     cx.set_global(Config {
@@ -290,12 +317,14 @@ pub fn init_liora_with_mode(cx: &mut App, mode: ThemeMode) {
     cx.set_global(crate::popper::ActiveDrawer(Vec::new()));
 }
 
+/// Applies a new theme mode and refreshes the active GPUI window.
 pub fn apply_theme_mode(window: &mut Window, cx: &mut App, mode: ThemeMode) {
     let appearance = current_system_appearance(window, cx);
     cx.global_mut::<Config>().set_theme_mode(mode, appearance);
     window.refresh();
 }
 
+/// Synchronizes the active theme from the current system/window appearance.
 pub fn sync_system_theme(window: &mut Window, cx: &mut App) {
     let appearance = current_system_appearance(window, cx);
     if cx.global_mut::<Config>().sync_system_theme(appearance) {
@@ -317,6 +346,7 @@ pub fn attach_system_theme_observer(window: &mut Window, cx: &mut App) {
         .detach();
 }
 
+/// Renders the render active popover in window layer into native GPUI elements.
 pub fn render_active_popover_in_window(_window: &mut gpui::Window, cx: &mut App) {
     for entry in cx.global::<crate::popper::ActivePopover>().0.clone() {
         push_portal(
@@ -326,6 +356,7 @@ pub fn render_active_popover_in_window(_window: &mut gpui::Window, cx: &mut App)
     }
 }
 
+/// Renders the render active modal in window layer into native GPUI elements.
 pub fn render_active_modal_in_window(_window: &mut gpui::Window, cx: &mut App) {
     for entry in cx.global::<crate::popper::ActiveModal>().0.clone() {
         push_portal(
@@ -335,6 +366,7 @@ pub fn render_active_modal_in_window(_window: &mut gpui::Window, cx: &mut App) {
     }
 }
 
+/// Renders the render active drawer in window layer into native GPUI elements.
 pub fn render_active_drawer_in_window(_window: &mut gpui::Window, cx: &mut App) {
     for entry in cx.global::<crate::popper::ActiveDrawer>().0.clone() {
         push_portal(
@@ -344,6 +376,7 @@ pub fn render_active_drawer_in_window(_window: &mut gpui::Window, cx: &mut App) 
     }
 }
 
+/// Renders the render active tooltip in window layer into native GPUI elements.
 pub fn render_active_tooltip_in_window(window: &mut gpui::Window, cx: &mut App) {
     let mouse_pos = window.mouse_position();
     cx.global_mut::<crate::popper::ActiveTooltip>()
@@ -528,11 +561,14 @@ mod motion_tests {
     }
 }
 
+/// Returns the active Liora theme stored in the GPUI application context.
 pub fn liora_theme<'a, V>(cx: &'a Context<'a, V>) -> &'a Theme {
     &cx.global::<Config>().theme
 }
 
+/// Convenience accessors for reading Liora theme data from GPUI contexts.
 pub trait ContextExt {
+    /// Returns the active Liora theme for the current context.
     fn liora(&self) -> &Theme;
 }
 
@@ -542,7 +578,9 @@ impl<'a, V> ContextExt for Context<'a, V> {
     }
 }
 
+/// Element extension points reserved for applying Liora-wide styling helpers.
 pub trait ElementExt {
+    /// Returns the active Liora theme for the current context.
     fn liora(self, cx: &mut App) -> Self;
 }
 
@@ -552,22 +590,27 @@ impl ElementExt for gpui::Div {
     }
 }
 
+/// Returns the z-index reserved for popup overlays.
 pub fn z_index_popup<V>(cx: &Context<'_, V>) -> u32 {
     cx.global::<Config>().z_index_base + 100
 }
 
+/// Returns the z-index reserved for modal overlays.
 pub fn z_index_modal<V>(cx: &Context<'_, V>) -> u32 {
     cx.global::<Config>().z_index_base + 200
 }
 
+/// Returns the z-index reserved for notifications.
 pub fn z_index_notification<V>(cx: &Context<'_, V>) -> u32 {
     cx.global::<Config>().z_index_base + 300
 }
 
+/// Returns the z-index reserved for tooltip overlays.
 pub fn z_index_tooltip<V>(cx: &Context<'_, V>) -> u32 {
     cx.global::<Config>().z_index_base + 400
 }
 
+/// Converts a packed RGB integer into a GPUI HSLA color.
 pub fn hex_color(hex: u32) -> Hsla {
     gpui::rgb(hex).into()
 }

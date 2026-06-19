@@ -37,16 +37,23 @@ use std::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported image fit modes and options.
 pub enum ImageFit {
+    /// Uses the fill variant.
     Fill,
     #[default]
+    /// Uses the contain variant.
     Contain,
+    /// Places the watermark in the cover region.
     Cover,
+    /// Uses the scale down variant.
     ScaleDown,
+    /// Uses the none variant.
     None,
 }
 
 impl ImageFit {
+    /// Borrows this value as object fit.
     pub fn as_object_fit(self) -> ObjectFit {
         match self {
             ImageFit::Fill => ObjectFit::Fill,
@@ -59,22 +66,32 @@ impl ImageFit {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported image radius modes and options.
 pub enum ImageRadius {
+    /// Uses the none variant.
     None,
+    /// Uses the small component size preset.
     Small,
     #[default]
+    /// Uses the medium variant.
     Medium,
+    /// Uses the large component size preset.
     Large,
+    /// Uses the round variant.
     Round,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
+/// Public builder and render state for the Liora image ring component.
 pub struct ImageRing {
+    /// Configured width used during layout.
     pub width: Pixels,
+    /// Color token or explicit color applied to the visual element.
     pub color: Hsla,
 }
 
 impl ImageRing {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(width: impl Into<Pixels>, color: impl Into<Hsla>) -> Self {
         Self {
             width: width.into(),
@@ -84,8 +101,11 @@ impl ImageRing {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
+/// Public builder and render state for the Liora image round options component.
 pub struct ImageRoundOptions {
+    /// Crop to square for this data model.
     pub crop_to_square: bool,
+    /// Ring for this data model.
     pub ring: Option<ImageRing>,
 }
 
@@ -96,6 +116,7 @@ impl Default for ImageRoundOptions {
 }
 
 impl ImageRoundOptions {
+    /// Configures the circle option.
     pub fn circle() -> Self {
         Self {
             crop_to_square: true,
@@ -103,6 +124,7 @@ impl ImageRoundOptions {
         }
     }
 
+    /// Configures the without square crop option.
     pub fn without_square_crop() -> Self {
         Self {
             crop_to_square: false,
@@ -110,6 +132,7 @@ impl ImageRoundOptions {
         }
     }
 
+    /// Configures the ring option.
     pub fn ring(mut self, ring: ImageRing) -> Self {
         self.ring = Some(ring);
         self
@@ -117,12 +140,16 @@ impl ImageRoundOptions {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Enumerates the supported image source modes and options.
 pub enum ImageSource {
+    /// Uses the url variant.
     Url(SharedString),
+    /// Uses the file variant.
     File(PathBuf),
 }
 
 impl ImageSource {
+    /// Creates this value from input.
     pub fn from_input(input: impl Into<SharedString>) -> Self {
         let input = input.into();
         if let Some(path) = parse_file_protocol(input.as_ref()) {
@@ -132,15 +159,18 @@ impl ImageSource {
         }
     }
 
+    /// Returns whether file is currently true for this value.
     pub fn is_file(&self) -> bool {
         matches!(self, ImageSource::File(_))
     }
 
+    /// Returns whether url is currently true for this value.
     pub fn is_url(&self) -> bool {
         matches!(self, ImageSource::Url(_))
     }
 }
 
+/// Public builder and render state for the Liora image component.
 pub struct Image {
     src: Option<ImageSource>,
     alt: Option<SharedString>,
@@ -158,6 +188,7 @@ pub struct Image {
 }
 
 impl Image {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(src: impl Into<SharedString>) -> Self {
         Self {
             src: Some(ImageSource::from_input(src)),
@@ -176,6 +207,7 @@ impl Image {
         }
     }
 
+    /// Configures the empty option.
     pub fn empty() -> Self {
         Self {
             src: None,
@@ -194,49 +226,59 @@ impl Image {
         }
     }
 
+    /// Configures the src option.
     pub fn src(mut self, src: impl Into<SharedString>) -> Self {
         self.src = Some(ImageSource::from_input(src));
         self
     }
 
+    /// Returns the bundled SVG file name for this Lucide icon.
     pub fn file(mut self, path: impl Into<PathBuf>) -> Self {
         self.src = Some(ImageSource::File(path.into()));
         self
     }
 
+    /// Configures the local option.
     pub fn local(path: impl Into<PathBuf>) -> Self {
         Self::empty().file(path)
     }
 
+    /// Configures the alt option.
     pub fn alt(mut self, alt: impl Into<SharedString>) -> Self {
         self.alt = Some(alt.into());
         self
     }
 
+    /// Returns the width token used for component sizing.
     pub fn width(mut self, width: impl Into<Pixels>) -> Self {
         self.width = Some(width.into());
         self
     }
 
+    /// Returns the height token used for component sizing.
     pub fn height(mut self, height: impl Into<Pixels>) -> Self {
         self.height = Some(height.into());
         self
     }
 
+    /// Sets an explicit icon size while preserving the default color behavior.
     pub fn size(mut self, width: impl Into<Pixels>, height: impl Into<Pixels>) -> Self {
         self.width = Some(width.into());
         self.height = Some(height.into());
         self
     }
 
+    /// Configures the thumbnail option.
     pub fn thumbnail(self) -> Self {
         self.size(px(180.0), px(120.0))
     }
 
+    /// Applies the predefined thumbnail sm sizing preset.
     pub fn thumbnail_sm(self) -> Self {
         self.size(px(132.0), px(88.0))
     }
 
+    /// Configures the square option.
     pub fn square(mut self, size: impl Into<Pixels>) -> Self {
         let size = size.into();
         self.width = Some(size);
@@ -244,92 +286,110 @@ impl Image {
         self
     }
 
+    /// Applies the predefined square lg sizing preset.
     pub fn square_lg(self) -> Self {
         self.square(px(96.0))
     }
 
+    /// Configures the fit option.
     pub fn fit(mut self, fit: ImageFit) -> Self {
         self.fit = fit;
         self
     }
 
+    /// Configures the fill option.
     pub fn fill(mut self) -> Self {
         self.fit = ImageFit::Fill;
         self
     }
 
+    /// Configures the contain option.
     pub fn contain(mut self) -> Self {
         self.fit = ImageFit::Contain;
         self
     }
 
+    /// Configures the cover option.
     pub fn cover(mut self) -> Self {
         self.fit = ImageFit::Cover;
         self
     }
 
+    /// Configures the scale down option.
     pub fn scale_down(mut self) -> Self {
         self.fit = ImageFit::ScaleDown;
         self
     }
 
+    /// Configures the radius option.
     pub fn radius(mut self, radius: ImageRadius) -> Self {
         self.radius = radius;
         self
     }
 
+    /// Configures the no radius option.
     pub fn no_radius(mut self) -> Self {
         self.radius = ImageRadius::None;
         self
     }
 
+    /// Configures the round option.
     pub fn round(mut self) -> Self {
         self.radius = ImageRadius::Round;
         self.round_options = ImageRoundOptions::default();
         self
     }
 
+    /// Configures the round options option.
     pub fn round_options(mut self, options: ImageRoundOptions) -> Self {
         self.radius = ImageRadius::Round;
         self.round_options = options;
         self
     }
 
+    /// Configures the round ring option.
     pub fn round_ring(mut self, ring: ImageRing) -> Self {
         self.radius = ImageRadius::Round;
         self.round_options = self.round_options.ring(ring);
         self
     }
 
+    /// Configures the round sleeve option.
     pub fn round_sleeve(self) -> Self {
         self.round_ring(ImageRing::new(px(6.0), gpui::white().opacity(0.72)))
     }
 
+    /// Configures the bordered option.
     pub fn bordered(mut self, bordered: bool) -> Self {
         self.bordered = bordered;
         self
     }
 
+    /// Configures the no border option.
     pub fn no_border(mut self) -> Self {
         self.bordered = false;
         self
     }
 
+    /// Configures the shadow option.
     pub fn shadow(mut self, shadow: bool) -> Self {
         self.shadow = shadow;
         self
     }
 
+    /// Configures the grayscale option.
     pub fn grayscale(mut self, grayscale: bool) -> Self {
         self.grayscale = grayscale;
         self
     }
 
+    /// Configures the preview option.
     pub fn preview(mut self, preview: bool) -> Self {
         self.preview = preview;
         self
     }
 
+    /// Configures the placeholder option.
     pub fn placeholder<E>(mut self, placeholder: impl Fn() -> E + 'static) -> Self
     where
         E: IntoElement,
@@ -338,6 +398,7 @@ impl Image {
         self
     }
 
+    /// Configures the fallback option.
     pub fn fallback<E>(mut self, fallback: impl Fn() -> E + 'static) -> Self
     where
         E: IntoElement,
@@ -346,25 +407,31 @@ impl Image {
         self
     }
 
+    /// Configures the fit kind option.
     pub fn fit_kind(&self) -> ImageFit {
         self.fit
     }
 
+    /// Configures the radius kind option.
     pub fn radius_kind(&self) -> ImageRadius {
         self.radius
     }
 
+    /// Configures the round config option.
     pub fn round_config(&self) -> ImageRoundOptions {
         self.round_options
     }
 
+    /// Configures the dimensions option.
     pub fn dimensions(&self) -> (Option<Pixels>, Option<Pixels>) {
         (self.width, self.height)
     }
 
+    /// Configures the source option.
     pub fn source(&self) -> Option<&ImageSource> {
         self.src.as_ref()
     }
+    /// Configures the preview enabled option.
     pub fn preview_enabled(&self) -> bool {
         self.preview
     }

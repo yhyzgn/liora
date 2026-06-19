@@ -29,30 +29,44 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported tag type modes and options.
 pub enum TagType {
     #[default]
+    /// Uses the info semantic button variant.
     Info,
+    /// Uses the success semantic button variant.
     Success,
+    /// Uses the warning semantic button variant.
     Warning,
+    /// Uses the danger semantic button variant.
     Danger,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported tag size modes and options.
 pub enum TagSize {
+    /// Uses the small component size preset.
     Small,
     #[default]
+    /// Uses the default semantic button variant.
     Default,
+    /// Uses the large component size preset.
     Large,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported tag effect modes and options.
 pub enum TagEffect {
+    /// Uses the dark theme mode.
     Dark,
     #[default]
+    /// Uses the light theme mode.
     Light,
+    /// Uses the plain variant.
     Plain,
 }
 
+/// Public builder and render state for the Liora tag component.
 pub struct Tag {
     label: SharedString,
     tag_type: TagType,
@@ -64,6 +78,7 @@ pub struct Tag {
 }
 
 impl Tag {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(label: impl Into<SharedString>) -> Self {
         Self {
             label: label.into(),
@@ -76,71 +91,85 @@ impl Tag {
         }
     }
 
+    /// Configures the tag type option.
     pub fn tag_type(mut self, t: TagType) -> Self {
         self.tag_type = t;
         self
     }
 
+    /// Configures the success option.
     pub fn success(mut self) -> Self {
         self.tag_type = TagType::Success;
         self
     }
 
+    /// Configures the warning option.
     pub fn warning(mut self) -> Self {
         self.tag_type = TagType::Warning;
         self
     }
 
+    /// Configures the danger option.
     pub fn danger(mut self) -> Self {
         self.tag_type = TagType::Danger;
         self
     }
 
+    /// Configures the info option.
     pub fn info(mut self) -> Self {
         self.tag_type = TagType::Info;
         self
     }
 
+    /// Sets an explicit icon size while preserving the default color behavior.
     pub fn size(mut self, s: TagSize) -> Self {
         self.size = s;
         self
     }
 
+    /// Configures the small option.
     pub fn small(mut self) -> Self {
         self.size = TagSize::Small;
         self
     }
 
+    /// Configures the large option.
     pub fn large(mut self) -> Self {
         self.size = TagSize::Large;
         self
     }
 
+    /// Configures the effect option.
     pub fn effect(mut self, e: TagEffect) -> Self {
         self.effect = e;
         self
     }
 
+    /// Builds the complete dark theme token set.
     pub fn dark(mut self) -> Self {
         self.effect = TagEffect::Dark;
         self
     }
 
+    /// Configures the plain option.
     pub fn plain(mut self) -> Self {
         self.effect = TagEffect::Plain;
         self
     }
 
+    /// Configures the closable option.
     pub fn closable(mut self, c: bool) -> Self {
         self.closable = c;
         self
     }
 
+    /// Configures the round option.
     pub fn round(mut self, r: bool) -> Self {
         self.round = r;
         self
     }
 
+    /// Registers a callback that runs when close occurs.
     pub fn on_close(mut self, f: impl Fn(&mut Window, &mut App) + 'static) -> Self {
         self.on_close = Some(Box::new(f));
         self
@@ -230,13 +259,18 @@ impl IntoElement for Tag {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported tag flow align modes and options.
 pub enum TagFlowAlign {
     #[default]
+    /// Uses the start variant.
     Start,
+    /// Uses the center variant.
     Center,
+    /// Uses the end variant.
     End,
 }
 
+/// Public builder and render state for the Liora tag flow component.
 pub struct TagFlow {
     tags: Vec<AnyElement>,
     gap: Pixels,
@@ -248,6 +282,7 @@ pub struct TagFlow {
 }
 
 impl TagFlow {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(tags: impl IntoIterator<Item = Tag>) -> Self {
         Self {
             tags: tags.into_iter().map(|tag| tag.into_any_element()).collect(),
@@ -260,6 +295,7 @@ impl TagFlow {
         }
     }
 
+    /// Creates this value from elements.
     pub fn from_elements(tags: impl IntoIterator<Item = impl IntoElement>) -> Self {
         Self {
             tags: tags.into_iter().map(|tag| tag.into_any_element()).collect(),
@@ -272,44 +308,53 @@ impl TagFlow {
         }
     }
 
+    /// Configures the gap option.
     pub fn gap(mut self, gap: impl Into<Pixels>) -> Self {
         self.gap = gap.into().max(px(0.0));
         self
     }
 
+    /// Configures the align option.
     pub fn align(mut self, align: TagFlowAlign) -> Self {
         self.align = align;
         self
     }
 
+    /// Configures the center option.
     pub fn center(self) -> Self {
         self.align(TagFlowAlign::Center)
     }
 
+    /// Configures the end option.
     pub fn end(self) -> Self {
         self.align(TagFlowAlign::End)
     }
 
+    /// Configures the max rows option.
     pub fn max_rows(mut self, rows: usize) -> Self {
         self.max_rows = Some(rows.max(1));
         self.collapsed = true;
         self
     }
 
+    /// Configures the estimated items per row option.
     pub fn estimated_items_per_row(mut self, count: usize) -> Self {
         self.estimated_items_per_row = count.max(1);
         self
     }
 
+    /// Configures the collapsed option.
     pub fn collapsed(mut self, collapsed: bool) -> Self {
         self.collapsed = collapsed;
         self
     }
 
+    /// Configures the expanded option.
     pub fn expanded(self) -> Self {
         self.collapsed(false)
     }
 
+    /// Configures the overflow indicator option.
     pub fn overflow_indicator(mut self, label: impl Into<SharedString>) -> Self {
         self.overflow_indicator = Some(label.into());
         self

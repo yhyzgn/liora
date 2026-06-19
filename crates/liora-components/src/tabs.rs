@@ -30,30 +30,46 @@ use liora_icons_lucide::IconName;
 use std::sync::Arc;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported tab position modes and options.
 pub enum TabPosition {
     #[default]
+    /// Uses the top variant.
     Top,
+    /// Uses the bottom variant.
     Bottom,
+    /// Uses the left variant.
     Left,
+    /// Uses the right variant.
     Right,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported tab type modes and options.
 pub enum TabType {
     #[default]
+    /// Uses the standard variant.
     Standard,
+    /// Uses the card variant.
     Card,
+    /// Uses the border card variant.
     BorderCard,
 }
 
+/// Public builder and render state for the Liora tab pane component.
 pub struct TabPane {
+    /// Human-readable name used for display or package metadata.
     pub name: SharedString,
+    /// Human-readable label shown in the component UI.
     pub label: SharedString,
+    /// Content rendered inside the component body.
     pub content: Arc<dyn Fn(&mut Window, &mut Context<Tabs>) -> AnyElement + 'static>,
+    /// Closable for this data model.
     pub closable: bool,
+    /// Optional icon rendered with the item.
     pub icon: Option<IconName>,
 }
 
+/// Public builder and render state for the Liora tabs component.
 pub struct Tabs {
     id: SharedString,
     active_name: SharedString,
@@ -68,6 +84,7 @@ pub struct Tabs {
 }
 
 impl Tabs {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(active_name: impl Into<SharedString>) -> Self {
         let name = active_name.into();
         Self {
@@ -84,31 +101,37 @@ impl Tabs {
         }
     }
 
+    /// Returns the stable tray command identifier used for menu event routing.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
+    /// Configures the position option.
     pub fn position(mut self, pos: TabPosition) -> Self {
         self.position = pos;
         self
     }
 
+    /// Configures the type option.
     pub fn type_(mut self, t: TabType) -> Self {
         self.tab_type = t;
         self
     }
 
+    /// Configures the editable option.
     pub fn editable(mut self, e: bool) -> Self {
         self.editable = e;
         self
     }
 
+    /// Configures the stretch option.
     pub fn stretch(mut self, stretch: bool) -> Self {
         self.stretch = stretch;
         self
     }
 
+    /// Registers a callback that runs when tab click occurs.
     pub fn on_tab_click(
         mut self,
         f: impl Fn(SharedString, &mut Window, &mut App) + 'static,
@@ -117,6 +140,7 @@ impl Tabs {
         self
     }
 
+    /// Registers a callback that runs when tab remove occurs.
     pub fn on_tab_remove(
         mut self,
         f: impl Fn(SharedString, &mut Window, &mut App) + 'static,
@@ -125,11 +149,13 @@ impl Tabs {
         self
     }
 
+    /// Registers a callback that runs when tab add occurs.
     pub fn on_tab_add(mut self, f: impl Fn(&mut Window, &mut App) + 'static) -> Self {
         self.on_tab_add = Some(Box::new(f));
         self
     }
 
+    /// Configures the pane option.
     pub fn pane<F, E>(
         mut self,
         name: impl Into<SharedString>,

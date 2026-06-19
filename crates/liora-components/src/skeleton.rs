@@ -24,19 +24,26 @@ use gpui::{AnyElement, App, DefiniteLength, IntoElement, RenderOnce, Window, div
 use liora_core::Config;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported skeleton variant modes and options.
 pub enum SkeletonVariant {
     #[default]
+    /// Uses the paragraph variant.
     Paragraph,
+    /// Uses the circle variant.
     Circle,
+    /// Uses the square variant.
     Square,
+    /// Reports a image failure.
     Image,
 }
 
+/// Public builder and render state for the Liora skeleton item component.
 pub struct SkeletonItem {
     variant: SkeletonVariant,
     width: Option<DefiniteLength>,
 }
 
+/// Public builder and render state for the Liora skeleton component.
 pub struct Skeleton {
     loading: bool,
     rows: u32,
@@ -46,6 +53,7 @@ pub struct Skeleton {
 }
 
 impl SkeletonItem {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(variant: SkeletonVariant) -> Self {
         Self {
             variant,
@@ -53,17 +61,20 @@ impl SkeletonItem {
         }
     }
 
+    /// Returns the width token used for component sizing.
     pub fn width(mut self, width: impl Into<DefiniteLength>) -> Self {
         self.width = Some(width.into());
         self
     }
 
+    /// Applies the predefined width 2 5 sizing preset.
     pub fn width_2_5(self) -> Self {
         self.width(gpui::relative(0.4))
     }
 }
 
 impl Skeleton {
+    /// Creates a new value with the required baseline configuration.
     pub fn new() -> Self {
         Self {
             loading: true,
@@ -74,21 +85,25 @@ impl Skeleton {
         }
     }
 
+    /// Configures the loading option.
     pub fn loading(mut self, l: bool) -> Self {
         self.loading = l;
         self
     }
 
+    /// Configures the rows option.
     pub fn rows(mut self, r: u32) -> Self {
         self.rows = r;
         self
     }
 
+    /// Configures the animated option.
     pub fn animated(mut self, a: bool) -> Self {
         self.animated = a;
         self
     }
 
+    /// Configures the template option.
     pub fn template<F>(mut self, f: F) -> Self
     where
         F: Fn(&mut Window, &mut App) -> AnyElement + 'static,
@@ -97,6 +112,7 @@ impl Skeleton {
         self
     }
 
+    /// Configures the child option.
     pub fn child(mut self, child: impl IntoElement) -> Self {
         self.child = Some(child.into_any_element());
         self

@@ -52,10 +52,15 @@ fn darken(base: Hsla, factor: f32) -> Hsla {
 // ---------------------------------------------------------------------------
 
 #[derive(Clone)]
+/// Semantic color family containing base, state, and subtle background tokens.
 pub struct ColorFamily {
+    /// Base semantic color for the token family.
     pub base: Hsla,
+    /// Color used for hover affordances.
     pub hover: Hsla,
+    /// Color used for active or pressed affordances.
     pub active: Hsla,
+    /// Supplemental accent color paired with the base token.
     pub suppl: Hsla,
     /// light-9: for subtle backgrounds
     pub light_9: Hsla,
@@ -100,29 +105,48 @@ impl ColorFamily {
 // ---------------------------------------------------------------------------
 
 #[derive(Clone)]
+/// Neutral surface, text, border, interaction, and overlay tokens used across components.
 pub struct NeutralTokens {
+    /// Application body background color.
     pub body: Hsla,
+    /// Card and elevated surface background color.
     pub card: Hsla,
+    /// Modal panel background color.
     pub modal: Hsla,
+    /// Popover and floating-panel background color.
     pub popover: Hsla,
+    /// Inverted surface color used behind high-contrast content.
     pub inverted: Hsla,
 
+    /// Primary text color.
     pub text_1: Hsla,
+    /// Secondary text color.
     pub text_2: Hsla,
+    /// Tertiary text color.
     pub text_3: Hsla,
+    /// Text color used for disabled controls.
     pub text_disabled: Hsla,
+    /// Placeholder text color for empty inputs.
     pub placeholder: Hsla,
+    /// Optional icon rendered with the item.
     pub icon: Hsla,
 
+    /// Border color used in the normal state.
     pub border: Hsla,
+    /// Divider line color.
     pub divider: Hsla,
 
+    /// Color used for hover affordances.
     pub hover: Hsla,
+    /// Pressed-state background color.
     pub pressed: Hsla,
 
+    /// Track or rail color for slider-like controls.
     pub rail: Hsla,
 
+    /// Translucent overlay color.
     pub overlay: Hsla,
+    /// Backdrop mask color for modal layers.
     pub mask: Hsla,
 }
 
@@ -131,28 +155,45 @@ pub struct NeutralTokens {
 // ---------------------------------------------------------------------------
 
 #[derive(Clone)]
+/// Spacing scale used by layout and component padding presets.
 pub struct Spacing {
+    /// Extra-small spacing or size token.
     pub xs: f32,
+    /// Small spacing, radius, or size token.
     pub sm: f32,
+    /// Medium spacing, radius, or size token.
     pub md: f32,
+    /// Large spacing, radius, or size token.
     pub lg: f32,
+    /// Extra-large spacing or size token.
     pub xl: f32,
 }
 
 #[derive(Clone)]
+/// Corner-radius scale used by controls, cards, and overlays.
 pub struct Radius {
+    /// Small spacing, radius, or size token.
     pub sm: f32,
+    /// Medium spacing, radius, or size token.
     pub md: f32,
+    /// Large spacing, radius, or size token.
     pub lg: f32,
+    /// Fully rounded radius token.
     pub full: f32,
 }
 
 #[derive(Clone)]
+/// Font-size scale used by typography and compact component variants.
 pub struct FontSize {
+    /// Extra-small spacing or size token.
     pub xs: f32,
+    /// Small spacing, radius, or size token.
     pub sm: f32,
+    /// Medium spacing, radius, or size token.
     pub md: f32,
+    /// Large spacing, radius, or size token.
     pub lg: f32,
+    /// Extra-large spacing or size token.
     pub xl: f32,
 }
 
@@ -161,35 +202,54 @@ pub struct FontSize {
 // ---------------------------------------------------------------------------
 
 #[derive(Clone)]
+/// Color tokens for secondary button and low-emphasis surfaces.
 pub struct SecondaryColors {
+    /// Base background color used in the normal state.
     pub bg: Hsla,
+    /// Color used for hover affordances.
     pub hover: Hsla,
+    /// Pressed-state background color.
     pub pressed: Hsla,
 }
 
 #[derive(Clone)]
+/// Complete Liora visual token set for one color mode.
 pub struct Theme {
+    /// Human-readable name used for display or package metadata.
     pub name: String,
+    /// Spacing for this data model.
     pub spacing: Spacing,
+    /// Radius for this data model.
     pub radius: Radius,
+    /// Font size for this data model.
     pub font_size: FontSize,
 
     // Semantic color families
+    /// Primary brand semantic color family.
     pub primary: ColorFamily,
+    /// Informational semantic color family.
     pub info: ColorFamily,
+    /// Success semantic color family.
     pub success: ColorFamily,
+    /// Warning semantic color family.
     pub warning: ColorFamily,
+    /// Danger semantic color family.
     pub danger: ColorFamily,
 
     // Neutral tokens
+    /// Neutral surface, text, border, and overlay tokens.
     pub neutral: NeutralTokens,
 
     // Secondary button style (NaiveUI buttonColor2)
+    /// Secondary button color tokens.
     pub secondary: SecondaryColors,
 
     // Shadows
+    /// Small elevation shadow token.
     pub shadow_1: &'static str,
+    /// Medium elevation shadow token.
     pub shadow_2: &'static str,
+    /// Large elevation shadow token.
     pub shadow_3: &'static str,
 }
 
@@ -203,6 +263,7 @@ impl Theme {
     // ========================================================================
     // Light Theme
     // ========================================================================
+    /// Builds the complete light theme token set.
     pub fn light() -> Self {
         Self {
             name: "light".into(),
@@ -299,6 +360,7 @@ impl Theme {
     // ========================================================================
     // Dark Theme
     // ========================================================================
+    /// Builds the complete dark theme token set.
     pub fn dark() -> Self {
         Self {
             name: "dark".into(),
@@ -395,6 +457,7 @@ impl Theme {
     // ========================================================================
     // Convenience: resolve colors for a ButtonVariant
     // ========================================================================
+    /// Returns semantic colors for the requested button variant.
     pub fn color_by_variant(
         &self,
         variant: ButtonVariant,
@@ -548,35 +611,57 @@ impl Theme {
 // ---------------------------------------------------------------------------
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Enumerates the supported button variant modes and options.
 pub enum ButtonVariant {
+    /// Uses the default visual style.
     Default,
+    /// Uses the tertiary visual style.
     Tertiary,
+    /// Uses the text visual style.
     Text,
+    /// Uses the primary visual style.
     Primary,
+    /// Uses the info visual style.
     Info,
+    /// Uses the success visual style.
     Success,
+    /// Uses the warning visual style.
     Warning,
+    /// Uses the danger visual style.
     Danger,
 }
 
+/// Public design-token group for Liora button variant colors styling.
 pub struct ButtonVariantColors {
+    /// Base background color used in the normal state.
     pub bg: Hsla,
+    /// Background color used while the control is hovered.
     pub hover_bg: Hsla,
+    /// Background color used while the control is pressed or active.
     pub active_bg: Hsla,
+    /// Foreground text color used in the normal state.
     pub text: Hsla,
+    /// Border color used in the normal state.
     pub border: Hsla,
+    /// Foreground text color used while the control is hovered.
     pub text_hover: Hsla,
+    /// Border color used while the control is hovered.
     pub border_hover: Hsla,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Enumerates the supported button size modes and options.
 pub enum ButtonSize {
+    /// Uses the small visual style.
     Small,
+    /// Uses the default visual style.
     Default,
+    /// Uses the large visual style.
     Large,
 }
 
 impl ButtonSize {
+    /// Returns the height token used for component sizing.
     pub fn height(&self) -> f32 {
         match self {
             ButtonSize::Small => 28.0,   // NaiveUI heightSmall
@@ -585,6 +670,7 @@ impl ButtonSize {
         }
     }
 
+    /// Returns the padding x token used for component sizing.
     pub fn padding_x(&self) -> f32 {
         match self {
             ButtonSize::Small => 12.0,   // NaiveUI: 0 12px

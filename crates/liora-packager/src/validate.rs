@@ -3,14 +3,22 @@ use std::{fmt, fs, path::PathBuf};
 use crate::known_apps;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Validation failures that can be reported by packaging layout checks.
 pub enum ValidationError {
+    /// Uses the missing path packaging case.
     MissingPath {
+        /// Human-readable label for the required packaging resource.
         label: String,
+        /// Expected filesystem path that was missing.
         path: PathBuf,
     },
+    /// Uses the invalid asset packaging case.
     InvalidAsset {
+        /// Human-readable label for the invalid packaging resource.
         label: String,
+        /// Filesystem path of the invalid asset.
         path: PathBuf,
+        /// Explanation of why the asset failed validation.
         reason: String,
     },
 }
@@ -35,11 +43,14 @@ impl fmt::Display for ValidationError {
 impl std::error::Error for ValidationError {}
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
+/// Result of validating the package layout and app assets.
 pub struct ValidationReport {
+    /// Validation errors collected while checking the operation.
     pub errors: Vec<ValidationError>,
 }
 
 impl ValidationReport {
+    /// Returns whether validation completed without errors.
     pub fn is_ok(&self) -> bool {
         self.errors.is_empty()
     }
@@ -80,6 +91,7 @@ impl ValidationReport {
     }
 }
 
+/// Validates that all required packaging assets, metadata files, and icon resources exist.
 pub fn validate_packaging_layout(root: impl Into<PathBuf>) -> ValidationReport {
     let root = root.into();
     let mut report = ValidationReport::default();

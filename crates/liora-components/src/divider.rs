@@ -21,12 +21,14 @@
 
 use gpui::{App, Component, IntoElement, RenderOnce, Window, prelude::*, px};
 
+/// Public builder and render state for the Liora divider component.
 pub struct Divider {
     vertical: bool,
     label: Option<String>,
 }
 
 impl Divider {
+    /// Creates a new value with the required baseline configuration.
     pub fn new() -> Self {
         Self {
             vertical: false,
@@ -34,11 +36,13 @@ impl Divider {
         }
     }
 
+    /// Configures the vertical option.
     pub fn vertical(mut self) -> Self {
         self.vertical = true;
         self
     }
 
+    /// Returns the stable user-facing label for this value.
     pub fn label(mut self, text: impl Into<String>) -> Self {
         self.label = Some(text.into());
         self

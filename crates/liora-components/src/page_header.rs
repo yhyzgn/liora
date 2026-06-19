@@ -24,6 +24,7 @@ use liora_core::Config;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
+/// Public builder and render state for the Liora page header component.
 pub struct PageHeader {
     title: SharedString,
     sub_title: Option<SharedString>,
@@ -35,6 +36,7 @@ pub struct PageHeader {
 }
 
 impl PageHeader {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(title: impl Into<SharedString>) -> Self {
         Self {
             title: title.into(),
@@ -47,21 +49,25 @@ impl PageHeader {
         }
     }
 
+    /// Configures the sub title option.
     pub fn sub_title(mut self, sub_title: impl Into<SharedString>) -> Self {
         self.sub_title = Some(sub_title.into());
         self
     }
 
+    /// Configures the back icon option.
     pub fn back_icon(mut self, icon: IconName) -> Self {
         self.back_icon = Some(icon);
         self
     }
 
+    /// Registers a callback that runs when back occurs.
     pub fn on_back(mut self, f: impl Fn(&mut Window, &mut App) + 'static) -> Self {
         self.on_back = Some(Box::new(f));
         self
     }
 
+    /// Configures the extra option.
     pub fn extra<F>(mut self, f: F) -> Self
     where
         F: Fn(&mut Window, &mut App) -> AnyElement + 'static,
@@ -70,6 +76,7 @@ impl PageHeader {
         self
     }
 
+    /// Configures the content option.
     pub fn content<F>(mut self, f: F) -> Self
     where
         F: Fn(&mut Window, &mut App) -> AnyElement + 'static,
@@ -78,6 +85,7 @@ impl PageHeader {
         self
     }
 
+    /// Configures the footer option.
     pub fn footer<F>(mut self, f: F) -> Self
     where
         F: Fn(&mut Window, &mut App) -> AnyElement + 'static,

@@ -24,6 +24,7 @@ use gpui::{App, Context, Entity, Render, SharedString, Window, div, prelude::*, 
 use liora_core::Config;
 use std::collections::HashSet;
 
+/// Public builder and render state for the Liora input tag component.
 pub struct InputTag {
     tags: Vec<SharedString>,
     input: Entity<Input>,
@@ -35,6 +36,7 @@ pub struct InputTag {
 }
 
 impl InputTag {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(tags: Vec<impl Into<SharedString>>, cx: &mut Context<Self>) -> Self {
         Self {
             tags: tags.into_iter().map(Into::into).collect(),
@@ -47,25 +49,31 @@ impl InputTag {
         }
     }
 
+    /// Creates a GPUI entity that owns this component state across render passes.
     pub fn entity(tags: Vec<impl Into<SharedString>>, cx: &mut App) -> Entity<Self> {
         cx.new(|cx| Self::new(tags, cx))
     }
+    /// Configures the placeholder option.
     pub fn placeholder(mut self, placeholder: impl Into<SharedString>) -> Self {
         self.placeholder = placeholder.into();
         self
     }
+    /// Configures the max tags option.
     pub fn max_tags(mut self, max: usize) -> Self {
         self.max_tags = Some(max);
         self
     }
+    /// Configures the allow duplicates option.
     pub fn allow_duplicates(mut self, allow: bool) -> Self {
         self.allow_duplicates = allow;
         self
     }
+    /// Configures the disabled option.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
     }
+    /// Registers a callback that runs when change occurs.
     pub fn on_change(
         mut self,
         cb: impl Fn(Vec<SharedString>, &mut Window, &mut App) + 'static,
@@ -73,10 +81,12 @@ impl InputTag {
         self.on_change = Some(Box::new(cb));
         self
     }
+    /// Configures the tags option.
     pub fn tags(&self) -> &[SharedString] {
         &self.tags
     }
 
+    /// Adds tag to the component state.
     pub fn add_tag(&mut self, tag: impl Into<SharedString>, cx: &mut Context<Self>) -> bool {
         let tag = tag.into();
         let trimmed = tag.trim();
@@ -101,6 +111,7 @@ impl InputTag {
         true
     }
 
+    /// Removes the matching tag from the component state.
     pub fn remove_tag(&mut self, index: usize, cx: &mut Context<Self>) -> Option<SharedString> {
         if self.disabled || index >= self.tags.len() {
             return None;
@@ -198,6 +209,7 @@ impl Render for InputTag {
     }
 }
 
+/// Configures the normalize tags option.
 pub fn normalize_tags(
     tags: impl IntoIterator<Item = impl Into<SharedString>>,
     allow_duplicates: bool,

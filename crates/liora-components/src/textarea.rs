@@ -25,6 +25,7 @@ use gpui::{
 };
 use liora_core::Config;
 
+/// Public builder and render state for the Liora textarea component.
 pub struct Textarea {
     input: Entity<Input>,
     rows: usize,
@@ -33,6 +34,7 @@ pub struct Textarea {
 }
 
 impl Textarea {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(value: impl Into<SharedString>, cx: &mut Context<Self>) -> Self {
         let value = value.into();
         let rows = 1;
@@ -46,11 +48,13 @@ impl Textarea {
         }
     }
 
+    /// Configures the rows option.
     pub fn rows(mut self, rows: usize) -> Self {
         self.rows = rows;
         self
     }
 
+    /// Configures the placeholder option.
     pub fn placeholder(self, p: impl Into<SharedString>, cx: &mut Context<Self>) -> Self {
         self.input.update(cx, |input, cx| {
             input.set_placeholder(p, cx);
@@ -58,6 +62,7 @@ impl Textarea {
         self
     }
 
+    /// Configures the disabled option.
     pub fn disabled(self, d: bool, cx: &mut Context<Self>) -> Self {
         self.input.update(cx, |input, cx| {
             input.set_disabled(d, cx);
@@ -65,6 +70,7 @@ impl Textarea {
         self
     }
 
+    /// Configures the max length option.
     pub fn max_length(mut self, max: usize) -> Self {
         self.max_length = Some(max);
         self

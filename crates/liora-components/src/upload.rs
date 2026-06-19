@@ -33,38 +33,59 @@ use std::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Enumerates the supported upload status modes and options.
 pub enum UploadStatus {
+    /// Uses the ready variant.
     Ready,
+    /// Uses the uploading variant.
     Uploading,
+    /// Uses the success semantic button variant.
     Success,
+    /// Reports a error failure.
     Error,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported upload list type modes and options.
 pub enum UploadListType {
     #[default]
+    /// Uses the text semantic button variant.
     Text,
+    /// Uses the picture card variant.
     PictureCard,
 }
 
 #[derive(Debug, Clone, PartialEq)]
+/// Public builder and render state for the Liora upload file component.
 pub struct UploadFile {
+    /// Stable identifier used to connect rendered UI, callbacks, and external state.
     pub id: SharedString,
+    /// Human-readable name used for display or package metadata.
     pub name: SharedString,
+    /// Configured visual size for this component or artifact.
     pub size: Option<u64>,
+    /// Current status value for this component or operation.
     pub status: UploadStatus,
+    /// Progress for this data model.
     pub progress: u8,
+    /// Supporting descriptive text shown near the primary label.
     pub description: Option<SharedString>,
+    /// Filesystem path associated with this item.
     pub path: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Enumerates the supported upload reject reason modes and options.
 pub enum UploadRejectReason {
+    /// Uses the type mismatch variant.
     TypeMismatch,
+    /// Uses the too large variant.
     TooLarge,
+    /// Uses the metadata unavailable variant.
     MetadataUnavailable,
 }
 
+/// Public builder and render state for the Liora upload component.
 pub struct Upload {
     id: SharedString,
     files: Vec<UploadFile>,
@@ -86,6 +107,7 @@ pub struct Upload {
 }
 
 impl UploadFile {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(id: impl Into<SharedString>, name: impl Into<SharedString>) -> Self {
         Self {
             id: id.into(),
@@ -98,26 +120,31 @@ impl UploadFile {
         }
     }
 
+    /// Sets an explicit icon size while preserving the default color behavior.
     pub fn size(mut self, size: u64) -> Self {
         self.size = Some(size);
         self
     }
 
+    /// Configures the status option.
     pub fn status(mut self, status: UploadStatus) -> Self {
         self.status = status;
         self
     }
 
+    /// Configures the progress option.
     pub fn progress(mut self, progress: u8) -> Self {
         self.progress = progress.min(100);
         self
     }
 
+    /// Configures the description option.
     pub fn description(mut self, description: impl Into<SharedString>) -> Self {
         self.description = Some(description.into());
         self
     }
 
+    /// Configures the path option.
     pub fn path(mut self, path: impl Into<PathBuf>) -> Self {
         self.path = Some(path.into());
         self
@@ -125,6 +152,7 @@ impl UploadFile {
 }
 
 impl Upload {
+    /// Creates a new value with the required baseline configuration.
     pub fn new() -> Self {
         Self {
             id: liora_core::unique_id("upload"),
@@ -146,84 +174,101 @@ impl Upload {
         }
     }
 
+    /// Returns the stable tray command identifier used for menu event routing.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
+    /// Configures the files option.
     pub fn files(mut self, files: impl IntoIterator<Item = UploadFile>) -> Self {
         self.files = files.into_iter().collect();
         self
     }
 
+    /// Adds file to the component state.
     pub fn add_file(mut self, file: UploadFile) -> Self {
         self.files.push(file);
         self
     }
 
+    /// Configures the list type option.
     pub fn list_type(mut self, list_type: UploadListType) -> Self {
         self.list_type = list_type;
         self
     }
 
+    /// Configures the picture card option.
     pub fn picture_card(self) -> Self {
         self.list_type(UploadListType::PictureCard)
     }
 
+    /// Configures the drag option.
     pub fn drag(mut self, drag: bool) -> Self {
         self.drag = drag;
         self
     }
 
+    /// Configures the disabled option.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
     }
 
+    /// Configures the multiple option.
     pub fn multiple(mut self, multiple: bool) -> Self {
         self.multiple = multiple;
         self
     }
 
+    /// Configures the limit option.
     pub fn limit(mut self, limit: usize) -> Self {
         self.limit = Some(limit);
         self
     }
 
+    /// Configures the accept option.
     pub fn accept(mut self, accept: impl Into<SharedString>) -> Self {
         self.accept = Some(accept.into());
         self
     }
 
+    /// Configures the max size option.
     pub fn max_size(mut self, bytes: u64) -> Self {
         self.max_size = Some(bytes);
         self
     }
 
+    /// Configures the button text option.
     pub fn button_text(mut self, text: impl Into<SharedString>) -> Self {
         self.button_text = text.into();
         self
     }
 
+    /// Configures the tip option.
     pub fn tip(mut self, tip: impl Into<SharedString>) -> Self {
         self.tip = Some(tip.into());
         self
     }
 
+    /// Returns the width token used for component sizing.
     pub fn width(mut self, width: impl Into<Pixels>) -> Self {
         self.width = Some(width.into());
         self
     }
 
+    /// Applies the predefined width lg sizing preset.
     pub fn width_lg(self) -> Self {
         self.width(px(420.0))
     }
 
+    /// Registers a callback that runs when select occurs.
     pub fn on_select(mut self, f: impl Fn(&mut Upload, &mut Context<Upload>) + 'static) -> Self {
         self.on_select = Some(Arc::new(f));
         self
     }
 
+    /// Registers a callback that runs when remove occurs.
     pub fn on_remove(
         mut self,
         f: impl Fn(&mut Upload, UploadFile, &mut Window, &mut Context<Upload>) + 'static,
@@ -232,11 +277,13 @@ impl Upload {
         self
     }
 
+    /// Updates the stored files value and keeps the existing component identity.
     pub fn set_files(&mut self, files: Vec<UploadFile>, cx: &mut Context<Self>) {
         self.files = files;
         cx.notify();
     }
 
+    /// Configures the push file option.
     pub fn push_file(&mut self, file: UploadFile, cx: &mut Context<Self>) {
         if !Self::can_accept_more_len(self.files.len(), self.limit, self.disabled) {
             return;
@@ -245,14 +292,17 @@ impl Upload {
         cx.notify();
     }
 
+    /// Configures the file count option.
     pub fn file_count(&self) -> usize {
         self.files.len()
     }
 
+    /// Configures the files ref option.
     pub fn files_ref(&self) -> &[UploadFile] {
         &self.files
     }
 
+    /// Returns filesystem paths for the selected resources.
     pub fn selected_paths(&self) -> Vec<PathBuf> {
         self.files
             .iter()
@@ -260,10 +310,12 @@ impl Upload {
             .collect()
     }
 
+    /// Returns whether the requested accept more len operation is currently allowed.
     pub fn can_accept_more_len(current_len: usize, limit: Option<usize>, disabled: bool) -> bool {
         !disabled && !limit.is_some_and(|limit| current_len >= limit)
     }
 
+    /// Configures the matches accept name option.
     pub fn matches_accept_name(name: &str, accept: Option<&str>) -> bool {
         let Some(accept) = accept else {
             return true;
@@ -298,6 +350,7 @@ impl Upload {
             })
     }
 
+    /// Configures the validate file name size option.
     pub fn validate_file_name_size(
         name: &str,
         size: Option<u64>,
@@ -318,6 +371,7 @@ impl Upload {
         Ok(())
     }
 
+    /// Returns the filesystem path for the validate resource.
     pub fn validate_path(
         path: &Path,
         accept: Option<&str>,
@@ -335,6 +389,7 @@ impl Upload {
             .path(path.to_path_buf()))
     }
 
+    /// Removes the matching file by id from the component state.
     pub fn remove_file_by_id(&mut self, id: &str, window: &mut Window, cx: &mut Context<Self>) {
         if let Some(index) = self.files.iter().position(|file| file.id.as_ref() == id) {
             let file = self.files.remove(index);

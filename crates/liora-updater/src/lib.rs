@@ -26,9 +26,13 @@ use std::{
 };
 use thiserror::Error;
 
+/// Stable default owner constant used by the liora updater API.
 pub const DEFAULT_OWNER: &str = "yhyzgn";
+/// Stable default repo constant used by the liora updater API.
 pub const DEFAULT_REPO: &str = "liora";
+/// Stable default api base constant used by the liora updater API.
 pub const DEFAULT_API_BASE: &str = "https://api.github.com";
+/// Stable checksums asset constant used by the liora updater API.
 pub const CHECKSUMS_ASSET: &str = "SHA256SUMS.txt";
 const DEFAULT_USER_AGENT: &str = concat!("liora-updater/", env!("CARGO_PKG_VERSION"));
 
@@ -38,11 +42,14 @@ const DEFAULT_USER_AGENT: &str = concat!("liora-updater/", env!("CARGO_PKG_VERSI
 /// directly instead of this preset enum.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum LioraApp {
+    /// Matches the docs update case.
     Docs,
+    /// Matches the gallery update case.
     Gallery,
 }
 
 impl LioraApp {
+    /// Returns the release asset prefix used by official Liora applications.
     pub fn release_name(self) -> &'static str {
         match self {
             Self::Docs => "liora-docs",
@@ -60,12 +67,16 @@ impl From<LioraApp> for String {
 /// Common desktop platforms encoded in release asset names.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Platform {
+    /// Matches the linux x64 update case.
     LinuxX64,
+    /// Matches the macos arm64 update case.
     MacosArm64,
+    /// Matches the windows x64 update case.
     WindowsX64,
 }
 
 impl Platform {
+    /// Returns the platform or environment value for the current target.
     pub fn current() -> Option<Self> {
         match (std::env::consts::OS, std::env::consts::ARCH) {
             ("linux", "x86_64") => Some(Self::LinuxX64),
@@ -84,6 +95,7 @@ impl Platform {
         }
     }
 
+    /// Returns the operating-system fragment used in release asset names.
     pub fn os_name(self) -> &'static str {
         match self {
             Self::LinuxX64 => "linux",
@@ -107,30 +119,41 @@ pub enum AssetKind {
 /// A GitHub release asset relevant to updates.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReleaseAsset {
+    /// Human-readable name used for display or package metadata.
     pub name: String,
+    /// Direct GitHub asset download URL.
     pub download_url: String,
+    /// Configured visual size for this component or artifact.
     pub size: u64,
 }
 
 /// A GitHub release with parsed assets.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Release {
+    /// Git tag that identifies the release.
     pub tag: String,
+    /// Human-readable name used for display or package metadata.
     pub name: Option<String>,
+    /// Whether the GitHub release is marked as a prerelease.
     pub prerelease: bool,
+    /// Whether the GitHub release is still a draft.
     pub draft: bool,
+    /// Assets attached to the GitHub release.
     pub assets: Vec<ReleaseAsset>,
 }
 
 impl Release {
+    /// Returns the release tag stripped of the leading `v` prefix when present.
     pub fn version(&self) -> Option<Version> {
         Version::parse_tag(&self.tag)
     }
 
+    /// Finds the default checksum manifest asset attached to a release.
     pub fn checksum_asset(&self) -> Option<&ReleaseAsset> {
         self.checksum_asset_named(CHECKSUMS_ASSET)
     }
 
+    /// Finds a checksum manifest asset by exact file name.
     pub fn checksum_asset_named(&self, name: &str) -> Option<&ReleaseAsset> {
         self.assets.iter().find(|asset| asset.name == name)
     }
@@ -139,12 +162,16 @@ impl Release {
 /// Minimal semver-ish `vX.Y.Z` version used by release tags.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Version {
+    /// Major semantic-version component.
     pub major: u64,
+    /// Minor semantic-version component.
     pub minor: u64,
+    /// Patch semantic-version component.
     pub patch: u64,
 }
 
 impl Version {
+    /// Parses a `vMAJOR.MINOR.PATCH` release tag into comparable version parts.
     pub fn parse_tag(tag: &str) -> Option<Self> {
         let version = tag.strip_prefix('v').unwrap_or(tag);
         let core = version
@@ -194,6 +221,7 @@ pub struct ChecksumManifest {
 }
 
 impl ChecksumManifest {
+    /// Parses a checksum manifest into asset-name to digest mappings.
     pub fn parse(input: &str) -> Self {
         let mut entries = BTreeMap::new();
         for line in input.lines() {
@@ -215,10 +243,12 @@ impl ChecksumManifest {
         Self { entries }
     }
 
+    /// Returns the expected SHA-256 digest for a named asset.
     pub fn expected_sha256(&self, name: &str) -> Option<&str> {
         self.entries.get(name).map(String::as_str)
     }
 
+    /// Returns whether this collection or manifest contains no entries.
     pub fn is_empty(&self) -> bool {
         self.entries.is_empty()
     }
@@ -252,11 +282,13 @@ impl AssetSelector {
         Self::new().matching_platform(platform)
     }
 
+    /// Returns true when an asset name matches the configured app prefix.
     pub fn matching_prefix(mut self, prefix: impl Into<String>) -> Self {
         self.name_prefix = Some(prefix.into());
         self
     }
 
+    /// Returns true when an asset name targets the configured platform.
     pub fn matching_platform(mut self, platform: Platform) -> Self {
         self.platform_fragment = Some(platform.asset_fragment().to_string());
         self
@@ -278,14 +310,17 @@ impl AssetSelector {
         self
     }
 
+    /// Returns the app-specific file-name prefix preferred by this selector.
     pub fn name_prefix(&self) -> Option<&str> {
         self.name_prefix.as_deref()
     }
 
+    /// Returns the platform-specific name fragment preferred by this selector.
     pub fn platform_fragment(&self) -> Option<&str> {
         self.platform_fragment.as_deref()
     }
 
+    /// Returns asset kinds in preferred selection order.
     pub fn kind_priority_order(&self) -> &[AssetKind] {
         &self.kind_priority
     }
@@ -310,15 +345,22 @@ impl Default for AssetSelector {
 /// A full update request for one application.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UpdateRequest {
+    /// Application name prefix used when selecting release assets.
     pub app_name: String,
+    /// Currently installed release tag used for update comparison.
     pub current_tag: String,
+    /// Whether prerelease GitHub releases are eligible update candidates.
     pub include_prerelease: bool,
+    /// Target platform for the artifact or update operation.
     pub platform: Platform,
+    /// Asset-selection strategy used to choose the downloadable artifact.
     pub selector: AssetSelector,
+    /// Directory used to store downloaded release assets.
     pub cache_dir: PathBuf,
 }
 
 impl UpdateRequest {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(
         app_name: impl Into<String>,
         current_tag: impl Into<String>,
@@ -336,11 +378,13 @@ impl UpdateRequest {
         }
     }
 
+    /// Configures whether prerelease GitHub releases may be selected.
     pub fn include_prerelease(mut self, include_prerelease: bool) -> Self {
         self.include_prerelease = include_prerelease;
         self
     }
 
+    /// Replaces the asset-selection policy for this update request.
     pub fn selector(mut self, selector: AssetSelector) -> Self {
         self.selector = selector;
         self
@@ -350,13 +394,18 @@ impl UpdateRequest {
 /// A downloaded, verified update ready for a visible install action.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PreparedUpdate {
+    /// GitHub release metadata returned by the updater.
     pub release: Release,
+    /// Selected release asset metadata.
     pub asset: ReleaseAsset,
+    /// Local path of the downloaded release asset.
     pub asset_path: PathBuf,
+    /// Installation plan derived from the selected release asset.
     pub install_plan: InstallPlan,
 }
 
 impl PreparedUpdate {
+    /// Returns the selected release tag for this update result.
     pub fn release_tag(&self) -> &str {
         &self.release.tag
     }
@@ -365,12 +414,19 @@ impl PreparedUpdate {
 /// An explicitly caller-owned installation plan.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InstallPlan {
+    /// Application name prefix used when selecting release assets.
     pub app_name: String,
+    /// Target platform for the artifact or update operation.
     pub platform: Platform,
+    /// Class of artifact selected for installation.
     pub asset_kind: AssetKind,
+    /// File name of the selected release asset.
     pub asset_name: String,
+    /// Local path of the downloaded release asset.
     pub asset_path: PathBuf,
+    /// Installation action chosen for the artifact.
     pub action: InstallAction,
+    /// Human-readable notes explaining installation behavior or limitations.
     pub notes: Vec<String>,
 }
 
@@ -390,15 +446,34 @@ impl InstallPlan {
 }
 
 #[derive(Debug)]
+/// Exit status returned after executing an installer-style update action.
 pub struct InstallOutcome {
+    /// Current status value for this component or operation.
     pub status: ExitStatus,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Executable, system-open, or manual action required to install an update asset.
 pub enum InstallAction {
-    RunExecutable { program: PathBuf, args: Vec<String> },
-    OpenWithSystem { program: String, args: Vec<String> },
-    Manual { description: String },
+    /// Runs a downloaded executable installer directly.
+    RunExecutable {
+        /// Executable path to launch for installer-style assets.
+        program: PathBuf,
+        /// Command-line arguments passed to the executable.
+        args: Vec<String>,
+    },
+    /// Opens an installer asset with the platform system opener.
+    OpenWithSystem {
+        /// System opener command used for platform-native installer assets.
+        program: String,
+        /// Command-line arguments passed to the opener command.
+        args: Vec<String>,
+    },
+    /// Reports that the caller must guide the user through a manual install step.
+    Manual {
+        /// Human-readable explanation of the manual installation step.
+        description: String,
+    },
 }
 
 impl InstallAction {
@@ -437,6 +512,7 @@ impl Default for Updater {
 }
 
 impl Updater {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(owner: impl Into<String>, repo: impl Into<String>) -> Self {
         Self {
             owner: owner.into(),
@@ -448,16 +524,19 @@ impl Updater {
         }
     }
 
+    /// Creates a value configured with the supplied api base.
     pub fn with_api_base(mut self, api_base: impl Into<String>) -> Self {
         self.api_base = api_base.into();
         self
     }
 
+    /// Creates a value configured with the supplied user agent.
     pub fn with_user_agent(mut self, user_agent: impl Into<String>) -> Self {
         self.user_agent = user_agent.into();
         self
     }
 
+    /// Creates a value configured with the supplied timeout.
     pub fn with_timeout(mut self, timeout: Duration) -> Self {
         self.timeout = timeout;
         self
@@ -472,6 +551,7 @@ impl Updater {
         self
     }
 
+    /// Fetches GitHub releases for the configured owner and repository.
     pub fn releases(&self) -> Result<Vec<Release>, UpdaterError> {
         let url = format!(
             "{}/repos/{}/{}/releases",
@@ -484,6 +564,7 @@ impl Updater {
         Ok(releases.into_iter().map(Release::from).collect())
     }
 
+    /// Returns the newest eligible release according to the update request policy.
     pub fn latest_release(
         &self,
         include_prerelease: bool,
@@ -494,6 +575,7 @@ impl Updater {
         Ok(releases.into_iter().next())
     }
 
+    /// Checks whether a newer eligible release and matching asset are available.
     pub fn update_available(
         &self,
         current_tag: &str,
@@ -540,6 +622,7 @@ impl Updater {
         }))
     }
 
+    /// Downloads the selected asset and verifies it against the release checksum manifest.
     pub fn download_verified_asset(
         &self,
         release: &Release,
@@ -810,26 +893,43 @@ fn sha256_file(path: &Path) -> Result<String, UpdaterError> {
 }
 
 #[derive(Debug, Error)]
+/// Errors that can occur while checking, downloading, verifying, or installing updates.
 pub enum UpdaterError {
     #[error("GitHub request failed: {0}")]
+    /// Reports a http failure.
     Http(#[from] Box<ureq::Error>),
     #[error("I/O failed: {0}")]
+    /// Reports a io failure.
     Io(#[from] io::Error),
     #[error("GitHub JSON response was invalid: {0}")]
+    /// Reports a json failure.
     Json(#[from] serde_json::Error),
     #[error("release is missing checksum asset {0}")]
+    /// Reports a missing checksum asset failure.
     MissingChecksumAsset(String),
     #[error("SHA256SUMS.txt has no entry for {0}")]
+    /// Reports a missing checksum entry failure.
     MissingChecksumEntry(String),
     #[error("checksum mismatch for {asset}: expected {expected}, got {actual}")]
+    /// Reports a checksum mismatch failure.
     ChecksumMismatch {
+        /// Asset name whose checksum was verified.
         asset: String,
+        /// Expected SHA-256 digest read from the checksum manifest.
         expected: String,
+        /// Actual SHA-256 digest computed from the downloaded asset.
         actual: String,
     },
     #[error("release {release} has no asset matching selector {selector}")]
-    NoMatchingAsset { release: String, selector: String },
+    /// Indicates that a release did not contain an asset accepted by the selector.
+    NoMatchingAsset {
+        /// Release tag or version whose assets were inspected.
+        release: String,
+        /// Selector description that failed to match any release asset.
+        selector: String,
+    },
     #[error("install action is manual: {0}")]
+    /// Reports a manual install failure.
     ManualInstall(String),
 }
 

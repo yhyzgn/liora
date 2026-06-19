@@ -41,20 +41,32 @@ fn rgba(r: u8, g: u8, b: u8, a: f32) -> Hsla {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
+/// Public builder and render state for the Liora button colors component.
 pub struct ButtonColors {
+    /// Base background color used in the normal state.
     pub bg: Hsla,
+    /// Background color used while the control is hovered.
     pub hover_bg: Hsla,
+    /// Background color used while the control is pressed or active.
     pub active_bg: Hsla,
+    /// Foreground text color used in the normal state.
     pub text: Hsla,
+    /// Border color used in the normal state.
     pub border: Hsla,
+    /// Foreground text color used while the control is hovered.
     pub text_hover: Hsla,
+    /// Border color used while the control is hovered.
     pub border_hover: Hsla,
+    /// Background color used when the control is disabled.
     pub disabled_bg: Hsla,
+    /// Foreground text color used when the control is disabled.
     pub disabled_text: Hsla,
+    /// Border color used when the control is disabled.
     pub disabled_border: Hsla,
 }
 
 impl ButtonColors {
+    /// Creates a filled custom button color set from background and foreground colors.
     pub fn filled(bg: Hsla, text: Hsla) -> Self {
         Self {
             bg,
@@ -70,6 +82,7 @@ impl ButtonColors {
         }
     }
 
+    /// Creates an outline custom button color set from accent, text, and background colors.
     pub fn outline(accent: Hsla, text: Hsla, bg: Hsla) -> Self {
         Self {
             bg,
@@ -87,23 +100,35 @@ impl ButtonColors {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+/// Public builder and render state for the Liora button gradient component.
 pub struct ButtonGradient {
+    /// Starting color for the gradient.
     pub from: Hsla,
+    /// Ending color for the gradient.
     pub to: Hsla,
+    /// Gradient angle in degrees.
     pub angle: f32,
+    /// Starting gradient color used while hovered.
     pub hover_from: Hsla,
+    /// Ending gradient color used while hovered.
     pub hover_to: Hsla,
+    /// Starting gradient color used while pressed or active.
     pub active_from: Hsla,
+    /// Ending gradient color used while pressed or active.
     pub active_to: Hsla,
+    /// Starting gradient color used while disabled.
     pub disabled_from: Hsla,
+    /// Ending gradient color used while disabled.
     pub disabled_to: Hsla,
 }
 
 impl ButtonGradient {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(from: Hsla, to: Hsla) -> Self {
         Self::with_angle(from, to, 90.0)
     }
 
+    /// Creates a value configured with the supplied angle.
     pub fn with_angle(from: Hsla, to: Hsla, angle: f32) -> Self {
         Self {
             from,
@@ -162,9 +187,13 @@ fn gradient_background(angle: f32, from: Hsla, to: Hsla) -> Background {
     )
 }
 
+/// Enumerates the supported button icon modes and options.
 pub enum ButtonIcon {
+    /// Uses the icon name variant.
     IconName(IconName),
+    /// Uses the icon variant.
     Icon(Icon),
+    /// Uses the element variant.
     Element(AnyElement),
 }
 
@@ -186,6 +215,7 @@ impl From<Icon> for ButtonIcon {
     }
 }
 
+/// Public builder and render state for the Liora button component.
 pub struct Button {
     label: SharedString,
     variant: ButtonVariant,
@@ -208,6 +238,7 @@ pub struct Button {
 }
 
 impl Button {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(label: impl Into<SharedString>) -> Self {
         Self {
             label: label.into(),
@@ -230,142 +261,175 @@ impl Button {
             on_click: None,
         }
     }
+    /// Configures the variant option.
     pub fn variant(mut self, v: ButtonVariant) -> Self {
         self.variant = v;
         self
     }
+    /// Configures the primary option.
     pub fn primary(mut self) -> Self {
         self.variant = ButtonVariant::Primary;
         self
     }
+    /// Configures the tertiary option.
     pub fn tertiary(mut self) -> Self {
         self.variant = ButtonVariant::Tertiary;
         self
     }
+    /// Configures the text option.
     pub fn text(mut self) -> Self {
         self.variant = ButtonVariant::Text;
         self
     }
+    /// Configures the info option.
     pub fn info(mut self) -> Self {
         self.variant = ButtonVariant::Info;
         self
     }
+    /// Configures the success option.
     pub fn success(mut self) -> Self {
         self.variant = ButtonVariant::Success;
         self
     }
+    /// Configures the warning option.
     pub fn warning(mut self) -> Self {
         self.variant = ButtonVariant::Warning;
         self
     }
+    /// Configures the danger option.
     pub fn danger(mut self) -> Self {
         self.variant = ButtonVariant::Danger;
         self
     }
+    /// Sets an explicit icon size while preserving the default color behavior.
     pub fn size(mut self, s: ButtonSize) -> Self {
         self.size = s;
         self
     }
+    /// Configures the small option.
     pub fn small(mut self) -> Self {
         self.size = ButtonSize::Small;
         self
     }
+    /// Configures the large option.
     pub fn large(mut self) -> Self {
         self.size = ButtonSize::Large;
         self
     }
+    /// Configures the disabled option.
     pub fn disabled(mut self, d: bool) -> Self {
         self.disabled = d;
         self
     }
+    /// Configures the loading option.
     pub fn loading(mut self, l: bool) -> Self {
         self.loading = l;
         self
     }
+    /// Configures the secondary option.
     pub fn secondary(mut self) -> Self {
         self.secondary = true;
         self
     }
+    /// Configures the background option.
     pub fn background(mut self, show: bool) -> Self {
         self.background = show;
         self
     }
+    /// Configures the border option.
     pub fn border(mut self, show: bool) -> Self {
         self.border = show;
         self
     }
+    /// Configures the rounded option.
     pub fn rounded(mut self, r: impl Into<AbsoluteLength>) -> Self {
         self.rounded = Some(r.into());
         self
     }
 
+    /// Applies the predefined rounded sm sizing preset.
     pub fn rounded_sm(self) -> Self {
         self.rounded(px(4.0))
     }
 
+    /// Applies the predefined rounded md sizing preset.
     pub fn rounded_md(self) -> Self {
         self.rounded(px(12.0))
     }
 
+    /// Applies the predefined rounded lg sizing preset.
     pub fn rounded_lg(self) -> Self {
         self.rounded(px(20.0))
     }
 
+    /// Configures the pill option.
     pub fn pill(self) -> Self {
         self.rounded(px(9999.0))
     }
+    /// Returns the stable tray command identifier used for menu event routing.
     pub fn id(mut self, id: impl Into<ElementId>) -> Self {
         self.id = Some(id.into());
         self
     }
+    /// Configures the icon start option.
     pub fn icon_start(mut self, icon: impl Into<ButtonIcon>) -> Self {
         self.icon_start = Some(icon.into());
         self
     }
+    /// Configures the icon end option.
     pub fn icon_end(mut self, icon: impl Into<ButtonIcon>) -> Self {
         self.icon_end = Some(icon.into());
         self
     }
+    /// Configures the icon top option.
     pub fn icon_top(mut self, icon: IconName) -> Self {
         self.icon_top = Some(icon);
         self
     }
+    /// Configures the icon bottom option.
     pub fn icon_bottom(mut self, icon: IconName) -> Self {
         self.icon_bottom = Some(icon);
         self
     }
+    /// Configures the icon only option.
     pub fn icon_only(mut self, icon: IconName) -> Self {
         self.icon_only = Some(icon);
         self
     }
+    /// Configures the colors option.
     pub fn colors(mut self, colors: ButtonColors) -> Self {
         self.custom_colors = Some(colors);
         self.gradient = None;
         self
     }
 
+    /// Configures the custom colors option.
     pub fn custom_colors(self, colors: ButtonColors) -> Self {
         self.colors(colors)
     }
 
+    /// Configures the custom color option.
     pub fn custom_color(mut self, bg: Hsla, text: Hsla) -> Self {
         self.custom_colors = Some(ButtonColors::filled(bg, text));
         self.gradient = None;
         self
     }
 
+    /// Configures the gradient option.
     pub fn gradient(mut self, from: Hsla, to: Hsla) -> Self {
         self.gradient = Some(ButtonGradient::new(from, to));
         self.custom_colors = None;
         self
     }
 
+    /// Configures the gradient with angle option.
     pub fn gradient_with_angle(mut self, angle: f32, from: Hsla, to: Hsla) -> Self {
         self.gradient = Some(ButtonGradient::with_angle(from, to, angle));
         self.custom_colors = None;
         self
     }
 
+    /// Registers a callback that runs when click occurs.
     pub fn on_click(
         mut self,
         cb: impl Fn(&gpui::ClickEvent, &mut Window, &mut App) + 'static,

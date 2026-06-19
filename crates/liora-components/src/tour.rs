@@ -31,27 +31,45 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 use std::sync::Arc;
 
-actions!(tour, [TourClose]);
+actions!(
+    tour,
+    [
+        #[doc = "Keyboard action that closes the active guided tour overlay."]
+        TourClose
+    ]
+);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported tour placement modes and options.
 pub enum TourPlacement {
+    /// Uses the top variant.
     Top,
     #[default]
+    /// Uses the bottom variant.
     Bottom,
+    /// Uses the left variant.
     Left,
+    /// Uses the right variant.
     Right,
+    /// Uses the center variant.
     Center,
 }
 
 #[derive(Clone)]
+/// Public builder and render state for the Liora tour step component.
 pub struct TourStep {
+    /// Primary heading or title text displayed by the component.
     pub title: SharedString,
+    /// Supporting descriptive text shown near the primary label.
     pub description: SharedString,
+    /// Target for this data model.
     pub target: Option<SharedString>,
+    /// Placement for this data model.
     pub placement: TourPlacement,
 }
 
 impl TourStep {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(title: impl Into<SharedString>, description: impl Into<SharedString>) -> Self {
         Self {
             title: title.into(),
@@ -61,11 +79,13 @@ impl TourStep {
         }
     }
 
+    /// Configures the target option.
     pub fn target(mut self, target: impl Into<SharedString>) -> Self {
         self.target = Some(target.into());
         self
     }
 
+    /// Configures the placement option.
     pub fn placement(mut self, placement: TourPlacement) -> Self {
         self.placement = placement;
         self
@@ -75,6 +95,7 @@ impl TourStep {
 type ChangeCallback = dyn Fn(usize, &mut Window, &mut App) + 'static;
 type CloseCallback = dyn Fn(&mut Window, &mut App) + 'static;
 
+/// Public builder and render state for the Liora tour component.
 pub struct Tour {
     id: SharedString,
     steps: Vec<TourStep>,
@@ -93,6 +114,7 @@ pub struct Tour {
     on_finish: Option<Arc<CloseCallback>>,
 }
 
+/// Public builder and render state for the Liora tour view component.
 pub struct TourView {
     id: SharedString,
     steps: Vec<TourStep>,
@@ -111,10 +133,12 @@ pub struct TourView {
 }
 
 impl Tour {
+    /// Configures the register key bindings option.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([KeyBinding::new("escape", TourClose, None)]);
     }
 
+    /// Creates a new value with the required baseline configuration.
     pub fn new(steps: Vec<TourStep>) -> Self {
         Self {
             id: liora_core::unique_id("tour"),
@@ -135,89 +159,107 @@ impl Tour {
         }
     }
 
+    /// Returns the stable tray command identifier used for menu event routing.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
+    /// Configures the active index option.
     pub fn active_index(mut self, index: usize) -> Self {
         self.active_index = index;
         self
     }
 
+    /// Configures the open option.
     pub fn open(mut self, open: bool) -> Self {
         self.open = open;
         self
     }
 
+    /// Configures whether mask is visible in the rendered component.
     pub fn show_mask(mut self, show: bool) -> Self {
         self.show_mask = show;
         self
     }
 
+    /// Configures whether progress is visible in the rendered component.
     pub fn show_progress(mut self, show: bool) -> Self {
         self.show_progress = show;
         self
     }
 
+    /// Configures the close on click outside option.
     pub fn close_on_click_outside(mut self, close: bool) -> Self {
         self.close_on_click_outside = close;
         self
     }
 
+    /// Configures the close on escape option.
     pub fn close_on_escape(mut self, close: bool) -> Self {
         self.close_on_escape = close;
         self
     }
 
+    /// Configures the card width option.
     pub fn card_width(mut self, width: impl Into<Pixels>) -> Self {
         self.card_width = width.into();
         self
     }
 
+    /// Configures the finish text option.
     pub fn finish_text(mut self, text: impl Into<SharedString>) -> Self {
         self.finish_text = text.into();
         self
     }
 
+    /// Configures the next text option.
     pub fn next_text(mut self, text: impl Into<SharedString>) -> Self {
         self.next_text = text.into();
         self
     }
 
+    /// Configures the previous text option.
     pub fn previous_text(mut self, text: impl Into<SharedString>) -> Self {
         self.previous_text = text.into();
         self
     }
 
+    /// Registers a callback that runs when change occurs.
     pub fn on_change(mut self, cb: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
         self.on_change = Some(Arc::new(cb));
         self
     }
 
+    /// Registers a callback that runs when close occurs.
     pub fn on_close(mut self, cb: impl Fn(&mut Window, &mut App) + 'static) -> Self {
         self.on_close = Some(Arc::new(cb));
         self
     }
 
+    /// Registers a callback that runs when finish occurs.
     pub fn on_finish(mut self, cb: impl Fn(&mut Window, &mut App) + 'static) -> Self {
         self.on_finish = Some(Arc::new(cb));
         self
     }
 
+    /// Configures the step count option.
     pub fn step_count(&self) -> usize {
         self.steps.len()
     }
 
+    /// Configures the resolved active index option.
     pub fn resolved_active_index(&self) -> Option<usize> {
         (!self.steps.is_empty()).then(|| self.active_index.min(self.steps.len() - 1))
     }
 
+    /// Configures the next index option.
     pub fn next_index(&self) -> Option<usize> {
         self.resolved_active_index()
             .and_then(|idx| (idx + 1 < self.steps.len()).then_some(idx + 1))
     }
 
+    /// Configures the previous index option.
     pub fn previous_index(&self) -> Option<usize> {
         self.resolved_active_index()
             .and_then(|idx| (idx > 0).then_some(idx - 1))
@@ -251,10 +293,12 @@ impl Tour {
         liora_core::set_active_modal(id, view.into(), cx);
     }
 
+    /// Configures the close option.
     pub fn close(cx: &mut App) {
         liora_core::clear_active_modal(cx);
     }
 
+    /// Configures the close id option.
     pub fn close_id(id: impl Into<SharedString>, cx: &mut App) {
         liora_core::clear_modal(&id.into(), cx);
     }

@@ -31,10 +31,15 @@ use std::path::Path;
 use std::sync::Arc;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Enumerates the supported qr ec level modes and options.
 pub enum QrEcLevel {
+    /// Uses the low variant.
     Low,
+    /// Uses the medium variant.
     Medium,
+    /// Uses the quartile variant.
     Quartile,
+    /// Uses the high variant.
     High,
 }
 
@@ -50,51 +55,79 @@ impl QrEcLevel {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+/// Public builder and render state for the Liora qr decoded component.
 pub struct QrDecoded {
+    /// Content rendered inside the component body.
     pub content: SharedString,
+    /// Ecc level for this data model.
     pub ecc_level: u8,
+    /// Version string associated with this package, release, or update.
     pub version: i32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Enumerates the supported qr code error modes and options.
 pub enum QrCodeError {
+    /// Uses the encode variant.
     Encode(String),
+    /// Reports a image failure.
     Image(String),
+    /// Uses the not found variant.
     NotFound,
+    /// Uses the decode variant.
     Decode(String),
 }
 
+/// Type alias for qr code result values used by the qr code API.
 pub type QrCodeResult<T> = Result<T, QrCodeError>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported qr module style modes and options.
 pub enum QrModuleStyle {
     #[default]
+    /// Uses the square variant.
     Square,
+    /// Uses the rounded variant.
     Rounded,
+    /// Uses the dots variant.
     Dots,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported qr finder style modes and options.
 pub enum QrFinderStyle {
     #[default]
+    /// Uses the square variant.
     Square,
+    /// Uses the rounded variant.
     Rounded,
+    /// Uses the circle variant.
     Circle,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported qr gradient direction modes and options.
 pub enum QrGradientDirection {
+    /// Uses the to top variant.
     ToTop,
+    /// Uses the to top right variant.
     ToTopRight,
+    /// Uses the to right variant.
     ToRight,
+    /// Uses the to bottom right variant.
     ToBottomRight,
     #[default]
+    /// Uses the to bottom variant.
     ToBottom,
+    /// Uses the to bottom left variant.
     ToBottomLeft,
+    /// Uses the to left variant.
     ToLeft,
+    /// Uses the to top left variant.
     ToTopLeft,
 }
 
+/// Public builder and render state for the Liora qr code component.
 pub struct QrCode {
     value: SharedString,
     size: Pixels,
@@ -118,6 +151,7 @@ pub struct QrCode {
 }
 
 impl QrCode {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(value: impl Into<SharedString>) -> Self {
         Self {
             value: value.into(),
@@ -142,27 +176,32 @@ impl QrCode {
         }
     }
 
+    /// Sets an explicit icon size while preserving the default color behavior.
     pub fn size(mut self, size: impl Into<Pixels>) -> Self {
         self.size = size.into();
         self
     }
 
+    /// Configures the quiet zone option.
     pub fn quiet_zone(mut self, modules: u32) -> Self {
         self.quiet_zone = modules;
         self
     }
 
+    /// Configures the module radius option.
     pub fn module_radius(mut self, radius: impl Into<Pixels>) -> Self {
         self.module_radius = radius.into();
         self
     }
 
+    /// Configures the foreground option.
     pub fn foreground(mut self, color: Hsla) -> Self {
         self.foreground = Some(color);
         self.gradient_colors = None;
         self
     }
 
+    /// Configures the gradient option.
     pub fn gradient(
         mut self,
         colors: impl IntoIterator<Item = Hsla>,
@@ -174,6 +213,7 @@ impl QrCode {
         self
     }
 
+    /// Configures the foreground gradient option.
     pub fn foreground_gradient(
         self,
         colors: impl IntoIterator<Item = Hsla>,
@@ -182,108 +222,130 @@ impl QrCode {
         self.gradient(colors, direction)
     }
 
+    /// Configures the gradient colors option.
     pub fn gradient_colors(mut self, colors: impl IntoIterator<Item = Hsla>) -> Self {
         let colors = colors.into_iter().collect::<Vec<_>>();
         self.gradient_colors = (colors.len() >= 2).then_some(colors);
         self
     }
 
+    /// Configures the gradient direction option.
     pub fn gradient_direction(mut self, direction: QrGradientDirection) -> Self {
         self.gradient_direction = direction;
         self
     }
 
+    /// Configures the background option.
     pub fn background(mut self, color: Hsla) -> Self {
         self.background = Some(color);
         self
     }
 
+    /// Configures the colors option.
     pub fn colors(self, foreground: Hsla, background: Hsla) -> Self {
         self.foreground(foreground).background(background)
     }
 
+    /// Configures the ec level option.
     pub fn ec_level(mut self, level: QrEcLevel) -> Self {
         self.ec_level = level;
         self
     }
 
+    /// Configures the high recovery option.
     pub fn high_recovery(self) -> Self {
         self.ec_level(QrEcLevel::High)
     }
 
+    /// Configures whether text is visible in the rendered component.
     pub fn show_text(mut self, show: bool) -> Self {
         self.show_text = show;
         self
     }
 
+    /// Configures the module style option.
     pub fn module_style(mut self, style: QrModuleStyle) -> Self {
         self.module_style = style;
         self
     }
 
+    /// Configures the square modules option.
     pub fn square_modules(self) -> Self {
         self.module_style(QrModuleStyle::Square)
     }
 
+    /// Configures the rounded modules option.
     pub fn rounded_modules(self) -> Self {
         self.module_style(QrModuleStyle::Rounded)
     }
 
+    /// Configures the dot modules option.
     pub fn dot_modules(self) -> Self {
         self.module_style(QrModuleStyle::Dots)
     }
 
+    /// Configures the finder style option.
     pub fn finder_style(mut self, style: QrFinderStyle) -> Self {
         self.finder_style = style;
         self
     }
 
+    /// Configures the rounded finders option.
     pub fn rounded_finders(self) -> Self {
         self.finder_style(QrFinderStyle::Rounded)
     }
 
+    /// Configures the circle finders option.
     pub fn circle_finders(self) -> Self {
         self.finder_style(QrFinderStyle::Circle)
     }
 
+    /// Configures the logo option.
     pub fn logo(mut self, logo: impl IntoElement) -> Self {
         self.logo = Some(logo.into_any_element());
         self.ec_level = QrEcLevel::High;
         self
     }
 
+    /// Configures the logo text option.
     pub fn logo_text(mut self, text: impl Into<SharedString>) -> Self {
         self.logo_text = Some(text.into());
         self.ec_level = QrEcLevel::High;
         self
     }
 
+    /// Configures the logo size ratio option.
     pub fn logo_size_ratio(mut self, ratio: f32) -> Self {
         self.logo_size_ratio = ratio.clamp(0.12, 0.36);
         self
     }
 
+    /// Configures the logo background option.
     pub fn logo_background(mut self, color: Hsla) -> Self {
         self.logo_background = Some(color);
         self
     }
 
+    /// Configures the logo color option.
     pub fn logo_color(mut self, color: Hsla) -> Self {
         self.logo_color = Some(color);
         self
     }
 
+    /// Configures the corner logo option.
     pub fn corner_logo(mut self, logo: impl IntoElement) -> Self {
         self.corner_logo = Some(logo.into_any_element());
         self.ec_level = QrEcLevel::High;
         self
     }
 
+    /// Configures the corner logo text option.
     pub fn corner_logo_text(mut self, text: impl Into<SharedString>) -> Self {
         self.corner_logo_text = Some(text.into());
         self
     }
 
+    /// Configures the encode matrix option.
     pub fn encode_matrix(value: &str, ec_level: QrEcLevel) -> QrCodeResult<QrMatrix> {
         let code = QrEncoder::with_error_correction_level(value.as_bytes(), ec_level.into_qrcode())
             .map_err(|err| QrCodeError::Encode(err.to_string()))?;
@@ -297,6 +359,7 @@ impl QrCode {
         Ok(QrMatrix { width, modules })
     }
 
+    /// Renders the render image layer into native GPUI elements.
     pub fn render_image(
         value: &str,
         size_px: u32,
@@ -309,6 +372,7 @@ impl QrCode {
         Ok(matrix.render_image(size_px, quiet_zone, foreground, background))
     }
 
+    /// Configures the decode image option.
     pub fn decode_image(image: DynamicImage) -> QrCodeResult<Vec<QrDecoded>> {
         let luma = image.to_luma8();
         let mut prepared = rqrr::PreparedImage::prepare(luma);
@@ -331,28 +395,35 @@ impl QrCode {
         Ok(decoded)
     }
 
+    /// Configures the decode bytes option.
     pub fn decode_bytes(bytes: &[u8]) -> QrCodeResult<Vec<QrDecoded>> {
         let image =
             image::load_from_memory(bytes).map_err(|err| QrCodeError::Image(err.to_string()))?;
         Self::decode_image(image)
     }
 
+    /// Configures the decode file option.
     pub fn decode_file(path: impl AsRef<Path>) -> QrCodeResult<Vec<QrDecoded>> {
         let image = image::open(path).map_err(|err| QrCodeError::Image(err.to_string()))?;
         Self::decode_image(image)
     }
 }
 
+/// Public builder and render state for the Liora qr matrix component.
 pub struct QrMatrix {
+    /// Configured width used during layout.
     pub width: usize,
+    /// Modules for this data model.
     pub modules: Vec<bool>,
 }
 
 impl QrMatrix {
+    /// Returns whether dark is currently true for this value.
     pub fn is_dark(&self, x: usize, y: usize) -> bool {
         self.modules[y * self.width + x]
     }
 
+    /// Renders the render image layer into native GPUI elements.
     pub fn render_image(
         &self,
         size_px: u32,
@@ -372,6 +443,7 @@ impl QrMatrix {
         )
     }
 
+    /// Renders the render styled image layer into native GPUI elements.
     pub fn render_styled_image(
         &self,
         size_px: u32,
@@ -533,6 +605,7 @@ fn hsla_to_rgba_bytes(color: Hsla) -> [u8; 4] {
 }
 
 #[derive(Clone)]
+/// Public builder and render state for the Liora qr gradient bytes component.
 pub struct QrGradientBytes {
     colors: Vec<[u8; 4]>,
     direction: QrGradientDirection,

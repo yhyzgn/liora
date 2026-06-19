@@ -26,6 +26,7 @@ use gpui::{
 };
 use liora_core::Config;
 
+/// Public builder and render state for the Liora paragraph component.
 pub struct Paragraph {
     children: Vec<Text>,
     selectable: bool,
@@ -33,6 +34,7 @@ pub struct Paragraph {
 }
 
 impl Paragraph {
+    /// Creates a new value with the required baseline configuration.
     pub fn new() -> Self {
         Self {
             children: Vec::new(),
@@ -41,6 +43,7 @@ impl Paragraph {
         }
     }
 
+    /// Creates a value configured with the supplied text.
     pub fn with_text(text: impl Into<SharedString>) -> Self {
         Self {
             children: vec![Text::new(text)],
@@ -49,26 +52,31 @@ impl Paragraph {
         }
     }
 
+    /// Configures the child option.
     pub fn child(mut self, child: Text) -> Self {
         self.children.push(child);
         self
     }
 
+    /// Configures the children option.
     pub fn children(mut self, children: impl IntoIterator<Item = Text>) -> Self {
         self.children.extend(children);
         self
     }
 
+    /// Configures the selectable option.
     pub fn selectable(mut self, selectable: bool) -> Self {
         self.selectable = selectable;
         self
     }
 
+    /// Returns the stable tray command identifier used for menu event routing.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
+    /// Configures the register key bindings option.
     pub fn register_key_bindings(cx: &mut App) {
         SelectableText::register_key_bindings(cx);
     }

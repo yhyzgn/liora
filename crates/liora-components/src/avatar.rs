@@ -27,20 +27,28 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported avatar shape modes and options.
 pub enum AvatarShape {
     #[default]
+    /// Uses the circle variant.
     Circle,
+    /// Uses the square variant.
     Square,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported avatar size modes and options.
 pub enum AvatarSize {
+    /// Uses the small component size preset.
     Small,
     #[default]
+    /// Uses the default semantic button variant.
     Default,
+    /// Uses the large component size preset.
     Large,
 }
 
+/// Public builder and render state for the Liora avatar component.
 pub struct Avatar {
     src: Option<SharedString>,
     icon: Option<IconName>,
@@ -51,6 +59,7 @@ pub struct Avatar {
 }
 
 impl Avatar {
+    /// Creates a new value with the required baseline configuration.
     pub fn new() -> Self {
         Self {
             src: None,
@@ -62,46 +71,55 @@ impl Avatar {
         }
     }
 
+    /// Configures the src option.
     pub fn src(mut self, src: impl Into<SharedString>) -> Self {
         self.src = Some(src.into());
         self
     }
 
+    /// Sets the tray icon configuration value.
     pub fn icon(mut self, icon: IconName) -> Self {
         self.icon = Some(icon);
         self
     }
 
+    /// Sets an explicit icon size while preserving the default color behavior.
     pub fn size(mut self, size: AvatarSize) -> Self {
         self.size = size;
         self
     }
 
+    /// Configures the small option.
     pub fn small(mut self) -> Self {
         self.size = AvatarSize::Small;
         self
     }
 
+    /// Configures the large option.
     pub fn large(mut self) -> Self {
         self.size = AvatarSize::Large;
         self
     }
 
+    /// Configures the shape option.
     pub fn shape(mut self, shape: AvatarShape) -> Self {
         self.shape = shape;
         self
     }
 
+    /// Configures the square option.
     pub fn square(mut self) -> Self {
         self.shape = AvatarShape::Square;
         self
     }
 
+    /// Configures the alt option.
     pub fn alt(mut self, alt: impl Into<SharedString>) -> Self {
         self.alt = Some(alt.into());
         self
     }
 
+    /// Configures the background option.
     pub fn background(mut self, background: Hsla) -> Self {
         self.background = Some(background);
         self

@@ -22,6 +22,7 @@
 use crate::Col;
 use gpui::{App, Component, IntoElement, RenderOnce, Window, prelude::*};
 
+/// Public builder and render state for the Liora row component.
 pub struct Row {
     justify: Option<RowJustify>,
     align: Option<RowAlign>,
@@ -29,21 +30,32 @@ pub struct Row {
 }
 
 #[derive(Clone, Copy)]
+/// Enumerates the supported row justify modes and options.
 pub enum RowJustify {
+    /// Uses the start variant.
     Start,
+    /// Uses the center variant.
     Center,
+    /// Uses the end variant.
     End,
+    /// Uses the space between variant.
     SpaceBetween,
+    /// Uses the space around variant.
     SpaceAround,
 }
 #[derive(Clone, Copy)]
+/// Enumerates the supported row align modes and options.
 pub enum RowAlign {
+    /// Uses the top variant.
     Top,
+    /// Uses the middle variant.
     Middle,
+    /// Uses the bottom variant.
     Bottom,
 }
 
 impl Row {
+    /// Creates a new value with the required baseline configuration.
     pub fn new() -> Self {
         Self {
             justify: None,
@@ -51,14 +63,17 @@ impl Row {
             children: vec![],
         }
     }
+    /// Configures the justify option.
     pub fn justify(mut self, j: RowJustify) -> Self {
         self.justify = Some(j);
         self
     }
+    /// Configures the align option.
     pub fn align(mut self, a: RowAlign) -> Self {
         self.align = Some(a);
         self
     }
+    /// Configures the child option.
     pub fn child(mut self, child: impl IntoElement) -> Self {
         self.children.push(child.into_any_element());
         self

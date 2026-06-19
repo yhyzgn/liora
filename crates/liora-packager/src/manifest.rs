@@ -6,36 +6,52 @@ use std::{
 use crate::{Checksum, PackageFormat, Platform, sha256_file};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Manifest entry describing one produced native package artifact.
 pub struct PackageArtifact {
+    /// Application metadata associated with this package artifact.
     pub app: String,
+    /// Version string associated with this package, release, or update.
     pub version: String,
+    /// Target platform for the artifact or update operation.
     pub platform: Platform,
+    /// Rust target triple used to build the artifact.
     pub target_triple: String,
+    /// Optional source commit SHA associated with the artifact.
     pub git_sha: Option<String>,
+    /// Package format represented by this artifact.
     pub format: PackageFormat,
+    /// Filesystem path associated with this item.
     pub path: PathBuf,
+    /// Checksum data used to verify downloaded or packaged bytes.
     pub checksum: Checksum,
+    /// Whether the artifact is expected to be signed by the release process.
     pub signed: bool,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
+/// Release manifest that groups generated package artifacts and checksums.
 pub struct PackageManifest {
+    /// Package artifacts collected for the release manifest.
     pub artifacts: Vec<PackageArtifact>,
 }
 
 impl PackageManifest {
+    /// Appends one entry to the collection while preserving existing entries.
     pub fn push(&mut self, artifact: PackageArtifact) {
         self.artifacts.push(artifact);
     }
 
+    /// Appends multiple entries to the collection in iteration order.
     pub fn extend(&mut self, artifacts: impl IntoIterator<Item = PackageArtifact>) {
         self.artifacts.extend(artifacts);
     }
 
+    /// Returns whether this collection or manifest contains no entries.
     pub fn is_empty(&self) -> bool {
         self.artifacts.is_empty()
     }
 
+    /// Renders a SHA256SUMS-compatible checksum listing for release assets.
     pub fn checksums_txt(&self) -> String {
         let mut out = String::new();
         for artifact in &self.artifacts {
@@ -48,6 +64,7 @@ impl PackageManifest {
         out
     }
 
+    /// Renders a Markdown table summarizing release artifacts and checksums.
     pub fn release_notes_markdown(&self) -> String {
         let mut out = String::from("# Liora native package release\n\n");
         if self.artifacts.is_empty() {
@@ -78,6 +95,7 @@ impl PackageManifest {
         out
     }
 
+    /// Converts this value into json pretty.
     pub fn to_json_pretty(&self) -> String {
         let mut out = String::from("{\n  \"artifacts\": [");
         for (idx, artifact) in self.artifacts.iter().enumerate() {
@@ -103,6 +121,7 @@ impl PackageManifest {
     }
 }
 
+/// Discovers generated package artifacts and attaches checksum metadata for release manifests.
 pub fn collect_package_artifacts(
     app: &str,
     version: &str,

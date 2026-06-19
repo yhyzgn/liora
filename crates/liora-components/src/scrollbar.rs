@@ -38,6 +38,7 @@ const SCROLLBAR_THUMB_HOVER_WIDTH: Pixels = px(8.0);
 const SCROLLBAR_HIT_WIDTH: Pixels = px(14.0);
 const SCROLLBAR_MIN_THUMB_HEIGHT: Pixels = px(24.0);
 
+/// Public builder and render state for the Liora scrollbar component.
 pub struct Scrollbar {
     scroll_handle: ScrollHandle,
     render_content: Box<dyn Fn(&mut Window, &mut App) -> AnyElement + 'static>,
@@ -45,6 +46,7 @@ pub struct Scrollbar {
 }
 
 impl Scrollbar {
+    /// Creates a new value with the required baseline configuration.
     pub fn new<F, E>(_cx: &mut Context<Self>, render_content: F) -> Self
     where
         F: Fn(&mut Window, &mut App) -> E + 'static,
@@ -59,6 +61,7 @@ impl Scrollbar {
         }
     }
 
+    /// Returns the height token used for component sizing.
     pub fn height(mut self, h: impl Into<Pixels>) -> Self {
         self.height = Some(h.into());
         self
@@ -74,6 +77,7 @@ pub struct VirtualScrollbar {
 }
 
 impl VirtualScrollbar {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(list_state: ListState) -> Self {
         Self { list_state }
     }
@@ -86,6 +90,7 @@ impl IntoElement for VirtualScrollbar {
     }
 }
 
+/// Public builder and render state for the Liora virtual scrollbar prepaint component.
 pub struct VirtualScrollbarPrepaint {
     thumb_bounds: Option<Bounds<Pixels>>,
     hover_bounds: Bounds<Pixels>,

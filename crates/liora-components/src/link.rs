@@ -28,6 +28,7 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 use liora_theme::{ButtonVariant, Theme};
 
+/// Public builder and render state for the Liora link component.
 pub struct Link {
     label: SharedString,
     href: Option<SharedString>,
@@ -40,6 +41,7 @@ pub struct Link {
 }
 
 impl Link {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(label: impl Into<SharedString>) -> Self {
         Self {
             label: label.into(),
@@ -52,51 +54,63 @@ impl Link {
             id: None,
         }
     }
+    /// Configures the href option.
     pub fn href(mut self, url: impl Into<SharedString>) -> Self {
         self.href = Some(url.into());
         self
     }
+    /// Configures the variant option.
     pub fn variant(mut self, v: ButtonVariant) -> Self {
         self.variant = v;
         self
     }
+    /// Configures the primary option.
     pub fn primary(mut self) -> Self {
         self.variant = ButtonVariant::Primary;
         self
     }
+    /// Configures the success option.
     pub fn success(mut self) -> Self {
         self.variant = ButtonVariant::Success;
         self
     }
+    /// Configures the warning option.
     pub fn warning(mut self) -> Self {
         self.variant = ButtonVariant::Warning;
         self
     }
+    /// Configures the danger option.
     pub fn danger(mut self) -> Self {
         self.variant = ButtonVariant::Danger;
         self
     }
+    /// Configures the info option.
     pub fn info(mut self) -> Self {
         self.variant = ButtonVariant::Info;
         self
     }
+    /// Configures the disabled option.
     pub fn disabled(mut self, d: bool) -> Self {
         self.disabled = d;
         self
     }
+    /// Configures the underline option.
     pub fn underline(mut self, u: bool) -> Self {
         self.underline = u;
         self
     }
+    /// Configures the icon start option.
     pub fn icon_start(mut self, icon: IconName) -> Self {
         self.icon_start = Some(icon);
         self
     }
+    /// Configures the icon end option.
     pub fn icon_end(mut self, icon: IconName) -> Self {
         self.icon_end = Some(icon);
         self
     }
 
+    /// Returns the stable tray command identifier used for menu event routing.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = Some(id.into());
         self

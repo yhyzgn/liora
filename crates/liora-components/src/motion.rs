@@ -24,51 +24,77 @@ use liora_icons::Icon;
 use std::{f32::consts::TAU, time::Duration};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Enumerates the supported motion duration modes and options.
 pub enum MotionDuration {
+    /// Uses the fast variant.
     Fast,
+    /// Uses the normal variant.
     Normal,
+    /// Uses the slow variant.
     Slow,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Enumerates the supported motion easing modes and options.
 pub enum MotionEasing {
+    /// Uses the linear variant.
     Linear,
+    /// Uses the ease in out variant.
     EaseInOut,
+    /// Uses the ease out variant.
     EaseOut,
+    /// Uses the elastic variant.
     Elastic,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Enumerates the supported motion preset modes and options.
 pub enum MotionPreset {
+    /// Uses the fade in variant.
     FadeIn,
+    /// Uses the fade out variant.
     FadeOut,
+    /// Uses the pop in variant.
     PopIn,
+    /// Uses the pulse variant.
     Pulse,
+    /// Uses the spin variant.
     Spin,
+    /// Uses the elastic slide variant.
     ElasticSlide,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Enumerates the supported motion curve modes and options.
 pub enum MotionCurve {
+    /// Uses the linear variant.
     Linear,
+    /// Uses the ease in out variant.
     EaseInOut,
+    /// Uses the ease out variant.
     EaseOut,
+    /// Uses the elastic snap variant.
     ElasticSnap,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Enumerates the supported fade direction modes and options.
 pub enum FadeDirection {
+    /// Uses the in variant.
     In,
+    /// Uses the out variant.
     Out,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
+/// Public builder and render state for the Liora interpolator component.
 pub struct Interpolator {
     from: f32,
     to: f32,
 }
 
 impl MotionDuration {
+    /// Borrows this value as duration.
     pub fn as_duration(self) -> Duration {
         match self {
             Self::Fast => Duration::from_millis(220),
@@ -79,39 +105,48 @@ impl MotionDuration {
 }
 
 impl Interpolator {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(from: f32, to: f32) -> Self {
         Self { from, to }
     }
 
+    /// Configures the from option.
     pub fn from(&self) -> f32 {
         self.from
     }
 
+    /// Configures the to option.
     pub fn to(&self) -> f32 {
         self.to
     }
 
+    /// Configures the sample option.
     pub fn sample(&self, delta: f32) -> f32 {
         self.sample_with(delta, MotionCurve::Linear)
     }
 
+    /// Configures the sample with option.
     pub fn sample_with(&self, delta: f32, curve: MotionCurve) -> f32 {
         self.from + (self.to - self.from) * curve_progress(delta, curve)
     }
 
+    /// Configures the map option.
     pub fn map(&self, delta: f32, mapper: impl FnOnce(f32) -> f32) -> f32 {
         self.from + (self.to - self.from) * mapper(delta.clamp(0.0, 1.0))
     }
 }
 
+/// Configures the motion animation option.
 pub fn motion_animation(duration: MotionDuration, easing: MotionEasing) -> Animation {
     Animation::new(duration.as_duration()).with_easing(move |delta| ease(delta, easing))
 }
 
+/// Configures the repeating motion animation option.
 pub fn repeating_motion_animation(duration: MotionDuration, easing: MotionEasing) -> Animation {
     motion_animation(duration, easing).repeat()
 }
 
+/// Configures the fade option.
 pub fn fade<E>(
     id: impl Into<ElementId>,
     direction: FadeDirection,
@@ -133,6 +168,7 @@ where
     )
 }
 
+/// Configures the fade in option.
 pub fn fade_in<E>(id: impl Into<ElementId>, element: E) -> AnimationElement<E>
 where
     E: Styled + IntoElement + 'static,
@@ -140,6 +176,7 @@ where
     fade(id, FadeDirection::In, element)
 }
 
+/// Configures the fade out option.
 pub fn fade_out<E>(id: impl Into<ElementId>, element: E) -> AnimationElement<E>
 where
     E: Styled + IntoElement + 'static,
@@ -147,6 +184,7 @@ where
     fade(id, FadeDirection::Out, element)
 }
 
+/// Configures the pop in option.
 pub fn pop_in<E>(id: impl Into<ElementId>, element: E) -> AnimationElement<E>
 where
     E: Styled + IntoElement + 'static,
@@ -158,6 +196,7 @@ where
     )
 }
 
+/// Configures the pulse option.
 pub fn pulse<E>(id: impl Into<ElementId>, element: E) -> AnimationElement<E>
 where
     E: Styled + IntoElement + 'static,
@@ -169,6 +208,7 @@ where
     )
 }
 
+/// Configures the spin icon option.
 pub fn spin_icon(id: impl Into<ElementId>, icon: Icon) -> AnimationElement<Icon> {
     icon.with_animation(
         ElementId::from(id.into()),
@@ -177,6 +217,7 @@ pub fn spin_icon(id: impl Into<ElementId>, icon: Icon) -> AnimationElement<Icon>
     )
 }
 
+/// Configures the elastic slide option.
 pub fn elastic_slide(delta: f32) -> f32 {
     let t = delta.clamp(0.0, 1.0);
     let c1 = 1.35;
@@ -184,6 +225,7 @@ pub fn elastic_slide(delta: f32) -> f32 {
     1.0 + c3 * (t - 1.0).powi(3) + c1 * (t - 1.0).powi(2)
 }
 
+/// Configures the elastic snap option.
 pub fn elastic_snap(delta: f32) -> f32 {
     let eased = gpui::ease_in_out(delta.clamp(0.0, 1.0));
     let snap_start = 0.62;
@@ -196,6 +238,7 @@ pub fn elastic_snap(delta: f32) -> f32 {
     }
 }
 
+/// Configures the slide snap option.
 pub fn slide_snap(from: f32, to: f32, delta: f32) -> f32 {
     Interpolator::new(from, to).sample_with(delta, MotionCurve::ElasticSnap)
 }

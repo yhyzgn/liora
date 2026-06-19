@@ -31,13 +31,19 @@ use std::collections::HashSet;
 use std::sync::Arc;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Public builder and render state for the Liora transfer item component.
 pub struct TransferItem {
+    /// Stable key used to identify this entry in collections and callbacks.
     pub key: SharedString,
+    /// Human-readable label shown in the component UI.
     pub label: SharedString,
+    /// Supporting descriptive text shown near the primary label.
     pub description: Option<SharedString>,
+    /// Whether user interaction is disabled for this item.
     pub disabled: bool,
 }
 
+/// Public builder and render state for the Liora transfer component.
 pub struct Transfer {
     id: SharedString,
     items: Vec<TransferItem>,
@@ -56,6 +62,7 @@ pub struct Transfer {
 }
 
 impl TransferItem {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(key: impl Into<SharedString>, label: impl Into<SharedString>) -> Self {
         Self {
             key: key.into(),
@@ -65,11 +72,13 @@ impl TransferItem {
         }
     }
 
+    /// Configures the description option.
     pub fn description(mut self, description: impl Into<SharedString>) -> Self {
         self.description = Some(description.into());
         self
     }
 
+    /// Configures the disabled option.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
@@ -77,6 +86,7 @@ impl TransferItem {
 }
 
 impl Transfer {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(items: Vec<TransferItem>) -> Self {
         Self {
             id: liora_core::unique_id("transfer"),
@@ -96,16 +106,19 @@ impl Transfer {
         }
     }
 
+    /// Returns the stable tray command identifier used for menu event routing.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
         self
     }
 
+    /// Configures the target keys option.
     pub fn target_keys(mut self, keys: impl IntoIterator<Item = impl Into<SharedString>>) -> Self {
         self.target_keys = keys.into_iter().map(Into::into).collect();
         self
     }
 
+    /// Configures the checked source keys option.
     pub fn checked_source_keys(
         mut self,
         keys: impl IntoIterator<Item = impl Into<SharedString>>,
@@ -114,6 +127,7 @@ impl Transfer {
         self
     }
 
+    /// Configures the checked target keys option.
     pub fn checked_target_keys(
         mut self,
         keys: impl IntoIterator<Item = impl Into<SharedString>>,
@@ -122,6 +136,7 @@ impl Transfer {
         self
     }
 
+    /// Configures the titles option.
     pub fn titles(
         mut self,
         source: impl Into<SharedString>,
@@ -132,40 +147,48 @@ impl Transfer {
         self
     }
 
+    /// Configures the filterable option.
     pub fn filterable(mut self, filterable: bool) -> Self {
         self.filterable = filterable;
         self
     }
 
+    /// Configures the source filter option.
     pub fn source_filter(mut self, query: impl Into<SharedString>) -> Self {
         self.source_filter = query.into();
         self
     }
 
+    /// Configures the target filter option.
     pub fn target_filter(mut self, query: impl Into<SharedString>) -> Self {
         self.target_filter = query.into();
         self
     }
 
+    /// Configures the empty text option.
     pub fn empty_text(mut self, text: impl Into<SharedString>) -> Self {
         self.empty_text = text.into();
         self
     }
 
+    /// Returns the width token used for component sizing.
     pub fn width(mut self, width: impl Into<gpui::Pixels>) -> Self {
         self.width = width.into();
         self
     }
 
+    /// Applies the predefined width lg sizing preset.
     pub fn width_lg(self) -> Self {
         self.width(px(680.0))
     }
 
+    /// Returns the height token used for component sizing.
     pub fn height(mut self, height: impl Into<gpui::Pixels>) -> Self {
         self.height = height.into();
         self
     }
 
+    /// Registers a callback that runs when change occurs.
     pub fn on_change(
         mut self,
         f: impl Fn(Vec<SharedString>, &mut Window, &mut App) + 'static,
@@ -174,10 +197,12 @@ impl Transfer {
         self
     }
 
+    /// Updates the stored target keys value and keeps the existing component identity.
     pub fn set_target_keys(&mut self, keys: impl IntoIterator<Item = impl Into<SharedString>>) {
         self.target_keys = keys.into_iter().map(Into::into).collect();
     }
 
+    /// Configures the filter items option.
     pub fn filter_items(items: &[TransferItem], query: &str) -> Vec<SharedString> {
         let query = query.trim().to_lowercase();
         items
@@ -195,6 +220,7 @@ impl Transfer {
             .collect()
     }
 
+    /// Configures the move to target option.
     pub fn move_to_target(
         items: &[TransferItem],
         target_keys: &mut Vec<SharedString>,
@@ -213,6 +239,7 @@ impl Transfer {
         moved
     }
 
+    /// Configures the move to source option.
     pub fn move_to_source(
         items: &[TransferItem],
         target_keys: &mut Vec<SharedString>,
@@ -231,6 +258,7 @@ impl Transfer {
         moved
     }
 
+    /// Configures the move to target with checked option.
     pub fn move_to_target_with_checked(
         items: &[TransferItem],
         target_keys: &mut Vec<SharedString>,
@@ -246,6 +274,7 @@ impl Transfer {
         moved
     }
 
+    /// Configures the move to source with checked option.
     pub fn move_to_source_with_checked(
         items: &[TransferItem],
         target_keys: &mut Vec<SharedString>,

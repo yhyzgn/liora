@@ -27,14 +27,21 @@ use gpui::{
 use liora_core::Config;
 
 #[derive(Clone, Debug)]
+/// Public builder and render state for the Liora segment ratio item component.
 pub struct SegmentRatioItem {
+    /// Human-readable label shown in the component UI.
     pub label: SharedString,
+    /// Current value represented by this option or component state.
     pub value: f64,
+    /// Color token or explicit color applied to the visual element.
     pub color: Hsla,
+    /// Label pattern for this data model.
     pub label_pattern: Option<SharedString>,
+    /// Value pattern for this data model.
     pub value_pattern: Option<SharedString>,
 }
 impl SegmentRatioItem {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(label: impl Into<SharedString>, value: f64, color: Hsla) -> Self {
         Self {
             label: label.into(),
@@ -44,10 +51,12 @@ impl SegmentRatioItem {
             value_pattern: None,
         }
     }
+    /// Configures the label pattern option.
     pub fn label_pattern(mut self, pattern: impl Into<SharedString>) -> Self {
         self.label_pattern = Some(pattern.into());
         self
     }
+    /// Configures the value pattern option.
     pub fn value_pattern(mut self, pattern: impl Into<SharedString>) -> Self {
         self.value_pattern = Some(pattern.into());
         self
@@ -55,15 +64,21 @@ impl SegmentRatioItem {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Enumerates the supported segment legend position modes and options.
 pub enum SegmentLegendPosition {
+    /// Uses the top variant.
     Top,
     #[default]
+    /// Uses the bottom variant.
     Bottom,
+    /// Uses the both variant.
     Both,
+    /// Uses the hidden variant.
     Hidden,
 }
 
 #[derive(Clone)]
+/// Public builder and render state for the Liora segment ratio bar component.
 pub struct SegmentRatioBar {
     items: Vec<SegmentRatioItem>,
     height: Pixels,
@@ -76,6 +91,7 @@ pub struct SegmentRatioBar {
 }
 
 impl SegmentRatioBar {
+    /// Creates a new value with the required baseline configuration.
     pub fn new(items: impl IntoIterator<Item = SegmentRatioItem>) -> Self {
         Self {
             items: items.into_iter().collect(),
@@ -88,54 +104,67 @@ impl SegmentRatioBar {
             legend_inset_x: px(6.0),
         }
     }
+    /// Returns the height token used for component sizing.
     pub fn height(mut self, height: impl Into<Pixels>) -> Self {
         self.height = height.into().max(px(4.0));
         self
     }
+    /// Configures the radius option.
     pub fn radius(mut self, radius: impl Into<Pixels>) -> Self {
         self.radius = radius.into().max(px(0.0));
         self
     }
 
+    /// Configures the segment radius option.
     pub fn segment_radius(mut self, radius: impl Into<Pixels>) -> Self {
         self.segment_radius = radius.into().max(px(0.0));
         self
     }
 
+    /// Configures the rounded segments option.
     pub fn rounded_segments(self, radius: impl Into<Pixels>) -> Self {
         self.segment_radius(radius)
     }
 
+    /// Configures the legend position option.
     pub fn legend_position(mut self, position: SegmentLegendPosition) -> Self {
         self.legend_position = position;
         self
     }
+    /// Configures the legend top option.
     pub fn legend_top(self) -> Self {
         self.legend_position(SegmentLegendPosition::Top)
     }
+    /// Configures the legend bottom option.
     pub fn legend_bottom(self) -> Self {
         self.legend_position(SegmentLegendPosition::Bottom)
     }
+    /// Configures the legend both option.
     pub fn legend_both(self) -> Self {
         self.legend_position(SegmentLegendPosition::Both)
     }
+    /// Configures whether legend is hidden in the rendered component.
     pub fn hide_legend(self) -> Self {
         self.legend_position(SegmentLegendPosition::Hidden)
     }
+    /// Configures the percentage decimals option.
     pub fn percentage_decimals(mut self, decimals: usize) -> Self {
         self.percentage_decimals = decimals.min(4);
         self
     }
+    /// Configures the split legend option.
     pub fn split_legend(mut self, split: bool) -> Self {
         self.split_legend = split;
         self
     }
 
+    /// Configures the legend inset x option.
     pub fn legend_inset_x(mut self, inset: impl Into<Pixels>) -> Self {
         self.legend_inset_x = inset.into().max(px(0.0));
         self
     }
 
+    /// Configures the legend text inset option.
     pub fn legend_text_inset(self, inset: impl Into<Pixels>) -> Self {
         self.legend_inset_x(inset)
     }
