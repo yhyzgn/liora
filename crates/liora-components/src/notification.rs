@@ -71,7 +71,7 @@ impl NotificationManager {
             cx.foreground_executor()
                 .spawn(async move {
                     executor.timer(Duration::from_secs(4)).await;
-                    async_cx.update(|cx| {
+                    let _ = async_cx.update(|cx| {
                         if cx.has_global::<NotificationManagerGlobal>() {
                             let manager = cx.global::<NotificationManagerGlobal>().0.clone();
                             manager.update(cx, |this, cx| {

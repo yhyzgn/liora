@@ -55,7 +55,7 @@ impl ToastDispatcherGlobal {
         let app = self.app.clone();
         self.foreground_executor
             .spawn(async move {
-                app.update(|cx| {
+                let _ = app.update(|cx| {
                     show_message(content, msg_type, cx);
                     cx.refresh_windows();
                 });
@@ -105,7 +105,7 @@ impl MessageManager {
             cx.foreground_executor()
                 .spawn(async move {
                     executor.timer(Duration::from_secs(3)).await;
-                    async_cx.update(|cx| {
+                    let _ = async_cx.update(|cx| {
                         if cx.has_global::<MessageManagerGlobal>() {
                             let manager = cx.global::<MessageManagerGlobal>().0.clone();
                             manager.update(cx, |this, cx| {

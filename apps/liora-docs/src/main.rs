@@ -147,7 +147,7 @@ fn install_docs_tray(cx: &mut App) {
         loop {
             liora_tray::pump_platform_events();
             while let Ok(command) = rx.try_recv() {
-                cx.update(|cx| handle_docs_tray_command(command, cx));
+                let _ = cx.update(|cx| handle_docs_tray_command(command, cx));
             }
             cx.background_executor()
                 .timer(Duration::from_millis(100))

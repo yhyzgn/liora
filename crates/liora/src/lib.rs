@@ -4,7 +4,7 @@
 //! listing every lower-level crate separately:
 //!
 //! ```toml
-//! liora = "0.1.2"
+//! liora = "0.1.3"
 //! ```
 //!
 //! The facade keeps each domain available under a stable module name while also
@@ -23,6 +23,9 @@ pub use liora_tray as tray;
 #[cfg(feature = "packager")]
 pub use liora_packager as packager;
 
+#[cfg(feature = "updater")]
+pub use liora_updater as updater;
+
 /// Prelude for applications that prefer a compact import surface.
 pub mod prelude {
     pub use liora_components::{init_liora, init_liora_with_mode};
@@ -32,4 +35,7 @@ pub mod prelude {
 
     #[cfg(feature = "packager")]
     pub use crate::packager;
+
+    #[cfg(feature = "updater")]
+    pub use crate::updater;
 }

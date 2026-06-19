@@ -17,7 +17,12 @@ use liora_tray::{
     TrayCloseAction, TrayCommand, TrayConfig, TrayControlCenter, TrayIconEvent, bundled_tray_icon,
     default_liora_tray_menu, solid_icon,
 };
+use liora_updater::{
+    AssetKind, InstallAction, InstallPlan, LioraApp, Platform, Updater, build_install_plan,
+    select_asset,
+};
 use std::{
+    process::Command,
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
@@ -38,6 +43,35 @@ pub struct Gallery {
     frame_mode: WindowFrameMode,
     frame_mode_switch: gpui::Entity<Switch>,
     refresh_revision: u32,
+    updater_status: UpdatePanelStatus,
+    install_plan: Option<InstallPlan>,
+}
+
+#[derive(Debug)]
+enum UpdatePanelStatus {
+    Idle,
+    Checking,
+    UpToDate(String),
+    Available(String),
+    Downloading(String),
+    Downloaded(String),
+    Installing(String),
+    Error(String),
+}
+
+impl UpdatePanelStatus {
+    fn label(&self) -> String {
+        match self {
+            Self::Idle => "未检查更新 / Not checked".into(),
+            Self::Checking => "正在检查 GitHub Release…".into(),
+            Self::UpToDate(version) => format!("已是最新版本 {version}"),
+            Self::Available(version) => format!("发现新版本 {version}"),
+            Self::Downloading(version) => format!("正在下载并校验 {version}…"),
+            Self::Downloaded(version) => format!("已下载并通过 SHA-256 校验：{version}"),
+            Self::Installing(detail) => format!("已启动安装流程：{detail}"),
+            Self::Error(error) => format!("更新失败：{error}"),
+        }
+    }
 }
 
 struct GalleryTrayState {
@@ -87,8 +121,12 @@ fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
                 frame_mode,
                 frame_mode_switch: cx.new(|cx| Switch::new(frame_mode.is_custom(), cx)),
                 refresh_revision: 0,
+                updater_status: UpdatePanelStatus::Idle,
+                install_plan: None,
             }
         });
+        let auto_update_view = view.clone();
+        cx.defer(move |cx| download_gallery_update(auto_update_view.clone(), cx));
         window.on_window_should_close(cx, |window, cx| {
             handle_gallery_window_should_close(window, cx)
         });
@@ -181,7 +219,7 @@ fn install_gallery_tray(cx: &mut App) {
         loop {
             liora_tray::pump_platform_events();
             while let Ok(command) = rx.try_recv() {
-                cx.update(|cx| handle_gallery_tray_command(command, cx));
+                let _ = cx.update(|cx| handle_gallery_tray_command(command, cx));
             }
             cx.background_executor()
                 .timer(Duration::from_millis(100))
@@ -545,19 +583,21 @@ mod shell_tests {
             .expect("Gallery should handle opened window")..];
         assert!(ok_branch.contains("window.activate_window()"));
         assert!(source.contains("Gallery theme switched"));
+        assert!(source.contains("About / 关于"));
+        assert!(source.contains("check_gallery_update"));
     }
 }
 
 impl Render for Gallery {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let selected = self.selected.min(self.entries.len().saturating_sub(1));
+        let selected = self.selected.min(self.entries.len());
         self.selected = selected;
 
         self.wire_shell_controls(cx);
         let nav_menu = self.gallery_nav_menu(selected, cx);
 
-        let selected_entry = &self.entries[selected];
-        let selected_demo = self.demos[selected].clone();
+        let selected_entry = self.entries.get(selected);
+        let selected_demo = self.demos.get(selected).cloned();
 
         let header = div()
             .flex()
@@ -586,7 +626,7 @@ impl Render for Gallery {
                     .child(Button::new("Refresh").primary().on_click({
                         let gallery = cx.entity().clone();
                         move |_, _window, cx| {
-                            gallery.update(cx, |gallery, cx| {
+                            let _ = gallery.update(cx, |gallery, cx| {
                                 gallery.refresh_revision += 1;
                                 cx.notify();
                             });
@@ -605,7 +645,10 @@ impl Render for Gallery {
                     )),
             );
 
-        let content = Card::new(
+        let content_body = if selected == self.entries.len() {
+            self.render_about_panel(cx).into_any_element()
+        } else if let (Some(selected_entry), Some(selected_demo)) = (selected_entry, selected_demo)
+        {
             Space::new()
                 .vertical()
                 .gap_lg()
@@ -616,10 +659,13 @@ impl Render for Gallery {
                         .child(Title::new(selected_entry.name).h3())
                         .child(Paragraph::with_text(selected_entry.description)),
                 )
-                .child(selected_demo),
-        )
-        .no_shadow()
-        .no_shrink();
+                .child(selected_demo)
+                .into_any_element()
+        } else {
+            Paragraph::with_text("No gallery entry selected.").into_any_element()
+        };
+
+        let content = Card::new(content_body).no_shadow().no_shrink();
 
         liora_components::message::render_messages(cx);
         liora_components::notification::render_notifications(cx);
@@ -679,6 +725,10 @@ impl Gallery {
                     || entry.description.to_lowercase().contains(&query)
             })
             .map(|(index, entry)| (index, entry.name))
+            .chain(
+                (query.is_empty() || "about 关于 updates 更新".contains(&query))
+                    .then_some((self.entries.len(), "About / 关于")),
+            )
             .collect::<Vec<_>>();
 
         let gallery = cx.entity().downgrade();
@@ -686,6 +736,62 @@ impl Gallery {
         self.nav_query = query;
         self.nav_menu = Some(nav_menu.clone());
         nav_menu
+    }
+
+    fn render_about_panel(&self, cx: &mut Context<Self>) -> impl IntoElement {
+        let theme = cx.global::<Config>().theme.clone();
+        let gallery = cx.entity().clone();
+        let can_install = self.install_plan.is_some();
+
+        Space::new()
+            .vertical()
+            .gap_lg()
+            .child(
+                Space::new()
+                    .vertical()
+                    .gap_xs()
+                    .child(Title::new("About Liora Gallery").h3())
+                    .child(Paragraph::with_text(
+                        "Liora Gallery 是 Liora 原生 GPUI 组件库的 dogfooding 展示应用，用真实桌面应用壳验证主题、托盘、弹层、代码与数据组件。",
+                    )),
+            )
+            .child(
+                Space::new()
+                    .gap_sm()
+                    .wrap()
+                    .child(Tag::new(format!("Version {}", env!("CARGO_PKG_VERSION"))).success().round(true))
+                    .child(Tag::new("Pure Rust + official Zed GPUI").round(true))
+                    .child(Tag::new(current_platform_label()).round(true)),
+            )
+            .child(Paragraph::with_text(
+                "更新通道使用 GitHub Releases：Gallery 优先下载当前平台的安装器（AppImage/DMG/NSIS/MSI 等），下载后会校验 SHA256SUMS.txt。需要系统权限的包管理器安装会生成明确计划，不会静默提权。",
+            ))
+            .child(
+                Card::new(
+                    Space::new()
+                        .vertical()
+                        .gap_md()
+                        .child(Text::new(self.updater_status.label()).text_color(theme.primary.base).bold())
+                        .child(
+                            Space::new()
+                                .gap_sm()
+                                .wrap()
+                                .child(Button::new("检查更新 / Check").primary().on_click({
+                                    let gallery = gallery.clone();
+                                    move |_, _window, cx| check_gallery_update(gallery.clone(), cx)
+                                }))
+                                .child(Button::new("下载更新 / Download").on_click({
+                                    let gallery = gallery.clone();
+                                    move |_, _window, cx| download_gallery_update(gallery.clone(), cx)
+                                }))
+                                .child(Button::new("安装 / Install").disabled(!can_install).on_click({
+                                    let gallery = gallery.clone();
+                                    move |_, _window, cx| install_gallery_update(gallery.clone(), cx)
+                                })),
+                        ),
+                )
+                .no_shadow(),
+            )
     }
 
     fn wire_shell_controls(&self, cx: &mut Context<Self>) {
@@ -721,6 +827,156 @@ impl Gallery {
                 set_gallery_frame_mode(WindowFrameMode::from_custom(enabled), window, cx);
             });
         });
+    }
+}
+
+fn check_gallery_update(gallery: gpui::Entity<Gallery>, cx: &mut App) {
+    let _ = gallery.update(cx, |gallery, cx| {
+        gallery.updater_status = UpdatePanelStatus::Checking;
+        gallery.install_plan = None;
+        cx.notify();
+    });
+    let async_cx = cx.to_async();
+    let executor = cx.background_executor().clone();
+    cx.foreground_executor()
+        .spawn(async move {
+            let result = executor
+                .spawn(async move {
+                    Updater::default()
+                        .update_available(&format!("v{}", env!("CARGO_PKG_VERSION")), false)
+                })
+                .await;
+            let _ = async_cx.update(move |cx| {
+                let _ = gallery.update(cx, |gallery, cx| {
+                    gallery.updater_status = match result {
+                        Ok(None) => UpdatePanelStatus::UpToDate(env!("CARGO_PKG_VERSION").into()),
+                        Ok(Some(release)) => UpdatePanelStatus::Available(release.tag),
+                        Err(error) => UpdatePanelStatus::Error(error.to_string()),
+                    };
+                    cx.notify();
+                });
+            });
+        })
+        .detach();
+}
+
+fn download_gallery_update(gallery: gpui::Entity<Gallery>, cx: &mut App) {
+    let _ = gallery.update(cx, |gallery, cx| {
+        gallery.updater_status = UpdatePanelStatus::Downloading("latest".into());
+        cx.notify();
+    });
+    let async_cx = cx.to_async();
+    let executor = cx.background_executor().clone();
+    cx.foreground_executor()
+        .spawn(async move {
+            let result = executor
+                .spawn(async move { download_gallery_update_sync() })
+                .await;
+            let _ = async_cx.update(move |cx| {
+                let _ = gallery.update(cx, |gallery, cx| {
+                    match result {
+                        Ok(Some((version, plan))) => {
+                            gallery.install_plan = Some(plan);
+                            gallery.updater_status = UpdatePanelStatus::Downloaded(version);
+                        }
+                        Ok(None) => {
+                            gallery.updater_status =
+                                UpdatePanelStatus::UpToDate(env!("CARGO_PKG_VERSION").into());
+                        }
+                        Err(error) => {
+                            gallery.updater_status = UpdatePanelStatus::Error(error.to_string())
+                        }
+                    }
+                    cx.notify();
+                });
+            });
+        })
+        .detach();
+}
+
+fn install_gallery_update(gallery: gpui::Entity<Gallery>, cx: &mut App) {
+    let _ = gallery.update(cx, |gallery, cx| {
+        let Some(plan) = &gallery.install_plan else {
+            gallery.updater_status = UpdatePanelStatus::Error("请先下载并校验更新".into());
+            cx.notify();
+            return;
+        };
+        let description = install_plan_description(plan);
+        match &plan.action {
+            InstallAction::RunExecutable { program, args } => {
+                match Command::new(program).args(args).spawn() {
+                    Ok(_) => gallery.updater_status = UpdatePanelStatus::Installing(description),
+                    Err(error) => {
+                        gallery.updater_status = UpdatePanelStatus::Error(error.to_string())
+                    }
+                }
+            }
+            InstallAction::OpenWithSystem { program, args } => {
+                match Command::new(program).args(args).spawn() {
+                    Ok(_) => gallery.updater_status = UpdatePanelStatus::Installing(description),
+                    Err(error) => {
+                        gallery.updater_status = UpdatePanelStatus::Error(error.to_string())
+                    }
+                }
+            }
+            InstallAction::Manual { .. } => {
+                gallery.updater_status = UpdatePanelStatus::Installing(description);
+            }
+        }
+        cx.notify();
+    });
+}
+
+fn current_platform_label() -> &'static str {
+    match Platform::current() {
+        Some(Platform::LinuxX64) => "Linux x64",
+        Some(Platform::MacosArm64) => "macOS arm64",
+        Some(Platform::WindowsX64) => "Windows x64",
+        None => "Unsupported platform",
+    }
+}
+
+fn update_cache_dir(app: LioraApp) -> std::path::PathBuf {
+    std::env::var_os("LIORA_UPDATE_CACHE")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| std::env::temp_dir().join("liora-updates"))
+        .join(app.release_name())
+        .join(env!("CARGO_PKG_VERSION"))
+}
+
+fn download_gallery_update_sync()
+-> Result<Option<(String, InstallPlan)>, liora_updater::UpdaterError> {
+    let Some(platform) = Platform::current() else {
+        return Ok(None);
+    };
+    let updater = Updater::default();
+    let Some(release) =
+        updater.update_available(&format!("v{}", env!("CARGO_PKG_VERSION")), false)?
+    else {
+        return Ok(None);
+    };
+    let Some(asset) = select_asset(&release, LioraApp::Gallery, platform, AssetKind::Installer)
+    else {
+        return Ok(None);
+    };
+    let path =
+        updater.download_verified_asset(&release, &asset, &update_cache_dir(LioraApp::Gallery))?;
+    let plan = build_install_plan(LioraApp::Gallery, platform, &asset, path);
+    Ok(Some((release.tag, plan)))
+}
+
+fn install_plan_description(plan: &InstallPlan) -> String {
+    match &plan.action {
+        InstallAction::RunExecutable { program, args } if args.is_empty() => {
+            format!("Run {}", program.display())
+        }
+        InstallAction::RunExecutable { program, args } => {
+            format!("Run {} {}", program.display(), args.join(" "))
+        }
+        InstallAction::OpenWithSystem { program, args } => {
+            format!("Run {} {}", program, args.join(" "))
+        }
+        InstallAction::Manual { description } => description.clone(),
     }
 }
 

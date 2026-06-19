@@ -19,7 +19,7 @@ permissions:
   contents: read
 
 env:
-  SDK_CRATES: "liora-theme liora-core liora-icons liora-icons-lucide liora-components liora-tray liora-packager liora"
+  SDK_CRATES: "liora-theme liora-core liora-icons liora-icons-lucide liora-components liora-tray liora-packager liora-updater liora"
 
 jobs:
   package-sdk:
@@ -28,7 +28,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -78,6 +78,7 @@ jobs:
               "liora-components": ["liora-core", "liora-theme", "liora-icons", "liora-icons-lucide"],
               "liora-tray": [],
               "liora-packager": [],
+              "liora-updater": [],
               "liora": [
                   "liora-core",
                   "liora-theme",
@@ -86,6 +87,7 @@ jobs:
                   "liora-components",
                   "liora-tray",
                   "liora-packager",
+                  "liora-updater",
               ],
           }
           root_manifest = Path("Cargo.toml").read_text()
@@ -124,14 +126,16 @@ jobs:
           # prerequisite is visible in the crates.io index.
           cargo package -p liora-theme
           cargo package -p liora-packager
+          cargo package -p liora-updater
 
       - name: Upload root SDK package preflight artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: liora-sdk-root-crate-preflight
           path: |
             target/package/liora-theme-*.crate
             target/package/liora-packager-*.crate
+            target/package/liora-updater-*.crate
           if-no-files-found: error
           retention-days: 30
 
@@ -144,7 +148,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -202,6 +206,7 @@ jobs:
               liora-components) echo "crates/liora-components" ;;
               liora-tray) echo "crates/liora-tray" ;;
               liora-packager) echo "crates/liora-packager" ;;
+              liora-updater) echo "crates/liora-updater" ;;
               liora) echo "crates/liora" ;;
               *) echo "unknown SDK crate: $1" >&2; exit 1 ;;
             esac

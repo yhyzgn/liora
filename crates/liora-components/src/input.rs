@@ -67,8 +67,8 @@ pub struct Input {
     append: Option<Box<dyn Fn(&mut Window, &mut App) -> AnyElement + 'static>>,
     width: Option<Pixels>,
     height: Option<Pixels>,
-    pub min_rows: usize,
     text_align: gpui::TextAlign,
+    pub min_rows: usize,
     on_enter: Option<Box<dyn Fn(&mut Self, &str, &mut Window, &mut Context<Self>) + 'static>>,
     on_change: Option<Box<dyn Fn(&str, &mut Context<Self>) + 'static>>,
 }
@@ -1095,7 +1095,6 @@ struct InputPrepaint {
     cursor: Option<gpui::PaintQuad>,
     selection: Vec<gpui::PaintQuad>,
     is_masked: bool,
-    text_align: gpui::TextAlign,
 }
 
 impl IntoElement for InputElement {
@@ -1283,7 +1282,6 @@ impl Element for InputElement {
             cursor: cursor_quad,
             selection: selection_quads,
             is_masked,
-            text_align,
         }
     }
 
@@ -1306,7 +1304,6 @@ impl Element for InputElement {
         for s in prepaint.selection.drain(..) {
             window.paint_quad(s);
         }
-        let text_align = prepaint.text_align;
         for (line, y) in &prepaint.lines {
             let _ = line.paint(point(bounds.left(), *y), window.line_height(), window, cx);
         }

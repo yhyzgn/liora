@@ -106,7 +106,7 @@ impl Render for Radio {
             row = row.cursor_pointer().track_focus(&self.focus_handle);
             row = row.on_mouse_down(
                 MouseButton::Left,
-                cx.listener(|this, _, window, cx| {
+                cx.listener(|this, _, window, _cx| {
                     window.focus(&this.focus_handle);
                 }),
             );

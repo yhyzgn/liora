@@ -170,7 +170,7 @@ impl Render for Switch {
             el = el.cursor_pointer().track_focus(&self.focus_handle);
             el = el.on_mouse_down(
                 MouseButton::Left,
-                cx.listener(|this, _, window, cx| {
+                cx.listener(|this, _, window, _cx| {
                     window.focus(&this.focus_handle);
                 }),
             );

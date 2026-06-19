@@ -741,7 +741,7 @@ pub(crate) fn load_remote_render_image(
             if let Ok(mut cache) = remote_image_cache().lock() {
                 cache.insert(url, state);
             }
-            async_cx.update(|cx| cx.refresh_windows());
+            let _ = async_cx.update(|cx| cx.refresh_windows());
         })
         .detach();
     window.request_animation_frame();

@@ -15,6 +15,7 @@ Liora publishes three kinds of release outputs:
 The reusable packaging logic lives in:
 
 - `crates/liora-packager` — package metadata, format decisions, generated backend config, manifest/checksum helpers.
+- `crates/liora-updater` — GitHub Release checks, platform asset selection, cached downloads, checksum verification, and install plans used by Gallery/Docs About panels.
 - `xtask` — command-line entry point used locally and by CI.
 - `.github/workflows/ci.yml` — ordinary quality gate for every pull request and `main` push.
 - `.github/workflows/package.yml` — GitHub Actions preview/release pipeline for native app binaries and Gallery installers.
@@ -106,7 +107,7 @@ Linux installs GTK/Wayland/X11/audio/font/icon/rpm prerequisites plus `cargo-pac
 
 macOS installs `cargo-packager`.
 
-Windows installs `cargo-packager`. Preview Windows builds intentionally use NSIS only because MSI requires a numeric-only Windows Installer version and does not accept Liora preview metadata like `0.1.2-preview.123.abcdef0`.
+Windows installs `cargo-packager`. Preview Windows builds intentionally use NSIS only because MSI requires a numeric-only Windows Installer version and does not accept Liora preview metadata like `<base-version>-preview.123.abcdef0`.
 
 ### 4. Validate and test packaging logic
 

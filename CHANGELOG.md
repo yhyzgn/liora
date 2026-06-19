@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.3 - 2026-06-19
+
+- Added publishable `liora-updater` crate and default `liora::updater` facade export for GitHub Release checks, platform asset selection, cached downloads, SHA-256 verification, and explicit install plans.
+- Added About / update panels to Liora Gallery and Liora Docs with startup auto-check/download behavior and user-visible install actions.
+- Updated all workspace package versions and internal Liora dependency versions to `0.1.3`.
+- Updated release/CI workflows to Node 24 action generations and included `liora-updater` in SDK crates publishing.
+- Cleaned Rust warnings in component/app async update paths and form-control listeners.
+
 Liora currently records detailed implementation history in `.memory/sessions.md` and phase-level plans under `.prompt/`.
 
 ## Unreleased

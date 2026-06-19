@@ -76,8 +76,8 @@ pub fn paint_chart_label_aligned(
     text: SharedString,
     origin: gpui::Point<Pixels>,
     color: Hsla,
-    align: TextAlign,
-    align_width: Option<Pixels>,
+    _align: TextAlign,
+    _align_width: Option<Pixels>,
     window: &mut Window,
     cx: &mut App,
 ) {

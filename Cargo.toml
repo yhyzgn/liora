@@ -8,6 +8,7 @@ members = [
     "crates/liora-components",
     "crates/liora-tray",
     "crates/liora-packager",
+    "crates/liora-updater",
     "xtask",
     "crates/liora-icons",
     "crates/liora-icons-lucide",

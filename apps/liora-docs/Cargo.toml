@@ -1,6 +1,6 @@
 [package]
 name = "liora-docs"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2024"
 description = "Native GPUI documentation application for Liora."
 license = "LicenseRef-Liora"
@@ -24,6 +24,7 @@ liora-core = { path = "../../crates/liora-core" }
 liora-theme = { path = "../../crates/liora-theme" }
 liora-components = { path = "../../crates/liora-components" }
 liora-tray = { path = "../../crates/liora-tray" }
+liora-updater = { path = "../../crates/liora-updater" }
 liora-gallery = { path = "../liora-gallery" }
 liora-icons = { path = "../../crates/liora-icons" }
 liora-icons-lucide = { path = "../../crates/liora-icons-lucide" }

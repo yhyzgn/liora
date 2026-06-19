@@ -595,7 +595,7 @@ impl Render for RadioGroup {
             col = col.track_focus(&self.focus_handle);
             col = col.on_mouse_down(
                 MouseButton::Left,
-                cx.listener(|this, _, window, cx| {
+                cx.listener(|this, _, window, _cx| {
                     window.focus(&this.focus_handle);
                 }),
             );

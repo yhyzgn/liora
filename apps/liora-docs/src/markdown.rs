@@ -22,7 +22,12 @@ use liora_core::{
 };
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
+use liora_updater::{
+    AssetKind, InstallAction, InstallPlan, LioraApp, Platform, Updater, build_install_plan,
+    select_asset,
+};
 use pulldown_cmark::{CodeBlockKind, Event, HeadingLevel, Options, Parser, Tag, TagEnd};
+use std::process::Command;
 
 const INTRO_DOC: &str = include_str!("../content/pages/overview.md");
 const QUICK_START_DOC: &str = include_str!("../content/pages/quick_start.md");
@@ -7131,12 +7136,14 @@ pub fn render_docs_shell(
     on_close: fn(&mut Window, &mut App),
     cx: &mut App,
 ) -> Entity<DocsShell> {
-    cx.new(|cx| {
+    let view = cx.new(|cx| {
         let theme_mode = cx.global::<Config>().theme_mode;
         DocsShell {
             selected: 0,
             nav_menu: None,
             page_views: vec![None; DOC_PAGES.len()],
+            update_status: UpdatePanelStatus::Idle,
+            install_plan: None,
             theme_mode,
             theme_mode_segmented: cx.new(move |_| theme_mode_segmented(theme_mode)),
             frame_mode,
@@ -7144,13 +7151,45 @@ pub fn render_docs_shell(
             on_frame_mode_change,
             on_close,
         }
-    })
+    });
+    let auto_update_view = view.clone();
+    cx.defer(move |cx| download_docs_update(auto_update_view.clone(), cx));
+    view
+}
+
+#[derive(Debug)]
+enum UpdatePanelStatus {
+    Idle,
+    Checking,
+    UpToDate(String),
+    Available(String),
+    Downloading(String),
+    Downloaded(String),
+    Installing(String),
+    Error(String),
+}
+
+impl UpdatePanelStatus {
+    fn label(&self) -> String {
+        match self {
+            Self::Idle => "未检查更新 / Not checked".into(),
+            Self::Checking => "正在检查 GitHub Release…".into(),
+            Self::UpToDate(version) => format!("已是最新版本 {version}"),
+            Self::Available(version) => format!("发现新版本 {version}"),
+            Self::Downloading(version) => format!("正在下载并校验 {version}…"),
+            Self::Downloaded(version) => format!("已下载并通过 SHA-256 校验：{version}"),
+            Self::Installing(detail) => format!("安装计划：{detail}"),
+            Self::Error(error) => format!("更新失败：{error}"),
+        }
+    }
 }
 
 pub struct DocsShell {
     selected: usize,
     nav_menu: Option<Entity<Menu>>,
     page_views: Vec<Option<Entity<DocsPageView>>>,
+    update_status: UpdatePanelStatus,
+    install_plan: Option<InstallPlan>,
     theme_mode: ThemeMode,
     theme_mode_segmented: Entity<Segmented>,
     frame_mode: WindowFrameMode,
@@ -7167,6 +7206,12 @@ impl Render for DocsShell {
         let nav_menu = self.nav_menu(selected, cx);
         let page = &DOC_PAGES[selected];
         let page_view = self.page_view(selected, cx);
+        let content_body = if page.title == "About" {
+            self.render_about_panel(page_view.clone(), cx)
+                .into_any_element()
+        } else {
+            page_view.into_any_element()
+        };
         let theme = cx.global::<Config>().theme.clone();
         self.wire_shell_controls(cx);
 
@@ -7215,7 +7260,7 @@ impl Render for DocsShell {
                     .bg(theme.neutral.card)
                     .overflow_hidden()
                     .child(Title::new(page.title).h3())
-                    .child(div().flex_1().min_h_0().child(page_view)),
+                    .child(div().flex_1().min_h_0().child(content_body)),
             )
             .overlay(DocsPortalLayer);
 
@@ -7367,6 +7412,152 @@ impl RenderOnce for DocsPortalLayer {
     }
 }
 
+fn current_platform_label() -> &'static str {
+    match Platform::current() {
+        Some(Platform::LinuxX64) => "Linux x64",
+        Some(Platform::MacosArm64) => "macOS arm64",
+        Some(Platform::WindowsX64) => "Windows x64",
+        None => "Unsupported platform",
+    }
+}
+
+fn update_cache_dir(app: LioraApp) -> std::path::PathBuf {
+    std::env::var_os("LIORA_UPDATE_CACHE")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| std::env::temp_dir().join("liora-updates"))
+        .join(app.release_name())
+        .join(env!("CARGO_PKG_VERSION"))
+}
+
+fn check_docs_update(docs: Entity<DocsShell>, cx: &mut App) {
+    let _ = docs.update(cx, |docs, cx| {
+        docs.update_status = UpdatePanelStatus::Checking;
+        docs.install_plan = None;
+        cx.notify();
+    });
+    let async_cx = cx.to_async();
+    let executor = cx.background_executor().clone();
+    cx.foreground_executor()
+        .spawn(async move {
+            let result = executor
+                .spawn(async move {
+                    Updater::default()
+                        .update_available(&format!("v{}", env!("CARGO_PKG_VERSION")), false)
+                })
+                .await;
+            let _ = async_cx.update(move |cx| {
+                let _ = docs.update(cx, |docs, cx| {
+                    docs.update_status = match result {
+                        Ok(None) => UpdatePanelStatus::UpToDate(env!("CARGO_PKG_VERSION").into()),
+                        Ok(Some(release)) => UpdatePanelStatus::Available(release.tag),
+                        Err(error) => UpdatePanelStatus::Error(error.to_string()),
+                    };
+                    cx.notify();
+                });
+            });
+        })
+        .detach();
+}
+
+fn download_docs_update(docs: Entity<DocsShell>, cx: &mut App) {
+    let _ = docs.update(cx, |docs, cx| {
+        docs.update_status = UpdatePanelStatus::Downloading("latest".into());
+        cx.notify();
+    });
+    let async_cx = cx.to_async();
+    let executor = cx.background_executor().clone();
+    cx.foreground_executor()
+        .spawn(async move {
+            let result = executor
+                .spawn(async move { download_docs_update_sync() })
+                .await;
+            let _ = async_cx.update(move |cx| {
+                let _ = docs.update(cx, |docs, cx| {
+                    match result {
+                        Ok(Some((version, plan))) => {
+                            docs.install_plan = Some(plan);
+                            docs.update_status = UpdatePanelStatus::Downloaded(version);
+                        }
+                        Ok(None) => {
+                            docs.update_status =
+                                UpdatePanelStatus::UpToDate(env!("CARGO_PKG_VERSION").into());
+                        }
+                        Err(error) => {
+                            docs.update_status = UpdatePanelStatus::Error(error.to_string())
+                        }
+                    }
+                    cx.notify();
+                });
+            });
+        })
+        .detach();
+}
+
+fn download_docs_update_sync() -> Result<Option<(String, InstallPlan)>, liora_updater::UpdaterError>
+{
+    let Some(platform) = Platform::current() else {
+        return Ok(None);
+    };
+    let updater = Updater::default();
+    let Some(release) =
+        updater.update_available(&format!("v{}", env!("CARGO_PKG_VERSION")), false)?
+    else {
+        return Ok(None);
+    };
+    let Some(asset) = select_asset(&release, LioraApp::Docs, platform, AssetKind::RawExecutable)
+    else {
+        return Ok(None);
+    };
+    let path =
+        updater.download_verified_asset(&release, &asset, &update_cache_dir(LioraApp::Docs))?;
+    let plan = build_install_plan(LioraApp::Docs, platform, &asset, path);
+    Ok(Some((release.tag, plan)))
+}
+
+fn install_docs_update(docs: Entity<DocsShell>, cx: &mut App) {
+    let _ = docs.update(cx, |docs, cx| {
+        let Some(plan) = &docs.install_plan else {
+            docs.update_status = UpdatePanelStatus::Error("请先下载并校验更新".into());
+            cx.notify();
+            return;
+        };
+        let description = install_plan_description(plan);
+        match &plan.action {
+            InstallAction::RunExecutable { program, args } => {
+                match Command::new(program).args(args).spawn() {
+                    Ok(_) => docs.update_status = UpdatePanelStatus::Installing(description),
+                    Err(error) => docs.update_status = UpdatePanelStatus::Error(error.to_string()),
+                }
+            }
+            InstallAction::OpenWithSystem { program, args } => {
+                match Command::new(program).args(args).spawn() {
+                    Ok(_) => docs.update_status = UpdatePanelStatus::Installing(description),
+                    Err(error) => docs.update_status = UpdatePanelStatus::Error(error.to_string()),
+                }
+            }
+            InstallAction::Manual { .. } => {
+                docs.update_status = UpdatePanelStatus::Installing(description);
+            }
+        }
+        cx.notify();
+    });
+}
+
+fn install_plan_description(plan: &InstallPlan) -> String {
+    match &plan.action {
+        InstallAction::RunExecutable { program, args } if args.is_empty() => {
+            format!("Run {}", program.display())
+        }
+        InstallAction::RunExecutable { program, args } => {
+            format!("Run {} {}", program.display(), args.join(" "))
+        }
+        InstallAction::OpenWithSystem { program, args } => {
+            format!("Run {} {}", program, args.join(" "))
+        }
+        InstallAction::Manual { description } => description.clone(),
+    }
+}
+
 fn theme_mode_segmented(mode: ThemeMode) -> Segmented {
     Segmented::new(vec![
         SegmentedOption::new("System", ThemeMode::System.value()),
@@ -7378,6 +7569,71 @@ fn theme_mode_segmented(mode: ThemeMode) -> Segmented {
 }
 
 impl DocsShell {
+    fn render_about_panel(
+        &self,
+        page_view: Entity<DocsPageView>,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement {
+        let theme = cx.global::<Config>().theme.clone();
+        let docs = cx.entity().clone();
+        let can_install = self.install_plan.is_some();
+
+        Space::new()
+            .vertical()
+            .gap_lg()
+            .child(page_view)
+            .child(
+                Card::new(
+                    Space::new()
+                        .vertical()
+                        .gap_md()
+                        .child(Title::new("About / Updates").h3())
+                        .child(
+                            Space::new()
+                                .gap_sm()
+                                .wrap()
+                                .child(
+                                    LioraTag::new(format!("Docs {}", env!("CARGO_PKG_VERSION")))
+                                        .success()
+                                        .round(true),
+                                )
+                                .child(LioraTag::new("GitHub Releases").round(true))
+                                .child(LioraTag::new(current_platform_label()).round(true)),
+                        )
+                        .child(Paragraph::with_text(
+                            "Docs 会自动检查 GitHub Releases。Docs 当前按项目发布策略提供跨平台原始可执行程序；下载后会校验 SHA256SUMS.txt，替换正在运行的二进制文件需要由外部启动器或用户手动完成。",
+                        ))
+                        .child(
+                            Text::new(self.update_status.label())
+                                .text_color(theme.primary.base)
+                                .bold(),
+                        )
+                        .child(
+                            Space::new()
+                                .gap_sm()
+                                .wrap()
+                                .child(Button::new("检查更新 / Check").primary().on_click({
+                                    let docs = docs.clone();
+                                    move |_, _window, cx| check_docs_update(docs.clone(), cx)
+                                }))
+                                .child(Button::new("下载更新 / Download").on_click({
+                                    let docs = docs.clone();
+                                    move |_, _window, cx| download_docs_update(docs.clone(), cx)
+                                }))
+                                .child(
+                                    Button::new("安装计划 / Install Plan")
+                                        .disabled(!can_install)
+                                        .on_click({
+                                            let docs = docs.clone();
+                                            move |_, _window, cx| install_docs_update(docs.clone(), cx)
+                                        }),
+                                ),
+                        ),
+                )
+                .no_shadow(),
+            )
+    }
+
     fn wire_shell_controls(&self, cx: &mut Context<Self>) {
         let docs = cx.entity().clone();
         cx.update_entity(&self.theme_mode_segmented, |segmented, _cx| {
@@ -7588,6 +7844,7 @@ mod tests {
         assert!(ARCHITECTURE_DOC.contains("Workspace 分层"));
         assert!(ARCHITECTURE_DOC.contains("Live Demo 与代码片段"));
         assert!(ABOUT_DOC.contains("贡献文档的规则"));
+        assert!(ABOUT_DOC.contains("GitHub Releases"));
     }
 
     #[test]
@@ -8389,6 +8646,8 @@ mod tests {
         assert!(ok_branch.contains("window.activate_window()"));
         assert!(source.contains("frame_mode_switch"));
         assert!(source.contains("Menu::new()"));
+        assert!(source.contains("check_docs_update"));
+        assert!(source.contains("About / Updates"));
         assert!(source.contains(".aside_scroll()"));
         assert!(source.contains("VirtualizedList::new"));
         assert!(source.contains("virtual_list: Entity<VirtualizedList>"));

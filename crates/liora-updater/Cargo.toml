@@ -1,0 +1,16 @@
+[package]
+name = "liora-updater"
+version = "0.1.3"
+edition = "2024"
+description = "Safe GitHub release updater planning library for Liora desktop applications."
+license-file = "../../LICENSE.md"
+repository = "https://github.com/yhyzgn/liora"
+publish = true
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+sha2 = "0.10"
+thiserror = { workspace = true }
+ureq = "2"
+

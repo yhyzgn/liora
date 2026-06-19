@@ -47,7 +47,7 @@ Rust desktop teams often need more than a handful of primitives. Liora focuses o
 | Enterprise component coverage | Element Plus-style categories and APIs across forms, feedback, data, navigation, charts, and advanced controls. |
 | Real app surfaces | `liora-gallery` and `liora-docs` show complete native application setup, theme switching, search/filtering, tray behavior, docs rendering, and dashboard-style composition. |
 | Theming | Light, Dark, and System theme modes with semantic tokens and component-level variants. |
-| One dependency for apps | `cargo add liora` exposes the maintained SDK facade: core, theme, components, icons, tray, and packaging helpers. |
+| One dependency for apps | `cargo add liora` exposes the maintained SDK facade: core, theme, components, icons, tray, packaging, and updater helpers. |
 | Native distribution | `liora-packager` + `xtask package` validate installer information, manifests, checksums, signing policy, and package generation plans. |
 | Clear architecture boundary | Reusable components stay in `liora-components`; product-specific data models and screen composition stay in applications. |
 
@@ -62,6 +62,7 @@ Rust desktop teams often need more than a handful of primitives. Liora focuses o
 - **Native docs renderer**: Markdown is parsed as input and rendered into Liora/GPUI native nodes; code snippets live outside Markdown and are compile-checked.
 - **System tray facade**: `liora-tray` wraps `tray-icon` + `muda` for dynamic icons, nested menus, checkbox items, stable commands, and process-resident GPUI apps.
 - **Installer pipeline**: package information validation, `cargo-packager` config generation, RPM supplemental config, portable `.tar.gz`, manifests, checksums, release notes, and CI validation gates.
+- **Updater pipeline**: `liora-updater` checks GitHub Releases, selects the right Docs/Gallery asset, downloads into a cache, verifies `SHA256SUMS.txt`, and returns an explicit install plan.
 - **Quality gates**: workspace fmt/check/test, docs snippet checks, package validation, release-readiness checks, and GUI startup smoke commands.
 
 ## Component coverage
@@ -89,7 +90,8 @@ liora/
 │   ├── liora-icons/           # native icon trait and helpers
 │   ├── liora-icons-lucide/    # generated Lucide icon names and paths
 │   ├── liora-tray/            # tray-icon + muda facade for GPUI apps
-│   └── liora-packager/        # package info, manifests, checksums, backend config
+│   ├── liora-packager/        # package info, manifests, checksums, backend config
+│   └── liora-updater/         # GitHub Release checks, downloads, checksums, install plans
 ├── apps/
 │   ├── liora-gallery/         # native component gallery and showcase application
 │   └── liora-docs/            # native documentation app and Markdown renderer
@@ -111,6 +113,16 @@ cargo add liora
 ```
 
 Use lower-level crates such as `liora-components` or `liora-packager` only when a workspace needs a narrower dependency surface.
+
+### Updater module
+
+`liora-updater` is included in the default `liora` facade and can also be used directly:
+
+```bash
+cargo add liora-updater
+```
+
+It provides GitHub Release update checks for Liora apps, platform-aware asset selection, cached downloads, SHA-256 verification from `SHA256SUMS.txt`, and explicit install plans. Gallery and Docs automatically check for newer releases and download verified assets into the update cache from their About panels/startup flow. Installing remains a visible user action because some installer formats require OS elevation or replacing a running executable.
 
 ### 3. Run the native Gallery
 
