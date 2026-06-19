@@ -378,7 +378,7 @@ jobs:
 
           # Gallery installer/package artifacts only. Do not upload generated .md notes,
           # backend TOML configs, package manifests, or portable staging internals.
-          for artifact in $(find dist/liora-release-gallery-packages-* -type f | sort); do
+          while IFS= read -r artifact; do
             name="$(basename "$artifact")"
             case "$artifact" in
               */portable-staging/*|*.md|*.toml|*.json|*/checksums.txt) continue ;;
@@ -413,7 +413,7 @@ jobs:
                   "Gallery installer" "windows" "Windows MSI installer package."
                 ;;
             esac
-          done
+          done < <(find dist/liora-release-gallery-packages-* -type f | sort)
 
           if [[ ! -s "$asset_index" ]]; then
             echo "No distributable release assets were selected from dist/." >&2
@@ -635,4 +635,3 @@ jobs:
               --title "Liora ${tag}" \
               --notes-file release-notes.md
           fi
-
