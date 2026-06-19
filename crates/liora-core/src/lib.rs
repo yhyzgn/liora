@@ -151,10 +151,19 @@ pub struct LinuxDesktopIdentity<'a> {
     pub app_id: &'a str,
     /// Complete `.desktop` file contents for this app.
     pub desktop_entry: Cow<'a, str>,
-    /// PNG icon bytes, preferably 512×512, installed into hicolor.
-    pub png_icon: &'a [u8],
+    /// PNG icon bytes installed into hicolor size directories.
+    pub png_icons: &'a [LinuxDesktopPngIcon<'a>],
     /// SVG icon bytes installed into hicolor scalable apps.
     pub svg_icon: &'a [u8],
+}
+
+/// PNG icon bytes for one hicolor app-icon size bucket.
+#[derive(Clone, Copy, Debug)]
+pub struct LinuxDesktopPngIcon<'a> {
+    /// Square icon size in logical pixels.
+    pub size: u16,
+    /// PNG bytes for this size, normally 8-bit RGBA for maximum shell support.
+    pub bytes: &'a [u8],
 }
 
 /// Builds a user-level Linux desktop entry for a running Liora app.
@@ -176,6 +185,31 @@ pub fn linux_desktop_entry(
         "[Desktop Entry]\nVersion=1.0\nType=Application\nName={name}\nGenericName={generic_name}\nComment={comment}\nExec={}\nIcon={icon}\nCategories={categories}\nKeywords={keywords}\nStartupNotify=true\nTerminal=false\n",
         desktop_exec_value(executable),
     )
+}
+
+/// Returns the user-scoped hicolor app-icon path for an app id and icon size.
+///
+/// Use this when generating a development `.desktop` entry that should bypass
+/// desktop-environment icon-theme cache latency by pointing `Icon=` at the
+/// exact PNG file Liora registers.
+pub fn linux_desktop_png_icon_path(app_id: &str, size: u16) -> Option<std::path::PathBuf> {
+    #[cfg(any(target_os = "linux", target_os = "freebsd"))]
+    {
+        linux_xdg_data_home().ok().map(|data_home| {
+            data_home
+                .join("icons")
+                .join("hicolor")
+                .join(format!("{size}x{size}"))
+                .join("apps")
+                .join(format!("{app_id}.png"))
+        })
+    }
+
+    #[cfg(not(any(target_os = "linux", target_os = "freebsd")))]
+    {
+        let _ = (app_id, size);
+        None
+    }
 }
 
 fn desktop_exec_value(executable: &std::path::Path) -> String {
@@ -201,7 +235,7 @@ fn desktop_exec_value(executable: &std::path::Path) -> String {
 pub fn ensure_linux_desktop_identity(identity: LinuxDesktopIdentity<'_>) -> std::io::Result<()> {
     #[cfg(any(target_os = "linux", target_os = "freebsd"))]
     {
-        ensure_linux_desktop_identity_impl(linux_xdg_data_home()?, identity)
+        ensure_linux_desktop_identity_impl(linux_xdg_data_home()?, identity, true)
     }
 
     #[cfg(not(any(target_os = "linux", target_os = "freebsd")))]
@@ -215,23 +249,26 @@ pub fn ensure_linux_desktop_identity(identity: LinuxDesktopIdentity<'_>) -> std:
 fn ensure_linux_desktop_identity_impl(
     data_home: std::path::PathBuf,
     identity: LinuxDesktopIdentity<'_>,
+    refresh_cache: bool,
 ) -> std::io::Result<()> {
-    write_if_changed(
+    let mut changed = write_if_changed(
         &data_home
             .join("applications")
             .join(format!("{}.desktop", identity.app_id)),
         identity.desktop_entry.as_bytes(),
     )?;
-    write_if_changed(
-        &data_home
-            .join("icons")
-            .join("hicolor")
-            .join("512x512")
-            .join("apps")
-            .join(format!("{}.png", identity.app_id)),
-        identity.png_icon,
-    )?;
-    write_if_changed(
+    for icon in identity.png_icons {
+        changed |= write_if_changed(
+            &data_home
+                .join("icons")
+                .join("hicolor")
+                .join(format!("{}x{}", icon.size, icon.size))
+                .join("apps")
+                .join(format!("{}.png", identity.app_id)),
+            icon.bytes,
+        )?;
+    }
+    changed |= write_if_changed(
         &data_home
             .join("icons")
             .join("hicolor")
@@ -240,8 +277,42 @@ fn ensure_linux_desktop_identity_impl(
             .join(format!("{}.svg", identity.app_id)),
         identity.svg_icon,
     )?;
+    changed |= ensure_hicolor_index_theme(&data_home)?;
+    if changed && refresh_cache {
+        refresh_linux_desktop_identity_cache(&data_home);
+    }
     Ok(())
 }
+
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
+fn refresh_linux_desktop_identity_cache(data_home: &std::path::Path) {
+    let apps_dir = data_home.join("applications");
+    let _ = std::fs::remove_file(
+        data_home
+            .join("icons")
+            .join("hicolor")
+            .join(".icon-theme.cache"),
+    );
+    let _ = std::process::Command::new("update-desktop-database")
+        .arg(&apps_dir)
+        .status();
+    for command in ["kbuildsycoca6", "kbuildsycoca5"] {
+        let _ = std::process::Command::new(command)
+            .arg("--noincremental")
+            .status();
+    }
+}
+
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
+fn ensure_hicolor_index_theme(data_home: &std::path::Path) -> std::io::Result<bool> {
+    write_if_changed(
+        &data_home.join("icons").join("hicolor").join("index.theme"),
+        HICOLOR_INDEX_THEME.as_bytes(),
+    )
+}
+
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
+const HICOLOR_INDEX_THEME: &str = "[Icon Theme]\nName=Hicolor\nComment=Fallback icon theme\nHidden=true\nDirectories=16x16/apps,24x24/apps,32x32/apps,48x48/apps,64x64/apps,128x128/apps,256x256/apps,512x512/apps,scalable/apps\n\n[16x16/apps]\nSize=16\nContext=Applications\nType=Threshold\n\n[24x24/apps]\nSize=24\nContext=Applications\nType=Threshold\n\n[32x32/apps]\nSize=32\nContext=Applications\nType=Threshold\n\n[48x48/apps]\nSize=48\nContext=Applications\nType=Threshold\n\n[64x64/apps]\nSize=64\nContext=Applications\nType=Threshold\n\n[128x128/apps]\nSize=128\nContext=Applications\nType=Threshold\n\n[256x256/apps]\nSize=256\nContext=Applications\nType=Threshold\n\n[512x512/apps]\nSize=512\nContext=Applications\nType=Threshold\n\n[scalable/apps]\nSize=512\nMinSize=16\nMaxSize=512\nContext=Applications\nType=Scalable\n";
 
 #[cfg(any(target_os = "linux", target_os = "freebsd"))]
 fn linux_xdg_data_home() -> std::io::Result<std::path::PathBuf> {
@@ -260,14 +331,15 @@ fn linux_xdg_data_home() -> std::io::Result<std::path::PathBuf> {
 }
 
 #[cfg(any(target_os = "linux", target_os = "freebsd"))]
-fn write_if_changed(path: &std::path::Path, bytes: &[u8]) -> std::io::Result<()> {
+fn write_if_changed(path: &std::path::Path, bytes: &[u8]) -> std::io::Result<bool> {
     if std::fs::read(path).is_ok_and(|existing| existing == bytes) {
-        return Ok(());
+        return Ok(false);
     }
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)?;
     }
-    std::fs::write(path, bytes)
+    std::fs::write(path, bytes)?;
+    Ok(true)
 }
 
 fn startup_system_appearance(cx: &App) -> WindowAppearance {
@@ -785,9 +857,13 @@ mod desktop_identity_tests {
                 desktop_entry: Cow::Borrowed(
                     "[Desktop Entry]\nType=Application\nName=Liora Test\nIcon=liora-test\n",
                 ),
-                png_icon: b"png",
+                png_icons: &[LinuxDesktopPngIcon {
+                    size: 48,
+                    bytes: b"png",
+                }],
                 svg_icon: b"svg",
             },
+            false,
         )
         .expect("identity registration should write into the supplied XDG data home");
 
@@ -797,7 +873,7 @@ mod desktop_identity_tests {
             "[Desktop Entry]\nType=Application\nName=Liora Test\nIcon=liora-test\n"
         );
         assert_eq!(
-            std::fs::read(temp_root.join("icons/hicolor/512x512/apps/liora-test.png"))
+            std::fs::read(temp_root.join("icons/hicolor/48x48/apps/liora-test.png"))
                 .expect("PNG hicolor icon should be installed"),
             b"png"
         );
@@ -805,6 +881,11 @@ mod desktop_identity_tests {
             std::fs::read(temp_root.join("icons/hicolor/scalable/apps/liora-test.svg"))
                 .expect("SVG hicolor icon should be installed"),
             b"svg"
+        );
+        assert!(
+            std::fs::read_to_string(temp_root.join("icons/hicolor/index.theme"))
+                .expect("hicolor index theme should be installed")
+                .contains("Directories=16x16/apps")
         );
 
         let _ = std::fs::remove_dir_all(temp_root);

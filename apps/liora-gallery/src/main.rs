@@ -8,9 +8,9 @@ use liora_components::{
     apply_window_frame_mode, frame_mode_switch_row, init_liora, toast_info, toast_success,
 };
 use liora_core::{
-    Config, LinuxDesktopIdentity, PassivePortal, Portal, ThemeMode, apply_theme_mode,
-    attach_system_theme_observer, ensure_linux_desktop_identity, linux_desktop_entry,
-    startup_maximized_window_bounds,
+    Config, LinuxDesktopIdentity, LinuxDesktopPngIcon, PassivePortal, Portal, ThemeMode,
+    apply_theme_mode, attach_system_theme_observer, ensure_linux_desktop_identity,
+    linux_desktop_entry, linux_desktop_png_icon_path, startup_maximized_window_bounds,
 };
 use liora_gallery::demos;
 use liora_tray::{
@@ -174,6 +174,10 @@ fn gallery_window_options(cx: &App, frame_mode: WindowFrameMode) -> WindowOption
 }
 
 fn register_gallery_desktop_identity() {
+    let desktop_icon = linux_desktop_png_icon_path("liora-gallery", 512)
+        .map(|path| path.to_string_lossy().into_owned())
+        .unwrap_or_else(|| "liora-gallery".to_string());
+
     let desktop_entry = std::env::current_exe()
         .map(|executable| {
             linux_desktop_entry(
@@ -181,7 +185,7 @@ fn register_gallery_desktop_identity() {
                 "Component Gallery",
                 "Native GPUI component gallery for Liora.",
                 &executable,
-                "liora-gallery",
+                &desktop_icon,
                 "Development;Utility;",
                 "gpui;liora;components;gallery;",
             )
@@ -196,7 +200,40 @@ fn register_gallery_desktop_identity() {
     if let Err(error) = ensure_linux_desktop_identity(LinuxDesktopIdentity {
         app_id: "liora-gallery",
         desktop_entry,
-        png_icon: include_bytes!("../assets/app-icons/liora-gallery.png"),
+        png_icons: &[
+            LinuxDesktopPngIcon {
+                size: 16,
+                bytes: include_bytes!("../assets/app-icons/liora-gallery-16.png"),
+            },
+            LinuxDesktopPngIcon {
+                size: 24,
+                bytes: include_bytes!("../assets/app-icons/liora-gallery-24.png"),
+            },
+            LinuxDesktopPngIcon {
+                size: 32,
+                bytes: include_bytes!("../assets/app-icons/liora-gallery-32.png"),
+            },
+            LinuxDesktopPngIcon {
+                size: 48,
+                bytes: include_bytes!("../assets/app-icons/liora-gallery-48.png"),
+            },
+            LinuxDesktopPngIcon {
+                size: 64,
+                bytes: include_bytes!("../assets/app-icons/liora-gallery-64.png"),
+            },
+            LinuxDesktopPngIcon {
+                size: 128,
+                bytes: include_bytes!("../assets/app-icons/liora-gallery-128.png"),
+            },
+            LinuxDesktopPngIcon {
+                size: 256,
+                bytes: include_bytes!("../assets/app-icons/liora-gallery-256.png"),
+            },
+            LinuxDesktopPngIcon {
+                size: 512,
+                bytes: include_bytes!("../assets/app-icons/liora-gallery.png"),
+            },
+        ],
         svg_icon: include_bytes!("../assets/app-icons/liora-gallery.svg"),
     }) {
         eprintln!("failed to register Liora Gallery desktop identity: {error}");
@@ -615,6 +652,10 @@ mod shell_tests {
         assert!(source.contains("register_gallery_desktop_identity();"));
         assert!(source.contains("app_id: \"liora-gallery\""));
         assert!(source.contains("packaging/linux/liora-gallery.desktop"));
+        assert!(source.contains("LinuxDesktopPngIcon"));
+        assert!(source.contains("../assets/app-icons/liora-gallery-16.png"));
+        assert!(source.contains("../assets/app-icons/liora-gallery-48.png"));
+        assert!(source.contains("../assets/app-icons/liora-gallery-128.png"));
         assert!(source.contains("../assets/app-icons/liora-gallery.png"));
         assert!(source.contains("../assets/app-icons/liora-gallery.svg"));
         assert!(source.contains("gallery_status_icon"));
