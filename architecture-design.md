@@ -85,8 +85,8 @@ liora/
 | `liora-icons-lucide` | `liora-icons` | build.rs 代码生成 → IconName 枚举（1,703 Lucide 图标），实现 IntoIconPath |
 | `liora-core` | `gpui`, `liora-theme` | Config(Global)、init_liora()、ContextExt trait、ElementExt trait、Z-Index 管理器、工具函数 |
 | `liora-components` | `gpui`, `liora-core`, `liora-theme`, `liora-icons` | 全部业务组件（Button/Input/Dialog/Table 等） |
-| `liora-gallery` | `gpui`(default), `gpui_platform`, 全部 liora crates | 组件看板，展示已实现组件 Demo |
-| `liora-docs` | `gpui`(default), `gpui_platform`, 全部 liora crates；P8 增加 `pulldown-cmark` | 官方原生文档主程序，包含 Markdown 渲染与 Live Demo 注入 |
+| `liora-gallery` | `gpui`(default), 全部 liora crates | 组件看板，展示已实现组件 Demo |
+| `liora-docs` | `gpui`(default), 全部 liora crates；P8 增加 `pulldown-cmark` | 官方原生文档主程序，包含 Markdown 渲染与 Live Demo 注入 |
 | `liora-tray` | `tray-icon`, `muda`(via tray-icon re-export), `image` | P11 系统托盘/进程常驻 facade：动态图标、CheckBox、递归子菜单、稳定命令桥接 |
 | `liora-components::chart*` | `gpui` 原生 `canvas`/`PathBuilder`/paint API | P10 统计图控件基础设施与 Line/Area/Bar/Pie/Ring/Sparkline，含降采样与 hover hit testing |
 | `liora-packager` | `serde`, `sha2`, `toml` | P12 打包领域逻辑：app metadata、format model、checksum、manifest、backend config |
@@ -105,8 +105,7 @@ liora-theme/Cargo.toml: gpui.workspace = true
 # App crate — 显式启用所需平台 feature
 liora-gallery/Cargo.toml:
   gpui = { workspace = true, features = ["wayland", "x11", "font-kit"] }
-  gpui_platform = { workspace = true, features = ["wayland", "x11"] }
-```
+  ```
 
 ### 2.5 系统托盘依赖策略（P11）
 
@@ -116,7 +115,7 @@ liora-gallery/Cargo.toml:
 - 通过 `tray-icon::menu` re-export 使用 `muda` 菜单类型，不额外引入平行菜单依赖。
 - 动态图标通过 `TrayIcon::set_icon` 封装为 `set_icon` / `set_icon_from_rgba` / `set_icon_from_path`。
 - 菜单事件映射为稳定 command id，主程序负责将 `Show/Hide/Toggle/Quit/SetIcon/Custom` 应用到 GPUI 窗口和业务状态。
-- 启用托盘的 GPUI app 必须使用 `QuitMode::Explicit` 并持有 `LioraTray` 全生命周期。
+- 启用托盘的 GPUI app 必须在应用状态中持有 `LioraTray` 全生命周期，并由应用关闭策略决定隐藏窗口或显式退出。
 - Linux 需要 GTK/AppIndicator 系统库；macOS 创建要求主线程；普通文档/demo 仅展示配置预览，避免创建真实 OS 托盘副作用。
 
 ### 2.6 原生打包架构（P12）

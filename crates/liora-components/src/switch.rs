@@ -1,3 +1,4 @@
+use crate::gpui_compat::element_id;
 use crate::motion::{MotionDuration, MotionEasing, motion_animation, slide_snap};
 use gpui::{
     AnimationExt, App, Context, FocusHandle, Focusable, Hsla, KeyBinding, MouseButton, Render,
@@ -131,7 +132,7 @@ impl Render for Switch {
                     .rounded(px(thumb_sz / 2.0))
                     .bg(thumb_color)
                     .with_animation(
-                        thumb_motion_id,
+                        element_id(thumb_motion_id),
                         motion_animation(MotionDuration::Normal, MotionEasing::Linear),
                         move |thumb, delta| {
                             let left = if (to_left - from_left).abs() < f32::EPSILON {
@@ -170,7 +171,7 @@ impl Render for Switch {
             el = el.on_mouse_down(
                 MouseButton::Left,
                 cx.listener(|this, _, window, cx| {
-                    window.focus(&this.focus_handle, cx);
+                    window.focus(&this.focus_handle);
                 }),
             );
         } else {

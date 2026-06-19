@@ -1,3 +1,4 @@
+use crate::gpui_compat::element_id;
 use crate::motion::pop_in;
 use gpui::{App, Context, IntoElement, Render, SharedString, Window, div, prelude::*, px};
 use liora_core::Config;
@@ -97,7 +98,7 @@ impl Render for Segmented {
                 let disabled = opt.disabled;
 
                 let option = div()
-                    .id(format!("{}-option-{}", self.id, i))
+                    .id(element_id(format!("{}-option-{}", self.id, i)))
                     .flex()
                     .items_center()
                     .justify_center()
@@ -134,7 +135,11 @@ impl Render for Segmented {
                     .child(div().text_sm().child(opt.label.clone()));
 
                 if is_active {
-                    pop_in(format!("{}-option-motion-{}", self.id, i), option).into_any_element()
+                    pop_in(
+                        element_id(format!("{}-option-motion-{}", self.id, i)),
+                        option,
+                    )
+                    .into_any_element()
                 } else {
                     option.into_any_element()
                 }

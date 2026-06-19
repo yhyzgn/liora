@@ -4,20 +4,17 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-gpui = { package = "open-gpui", version = "0.1", default-features = false }
-gpui_platform = { package = "open-gpui-platform", version = "0.1", default-features = false }
+# Official Zed GPUI crate. Do not use non-official forks.
+gpui = { version = "0.2", default-features = false }
 
 # Use the facade crate for application development.
-liora = { path = "../liora/crates/liora" }
+liora = { version = "0.1" }
 
 [target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
-gpui = { package = "open-gpui", version = "0.1", default-features = false, features = ["wayland", "x11", "font-kit"] }
-gpui_platform = { package = "open-gpui-platform", version = "0.1", default-features = false, features = ["wayland", "x11"] }
+gpui = { version = "0.2", default-features = false, features = ["wayland", "x11", "font-kit"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
-gpui = { package = "open-gpui", version = "0.1", default-features = false, features = ["font-kit"] }
-gpui_platform = { package = "open-gpui-platform", version = "0.1", default-features = false, features = ["font-kit"] }
+gpui = { version = "0.2", default-features = false, features = ["font-kit"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
-gpui = { package = "open-gpui", version = "0.1", default-features = false }
-gpui_platform = { package = "open-gpui-platform", version = "0.1", default-features = false }
+gpui = { version = "0.2", default-features = false }

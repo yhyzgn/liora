@@ -41,8 +41,7 @@ derive_more = { version = "2.1.1", features = ["add", "add_assign", "deref", "de
 env_logger = "0.11"
 futures = "0.3.32"
 futures-concurrency = "7.7.1"
-gpui = { package = "open-gpui", version = "0.1.0", default-features = false }
-gpui_platform = { package = "open-gpui-platform", version = "0.1.0", default-features = false }
+gpui = { version = "0.2.2", default-features = false }
 hdrhistogram = "7"
 image = "0.25.1"
 inventory = "0.3.19"

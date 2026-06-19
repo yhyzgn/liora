@@ -1,3 +1,4 @@
+use crate::gpui_compat::element_id;
 use gpui::{
     App, Component, Hsla, IntoElement, RenderOnce, SharedString, Window, div, prelude::*, px,
 };
@@ -184,7 +185,7 @@ impl RenderOnce for Calendar {
                         let in_range = is_between_or_edge(date, self.range_start, self.range_end);
                         let day_events = events.get(&date).cloned().unwrap_or_default();
                         let mut cell = div()
-                            .id(format!("calendar-cell-{}", date.format()))
+                            .id(element_id(format!("calendar-cell-{}", date.format())))
                             .min_h(px(70.0))
                             .rounded_md()
                             .border_1()

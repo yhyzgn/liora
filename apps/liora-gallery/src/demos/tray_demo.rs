@@ -115,7 +115,7 @@ impl Render for TrayDemo {
                             Space::new()
                                 .gap_sm()
                                 .wrap()
-                                .child(Tag::new("QuitMode::Explicit").warning())
+                                .child(Tag::new("App-owned close policy").warning())
                                 .child(Tag::new("TrayIcon::set_icon").success())
                                 .child(Tag::new("CheckMenuItem").info())
                                 .child(Tag::new("N-level Submenu").info()),
@@ -123,7 +123,7 @@ impl Render for TrayDemo {
                 ))
                 .child(section(
                     "状态栏驻留开关",
-                    "实际应用中可通过页面配置决定是否启用驻留：开启时使用 QuitMode::Explicit 并保持托盘可见；关闭时隐藏托盘并恢复 LastWindowClosed。",
+                    "实际应用中可通过页面配置决定是否启用驻留：开启时保留托盘并在关闭窗口时隐藏到托盘；关闭时隐藏托盘并由应用在退出动作中调用 cx.quit()。",
                     residency_preview(self.resident_enabled, self.tray_visible),
                 ))
                 .child(section(
@@ -248,11 +248,11 @@ fn residency_preview(resident_enabled: bool, tray_visible: bool) -> impl IntoEle
             .vertical()
             .gap_xs()
             .child(Text::new(format!(
-                "with_quit_mode({})",
+                "close_policy = {}",
                 if resident_enabled {
-                    "QuitMode::Explicit"
+                    "hide-to-tray"
                 } else {
-                    "QuitMode::LastWindowClosed"
+                    "exit-on-close"
                 }
             )))
             .child(Text::new(format!(
@@ -260,9 +260,9 @@ fn residency_preview(resident_enabled: bool, tray_visible: bool) -> impl IntoEle
                 if tray_visible { "true" } else { "false" }
             )))
             .child(Text::new(if resident_enabled {
-                "关闭窗口后进程继续驻留，可从状态栏恢复。"
+                "关闭窗口后保留托盘入口，可从状态栏恢复。"
             } else {
-                "最后一个窗口关闭后进程退出，不保留状态栏入口。"
+                "关闭托盘驻留后，用户退出动作应调用 cx.quit()。"
             })),
     ))
 }

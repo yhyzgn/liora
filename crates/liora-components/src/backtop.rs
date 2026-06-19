@@ -1,3 +1,4 @@
+use crate::gpui_compat::element_id;
 use crate::motion::pop_in;
 use gpui::{
     AnyElement, App, Bounds, Context, ElementId, Entity, GlobalElementId, InspectorElementId,
@@ -86,9 +87,9 @@ impl Render for Backtop {
             })
             .when(is_visible, |s| {
                 s.child(pop_in(
-                    format!("{}-btn-motion", self.id),
+                    element_id(format!("{}-btn-motion", self.id)),
                     div()
-                        .id(format!("{}-btn", self.id))
+                        .id(element_id(format!("{}-btn", self.id)))
                         .absolute()
                         .bottom(self.bottom)
                         .right(self.right)

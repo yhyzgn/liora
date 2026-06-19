@@ -1,3 +1,4 @@
+use crate::gpui_compat::element_id;
 use gpui::{
     App, Bounds, Context, Corners, Element, ElementId, GlobalElementId, Hsla, InspectorElementId,
     IntoElement, LayoutId, MouseButton, Pixels, Point, Render, RenderImage, Rgba, SharedString,
@@ -388,7 +389,7 @@ impl Render for ColorPicker {
             .when_some(self.width, |s, width| s.w(width))
             .child(
                 div()
-                    .id(format!("{}-trigger", id))
+                    .id(element_id(format!("{}-trigger", id)))
                     .relative()
                     .w(px(40.0))
                     .h(px(40.0))
@@ -479,7 +480,7 @@ fn render_color_panel(
     picker: gpui::Entity<ColorPicker>,
 ) -> gpui::Stateful<gpui::Div> {
     div()
-        .id(format!("{}-panel", id))
+        .id(element_id(format!("{}-panel", id)))
         .occlude()
         .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
         .w(px(326.0))
@@ -527,7 +528,7 @@ fn render_color_panel(
                     move |(index, color)| {
                         let hsla = hex_to_hsla(&color).unwrap_or(theme.primary.base);
                         div()
-                            .id(format!("{}-preset-{}", id, index))
+                            .id(element_id(format!("{}-preset-{}", id, index)))
                             .w(px(20.0))
                             .h(px(20.0))
                             .rounded(px(4.0))
@@ -571,7 +572,7 @@ fn sv_panel(
     let picker_for_click = picker.clone();
     let picker_for_drag = picker.clone();
     div()
-        .id(id)
+        .id(element_id(id))
         .w(px(280.0))
         .h(px(180.0))
         .cursor_pointer()
@@ -605,7 +606,7 @@ fn hue_bar(
     let picker_for_click = picker.clone();
     let picker_for_drag = picker.clone();
     div()
-        .id(id)
+        .id(element_id(id))
         .w(px(14.0))
         .h(px(180.0))
         .rounded(px(4.0))
@@ -639,7 +640,7 @@ fn alpha_bar(
     let picker_for_click = picker.clone();
     let picker_for_drag = picker.clone();
     div()
-        .id(id)
+        .id(element_id(id))
         .w_full()
         .h(px(14.0))
         .rounded(px(3.0))

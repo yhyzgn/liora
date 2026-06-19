@@ -92,7 +92,7 @@ impl VirtualizedList {
             return;
         }
         self.item_spacing = spacing;
-        self.list_state.remeasure();
+        self.list_state.reset(self.item_count);
     }
 
     pub fn set_overdraw(&mut self, overdraw: impl Into<Pixels>) {
@@ -109,7 +109,7 @@ impl VirtualizedList {
             return;
         }
         self.height = height;
-        self.list_state.remeasure();
+        self.list_state.reset(self.item_count);
     }
 
     pub fn set_draggable(&mut self, draggable: bool) {
@@ -173,7 +173,7 @@ impl VirtualizedList {
 
         if self.drag_state.over_index() != Some(target) {
             self.drag_state.set_over(target);
-            self.list_state.remeasure();
+            self.list_state.reset(self.item_count);
             cx.notify();
         }
     }
@@ -223,7 +223,7 @@ impl VirtualizedList {
         self.drag_reference_bounds.clear();
         if from != to {
             if reorder_indices(&mut self.order, from, to) {
-                self.list_state.remeasure();
+                self.list_state.reset(self.item_count);
             }
             if let Some(callback) = self.on_reorder.clone() {
                 callback(from, to, window, cx);
@@ -261,12 +261,12 @@ impl VirtualizedList {
     /// Updating the render closure alone does not remeasure automatically, so
     /// callers that know item heights changed can opt into the heavier work.
     pub fn remeasure(&self) {
-        self.list_state.remeasure();
+        self.list_state.reset(self.item_count);
     }
 
     /// Mark one item range for remeasurement while preserving proportional scroll.
     pub fn remeasure_items(&self, range: std::ops::Range<usize>) {
-        self.list_state.remeasure_items(range);
+        self.list_state.splice(range.clone(), range.len());
     }
 }
 

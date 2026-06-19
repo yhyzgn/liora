@@ -554,7 +554,7 @@ impl Input {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        window.focus(&self.focus_handle, cx);
+        window.focus(&self.focus_handle);
         if self.value.is_empty() {
             self.move_to(0, cx);
             return;
@@ -1156,7 +1156,7 @@ impl Element for InputElement {
         let text = input.text_for_display();
         let is_masked = input.is_password();
         let text_align = input.text_align;
-        let text_lines: Vec<&str> = text.split('\n').collect();
+        let text_lines: Vec<String> = text.split('\n').map(str::to_owned).collect();
 
         let original_cursor_line = if input.value.is_empty() {
             0
@@ -1183,7 +1183,7 @@ impl Element for InputElement {
             let (display, color) = if input.value.is_empty() {
                 (input.placeholder.clone(), theme.neutral.text_3)
             } else {
-                (SharedString::from(*line_text), text_c)
+                (SharedString::from(line_text.clone()), text_c)
             };
             let run = TextRun {
                 len: display.len(),
@@ -1308,14 +1308,7 @@ impl Element for InputElement {
         }
         let text_align = prepaint.text_align;
         for (line, y) in &prepaint.lines {
-            let _ = line.paint(
-                point(bounds.left(), *y),
-                window.line_height(),
-                text_align,
-                None,
-                window,
-                cx,
-            );
+            let _ = line.paint(point(bounds.left(), *y), window.line_height(), window, cx);
         }
         if focus_handle.is_focused(window) {
             if let Some(c) = prepaint.cursor.take() {
@@ -1414,7 +1407,7 @@ impl Render for Input {
             row = row.child(
                 gpui::div()
                     .flex_none()
-                    .self_stretch()
+                    .items_start()
                     .bg(theme.neutral.hover)
                     .border_r_1()
                     .border_color(theme.neutral.border)
@@ -1507,7 +1500,7 @@ impl Render for Input {
             row = row.child(
                 gpui::div()
                     .flex_none()
-                    .self_stretch()
+                    .items_start()
                     .bg(theme.neutral.hover)
                     .border_l_1()
                     .border_color(theme.neutral.border)

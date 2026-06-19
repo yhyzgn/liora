@@ -1,3 +1,4 @@
+use crate::gpui_compat::element_id;
 use crate::motion::pop_in;
 use gpui::{
     AnyElement, App, Context, IntoElement, Pixels, Render, SharedString, Window, div, prelude::*,
@@ -165,7 +166,7 @@ impl Tree {
                             .items_center()
                             .justify_center()
                             .w(px(20.0))
-                            .id(format!("expand-{}", id.clone()))
+                            .id(element_id(format!("expand-{}", id.clone())))
                             .when(has_children, |s| {
                                 s.on_click(cx.listener({
                                     let id = id.clone();
@@ -194,13 +195,13 @@ impl Tree {
                     .child(
                         div()
                             .flex_1()
-                            .id(format!("content-{}", id.clone()))
+                            .id(element_id(format!("content-{}", id.clone())))
                             .child(div().text_sm().child(node.label.clone())),
                     ),
             )
             .when(is_expanded && has_children, |s| {
                 s.child(pop_in(
-                    format!("tree-children-motion-{}", id),
+                    element_id(format!("tree-children-motion-{}", id)),
                     div().flex().flex_col().children(
                         node.children
                             .iter()

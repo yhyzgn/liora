@@ -1,3 +1,4 @@
+use crate::gpui_compat::element_id;
 use gpui::{
     App, Context, Entity, IntoElement, MouseButton, Render, SharedString, Window, div, prelude::*,
     px,
@@ -379,7 +380,7 @@ fn render_panel(
     let checked_count = checked_keys.len();
 
     div()
-        .id(id.clone())
+        .id(element_id(id.clone()))
         .flex()
         .flex_col()
         .w(px(260.0))
@@ -450,7 +451,7 @@ fn render_panel(
         })
         .child(
             div()
-                .id(format!("{}-list", id))
+                .id(element_id(format!("{}-list", id)))
                 .flex_1()
                 .overflow_y_scroll()
                 .children(
@@ -497,7 +498,7 @@ fn render_item(
     let item_id = format!("{}-item-{}", panel_id, key);
 
     div()
-        .id(item_id)
+        .id(element_id(item_id))
         .min_h(px(38.0))
         .px_3()
         .py_2()
@@ -578,7 +579,7 @@ fn action_button(
     to_target: bool,
 ) -> impl IntoElement {
     div()
-        .id(id)
+        .id(element_id(id))
         .w(px(34.0))
         .h(px(30.0))
         .flex()

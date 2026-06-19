@@ -145,10 +145,13 @@ mod tests {
         assert_eq!(op.gap, px(20.0));
         assert!(!op.padded);
         assert_eq!(
-            op.description.as_deref(),
+            op.description.as_ref().map(|text| text.as_ref()),
             Some("Save changes automatically")
         );
-        assert_eq!(op.status.as_deref(), Some("Enabled"));
+        assert_eq!(
+            op.status.as_ref().map(|text| text.as_ref()),
+            Some("Enabled")
+        );
         assert!(op.disabled);
     }
 }

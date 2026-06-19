@@ -1,7 +1,8 @@
 //! Minimal GPUI + Liora window bootstrap.
 
 use gpui::{
-    App, AppContext, Bounds, Context, Render, Window, WindowBounds, WindowOptions, px, size,
+    App, AppContext, Application, Bounds, Context, Render, Window, WindowBounds, WindowOptions, px,
+    size,
 };
 use liora_components::{ThemeMode, init_liora, init_liora_with_mode};
 
@@ -14,7 +15,7 @@ impl Render for RootView {
 }
 
 fn main() {
-    gpui_platform::application().run(|cx: &mut App| {
+    Application::new().run(|cx: &mut App| {
         // 1. Initialize Liora core/theme state, component services, and key bindings.
         init_liora(cx);
 

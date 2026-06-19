@@ -1,4 +1,5 @@
 use crate::Popover;
+use crate::gpui_compat::element_id;
 use gpui::{
     AnyElement, App, Component, IntoElement, RenderOnce, SharedString, Window, div, prelude::*, px,
 };
@@ -83,7 +84,7 @@ impl RenderOnce for Dropdown {
             .content(move |_window, _cx| {
                 let theme = theme.clone();
                 div()
-                    .id(format!("{}-menu", dropdown_id))
+                    .id(element_id(format!("{}-menu", dropdown_id)))
                     .cursor_default()
                     .occlude()
                     .flex()
@@ -98,7 +99,7 @@ impl RenderOnce for Dropdown {
                         let item_id = format!("{}-item-{}", dropdown_id, i);
 
                         div()
-                            .id(item_id)
+                            .id(element_id(item_id))
                             .cursor_pointer()
                             .flex()
                             .items_center()

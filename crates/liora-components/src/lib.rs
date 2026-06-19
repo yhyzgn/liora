@@ -35,7 +35,6 @@
 //! Liora components render native GPUI element trees. This crate does not require
 //! Tauri, WebView, HTML/CSS, DOM, or a browser runtime.
 
-extern crate gpui as open_gpui;
 pub mod affix;
 pub mod alert;
 pub mod anchor;
@@ -75,6 +74,7 @@ pub mod dropdown;
 pub mod empty;
 pub mod flex;
 pub mod form;
+pub(crate) mod gpui_compat;
 pub mod heat_bar;
 pub mod horizontal_list;
 pub mod image;

@@ -206,7 +206,7 @@ impl Element for VirtualScrollbar {
                 set_virtual_scrollbar_grab_offset(Some(grab_offset));
                 list_state.scrollbar_drag_started();
                 set_virtual_scrollbar_position(&list_state, event.position, grab_offset);
-                window.capture_pointer(hitbox.id);
+
                 cx.stop_propagation();
                 window.refresh();
             }
@@ -246,17 +246,17 @@ fn set_virtual_scrollbar_position(
 ) {
     let viewport = list_state.viewport_bounds();
     let max_offset = list_state.max_offset_for_scrollbar();
-    if max_offset.y <= px(0.0) || viewport.size.height <= px(0.0) {
+    if max_offset.height <= px(0.0) || viewport.size.height <= px(0.0) {
         return;
     }
 
-    let content_height = viewport.size.height + max_offset.y;
+    let content_height = viewport.size.height + max_offset.height;
     let thumb_height = (viewport.size.height * (viewport.size.height / content_height))
         .max(SCROLLBAR_MIN_THUMB_HEIGHT)
         .min(viewport.size.height);
     let track_height = (viewport.size.height - thumb_height).max(px(1.0));
     let y = (position.y - viewport.top() - grab_offset).clamp(px(0.0), track_height);
-    let content_offset = y / track_height * max_offset.y;
+    let content_offset = y / track_height * max_offset.height;
     list_state.set_offset_from_scrollbar(point(px(0.0), content_offset));
 }
 
@@ -265,7 +265,7 @@ fn virtual_thumb_metrics(list_state: &ListState, width: Pixels) -> Option<ThumbM
     let max_offset = list_state.max_offset_for_scrollbar();
     let offset = list_state.scroll_px_offset_for_scrollbar();
     let viewport_h = viewport.size.height;
-    let content_h = viewport_h + max_offset.y;
+    let content_h = viewport_h + max_offset.height;
 
     if content_h <= viewport_h || content_h <= px(0.0) || viewport_h <= px(0.0) {
         return None;
@@ -275,8 +275,8 @@ fn virtual_thumb_metrics(list_state: &ListState, width: Pixels) -> Option<ThumbM
     let thumb_h = (viewport_h * ratio)
         .max(SCROLLBAR_MIN_THUMB_HEIGHT)
         .min(viewport_h);
-    let scroll_ratio = if max_offset.y > px(0.0) {
-        -offset.y / max_offset.y
+    let scroll_ratio = if max_offset.height > px(0.0) {
+        -offset.y / max_offset.height
     } else {
         0.0
     }
@@ -293,7 +293,7 @@ fn virtual_thumb_metrics(list_state: &ListState, width: Pixels) -> Option<ThumbM
 
     Some(ThumbMetrics {
         bounds,
-        max_offset: max_offset.y,
+        max_offset: max_offset.height,
         track_height: viewport_h - thumb_h,
     })
 }
@@ -340,7 +340,7 @@ fn scroll_handle_thumb_metrics(
     let offset = scroll_handle.offset();
 
     let viewport_h = viewport_bounds.size.height;
-    let content_h = viewport_h + max_offset.y;
+    let content_h = viewport_h + max_offset.height;
 
     if content_h <= viewport_h || content_h <= px(0.0) || viewport_h <= px(0.0) {
         return None;
@@ -350,8 +350,8 @@ fn scroll_handle_thumb_metrics(
     let thumb_h = (viewport_h * ratio)
         .max(SCROLLBAR_MIN_THUMB_HEIGHT)
         .min(viewport_h);
-    let scroll_ratio = if max_offset.y > px(0.0) {
-        -offset.y / max_offset.y
+    let scroll_ratio = if max_offset.height > px(0.0) {
+        -offset.y / max_offset.height
     } else {
         0.0
     }
@@ -367,7 +367,7 @@ fn scroll_handle_thumb_metrics(
 
     Some(ThumbMetrics {
         bounds,
-        max_offset: max_offset.y,
+        max_offset: max_offset.height,
         track_height: viewport_h - thumb_h,
     })
 }
@@ -558,7 +558,7 @@ impl gpui::Element for ScrollbarThumb {
                 };
                 set_scrollbar_grab_offset(Some(grab_offset));
                 set_scroll_handle_position(&scroll_handle, event.position, grab_offset);
-                window.capture_pointer(hitbox.id);
+
                 cx.stop_propagation();
                 window.refresh();
             }

@@ -1,3 +1,4 @@
+use crate::gpui_compat::element_id;
 use crate::motion::pop_in;
 use gpui::{
     App, Bounds, Context, Element, ElementId, Entity, GlobalElementId, InspectorElementId,
@@ -249,7 +250,7 @@ impl Render for TimePicker {
                             })
                         })
                         .child(pop_in(
-                            format!("{}-panel-motion", picker_id),
+                            element_id(format!("{}-panel-motion", picker_id)),
                             div()
                                 .absolute()
                                 .top(top)
@@ -268,7 +269,7 @@ impl Render for TimePicker {
             .when_some(self.width, |s, width| s.w(width))
             .when(self.width.is_none(), |s| s.w(px(220.0)))
             .h(px(34.0))
-            .id(format!("{}-trigger", self.id))
+            .id(element_id(format!("{}-trigger", self.id)))
             .flex()
             .items_center()
             .justify_between()
@@ -344,7 +345,7 @@ fn render_time_panel(
         .unwrap_or_else(|| "--:--".to_string());
 
     div()
-        .id(format!("{}-panel", id))
+        .id(element_id(format!("{}-panel", id)))
         .cursor_default()
         .occlude()
         .on_mouse_down(MouseButton::Left, |_, _, cx| {
@@ -467,7 +468,7 @@ fn time_column(
         )
         .child(
             div()
-                .id(format!("{}-scroll", id))
+                .id(element_id(format!("{}-scroll", id)))
                 .max_h(px(210.0))
                 .overflow_y_scroll()
                 .flex()

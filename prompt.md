@@ -247,8 +247,7 @@ liora-theme/Cargo.toml:    gpui = { workspace = true }
 # App — 显式启用
 liora-gallery/Cargo.toml:
   gpui = { workspace = true, features = ["wayland", "x11", "font-kit"] }
-  gpui_platform = { workspace = true, features = ["wayland", "x11"] }
-```
+  ```
 
 ### 5.4 不在 GPUI 0.2.2 中的 API
 

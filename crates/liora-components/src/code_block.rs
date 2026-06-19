@@ -1,3 +1,4 @@
+use crate::gpui_compat::element_id;
 use gpui::{
     App, Bounds, ClipboardItem, Component, Context, ElementId, Entity, FocusHandle, Focusable,
     FontStyle, FontWeight, GlobalElementId, Hsla, IntoElement, LayoutId, MouseButton,
@@ -478,7 +479,7 @@ fn render_block_code(
     if copyable {
         header = header.child(
             div()
-                .id(format!("{id}-copy"))
+                .id(element_id(format!("{id}-copy")))
                 .flex()
                 .items_center()
                 .gap_1()
@@ -519,7 +520,7 @@ fn render_block_code(
         .child(header)
         .child(
             div()
-                .id(scroll_id)
+                .id(element_id(scroll_id))
                 .overflow_x_scroll()
                 .p_4()
                 .bg(code_surface(resolved_theme))
@@ -558,7 +559,7 @@ fn should_render_code_now(
         return true;
     }
 
-    let state_key = ElementId::NamedChild(Arc::new(id), SharedString::from("deferred-code-ready"));
+    let state_key = ElementId::NamedChild(Box::new(id), SharedString::from("deferred-code-ready"));
     let ready = window.use_keyed_state(state_key, cx, |_, _| false);
 
     if !*ready.read(cx) {
@@ -681,7 +682,7 @@ fn render_code_content(
 
     if selectable {
         let state_key = ElementId::NamedChild(
-            Arc::new(id.clone()),
+            Box::new(id.clone()),
             SharedString::from("selectable-code-text"),
         );
         let initial_id = id.clone();
@@ -705,7 +706,7 @@ fn render_code_content(
         SelectableCodeTextView { input }.into_any_element()
     } else {
         let state_key = ElementId::NamedChild(
-            Arc::new(id.clone()),
+            Box::new(id.clone()),
             SharedString::from("read-only-code-text"),
         );
         let initial_code = code.clone();
@@ -1253,8 +1254,6 @@ impl Element for ReadOnlyCodeElement {
             let _ = line.shaped.paint(
                 point(bounds.left(), bounds.top() + line.y),
                 line_height,
-                gpui::TextAlign::Left,
-                None,
                 window,
                 cx,
             );
@@ -1499,7 +1498,7 @@ impl SelectableCodeText {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        window.focus(&self.focus_handle, cx);
+        window.focus(&self.focus_handle);
         let idx = self.index_for_point(event.position);
         let changed = with_selectable_state(&self.id, |state| {
             let was_selecting = state.selecting;
@@ -1752,8 +1751,7 @@ impl Element for SelectableCodeElement {
         let hitbox = prepaint.hitbox.clone();
         window.on_mouse_event(move |event: &MouseDownEvent, phase, window, cx| {
             if phase.bubble() && event.button == MouseButton::Left && hitbox.is_hovered(window) {
-                window.capture_pointer(hitbox.id);
-                window.focus(&focus_handle_for_down, cx);
+                window.focus(&focus_handle_for_down);
                 input.update(cx, |input, cx| input.on_mouse_down(event, window, cx));
                 cx.stop_propagation();
             }
@@ -1781,8 +1779,6 @@ impl Element for SelectableCodeElement {
             let _ = line.shaped.paint(
                 point(bounds.left(), bounds.top() + line.y),
                 self.input.read(cx).line_height(),
-                gpui::TextAlign::Left,
-                None,
                 window,
                 cx,
             );
@@ -1793,14 +1789,14 @@ impl Element for SelectableCodeElement {
 impl Render for SelectableCodeText {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         div()
-            .id(format!("{}-selectable", self.id))
+            .id(element_id(format!("{}-selectable", self.id)))
             .key_context("CodeBlock")
             .track_focus(&self.focus_handle(cx))
             .cursor_text()
             .on_action(cx.listener(Self::select_all))
             .on_action(cx.listener(Self::copy))
             .child(SelectableCodeElement {
-                id: format!("{}-text", self.id).into(),
+                id: element_id(format!("{}-text", self.id)),
                 input: cx.entity(),
             })
     }
@@ -1826,7 +1822,7 @@ fn build_code_layout(
             &line_runs,
             None,
         );
-        max_width = max_width.max(shaped.width());
+        max_width = max_width.max(shaped.width);
         lines.push(SelectableCodeLine {
             shaped,
             start: offset,

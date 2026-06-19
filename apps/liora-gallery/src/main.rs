@@ -1,6 +1,6 @@
 use gpui::{
-    AnyView, App, Component, Context, Global, Render, WeakEntity, Window, WindowOptions, div,
-    prelude::*, px, size,
+    AnyView, App, Application, Component, Context, Global, Render, WeakEntity, Window,
+    WindowOptions, div, prelude::*, px, size,
 };
 use liora_components::{
     AppWindowFrame, Button, Card, Checkbox, Container, Dialog, Input, Menu, MenuMode, Paragraph,
@@ -54,18 +54,16 @@ struct GalleryTrayState {
 impl Global for GalleryTrayState {}
 
 fn run_gallery() {
-    gpui_platform::application()
-        .with_quit_mode(gpui::QuitMode::Explicit)
-        .run(|cx: &mut App| {
-            init_liora(cx);
+    Application::new().run(|cx: &mut App| {
+        init_liora(cx);
 
-            install_gallery_tray(cx);
-            if let Some(handle) = open_gallery_window(cx) {
-                if cx.has_global::<GalleryTrayState>() {
-                    cx.global_mut::<GalleryTrayState>().window = Some(handle);
-                }
+        install_gallery_tray(cx);
+        if let Some(handle) = open_gallery_window(cx) {
+            if cx.has_global::<GalleryTrayState>() {
+                cx.global_mut::<GalleryTrayState>().window = Some(handle);
             }
-        });
+        }
+    });
 }
 
 fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
@@ -175,7 +173,6 @@ fn install_gallery_tray(cx: &mut App) {
         }
         Err(error) => {
             eprintln!("failed to install Liora Gallery tray icon: {error}");
-            cx.set_quit_mode(gpui::QuitMode::LastWindowClosed);
             return;
         }
     }
@@ -305,11 +302,6 @@ fn handle_gallery_tray_command(command: TrayCommand, cx: &mut App) {
                     let _ = state.tray.set_visible(state.tray_visible);
                     state.resident_enabled
                 };
-                cx.set_quit_mode(if resident_enabled {
-                    gpui::QuitMode::Explicit
-                } else {
-                    gpui::QuitMode::LastWindowClosed
-                });
                 if cx.has_global::<TrayControlCenter>() {
                     cx.global_mut::<TrayControlCenter>()
                         .set_resident_enabled(resident_enabled);
@@ -358,7 +350,6 @@ fn prepare_gallery_hide_to_tray(cx: &mut App) {
         return;
     }
 
-    cx.set_quit_mode(gpui::QuitMode::Explicit);
     set_gallery_tray_visible(cx, true);
 
     let state = cx.global_mut::<GalleryTrayState>();
@@ -850,13 +841,6 @@ impl gpui::RenderOnce for PortalLayer {
     }
 }
 
-#[cfg(not(target_family = "wasm"))]
 fn main() {
-    run_gallery();
-}
-#[cfg(target_family = "wasm")]
-#[wasm_bindgen::prelude::wasm_bindgen(start)]
-pub fn start() {
-    gpui_platform::web_init();
     run_gallery();
 }

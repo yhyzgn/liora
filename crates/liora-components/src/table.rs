@@ -1,3 +1,4 @@
+use crate::gpui_compat::element_id;
 use gpui::{
     AnyElement, App, Component, IntoElement, MouseButton, Pixels, RenderOnce, SharedString, Window,
     div, prelude::*, px,
@@ -320,7 +321,7 @@ impl RenderOnce for Table {
 
         let body = div()
             .w_full()
-            .id(body_id)
+            .id(element_id(body_id))
             .when(fixed_header, |s| s.overflow_y_scroll())
             .when_some(height, |s, h| s.max_h(h))
             .child(body);
@@ -451,7 +452,7 @@ fn table_header_cell(
     };
     let callback = on_sort_change.clone();
 
-    cell.id(format!("{}-sort-{}", table_id, column.key))
+    cell.id(element_id(format!("{}-sort-{}", table_id, column.key)))
         .cursor_pointer()
         .hover(|s| s.bg(theme.neutral.pressed))
         .on_mouse_up(MouseButton::Left, move |_, window, cx| {

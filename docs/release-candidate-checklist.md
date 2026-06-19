@@ -9,7 +9,7 @@ This checklist defines the repository-owned readiness gate for the Liora 0.1.x r
 - Canonical apps: `apps/liora-gallery` and `apps/liora-docs`.
 - Removed sample-app boundary: do not re-add `examples/minimal-app`, `examples/dashboard-app`, `liora-minimal-app`, or `liora-dashboard-app`; their useful adoption and dogfooding behavior lives in Gallery and Docs.
 - Package policy: Public SDK crates, including `liora` and `liora-packager`, publish to crates.io using the repository license file; app packages and the repository-local `xtask` wrapper remain private workspace packages. `LicenseRef-Liora` remains the explicit package/install metadata until the owner replaces it with formal OSS or commercial terms.
-- GPUI patch policy: public SDK manifests must resolve GPUI through crates.io `open-gpui` / `open-gpui-platform` and must not contain `[patch.crates-io]`, `[patch."https://github.com/zed-industries/zed"]`, `third_party/zed`, or local path GPUI overrides. The vendored Zed patch is app-root-only verification material for Gallery / Docs and is not part of Liora crates.
+- GPUI patch policy: public SDK manifests must resolve GPUI through official crates.io `gpui = "0.2.2"` and must not contain renamed GPUI fork dependencies, `[patch.crates-io]`, `[patch."https://github.com/zed-industries/zed"]`, `third_party/zed`, or local path GPUI overrides. The vendored Zed patch is app-root-only verification material for Gallery / Docs and is not part of Liora crates.
 
 ## Local RC gates
 

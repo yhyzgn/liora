@@ -1,3 +1,4 @@
+use crate::gpui_compat::element_id;
 use crate::motion::pop_in;
 use gpui::{
     AnyElement, App, Bounds, Context, Element, ElementId, Entity, FocusHandle, Focusable,
@@ -433,7 +434,7 @@ impl Cascader {
         self.is_open = !self.is_open;
         if self.is_open {
             self.active_path = self.selected_path.clone();
-            window.focus(&self.focus_handle, cx);
+            window.focus(&self.focus_handle);
         }
         cx.notify();
     }
@@ -536,7 +537,7 @@ impl Render for Cascader {
 
                     let close_entity = entity.clone();
                     let panel = div()
-                        .id(format!("{}-panel", cascader_id))
+                        .id(element_id(format!("{}-panel", cascader_id)))
                         .absolute()
                         .top(top)
                         .left(left)
@@ -552,7 +553,6 @@ impl Render for Cascader {
                             offset: gpui::point(px(0.0), px(4.0)),
                             blur_radius: px(14.0),
                             spread_radius: px(0.0),
-                            inset: false,
                         }])
                         .occlude()
                         .on_mouse_down(MouseButton::Left, |_, _, cx| {
@@ -591,7 +591,10 @@ impl Render for Cascader {
                                 });
                             })
                         })
-                        .child(pop_in(format!("{}-panel-motion", cascader_id), panel))
+                        .child(pop_in(
+                            element_id(format!("{}-panel-motion", cascader_id)),
+                            panel,
+                        ))
                         .into_any_element()
                 },
                 cx,
@@ -627,7 +630,7 @@ impl Render for Cascader {
             .when(self.clearable && has_value && !self.disabled, |s| {
                 s.child(
                     div()
-                        .id(format!("{}-clear", self.id))
+                        .id(element_id(format!("{}-clear", self.id)))
                         .flex()
                         .items_center()
                         .justify_center()
@@ -694,7 +697,7 @@ fn render_columns(
             let column_id = format!("{}-column-{depth}", cascader_id);
             let item_id_prefix = cascader_id.clone();
             div()
-                .id(column_id)
+                .id(element_id(column_id))
                 .w(px(180.0))
                 .max_h(px(280.0))
                 .overflow_y_scroll()

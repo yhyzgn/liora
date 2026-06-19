@@ -1,3 +1,4 @@
+use crate::gpui_compat::element_id;
 use crate::motion::{fade_in, pop_in};
 use gpui::{
     AnyElement, App, Context, IntoElement, KeyBinding, MouseButton, Pixels, Render, SharedString,
@@ -155,9 +156,9 @@ impl Render for DrawerView {
         }
 
         fade_in(
-            format!("{id}-overlay-motion"),
+            element_id(format!("{id}-overlay-motion")),
             container.child(pop_in(
-                format!("{id}-panel-motion"),
+                element_id(format!("{id}-panel-motion")),
                 panel
                     .child(
                         div()
@@ -170,7 +171,7 @@ impl Render for DrawerView {
                             .child(div().font_weight(gpui::FontWeight::BOLD).child(title))
                             .child(
                                 div()
-                                    .id(format!("{id}-close-btn"))
+                                    .id(element_id(format!("{id}-close-btn")))
                                     .cursor_pointer()
                                     .child(
                                         Icon::new(IconName::X)

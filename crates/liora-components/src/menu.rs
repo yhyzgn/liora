@@ -1,3 +1,4 @@
+use crate::gpui_compat::element_id;
 use crate::{Popover, motion::pop_in};
 use gpui::{
     AnyElement, App, Context, IntoElement, Render, SharedString, Window, div, prelude::*, px,
@@ -209,7 +210,7 @@ impl Menu {
         };
 
         div()
-            .id(format!("{}-item-{}", self.id, id))
+            .id(element_id(format!("{}-item-{}", self.id, id)))
             .cursor_pointer()
             .flex()
             .flex_row()
@@ -259,7 +260,7 @@ impl Menu {
             let menu_handle = cx.entity().clone();
             Popover::new(
                 div()
-                    .id(format!("{}-collapsed-submenu-{}", self.id, id))
+                    .id(element_id(format!("{}-collapsed-submenu-{}", self.id, id)))
                     .cursor_pointer()
                     .flex()
                     .items_center()
@@ -312,10 +313,10 @@ impl Menu {
                 move |_window, _cx| {
                     let menu_handle = menu_handle.clone();
                     div()
-                        .id(format!(
+                        .id(element_id(format!(
                             "menu-sub-popover-content-{}",
                             menu_handle.entity_id()
-                        ))
+                        )))
                         .cursor_default()
                         .occlude()
                         .on_hover(|_, _, cx| {
@@ -342,7 +343,11 @@ impl Menu {
                                 theme.neutral.text_1
                             };
                             div()
-                                .id(format!("menu-sub-item-{}-{}", menu_handle.entity_id(), id))
+                                .id(element_id(format!(
+                                    "menu-sub-item-{}-{}",
+                                    menu_handle.entity_id(),
+                                    id
+                                )))
                                 .cursor_pointer()
                                 .flex()
                                 .flex_row()
@@ -383,7 +388,7 @@ impl Menu {
                 .flex_col()
                 .child(
                     div()
-                        .id(format!("{}-submenu-{}", self.id, id))
+                        .id(element_id(format!("{}-submenu-{}", self.id, id)))
                         .cursor_pointer()
                         .flex()
                         .flex_row()
@@ -421,7 +426,7 @@ impl Menu {
                 )
                 .when(is_open, |s| {
                     s.child(pop_in(
-                        format!("{}-submenu-motion-{}", self.id, id),
+                        element_id(format!("{}-submenu-motion-{}", self.id, id)),
                         div().flex().flex_col().children(
                             submenu
                                 .children
@@ -486,7 +491,7 @@ impl Menu {
         };
 
         div()
-            .id(format!("{}-horizontal-item-{}", self.id, id))
+            .id(element_id(format!("{}-horizontal-item-{}", self.id, id)))
             .cursor_pointer()
             .flex()
             .flex_row()
@@ -525,7 +530,7 @@ impl Menu {
 
         Popover::new(
             div()
-                .id(format!("{}-horizontal-submenu-{}", self.id, id))
+                .id(element_id(format!("{}-horizontal-submenu-{}", self.id, id)))
                 .cursor_pointer()
                 .flex()
                 .flex_row()
@@ -577,10 +582,10 @@ impl Menu {
             move |_window, _cx| {
                 let menu_handle = menu_handle.clone();
                 div()
-                    .id(format!(
+                    .id(element_id(format!(
                         "menu-horiz-popover-content-{}",
                         menu_handle.entity_id()
-                    ))
+                    )))
                     .cursor_default()
                     .occlude()
                     .on_hover(|_, _, cx| {
@@ -606,11 +611,11 @@ impl Menu {
                             theme.neutral.text_1
                         };
                         div()
-                            .id(format!(
+                            .id(element_id(format!(
                                 "menu-horiz-sub-item-{}-{}",
                                 menu_handle.entity_id(),
                                 id
-                            ))
+                            )))
                             .cursor_pointer()
                             .flex()
                             .flex_row()

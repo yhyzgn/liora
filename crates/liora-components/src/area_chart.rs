@@ -11,6 +11,7 @@ use crate::chart_shape::{
     area_path, finite_line_points, line_path, line_soft_edge_path, smooth_area_path,
     smooth_line_path,
 };
+use crate::gpui_compat::PixelsExt;
 use crate::{Empty, Space, Text};
 use gpui::{
     App, Bounds, Component, ElementId, InteractiveElement, IntoElement, ParentElement, Pixels,

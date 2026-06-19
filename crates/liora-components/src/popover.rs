@@ -1,4 +1,4 @@
-use crate::motion::pop_in;
+use crate::{gpui_compat::element_id, motion::pop_in};
 use gpui::{
     AnyElement, App, Bounds, Component, Context, ElementId, GlobalElementId, InspectorElementId,
     IntoElement, KeyBinding, LayoutId, MouseButton, Pixels, Render, RenderOnce, SharedString,
@@ -111,9 +111,9 @@ impl Render for PopoverView {
                     .anchor(popover_anchor_corner)
                     .snap_to_window_with_margin(viewport_margin)
                     .child(pop_in(
-                        format!("{}-motion", id),
+                        element_id(format!("{}-motion", id)),
                         div()
-                            .id(format!("{}-content", id))
+                            .id(element_id(format!("{}-content", id)))
                             .flex_shrink_0() // Ensure content is not squeezed by flex layout
                             .cursor_default()
                             .occlude()
@@ -172,20 +172,20 @@ fn popover_anchor_point(
     }
 }
 
-fn popover_anchor_corner(placement: Placement) -> gpui::Anchor {
+fn popover_anchor_corner(placement: Placement) -> gpui::Corner {
     match placement {
-        Placement::Top => gpui::Anchor::BottomCenter,
-        Placement::TopStart => gpui::Anchor::BottomLeft,
-        Placement::TopEnd => gpui::Anchor::BottomRight,
-        Placement::Bottom => gpui::Anchor::TopCenter,
-        Placement::BottomStart => gpui::Anchor::TopLeft,
-        Placement::BottomEnd => gpui::Anchor::TopRight,
-        Placement::Left => gpui::Anchor::RightCenter,
-        Placement::LeftStart => gpui::Anchor::TopRight,
-        Placement::LeftEnd => gpui::Anchor::BottomRight,
-        Placement::Right => gpui::Anchor::LeftCenter,
-        Placement::RightStart => gpui::Anchor::TopLeft,
-        Placement::RightEnd => gpui::Anchor::BottomLeft,
+        Placement::Top => gpui::Corner::BottomLeft,
+        Placement::TopStart => gpui::Corner::BottomLeft,
+        Placement::TopEnd => gpui::Corner::BottomRight,
+        Placement::Bottom => gpui::Corner::TopLeft,
+        Placement::BottomStart => gpui::Corner::TopLeft,
+        Placement::BottomEnd => gpui::Corner::TopRight,
+        Placement::Left => gpui::Corner::TopRight,
+        Placement::LeftStart => gpui::Corner::TopRight,
+        Placement::LeftEnd => gpui::Corner::BottomRight,
+        Placement::Right => gpui::Corner::TopLeft,
+        Placement::RightStart => gpui::Corner::TopLeft,
+        Placement::RightEnd => gpui::Corner::BottomLeft,
     }
 }
 

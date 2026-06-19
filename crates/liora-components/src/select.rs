@@ -1,3 +1,4 @@
+use crate::gpui_compat::element_id;
 use crate::motion::pop_in;
 use gpui::{
     App, Bounds, Context, ElementId, Entity, FocusHandle, Focusable, Hsla, MouseButton, Pixels,
@@ -225,7 +226,7 @@ impl Select {
     fn toggle_open(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.is_open = !self.is_open;
         if self.is_open {
-            window.focus(&self.focus_handle, cx);
+            window.focus(&self.focus_handle);
         }
         cx.notify();
     }
@@ -385,7 +386,6 @@ impl Render for Select {
                             offset: gpui::point(gpui::px(0.0), gpui::px(4.0)),
                             blur_radius: gpui::px(12.0),
                             spread_radius: gpui::px(0.0),
-                            inset: false,
                         }])
                         .children(options.iter().enumerate().map(|(idx, label)| {
                             let is_selected = Some(idx) == selected_idx;
@@ -394,7 +394,7 @@ impl Render for Select {
                             let label = label.clone();
 
                             gpui::div()
-                                .id(format!("select-option-{}", idx))
+                                .id(element_id(format!("select-option-{}", idx)))
                                 .px(gpui::px(12.0))
                                 .py(gpui::px(8.0))
                                 .cursor_pointer()
@@ -428,7 +428,7 @@ impl Render for Select {
                         }));
 
                     pop_in(
-                        format!("liora-select-panel-motion-{}", entity.entity_id()),
+                        element_id(format!("liora-select-panel-motion-{}", entity.entity_id())),
                         panel,
                     )
                     .into_any_element()

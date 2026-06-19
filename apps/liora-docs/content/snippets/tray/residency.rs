@@ -1,10 +1,10 @@
 //! Page-level residency configuration for tray-enabled GPUI apps.
 //!
 //! Keep this state in your app/page model. When users disable residency, hide
-//! the tray icon and return to `LastWindowClosed` so no invisible process is
-//! left behind.
+//! the tray icon. Official Zed GPUI does not expose a public quit-mode switch;
+//! dispatch an explicit quit action when your product should terminate.
 
-use gpui::{App, QuitMode};
+use gpui::App;
 use liora_tray::{LioraTray, Result, TrayCommand, TrayControlCenter};
 
 pub struct TrayResidencyConfig {
@@ -15,11 +15,6 @@ pub struct TrayResidencyConfig {
 impl TrayResidencyConfig {
     pub fn apply(&self, tray: &LioraTray, cx: &mut App) -> Result<()> {
         tray.set_visible(self.resident_enabled && self.tray_visible)?;
-        cx.set_quit_mode(if self.resident_enabled {
-            QuitMode::Explicit
-        } else {
-            QuitMode::LastWindowClosed
-        });
         Ok(())
     }
 }

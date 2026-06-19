@@ -1,4 +1,5 @@
 use crate::Button;
+use crate::gpui_compat::element_id;
 use crate::motion::{fade_in, pop_in};
 use gpui::{
     App, Context, KeyBinding, MouseButton, Pixels, Render, SharedString, Window, actions, div,
@@ -291,7 +292,7 @@ impl Render for TourView {
         let close_on_escape = self.close_on_escape;
 
         let card = div()
-            .id(format!("{id}-card"))
+            .id(element_id(format!("{id}-card")))
             .rounded_lg()
             .border_1()
             .border_color(theme.neutral.border)
@@ -333,7 +334,7 @@ impl Render for TourView {
                     )
                     .child(
                         div()
-                            .id(format!("{id}-close"))
+                            .id(element_id(format!("{id}-close")))
                             .cursor_pointer()
                             .child(
                                 Icon::new(IconName::X)
@@ -429,9 +430,9 @@ impl Render for TourView {
                     entity.update(cx, |tour, cx| tour.close(window, cx));
                 })
             })
-            .child(pop_in(format!("{id}-card-motion"), card));
+            .child(pop_in(element_id(format!("{id}-card-motion")), card));
 
-        fade_in(format!("{id}-overlay-motion"), overlay).into_any_element()
+        fade_in(element_id(format!("{id}-overlay-motion")), overlay).into_any_element()
     }
 }
 

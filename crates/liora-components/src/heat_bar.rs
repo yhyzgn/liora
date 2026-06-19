@@ -1,4 +1,5 @@
 use crate::Text;
+use crate::gpui_compat::PixelsExt;
 use gpui::{
     App, Background, BorderStyle, Bounds, Component, Corners, Edges, Hsla, IntoElement, Pixels,
     RenderOnce, SharedString, Window, div, point, prelude::*, px, quad, size,

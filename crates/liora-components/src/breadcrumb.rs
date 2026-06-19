@@ -1,3 +1,4 @@
+use crate::gpui_compat::element_id;
 use gpui::{App, IntoElement, RenderOnce, SharedString, Window, div, prelude::*, px};
 use liora_core::Config;
 use liora_icons::Icon;
@@ -82,7 +83,7 @@ impl RenderOnce for Breadcrumb {
                     .items_center()
                     .child(
                         div()
-                            .id(format!("breadcrumb-item-{}", i))
+                            .id(element_id(format!("breadcrumb-item-{}", i)))
                             .flex()
                             .flex_row()
                             .items_center()

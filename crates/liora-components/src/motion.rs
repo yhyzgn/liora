@@ -100,7 +100,7 @@ where
     E: Styled + IntoElement + 'static,
 {
     element.with_animation(
-        id,
+        ElementId::from(id.into()),
         motion_animation(MotionDuration::Fast, MotionEasing::EaseOut),
         move |element, delta| {
             let opacity = match direction {
@@ -131,7 +131,7 @@ where
     E: Styled + IntoElement + 'static,
 {
     element.with_animation(
-        id,
+        ElementId::from(id.into()),
         motion_animation(MotionDuration::Normal, MotionEasing::EaseOut),
         |element, delta| element.opacity(0.86 + delta * 0.14),
     )
@@ -142,7 +142,7 @@ where
     E: Styled + IntoElement + 'static,
 {
     element.with_animation(
-        id,
+        ElementId::from(id.into()),
         repeating_motion_animation(MotionDuration::Slow, MotionEasing::EaseInOut),
         |element, delta| element.opacity(0.62 + pulse_alpha(delta) * 0.38),
     )
@@ -150,7 +150,7 @@ where
 
 pub fn spin_icon(id: impl Into<ElementId>, icon: Icon) -> AnimationElement<Icon> {
     icon.with_animation(
-        id,
+        ElementId::from(id.into()),
         repeating_motion_animation(MotionDuration::Slow, MotionEasing::Linear),
         |icon, delta| icon.rotation(radians(delta * TAU)),
     )

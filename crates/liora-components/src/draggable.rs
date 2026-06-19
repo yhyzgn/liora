@@ -165,7 +165,7 @@ pub fn drag_handle(color: Hsla, active: bool, width: Pixels) -> Div {
         .flex()
         .flex_none()
         .w(width)
-        .self_stretch()
+        .items_start()
         .items_center()
         .justify_center()
         .cursor_pointer()

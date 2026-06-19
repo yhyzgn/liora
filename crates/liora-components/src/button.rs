@@ -1,3 +1,4 @@
+use crate::gpui_compat::element_id;
 use crate::motion::spin_icon;
 use gpui::{
     AbsoluteLength, AnyElement, App, Background, Component, ElementId, Hsla, IntoElement,
@@ -537,7 +538,7 @@ impl Button {
             let group = hover_group.clone();
             children.push(
                 spin_icon(
-                    format!("{id}:loading-spinner-motion"),
+                    element_id(format!("{id}:loading-spinner-motion")),
                     Icon::new(IconName::LoaderCircle)
                         .size(px(sz))
                         .color(c.text)

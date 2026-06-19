@@ -92,5 +92,5 @@ pub fn paint_chart_label_aligned(
     let line = window
         .text_system()
         .shape_line(text, px(11.0), &[run], None);
-    let _ = line.paint(origin, px(14.0), align, align_width, window, cx);
+    let _ = line.paint(origin, px(14.0), window, cx);
 }

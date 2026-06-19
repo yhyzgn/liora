@@ -1,4 +1,5 @@
 use crate::Input;
+use crate::gpui_compat::element_id;
 use gpui::{App, Context, Entity, Render, SharedString, Window, div, prelude::*, px};
 use liora_core::Config;
 use liora_icons::Icon;
@@ -128,7 +129,7 @@ impl Render for Mention {
                                     .min(self.max_suggestions.saturating_sub(1));
                             let selected_item = item.clone();
                             let mut row = div()
-                                .id(format!("mention-option-{}", idx))
+                                .id(element_id(format!("mention-option-{}", idx)))
                                 .flex()
                                 .items_center()
                                 .gap_2()

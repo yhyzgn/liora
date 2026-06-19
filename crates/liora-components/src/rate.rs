@@ -1,3 +1,4 @@
+use crate::gpui_compat::element_id;
 use crate::motion::pop_in;
 use gpui::{App, Context, FocusHandle, Focusable, MouseButton, Render, Window, prelude::*, px};
 use liora_core::Config;
@@ -64,7 +65,7 @@ impl Render for Rate {
         let view_id = cx.entity().entity_id().as_u64();
 
         let mut row = gpui::div()
-            .id(format!("rate-container-{view_id}"))
+            .id(element_id(format!("rate-container-{view_id}")))
             .relative()
             .flex()
             .flex_row()
@@ -93,7 +94,7 @@ impl Render for Rate {
             };
 
             let mut star = gpui::div()
-                .id(format!("rate-star-{view_id}-{i}"))
+                .id(element_id(format!("rate-star-{view_id}-{i}")))
                 .flex()
                 .items_center()
                 .justify_center()
@@ -105,8 +106,11 @@ impl Render for Rate {
                         .justify_center()
                         .child(icon);
                     if is_active {
-                        pop_in(format!("rate-star-motion-{view_id}-{i}"), icon_shell)
-                            .into_any_element()
+                        pop_in(
+                            element_id(format!("rate-star-motion-{view_id}-{i}")),
+                            icon_shell,
+                        )
+                        .into_any_element()
                     } else {
                         icon_shell.into_any_element()
                     }

@@ -1,3 +1,4 @@
+use crate::gpui_compat::element_id;
 use crate::motion::{fade_in, pop_in};
 use gpui::{
     AnyElement, App, Context, IntoElement, KeyBinding, MouseButton, Render, SharedString, Window,
@@ -58,7 +59,7 @@ impl Render for DialogView {
         let close_on_escape = self.close_on_escape;
 
         fade_in(
-            format!("{id}-overlay-motion"),
+            element_id(format!("{id}-overlay-motion")),
             div()
                 .id(id.clone())
                 .absolute()
@@ -88,7 +89,7 @@ impl Render for DialogView {
                     }))
                 })
                 .child(pop_in(
-                    format!("{id}-panel-motion"),
+                    element_id(format!("{id}-panel-motion")),
                     div()
                         .w(px(400.0))
                         .bg(theme.neutral.card)
@@ -112,7 +113,7 @@ impl Render for DialogView {
                                 .child(div().font_weight(gpui::FontWeight::BOLD).child(title))
                                 .child(
                                     div()
-                                        .id(format!("{id}-close-btn"))
+                                        .id(element_id(format!("{id}-close-btn")))
                                         .cursor_pointer()
                                         .child(
                                             Icon::new(IconName::X)

@@ -234,7 +234,7 @@ impl RenderOnce for Text {
         if self.wrap {
             el = el.whitespace_normal();
             if self.fill_width_on_wrap {
-                el = el.w_full().flex_shrink_1();
+                el = el.w_full().flex_shrink();
             }
         } else {
             el = el.whitespace_nowrap();

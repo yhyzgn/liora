@@ -1,7 +1,7 @@
 //! Basic liora-tray installation shape with bundled demo icons.
 //!
-//! In a real GPUI app, keep the returned `LioraTray` in your app state and set
-//! the platform quit mode to `gpui::QuitMode::Explicit` before opening windows.
+//! In a real GPUI app, keep the returned `LioraTray` in your app state for as
+//! long as the tray icon should remain visible.
 
 use liora_tray::{
     BundledTrayIconSet, BundledTrayIconState, LioraTray, Result, TrayConfig, bundled_tray_icon,

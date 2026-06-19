@@ -46,7 +46,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -278,7 +278,7 @@ jobs:
 
       - name: Upload raw runnable binaries
         if: github.event.inputs.dry_run != 'true'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: liora-${{ steps.package-channel.outputs.channel }}-binaries-${{ matrix.platform }}
           path: target/liora-raw-binaries/**
@@ -287,7 +287,7 @@ jobs:
 
       - name: Upload Gallery package artifacts
         if: github.event.inputs.dry_run != 'true' && github.event.inputs.app != 'docs'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: liora-${{ steps.package-channel.outputs.channel }}-gallery-packages-${{ matrix.platform }}
           path: |
@@ -306,19 +306,19 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Download package artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           pattern: liora-release-gallery-packages-*
           path: dist
           merge-multiple: false
 
       - name: Download raw runnable binaries
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           pattern: liora-release-binaries-*
           path: dist

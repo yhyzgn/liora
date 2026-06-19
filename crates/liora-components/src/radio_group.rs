@@ -477,7 +477,7 @@ impl RadioGroup {
             .border_color(theme.neutral.border)
             .overflow_hidden()
             .when(self.stretch, |s| s.w_full())
-            .when(!self.stretch, |s| s.self_start())
+            .when(!self.stretch, |s| s.items_start())
             .on_action(cx.listener(Self::up))
             .on_action(cx.listener(Self::down));
 
@@ -596,7 +596,7 @@ impl Render for RadioGroup {
             col = col.on_mouse_down(
                 MouseButton::Left,
                 cx.listener(|this, _, window, cx| {
-                    window.focus(&this.focus_handle, cx);
+                    window.focus(&this.focus_handle);
                 }),
             );
         }

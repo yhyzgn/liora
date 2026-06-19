@@ -1,3 +1,5 @@
+use crate::gpui_compat::PixelsExt;
+use crate::gpui_compat::element_id;
 use crate::motion::{MotionDuration, MotionEasing, motion_animation};
 use gpui::{
     AnimationExt, App, FillOptions, FontWeight, Hsla, IntoElement, ParentElement, PathBuilder,
@@ -330,7 +332,7 @@ impl RenderOnce for Progress {
 
             let bar = if self.animated {
                 bar.with_animation(
-                    format!("{}-line-fill", id),
+                    element_id(format!("{}-line-fill", id)),
                     motion_animation(MotionDuration::Normal, MotionEasing::EaseOut),
                     move |bar, delta| bar.w(gpui::relative(target * delta.clamp(0.0, 1.0))),
                 )
@@ -424,7 +426,7 @@ impl RenderOnce for Progress {
                 let complete_color = self.complete_color;
                 let center_text = percent_text.clone();
                 base.with_animation(
-                    format!("{}-circle-fill", id),
+                    element_id(format!("{}-circle-fill", id)),
                     motion_animation(MotionDuration::Normal, MotionEasing::EaseOut),
                     move |base, delta| {
                         let progress = target * delta.clamp(0.0, 1.0);
@@ -903,7 +905,10 @@ mod tests {
             .text_color(gpui::white())
             .text_size(px(22.0))
             .text_weight(FontWeight::NORMAL);
-        assert_eq!(progress.text.as_deref(), Some("Deploy"));
+        assert_eq!(
+            progress.text.as_ref().map(|text| text.as_ref()),
+            Some("Deploy")
+        );
         assert_eq!(progress.text_size, Some(px(22.0)));
         assert_eq!(progress.text_weight, FontWeight::NORMAL);
     }

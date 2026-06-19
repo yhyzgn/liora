@@ -29,12 +29,13 @@ pub fn unique_id(prefix: &str) -> gpui::SharedString {
 /// keyed element state and reuses it for the same element across frames. The
 /// `key` must itself be stable for the visual element being rendered.
 pub fn stable_unique_id(
-    key: impl Into<gpui::ElementId>,
+    key: impl Into<gpui::SharedString>,
     prefix: &str,
     window: &mut Window,
     cx: &mut App,
 ) -> gpui::SharedString {
     let prefix = prefix.to_string();
+    let key = gpui::ElementId::from(key.into());
     window
         .use_keyed_state(key, cx, move |_, _| unique_id(&prefix))
         .read(cx)

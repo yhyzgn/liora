@@ -1,3 +1,4 @@
+use crate::gpui_compat::element_id;
 use crate::motion::pop_in;
 use gpui::{
     AnyElement, App, Context, IntoElement, Render, SharedString, Window, div, prelude::*, px,
@@ -220,7 +221,7 @@ impl Render for Tabs {
                     let closable = pane.closable;
 
                     div()
-                        .id(format!("{}-tab-{}", this.id, name))
+                        .id(element_id(format!("{}-tab-{}", this.id, name)))
                         .cursor_pointer()
                         .flex()
                         .items_center()
@@ -238,7 +239,10 @@ impl Render for Tabs {
                                 .hover(|s| s.text_color(theme.primary.base))
                                 .when(is_active, |s| match position {
                                     TabPosition::Top => s.child(pop_in(
-                                        format!("{}-indicator-motion-{}", this.id, name),
+                                        element_id(format!(
+                                            "{}-indicator-motion-{}",
+                                            this.id, name
+                                        )),
                                         div()
                                             .absolute()
                                             .bottom_0()
@@ -247,7 +251,10 @@ impl Render for Tabs {
                                             .bg(theme.primary.base),
                                     )),
                                     TabPosition::Bottom => s.child(pop_in(
-                                        format!("{}-indicator-motion-{}", this.id, name),
+                                        element_id(format!(
+                                            "{}-indicator-motion-{}",
+                                            this.id, name
+                                        )),
                                         div()
                                             .absolute()
                                             .top_0()
@@ -256,7 +263,10 @@ impl Render for Tabs {
                                             .bg(theme.primary.base),
                                     )),
                                     TabPosition::Left => s.child(pop_in(
-                                        format!("{}-indicator-motion-{}", this.id, name),
+                                        element_id(format!(
+                                            "{}-indicator-motion-{}",
+                                            this.id, name
+                                        )),
                                         div()
                                             .absolute()
                                             .right_0()
@@ -265,7 +275,10 @@ impl Render for Tabs {
                                             .bg(theme.primary.base),
                                     )),
                                     TabPosition::Right => s.child(pop_in(
-                                        format!("{}-indicator-motion-{}", this.id, name),
+                                        element_id(format!(
+                                            "{}-indicator-motion-{}",
+                                            this.id, name
+                                        )),
                                         div()
                                             .absolute()
                                             .left_0()
@@ -313,7 +326,7 @@ impl Render for Tabs {
                                 .when(closable && this.editable, |s| {
                                     s.child(
                                         div()
-                                            .id(format!("{}-close-{}", this.id, name))
+                                            .id(element_id(format!("{}-close-{}", this.id, name)))
                                             .flex()
                                             .items_center()
                                             .justify_center()
@@ -339,7 +352,7 @@ impl Render for Tabs {
                 .when(this.editable, |s| {
                     s.child(
                         div()
-                            .id(format!("{}-add-tab", this.id))
+                            .id(element_id(format!("{}-add-tab", this.id)))
                             .cursor_pointer()
                             .flex()
                             .items_center()

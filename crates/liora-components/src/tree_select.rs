@@ -1,4 +1,5 @@
 use crate::Input;
+use crate::gpui_compat::element_id;
 use gpui::{App, Context, Entity, Render, SharedString, Window, div, prelude::*, px};
 use liora_core::Config;
 use liora_icons::Icon;
@@ -187,7 +188,7 @@ impl TreeSelect {
         let has_children = !node.children.is_empty();
         let multiple = self.multiple;
         div()
-            .id(format!("tree-select-node-{}", id))
+            .id(element_id(format!("tree-select-node-{}", id)))
             .flex()
             .items_center()
             .gap_2()

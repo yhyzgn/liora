@@ -1,4 +1,5 @@
 use crate::chart::ChartLineStyle;
+use crate::gpui_compat::PixelsExt;
 use gpui::{PathBuilder, PathStyle, Pixels, Point, StrokeOptions, point, px};
 use lyon_tessellation::{LineCap, LineJoin};
 

@@ -106,7 +106,7 @@ Linux installs GTK/Wayland/X11/audio/font/icon/rpm prerequisites plus `cargo-pac
 
 macOS installs `cargo-packager`.
 
-Windows installs `cargo-packager`. Preview Windows builds intentionally use NSIS only because MSI requires a numeric-only Windows Installer version and does not accept Liora preview metadata like `0.1.1-preview.123.abcdef0`.
+Windows installs `cargo-packager`. Preview Windows builds intentionally use NSIS only because MSI requires a numeric-only Windows Installer version and does not accept Liora preview metadata like `0.1.2-preview.123.abcdef0`.
 
 ### 4. Validate and test packaging logic
 

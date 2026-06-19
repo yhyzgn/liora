@@ -1,3 +1,4 @@
+use crate::gpui_compat::PixelsExt;
 use gpui::{
     App, Background, BorderStyle, Bounds, Component, Corners, Edges, Hsla, IntoElement, Pixels,
     RenderOnce, Window, point, prelude::*, px, quad, size,

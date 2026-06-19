@@ -1,4 +1,5 @@
 use crate::VirtualScrollbar;
+use crate::gpui_compat::element_id;
 use crate::tree::TreeNode;
 use gpui::{
     App, Context, Entity, IntoElement, ListAlignment, ListState, MouseButton, Pixels, Render,
@@ -73,7 +74,7 @@ impl VirtualizedTree {
 
     pub fn row_height(mut self, height: impl Into<Pixels>) -> Self {
         self.row_height = height.into();
-        self.list_state.remeasure();
+        self.list_state.reset(self.flattened.len());
         self
     }
 
@@ -148,7 +149,7 @@ impl VirtualizedTree {
         if count_changed {
             self.rebuild_list_state();
         } else {
-            self.list_state.remeasure();
+            self.list_state.reset(self.flattened.len());
         }
     }
 
@@ -240,7 +241,7 @@ impl Render for VirtualizedTree {
                     let click_id = id.clone();
 
                     div()
-                        .id(format!("virtual-tree-row-{}", id))
+                        .id(element_id(format!("virtual-tree-row-{}", id)))
                         .cursor_pointer()
                         .flex()
                         .flex_row()

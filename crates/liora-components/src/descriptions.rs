@@ -159,7 +159,7 @@ impl RenderOnce for Descriptions {
                                     DescriptionsDirection::Horizontal => {
                                         if border {
                                             cell.flex_row()
-                                                .items_stretch()
+                                                .items_start()
                                                 .child(
                                                     div()
                                                         .p_3()

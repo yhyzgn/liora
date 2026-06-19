@@ -1,3 +1,4 @@
+use crate::gpui_compat::element_id;
 use crate::motion::pop_in;
 use gpui::{
     App, Context, EventEmitter, FocusHandle, Focusable, Hsla, KeyBinding, MouseButton, Render,
@@ -127,7 +128,7 @@ impl Render for Checkbox {
             row = row.on_mouse_down(
                 MouseButton::Left,
                 cx.listener(|this, _, window, cx| {
-                    window.focus(&this.focus_handle, cx);
+                    window.focus(&this.focus_handle);
                 }),
             );
             row = row.on_mouse_up(
@@ -154,7 +155,10 @@ impl Render for Checkbox {
 
         if self.checked {
             box_el = box_el.child(pop_in(
-                format!("liora-checkbox-check-motion-{}", cx.entity().entity_id()),
+                element_id(format!(
+                    "liora-checkbox-check-motion-{}",
+                    cx.entity().entity_id()
+                )),
                 gpui::div()
                     .flex()
                     .items_center()

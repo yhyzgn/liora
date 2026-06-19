@@ -1,4 +1,5 @@
 use crate::VirtualScrollbar;
+use crate::gpui_compat::element_id;
 use crate::table::{TableAlign, TableColumn, TableSortOrder, TableSortState};
 use gpui::{
     AnyElement, App, Component, IntoElement, ListAlignment, ListState, Pixels, RenderOnce,
@@ -78,7 +79,7 @@ impl VirtualizedTable {
 
     pub fn row_height(mut self, height: impl Into<Pixels>) -> Self {
         self.row_height = height.into();
-        self.list_state.remeasure();
+        self.list_state.reset(self.row_count);
         self
     }
 
@@ -365,7 +366,7 @@ fn virtual_table_header_cell(
     };
     let callback = on_sort_change.clone();
 
-    cell.id(format!("{}-sort-{}", table_id, column.key))
+    cell.id(element_id(format!("{}-sort-{}", table_id, column.key)))
         .cursor_pointer()
         .hover(|s| s.bg(theme.neutral.pressed))
         .on_mouse_up(gpui::MouseButton::Left, move |_, window, cx| {
@@ -417,7 +418,10 @@ mod tests {
         assert_eq!(table.row_height, px(44.0));
         assert!(table.stripe);
         assert!(table.border);
-        assert_eq!(table.sort_key.as_deref(), Some("name"));
+        assert_eq!(
+            table.sort_key.as_ref().map(|text| text.as_ref()),
+            Some("name")
+        );
         assert_eq!(table.sort_order, Some(TableSortOrder::Ascending));
     }
 }

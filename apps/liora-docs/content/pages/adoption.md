@@ -30,11 +30,11 @@ This avoids sample-only drift. If Gallery or Docs needs raw GPUI glue for a comm
 A downstream application still follows the same minimal setup:
 
 ```rust
-use gpui::App;
+use gpui::{App, Application};
 use liora::init_liora;
 
 fn main() {
-    gpui_platform::application().run(|cx: &mut App| {
+    Application::new().run(|cx: &mut App| {
         init_liora(cx);
         // open your product window here
     });
@@ -48,11 +48,10 @@ For a workspace project, use path dependencies while developing locally:
 ```toml
 [dependencies]
 liora = { path = "../liora/crates/liora" }
-gpui = { package = "open-gpui", version = "0.1", default-features = false }
-gpui_platform = { package = "open-gpui-platform", version = "0.1", default-features = false }
+gpui = { version = "0.2", default-features = false }
 ```
 
-Keep GPUI sourced consistently across the app and Liora to avoid duplicate framework versions.
+Keep GPUI sourced from the official Zed `gpui` crate consistently across the app and Liora to avoid duplicate framework versions.
 
 ## Component adoption checklist
 

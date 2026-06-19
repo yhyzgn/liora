@@ -1,6 +1,6 @@
 mod markdown;
 
-use gpui::{App, AppContext, Global, Window, WindowOptions, px, size};
+use gpui::{App, AppContext, Application, Global, Window, WindowOptions, px, size};
 use liora_components::{
     Button, Checkbox, Dialog, Paragraph, Space, WindowFrameMode, apply_window_frame_mode,
     init_liora,
@@ -34,18 +34,16 @@ struct DocsTrayState {
 impl Global for DocsTrayState {}
 
 fn run_docs() {
-    gpui_platform::application()
-        .with_quit_mode(gpui::QuitMode::Explicit)
-        .run(|cx: &mut App| {
-            init_liora(cx);
+    Application::new().run(|cx: &mut App| {
+        init_liora(cx);
 
-            install_docs_tray(cx);
-            if let Some(handle) = open_docs_window(cx) {
-                if cx.has_global::<DocsTrayState>() {
-                    cx.global_mut::<DocsTrayState>().window = Some(handle);
-                }
+        install_docs_tray(cx);
+        if let Some(handle) = open_docs_window(cx) {
+            if cx.has_global::<DocsTrayState>() {
+                cx.global_mut::<DocsTrayState>().window = Some(handle);
             }
-        });
+        }
+    });
 }
 
 fn open_docs_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
@@ -141,7 +139,6 @@ fn install_docs_tray(cx: &mut App) {
         }
         Err(error) => {
             eprintln!("failed to install Liora Docs tray icon: {error}");
-            cx.set_quit_mode(gpui::QuitMode::LastWindowClosed);
             return;
         }
     }
@@ -271,11 +268,6 @@ fn handle_docs_tray_command(command: TrayCommand, cx: &mut App) {
                     let _ = state.tray.set_visible(state.tray_visible);
                     state.resident_enabled
                 };
-                cx.set_quit_mode(if resident_enabled {
-                    gpui::QuitMode::Explicit
-                } else {
-                    gpui::QuitMode::LastWindowClosed
-                });
                 if cx.has_global::<TrayControlCenter>() {
                     cx.global_mut::<TrayControlCenter>()
                         .set_resident_enabled(resident_enabled);
@@ -323,7 +315,6 @@ fn prepare_docs_hide_to_tray(cx: &mut App) {
         return;
     }
 
-    cx.set_quit_mode(gpui::QuitMode::Explicit);
     set_docs_tray_visible(cx, true);
 
     let state = cx.global_mut::<DocsTrayState>();

@@ -75,7 +75,7 @@ impl Slider {
         if self.disabled {
             return;
         }
-        window.focus(&self.focus_handle, cx);
+        window.focus(&self.focus_handle);
         self.is_dragging = true;
         self.update_value_from_mouse(event.position, window, cx);
     }

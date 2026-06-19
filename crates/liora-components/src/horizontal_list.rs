@@ -302,7 +302,7 @@ impl Render for HorizontalList {
                 .flex_none()
                 .flex()
                 .flex_row()
-                .items_stretch()
+                .items_start()
                 .rounded_md()
                 .border_1()
                 .border_color(if is_over {

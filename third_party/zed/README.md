@@ -13,23 +13,22 @@ Why this exists:
 
 Dependency boundary:
 
-- Published Liora crates keep using crates.io `open-gpui` / `open-gpui-platform` and must not depend on this directory.
+- Published Liora crates use only the official crates.io `gpui` package and must not depend on this directory.
 - Liora's root `Cargo.toml` must not contain `[patch.crates-io]` or path GPUI overrides for SDK publication.
 - Cargo patches are root-application decisions; a library crate cannot safely force downstream applications to use a patched backend.
 
 How Gallery / Docs can test this patch locally:
 
 1. Use a throwaway local branch for verification.
-2. Temporarily change the root `[workspace.dependencies]` aliases so every Liora crate resolves `gpui` and `gpui_platform` from Zed git packages instead of crates.io `open-gpui` / `open-gpui-platform`. Do not change only one app crate, or the workspace can end up with incompatible GPUI types.
-3. Add this app-root git-source patch:
+2. Keep the normal workspace dependency on official crates.io `gpui`.
+3. Add this app-root patch only on the throwaway branch:
 
 ```toml
-[patch."https://github.com/zed-industries/zed"]
+[patch.crates-io]
 gpui = { path = "third_party/zed/crates/gpui" }
-gpui_linux = { path = "third_party/zed/crates/gpui_linux" }
 ```
 
-Do not commit that override to publishable Liora SDK manifests. The vendored packages are named upstream `gpui` / `gpui_linux`, so they cannot directly patch crates.io packages named `open-gpui` / `open-gpui-linux`; apps that stay on `open-gpui` need a renamed private fork instead.
+Do not commit that override to publishable Liora SDK manifests. The SDK release path must remain official crates.io `gpui` with no local path override.
 
 Kept intentionally small:
 

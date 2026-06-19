@@ -1,3 +1,4 @@
+use crate::gpui_compat::element_id;
 use gpui::{
     AnyElement, App, Component, IntoElement, Pixels, RenderOnce, SharedString, Window, div,
     prelude::*, px,
@@ -178,7 +179,7 @@ impl RenderOnce for Tag {
                 let label = self.label.clone();
                 s.child(
                     div()
-                        .id(format!("close-btn-{}", label))
+                        .id(element_id(format!("close-btn-{}", label)))
                         .ml_1()
                         .flex()
                         .items_center()

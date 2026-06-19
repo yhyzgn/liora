@@ -1,6 +1,6 @@
 [package]
 name = "liora"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 description = "One-stop Liora SDK facade for native Rust GPUI apps: core, themes, components, icons, tray, and packaging helpers."
 license-file = "../../LICENSE.md"
@@ -8,13 +8,13 @@ repository = "https://github.com/yhyzgn/liora"
 publish = true
 
 [dependencies]
-liora-core = { version = "0.1.1", path = "../liora-core" }
-liora-theme = { version = "0.1.1", path = "../liora-theme" }
-liora-icons = { version = "0.1.1", path = "../liora-icons" }
-liora-icons-lucide = { version = "0.1.1", path = "../liora-icons-lucide" }
-liora-components = { version = "0.1.1", path = "../liora-components" }
-liora-tray = { version = "0.1.1", path = "../liora-tray" }
-liora-packager = { version = "0.1.1", path = "../liora-packager", optional = true }
+liora-core = { version = "0.1.2", path = "../liora-core" }
+liora-theme = { version = "0.1.2", path = "../liora-theme" }
+liora-icons = { version = "0.1.2", path = "../liora-icons" }
+liora-icons-lucide = { version = "0.1.2", path = "../liora-icons-lucide" }
+liora-components = { version = "0.1.2", path = "../liora-components" }
+liora-tray = { version = "0.1.2", path = "../liora-tray" }
+liora-packager = { version = "0.1.2", path = "../liora-packager", optional = true }
 
 [features]
 default = ["packager"]

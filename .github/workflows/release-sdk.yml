@@ -28,7 +28,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -93,8 +93,8 @@ jobs:
           assert "[patch.\"https://github.com/zed-industries/zed\"]" not in root_manifest, "SDK workspace must not force local Zed GPUI patches"
           root = tomllib.loads(root_manifest)
           gpui_dep = root["workspace"]["dependencies"]["gpui"]
-          assert gpui_dep["package"] == "open-gpui", "published SDK must resolve GPUI through crates.io open-gpui"
-          assert gpui_dep["version"] == "0.1.0", "unexpected open-gpui version"
+          assert "package" not in gpui_dep, "published SDK must use official crates.io gpui directly, not a renamed fork"
+          assert gpui_dep["version"] == "0.2.2", "published SDK must use official Zed gpui 0.2.2"
           assert gpui_dep["default-features"] is False, "SDK should keep GPUI default features disabled unless target apps opt in"
 
           paths = {crate: Path("crates") / crate / "Cargo.toml" for crate in expected}
@@ -126,7 +126,7 @@ jobs:
           cargo package -p liora-packager
 
       - name: Upload root SDK package preflight artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: liora-sdk-root-crate-preflight
           path: |
@@ -144,7 +144,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable

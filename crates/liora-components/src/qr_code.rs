@@ -1,3 +1,4 @@
+use crate::gpui_compat::PixelsExt;
 use gpui::{
     AnyElement, App, Hsla, IntoElement, Pixels, RenderImage, RenderOnce, Rgba, SharedString,
     Window, div, img, prelude::*, px,

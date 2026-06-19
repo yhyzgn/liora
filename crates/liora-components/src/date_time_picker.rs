@@ -1,3 +1,4 @@
+use crate::gpui_compat::element_id;
 use crate::motion::pop_in;
 use gpui::{
     App, Bounds, Context, Element, ElementId, Entity, GlobalElementId, Hsla, InspectorElementId,
@@ -514,7 +515,7 @@ impl Render for DateTimePicker {
                             })
                         })
                         .child(pop_in(
-                            format!("{}-panel-motion", picker_id),
+                            element_id(format!("{}-panel-motion", picker_id)),
                             div()
                                 .absolute()
                                 .top(top)
@@ -533,7 +534,7 @@ impl Render for DateTimePicker {
             .when_some(self.width, |s, width| s.w(width))
             .when(self.width.is_none(), |s| s.w(px(260.0)))
             .h(px(34.0))
-            .id(format!("{}-trigger", self.id))
+            .id(element_id(format!("{}-trigger", self.id)))
             .flex()
             .items_center()
             .gap_2()
@@ -658,7 +659,7 @@ fn render_date_time_panel(
     let is_range = picker.update(cx, |picker, _| picker.is_range());
 
     div()
-        .id(format!("{}-panel", id))
+        .id(element_id(format!("{}-panel", id)))
         .cursor_default()
         .occlude()
         .on_mouse_down(MouseButton::Left, |_, _, cx| {
@@ -1035,7 +1036,7 @@ fn render_footer(
         .pt_2()
         .child(
             div()
-                .id(format!("{}-cancel", id))
+                .id(element_id(format!("{}-cancel", id)))
                 .cursor_pointer()
                 .px_3()
                 .py_1()
@@ -1050,7 +1051,7 @@ fn render_footer(
         )
         .child(
             div()
-                .id(format!("{}-confirm", id))
+                .id(element_id(format!("{}-confirm", id)))
                 .cursor_pointer()
                 .px_3()
                 .py_1()
@@ -1159,7 +1160,7 @@ fn time_column(
         )
         .child(
             div()
-                .id(format!("{}-scroll", id))
+                .id(element_id(format!("{}-scroll", id)))
                 .max_h(px(210.0))
                 .overflow_y_scroll()
                 .flex()

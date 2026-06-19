@@ -1,3 +1,4 @@
+use crate::gpui_compat::element_id;
 use gpui::{
     Context, IntoElement, MouseButton, PathPromptOptions, Pixels, Render, SharedString, Window,
     div, prelude::*, px,
@@ -308,7 +309,7 @@ impl Upload {
             .to_string();
         let size = std::fs::metadata(path).ok().map(|metadata| metadata.len());
         Self::validate_file_name_size(&name, size, accept, max_size)?;
-        Ok(UploadFile::new(path.to_string_lossy(), name)
+        Ok(UploadFile::new(path.to_string_lossy().into_owned(), name)
             .size(size.unwrap_or(0))
             .path(path.to_path_buf()))
     }
@@ -469,7 +470,7 @@ fn render_button_trigger(
     };
 
     div()
-        .id(id)
+        .id(element_id(id))
         .flex()
         .items_center()
         .gap_2()
@@ -536,7 +537,7 @@ fn render_drag_trigger(
     };
 
     div()
-        .id(id)
+        .id(element_id(id))
         .h(px(150.0))
         .flex()
         .flex_col()
@@ -601,7 +602,7 @@ fn render_text_file_item(
 ) -> impl IntoElement {
     let file_id = file.id.clone();
     div()
-        .id(id)
+        .id(element_id(id))
         .flex()
         .flex_col()
         .gap_1()
@@ -636,7 +637,7 @@ fn render_text_file_item(
                 )
                 .child(
                     div()
-                        .id(format!("{}-remove", file_id))
+                        .id(element_id(format!("{}-remove", file_id)))
                         .p_1()
                         .rounded(px(theme.radius.sm))
                         .cursor_pointer()
@@ -673,7 +674,7 @@ fn render_picture_file_list(
             let file_id = file.id.clone();
             let remove_id = file.id.clone();
             div()
-                .id(format!("{}-picture-{}", id, file.id))
+                .id(element_id(format!("{}-picture-{}", id, file.id)))
                 .relative()
                 .w(px(112.0))
                 .h(px(112.0))
@@ -707,7 +708,7 @@ fn render_picture_file_list(
                 .child({
                     let upload = upload.clone();
                     div()
-                        .id(format!("{}-picture-remove", file_id))
+                        .id(element_id(format!("{}-picture-remove", file_id)))
                         .absolute()
                         .top(px(6.0))
                         .right(px(6.0))

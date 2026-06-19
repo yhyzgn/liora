@@ -1,3 +1,4 @@
+use crate::gpui_compat::element_id;
 use crate::motion::pop_in;
 use gpui::{
     App, Bounds, Context, Element, ElementId, Entity, GlobalElementId, Hsla, InspectorElementId,
@@ -470,7 +471,7 @@ impl Render for DatePicker {
                             })
                         })
                         .child(pop_in(
-                            format!("{}-panel-motion", picker_id),
+                            element_id(format!("{}-panel-motion", picker_id)),
                             div()
                                 .absolute()
                                 .top(top)
@@ -489,7 +490,7 @@ impl Render for DatePicker {
             .when_some(self.width, |s, width| s.w(width))
             .when(self.width.is_none(), |s| s.w(px(220.0)))
             .h(px(34.0))
-            .id(format!("{}-trigger", self.id))
+            .id(element_id(format!("{}-trigger", self.id)))
             .flex()
             .items_center()
             .gap_2()
@@ -620,7 +621,7 @@ fn render_picker_panel(
 
 fn panel_shell(id: &SharedString, theme: &liora_theme::Theme) -> gpui::Stateful<gpui::Div> {
     div()
-        .id(format!("{}-panel", id))
+        .id(element_id(format!("{}-panel", id)))
         .cursor_default()
         .occlude()
         .on_mouse_down(MouseButton::Left, |_, _, cx| {

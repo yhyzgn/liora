@@ -1,6 +1,6 @@
 [package]
 name = "liora-gallery"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 description = "Native GPUI component gallery and dogfooding application for Liora."
 license = "LicenseRef-Liora"
@@ -15,7 +15,6 @@ path = "src/main.rs"
 
 [dependencies]
 gpui.workspace = true
-gpui_platform.workspace = true
 liora-core = { path = "../../crates/liora-core" }
 liora-theme = { path = "../../crates/liora-theme" }
 liora-components = { path = "../../crates/liora-components" }
@@ -25,12 +24,9 @@ liora-icons-lucide = { path = "../../crates/liora-icons-lucide" }
 
 [target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
 gpui = { workspace = true, features = ["wayland", "x11", "font-kit"] }
-gpui_platform = { workspace = true, features = ["wayland", "x11"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 gpui = { workspace = true, features = ["font-kit"] }
-gpui_platform = { workspace = true, features = ["font-kit"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 gpui.workspace = true
-gpui_platform.workspace = true

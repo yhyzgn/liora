@@ -1,3 +1,4 @@
+use crate::gpui_compat::element_id;
 use crate::motion::pop_in;
 use gpui::{AnyElement, Context, IntoElement, Render, SharedString, Window, div, prelude::*, px};
 use liora_core::{Config, unique_id};
@@ -92,7 +93,7 @@ impl Render for Collapse {
                     .flex_col()
                     .child(
                         div()
-                            .id(header_id)
+                            .id(element_id(header_id))
                             .cursor_pointer()
                             .px_4()
                             .py_3()
@@ -129,7 +130,7 @@ impl Render for Collapse {
                     )
                     .when(is_active, |s| {
                         s.child(pop_in(
-                            content_motion_id,
+                            element_id(content_motion_id),
                             div()
                                 .p_4()
                                 .bg(theme.neutral.card)

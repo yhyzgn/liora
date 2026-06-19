@@ -1,3 +1,4 @@
+use crate::gpui_compat::element_id;
 use gpui::{
     App, Bounds, ClipboardItem, Component, Context, Element, ElementId, Entity, FocusHandle,
     Focusable, GlobalElementId, InspectorElementId, IntoElement, KeyDownEvent, LayoutId,
@@ -337,7 +338,7 @@ impl SelectableTextState {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        window.focus(&self.focus_handle, cx);
+        window.focus(&self.focus_handle);
         let idx = self.index_for_point(event.position);
         let changed = with_selection_state(&self.id, |state| {
             let was_selecting = state.selecting;
@@ -514,7 +515,7 @@ impl Render for SelectableTextState {
         .detach();
 
         div()
-            .id(format!("{:?}-selectable", self.id))
+            .id(element_id(format!("{:?}-selectable", self.id)))
             .key_context(self.key_context)
             .track_focus(&self.focus_handle(cx))
             .cursor_text()
@@ -522,7 +523,7 @@ impl Render for SelectableTextState {
             .on_action(cx.listener(Self::select_all))
             .on_action(cx.listener(Self::copy))
             .child(SelectableTextElement {
-                id: ElementId::from(format!("{:?}-text", self.id)),
+                id: element_id(format!("{:?}-text", self.id)),
                 input: cx.entity(),
             })
     }
@@ -652,8 +653,7 @@ impl Element for SelectableTextElement {
         let hitbox = prepaint.hitbox.clone();
         window.on_mouse_event(move |event: &MouseDownEvent, phase, window, cx| {
             if phase.bubble() && event.button == MouseButton::Left && hitbox.is_hovered(window) {
-                window.capture_pointer(hitbox.id);
-                window.focus(&focus_handle_for_down, cx);
+                window.focus(&focus_handle_for_down);
                 input.update(cx, |input, cx| input.on_mouse_down(event, window, cx));
                 cx.stop_propagation();
             }

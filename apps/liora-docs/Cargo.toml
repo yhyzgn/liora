@@ -1,6 +1,6 @@
 [package]
 name = "liora-docs"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 description = "Native GPUI documentation application for Liora."
 license = "LicenseRef-Liora"
@@ -20,7 +20,6 @@ path = "src/bin/check_snippets.rs"
 
 [dependencies]
 gpui.workspace = true
-gpui_platform.workspace = true
 liora-core = { path = "../../crates/liora-core" }
 liora-theme = { path = "../../crates/liora-theme" }
 liora-components = { path = "../../crates/liora-components" }
@@ -32,12 +31,9 @@ pulldown-cmark = "0.13.3"
 
 [target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
 gpui = { workspace = true, features = ["wayland", "x11", "font-kit"] }
-gpui_platform = { workspace = true, features = ["wayland", "x11"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 gpui = { workspace = true, features = ["font-kit"] }
-gpui_platform = { workspace = true, features = ["font-kit"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 gpui.workspace = true
-gpui_platform.workspace = true
