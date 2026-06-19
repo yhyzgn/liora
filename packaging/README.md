@@ -12,8 +12,8 @@ runtime.
 The icon set is generated from deterministic SVG sources in `packaging/icons/`:
 
 - `liora.*` — main Liora component-library brand logo.
-- `liora-gallery.*` — application icon for `liora-gallery` packages.
-- `liora-docs.*` — application icon for `liora-docs` packages.
+- `liora-gallery.*` — application icon for `liora-gallery` packages; component-grid mark.
+- `liora-docs.*` — application icon for `liora-docs` packages; document/fold mark.
 
 Each icon currently ships as:
 
@@ -24,4 +24,9 @@ Each icon currently ships as:
 
 Regenerate these assets from the SVG sources when the brand mark changes. The
 packaging validator checks that all required icon files exist and have the
-expected file headers.
+expected file headers. Runtime tray icons are app-owned assets under
+`apps/liora-gallery/assets/tray-icons/` and `apps/liora-docs/assets/tray-icons/`.
+Window header marks live under each app's `assets/status-icons/` directory, and
+bottom status-bar state icons live under each app's `assets/status-bar-icons/`
+directory. These assets intentionally do not live inside the reusable
+`liora-tray` SDK crate.

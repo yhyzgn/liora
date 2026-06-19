@@ -1,6 +1,6 @@
 use gpui::{
-    AnyView, App, Application, Component, Context, Global, Render, WeakEntity, Window,
-    WindowOptions, div, prelude::*, px, size,
+    AnyView, App, Application, Component, Context, Global, Render, RenderImage, WeakEntity, Window,
+    WindowOptions, div, img, prelude::*, px, size,
 };
 use liora_components::{
     AppWindowFrame, Button, Card, Checkbox, Container, Dialog, Input, Menu, MenuMode, Paragraph,
@@ -13,9 +13,8 @@ use liora_core::{
 };
 use liora_gallery::demos;
 use liora_tray::{
-    BundledTrayIconSet, BundledTrayIconState, LioraTray, MouseButton, MouseButtonState,
-    TrayCloseAction, TrayCommand, TrayConfig, TrayControlCenter, TrayIconEvent, bundled_tray_icon,
-    default_liora_tray_menu, solid_icon,
+    LioraTray, MouseButton, MouseButtonState, TrayCloseAction, TrayCommand, TrayConfig,
+    TrayControlCenter, TrayIconEvent, default_liora_tray_menu, icon_from_png_bytes, solid_icon,
 };
 use liora_updater::{
     AssetKind, InstallAction, InstallPlan, LioraApp, Platform, UpdateRequest, Updater,
@@ -24,7 +23,7 @@ use liora_updater::{
 use std::{
     process::Command,
     sync::{
-        Arc,
+        Arc, OnceLock,
         atomic::{AtomicBool, Ordering},
         mpsc,
     },
@@ -70,6 +69,15 @@ impl UpdatePanelStatus {
             Self::Downloaded(version) => format!("已下载并通过 SHA-256 校验：{version}"),
             Self::Installing(detail) => format!("已启动安装流程：{detail}"),
             Self::Error(error) => format!("更新失败：{error}"),
+        }
+    }
+
+    fn status_bar_icon(&self) -> &'static str {
+        match self {
+            Self::Checking | Self::Downloading(_) | Self::Installing(_) => "syncing",
+            Self::Available(_) | Self::Downloaded(_) => "update",
+            Self::Error(_) => "error",
+            Self::Idle | Self::UpToDate(_) => "ready",
         }
     }
 }
@@ -156,6 +164,7 @@ fn gallery_window_options(cx: &App, frame_mode: WindowFrameMode) -> WindowOption
                 title: Some("Liora UI Gallery".into()),
                 ..Default::default()
             }),
+            app_id: Some("liora-gallery".into()),
             ..Default::default()
         },
         frame_mode,
@@ -525,14 +534,16 @@ fn show_gallery_close_confirm(cx: &mut App) {
 }
 
 fn gallery_tray_icon(name: &str) -> Option<liora_tray::TrayIconImage> {
-    match bundled_tray_icon(
-        BundledTrayIconSet::Gallery,
-        BundledTrayIconState::from_name(name),
-    ) {
+    let bytes = match name {
+        "syncing" => include_bytes!("../assets/tray-icons/syncing.png").as_slice(),
+        "error" => include_bytes!("../assets/tray-icons/error.png").as_slice(),
+        _ => include_bytes!("../assets/tray-icons/default.png").as_slice(),
+    };
+    match icon_from_png_bytes(bytes) {
         Ok(icon) => Some(icon),
         Err(error) => {
             eprintln!(
-                "failed to load bundled Liora Gallery tray icon '{name}': {error}; using fallback icon"
+                "failed to load Liora Gallery tray icon asset '{name}': {error}; using fallback icon"
             );
             match solid_icon([32, 96, 255, 255], 32) {
                 Ok(icon) => Some(icon),
@@ -568,6 +579,12 @@ mod shell_tests {
             .expect("Gallery should open a GPUI window")..];
         assert!(source.contains("show: false,"));
         assert!(source.contains("startup_maximized_window_bounds"));
+        assert!(source.contains("app_id: Some(\"liora-gallery\".into())"));
+        assert!(source.contains("gallery_status_icon"));
+        assert!(source.contains("../assets/status-icons/status.png"));
+        assert!(source.contains("gallery_status_bar_icon"));
+        assert!(source.contains("../assets/status-bar-icons/ready.png"));
+        assert!(source.contains("../assets/tray-icons/default.png"));
         let attach_index = open_window
             .find(&attach_call)
             .expect("Gallery should attach System theme before first render");
@@ -588,6 +605,55 @@ mod shell_tests {
     }
 }
 
+fn gallery_status_icon() -> Arc<RenderImage> {
+    static ICON: OnceLock<Arc<RenderImage>> = OnceLock::new();
+    ICON.get_or_init(|| {
+        let image = ::image::load_from_memory(include_bytes!("../assets/status-icons/status.png"))
+            .expect("Gallery status icon asset must be a valid PNG")
+            .into_rgba8();
+        Arc::new(RenderImage::new([::image::Frame::new(image)]))
+    })
+    .clone()
+}
+
+fn gallery_status_bar_icon(name: &str) -> Arc<RenderImage> {
+    static READY: OnceLock<Arc<RenderImage>> = OnceLock::new();
+    static SYNCING: OnceLock<Arc<RenderImage>> = OnceLock::new();
+    static UPDATE: OnceLock<Arc<RenderImage>> = OnceLock::new();
+    static ERROR: OnceLock<Arc<RenderImage>> = OnceLock::new();
+
+    let (slot, bytes, label) = match name {
+        "syncing" => (
+            &SYNCING,
+            include_bytes!("../assets/status-bar-icons/syncing.png").as_slice(),
+            "Gallery syncing status-bar icon",
+        ),
+        "update" => (
+            &UPDATE,
+            include_bytes!("../assets/status-bar-icons/update.png").as_slice(),
+            "Gallery update status-bar icon",
+        ),
+        "error" => (
+            &ERROR,
+            include_bytes!("../assets/status-bar-icons/error.png").as_slice(),
+            "Gallery error status-bar icon",
+        ),
+        _ => (
+            &READY,
+            include_bytes!("../assets/status-bar-icons/ready.png").as_slice(),
+            "Gallery ready status-bar icon",
+        ),
+    };
+
+    slot.get_or_init(|| {
+        let image = ::image::load_from_memory(bytes)
+            .unwrap_or_else(|error| panic!("{label} asset must be a valid PNG: {error}"))
+            .into_rgba8();
+        Arc::new(RenderImage::new([::image::Frame::new(image)]))
+    })
+    .clone()
+}
+
 impl Render for Gallery {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let selected = self.selected.min(self.entries.len());
@@ -598,6 +664,9 @@ impl Render for Gallery {
 
         let selected_entry = self.entries.get(selected);
         let selected_demo = self.demos.get(selected).cloned();
+        let selected_label = selected_entry
+            .map(|entry| entry.name.to_string())
+            .unwrap_or_else(|| "About".into());
 
         let header = div()
             .flex()
@@ -606,13 +675,24 @@ impl Render for Gallery {
             .gap_4()
             .child(
                 Space::new()
-                    .vertical()
-                    .gap_xs()
-                    .child(Title::new("Liora UI").h2())
-                    .child(Text::new(format!(
-                        "Native Component Library · {} demos · rendering one demo at a time",
-                        self.entries.len()
-                    ))),
+                    .gap_md()
+                    .child(
+                        div()
+                            .size(px(42.0))
+                            .rounded(px(13.0))
+                            .overflow_hidden()
+                            .child(img(gallery_status_icon()).size(px(42.0))),
+                    )
+                    .child(
+                        Space::new()
+                            .vertical()
+                            .gap_xs()
+                            .child(Title::new("Liora UI").h2())
+                            .child(Text::new(format!(
+                                "Native Component Library · {} demos · rendering one demo at a time",
+                                self.entries.len()
+                            ))),
+                    ),
             )
             .child(
                 Space::new()
@@ -690,6 +770,8 @@ impl Render for Gallery {
             .main_scroll()
             .main_padding_xl()
             .child(content)
+            .footer(self.render_status_bar(selected_label, cx))
+            .footer_height(px(38.0))
             .overlay(PortalLayer);
 
         AppWindowFrame::new("Liora UI Gallery", shell)
@@ -700,6 +782,53 @@ impl Render for Gallery {
 }
 
 impl Gallery {
+    fn render_status_bar(
+        &self,
+        selected_label: String,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement {
+        let theme = cx.global::<Config>().theme.clone();
+
+        div()
+            .flex()
+            .items_center()
+            .justify_between()
+            .w_full()
+            .gap_4()
+            .child(
+                Space::new()
+                    .gap_sm()
+                    .child(
+                        div()
+                            .size(px(22.0))
+                            .rounded(px(7.0))
+                            .overflow_hidden()
+                            .child(
+                                img(gallery_status_bar_icon(
+                                    self.updater_status.status_bar_icon(),
+                                ))
+                                .size(px(22.0)),
+                            ),
+                    )
+                    .child(Text::new(self.updater_status.label()).sm().nowrap()),
+            )
+            .child(
+                Space::new()
+                    .gap_sm()
+                    .child(
+                        Text::new(selected_label)
+                            .sm()
+                            .text_color(theme.neutral.text_3)
+                            .nowrap(),
+                    )
+                    .child(
+                        Tag::new(format!("v{}", env!("CARGO_PKG_VERSION")))
+                            .small()
+                            .round(true),
+                    ),
+            )
+    }
+
     fn gallery_nav_menu(&mut self, selected: usize, cx: &mut Context<Self>) -> gpui::Entity<Menu> {
         let query = self
             .nav_filter

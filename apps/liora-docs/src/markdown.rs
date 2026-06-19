@@ -1,6 +1,7 @@
 use gpui::{
     AnyElement, AnyView, App, Component, Context, Entity, FontWeight, IntoElement, Render,
-    RenderOnce, ScrollHandle, SharedString, WeakEntity, Window, div, prelude::*, px, rgb,
+    RenderImage, RenderOnce, ScrollHandle, SharedString, WeakEntity, Window, div, img, prelude::*,
+    px, rgb,
 };
 use liora_components::{
     Affix, AffixPosition, Alert, AlertType, Anchor, AnchorLink, AnchorTarget, AppWindowFrame,
@@ -27,7 +28,10 @@ use liora_updater::{
     liora_asset_selector,
 };
 use pulldown_cmark::{CodeBlockKind, Event, HeadingLevel, Options, Parser, Tag, TagEnd};
-use std::process::Command;
+use std::{
+    process::Command,
+    sync::{Arc, OnceLock},
+};
 
 const INTRO_DOC: &str = include_str!("../content/pages/overview.md");
 const QUICK_START_DOC: &str = include_str!("../content/pages/quick_start.md");
@@ -7182,6 +7186,15 @@ impl UpdatePanelStatus {
             Self::Error(error) => format!("更新失败：{error}"),
         }
     }
+
+    fn status_bar_icon(&self) -> &'static str {
+        match self {
+            Self::Checking | Self::Downloading(_) | Self::Installing(_) => "syncing",
+            Self::Available(_) | Self::Downloaded(_) => "update",
+            Self::Error(_) => "error",
+            Self::Idle | Self::UpToDate(_) => "ready",
+        }
+    }
 }
 
 pub struct DocsShell {
@@ -7196,6 +7209,55 @@ pub struct DocsShell {
     frame_mode_switch: Entity<Switch>,
     on_frame_mode_change: fn(WindowFrameMode, &mut Window, &mut App),
     on_close: fn(&mut Window, &mut App),
+}
+
+fn docs_status_icon() -> Arc<RenderImage> {
+    static ICON: OnceLock<Arc<RenderImage>> = OnceLock::new();
+    ICON.get_or_init(|| {
+        let image = ::image::load_from_memory(include_bytes!("../assets/status-icons/status.png"))
+            .expect("Docs status icon asset must be a valid PNG")
+            .into_rgba8();
+        Arc::new(RenderImage::new([::image::Frame::new(image)]))
+    })
+    .clone()
+}
+
+fn docs_status_bar_icon(name: &str) -> Arc<RenderImage> {
+    static READY: OnceLock<Arc<RenderImage>> = OnceLock::new();
+    static SYNCING: OnceLock<Arc<RenderImage>> = OnceLock::new();
+    static UPDATE: OnceLock<Arc<RenderImage>> = OnceLock::new();
+    static ERROR: OnceLock<Arc<RenderImage>> = OnceLock::new();
+
+    let (slot, bytes, label) = match name {
+        "syncing" => (
+            &SYNCING,
+            include_bytes!("../assets/status-bar-icons/syncing.png").as_slice(),
+            "Docs syncing status-bar icon",
+        ),
+        "update" => (
+            &UPDATE,
+            include_bytes!("../assets/status-bar-icons/update.png").as_slice(),
+            "Docs update status-bar icon",
+        ),
+        "error" => (
+            &ERROR,
+            include_bytes!("../assets/status-bar-icons/error.png").as_slice(),
+            "Docs error status-bar icon",
+        ),
+        _ => (
+            &READY,
+            include_bytes!("../assets/status-bar-icons/ready.png").as_slice(),
+            "Docs ready status-bar icon",
+        ),
+    };
+
+    slot.get_or_init(|| {
+        let image = ::image::load_from_memory(bytes)
+            .unwrap_or_else(|error| panic!("{label} asset must be a valid PNG: {error}"))
+            .into_rgba8();
+        Arc::new(RenderImage::new([::image::Frame::new(image)]))
+    })
+    .clone()
 }
 
 impl Render for DocsShell {
@@ -7224,12 +7286,23 @@ impl Render for DocsShell {
                     .gap_4()
                     .child(
                         Space::new()
-                            .vertical()
-                            .gap_xs()
-                            .child(Title::new("Liora Docs").h2())
-                            .child(Text::new(
-                                "Native Markdown · GPUI elements · Liora components",
-                            )),
+                            .gap_md()
+                            .child(
+                                div()
+                                    .size(px(42.0))
+                                    .rounded(px(13.0))
+                                    .overflow_hidden()
+                                    .child(img(docs_status_icon()).size(px(42.0))),
+                            )
+                            .child(
+                                Space::new()
+                                    .vertical()
+                                    .gap_xs()
+                                    .child(Title::new("Liora Docs").h2())
+                                    .child(Text::new(
+                                        "Native Markdown · GPUI elements · Liora components",
+                                    )),
+                            ),
                     )
                     .child(
                         Space::new()
@@ -7262,6 +7335,8 @@ impl Render for DocsShell {
                     .child(Title::new(page.title).h3())
                     .child(div().flex_1().min_h_0().child(content_body)),
             )
+            .footer(self.render_status_bar(page.title, cx))
+            .footer_height(px(38.0))
             .overlay(DocsPortalLayer);
 
         AppWindowFrame::new("Liora Docs", shell)
@@ -7570,6 +7645,51 @@ fn theme_mode_segmented(mode: ThemeMode) -> Segmented {
 }
 
 impl DocsShell {
+    fn render_status_bar(
+        &self,
+        page_title: &'static str,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement {
+        let theme = cx.global::<Config>().theme.clone();
+
+        div()
+            .flex()
+            .items_center()
+            .justify_between()
+            .w_full()
+            .gap_4()
+            .child(
+                Space::new()
+                    .gap_sm()
+                    .child(
+                        div()
+                            .size(px(22.0))
+                            .rounded(px(7.0))
+                            .overflow_hidden()
+                            .child(
+                                img(docs_status_bar_icon(self.update_status.status_bar_icon()))
+                                    .size(px(22.0)),
+                            ),
+                    )
+                    .child(Text::new(self.update_status.label()).sm().nowrap()),
+            )
+            .child(
+                Space::new()
+                    .gap_sm()
+                    .child(
+                        Text::new(page_title)
+                            .sm()
+                            .text_color(theme.neutral.text_3)
+                            .nowrap(),
+                    )
+                    .child(
+                        LioraTag::new(format!("v{}", env!("CARGO_PKG_VERSION")))
+                            .small()
+                            .round(true),
+                    ),
+            )
+    }
+
     fn render_about_panel(
         &self,
         page_view: Entity<DocsPageView>,
@@ -8649,6 +8769,8 @@ mod tests {
         assert!(source.contains("Menu::new()"));
         assert!(source.contains("check_docs_update"));
         assert!(source.contains("About / Updates"));
+        assert!(source.contains("docs_status_bar_icon"));
+        assert!(source.contains("../assets/status-bar-icons/ready.png"));
         assert!(source.contains(".aside_scroll()"));
         assert!(source.contains("VirtualizedList::new"));
         assert!(source.contains("virtual_list: Entity<VirtualizedList>"));

@@ -7,9 +7,8 @@ use liora_components::{
 };
 use liora_core::{attach_system_theme_observer, startup_maximized_window_bounds};
 use liora_tray::{
-    BundledTrayIconSet, BundledTrayIconState, LioraTray, MouseButton, MouseButtonState,
-    TrayCloseAction, TrayCommand, TrayConfig, TrayControlCenter, TrayIconEvent, bundled_tray_icon,
-    default_liora_tray_menu, solid_icon,
+    LioraTray, MouseButton, MouseButtonState, TrayCloseAction, TrayCommand, TrayConfig,
+    TrayControlCenter, TrayIconEvent, default_liora_tray_menu, icon_from_png_bytes, solid_icon,
 };
 use std::{
     sync::{
@@ -84,6 +83,7 @@ fn docs_window_options(cx: &App, frame_mode: WindowFrameMode) -> WindowOptions {
                 title: Some("Liora Docs — Native Main Window".into()),
                 ..Default::default()
             }),
+            app_id: Some("liora-docs".into()),
             ..Default::default()
         },
         frame_mode,
@@ -452,14 +452,16 @@ fn show_docs_close_confirm(cx: &mut App) {
 }
 
 fn docs_tray_icon(name: &str) -> Option<liora_tray::TrayIconImage> {
-    match bundled_tray_icon(
-        BundledTrayIconSet::Docs,
-        BundledTrayIconState::from_name(name),
-    ) {
+    let bytes = match name {
+        "syncing" => include_bytes!("../assets/tray-icons/syncing.png").as_slice(),
+        "error" => include_bytes!("../assets/tray-icons/error.png").as_slice(),
+        _ => include_bytes!("../assets/tray-icons/default.png").as_slice(),
+    };
+    match icon_from_png_bytes(bytes) {
         Ok(icon) => Some(icon),
         Err(error) => {
             eprintln!(
-                "failed to load bundled Liora Docs tray icon '{name}': {error}; using fallback icon"
+                "failed to load Liora Docs tray icon asset '{name}': {error}; using fallback icon"
             );
             match solid_icon([139, 92, 246, 255], 32) {
                 Ok(icon) => Some(icon),

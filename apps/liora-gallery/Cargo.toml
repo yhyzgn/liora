@@ -1,6 +1,6 @@
 [package]
 name = "liora-gallery"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2024"
 description = "Native GPUI component gallery and dogfooding application for Liora."
 license = "LicenseRef-Liora"
@@ -15,6 +15,7 @@ path = "src/main.rs"
 
 [dependencies]
 gpui.workspace = true
+image.workspace = true
 liora-core = { path = "../../crates/liora-core" }
 liora-theme = { path = "../../crates/liora-theme" }
 liora-components = { path = "../../crates/liora-components" }

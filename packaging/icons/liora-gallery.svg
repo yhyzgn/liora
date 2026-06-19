@@ -1,63 +1,36 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="Liora Gallery application icon">
+      <defs>
+        <linearGradient id="bg" x1="132" y1="92" x2="894" y2="930" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#08111F"/><stop offset="0.42" stop-color="#111827"/><stop offset="1" stop-color="#020617"/>
+        </linearGradient>
+        <radialGradient id="cyan" cx="28%" cy="22%" r="62%"><stop offset="0" stop-color="#67E8F9" stop-opacity="0.68"/><stop offset="1" stop-color="#67E8F9" stop-opacity="0"/></radialGradient>
+        <radialGradient id="mint" cx="72%" cy="78%" r="60%"><stop offset="0" stop-color="#5EEAD4" stop-opacity="0.52"/><stop offset="1" stop-color="#5EEAD4" stop-opacity="0"/></radialGradient>
+        <radialGradient id="violet" cx="78%" cy="18%" r="48%"><stop offset="0" stop-color="#A78BFA" stop-opacity="0.45"/><stop offset="1" stop-color="#A78BFA" stop-opacity="0"/></radialGradient>
+        <linearGradient id="aurora" x1="206" y1="208" x2="824" y2="820" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#67E8F9"/><stop offset="0.52" stop-color="#A78BFA"/><stop offset="1" stop-color="#5EEAD4"/></linearGradient>
+        <filter id="shadow" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="32" stdDeviation="34" flood-color="#000" flood-opacity="0.38"/></filter>
+        <filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="14" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <clipPath id="round"><rect x="64" y="64" width="896" height="896" rx="218"/></clipPath>
+      </defs>
+      <g clip-path="url(#round)">
+        <rect x="64" y="64" width="896" height="896" rx="218" fill="url(#bg)"/>
+        <rect x="64" y="64" width="896" height="896" rx="218" fill="url(#cyan)"/>
+        <rect x="64" y="64" width="896" height="896" rx="218" fill="url(#mint)"/>
+        <rect x="64" y="64" width="896" height="896" rx="218" fill="url(#violet)"/>
+        <path d="M88 814C250 714 420 696 592 758C746 814 850 758 960 650V960H88Z" fill="#0F172A" opacity="0.62"/>
+        <circle cx="822" cy="202" r="114" fill="#FFFFFF" opacity="0.04"/>
+        <circle cx="205" cy="782" r="136" fill="#FFFFFF" opacity="0.035"/>
+      </g>
+      <rect x="64" y="64" width="896" height="896" rx="218" fill="none" stroke="#FFFFFF" stroke-opacity="0.16" stroke-width="3"/>
 
-  <defs>
-    <linearGradient id="bg" x1="160" y1="80" x2="880" y2="944" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#111a3f"/>
-      <stop offset="0.45" stop-color="#321b72"/>
-      <stop offset="1" stop-color="#050814"/>
-    </linearGradient>
-    <radialGradient id="liora1" cx="34%" cy="24%" r="62%">
-      <stop offset="0" stop-color="#62f4ff" stop-opacity="0.88"/>
-      <stop offset="0.42" stop-color="#7b61ff" stop-opacity="0.34"/>
-      <stop offset="1" stop-color="#7b61ff" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="liora2" cx="70%" cy="76%" r="58%">
-      <stop offset="0" stop-color="#ff7adf" stop-opacity="0.72"/>
-      <stop offset="0.38" stop-color="#a855f7" stop-opacity="0.28"/>
-      <stop offset="1" stop-color="#a855f7" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="stroke" x1="238" y1="188" x2="820" y2="856" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#84f7ff"/>
-      <stop offset="0.48" stop-color="#b9a7ff"/>
-      <stop offset="1" stop-color="#ff8bd8"/>
-    </linearGradient>
-    <linearGradient id="whiteGlass" x1="314" y1="188" x2="690" y2="814" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#d7e3ff"/>
-    </linearGradient>
-    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="32" stdDeviation="34" flood-color="#000000" flood-opacity="0.38"/>
-    </filter>
-    <filter id="glow" x="-35%" y="-35%" width="170%" height="170%">
-      <feGaussianBlur stdDeviation="12" result="blur"/>
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-    <clipPath id="clipRound"><rect x="64" y="64" width="896" height="896" rx="218"/></clipPath>
-  </defs>
+        <g filter="url(#shadow)">
+          <rect x="216" y="218" width="592" height="592" rx="132" fill="#071126" fill-opacity="0.70" stroke="url(#aurora)" stroke-width="26"/>
+          <rect x="292" y="294" width="174" height="174" rx="44" fill="#F8FAFC"/>
+          <rect x="558" y="294" width="174" height="174" rx="44" fill="#67E8F9"/>
+          <rect x="292" y="560" width="174" height="174" rx="44" fill="#A78BFA"/>
+          <rect x="558" y="560" width="174" height="174" rx="44" fill="#5EEAD4"/>
+          <path d="M336 382H422M602 382H688M336 648H422M602 648H688" stroke="#071126" stroke-width="20" stroke-linecap="round" opacity="0.42"/>
+          <path d="M512 248V780M248 512H776" stroke="#E2E8F0" stroke-width="6" stroke-linecap="round" opacity="0.16"/>
+        </g>
+        <path d="M770 190L794 248L852 272L794 296L770 354L746 296L688 272L746 248Z" fill="#FFFFFF" opacity="0.92" filter="url(#glow)"/>
 
-
-  <g clip-path="url(#clipRound)">
-    <rect x="64" y="64" width="896" height="896" rx="218" fill="url(#bg)"/>
-    <rect x="64" y="64" width="896" height="896" rx="218" fill="url(#liora1)"/>
-    <rect x="64" y="64" width="896" height="896" rx="218" fill="url(#liora2)"/>
-    <path d="M118 794C282 686 420 710 570 770C728 833 850 792 954 680V960H118Z" fill="#101936" opacity="0.5"/>
-    <circle cx="820" cy="190" r="104" fill="#ffffff" opacity="0.05"/>
-    <circle cx="212" cy="770" r="140" fill="#ffffff" opacity="0.035"/>
-  </g>
-  <rect x="64" y="64" width="896" height="896" rx="218" fill="none" stroke="#ffffff" stroke-opacity="0.18" stroke-width="3"/>
-
-
-  <g filter="url(#softShadow)">
-    <rect x="238" y="236" width="548" height="548" rx="96" fill="#071126" fill-opacity="0.58" stroke="url(#stroke)" stroke-width="24"/>
-    <rect x="306" y="304" width="164" height="164" rx="38" fill="#ffffff" fill-opacity="0.92"/>
-    <rect x="554" y="304" width="164" height="164" rx="38" fill="#7df7ff" fill-opacity="0.84"/>
-    <rect x="306" y="552" width="164" height="164" rx="38" fill="#b9a7ff" fill-opacity="0.88"/>
-    <rect x="554" y="552" width="164" height="164" rx="38" fill="#ff8bd8" fill-opacity="0.86"/>
-    <path d="M348 386H428M596 386H676M348 634H428M596 634H676" stroke="#071126" stroke-width="18" stroke-linecap="round" opacity="0.38"/>
-  </g>
-  <path d="M770 214L790 260L836 280L790 300L770 346L750 300L704 280L750 260Z" fill="#ffffff" opacity="0.88" filter="url(#glow)"/>
-
-</svg>
+    </svg>

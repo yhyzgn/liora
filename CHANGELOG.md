@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.5 - 2026-06-19
+
+- Removed Gallery/Docs-specific bundled tray icon assets from the reusable `liora-tray` SDK crate.
+- Moved runtime tray icons into app-owned `apps/liora-gallery/assets/tray-icons/` and `apps/liora-docs/assets/tray-icons/` assets.
+- Redesigned Gallery and Docs desktop/taskbar package icons as distinct Liora-branded app marks.
+- Added separate app-owned window header icons under `assets/status-icons/` and status-bar state icons under `assets/status-bar-icons/`, then rendered them in Gallery/Docs shells.
+- Updated tray documentation and compile-checked snippets to demonstrate app-owned icon loading with `icon_from_png_bytes`.
+
 ## 0.1.4 - 2026-06-19
 
 - Refactored `liora-updater` into a reusable GitHub Release updater SDK for any native app, with generic `AssetSelector`, `UpdateRequest`, and `PreparedUpdate` APIs.

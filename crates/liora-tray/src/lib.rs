@@ -39,60 +39,10 @@ pub enum LioraTrayError {
 pub type Result<T> = std::result::Result<T, LioraTrayError>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BundledTrayIconSet {
-    Gallery,
-    Docs,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BundledTrayIconState {
-    Default,
-    Syncing,
-    Error,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TrayCloseAction {
     Ask,
     ExitProcess,
     HideToTray,
-}
-
-impl BundledTrayIconState {
-    pub fn from_name(name: &str) -> Self {
-        match name {
-            "syncing" => Self::Syncing,
-            "error" => Self::Error,
-            _ => Self::Default,
-        }
-    }
-}
-
-pub fn bundled_tray_icon(
-    set: BundledTrayIconSet,
-    state: BundledTrayIconState,
-) -> Result<TrayIconImage> {
-    let bytes = match (set, state) {
-        (BundledTrayIconSet::Gallery, BundledTrayIconState::Default) => {
-            include_bytes!("../assets/tray-icons/gallery-default.png").as_slice()
-        }
-        (BundledTrayIconSet::Gallery, BundledTrayIconState::Syncing) => {
-            include_bytes!("../assets/tray-icons/gallery-syncing.png").as_slice()
-        }
-        (BundledTrayIconSet::Gallery, BundledTrayIconState::Error) => {
-            include_bytes!("../assets/tray-icons/gallery-error.png").as_slice()
-        }
-        (BundledTrayIconSet::Docs, BundledTrayIconState::Default) => {
-            include_bytes!("../assets/tray-icons/docs-default.png").as_slice()
-        }
-        (BundledTrayIconSet::Docs, BundledTrayIconState::Syncing) => {
-            include_bytes!("../assets/tray-icons/docs-syncing.png").as_slice()
-        }
-        (BundledTrayIconSet::Docs, BundledTrayIconState::Error) => {
-            include_bytes!("../assets/tray-icons/docs-error.png").as_slice()
-        }
-    };
-    icon_from_png_bytes(bytes)
 }
 
 pub fn icon_from_png_bytes(bytes: &[u8]) -> Result<TrayIconImage> {
@@ -679,15 +629,15 @@ mod tests {
     }
 
     #[test]
-    fn bundled_icons_are_valid_png_assets() {
-        for set in [BundledTrayIconSet::Gallery, BundledTrayIconSet::Docs] {
-            for state in [
-                BundledTrayIconState::Default,
-                BundledTrayIconState::Syncing,
-                BundledTrayIconState::Error,
-            ] {
-                assert!(bundled_tray_icon(set, state).is_ok());
-            }
-        }
+    fn tray_crate_keeps_application_icons_caller_owned() {
+        let manifest_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        assert!(
+            !manifest_dir.join("assets").exists(),
+            "liora-tray must not bundle Gallery/Docs icon assets"
+        );
+        assert!(
+            !manifest_dir.join("src/assets").exists(),
+            "liora-tray source must stay free of app-specific image assets"
+        );
     }
 }

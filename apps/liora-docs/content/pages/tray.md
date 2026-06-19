@@ -6,7 +6,7 @@
 
 ## 主窗口控制用例
 
-`cargo run -p liora-gallery` 与 `cargo run -p liora-docs` 会在应用启动时分别创建独立的演示系统托盘图标：Gallery 使用蓝色图标，Docs 使用紫色图标；这两套 PNG 图标资源位于 `crates/liora-tray/assets/tray-icons/`，并通过 `bundled_tray_icon(...)` 引用。本页和 Gallery 内部的 Tray 页面额外在主窗口中提供按钮：切换动态图标、显示/隐藏主窗口、开启/关闭状态栏驻留、显示/隐藏托盘图标、切换自动显示。
+`cargo run -p liora-gallery` 与 `cargo run -p liora-docs` 会在应用启动时分别创建独立的系统托盘图标。Gallery 和 Docs 的 PNG/SVG 托盘状态图标分别位于 `apps/liora-gallery/assets/tray-icons/` 与 `apps/liora-docs/assets/tray-icons/`，由应用层通过 `icon_from_png_bytes(...)` 加载；`liora-tray` 只提供通用托盘 API，不内嵌任何应用专用资源。本页和 Gallery 内部的 Tray 页面额外在主窗口中提供按钮：切换动态图标、显示/隐藏主窗口、开启/关闭状态栏驻留、显示/隐藏托盘图标、切换自动显示。
 
 ### 效果
 
