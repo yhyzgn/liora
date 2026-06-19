@@ -122,6 +122,17 @@ pub fn validate_packaging_layout(root: impl Into<PathBuf>) -> ValidationReport {
             metadata.linux_metainfo_path(&root),
         );
         require_icon_set(&mut report, &root, &metadata.icon_stem, &metadata.name);
+        for size in [16, 24, 32, 48, 64, 128, 256, 512] {
+            report.require_magic(
+                format!("{} hicolor {size}x{size} icon", metadata.name),
+                metadata.hicolor_png_path(&root, size),
+                b"\x89PNG\r\n\x1a\n",
+            );
+        }
+        report.require_path(
+            format!("{} Windows resource build script", metadata.name),
+            metadata.windows_resource_build_script_path(&root),
+        );
     }
 
     report

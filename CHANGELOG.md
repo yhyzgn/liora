@@ -7,6 +7,7 @@
 - Redesigned Gallery and Docs desktop/taskbar package icons as distinct Liora-branded app marks.
 - Registered Gallery and Docs user-scoped Linux desktop identities at startup so Wayland titlebar/taskbar icons resolve correctly during `cargo run`, not only after installing packages.
 - Standardized runtime app icons as 8-bit RGBA hicolor PNGs across 16/24/32/48/64/128/256/512 sizes, install a user hicolor index, and refresh KDE/desktop service caches after registration.
+- Extended installer packaging resources so Linux packages ship multi-size hicolor icons, Windows NSIS/WiX packages rely on the official cargo-packager shortcut templates, Windows app binaries embed their `.ico` resources, and portable Linux archives include desktop install/uninstall scripts.
 - Added separate app-owned window header icons under `assets/status-icons/` and status-bar state icons under `assets/status-bar-icons/`, then rendered them in Gallery/Docs shells.
 - Updated tray documentation and compile-checked snippets to demonstrate app-owned icon loading with `icon_from_png_bytes`.
 

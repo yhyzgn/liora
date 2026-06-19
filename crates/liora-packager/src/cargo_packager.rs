@@ -120,6 +120,10 @@ pub fn generated_rpm_config_path(root: &Path, app: &AppMetadata) -> PathBuf {
         .join(format!("GenerateRpm.{}.toml", app.app.key()))
 }
 
+fn hicolor_icon_sizes() -> [u16; 8] {
+    [16, 24, 32, 48, 64, 128, 256, 512]
+}
+
 /// Renders the render generate rpm config layer into native GPUI elements.
 pub fn render_generate_rpm_config(root: &Path, app: &AppMetadata) -> String {
     let mut out = String::new();
@@ -157,14 +161,17 @@ pub fn render_generate_rpm_config(root: &Path, app: &AppMetadata) -> String {
         &format!("/usr/share/metainfo/{}.metainfo.xml", app.binary),
         "644",
     );
-    rpm_asset(
-        &mut out,
-        &root
-            .join("packaging/icons")
-            .join(format!("{}.png", app.icon_stem)),
-        &format!("/usr/share/icons/hicolor/512x512/apps/{}.png", app.binary),
-        "644",
-    );
+    for size in hicolor_icon_sizes() {
+        rpm_asset(
+            &mut out,
+            &app.hicolor_png_path(root, size),
+            &format!(
+                "/usr/share/icons/hicolor/{size}x{size}/apps/{}.png",
+                app.binary
+            ),
+            "644",
+        );
+    }
     rpm_asset(
         &mut out,
         &root
@@ -224,21 +231,16 @@ pub fn render_cargo_packager_config(
     arr(&mut out, "formats", &cargo_formats);
     path_kv(&mut out, "outDir", out_dir);
     path_kv(&mut out, "binariesDir", binaries_dir);
-    arr(
-        &mut out,
-        "icons",
-        &[
-            &abs(root
-                .join("packaging/icons")
-                .join(format!("{}.png", app.icon_stem))),
-            &abs(root
-                .join("packaging/icons")
-                .join(format!("{}.icns", app.icon_stem))),
-            &abs(root
-                .join("packaging/icons")
-                .join(format!("{}.ico", app.icon_stem))),
-        ],
-    );
+    let mut icon_paths = app
+        .hicolor_png_paths(root)
+        .into_iter()
+        .map(abs)
+        .collect::<Vec<_>>();
+    icon_paths.push(abs(app.icon_png_path(root)));
+    icon_paths.push(abs(app.icon_icns_path(root)));
+    icon_paths.push(abs(app.icon_ico_path(root)));
+    let icon_refs = icon_paths.iter().map(String::as_str).collect::<Vec<_>>();
+    arr(&mut out, "icons", &icon_refs);
 
     line(&mut out, "");
     line(&mut out, "[[binaries]]");
@@ -354,6 +356,11 @@ mod tests {
         assert!(text.contains("[[binaries]]"));
         assert!(text.contains("path = \"liora-gallery\""));
         assert!(text.contains("installerIcon"));
+        assert!(text.contains("[nsis]"));
+        assert!(text.contains("installMode = \"currentUser\""));
+        assert!(!text.contains("fragmentPaths"));
+        assert!(text.contains("hicolor/16x16/apps/liora-gallery.png"));
+        assert!(text.contains("hicolor/512x512/apps/liora-gallery.png"));
     }
 
     #[test]
@@ -368,6 +375,8 @@ mod tests {
         assert!(text.contains("gtk3 = \"*\""));
         assert!(text.contains("vulkan-loader = \"*\""));
         assert!(text.contains("/usr/share/applications/liora-docs.desktop"));
+        assert!(text.contains("/usr/share/icons/hicolor/16x16/apps/liora-docs.png"));
+        assert!(text.contains("/usr/share/icons/hicolor/512x512/apps/liora-docs.png"));
         assert!(text.contains("/usr/share/icons/hicolor/scalable/apps/liora-docs.svg"));
     }
 }

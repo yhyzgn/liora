@@ -116,6 +116,29 @@ impl AppMetadata {
             .join(format!("{}.metainfo.xml", self.binary))
     }
 
+    /// Returns the filesystem path for one hicolor PNG icon size.
+    pub fn hicolor_png_path(&self, root: &Path, size: u16) -> PathBuf {
+        root.join("packaging")
+            .join("icons")
+            .join("hicolor")
+            .join(format!("{size}x{size}"))
+            .join("apps")
+            .join(format!("{}.png", self.icon_stem))
+    }
+
+    /// Returns every Linux hicolor PNG size shipped with installers.
+    pub fn hicolor_png_paths(&self, root: &Path) -> Vec<PathBuf> {
+        [16, 24, 32, 48, 64, 128, 256, 512]
+            .into_iter()
+            .map(|size| self.hicolor_png_path(root, size))
+            .collect()
+    }
+
+    /// Returns the filesystem path for the Windows resource build script.
+    pub fn windows_resource_build_script_path(&self, root: &Path) -> PathBuf {
+        root.join("apps").join(&self.binary).join("build.rs")
+    }
+
     /// Returns the filesystem path for the icon png resource.
     pub fn icon_png_path(&self, root: &Path) -> PathBuf {
         root.join("packaging")

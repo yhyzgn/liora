@@ -783,6 +783,10 @@ fn smoke_portable_tar_gz(
         for required_entry in [
             format!("{top}/share/applications/{}.desktop", app.binary),
             format!("{top}/share/metainfo/{}.metainfo.xml", app.binary),
+            format!("{top}/share/icons/hicolor/16x16/apps/{}.png", app.binary),
+            format!("{top}/share/icons/hicolor/512x512/apps/{}.png", app.binary),
+            format!("{top}/install-desktop.sh"),
+            format!("{top}/uninstall-desktop.sh"),
         ] {
             if !tar_listing_contains(&entries, &required_entry) {
                 return Err(format!(
@@ -1046,6 +1050,8 @@ fn build_portable_tar_gz(
         .map_err(|error| format!("failed to create staging bin directory: {error}"))?;
     fs::create_dir_all(stage_root.join("icons"))
         .map_err(|error| format!("failed to create staging icons directory: {error}"))?;
+    fs::create_dir_all(stage_root.join("share/icons/hicolor"))
+        .map_err(|error| format!("failed to create staging hicolor directory: {error}"))?;
     fs::create_dir_all(stage_root.join("share/applications"))
         .map_err(|error| format!("failed to create staging desktop directory: {error}"))?;
     fs::create_dir_all(stage_root.join("share/metainfo"))
@@ -1068,6 +1074,16 @@ fn build_portable_tar_gz(
             .join("icons")
             .join(format!("{}.svg", app.icon_stem)),
     )?;
+    for size in [16, 24, 32, 48, 64, 128, 256, 512] {
+        copy_file(
+            &app.hicolor_png_path(root, size),
+            &stage_root
+                .join("share/icons/hicolor")
+                .join(format!("{size}x{size}"))
+                .join("apps")
+                .join(format!("{}.png", app.binary)),
+        )?;
+    }
 
     if platform == Platform::Linux {
         copy_file(
@@ -1082,6 +1098,7 @@ fn build_portable_tar_gz(
                 .join("share/metainfo")
                 .join(format!("{}.metainfo.xml", app.binary)),
         )?;
+        write_portable_linux_desktop_scripts(&stage_root, app)?;
     }
 
     write_portable_launcher(&stage_root.join(app.binary.as_str()), &app.binary)?;
@@ -1130,6 +1147,69 @@ fn copy_file(source: &Path, dest: &Path) -> Result<(), String> {
     Ok(())
 }
 
+fn write_portable_linux_desktop_scripts(
+    stage_root: &Path,
+    app: &liora_packager::AppMetadata,
+) -> Result<(), String> {
+    let install_script = format!(
+        r#"#!/usr/bin/env sh
+set -eu
+DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+DATA_HOME="${{XDG_DATA_HOME:-$HOME/.local/share}}"
+mkdir -p "$DATA_HOME/applications" "$DATA_HOME/icons/hicolor"
+cp "$DIR/share/applications/{binary}.desktop" "$DATA_HOME/applications/{binary}.desktop"
+for size in 16 24 32 48 64 128 256 512; do
+  mkdir -p "$DATA_HOME/icons/hicolor/${{size}}x${{size}}/apps"
+  cp "$DIR/share/icons/hicolor/${{size}}x${{size}}/apps/{binary}.png" "$DATA_HOME/icons/hicolor/${{size}}x${{size}}/apps/{binary}.png"
+done
+mkdir -p "$DATA_HOME/icons/hicolor/scalable/apps"
+cp "$DIR/icons/{icon_stem}.svg" "$DATA_HOME/icons/hicolor/scalable/apps/{binary}.svg"
+if command -v update-desktop-database >/dev/null 2>&1; then update-desktop-database "$DATA_HOME/applications" >/dev/null 2>&1 || true; fi
+if command -v kbuildsycoca6 >/dev/null 2>&1; then kbuildsycoca6 --noincremental >/dev/null 2>&1 || true; fi
+if command -v kbuildsycoca5 >/dev/null 2>&1; then kbuildsycoca5 --noincremental >/dev/null 2>&1 || true; fi
+echo "Installed {name} desktop integration into $DATA_HOME"
+"#,
+        binary = app.binary,
+        icon_stem = app.icon_stem,
+        name = app.name
+    );
+    let uninstall_script = format!(
+        r#"#!/usr/bin/env sh
+set -eu
+DATA_HOME="${{XDG_DATA_HOME:-$HOME/.local/share}}"
+rm -f "$DATA_HOME/applications/{binary}.desktop"
+for size in 16 24 32 48 64 128 256 512; do
+  rm -f "$DATA_HOME/icons/hicolor/${{size}}x${{size}}/apps/{binary}.png"
+done
+rm -f "$DATA_HOME/icons/hicolor/scalable/apps/{binary}.svg"
+if command -v update-desktop-database >/dev/null 2>&1; then update-desktop-database "$DATA_HOME/applications" >/dev/null 2>&1 || true; fi
+if command -v kbuildsycoca6 >/dev/null 2>&1; then kbuildsycoca6 --noincremental >/dev/null 2>&1 || true; fi
+if command -v kbuildsycoca5 >/dev/null 2>&1; then kbuildsycoca5 --noincremental >/dev/null 2>&1 || true; fi
+echo "Removed {name} desktop integration from $DATA_HOME"
+"#,
+        binary = app.binary,
+        name = app.name
+    );
+    write_executable_script(&stage_root.join("install-desktop.sh"), &install_script)?;
+    write_executable_script(&stage_root.join("uninstall-desktop.sh"), &uninstall_script)
+}
+
+fn write_executable_script(path: &Path, script: &str) -> Result<(), String> {
+    fs::write(path, script)
+        .map_err(|error| format!("failed to write {}: {error}", path.display()))?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut permissions = fs::metadata(path)
+            .map_err(|error| format!("failed to stat {}: {error}", path.display()))?
+            .permissions();
+        permissions.set_mode(0o755);
+        fs::set_permissions(path, permissions)
+            .map_err(|error| format!("failed to chmod {}: {error}", path.display()))?;
+    }
+    Ok(())
+}
+
 fn write_portable_launcher(path: &Path, binary: &str) -> Result<(), String> {
     let script = format!(
         "#!/usr/bin/env sh\nset -eu\nDIR=\"$(CDPATH= cd -- \"$(dirname -- \"$0\")\" && pwd)\"\nexec \"$DIR/bin/{binary}\" \"$@\"\n"
@@ -1160,7 +1240,7 @@ fn write_portable_readme(
         .map(|sha| format!("- Git SHA: `{sha}`\n"))
         .unwrap_or_default();
     let text = format!(
-        "# {name} portable archive\n\nThis archive contains a pure Rust + GPUI native Liora application. It does not bundle or require Tauri, WebView, HTML/CSS, or browser runtime architecture.\n\n## Metadata\n\n- Package: `{package}`\n- Version: `{version}`\n- Platform: `{platform}`\n- Target triple: `{target_triple}`\n{git_line}\n## Run\n\n```bash\n./{binary}\n# or\n./bin/{binary}\n```\n\nLinux desktop metadata is included under `share/` when the archive is built on Linux.\n",
+        "# {name} portable archive\n\nThis archive contains a pure Rust + GPUI native Liora application. It does not bundle or require Tauri, WebView, HTML/CSS, or browser runtime architecture.\n\n## Metadata\n\n- Package: `{package}`\n- Version: `{version}`\n- Platform: `{platform}`\n- Target triple: `{target_triple}`\n{git_line}\n## Run\n\n```bash\n./{binary}\n# or\n./bin/{binary}\n```\n\nLinux desktop metadata is included under `share/` when the archive is built on Linux. Run `./install-desktop.sh` from the extracted archive to register the app in your desktop application menu, and `./uninstall-desktop.sh` to remove that registration.\n",
         name = app.name,
         package = app.package,
         version = app_version(),
