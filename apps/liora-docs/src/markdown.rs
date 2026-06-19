@@ -23,8 +23,8 @@ use liora_core::{
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 use liora_updater::{
-    AssetKind, InstallAction, InstallPlan, LioraApp, Platform, Updater, build_install_plan,
-    select_asset,
+    AssetKind, InstallAction, InstallPlan, LioraApp, Platform, UpdateRequest, Updater,
+    liora_asset_selector,
 };
 use pulldown_cmark::{CodeBlockKind, Event, HeadingLevel, Options, Parser, Tag, TagEnd};
 use std::process::Command;
@@ -7498,20 +7498,21 @@ fn download_docs_update_sync() -> Result<Option<(String, InstallPlan)>, liora_up
     let Some(platform) = Platform::current() else {
         return Ok(None);
     };
-    let updater = Updater::default();
-    let Some(release) =
-        updater.update_available(&format!("v{}", env!("CARGO_PKG_VERSION")), false)?
-    else {
+    let request = UpdateRequest::new(
+        LioraApp::Docs,
+        format!("v{}", env!("CARGO_PKG_VERSION")),
+        platform,
+        update_cache_dir(LioraApp::Docs),
+    )
+    .selector(liora_asset_selector(
+        LioraApp::Docs,
+        platform,
+        AssetKind::RawExecutable,
+    ));
+    let Some(update) = Updater::default().prepare_update(&request)? else {
         return Ok(None);
     };
-    let Some(asset) = select_asset(&release, LioraApp::Docs, platform, AssetKind::RawExecutable)
-    else {
-        return Ok(None);
-    };
-    let path =
-        updater.download_verified_asset(&release, &asset, &update_cache_dir(LioraApp::Docs))?;
-    let plan = build_install_plan(LioraApp::Docs, platform, &asset, path);
-    Ok(Some((release.tag, plan)))
+    Ok(Some((update.release.tag, update.install_plan)))
 }
 
 fn install_docs_update(docs: Entity<DocsShell>, cx: &mut App) {

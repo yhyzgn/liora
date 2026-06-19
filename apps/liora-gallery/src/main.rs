@@ -18,8 +18,8 @@ use liora_tray::{
     default_liora_tray_menu, solid_icon,
 };
 use liora_updater::{
-    AssetKind, InstallAction, InstallPlan, LioraApp, Platform, Updater, build_install_plan,
-    select_asset,
+    AssetKind, InstallAction, InstallPlan, LioraApp, Platform, UpdateRequest, Updater,
+    liora_asset_selector,
 };
 use std::{
     process::Command,
@@ -949,20 +949,21 @@ fn download_gallery_update_sync()
     let Some(platform) = Platform::current() else {
         return Ok(None);
     };
-    let updater = Updater::default();
-    let Some(release) =
-        updater.update_available(&format!("v{}", env!("CARGO_PKG_VERSION")), false)?
-    else {
+    let request = UpdateRequest::new(
+        LioraApp::Gallery,
+        format!("v{}", env!("CARGO_PKG_VERSION")),
+        platform,
+        update_cache_dir(LioraApp::Gallery),
+    )
+    .selector(liora_asset_selector(
+        LioraApp::Gallery,
+        platform,
+        AssetKind::Installer,
+    ));
+    let Some(update) = Updater::default().prepare_update(&request)? else {
         return Ok(None);
     };
-    let Some(asset) = select_asset(&release, LioraApp::Gallery, platform, AssetKind::Installer)
-    else {
-        return Ok(None);
-    };
-    let path =
-        updater.download_verified_asset(&release, &asset, &update_cache_dir(LioraApp::Gallery))?;
-    let plan = build_install_plan(LioraApp::Gallery, platform, &asset, path);
-    Ok(Some((release.tag, plan)))
+    Ok(Some((update.release.tag, update.install_plan)))
 }
 
 fn install_plan_description(plan: &InstallPlan) -> String {

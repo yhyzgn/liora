@@ -47,7 +47,7 @@ Rust desktop teams often need more than a handful of primitives. Liora focuses o
 | Enterprise component coverage | Element Plus-style categories and APIs across forms, feedback, data, navigation, charts, and advanced controls. |
 | Real app surfaces | `liora-gallery` and `liora-docs` show complete native application setup, theme switching, search/filtering, tray behavior, docs rendering, and dashboard-style composition. |
 | Theming | Light, Dark, and System theme modes with semantic tokens and component-level variants. |
-| One dependency for apps | `cargo add liora` exposes the maintained SDK facade: core, theme, components, icons, tray, packaging, and updater helpers. |
+| One dependency for apps | `cargo add liora` exposes the maintained SDK facade: core, theme, components, icons, tray, packaging, and generic updater helpers. |
 | Native distribution | `liora-packager` + `xtask package` validate installer information, manifests, checksums, signing policy, and package generation plans. |
 | Clear architecture boundary | Reusable components stay in `liora-components`; product-specific data models and screen composition stay in applications. |
 
@@ -62,7 +62,7 @@ Rust desktop teams often need more than a handful of primitives. Liora focuses o
 - **Native docs renderer**: Markdown is parsed as input and rendered into Liora/GPUI native nodes; code snippets live outside Markdown and are compile-checked.
 - **System tray facade**: `liora-tray` wraps `tray-icon` + `muda` for dynamic icons, nested menus, checkbox items, stable commands, and process-resident GPUI apps.
 - **Installer pipeline**: package information validation, `cargo-packager` config generation, RPM supplemental config, portable `.tar.gz`, manifests, checksums, release notes, and CI validation gates.
-- **Updater pipeline**: `liora-updater` checks GitHub Releases, selects the right Docs/Gallery asset, downloads into a cache, verifies `SHA256SUMS.txt`, and returns an explicit install plan.
+- **Reusable updater pipeline**: `liora-updater` checks GitHub Releases for any configured repository, selects assets with app/platform naming rules, downloads into a cache, verifies SHA-256 manifests, and returns an explicit install plan. Liora Gallery/Docs use small built-in presets on top of the generic API.
 - **Quality gates**: workspace fmt/check/test, docs snippet checks, package validation, release-readiness checks, and GUI startup smoke commands.
 
 ## Component coverage
@@ -122,7 +122,37 @@ Use lower-level crates such as `liora-components` or `liora-packager` only when 
 cargo add liora-updater
 ```
 
-It provides GitHub Release update checks for Liora apps, platform-aware asset selection, cached downloads, SHA-256 verification from `SHA256SUMS.txt`, and explicit install plans. Gallery and Docs automatically check for newer releases and download verified assets into the update cache from their About panels/startup flow. Installing remains a visible user action because some installer formats require OS elevation or replacing a running executable.
+It provides a reusable GitHub Release update layer for your own applications: configure the owner/repo, current tag, app name, platform selector, cache directory, checksum asset name, and installer preference. Gallery and Docs use Liora presets, but those presets are not required for other products.
+
+```rust
+use liora_updater::{
+    AssetKind, AssetSelector, Platform, UpdateRequest, Updater,
+};
+
+let platform = Platform::current().expect("supported desktop platform");
+let request = UpdateRequest::new(
+    "acme-notes",
+    "v0.3.0",
+    platform,
+    std::env::temp_dir().join("acme-notes-updates"),
+)
+.selector(
+    AssetSelector::for_platform(platform)
+        .matching_prefix("acme-notes")
+        .kind_priority([AssetKind::Installer, AssetKind::RawExecutable]),
+);
+
+if let Some(update) = Updater::new("acme", "acme-notes")
+    .with_checksum_asset_name("SHA256SUMS.txt")
+    .prepare_update(&request)?
+{
+    // Show update.release_tag(), update.asset.name, and update.install_plan in your UI.
+    // Run update.install_plan.install() only from an explicit user action.
+}
+# Ok::<(), liora_updater::UpdaterError>(())
+```
+
+The updater can automatically check, download, and verify assets, while installation remains a visible user action because some installer formats require OS elevation or replacing a running executable.
 
 ### 3. Run the native Gallery
 

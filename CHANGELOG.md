@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.4 - 2026-06-19
+
+- Refactored `liora-updater` into a reusable GitHub Release updater SDK for any native app, with generic `AssetSelector`, `UpdateRequest`, and `PreparedUpdate` APIs.
+- Kept Liora Gallery/Docs release selection as small presets on top of the generic updater instead of hard-coding those apps into the core flow.
+- Added configurable checksum asset names and documented custom updater integration for downstream applications.
+- Updated Gallery and Docs About/update flows to use the generic updater request pipeline.
+
 ## 0.1.3 - 2026-06-19
 
 - Added publishable `liora-updater` crate and default `liora::updater` facade export for GitHub Release checks, platform asset selection, cached downloads, SHA-256 verification, and explicit install plans.

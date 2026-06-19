@@ -31,6 +31,8 @@ Liora 不计划提供 HTML 输出、不计划运行在浏览器里，也不把 C
 
 ## About 栏与自动更新
 
-Gallery 和 Docs 都提供 About / 关于入口。应用启动后会自动检查 GitHub Releases 是否存在新版本，并把通过校验的资产下载到本地更新缓存；About 面板可以继续手动触发检查、下载和安装计划。`liora-updater` 负责选择当前平台的 release asset、下载到本地缓存、校验 `SHA256SUMS.txt`，并生成明确的安装动作。
+Gallery 和 Docs 都提供 About / 关于入口。应用启动后会自动检查 GitHub Releases 是否存在新版本，并把通过校验的资产下载到本地更新缓存；About 面板可以继续手动触发检查、下载和安装计划。
+
+`liora-updater` 不是 Gallery/Docs 专用模块，而是可复用的 GitHub Release updater SDK：应用可以自己配置 owner/repo、当前版本、asset selector、缓存目录、checksum asset 名称和安装器偏好。Gallery 和 Docs 只是在通用 API 上使用 Liora release 预设，用于选择 `liora-gallery` / `liora-docs` 的当前平台资产。
 
 为了避免静默提权或替换运行中的程序，Liora 不在后台偷偷执行系统级安装。Gallery 对安装器资产（例如 AppImage、DMG、NSIS/MSI）提供可执行安装动作；Docs 当前按照发布策略下载原始可执行文件，并给出手动替换计划。

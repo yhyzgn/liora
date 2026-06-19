@@ -1,9 +1,16 @@
-//! Safe updater planning for Liora desktop applications.
+//! Reusable GitHub Release updater primitives for native Rust applications.
 //!
-//! This crate talks to the public GitHub Releases API for `yhyzgn/liora`,
-//! selects release assets for the maintained Liora apps, downloads an asset into
+//! `liora-updater` is intentionally split into two layers:
+//!
+//! - generic update primitives (`Updater`, `AssetSelector`, `UpdateRequest`,
+//!   `PreparedUpdate`) that any application can configure for its own GitHub
+//!   repository and asset naming convention;
+//! - small Liora presets (`LioraApp`, `liora_asset_selector`, `select_asset`) used
+//!   by the official Gallery and Docs apps.
+//!
+//! The crate checks GitHub Releases, selects a platform asset, downloads it into
 //! caller-controlled cache/temp storage, verifies it against `SHA256SUMS.txt`,
-//! and builds an explicit install plan. It never performs privileged or
+//! and returns an explicit install plan. It never performs privileged or
 //! system-wide installation as part of update checks or downloads.
 
 use serde::Deserialize;
@@ -25,7 +32,10 @@ pub const DEFAULT_API_BASE: &str = "https://api.github.com";
 pub const CHECKSUMS_ASSET: &str = "SHA256SUMS.txt";
 const DEFAULT_USER_AGENT: &str = concat!("liora-updater/", env!("CARGO_PKG_VERSION"));
 
-/// Maintained release applications in the Liora repository.
+/// Official applications published from the Liora repository.
+///
+/// Other applications should use [`AssetSelector`] and [`UpdateRequest`]
+/// directly instead of this preset enum.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum LioraApp {
     Docs,
@@ -41,7 +51,13 @@ impl LioraApp {
     }
 }
 
-/// Release platform encoded in public GitHub release asset names.
+impl From<LioraApp> for String {
+    fn from(value: LioraApp) -> Self {
+        value.release_name().to_string()
+    }
+}
+
+/// Common desktop platforms encoded in release asset names.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Platform {
     LinuxX64,
@@ -59,6 +75,7 @@ impl Platform {
         }
     }
 
+    /// Asset-name fragment used by Liora release packages.
     pub fn asset_fragment(self) -> &'static str {
         match self {
             Self::LinuxX64 => "linux-x64",
@@ -83,7 +100,7 @@ pub enum AssetKind {
     RawExecutable,
     /// Platform installer/package asset where available.
     Installer,
-    /// Portable Linux archive.
+    /// Portable archive such as `.tar.gz`.
     PortableArchive,
 }
 
@@ -95,7 +112,7 @@ pub struct ReleaseAsset {
     pub size: u64,
 }
 
-/// A GitHub release with parsed Liora assets.
+/// A GitHub release with parsed assets.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Release {
     pub tag: String,
@@ -111,13 +128,15 @@ impl Release {
     }
 
     pub fn checksum_asset(&self) -> Option<&ReleaseAsset> {
-        self.assets
-            .iter()
-            .find(|asset| asset.name == CHECKSUMS_ASSET)
+        self.checksum_asset_named(CHECKSUMS_ASSET)
+    }
+
+    pub fn checksum_asset_named(&self, name: &str) -> Option<&ReleaseAsset> {
+        self.assets.iter().find(|asset| asset.name == name)
     }
 }
 
-/// Minimal semver-ish `vX.Y.Z` version used by Liora release tags.
+/// Minimal semver-ish `vX.Y.Z` version used by release tags.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Version {
     pub major: u64,
@@ -158,7 +177,7 @@ impl PartialOrd for Version {
     }
 }
 
-/// Compare two Liora release tags. Invalid tags sort before valid tags.
+/// Compare two release tags. Invalid tags sort before valid tags.
 pub fn compare_release_tags(left: &str, right: &str) -> Ordering {
     match (Version::parse_tag(left), Version::parse_tag(right)) {
         (Some(left), Some(right)) => left.cmp(&right),
@@ -205,10 +224,148 @@ impl ChecksumManifest {
     }
 }
 
+/// Generic asset selector for an application's release naming convention.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AssetSelector {
+    name_prefix: Option<String>,
+    platform_fragment: Option<String>,
+    kind_priority: Vec<AssetKind>,
+}
+
+impl AssetSelector {
+    /// Create a selector with the common preference order:
+    /// installer/package, portable archive, raw executable.
+    pub fn new() -> Self {
+        Self {
+            name_prefix: None,
+            platform_fragment: None,
+            kind_priority: vec![
+                AssetKind::Installer,
+                AssetKind::PortableArchive,
+                AssetKind::RawExecutable,
+            ],
+        }
+    }
+
+    /// Create a selector matching a conventional `app-platform` asset scheme.
+    pub fn for_platform(platform: Platform) -> Self {
+        Self::new().matching_platform(platform)
+    }
+
+    pub fn matching_prefix(mut self, prefix: impl Into<String>) -> Self {
+        self.name_prefix = Some(prefix.into());
+        self
+    }
+
+    pub fn matching_platform(mut self, platform: Platform) -> Self {
+        self.platform_fragment = Some(platform.asset_fragment().to_string());
+        self
+    }
+
+    /// Use a custom platform/name fragment when your release assets do not use
+    /// Liora's `linux-x64`, `macos-arm64`, `windows-x64` convention.
+    pub fn matching_platform_fragment(mut self, fragment: impl Into<String>) -> Self {
+        self.platform_fragment = Some(fragment.into());
+        self
+    }
+
+    /// Replace the asset-kind priority order. Empty input means "match any kind".
+    pub fn kind_priority<I>(mut self, kinds: I) -> Self
+    where
+        I: IntoIterator<Item = AssetKind>,
+    {
+        self.kind_priority = dedupe_kinds(kinds);
+        self
+    }
+
+    pub fn name_prefix(&self) -> Option<&str> {
+        self.name_prefix.as_deref()
+    }
+
+    pub fn platform_fragment(&self) -> Option<&str> {
+        self.platform_fragment.as_deref()
+    }
+
+    pub fn kind_priority_order(&self) -> &[AssetKind] {
+        &self.kind_priority
+    }
+
+    fn matches_name(&self, asset: &ReleaseAsset) -> bool {
+        self.name_prefix
+            .as_ref()
+            .is_none_or(|prefix| asset.name.starts_with(prefix))
+            && self
+                .platform_fragment
+                .as_ref()
+                .is_none_or(|fragment| asset.name.contains(fragment))
+    }
+}
+
+impl Default for AssetSelector {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// A full update request for one application.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UpdateRequest {
+    pub app_name: String,
+    pub current_tag: String,
+    pub include_prerelease: bool,
+    pub platform: Platform,
+    pub selector: AssetSelector,
+    pub cache_dir: PathBuf,
+}
+
+impl UpdateRequest {
+    pub fn new(
+        app_name: impl Into<String>,
+        current_tag: impl Into<String>,
+        platform: Platform,
+        cache_dir: impl Into<PathBuf>,
+    ) -> Self {
+        let app_name = app_name.into();
+        Self {
+            selector: AssetSelector::for_platform(platform).matching_prefix(app_name.clone()),
+            app_name,
+            current_tag: current_tag.into(),
+            include_prerelease: false,
+            platform,
+            cache_dir: cache_dir.into(),
+        }
+    }
+
+    pub fn include_prerelease(mut self, include_prerelease: bool) -> Self {
+        self.include_prerelease = include_prerelease;
+        self
+    }
+
+    pub fn selector(mut self, selector: AssetSelector) -> Self {
+        self.selector = selector;
+        self
+    }
+}
+
+/// A downloaded, verified update ready for a visible install action.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PreparedUpdate {
+    pub release: Release,
+    pub asset: ReleaseAsset,
+    pub asset_path: PathBuf,
+    pub install_plan: InstallPlan,
+}
+
+impl PreparedUpdate {
+    pub fn release_tag(&self) -> &str {
+        &self.release.tag
+    }
+}
+
 /// An explicitly caller-owned installation plan.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InstallPlan {
-    pub app: LioraApp,
+    pub app_name: String,
     pub platform: Platform,
     pub asset_kind: AssetKind,
     pub asset_name: String,
@@ -270,6 +427,7 @@ pub struct Updater {
     api_base: String,
     user_agent: String,
     timeout: Duration,
+    checksum_asset_name: String,
 }
 
 impl Default for Updater {
@@ -286,6 +444,7 @@ impl Updater {
             api_base: DEFAULT_API_BASE.to_string(),
             user_agent: DEFAULT_USER_AGENT.to_string(),
             timeout: Duration::from_secs(30),
+            checksum_asset_name: CHECKSUMS_ASSET.to_string(),
         }
     }
 
@@ -301,6 +460,15 @@ impl Updater {
 
     pub fn with_timeout(mut self, timeout: Duration) -> Self {
         self.timeout = timeout;
+        self
+    }
+
+    /// Override the release asset that stores SHA-256 checksums.
+    ///
+    /// The default is `SHA256SUMS.txt`, but applications can use names such as
+    /// `checksums.txt` or `sha256.txt` if their release pipeline emits those.
+    pub fn with_checksum_asset_name(mut self, checksum_asset_name: impl Into<String>) -> Self {
+        self.checksum_asset_name = checksum_asset_name.into();
         self
     }
 
@@ -341,6 +509,37 @@ impl Updater {
         }
     }
 
+    /// Check, select, download, verify, and plan an update for one app.
+    pub fn prepare_update(
+        &self,
+        request: &UpdateRequest,
+    ) -> Result<Option<PreparedUpdate>, UpdaterError> {
+        let Some(release) =
+            self.update_available(&request.current_tag, request.include_prerelease)?
+        else {
+            return Ok(None);
+        };
+        let asset = select_asset_with(&release, &request.selector).ok_or_else(|| {
+            UpdaterError::NoMatchingAsset {
+                release: release.tag.clone(),
+                selector: format!("{:?}", request.selector),
+            }
+        })?;
+        let asset_path = self.download_verified_asset(&release, &asset, &request.cache_dir)?;
+        let install_plan = build_install_plan(
+            request.app_name.clone(),
+            request.platform,
+            &asset,
+            asset_path.clone(),
+        );
+        Ok(Some(PreparedUpdate {
+            release,
+            asset,
+            asset_path,
+            install_plan,
+        }))
+    }
+
     pub fn download_verified_asset(
         &self,
         release: &Release,
@@ -349,8 +548,8 @@ impl Updater {
     ) -> Result<PathBuf, UpdaterError> {
         fs::create_dir_all(destination_dir)?;
         let checksums = release
-            .checksum_asset()
-            .ok_or(UpdaterError::MissingChecksumAsset)?;
+            .checksum_asset_named(&self.checksum_asset_name)
+            .ok_or_else(|| UpdaterError::MissingChecksumAsset(self.checksum_asset_name.clone()))?;
         let checksum_text = self.get(&checksums.download_url)?.into_string()?;
         let manifest = ChecksumManifest::parse(&checksum_text);
         let expected = manifest
@@ -387,37 +586,59 @@ impl Updater {
     }
 }
 
-/// Select the best release asset for an app/platform preference.
+/// Select the best release asset using a generic selector.
+pub fn select_asset_with(release: &Release, selector: &AssetSelector) -> Option<ReleaseAsset> {
+    if selector.kind_priority.is_empty() {
+        return release
+            .assets
+            .iter()
+            .find(|asset| selector.matches_name(asset))
+            .cloned();
+    }
+
+    selector.kind_priority.iter().find_map(|kind| {
+        release
+            .assets
+            .iter()
+            .filter(|asset| selector.matches_name(asset))
+            .find(|asset| asset_matches_kind(&asset.name, *kind))
+            .cloned()
+    })
+}
+
+/// Select the best release asset for an official Liora app/platform preference.
 pub fn select_asset(
     release: &Release,
     app: LioraApp,
     platform: Platform,
     preferred: AssetKind,
 ) -> Option<ReleaseAsset> {
-    let priorities = asset_priorities(app, platform, preferred);
-    priorities.into_iter().find_map(|kind| {
-        release
-            .assets
-            .iter()
-            .filter(|asset| asset.name.starts_with(app.release_name()))
-            .filter(|asset| asset.name.contains(platform.asset_fragment()))
-            .find(|asset| asset_matches_kind(&asset.name, kind))
-            .cloned()
-    })
+    select_asset_with(release, &liora_asset_selector(app, platform, preferred))
+}
+
+/// Build the official Liora asset selector while keeping the core selector API generic.
+pub fn liora_asset_selector(
+    app: LioraApp,
+    platform: Platform,
+    preferred: AssetKind,
+) -> AssetSelector {
+    AssetSelector::for_platform(platform)
+        .matching_prefix(app.release_name())
+        .kind_priority(liora_asset_priorities(app, platform, preferred))
 }
 
 /// Build an install plan for a downloaded and verified release asset.
 pub fn build_install_plan(
-    app: LioraApp,
+    app_name: impl Into<String>,
     platform: Platform,
     asset: &ReleaseAsset,
     asset_path: impl Into<PathBuf>,
 ) -> InstallPlan {
     let asset_path = asset_path.into();
-    let asset_kind = classify_asset_kind(&asset.name, app);
+    let asset_kind = classify_asset_kind(&asset.name);
     let (action, notes) = install_action(platform, asset_kind, &asset_path, &asset.name);
     InstallPlan {
-        app,
+        app_name: app_name.into(),
         platform,
         asset_kind,
         asset_name: asset.name.clone(),
@@ -427,7 +648,11 @@ pub fn build_install_plan(
     }
 }
 
-fn asset_priorities(app: LioraApp, platform: Platform, preferred: AssetKind) -> Vec<AssetKind> {
+fn liora_asset_priorities(
+    app: LioraApp,
+    platform: Platform,
+    preferred: AssetKind,
+) -> Vec<AssetKind> {
     let mut kinds = match (app, platform) {
         (LioraApp::Docs, _) => vec![AssetKind::RawExecutable],
         (LioraApp::Gallery, Platform::LinuxX64) => vec![
@@ -444,6 +669,19 @@ fn asset_priorities(app: LioraApp, platform: Platform, preferred: AssetKind) -> 
         kinds.insert(0, selected);
     }
     kinds
+}
+
+fn dedupe_kinds<I>(kinds: I) -> Vec<AssetKind>
+where
+    I: IntoIterator<Item = AssetKind>,
+{
+    let mut deduped = Vec::new();
+    for kind in kinds {
+        if !deduped.contains(&kind) {
+            deduped.push(kind);
+        }
+    }
+    deduped
 }
 
 fn asset_matches_kind(name: &str, kind: AssetKind) -> bool {
@@ -469,10 +707,8 @@ fn asset_matches_kind(name: &str, kind: AssetKind) -> bool {
     }
 }
 
-fn classify_asset_kind(name: &str, app: LioraApp) -> AssetKind {
-    if app == LioraApp::Docs {
-        AssetKind::RawExecutable
-    } else if name.ends_with(".tar.gz") {
+fn classify_asset_kind(name: &str) -> AssetKind {
+    if name.ends_with(".tar.gz") {
         AssetKind::PortableArchive
     } else if asset_matches_kind(name, AssetKind::Installer) {
         AssetKind::Installer
@@ -556,7 +792,7 @@ fn safe_asset_filename(name: &str) -> &Path {
     Path::new(name)
         .file_name()
         .map(Path::new)
-        .unwrap_or_else(|| Path::new("liora-release-asset"))
+        .unwrap_or_else(|| Path::new("release-asset"))
 }
 
 fn sha256_file(path: &Path) -> Result<String, UpdaterError> {
@@ -581,8 +817,8 @@ pub enum UpdaterError {
     Io(#[from] io::Error),
     #[error("GitHub JSON response was invalid: {0}")]
     Json(#[from] serde_json::Error),
-    #[error("release is missing SHA256SUMS.txt")]
-    MissingChecksumAsset,
+    #[error("release is missing checksum asset {0}")]
+    MissingChecksumAsset(String),
     #[error("SHA256SUMS.txt has no entry for {0}")]
     MissingChecksumEntry(String),
     #[error("checksum mismatch for {asset}: expected {expected}, got {actual}")]
@@ -591,6 +827,8 @@ pub enum UpdaterError {
         expected: String,
         actual: String,
     },
+    #[error("release {release} has no asset matching selector {selector}")]
+    NoMatchingAsset { release: String, selector: String },
     #[error("install action is manual: {0}")]
     ManualInstall(String),
 }
@@ -668,6 +906,35 @@ mod tests {
         assert_eq!(compare_release_tags("v1.0.0", "v1.0.0"), Ordering::Equal);
         assert_eq!(compare_release_tags("nightly", "v0.1.0"), Ordering::Less);
         assert_eq!(Version::parse_tag("v2.3.4-beta.1").unwrap().patch, 4);
+    }
+
+    #[test]
+    fn generic_asset_selector_supports_custom_apps() {
+        let release = release_with_assets(&[
+            "acme-notes_0.4.0_x86_64.AppImage",
+            "acme-notes_0.4.0_x86_64.tar.gz",
+            "liora-gallery-v0.2.0-linux-x64.AppImage",
+        ]);
+        let selector = AssetSelector::new()
+            .matching_prefix("acme-notes")
+            .matching_platform_fragment("x86_64")
+            .kind_priority([AssetKind::PortableArchive, AssetKind::Installer]);
+
+        let selected = select_asset_with(&release, &selector).unwrap();
+        assert_eq!(selected.name, "acme-notes_0.4.0_x86_64.tar.gz");
+    }
+
+    #[test]
+    fn update_request_defaults_to_app_prefix_and_platform() {
+        let request = UpdateRequest::new(
+            "acme-notes",
+            "v0.3.0",
+            Platform::LinuxX64,
+            "/tmp/acme-updates",
+        );
+        assert_eq!(request.selector.name_prefix(), Some("acme-notes"));
+        assert_eq!(request.selector.platform_fragment(), Some("linux-x64"));
+        assert!(!request.include_prerelease);
     }
 
     #[test]
