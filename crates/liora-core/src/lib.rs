@@ -11,6 +11,7 @@ use gpui::{
     WindowAppearance, WindowBounds, prelude::*, px,
 };
 
+use std::borrow::Cow;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
@@ -134,6 +135,139 @@ pub fn startup_maximized_window_bounds(
             size: fallback_size,
         });
     WindowBounds::Maximized(bounds)
+}
+
+/// Metadata and icon bytes used to publish a Linux desktop identity.
+///
+/// Wayland does not let a client set a titlebar or taskbar icon directly.
+/// Compositors resolve the icon by matching the window `app_id` to a desktop
+/// entry and then loading that entry's `Icon=` name from the icon theme. Liora
+/// apps call [`ensure_linux_desktop_identity`] before opening their first GPUI
+/// window so `cargo run -p <app>` gets the same icon identity as an installed
+/// package without requiring root privileges.
+#[derive(Clone, Debug)]
+pub struct LinuxDesktopIdentity<'a> {
+    /// Stable GPUI/Wayland app id and desktop/icon filename stem.
+    pub app_id: &'a str,
+    /// Complete `.desktop` file contents for this app.
+    pub desktop_entry: Cow<'a, str>,
+    /// PNG icon bytes, preferably 512×512, installed into hicolor.
+    pub png_icon: &'a [u8],
+    /// SVG icon bytes installed into hicolor scalable apps.
+    pub svg_icon: &'a [u8],
+}
+
+/// Builds a user-level Linux desktop entry for a running Liora app.
+///
+/// Packaged installers use the static files under `packaging/linux`. Direct
+/// development runs should instead register the currently running executable,
+/// because `TryExec=<binary>` entries can be ignored when `cargo run` launches a
+/// target/debug binary that is not on `PATH`.
+pub fn linux_desktop_entry(
+    name: &str,
+    generic_name: &str,
+    comment: &str,
+    executable: &std::path::Path,
+    icon: &str,
+    categories: &str,
+    keywords: &str,
+) -> String {
+    format!(
+        "[Desktop Entry]\nVersion=1.0\nType=Application\nName={name}\nGenericName={generic_name}\nComment={comment}\nExec={}\nIcon={icon}\nCategories={categories}\nKeywords={keywords}\nStartupNotify=true\nTerminal=false\n",
+        desktop_exec_value(executable),
+    )
+}
+
+fn desktop_exec_value(executable: &std::path::Path) -> String {
+    let value = executable.to_string_lossy();
+    if value
+        .chars()
+        .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '/' | '.' | '_' | '-' | '+'))
+    {
+        value.into_owned()
+    } else {
+        format!("\"{}\"", value.replace('\\', "\\\\").replace('\"', "\\\""))
+    }
+}
+
+/// Installs a user-scoped Linux desktop entry and hicolor icons for an app.
+///
+/// The operation is intentionally best-effort and idempotent: it writes only to
+/// `$XDG_DATA_HOME` or `~/.local/share`, skips non-Linux targets, and returns an
+/// error instead of panicking when the host environment has no usable home/data
+/// directory. Applications should call this before creating their first window
+/// and log failures, because the app can still run when icon registration is
+/// unavailable.
+pub fn ensure_linux_desktop_identity(identity: LinuxDesktopIdentity<'_>) -> std::io::Result<()> {
+    #[cfg(any(target_os = "linux", target_os = "freebsd"))]
+    {
+        ensure_linux_desktop_identity_impl(linux_xdg_data_home()?, identity)
+    }
+
+    #[cfg(not(any(target_os = "linux", target_os = "freebsd")))]
+    {
+        let _ = identity;
+        Ok(())
+    }
+}
+
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
+fn ensure_linux_desktop_identity_impl(
+    data_home: std::path::PathBuf,
+    identity: LinuxDesktopIdentity<'_>,
+) -> std::io::Result<()> {
+    write_if_changed(
+        &data_home
+            .join("applications")
+            .join(format!("{}.desktop", identity.app_id)),
+        identity.desktop_entry.as_bytes(),
+    )?;
+    write_if_changed(
+        &data_home
+            .join("icons")
+            .join("hicolor")
+            .join("512x512")
+            .join("apps")
+            .join(format!("{}.png", identity.app_id)),
+        identity.png_icon,
+    )?;
+    write_if_changed(
+        &data_home
+            .join("icons")
+            .join("hicolor")
+            .join("scalable")
+            .join("apps")
+            .join(format!("{}.svg", identity.app_id)),
+        identity.svg_icon,
+    )?;
+    Ok(())
+}
+
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
+fn linux_xdg_data_home() -> std::io::Result<std::path::PathBuf> {
+    if let Some(data_home) = std::env::var_os("XDG_DATA_HOME") {
+        return Ok(std::path::PathBuf::from(data_home));
+    }
+    std::env::var_os("HOME")
+        .map(std::path::PathBuf::from)
+        .map(|home| home.join(".local").join("share"))
+        .ok_or_else(|| {
+            std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "neither XDG_DATA_HOME nor HOME is set",
+            )
+        })
+}
+
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
+fn write_if_changed(path: &std::path::Path, bytes: &[u8]) -> std::io::Result<()> {
+    if std::fs::read(path).is_ok_and(|existing| existing == bytes) {
+        return Ok(());
+    }
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    std::fs::write(path, bytes)
 }
 
 fn startup_system_appearance(cx: &App) -> WindowAppearance {
@@ -627,5 +761,52 @@ mod unique_id_tests {
         assert!(first.as_ref().starts_with("component-"));
         assert!(second.as_ref().starts_with("component-"));
         assert_ne!(first, second);
+    }
+}
+
+#[cfg(test)]
+mod desktop_identity_tests {
+    use super::*;
+
+    #[cfg(any(target_os = "linux", target_os = "freebsd"))]
+    #[test]
+    fn linux_desktop_identity_installs_desktop_entry_and_hicolor_icons() {
+        let temp_root = std::env::temp_dir().join(format!(
+            "liora-desktop-identity-test-{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&temp_root);
+        std::fs::create_dir_all(&temp_root).expect("test temp root should be creatable");
+
+        ensure_linux_desktop_identity_impl(
+            temp_root.clone(),
+            LinuxDesktopIdentity {
+                app_id: "liora-test",
+                desktop_entry: Cow::Borrowed(
+                    "[Desktop Entry]\nType=Application\nName=Liora Test\nIcon=liora-test\n",
+                ),
+                png_icon: b"png",
+                svg_icon: b"svg",
+            },
+        )
+        .expect("identity registration should write into the supplied XDG data home");
+
+        assert_eq!(
+            std::fs::read_to_string(temp_root.join("applications/liora-test.desktop"))
+                .expect("desktop entry should be installed"),
+            "[Desktop Entry]\nType=Application\nName=Liora Test\nIcon=liora-test\n"
+        );
+        assert_eq!(
+            std::fs::read(temp_root.join("icons/hicolor/512x512/apps/liora-test.png"))
+                .expect("PNG hicolor icon should be installed"),
+            b"png"
+        );
+        assert_eq!(
+            std::fs::read(temp_root.join("icons/hicolor/scalable/apps/liora-test.svg"))
+                .expect("SVG hicolor icon should be installed"),
+            b"svg"
+        );
+
+        let _ = std::fs::remove_dir_all(temp_root);
     }
 }

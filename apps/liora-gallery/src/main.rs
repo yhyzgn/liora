@@ -8,7 +8,8 @@ use liora_components::{
     apply_window_frame_mode, frame_mode_switch_row, init_liora, toast_info, toast_success,
 };
 use liora_core::{
-    Config, PassivePortal, Portal, ThemeMode, apply_theme_mode, attach_system_theme_observer,
+    Config, LinuxDesktopIdentity, PassivePortal, Portal, ThemeMode, apply_theme_mode,
+    attach_system_theme_observer, ensure_linux_desktop_identity, linux_desktop_entry,
     startup_maximized_window_bounds,
 };
 use liora_gallery::demos;
@@ -98,6 +99,7 @@ impl Global for GalleryTrayState {}
 fn run_gallery() {
     Application::new().run(|cx: &mut App| {
         init_liora(cx);
+        register_gallery_desktop_identity();
 
         install_gallery_tray(cx);
         if let Some(handle) = open_gallery_window(cx) {
@@ -169,6 +171,36 @@ fn gallery_window_options(cx: &App, frame_mode: WindowFrameMode) -> WindowOption
         },
         frame_mode,
     )
+}
+
+fn register_gallery_desktop_identity() {
+    let desktop_entry = std::env::current_exe()
+        .map(|executable| {
+            linux_desktop_entry(
+                "Liora Gallery",
+                "Component Gallery",
+                "Native GPUI component gallery for Liora.",
+                &executable,
+                "liora-gallery",
+                "Development;Utility;",
+                "gpui;liora;components;gallery;",
+            )
+        })
+        .map(std::borrow::Cow::Owned)
+        .unwrap_or_else(|_| {
+            std::borrow::Cow::Borrowed(include_str!(
+                "../../../packaging/linux/liora-gallery.desktop"
+            ))
+        });
+
+    if let Err(error) = ensure_linux_desktop_identity(LinuxDesktopIdentity {
+        app_id: "liora-gallery",
+        desktop_entry,
+        png_icon: include_bytes!("../assets/app-icons/liora-gallery.png"),
+        svg_icon: include_bytes!("../assets/app-icons/liora-gallery.svg"),
+    }) {
+        eprintln!("failed to register Liora Gallery desktop identity: {error}");
+    }
 }
 
 fn install_gallery_tray(cx: &mut App) {
@@ -580,6 +612,11 @@ mod shell_tests {
         assert!(source.contains("show: false,"));
         assert!(source.contains("startup_maximized_window_bounds"));
         assert!(source.contains("app_id: Some(\"liora-gallery\".into())"));
+        assert!(source.contains("register_gallery_desktop_identity();"));
+        assert!(source.contains("app_id: \"liora-gallery\""));
+        assert!(source.contains("packaging/linux/liora-gallery.desktop"));
+        assert!(source.contains("../assets/app-icons/liora-gallery.png"));
+        assert!(source.contains("../assets/app-icons/liora-gallery.svg"));
         assert!(source.contains("gallery_status_icon"));
         assert!(source.contains("../assets/status-icons/status.png"));
         assert!(source.contains("gallery_status_bar_icon"));

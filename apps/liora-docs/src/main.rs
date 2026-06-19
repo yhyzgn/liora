@@ -5,7 +5,10 @@ use liora_components::{
     Button, Checkbox, Dialog, Paragraph, Space, WindowFrameMode, apply_window_frame_mode,
     init_liora,
 };
-use liora_core::{attach_system_theme_observer, startup_maximized_window_bounds};
+use liora_core::{
+    LinuxDesktopIdentity, attach_system_theme_observer, ensure_linux_desktop_identity,
+    linux_desktop_entry, startup_maximized_window_bounds,
+};
 use liora_tray::{
     LioraTray, MouseButton, MouseButtonState, TrayCloseAction, TrayCommand, TrayConfig,
     TrayControlCenter, TrayIconEvent, default_liora_tray_menu, icon_from_png_bytes, solid_icon,
@@ -35,6 +38,7 @@ impl Global for DocsTrayState {}
 fn run_docs() {
     Application::new().run(|cx: &mut App| {
         init_liora(cx);
+        register_docs_desktop_identity();
 
         install_docs_tray(cx);
         if let Some(handle) = open_docs_window(cx) {
@@ -88,6 +92,34 @@ fn docs_window_options(cx: &App, frame_mode: WindowFrameMode) -> WindowOptions {
         },
         frame_mode,
     )
+}
+
+fn register_docs_desktop_identity() {
+    let desktop_entry = std::env::current_exe()
+        .map(|executable| {
+            linux_desktop_entry(
+                "Liora Docs",
+                "Documentation",
+                "Native GPUI documentation app for Liora.",
+                &executable,
+                "liora-docs",
+                "Development;Documentation;",
+                "gpui;liora;docs;documentation;",
+            )
+        })
+        .map(std::borrow::Cow::Owned)
+        .unwrap_or_else(|_| {
+            std::borrow::Cow::Borrowed(include_str!("../../../packaging/linux/liora-docs.desktop"))
+        });
+
+    if let Err(error) = ensure_linux_desktop_identity(LinuxDesktopIdentity {
+        app_id: "liora-docs",
+        desktop_entry,
+        png_icon: include_bytes!("../assets/app-icons/liora-docs.png"),
+        svg_icon: include_bytes!("../assets/app-icons/liora-docs.svg"),
+    }) {
+        eprintln!("failed to register Liora Docs desktop identity: {error}");
+    }
 }
 
 fn install_docs_tray(cx: &mut App) {
@@ -476,4 +508,19 @@ fn docs_tray_icon(name: &str) -> Option<liora_tray::TrayIconImage> {
 
 fn main() {
     run_docs();
+}
+
+#[cfg(test)]
+mod shell_tests {
+    #[test]
+    fn docs_shell_registers_wayland_desktop_identity() {
+        let source = include_str!("main.rs");
+
+        assert!(source.contains("register_docs_desktop_identity();"));
+        assert!(source.contains(r#"app_id: Some("liora-docs".into())"#));
+        assert!(source.contains(r#"app_id: "liora-docs""#));
+        assert!(source.contains("packaging/linux/liora-docs.desktop"));
+        assert!(source.contains("../assets/app-icons/liora-docs.png"));
+        assert!(source.contains("../assets/app-icons/liora-docs.svg"));
+    }
 }

@@ -5,6 +5,7 @@
 - Removed Gallery/Docs-specific bundled tray icon assets from the reusable `liora-tray` SDK crate.
 - Moved runtime tray icons into app-owned `apps/liora-gallery/assets/tray-icons/` and `apps/liora-docs/assets/tray-icons/` assets.
 - Redesigned Gallery and Docs desktop/taskbar package icons as distinct Liora-branded app marks.
+- Registered Gallery and Docs user-scoped Linux desktop identities at startup so Wayland titlebar/taskbar icons resolve correctly during `cargo run`, not only after installing packages.
 - Added separate app-owned window header icons under `assets/status-icons/` and status-bar state icons under `assets/status-bar-icons/`, then rendered them in Gallery/Docs shells.
 - Updated tray documentation and compile-checked snippets to demonstrate app-owned icon loading with `icon_from_png_bytes`.
 
