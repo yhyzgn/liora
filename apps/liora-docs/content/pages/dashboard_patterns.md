@@ -12,7 +12,7 @@ Liora keeps these patterns in maintained apps instead of standalone sample apps 
 
 A production dashboard usually follows this native GPUI shape:
 
-1. Initialize Liora once with `liora_components::init_liora(cx)`; use `liora_components::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)` when a product wants an explicit startup mode.
+1. Initialize Liora once with `liora::init_liora(cx)`; use `liora::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)` when a product wants an explicit startup mode.
 2. Keep filters and toggles as `Entity<T>` fields in the app/view layer.
 3. Render content as header, filters, metric cards, chart cards, operation panels, table, and runbook.
 4. Keep business models, refresh logic, mock data, and dashboard-specific composition helpers in the app crate.

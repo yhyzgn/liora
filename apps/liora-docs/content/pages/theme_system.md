@@ -30,8 +30,8 @@ src="theme/system_mode.rs"
 
 Gallery 和 Docs 都使用同一套接入方式：
 
-1. `liora_components::init_liora(cx)` 初始化默认跟随系统，并统一注册组件全局服务和 key bindings。
-2. 如果产品需要固定启动主题，调用 `liora_components::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)`。
+1. `liora::init_liora(cx)` 初始化默认跟随系统，并统一注册组件全局服务和 key bindings。
+2. 如果产品需要固定启动主题，调用 `liora::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)`。
 3. 最大化启动窗口使用 `startup_maximized_window_bounds(cx, fallback)`：它保留 GPUI 的 `WindowBounds::Maximized` 语义，并把当前显示器可用区域作为 restore/fallback bounds。
 4. Liora 的 patched GPUI 会把初始 `Maximized` / `Fullscreen` 状态传入 Linux 平台创建路径：Wayland 在首个 `surface.commit()` 前调用 `xdg_toplevel.set_maximized()`，X11 在 `MapWindow` 前写入 `_NET_WM_STATE_MAXIMIZED_VERT/HORZ`。这是避免“先默认大小、再最大化”的关键。
 5. 窗口选项保留 `show: false` 并在 `open_window` 返回 handle 后调用 `window.activate_window()`，与 Zed 主窗口显示时机保持一致；但 Linux 尺寸首帧正确性依赖第 4 步的平台层初始状态，不依赖应用层延迟显示参数。

@@ -23,7 +23,7 @@
 | 文档 | 路径 | 用途 |
 |------|------|------|
 | 架构设计 | `architecture-design.md` | 完整技术方案、组件清单、Token 体系、里程碑 |
-| Release Candidate Checklist | `docs/release-candidate-checklist.md` | P21 0.1.0 RC 本地 gate、metadata audit 与 protected release 边界 |
+| Release Candidate Checklist | `docs/release-candidate-checklist.md` | P21 0.1.x RC 本地 gate、metadata audit 与 protected release 边界 |
 | 工程结构 | `structure.txt` | Workspace 目录树速览 |
 | 初始调研 | `chat.txt` | Gemini 技术可行性分析 |
 | **记忆库** | `.memory/` | 当前状态、架构决策、组件清单、会话历史 |
@@ -40,7 +40,7 @@
 | **P18 Dashboard Polish/API Ergonomics** | `.prompt/P18-dashboard-polish-and-api-ergonomics.md` | ✅ 已完成：Gallery shell polish、暗色主题切换、Dashboard Patterns 文档和回归测试；dashboard/sample 专用代码不进入核心组件库 |
 | **P19 Dashboard State/Data Flow** | `.prompt/P19-dashboard-state-and-data-flow.md` | ✅ 已完成：Dashboard 数据模型、过滤、刷新、状态分支、Dashboard State 文档和回归测试 |
 | **P20 Theme/Interaction Polish** | `.prompt/P20-theme-and-interaction-polish.md` | ✅ 已完成：System/Light/Dark 主题入口、dark subtle token、浮层/Loading mask token 化、Theme Gallery/Docs 页面和回归测试 |
-| **P21 Release Candidate Readiness** | `.prompt/P21-release-candidate-readiness.md` | ✅ 已完成：0.1.0 RC checklist、显式 package metadata、README/CHANGELOG/prompt/memory 同步和 release-boundary 回归测试 |
+| **P21 Release Candidate Readiness** | `.prompt/P21-release-candidate-readiness.md` | ✅ 已完成：0.1.x RC checklist、显式 package metadata、README/CHANGELOG/prompt/memory 同步和 release-boundary 回归测试 |
 
 ---
 
@@ -137,7 +137,7 @@ liora/
 - P17 Dashboard Dogfooding 阶段已完成并已回流：原 `examples/dashboard-app` 独立样例已移除，其验证出的搜索/过滤、主题切换、toast、组合布局和状态说明融合进 Gallery/Docs。详见 `.prompt/P17-dogfood-dashboard.md`。
 - P18 Dashboard Polish/API Ergonomics 阶段；P19 Dashboard State/Data Flow 阶段已完成并已回流：Dashboard app-shell 能力放在 Gallery/Docs；dashboard/sample 专用 helper、业务 sample/model 不进入核心组件库；Docs 保留 `Dashboard Patterns`/`Dashboard State` 作为 app-layer 模式说明。详见 `.prompt/P18-dashboard-polish-and-api-ergonomics.md`。
 - P20 Theme/Interaction Polish 阶段已完成：System/Light/Dark 成为正式主题入口，dark subtle token 改为透明 overlay，Dialog/Drawer/Tour/Loading/CodeEditor/WindowFrame 等关键路径完成 token 化，并新增 Gallery Theme demo 与 Docs Theme 页面。详见 `.prompt/P20-theme-and-interaction-polish.md`。
-- P21 Release Candidate Readiness 阶段已完成：新增 `docs/release-candidate-checklist.md` 作为 0.1.0 RC source of truth，显式补齐 package metadata，刷新 README/CHANGELOG/prompt/memory，并用回归测试锁住 Gallery/Docs canonical app、LicenseRef-Liora、纯 Rust + GPUI native 和 protected release 边界。详见 `.prompt/P21-release-candidate-readiness.md`。
+- P21 Release Candidate Readiness 阶段已完成：新增 `docs/release-candidate-checklist.md` 作为 0.1.x RC checklist，显式补齐 package metadata，刷新 README/CHANGELOG/prompt/memory，并用回归测试锁住 Gallery/Docs canonical app、LicenseRef-Liora、纯 Rust + GPUI native 和 protected release 边界。详见 `.prompt/P21-release-candidate-readiness.md`。
 
 ### 4.1.2 应用与示例边界红线
 

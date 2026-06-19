@@ -8,7 +8,7 @@ This page documents the packaging pipeline used by this repository and the piece
 
 Liora publishes three kinds of release outputs:
 
-- SDK crates — `liora-theme`, `liora-core`, `liora-icons`, `liora-icons-lucide`, `liora-components`, and `liora-tray` are published to crates.io from a dedicated SDK workflow.
+- SDK crates — `liora` is the one-stop facade; `liora-theme`, `liora-core`, `liora-icons`, `liora-icons-lucide`, `liora-components`, `liora-tray`, and `liora-packager` are also published to crates.io from a dedicated SDK workflow.
 - `liora-docs` raw executables — cross-platform runnable documentation binaries for Linux, macOS, and Windows.
 - `liora-gallery` raw executables plus installers — the component gallery is both directly downloadable as a binary and packaged into the planned native installer formats.
 
@@ -71,9 +71,9 @@ Liora intentionally separates ordinary quality gates from packaging/release gene
 | --- | --- | --- | --- |
 | `.github/workflows/ci.yml` | pull requests, `main` pushes, manual dispatch | Fast correctness gate split into two jobs: `rust-quality` runs formatting, workspace check/test, and docs snippets with native Linux build dependencies; `packaging-dry-run` runs package metadata validation, packaging dry-run, and install-smoke dry-run with only lightweight packaging prerequisites. | No. It must not upload installers or mutate GitHub Releases. |
 | `.github/workflows/package.yml` | `main` pushes, `v*` tags, manual dispatch | Native app release matrix for Linux/macOS/Windows: build raw release binaries for Docs/Gallery, generate installer/package artifacts for Gallery only, smoke Gallery package outputs, and plan Gallery install/uninstall checks. | Only `v*` tag runs publish GitHub Release assets. `main` runs produce preview Actions artifacts for QA. |
-| `.github/workflows/release-sdk.yml` | manual dispatch, `v*` tags | SDK crate pipeline: static manifest audit checks every publishable SDK crate, `cargo package -p liora-theme` fully verifies the root SDK crate, and explicit publish runs use `CRATES_IO_TOKEN` to publish SDK crates in dependency order while waiting for each crates.io index update. | Only explicit `publish=true` manual runs or `v*` tags publish crates to crates.io. Package verification alone never publishes. |
+| `.github/workflows/release-sdk.yml` | manual dispatch, `v*` tags | SDK crate pipeline: static manifest audit checks every publishable SDK crate, `cargo package -p liora-theme` and `cargo package -p liora-packager` fully verify independent root crates, and explicit publish runs use `CRATES_IO_TOKEN` to publish SDK crates in dependency order while waiting for each crates.io index update. | Only explicit `publish=true` manual runs or `v*` tags publish crates to crates.io. Package verification alone never publishes. |
 
-Because crates.io resolves versioned internal dependencies from the registry during package preparation, dependent SDK crates cannot be fully `cargo package`-verified before their prerequisites have been published. The SDK workflow handles this by statically auditing every SDK manifest, fully verifying `liora-theme`, then letting the publish job publish in dependency order and wait for each index update before continuing.
+Because crates.io resolves versioned internal dependencies from the registry during package preparation, dependent SDK crates cannot be fully `cargo package`-verified before their prerequisites have been published. The SDK workflow handles this by statically auditing every SDK manifest, fully verifying `liora-theme` and `liora-packager`, then letting the publish job publish in dependency order and wait for each index update before continuing.
 
 Keep `ci.yml` small and dependency-light enough to run on every code change. The workflow intentionally separates `rust-quality` from `packaging-dry-run` so package metadata changes can fail quickly without waiting for the full native workspace test job, and so packaging dry-run does not inherit GTK/Wayland/X11 dependencies it does not use. Keep `package.yml` responsible for expensive platform-specific app builds, raw binary staging, Gallery installer artifacts, grouped changelog generation, and GitHub Release publishing. Keep `release-sdk.yml` responsible for crates.io package verification and publication; it is the only workflow that may read `CRATES_IO_TOKEN` or call `cargo publish`. If a new package validation can run without real backend artifacts, add it to both workflows: `ci.yml` as a dry-run gate and `package.yml` before packaging. If a step builds installers, uploads artifacts, or calls `gh release`, it belongs only in `package.yml`. If a step publishes SDK crates, it belongs only in `release-sdk.yml`.
 
@@ -106,7 +106,7 @@ Linux installs GTK/Wayland/X11/audio/font/icon/rpm prerequisites plus `cargo-pac
 
 macOS installs `cargo-packager`.
 
-Windows installs `cargo-packager`. Preview Windows builds intentionally use NSIS only because MSI requires a numeric-only Windows Installer version and does not accept Liora preview metadata like `0.1.0-preview.123.abcdef0`.
+Windows installs `cargo-packager`. Preview Windows builds intentionally use NSIS only because MSI requires a numeric-only Windows Installer version and does not accept Liora preview metadata like `0.1.1-preview.123.abcdef0`.
 
 ### 4. Validate and test packaging logic
 
@@ -150,7 +150,7 @@ Generated Gallery package outputs are uploaded as:
 liora-<preview|release>-gallery-packages-<platform>
 ```
 
-The package artifact bundle includes generated backend TOML files and, when outputs are discovered, package manifest/checksum/release-note files under `target/packages/`. The manifest records `version`, `platform`, `targetTriple`, optional `gitSha`, format, path, checksum, and signing state.
+The Actions package artifact bundle includes generated backend TOML files and package manifest/checksum/release-note files under `target/packages/`; the public GitHub Release uploads only distributable binaries/installers/archives plus one `SHA256SUMS.txt`. The manifest records `version`, `platform`, `targetTriple`, optional `gitSha`, format, path, checksum, and signing state.
 
 Linux `.deb` and `.rpm` configs include explicit runtime dependency metadata for GTK3, Ayatana/AppIndicator, X11/Wayland, xkbcommon, fontconfig/freetype, Vulkan, ALSA, and xdg desktop integration.
 
@@ -189,13 +189,13 @@ When the workflow runs from a `v*` tag, the release job downloads both groups:
 - `liora-release-gallery-packages-*`
 - `liora-release-binaries-*`
 
-It then flattens them into `release-assets/`, generates grouped release notes, and uploads everything to the GitHub Release.
+It then selects only distributable files into `release-assets/`, gives them compact release names, generates grouped release notes with the asset table, writes one `SHA256SUMS.txt`, and uploads those files to the GitHub Release.
 
 The release notes include three sections:
 
 1. grouped changelog by commit type (`feat`, `fix`, `docs`, `ci`, `build`, `refactor`, `perf`, `test`, `style`, `chore`, `revert`, and `Other`),
 2. installer/package artifacts,
-3. raw runnable binaries with a clear note that Docs is raw-only and Gallery also has installer artifacts.
+3. raw runnable binaries with a clear note that Docs is raw-only and Gallery also has installer artifacts. Generated `.md` notes, TOML configs, package manifests, and portable staging internals are kept out of public release assets.
 
 
 ### 10. Release readiness, signing, and notarization gates
@@ -213,12 +213,12 @@ For a real signed public release, create a protected `vX.Y.Z` tag that matches `
 
 ## Release Candidate Checklist
 
-The repository-owned release-candidate checklist lives at `docs/release-candidate-checklist.md`. It is the source of truth for the Liora `0.1.0` RC gate and covers:
+The repository-owned release-candidate checklist lives at `docs/release-candidate-checklist.md`. It covers the Liora 0.1.x release gate:
 
 - local validation commands for formatting, workspace checks/tests, snippet checks, Rustdoc, packaging validation, release-readiness, dry-run packaging, install-smoke dry-run, and Gallery/Docs GUI smoke;
-- package metadata expectations: SDK crates are publishable with `license-file = "../../LICENSE.md"`, while apps, `liora-packager`, and `xtask` remain `publish = false`;
+- package metadata expectations: public SDK crates including `liora` and `liora-packager` are publishable with `license-file = "../../LICENSE.md"`, while apps and `xtask` remain `publish = false`;
 - the canonical app boundary: Gallery and Docs only, with no standalone `minimal-app` or `dashboard-app`;
-- protected release-only work such as real `v0.1.0` tag publication, macOS notarization, Windows signing, and destructive system installer smoke tests.
+- protected release-only work such as real `vX.Y.Z` tag publication, macOS notarization, Windows signing, and destructive system installer smoke tests.
 
 ## Downstream Project Guidance
 

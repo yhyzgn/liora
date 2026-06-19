@@ -10,6 +10,6 @@ fn show_toast_types() {
 }
 
 fn main() {
-    // In an app, call liora_components::init_liora(cx) before these macros run.
+    // In an app, call liora::init_liora(cx) before these macros run.
     let _ = show_toast_types as fn();
 }

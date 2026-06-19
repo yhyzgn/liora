@@ -47,11 +47,13 @@ Rust desktop teams often need more than a handful of primitives. Liora focuses o
 | Enterprise component coverage | Element Plus-style categories and APIs across forms, feedback, data, navigation, charts, and advanced controls. |
 | Real app surfaces | `liora-gallery` and `liora-docs` show complete native application setup, theme switching, search/filtering, tray behavior, docs rendering, and dashboard-style composition. |
 | Theming | Light, Dark, and System theme modes with semantic tokens and component-level variants. |
+| One dependency for apps | `cargo add liora` exposes the maintained SDK facade: core, theme, components, icons, tray, and packaging helpers. |
 | Native distribution | `liora-packager` + `xtask package` validate installer information, manifests, checksums, signing policy, and package generation plans. |
 | Clear architecture boundary | Reusable components stay in `liora-components`; product-specific data models and screen composition stay in applications. |
 
 ## Feature highlights
 
+- **One-stop SDK facade**: depend on `liora` for application development, or use focused crates such as `liora-components`, `liora-theme`, and `liora-packager` when you need narrower surfaces.
 - **70+ native UI components** across Basic, Form, Feedback, Data, Navigation, and Others categories.
 - **Element Plus-inspired API style** adapted for Rust builders and GPUI rendering.
 - **Native charting**: Line, Area, Bar, Pie, Ring, Sparkline, scales, grids, legends, downsampling, and hover hit testing.
@@ -80,6 +82,7 @@ Rust desktop teams often need more than a handful of primitives. Liora focuses o
 ```text
 liora/
 ├── crates/
+│   ├── liora/                 # one-stop SDK facade for application dependencies
 │   ├── liora-core/            # global config, theme setup, popper/portal state, unique IDs
 │   ├── liora-theme/           # semantic tokens, light/dark/system theme support
 │   ├── liora-components/      # reusable GPUI components
@@ -101,7 +104,15 @@ liora/
 
 Install Rust stable and the native dependencies required by GPUI on your platform. On Linux, common development packages include GTK3, Wayland/X11, xkbcommon, fontconfig/freetype, Vulkan, ALSA, and `pkg-config`. The repository also includes `scripts/install-fedora-deps.sh` for Fedora-oriented setup.
 
-### 2. Run the native Gallery
+### 2. Add Liora to an app
+
+```bash
+cargo add liora
+```
+
+Use lower-level crates such as `liora-components` or `liora-packager` only when a workspace needs a narrower dependency surface.
+
+### 3. Run the native Gallery
 
 ```bash
 cargo run -p liora-gallery
@@ -109,7 +120,7 @@ cargo run -p liora-gallery
 
 The Gallery presents component demos, theme switching, search/filtering, tray controls, toasts, and product-style composition in a native GPUI window.
 
-### 3. Run the native Docs app
+### 4. Run the native Docs app
 
 ```bash
 cargo run -p liora-docs
@@ -117,7 +128,7 @@ cargo run -p liora-docs
 
 The Docs app explains adoption and component usage. It renders Markdown content into native Liora/GPUI elements and shows compile-checked snippets from `apps/liora-docs/content/snippets/`.
 
-### 4. Check the workspace
+### 5. Check the workspace
 
 ```bash
 cargo fmt --all --check
@@ -133,7 +144,7 @@ A Liora-powered GPUI app should initialize theme/config, initialize global servi
 
 ```rust
 use gpui::App;
-use liora_components::init_liora;
+use liora::init_liora;
 
 fn main() {
     gpui_platform::application().run(|cx: &mut App| {
@@ -145,7 +156,7 @@ fn main() {
 }
 ```
 
-`liora_components::init_liora(cx)` follows the operating system by default and also initializes component services plus key bindings. Use `liora_components::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)` when a product wants to choose the startup mode explicitly. Use `Entity<T>` for stateful controls such as `Input`, `Switch`, `Select`, and `CodeEditor` so focus and internal state survive re-rendering. Gallery and Docs are compile-checked references for app shell setup, key binding registration, theme switching, tray behavior, toasts, and composition patterns.
+`liora::init_liora(cx)` follows the operating system by default and also initializes component services plus key bindings. Use `liora::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)` when a product wants to choose the startup mode explicitly. The lower-level `liora_components::init_liora(...)` entry point remains available for users who depend on individual crates instead of the facade. Use `Entity<T>` for stateful controls such as `Input`, `Switch`, `Select`, and `CodeEditor` so focus and internal state survive re-rendering. Gallery and Docs are compile-checked references for app shell setup, key binding registration, theme switching, tray behavior, toasts, and composition patterns.
 
 ## Component API example
 
@@ -153,7 +164,7 @@ Liora components follow a builder style and render through GPUI-native elements:
 
 ```rust
 use gpui::{div, IntoElement, RenderOnce};
-use liora_components::{Button, Space, Tag, Text, Title};
+use liora::components::{Button, Space, Tag, Text, Title};
 
 struct WelcomePanel;
 
@@ -177,6 +188,7 @@ Themes are read from Liora global config inside render paths. Avoid passing them
 
 Liora is more than a component catalog:
 
+- **One-dependency adoption**: `liora` re-exports the maintained public SDK modules so app manifests stay compact while focused crates remain independently usable.
 - **One-call application setup**: `init_liora(cx)` centralizes core configuration, component services, and keyboard bindings so applications do not repeat per-widget setup.
 - **Native Markdown documentation**: Markdown stays as authored content, while the running Docs app renders it into Liora/GPUI nodes and verifies external Rust snippets.
 - **Native charts without a browser layer**: chart primitives use Rust data structures, GPUI paint paths, hit testing, and downsampling instead of a WebView chart runtime.
@@ -194,7 +206,7 @@ Liora is more than a component catalog:
 
 ## Native packaging
 
-Repository-owned packaging readiness is implemented through `liora-packager` and `xtask`:
+Repository-owned packaging readiness is implemented through the published `liora-packager` library plus the repository-local `xtask` command wrapper:
 
 ```bash
 cargo run -p xtask -- package validate
@@ -233,9 +245,9 @@ Liora is designed around a few product-facing rules:
 
 ## Runtime model
 
-`liora_components::init_liora(cx)` is the recommended application entry point. It initializes Liora core/theme state, global component services, and key bindings for interactive controls.
+`liora::init_liora(cx)` is the recommended application entry point when using the facade crate. `liora_components::init_liora(cx)` provides the same setup for users of the focused components crate. It initializes Liora core/theme state, global component services, and key bindings for interactive controls.
 
-Use `liora_components::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)` when the product needs to choose an explicit startup theme mode. Runtime theme switches still use `apply_theme_mode(window, cx, mode)` from `liora_core`.
+Use `liora::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)` when the product needs to choose an explicit startup theme mode. Runtime theme switches still use `apply_theme_mode(window, cx, mode)` from `liora_core`.
 
 Stateful controls such as `Input`, `Switch`, `Select`, and `CodeEditor` should live in `gpui::Entity<T>` fields so focus, open state, selections, and text values survive re-rendering.
 

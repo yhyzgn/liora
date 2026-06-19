@@ -19,7 +19,7 @@ permissions:
   contents: read
 
 env:
-  SDK_CRATES: "liora-theme liora-core liora-icons liora-icons-lucide liora-components liora-tray"
+  SDK_CRATES: "liora-theme liora-core liora-icons liora-icons-lucide liora-components liora-tray liora-packager liora"
 
 jobs:
   package-sdk:
@@ -77,6 +77,16 @@ jobs:
               "liora-icons-lucide": ["liora-icons"],
               "liora-components": ["liora-core", "liora-theme", "liora-icons", "liora-icons-lucide"],
               "liora-tray": [],
+              "liora-packager": [],
+              "liora": [
+                  "liora-core",
+                  "liora-theme",
+                  "liora-icons",
+                  "liora-icons-lucide",
+                  "liora-components",
+                  "liora-tray",
+                  "liora-packager",
+              ],
           }
           root = tomllib.loads(Path("Cargo.toml").read_text())
           gpui_dep = root["workspace"]["dependencies"]["gpui"]
@@ -105,17 +115,20 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # Before the first crates.io release, dependent SDK crates cannot be packaged because
-          # Cargo resolves their versioned internal dependencies from crates.io even with
-          # --no-verify. The publish job handles those crates sequentially after each dependency
-          # becomes visible in the crates.io index.
+          # Dependent SDK crates are published sequentially because Cargo resolves their
+          # versioned internal dependencies from crates.io during publish/package verification.
+          # Fully package the independent roots here; publish validates dependents after each
+          # prerequisite is visible in the crates.io index.
           cargo package -p liora-theme
+          cargo package -p liora-packager
 
       - name: Upload root SDK package preflight artifact
         uses: actions/upload-artifact@v7
         with:
           name: liora-sdk-root-crate-preflight
-          path: target/package/liora-theme-*.crate
+          path: |
+            target/package/liora-theme-*.crate
+            target/package/liora-packager-*.crate
           if-no-files-found: error
           retention-days: 30
 
@@ -185,6 +198,8 @@ jobs:
               liora-icons-lucide) echo "crates/liora-icons-lucide" ;;
               liora-components) echo "crates/liora-components" ;;
               liora-tray) echo "crates/liora-tray" ;;
+              liora-packager) echo "crates/liora-packager" ;;
+              liora) echo "crates/liora" ;;
               *) echo "unknown SDK crate: $1" >&2; exit 1 ;;
             esac
           }

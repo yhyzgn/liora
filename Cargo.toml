@@ -2,6 +2,7 @@
 resolver = "2"
 default-members = ["apps/liora-gallery"]
 members = [
+    "crates/liora",
     "crates/liora-core",
     "crates/liora-theme",
     "crates/liora-components",

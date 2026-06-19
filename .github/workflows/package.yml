@@ -330,12 +330,106 @@ jobs:
           set -euo pipefail
           rm -rf release-assets
           mkdir -p release-assets
-          while IFS= read -r artifact; do
-            rel="${artifact#dist/}"
-            safe="${rel//\//__}"
-            cp "$artifact" "release-assets/$safe"
-          done < <(find dist -type f | sort)
+          tag="${GITHUB_REF_NAME}"
+          version="${tag#v}"
+          asset_index="release-asset-index.tsv"
+          : > "$asset_index"
 
+          short_platform() {
+            case "$1" in
+              linux) echo "linux-x64" ;;
+              macos) echo "macos-arm64" ;;
+              windows) echo "windows-x64" ;;
+              *) echo "$1" ;;
+            esac
+          }
+
+          sha256() {
+            if command -v sha256sum >/dev/null 2>&1; then
+              sha256sum "$1" | awk '{print $1}'
+            else
+              shasum -a 256 "$1" | awk '{print $1}'
+            fi
+          }
+
+          add_asset() {
+            local src="$1" dest="$2" kind="$3" platform="$4" notes="$5"
+            if [[ ! -f "$src" ]]; then
+              echo "missing release source: $src" >&2
+              exit 1
+            fi
+            cp "$src" "release-assets/$dest"
+            printf '%s\t%s\t%s\t%s\n' "$kind" "$platform" "$dest" "$notes" >> "$asset_index"
+          }
+
+          # Raw runnable executables: Docs and Gallery for every platform.
+          for platform in linux macos windows; do
+            suffix="$(short_platform "$platform")"
+            ext=""
+            [[ "$platform" == "windows" ]] && ext=".exe"
+            for app in liora-docs liora-gallery; do
+              src="dist/liora-release-binaries-${platform}/${app}/${platform}/${app}${ext}"
+              if [[ -f "$src" ]]; then
+                add_asset "$src" "${app}-${tag}-${suffix}${ext}" \
+                  "Raw executable" "$platform" "Directly runnable ${app} binary."
+              fi
+            done
+          done
+
+          # Gallery installer/package artifacts only. Do not upload generated .md notes,
+          # backend TOML configs, package manifests, or portable staging internals.
+          for artifact in $(find dist/liora-release-gallery-packages-* -type f | sort); do
+            name="$(basename "$artifact")"
+            case "$artifact" in
+              */portable-staging/*|*.md|*.toml|*.json|*/checksums.txt) continue ;;
+            esac
+            case "$name" in
+              *.AppImage)
+                add_asset "$artifact" "liora-gallery-${tag}-linux-x64.AppImage" \
+                  "Gallery installer" "linux" "Portable AppImage for Linux desktops."
+                ;;
+              *.deb)
+                add_asset "$artifact" "liora-gallery-${tag}-linux-x64.deb" \
+                  "Gallery installer" "linux" "Debian/Ubuntu package."
+                ;;
+              *.rpm)
+                add_asset "$artifact" "liora-gallery-${tag}-linux-x64.rpm" \
+                  "Gallery installer" "linux" "RPM package for Fedora/RHEL/openSUSE-family systems."
+                ;;
+              *.tar.gz)
+                add_asset "$artifact" "liora-gallery-${tag}-linux-x64.tar.gz" \
+                  "Gallery installer" "linux" "Portable unpack-and-run archive with launcher and desktop metadata."
+                ;;
+              *.dmg)
+                add_asset "$artifact" "liora-gallery-${tag}-macos-arm64.dmg" \
+                  "Gallery installer" "macos" "macOS Apple Silicon disk image."
+                ;;
+              *setup.exe)
+                add_asset "$artifact" "liora-gallery-${tag}-windows-x64-setup.exe" \
+                  "Gallery installer" "windows" "Windows NSIS setup installer."
+                ;;
+              *.msi)
+                add_asset "$artifact" "liora-gallery-${tag}-windows-x64.msi" \
+                  "Gallery installer" "windows" "Windows MSI installer package."
+                ;;
+            esac
+          done
+
+          if [[ ! -s "$asset_index" ]]; then
+            echo "No distributable release assets were selected from dist/." >&2
+            find dist -type f | sort >&2 || true
+            exit 1
+          fi
+
+          : > release-assets/SHA256SUMS.txt
+          while IFS= read -r file; do
+            name="${file#release-assets/}"
+            printf '%s  %s\n' "$(sha256 "$file")" "$name" >> release-assets/SHA256SUMS.txt
+          done < <(find release-assets -type f ! -name SHA256SUMS.txt | sort)
+          printf 'Checksum\tall\tSHA256SUMS.txt\tSHA-256 checksums for all uploaded distributable assets.\n' >> "$asset_index"
+
+          echo "Selected release assets:"
+          cut -f3 "$asset_index"
       - name: Build release notes and changelog
         shell: bash
         run: |
@@ -414,33 +508,25 @@ jobs:
           emit_download_table() {
             echo "## Downloads"
             echo
-            echo "| Package | Platform / profile | Asset |"
-            echo "| --- | --- | --- |"
-            if find release-assets -type f | grep -q 'liora-release-binaries-'; then
-              find release-assets -type f | grep 'liora-release-binaries-' | sort | while read -r artifact; do
-                name="${artifact#release-assets/}"
-                case "$name" in
-                  *linux*) platform="Linux" ;;
-                  *macos*) platform="macOS" ;;
-                  *windows*) platform="Windows" ;;
-                  *) platform="Cross-platform" ;;
+            echo "| Type | Platform | Asset | Notes |"
+            echo "| --- | --- | --- | --- |"
+            if [[ -s release-asset-index.tsv ]]; then
+              while IFS=$'\t' read -r kind platform asset notes; do
+                [[ -z "${asset}" ]] && continue
+                case "$platform" in
+                  linux) label="Linux x64" ;;
+                  macos) label="macOS arm64" ;;
+                  windows) label="Windows x64" ;;
+                  all) label="All platforms" ;;
+                  *) label="$platform" ;;
                 esac
-                echo "| Raw runnable executable | ${platform} | \`${name}\` |"
-              done
+                echo "| ${kind} | ${label} | \`${asset}\` | ${notes} |"
+              done < release-asset-index.tsv
+            else
+              echo "| Release assets | All platforms | See attached files | Asset index was not generated. |"
             fi
-            if find release-assets -type f | grep -q 'liora-release-gallery-packages-'; then
-              find release-assets -type f | grep 'liora-release-gallery-packages-' | sort | while read -r artifact; do
-                name="${artifact#release-assets/}"
-                case "$name" in
-                  *linux*) platform="Linux Gallery installers" ;;
-                  *macos*) platform="macOS Gallery installers" ;;
-                  *windows*) platform="Windows Gallery installers" ;;
-                  *) platform="Gallery installers" ;;
-                esac
-                echo "| Gallery installer bundle | ${platform} | \`${name}\` |"
-              done
-            fi
-            echo "| Release notes | All platforms | \`release-notes.md\` |"
+            echo
+            echo "Only distributable binaries, installers, portable archives, and one checksum file are uploaded. Generated CI notes, backend TOML configs, package manifests, and staging internals stay in Actions artifacts rather than GitHub Release assets."
             echo
           }
 
@@ -465,18 +551,18 @@ jobs:
           }
 
           asset_count="$(find release-assets -type f | wc -l | tr -d ' ')"
-          checksum_count="$(find release-assets -type f -name '*checksums*' | wc -l | tr -d ' ')"
+          checksum_count="$(find release-assets -type f -name 'SHA256SUMS.txt' | wc -l | tr -d ' ')"
 
           {
             echo "# Liora ${version} — Native GPUI SDK & Apps"
             echo
             echo "### Codename: Aurora"
             echo
-            echo "This release ships the Liora SDK crates, cross-platform runnable Docs/Gallery binaries, and Gallery installer packages from the automated release pipeline."
+            echo "This release ships the one-dependency Liora SDK facade, lower-level SDK crates, cross-platform runnable Docs/Gallery binaries, and Gallery installer packages from the automated release pipeline."
             echo
             echo "## Highlights"
             echo
-            echo "- **SDK crates** — \`liora-theme\`, \`liora-core\`, \`liora-icons\`, \`liora-icons-lucide\`, \`liora-components\`, and \`liora-tray\` are published through the dedicated crates.io workflow."
+            echo "- **SDK crates** — \`liora\` is the one-stop facade; \`liora-theme\`, \`liora-core\`, \`liora-icons\`, \`liora-icons-lucide\`, \`liora-components\`, \`liora-tray\`, and \`liora-packager\` remain available for focused integrations."
             echo "- **Docs app** — Cross-platform raw runnable executables are attached for Linux, macOS, and Windows."
             echo "- **Gallery app** — Cross-platform raw runnable executables plus native Gallery installer bundles are attached from the packaging workflow."
             echo "- **Release automation** — Assets, checksums, grouped changelog, verification notes, and commit audit are generated by GitHub Actions."
@@ -488,13 +574,13 @@ jobs:
             echo
             echo "| Crate | Version | Install |"
             echo "| --- | --- | --- |"
-            for crate in liora-theme liora-core liora-icons liora-icons-lucide liora-components liora-tray; do
+            for crate in liora liora-theme liora-core liora-icons liora-icons-lucide liora-components liora-tray liora-packager; do
               echo "| \`${crate}\` | \`${version}\` | \`cargo add ${crate}\` |"
             done
             echo
             echo "## Added"
             echo
-            echo "- Dedicated crates.io SDK publishing pipeline using \`CRATES_IO_TOKEN\` and dependency-ordered publishing."
+            echo "- One-dependency \`liora\` SDK facade plus dependency-ordered crates.io publishing for all public Liora crates."
             echo "- Cross-platform raw executable assets for both Liora Docs and Liora Gallery."
             echo "- Gallery installer package assets for the platform default installer formats."
             echo
@@ -506,7 +592,7 @@ jobs:
             else
               echo "- First tagged release in this repository history."
             fi
-            echo "- SDK consumers can start with \`cargo add liora-components\`; lower-level crates are published for token/theme/icon/tray-focused integrations."
+            echo "- SDK consumers can start with \`cargo add liora\`; lower-level crates are published for token/theme/icon/tray/packaging-focused integrations."
             echo "- \`liora-docs\` is distributed as a raw executable; \`liora-gallery\` includes both raw executables and installer bundles."
             echo "- macOS/Windows artifacts are unsigned unless the repository release environment provides signing/notarization secrets and sets \`LIORA_REQUIRE_SIGNING=true\`."
             echo
@@ -525,7 +611,6 @@ jobs:
           } > release-notes.md
 
           cat release-notes.md
-          cp release-notes.md release-assets/release-notes.md
 
       - name: Publish release and upload artifacts
         env:

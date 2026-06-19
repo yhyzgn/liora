@@ -3374,8 +3374,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32a66949e030da00e8c7d4434b251670a91556f4144941d37452769c25d58a53"
 
 [[package]]
+name = "liora"
+version = "0.1.1"
+dependencies = [
+ "liora-components",
+ "liora-core",
+ "liora-icons",
+ "liora-icons-lucide",
+ "liora-packager",
+ "liora-theme",
+ "liora-tray",
+]
+
+[[package]]
 name = "liora-components"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "image",
  "liora-core",
@@ -3393,7 +3406,7 @@ dependencies = [
 
 [[package]]
 name = "liora-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "liora-theme",
  "open-gpui",
@@ -3401,7 +3414,7 @@ dependencies = [
 
 [[package]]
 name = "liora-docs"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "liora-components",
  "liora-core",
@@ -3417,7 +3430,7 @@ dependencies = [
 
 [[package]]
 name = "liora-gallery"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "liora-components",
  "liora-core",
@@ -3431,7 +3444,7 @@ dependencies = [
 
 [[package]]
 name = "liora-icons"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "liora-core",
  "liora-theme",
@@ -3440,7 +3453,7 @@ dependencies = [
 
 [[package]]
 name = "liora-icons-lucide"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "liora-icons",
  "open-gpui",
@@ -3448,21 +3461,21 @@ dependencies = [
 
 [[package]]
 name = "liora-packager"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "thiserror 2.0.18",
 ]
 
 [[package]]
 name = "liora-theme"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "open-gpui",
 ]
 
 [[package]]
 name = "liora-tray"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "gtk",
  "image",
@@ -8203,7 +8216,7 @@ checksum = "ec7a2a501ed189703dba8b08142f057e887dfc4b2cc4db2d343ac6376ba3e0b9"
 
 [[package]]
 name = "xtask"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "liora-packager",
 ]

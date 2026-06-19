@@ -6,6 +6,7 @@ Liora currently records detailed implementation history in `.memory/sessions.md`
 
 ### Added
 
+- 0.1.1 release refinement: added the one-stop `liora` facade crate, made `liora-packager` publishable for reusable packaging helpers, kept `xtask` repository-local, and shortened GitHub Release assets to distributable files plus one `SHA256SUMS.txt`.
 - Release pipeline split: dedicated `.github/workflows/release-sdk.yml` publishes SDK crates to crates.io using `CRATES_IO_TOKEN`; native app packaging now releases Docs as cross-platform raw executables and Gallery as raw executables plus planned installer formats.
 - P21 release-candidate readiness: `docs/release-candidate-checklist.md`, explicit package metadata audit coverage, refreshed README/CHANGELOG/prompt/memory state, and regression tests for current release boundaries.
 - P20 theme and interaction polish: System/Light/Dark theme mode, tokenized overlay/mask paths, custom window-frame controls, Theme Gallery page, and native Docs Theme page.
@@ -26,5 +27,5 @@ Liora currently records detailed implementation history in `.memory/sessions.md`
 ### Notes
 
 - Liora remains pure Rust + GPUI native.
-- SDK crates use the repository license file for crates.io publication; installer/app metadata continues to use `LicenseRef-Liora` until the owner replaces the policy in `LICENSE.md` and package metadata.
+- Public SDK crates use the repository license file for crates.io publication; installer/app metadata continues to use `LicenseRef-Liora` until the owner replaces the policy in `LICENSE.md` and package metadata.
 - Formal app releases remain gated by owner-controlled signing/notarization credentials, protected release environments, real system-level install/uninstall smoke tests, and a matching `vX.Y.Z` GitHub Release tag.

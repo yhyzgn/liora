@@ -1,11 +1,11 @@
 [package]
 name = "liora-packager"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "Packaging metadata and release artifact helpers for Liora native GPUI applications."
-license = "LicenseRef-Liora"
+license-file = "../../LICENSE.md"
 repository = "https://github.com/yhyzgn/liora"
-publish = false
+publish = true
 
 [dependencies]
 thiserror = "2"

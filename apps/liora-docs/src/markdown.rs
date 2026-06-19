@@ -7538,7 +7538,7 @@ mod tests {
         let titles = DOC_PAGES.iter().map(|page| page.title).collect::<Vec<_>>();
         assert!(titles.contains(&"Theme"));
         assert!(THEME_SYSTEM_DOC.contains("ThemeMode::System"));
-        assert!(THEME_SYSTEM_DOC.contains("liora_components::init_liora_with_mode"));
+        assert!(THEME_SYSTEM_DOC.contains("liora::init_liora_with_mode"));
         assert!(THEME_SYSTEM_DOC.contains("attach_system_theme_observer"));
         assert!(THEME_SYSTEM_DOC.contains("observe_window_appearance"));
         assert!(load_code_snippet("theme/system_mode.rs").is_some());
@@ -7597,8 +7597,8 @@ mod tests {
         assert!(titles.contains(&"Release Candidate"));
         assert!(ADOPTION_DOC.contains("cargo run -p liora-gallery"));
         assert!(ADOPTION_DOC.contains("cargo run -p liora-docs"));
-        assert!(ADOPTION_DOC.contains("liora_components::init_liora(cx)"));
-        assert!(ADOPTION_DOC.contains("liora_components::init_liora_with_mode"));
+        assert!(ADOPTION_DOC.contains("liora::init_liora(cx)"));
+        assert!(ADOPTION_DOC.contains("liora::init_liora_with_mode"));
         assert!(ADOPTION_DOC.contains("Entity<T>"));
         assert!(!ADOPTION_DOC.contains("liora-minimal-app"));
         assert!(!ADOPTION_DOC.contains("liora-dashboard-app"));
@@ -7714,6 +7714,8 @@ mod tests {
         assert!(sdk.contains("CRATES_IO_TOKEN"));
         assert!(sdk.contains("Audit SDK publish metadata"));
         assert!(sdk.contains("cargo package -p liora-theme"));
+        assert!(sdk.contains("cargo package -p liora-packager"));
+        assert!(sdk.contains("liora-packager liora"));
         assert!(sdk.contains("cargo publish -p"));
     }
 
@@ -7750,8 +7752,9 @@ mod tests {
         for required in [
             "Design principles",
             "Runtime model",
-            "liora_components::init_liora(cx)",
-            "liora_components::init_liora_with_mode",
+            "liora::init_liora(cx)",
+            "liora::init_liora_with_mode",
+            "cargo add liora",
             "Native packaging",
             "Quality gates",
             "Technical differentiators",
@@ -7765,8 +7768,9 @@ mod tests {
         for required in [
             "设计原则",
             "运行时模型",
-            "liora_components::init_liora(cx)",
-            "liora_components::init_liora_with_mode",
+            "liora::init_liora(cx)",
+            "liora::init_liora_with_mode",
+            "cargo add liora",
             "原生打包",
             "质量门禁",
             "技术创新点",
@@ -7812,7 +7816,7 @@ mod tests {
         assert!(checklist.contains("pure Rust + GPUI native"));
         assert!(checklist.contains("apps/liora-gallery"));
         assert!(checklist.contains("apps/liora-docs"));
-        assert!(checklist.contains("v0.1.0"));
+        assert!(checklist.contains("vX.Y.Z"));
         assert!(!checklist.contains("Tauri runtime"));
         assert!(checklist.contains("liora-minimal-app"));
         assert!(checklist.contains("liora-dashboard-app"));
@@ -7822,8 +7826,9 @@ mod tests {
         assert!(readme.contains("README.zh-CN.md"));
         assert!(readme.contains("Design principles"));
         assert!(readme.contains("Runtime model"));
-        assert!(readme.contains("liora_components::init_liora(cx)"));
-        assert!(readme.contains("liora_components::init_liora_with_mode"));
+        assert!(readme.contains("liora::init_liora(cx)"));
+        assert!(readme.contains("liora::init_liora_with_mode"));
+        assert!(readme.contains("cargo add liora"));
         assert!(readme.contains("Native packaging"));
         assert!(readme.contains("Quality gates"));
         assert!(readme.contains("Technical differentiators"));
@@ -7862,17 +7867,23 @@ mod tests {
         );
         assert!(sdk_workflow.contains("Publish Liora SDK crates"));
         assert!(sdk_workflow.contains("CRATES_IO_TOKEN"));
+        assert!(sdk_workflow.contains("liora-packager liora"));
+        assert!(package_workflow.contains("SHA256SUMS.txt"));
+        assert!(package_workflow.contains("portable-staging/*|*.md|*.toml|*.json|*/checksums.txt"));
+        assert!(!package_workflow.contains("cp release-notes.md release-assets/release-notes.md"));
     }
 
     #[test]
     fn workspace_package_manifests_have_rc_metadata() {
         let sdk_manifests = [
+            include_str!("../../../crates/liora/Cargo.toml"),
             include_str!("../../../crates/liora-core/Cargo.toml"),
             include_str!("../../../crates/liora-theme/Cargo.toml"),
             include_str!("../../../crates/liora-components/Cargo.toml"),
             include_str!("../../../crates/liora-icons/Cargo.toml"),
             include_str!("../../../crates/liora-icons-lucide/Cargo.toml"),
             include_str!("../../../crates/liora-tray/Cargo.toml"),
+            include_str!("../../../crates/liora-packager/Cargo.toml"),
         ];
 
         for manifest in sdk_manifests {
@@ -7883,7 +7894,6 @@ mod tests {
         }
 
         let private_manifests = [
-            include_str!("../../../crates/liora-packager/Cargo.toml"),
             include_str!("../../../apps/liora-gallery/Cargo.toml"),
             include_str!("../../../apps/liora-docs/Cargo.toml"),
             include_str!("../../../xtask/Cargo.toml"),

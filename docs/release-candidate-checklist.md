@@ -1,14 +1,14 @@
-# Liora 0.1.0 Release Candidate Checklist
+# Liora 0.1.x Release Candidate Checklist
 
-This checklist defines the repository-owned readiness gate for the Liora `0.1.0` release-candidate path. It is intentionally stricter than a normal feature-phase checklist because RC work must prove that docs, package metadata, workflows, and canonical apps still agree.
+This checklist defines the repository-owned readiness gate for the Liora 0.1.x release-candidate path. It is intentionally stricter than a normal feature-phase checklist because RC work must prove that docs, package metadata, workflows, and canonical apps still agree.
 
 ## Scope
 
-- Target version: `0.1.0`.
+- Target version: the next `0.1.x` tag matching `crates/liora-packager/Cargo.toml`.
 - Runtime boundary: pure Rust + GPUI native apps only. Do not introduce Tauri, WebView, HTML/CSS/DOM, WASM chart runtimes, or browser shells.
 - Canonical apps: `apps/liora-gallery` and `apps/liora-docs`.
 - Removed sample-app boundary: do not re-add `examples/minimal-app`, `examples/dashboard-app`, `liora-minimal-app`, or `liora-dashboard-app`; their useful adoption and dogfooding behavior lives in Gallery and Docs.
-- Package policy: SDK crates publish to crates.io using the repository license file; app/packager automation crates remain private workspace packages. `LicenseRef-Liora` remains the explicit package/install metadata until the owner replaces it with formal OSS or commercial terms.
+- Package policy: Public SDK crates, including `liora` and `liora-packager`, publish to crates.io using the repository license file; app packages and the repository-local `xtask` wrapper remain private workspace packages. `LicenseRef-Liora` remains the explicit package/install metadata until the owner replaces it with formal OSS or commercial terms.
 
 ## Local RC gates
 
@@ -35,7 +35,7 @@ The GUI smoke commands are expected to exit with status `124` under `timeout` af
 
 Before a tag release, verify these files agree:
 
-- `Cargo.toml` and every workspace package manifest include repository-owned metadata. SDK crates (`liora-theme`, `liora-core`, `liora-icons`, `liora-icons-lucide`, `liora-components`, `liora-tray`) use `license-file = "../../LICENSE.md"` and `publish = true`; app/automation crates keep `license = "LicenseRef-Liora"` and `publish = false`.
+- `Cargo.toml` and every workspace package manifest include repository-owned metadata. SDK crates (`liora`, `liora-theme`, `liora-core`, `liora-icons`, `liora-icons-lucide`, `liora-components`, `liora-tray`, `liora-packager`) use `license-file = "../../LICENSE.md"` and `publish = true`; apps and `xtask` keep `license = "LicenseRef-Liora"` and `publish = false`.
 - `README.md`, `CHANGELOG.md`, `prompt.md`, `.prompt/P21-release-candidate-readiness.md`, and `.memory/state.md` all describe the same RC boundary.
 - `docs/packaging-installer-technical-plan.md` and `apps/liora-docs/content/pages/packaging_workflow.md` keep packaging as a pure native installer pipeline.
 - `.github/workflows/ci.yml` remains validation-only and must not publish installers or mutate GitHub Releases.
@@ -45,7 +45,7 @@ Before a tag release, verify these files agree:
 
 These items are intentionally outside local developer machines and ordinary CI dry-runs. They must be executed only in owner-controlled protected environments:
 
-1. Create and push a real `v0.1.0` tag only after the local RC gates pass.
+1. Create and push a real `vX.Y.Z` tag only after the local RC gates pass and the tag matches `crates/liora-packager/Cargo.toml`.
 2. For signed releases, configure macOS signing/notarization inputs (`codesign`, `notarytool`, `stapler`) and Windows signing inputs (`signtool`, timestamp server, certificate secrets), then set `LIORA_REQUIRE_SIGNING=true`; unsigned first-release builds are allowed when that variable is absent.
 3. Run real system-level install/uninstall smoke tests for `.deb`, `.rpm`, AppImage, macOS app/dmg, NSIS, and MSI on dedicated runners or test machines.
 4. Publish GitHub Release app assets only through the protected `package.yml` release path; publish SDK crates only through `release-sdk.yml` with `CRATES_IO_TOKEN`.
@@ -53,4 +53,4 @@ These items are intentionally outside local developer machines and ordinary CI d
 
 ## Completion definition
 
-P21 is complete when the repository contains this checklist, the phase prompt and memory entries are updated, package metadata is explicit, regression tests lock the RC boundaries, the local RC gates pass, and the resulting commit is pushed to `main`.
+The RC gate is complete when the repository contains this checklist, the phase prompt and memory entries are updated, package metadata is explicit, regression tests lock the RC boundaries, the local RC gates pass, and the resulting commit is pushed to `main`.

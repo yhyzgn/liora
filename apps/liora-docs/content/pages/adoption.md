@@ -13,7 +13,7 @@ cargo run -p liora-docs
 ```
 
 3. Use Gallery to inspect component behavior and app-shell interactions such as menu search, theme switching, tray controls, toasts, and close-to-tray flow.
-4. Use Docs to copy the setup shape: `liora_components::init_liora(cx)` as the one-line default entry point. It initializes core/theme state, global component services, and component key bindings. Use `liora_components::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)` when a product wants an explicit startup mode.
+4. Use Docs to copy the setup shape: `liora::init_liora(cx)` as the one-line default entry point. It initializes core/theme state, global component services, and component key bindings. Use `liora::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)` when a product wants an explicit startup mode.
 5. Keep stateful controls as `Entity<T>` fields in your own app views.
 
 ## Canonical app surfaces
@@ -31,7 +31,7 @@ A downstream application still follows the same minimal setup:
 
 ```rust
 use gpui::App;
-use liora_components::init_liora;
+use liora::init_liora;
 
 fn main() {
     gpui_platform::application().run(|cx: &mut App| {
@@ -47,11 +47,9 @@ For a workspace project, use path dependencies while developing locally:
 
 ```toml
 [dependencies]
-liora-components = { path = "../liora/crates/liora-components" }
-liora-core = { path = "../liora/crates/liora-core" }
-liora-theme = { path = "../liora/crates/liora-theme" }
-gpui = { git = "https://github.com/zed-industries/zed", default-features = false }
-gpui_platform = { git = "https://github.com/zed-industries/zed", default-features = false }
+liora = { path = "../liora/crates/liora" }
+gpui = { package = "open-gpui", version = "0.1", default-features = false }
+gpui_platform = { package = "open-gpui-platform", version = "0.1", default-features = false }
 ```
 
 Keep GPUI sourced consistently across the app and Liora to avoid duplicate framework versions.
@@ -62,14 +60,14 @@ Before using a component in production, check:
 
 - Docs page for effect + code examples.
 - Gallery page for native visual behavior.
-- Whether it has state that should live in an `Entity<T>`; app-level key bindings are covered by `liora_components::init_liora(cx)`.
+- Whether it has state that should live in an `Entity<T>`; app-level key bindings are covered by `liora::init_liora(cx)`.
 - Whether it should live as `Entity<T>` instead of being rebuilt every render.
 - Overlay close policy: ESC and outside-click behavior for popups, drawers, dialogs, Preview, and Tour.
 - Performance knobs for large data components such as CodeBlock, charts, and virtualized controls.
 
 ## Packaging downstream apps
 
-Liora's own Gallery and Docs apps use `liora-packager` through `xtask`. A downstream product can copy that structure if it wants native installers, but component-library users do not need to publish Liora's raw binaries.
+Liora's own Gallery and Docs apps use the published `liora-packager` library through the repository-local `xtask` wrapper. A downstream product can reuse `liora-packager` APIs or copy the wrapper structure if it wants native installers, but component-library users do not need to publish Liora's raw binaries.
 
 The package release gate is:
 
