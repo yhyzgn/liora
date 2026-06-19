@@ -120,7 +120,9 @@ impl Render for DialogView {
                 .child(pop_in(
                     element_id(format!("{id}-panel-motion")),
                     div()
-                        .w(px(400.0))
+                        .w_full()
+                        .max_w(px(420.0))
+                        .min_w(px(0.0))
                         .bg(theme.neutral.card)
                         .cursor_default()
                         .rounded(px(theme.radius.md))
@@ -134,12 +136,21 @@ impl Render for DialogView {
                         .child(
                             div()
                                 .p_4()
+                                .min_w(px(0.0))
                                 .border_b_1()
                                 .border_color(theme.neutral.border)
                                 .flex()
                                 .justify_between()
                                 .items_center()
-                                .child(div().font_weight(gpui::FontWeight::BOLD).child(title))
+                                .child(
+                                    div()
+                                        .min_w(px(0.0))
+                                        .flex_1()
+                                        .font_weight(gpui::FontWeight::BOLD)
+                                        .text_color(theme.neutral.text_1)
+                                        .whitespace_normal()
+                                        .child(title),
+                                )
                                 .child(
                                     div()
                                         .id(element_id(format!("{id}-close-btn")))
@@ -154,7 +165,13 @@ impl Render for DialogView {
                                         }),
                                 ),
                         )
-                        .child(div().p_4().child(content_fn(_window, cx))),
+                        .child(
+                            div()
+                                .p_4()
+                                .min_w(px(0.0))
+                                .text_color(theme.neutral.text_2)
+                                .child(content_fn(_window, cx)),
+                        ),
                 )),
         )
     }
@@ -162,6 +179,19 @@ impl Render for DialogView {
 
 #[cfg(test)]
 mod motion_tests {
+    #[test]
+    fn dialog_panel_is_responsive_and_text_wraps() {
+        let source = include_str!("dialog.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(source.contains(".w_full()"));
+        assert!(source.contains(".max_w(px(420.0))"));
+        assert!(source.contains(".min_w(px(0.0))"));
+        assert!(source.contains(".whitespace_normal()"));
+    }
+
     #[test]
     fn dialog_uses_liora_motion_on_overlay_and_panel() {
         let source = include_str!("dialog.rs")

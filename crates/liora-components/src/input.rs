@@ -1233,7 +1233,7 @@ impl Element for InputElement {
         let text_c = if self.disabled {
             theme.neutral.text_disabled
         } else {
-            style.color
+            theme.neutral.text_1
         };
         let font_size = style.font_size.to_pixels(window.rem_size());
         let line_height = window.line_height();
@@ -1266,7 +1266,7 @@ impl Element for InputElement {
 
         for (i, line_text) in text_lines.iter().enumerate() {
             let (display, color) = if input.value.is_empty() {
-                (input.placeholder.clone(), theme.neutral.text_3)
+                (input.placeholder.clone(), theme.neutral.placeholder)
             } else {
                 (SharedString::from(line_text.clone()), text_c)
             };
@@ -1447,6 +1447,11 @@ impl Render for Input {
             .border_1()
             .border_color(border_c)
             .text_size(px(theme.font_size.md))
+            .text_color(if self.disabled {
+                theme.neutral.text_disabled
+            } else {
+                theme.neutral.text_1
+            })
             .overflow_hidden();
 
         if self.min_rows > 1 {
@@ -1601,6 +1606,18 @@ impl Render for Input {
 
 #[cfg(test)]
 mod width_tests {
+    #[test]
+    fn input_text_uses_theme_foreground_instead_of_window_default() {
+        let source = include_str!("input.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(source.contains("theme.neutral.text_1"));
+        assert!(source.contains("theme.neutral.placeholder"));
+        assert!(!source.contains("} else {\n            style.color\n        }"));
+    }
+
     #[test]
     fn input_width_sm_sets_compact_width() {
         let source = include_str!("input.rs")

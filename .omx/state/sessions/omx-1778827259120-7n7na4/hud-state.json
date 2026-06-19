@@ -1,6 +1,0 @@
-{
-  "last_turn_at": "2026-05-15T13:17:49.524Z",
-  "last_progress_at": "2026-05-15T13:17:49.524Z",
-  "turn_count": 28,
-  "last_agent_output": "已完成并推送。\n\n更新内容：\n- `.github/workflows/package.yml`\n  - 新增 `release` job。\n  - `v*` tag 触发时：\n    - 等待 Li"
-}

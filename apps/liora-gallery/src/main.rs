@@ -563,6 +563,7 @@ fn show_gallery_close_confirm(cx: &mut App) {
             Space::new()
                 .vertical()
                 .gap_lg()
+                .grow()
                 .child(Paragraph::with_text(
                     "你可以直接退出进程，或者关闭主窗口并让应用继续驻留在系统托盘。",
                 ))
@@ -570,6 +571,7 @@ fn show_gallery_close_confirm(cx: &mut App) {
                 .child(
                     Space::new()
                         .gap_md()
+                        .wrap()
                         .child(Button::new("隐藏到托盘").on_click(move |_, window, cx| {
                             if remember_for_hide.load(Ordering::Relaxed)
                                 && cx.has_global::<TrayControlCenter>()
