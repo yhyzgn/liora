@@ -249,6 +249,8 @@ jobs:
             fi
 
             echo "Publishing ${crate} ${version}..."
-            cargo publish -p "$crate" --token "$CARGO_REGISTRY_TOKEN"
+            # Cargo authenticates to crates.io from CARGO_REGISTRY_TOKEN. Keep the
+            # token out of command-line arguments to avoid deprecated Cargo usage.
+            cargo publish -p "$crate"
             wait_for_index "$crate" "$version"
           done

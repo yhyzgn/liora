@@ -299,6 +299,137 @@ fn register_liora_key_bindings(cx: &mut gpui::App) {
 #[cfg(test)]
 mod application_init_api_tests {
     #[test]
+    fn component_modules_have_english_module_documentation() {
+        let modules = [
+            ("affix.rs", include_str!("affix.rs")),
+            ("alert.rs", include_str!("alert.rs")),
+            ("anchor.rs", include_str!("anchor.rs")),
+            ("area_chart.rs", include_str!("area_chart.rs")),
+            ("autocomplete.rs", include_str!("autocomplete.rs")),
+            ("avatar.rs", include_str!("avatar.rs")),
+            ("backtop.rs", include_str!("backtop.rs")),
+            ("badge.rs", include_str!("badge.rs")),
+            ("bar_chart.rs", include_str!("bar_chart.rs")),
+            ("breadcrumb.rs", include_str!("breadcrumb.rs")),
+            ("button.rs", include_str!("button.rs")),
+            ("button_group.rs", include_str!("button_group.rs")),
+            ("calendar.rs", include_str!("calendar.rs")),
+            ("card.rs", include_str!("card.rs")),
+            ("carousel.rs", include_str!("carousel.rs")),
+            ("cascader.rs", include_str!("cascader.rs")),
+            ("chart.rs", include_str!("chart.rs")),
+            ("chart_frame.rs", include_str!("chart_frame.rs")),
+            ("chart_scale.rs", include_str!("chart_scale.rs")),
+            ("chart_shape.rs", include_str!("chart_shape.rs")),
+            ("checkbox.rs", include_str!("checkbox.rs")),
+            ("checkbox_group.rs", include_str!("checkbox_group.rs")),
+            ("code_block.rs", include_str!("code_block.rs")),
+            ("code_editor.rs", include_str!("code_editor.rs")),
+            ("col.rs", include_str!("col.rs")),
+            ("collapse.rs", include_str!("collapse.rs")),
+            ("color_picker.rs", include_str!("color_picker.rs")),
+            ("container.rs", include_str!("container.rs")),
+            ("date_picker.rs", include_str!("date_picker.rs")),
+            ("date_time_picker.rs", include_str!("date_time_picker.rs")),
+            ("descriptions.rs", include_str!("descriptions.rs")),
+            ("dialog.rs", include_str!("dialog.rs")),
+            ("divider.rs", include_str!("divider.rs")),
+            ("draggable.rs", include_str!("draggable.rs")),
+            ("drawer.rs", include_str!("drawer.rs")),
+            ("dropdown.rs", include_str!("dropdown.rs")),
+            ("empty.rs", include_str!("empty.rs")),
+            ("flex.rs", include_str!("flex.rs")),
+            ("form.rs", include_str!("form.rs")),
+            ("gpui_compat.rs", include_str!("gpui_compat.rs")),
+            ("heat_bar.rs", include_str!("heat_bar.rs")),
+            ("horizontal_list.rs", include_str!("horizontal_list.rs")),
+            ("image.rs", include_str!("image.rs")),
+            ("input.rs", include_str!("input.rs")),
+            ("input_number.rs", include_str!("input_number.rs")),
+            ("input_tag.rs", include_str!("input_tag.rs")),
+            ("label.rs", include_str!("label.rs")),
+            ("layout_helpers.rs", include_str!("layout_helpers.rs")),
+            ("line_chart.rs", include_str!("line_chart.rs")),
+            ("link.rs", include_str!("link.rs")),
+            ("loading.rs", include_str!("loading.rs")),
+            ("mention.rs", include_str!("mention.rs")),
+            ("menu.rs", include_str!("menu.rs")),
+            ("message.rs", include_str!("message.rs")),
+            ("message_box.rs", include_str!("message_box.rs")),
+            ("motion.rs", include_str!("motion.rs")),
+            ("notification.rs", include_str!("notification.rs")),
+            ("operation.rs", include_str!("operation.rs")),
+            ("page_header.rs", include_str!("page_header.rs")),
+            ("pagination.rs", include_str!("pagination.rs")),
+            ("paragraph.rs", include_str!("paragraph.rs")),
+            ("pie_chart.rs", include_str!("pie_chart.rs")),
+            ("popconfirm.rs", include_str!("popconfirm.rs")),
+            ("popover.rs", include_str!("popover.rs")),
+            ("preview.rs", include_str!("preview.rs")),
+            ("progress.rs", include_str!("progress.rs")),
+            ("qr_code.rs", include_str!("qr_code.rs")),
+            ("radio.rs", include_str!("radio.rs")),
+            ("radio_group.rs", include_str!("radio_group.rs")),
+            ("rate.rs", include_str!("rate.rs")),
+            ("result.rs", include_str!("result.rs")),
+            ("row.rs", include_str!("row.rs")),
+            ("scrollbar.rs", include_str!("scrollbar.rs")),
+            ("segment_ratio_bar.rs", include_str!("segment_ratio_bar.rs")),
+            ("segmented.rs", include_str!("segmented.rs")),
+            ("select.rs", include_str!("select.rs")),
+            ("selectable_text.rs", include_str!("selectable_text.rs")),
+            ("signal_meter.rs", include_str!("signal_meter.rs")),
+            ("skeleton.rs", include_str!("skeleton.rs")),
+            ("slider.rs", include_str!("slider.rs")),
+            ("space.rs", include_str!("space.rs")),
+            ("sparkline.rs", include_str!("sparkline.rs")),
+            ("splitter.rs", include_str!("splitter.rs")),
+            ("statistic.rs", include_str!("statistic.rs")),
+            ("steps.rs", include_str!("steps.rs")),
+            ("switch.rs", include_str!("switch.rs")),
+            ("table.rs", include_str!("table.rs")),
+            ("tabs.rs", include_str!("tabs.rs")),
+            ("tag.rs", include_str!("tag.rs")),
+            ("text.rs", include_str!("text.rs")),
+            ("textarea.rs", include_str!("textarea.rs")),
+            ("time_picker.rs", include_str!("time_picker.rs")),
+            ("timeline.rs", include_str!("timeline.rs")),
+            ("timer.rs", include_str!("timer.rs")),
+            ("title.rs", include_str!("title.rs")),
+            ("tooltip.rs", include_str!("tooltip.rs")),
+            ("tour.rs", include_str!("tour.rs")),
+            ("transfer.rs", include_str!("transfer.rs")),
+            ("tree.rs", include_str!("tree.rs")),
+            ("tree_select.rs", include_str!("tree_select.rs")),
+            ("upload.rs", include_str!("upload.rs")),
+            ("virtualized_list.rs", include_str!("virtualized_list.rs")),
+            ("virtualized_table.rs", include_str!("virtualized_table.rs")),
+            ("virtualized_tree.rs", include_str!("virtualized_tree.rs")),
+            ("watermark.rs", include_str!("watermark.rs")),
+            ("window_frame.rs", include_str!("window_frame.rs")),
+        ];
+
+        for (path, source) in modules {
+            assert!(
+                source.starts_with("//!"),
+                "{path} must start with module docs"
+            );
+            assert!(
+                source.contains("## Usage model"),
+                "{path} must document usage model"
+            );
+            assert!(
+                source.contains("## Design contract"),
+                "{path} must document design contract"
+            );
+            assert!(
+                !source.contains("代目"),
+                "{path} docs must be English, not draft text"
+            );
+        }
+    }
+
+    #[test]
     fn components_crate_exposes_one_line_application_init() {
         let source = include_str!("lib.rs");
         assert!(source.contains("pub fn init_liora(cx: &mut gpui::App)"));

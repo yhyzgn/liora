@@ -1,8 +1,23 @@
-//! Native app-window frame helpers.
+//! Window Frame module.
 //!
-//! Liora apps can use the system window frame or opt into a lightweight custom
-//! native GPUI title bar. This module only wraps GPUI window/frame primitives;
-//! it does not introduce a web/runtime layer.
+//! This public module implements native app-window frame helpers for Liora GPUI
+//! applications. Liora apps can keep the platform system frame or opt into a
+//! lightweight custom native GPUI title bar without introducing a WebView or web
+//! runtime layer.
+//!
+//! ## Usage model
+//!
+//! Apply [`apply_window_frame_mode`] while constructing `gpui::WindowOptions`,
+//! then wrap the root content in [`AppWindowFrame`] when a custom frame is
+//! selected. Store the selected [`WindowFrameMode`] in application state so the
+//! frame choice survives normal GPUI render passes and window recreation.
+//!
+//! ## Design contract
+//!
+//! The implementation should only adapt GPUI window/frame primitives, use Liora
+//! theme tokens for custom chrome, preserve platform/server decorations when
+//! [`WindowFrameMode::System`] is selected, and avoid app-specific Gallery/Docs
+//! resources in this SDK crate.
 
 use crate::{Button, Space, Text};
 use gpui::{

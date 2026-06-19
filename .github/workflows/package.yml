@@ -136,7 +136,7 @@ jobs:
         run: cargo install cargo-packager --locked
 
       - name: Validate packaging metadata
-        run: cargo run -p xtask -- package validate
+        run: cargo run --release -p xtask -- package validate
 
       - name: Check release readiness policy
         env:
@@ -148,7 +148,7 @@ jobs:
           LIORA_WINDOWS_SIGNTOOL_CERT_PATH: ${{ secrets.LIORA_WINDOWS_SIGNTOOL_CERT_PATH }}
           LIORA_WINDOWS_SIGNTOOL_CERT_PASSWORD: ${{ secrets.LIORA_WINDOWS_SIGNTOOL_CERT_PASSWORD }}
           LIORA_WINDOWS_TIMESTAMP_URL: ${{ secrets.LIORA_WINDOWS_TIMESTAMP_URL }}
-        run: cargo run -p xtask -- package release-readiness
+        run: cargo run --release -p xtask -- package release-readiness
 
       - name: Test packager domain logic
         run: cargo test -p liora-packager
@@ -159,7 +159,7 @@ jobs:
         run: |
           set -euo pipefail
           APP_INPUT="${{ github.event.inputs.app || 'all' }}"
-          args=(cargo run -p xtask -- package build)
+          args=(cargo run --release -p xtask -- package build)
           if [[ "$APP_INPUT" == "all" ]]; then
             args+=(--all-apps)
           else
@@ -241,7 +241,7 @@ jobs:
             # building the NSIS package; tagged release builds still use the full Windows default set.
             format="nsis"
           fi
-          args=(cargo run -p xtask -- package ci --app gallery --format "$format" --skip-build)
+          args=(cargo run --release -p xtask -- package ci --app gallery --format "$format" --skip-build)
           if [[ "$DRY_INPUT" == "true" ]]; then
             args+=(--dry-run)
           fi
@@ -263,7 +263,7 @@ jobs:
           if [[ "${{ matrix.platform }}" == "windows" && "${{ steps.package-channel.outputs.channel }}" == "preview" ]]; then
             format="nsis"
           fi
-          cargo run -p xtask -- package smoke --app gallery --format "$format"
+          cargo run --release -p xtask -- package smoke --app gallery --format "$format"
 
       - name: Plan Gallery install and uninstall smoke
         if: github.event.inputs.dry_run != 'true' && github.event.inputs.app != 'docs'
@@ -274,7 +274,7 @@ jobs:
           if [[ "${{ matrix.platform }}" == "windows" && "${{ steps.package-channel.outputs.channel }}" == "preview" ]]; then
             format="nsis"
           fi
-          cargo run -p xtask -- package install-smoke --app gallery --format "$format"
+          cargo run --release -p xtask -- package install-smoke --app gallery --format "$format"
 
       - name: Upload raw runnable binaries
         if: github.event.inputs.dry_run != 'true'
@@ -603,7 +603,7 @@ jobs:
             echo "- \`cargo test --workspace\`"
             echo "- \`cargo check -p liora-docs --bin check_snippets\`"
             echo "- \`cargo doc --workspace --no-deps\`"
-            echo "- \`cargo run -p xtask -- package release-readiness\`"
+            echo "- \`cargo run --release -p xtask -- package release-readiness\`"
             echo "- Gallery package dry-run and install-smoke dry-run in CI."
             echo "- Release asset count: \`${asset_count}\`; checksum files discovered: \`${checksum_count}\`."
             echo

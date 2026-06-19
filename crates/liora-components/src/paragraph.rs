@@ -1,3 +1,24 @@
+//! Paragraph module.
+//!
+//! This public module implements the Liora selectable paragraph/text-run composition component. It keeps the reusable
+//! component logic inside `liora-components` rather than Gallery or Docs so
+//! downstream GPUI applications can compose the same behavior with their own
+//! app state, assets, and release policy.
+//!
+//! ## Usage model
+//!
+//! Components in this module render native GPUI element trees. Stateless builder
+//! values can be constructed inline, while controls with focus, selection,
+//! popup, drag, or editing state should be stored as `gpui::Entity<T>` fields in
+//! the parent view so state survives GPUI render passes.
+//!
+//! ## Design contract
+//!
+//! The implementation should use Liora theme tokens from `liora-core` and
+//! `liora-theme`, keep accessibility-oriented keyboard/pointer behavior close to
+//! the component, and avoid app-specific Gallery/Docs resources in this SDK
+//! crate.
+
 use crate::{SelectableText, SelectableTextOptions, SelectableTextWrap, Text};
 use gpui::{
     App, Component, ElementId, IntoElement, RenderOnce, SharedString, StyledText, TextRun,

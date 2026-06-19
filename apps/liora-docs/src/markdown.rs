@@ -6951,6 +6951,10 @@ fn render_code_block(
     } else {
         code
     };
+    let rendered_code = reference_annotated_code(
+        language.as_ref().map(|label| label.as_ref()),
+        rendered_code.as_ref(),
+    );
 
     let mut code_block = LioraCodeBlock::new(rendered_code);
     code_block = code_block.selectable(true);
@@ -6958,6 +6962,111 @@ fn render_code_block(
         code_block = code_block.language(language.as_ref());
     }
     code_block.into_any_element()
+}
+
+fn reference_annotated_code(language: Option<&str>, code: &str) -> SharedString {
+    let comment = match language
+        .map(CodeLanguage::from_label)
+        .unwrap_or(CodeLanguage::PlainText)
+    {
+        CodeLanguage::Rust | CodeLanguage::TypeScript | CodeLanguage::JavaScript => "//",
+        CodeLanguage::Toml | CodeLanguage::Shell => "#",
+        CodeLanguage::PlainText | CodeLanguage::Json | CodeLanguage::Markdown => {
+            return SharedString::from(code.to_string());
+        }
+    };
+
+    let mut annotated = String::new();
+    annotated.push_str(comment);
+    annotated.push_str(" Reference notes: every generated comment explains the next statement.\n");
+
+    for line in code.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty()
+            || trimmed.starts_with("//")
+            || trimmed.starts_with("#")
+            || trimmed.starts_with("/*")
+            || trimmed.starts_with("*")
+            || trimmed.starts_with("//! ")
+            || trimmed.starts_with("///")
+        {
+            annotated.push_str(line);
+            annotated.push('\n');
+            continue;
+        }
+
+        annotated.push_str(comment);
+        annotated.push(' ');
+        annotated.push_str(&explain_reference_statement(trimmed));
+        annotated.push('\n');
+        annotated.push_str(line);
+        annotated.push('\n');
+    }
+
+    SharedString::from(annotated)
+}
+
+fn explain_reference_statement(statement: &str) -> String {
+    let text = statement.trim_end_matches(';').trim();
+    let explanation = if text.starts_with("use ") {
+        "Imports the public API needed by this example."
+    } else if text.starts_with("pub struct ") || text.starts_with("struct ") {
+        "Declares the view or data structure used by the example."
+    } else if text.starts_with("pub enum ") || text.starts_with("enum ") {
+        "Declares a named set of states or options for the example."
+    } else if text.starts_with("pub fn ") || text.starts_with("fn ") {
+        "Declares the function that callers or the demo harness can run."
+    } else if text.starts_with("impl ") {
+        "Starts an implementation block that attaches behavior to the type."
+    } else if text.starts_with("let ") {
+        "Creates a local binding used by the following builder chain or action."
+    } else if text.starts_with("const ") {
+        "Declares a compile-time constant used by the example."
+    } else if text.starts_with("if ") || text.starts_with("if let ") {
+        "Branches only when the condition matches the desired state."
+    } else if text.starts_with("match ") {
+        "Selects behavior by matching the current value against known cases."
+    } else if text.starts_with("for ") {
+        "Iterates through the collection and applies the nested behavior."
+    } else if text.starts_with("return ") {
+        "Returns early from the function with the selected value."
+    } else if text.starts_with("Application::new") {
+        "Creates the GPUI application runtime before opening windows."
+    } else if text.contains("init_liora_with_mode") {
+        "Initializes Liora with an explicit Light, Dark, or System theme mode."
+    } else if text.contains("init_liora") {
+        "Initializes Liora core state, component services, and key bindings."
+    } else if text.contains("open_window") {
+        "Opens a native GPUI window and mounts the root view."
+    } else if text.contains("WindowOptions") {
+        "Configures the native window before GPUI creates it."
+    } else if text.contains("CodeBlock::new") {
+        "Creates a syntax-highlighted Liora code block from the provided source."
+    } else if text.contains("Button::new") {
+        "Creates a Liora button with the visible label shown to the user."
+    } else if text.contains("Container::new") || text.contains("Space::new") {
+        "Creates a Liora layout container for composing child elements."
+    } else if text.starts_with('.') {
+        "Applies a builder method to refine the component configuration."
+    } else if text == "}" || text == "})" || text == "))," || text == "))" {
+        "Closes the current builder chain, closure, or scope."
+    } else if text.starts_with('[') && text.ends_with(']') {
+        "Starts a TOML configuration table for the following keys."
+    } else if text.contains('=') {
+        "Assigns a configuration value used by Cargo or the component builder."
+    } else if text.starts_with("cargo check") {
+        "Runs Cargo type checking without producing a release binary."
+    } else if text.starts_with("cargo run") {
+        "Builds and runs the selected Liora application or helper command."
+    } else if text.starts_with("cargo test") {
+        "Runs the relevant regression tests for the selected crate."
+    } else if text.starts_with("sudo ") {
+        "Runs an operating-system package command needed by the local platform."
+    } else {
+        "Executes this statement as part of the example flow."
+    };
+
+    explanation.to_string()
 }
 
 fn collect_live_demo_components(blocks: &[Block], components: &mut Vec<SharedString>) {
@@ -8086,6 +8195,8 @@ mod tests {
         assert!(ci.contains("Release readiness dry-run policy check"));
         assert!(ci.contains("cargo run -p xtask -- package release-readiness"));
         assert!(package.contains("Check release readiness policy"));
+        assert!(package.contains("cargo run --release -p xtask -- package validate"));
+        assert!(package.contains("cargo run --release -p xtask -- package release-readiness"));
         assert!(package.contains("LIORA_REQUIRE_SIGNING"));
         assert!(package.contains("LIORA_MACOS_CODESIGN_IDENTITY"));
         assert!(package.contains("LIORA_WINDOWS_SIGNTOOL_CERT_PATH"));
@@ -8095,6 +8206,7 @@ mod tests {
         assert!(sdk.contains("cargo package -p liora-packager"));
         assert!(sdk.contains("liora-packager liora"));
         assert!(sdk.contains("cargo publish -p"));
+        assert!(!sdk.contains(concat!("cargo publish -p \"$crate\" ", "--", "token")));
     }
 
     #[test]
@@ -8686,6 +8798,33 @@ mod tests {
         assert!(source.contains("src=\"code_block/basic.rs\""));
         assert!(source.contains("src=\"code_block/theme.rs\""));
         assert!(load_code_snippet("code_block/basic.rs").is_some());
+    }
+
+    #[test]
+    fn docs_reference_code_blocks_add_statement_comments_for_comment_safe_languages() {
+        let annotated = reference_annotated_code(
+            Some("rust"),
+            "use liora::init_liora;\nfn main() {\n    init_liora(cx);\n}\n",
+        );
+
+        assert!(annotated.contains("// Reference notes"));
+        assert!(annotated.contains("// Imports the public API needed by this example."));
+        assert!(
+            annotated
+                .contains("// Declares the function that callers or the demo harness can run.")
+        );
+        assert!(
+            annotated
+                .contains("// Initializes Liora core state, component services, and key bindings.")
+        );
+    }
+
+    #[test]
+    fn docs_reference_code_blocks_leave_json_unchanged() {
+        let json = r#"{"name": "liora"}"#;
+        let rendered = reference_annotated_code(Some("json"), json);
+
+        assert_eq!(rendered.as_ref(), json);
     }
 
     #[test]

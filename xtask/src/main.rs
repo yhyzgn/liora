@@ -343,16 +343,17 @@ fn check_sdk_release_workflow(root: &Path, report: &mut ReleaseReadinessReport) 
             if text.contains("CRATES_IO_TOKEN")
                 && text.contains("cargo package -p")
                 && text.contains("cargo publish -p")
+                && !text.contains(concat!("cargo publish -p \"$crate\" ", "--", "token"))
                 && text.contains("liora-theme liora-core liora-icons liora-icons-lucide liora-components liora-tray liora-packager liora") =>
         {
             report.pass(
                 "SDK release workflow",
-                "release-sdk.yml verifies and publishes SDK crates, including liora and liora-packager, with CRATES_IO_TOKEN in dependency order",
+                "release-sdk.yml verifies and publishes SDK crates, including liora and liora-packager, with CARGO_REGISTRY_TOKEN authentication in dependency order",
             );
         }
         Ok(_) => report.fail(
             "SDK release workflow",
-            "release-sdk.yml is missing SDK package verification, publish commands, token wiring, liora/liora-packager crates, or dependency order",
+            "release-sdk.yml is missing SDK package verification, publish commands, environment-token wiring, liora/liora-packager crates, dependency order, or deprecated token-argument guard",
         ),
         Err(_) => report.fail("SDK release workflow", "missing .github/workflows/release-sdk.yml"),
     }
