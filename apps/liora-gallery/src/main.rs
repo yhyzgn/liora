@@ -1,6 +1,7 @@
 use gpui::{
     AnyView, App, Application, Component, Context, Global, Render, RenderImage, SharedString,
-    WeakEntity, Window, WindowOptions, div, img, prelude::*, px, size,
+    UniformListScrollHandle, WeakEntity, Window, WindowOptions, div, img, prelude::*, px, size,
+    uniform_list,
 };
 use liora_components::{
     AppWindowFrame, Button, Card, Checkbox, Container, Dialog, Input, Paragraph, Segmented,
@@ -1235,12 +1236,14 @@ fn gallery_nav_visible_indices(index: &[GalleryNavEntry], query: &str) -> Vec<us
 // Keep Gallery search navigation separate from the reusable Menu component.
 // The generic Menu intentionally renders every node because it supports groups,
 // submenus, icons, and popovers. Gallery only needs a flat, fixed-height list, so
-// this renderer keeps filtering as cheap index selection and draws simple rows
-// directly without changing component-library menu behavior.
+// this renderer keeps filtering as cheap index selection and uses GPUI's
+// uniform_list to render only visible rows when clearing search expands back to
+// all demos.
 struct GalleryNavMenu {
     entries: Arc<[GalleryNavEntry]>,
     visible: Arc<[usize]>,
     selected: usize,
+    scroll_handle: UniformListScrollHandle,
     gallery: WeakEntity<Gallery>,
 }
 
@@ -1257,6 +1260,7 @@ impl GalleryNavMenu {
             entries: Arc::from(entries),
             visible: Arc::from(visible),
             selected,
+            scroll_handle: UniformListScrollHandle::new(),
             gallery,
         }
     }
@@ -1285,72 +1289,80 @@ impl Render for GalleryNavMenu {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
         let entries = self.entries.clone();
+        let visible = self.visible.clone();
         let selected = self.selected;
         let gallery = self.gallery.clone();
 
-        let mut nav = div()
+        div()
             .id("gallery-nav-menu")
             .relative()
             .size_full()
-            .overflow_y_scroll()
-            .bg(theme.neutral.card);
+            .overflow_hidden()
+            .bg(theme.neutral.card)
+            .child(
+                uniform_list(
+                    "gallery-nav-menu-list",
+                    visible.len().max(1),
+                    move |range, _window, _cx| {
+                        range
+                            .map(|row| {
+                                let Some(entry_index) = visible.get(row).copied() else {
+                                    return div()
+                                        .h(px(50.0))
+                                        .flex()
+                                        .items_center()
+                                        .px_4()
+                                        .text_sm()
+                                        .text_color(theme.neutral.text_3)
+                                        .child("无匹配组件")
+                                        .into_any_element();
+                                };
+                                let Some(entry) = entries.get(entry_index).cloned() else {
+                                    return div().h(px(50.0)).into_any_element();
+                                };
+                                let is_active = selected == entry_index;
+                                let item_color = if is_active {
+                                    theme.primary.base
+                                } else {
+                                    theme.neutral.text_1
+                                };
+                                let gallery = gallery.clone();
 
-        if self.visible.is_empty() {
-            return nav
-                .child(
-                    div()
-                        .h(px(50.0))
-                        .flex()
-                        .items_center()
-                        .px_4()
-                        .text_sm()
-                        .text_color(theme.neutral.text_3)
-                        .child("无匹配组件"),
+                                div()
+                                    .id(("gallery-nav-item", entry_index))
+                                    .cursor_pointer()
+                                    .flex()
+                                    .flex_row()
+                                    .items_center()
+                                    .justify_start()
+                                    .h(px(50.0))
+                                    .pl(px(20.0))
+                                    .pr(px(16.0))
+                                    .text_color(item_color)
+                                    .bg(if is_active {
+                                        theme.primary.base.opacity(0.1)
+                                    } else {
+                                        gpui::transparent_black()
+                                    })
+                                    .hover(|style| style.bg(theme.neutral.hover))
+                                    .on_mouse_down(
+                                        gpui::MouseButton::Left,
+                                        move |_, _window, cx| {
+                                            let _ = gallery.update(cx, |gallery, cx| {
+                                                gallery.selected = entry_index;
+                                                cx.notify();
+                                            });
+                                        },
+                                    )
+                                    .child(div().ml_2().text_sm().child(entry.label.clone()))
+                                    .into_any_element()
+                            })
+                            .collect::<Vec<_>>()
+                    },
                 )
-                .into_any_element();
-        }
-
-        for &entry_index in self.visible.iter() {
-            let Some(entry) = entries.get(entry_index).cloned() else {
-                continue;
-            };
-            let is_active = selected == entry_index;
-            let item_color = if is_active {
-                theme.primary.base
-            } else {
-                theme.neutral.text_1
-            };
-            let gallery = gallery.clone();
-
-            nav = nav.child(
-                div()
-                    .id(("gallery-nav-item", entry_index))
-                    .cursor_pointer()
-                    .flex()
-                    .flex_row()
-                    .items_center()
-                    .justify_start()
-                    .h(px(50.0))
-                    .pl(px(20.0))
-                    .pr(px(16.0))
-                    .text_color(item_color)
-                    .bg(if is_active {
-                        theme.primary.base.opacity(0.1)
-                    } else {
-                        gpui::transparent_black()
-                    })
-                    .hover(|style| style.bg(theme.neutral.hover))
-                    .on_mouse_down(gpui::MouseButton::Left, move |_, _window, cx| {
-                        let _ = gallery.update(cx, |gallery, cx| {
-                            gallery.selected = entry_index;
-                            cx.notify();
-                        });
-                    })
-                    .child(div().ml_2().text_sm().child(entry.label.clone())),
-            );
-        }
-
-        nav.into_any_element()
+                .track_scroll(self.scroll_handle.clone())
+                .size_full(),
+            )
     }
 }
 
@@ -1488,7 +1500,8 @@ mod shell_regression_tests {
         assert!(source.contains("struct GalleryNavMenu"));
         assert!(source.contains("Arc<[GalleryNavEntry]>"));
         assert!(source.contains(r#".id("gallery-nav-menu")"#));
-        assert!(source.contains("overflow_y_scroll()"));
+        assert!(source.contains("uniform_list("));
+        assert!(source.contains(".track_scroll(self.scroll_handle.clone())"));
         assert!(!source.contains("ListState::new"));
         assert!(!source.contains("list(self.list_state.clone()"));
         assert!(!source.contains("list_state.reset"));
