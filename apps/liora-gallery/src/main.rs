@@ -40,6 +40,7 @@ pub struct Gallery {
     nav_filter: gpui::Entity<Input>,
     nav_menu: Option<gpui::Entity<GalleryNavMenu>>,
     nav_query: String,
+    nav_refresh_pending: bool,
     theme_mode: ThemeMode,
     theme_mode_segmented: gpui::Entity<Segmented>,
     frame_mode: WindowFrameMode,
@@ -135,6 +136,7 @@ fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
                 nav_filter: cx.new(|cx| Input::new("", cx).placeholder("搜索组件 / Search demos")),
                 nav_menu: None,
                 nav_query: String::new(),
+                nav_refresh_pending: false,
                 theme_mode,
                 theme_mode_segmented: cx.new(move |_| theme_mode_segmented(theme_mode)),
                 frame_mode,
@@ -939,12 +941,26 @@ impl Gallery {
         nav_menu
     }
 
-    fn refresh_nav_menu_for_query(&mut self, query: String, cx: &mut Context<Self>) {
+    fn set_nav_query_deferred(&mut self, query: String, cx: &mut Context<Self>) {
         if self.nav_query == query {
             return;
         }
-
         self.nav_query = query;
+
+        if self.nav_refresh_pending {
+            return;
+        }
+        self.nav_refresh_pending = true;
+        cx.spawn(async move |gallery, cx| {
+            let _ = gallery.update(cx, |gallery, cx| {
+                gallery.nav_refresh_pending = false;
+                gallery.refresh_nav_menu_for_current_query(cx);
+            });
+        })
+        .detach();
+    }
+
+    fn refresh_nav_menu_for_current_query(&mut self, cx: &mut Context<Self>) {
         if let Some(nav_menu) = &self.nav_menu {
             cx.update_entity(nav_menu, |menu, cx| {
                 menu.set_query(&self.nav_query, self.selected, cx);
@@ -1018,7 +1034,7 @@ impl Gallery {
                 move |value, cx| {
                     let query = value.trim().to_lowercase();
                     let _ = gallery.update(cx, |gallery, cx| {
-                        gallery.refresh_nav_menu_for_query(query, cx);
+                        gallery.set_nav_query_deferred(query, cx);
                     });
                 }
             });
@@ -1489,7 +1505,9 @@ mod shell_regression_tests {
             .next()
             .unwrap();
 
-        assert!(source.contains("fn refresh_nav_menu_for_query"));
+        assert!(source.contains("fn set_nav_query_deferred"));
+        assert!(source.contains("nav_refresh_pending"));
+        assert!(source.contains("fn refresh_nav_menu_for_current_query"));
         assert!(!source.contains("fn current_nav_query"));
         assert!(!source.contains(
             "self.nav_filter
@@ -1506,6 +1524,7 @@ mod shell_regression_tests {
         assert!(!source.contains("list(self.list_state.clone()"));
         assert!(!source.contains("list_state.reset"));
         assert!(!source.contains("timer(Duration::from_millis(24))"));
+        assert!(!source.contains("gallery.refresh_nav_menu_for_query(query, cx);"));
         assert!(!source.contains("menu.set_items(items, cx)"));
         assert!(!source.contains(
             "move |_, cx| {

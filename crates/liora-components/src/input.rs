@@ -99,6 +99,7 @@ pub struct Input {
     selection_reversed: bool,
     marked_range: Option<Range<usize>>,
     last_line_layouts: Vec<(ShapedLine, Pixels)>,
+    last_layout_text: SharedString,
     last_bounds: Option<Bounds<Pixels>>,
     last_layout_is_masked: bool,
     cursor_visible: bool,
@@ -134,6 +135,7 @@ impl Input {
             selection_reversed: false,
             marked_range: None,
             last_line_layouts: Vec::new(),
+            last_layout_text: SharedString::default(),
             last_bounds: None,
             last_layout_is_masked: false,
             cursor_visible: true,
@@ -1406,12 +1408,33 @@ impl Element for InputElement {
             }
         }
         let line_layouts = prepaint.lines.clone();
+        let layout_text = line_layouts
+            .iter()
+            .map(|(line, _)| line.text.as_ref())
+            .collect::<Vec<_>>()
+            .join("\n");
+        let layout_text = SharedString::from(layout_text);
         let is_masked = prepaint.is_masked;
-        self.input.update(cx, |input, _| {
-            input.last_line_layouts = line_layouts;
-            input.last_bounds = Some(bounds);
-            input.last_layout_is_masked = is_masked;
-        });
+        let should_update_layout_cache = {
+            let input = self.input.read(cx);
+            input.last_bounds != Some(bounds)
+                || input.last_layout_is_masked != is_masked
+                || input.last_layout_text != layout_text
+                || input.last_line_layouts.len() != line_layouts.len()
+                || input
+                    .last_line_layouts
+                    .iter()
+                    .zip(line_layouts.iter())
+                    .any(|((_, previous_y), (_, next_y))| previous_y != next_y)
+        };
+        if should_update_layout_cache {
+            self.input.update(cx, |input, _| {
+                input.last_line_layouts = line_layouts;
+                input.last_layout_text = layout_text;
+                input.last_bounds = Some(bounds);
+                input.last_layout_is_masked = is_masked;
+            });
+        }
     }
 }
 
@@ -1624,6 +1647,22 @@ mod width_tests {
         assert!(source.contains("self.start_blink(cx);"));
         assert!(source.contains("self.selected_range = previous..cursor"));
         assert!(!source.contains("self.select_to(p, cx);"));
+    }
+
+    #[test]
+    fn input_paint_layout_cache_does_not_notify_every_frame() {
+        let source = include_str!("input.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(source.contains("should_update_layout_cache"));
+        assert!(source.contains("last_layout_text"));
+        assert!(source.contains("if should_update_layout_cache"));
+        assert!(!source.contains(
+            "self.input.update(cx, |input, _| {
+            input.last_line_layouts = line_layouts;"
+        ));
     }
 
     #[test]
