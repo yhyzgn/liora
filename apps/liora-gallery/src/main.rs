@@ -1247,9 +1247,12 @@ fn gallery_nav_visible_indices(index: &[GalleryNavEntry], query: &str) -> Vec<us
 
 // Keep Gallery search navigation separate from the reusable Menu component.
 // The generic Menu intentionally renders every node because it supports groups,
-// submenus, icons, and popovers. Gallery only needs a flat, fixed-height list, so
-// this renderer keeps filtering as cheap index selection and draws simple rows
-// directly without changing component-library menu behavior.
+// submenus, icons, and popovers; doing that on each search keystroke made the
+// sidebar pay full element-tree construction and layout cost even for a tiny
+// data set. This dedicated renderer keeps filtering as cheap index selection and
+// draws simple fixed-height rows directly. For Gallery-sized data sets, this
+// avoids both the generic Menu subtree cost and ListState reset/re-measure churn
+// when short queries expand back to many matches.
 struct GalleryNavMenu {
     entries: Arc<[GalleryNavEntry]>,
     visible: Arc<[usize]>,
