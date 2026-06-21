@@ -1,6 +1,6 @@
 use gpui::{
-    AnyView, App, Application, Component, Context, Global, Render, RenderImage, Task, WeakEntity,
-    Window, WindowOptions, div, img, prelude::*, px, size,
+    AnyView, App, Application, Component, Context, Global, Render, RenderImage, SharedString,
+    WeakEntity, Window, WindowOptions, div, img, prelude::*, px, size,
 };
 use liora_components::{
     AppWindowFrame, Button, Card, Checkbox, Container, Dialog, Input, Menu, MenuItem, MenuMode,
@@ -35,12 +35,11 @@ use std::{
 pub struct Gallery {
     entries: Vec<demos::DemoEntry>,
     demos: Vec<AnyView>,
+    nav_index: Vec<GalleryNavEntry>,
     selected: usize,
     nav_filter: gpui::Entity<Input>,
     nav_menu: Option<gpui::Entity<liora_components::Menu>>,
     nav_query: String,
-    nav_refresh_revision: u64,
-    nav_refresh_task: Option<Task<()>>,
     theme_mode: ThemeMode,
     theme_mode_segmented: gpui::Entity<Segmented>,
     frame_mode: WindowFrameMode,
@@ -51,6 +50,12 @@ pub struct Gallery {
 }
 
 #[derive(Debug)]
+struct GalleryNavEntry {
+    id: SharedString,
+    label: SharedString,
+    search_text: String,
+}
+
 enum UpdatePanelStatus {
     Idle,
     Checking,
@@ -119,18 +124,18 @@ fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
         attach_system_theme_observer(window, cx);
 
         let entries = demos::registry();
+        let nav_index = gallery_nav_index(&entries);
         let demos = entries.iter().map(|entry| (entry.render)(cx)).collect();
         let view = cx.new(|cx| {
             let theme_mode = cx.global::<Config>().theme_mode;
             Gallery {
                 entries,
                 demos,
+                nav_index,
                 selected: 0,
                 nav_filter: cx.new(|cx| Input::new("", cx).placeholder("搜索组件 / Search demos")),
                 nav_menu: None,
                 nav_query: String::new(),
-                nav_refresh_revision: 0,
-                nav_refresh_task: None,
                 theme_mode,
                 theme_mode_segmented: cx.new(move |_| theme_mode_segmented(theme_mode)),
                 frame_mode,
@@ -924,7 +929,7 @@ impl Gallery {
             }
         }
 
-        let items = gallery_nav_items(&self.entries, &query);
+        let items = gallery_nav_nodes(&self.nav_index, &query);
         let gallery = cx.entity().downgrade();
         let nav_menu = cx.new(move |_| build_gallery_menu(items, selected, gallery));
         self.nav_query = query;
@@ -941,33 +946,16 @@ impl Gallery {
             .to_lowercase()
     }
 
-    fn schedule_nav_menu_refresh_for_query(&mut self, query: String, cx: &mut Context<Self>) {
+    fn refresh_nav_menu_for_query(&mut self, query: String, cx: &mut Context<Self>) {
         if self.nav_query == query {
             return;
         }
 
+        let items = gallery_nav_nodes(&self.nav_index, &query);
         self.nav_query = query;
-        self.nav_refresh_revision = self.nav_refresh_revision.wrapping_add(1);
-        let revision = self.nav_refresh_revision;
-        self.nav_refresh_task = Some(cx.spawn(async move |gallery, cx| {
-            cx.background_executor()
-                .timer(Duration::from_millis(24))
-                .await;
-            let _ = gallery.update(cx, |gallery, cx| {
-                if gallery.nav_refresh_revision != revision {
-                    return;
-                }
-                gallery.apply_scheduled_nav_menu_refresh(cx);
-                gallery.nav_refresh_task = None;
-            });
-        }));
-    }
-
-    fn apply_scheduled_nav_menu_refresh(&mut self, cx: &mut Context<Self>) {
-        let items = gallery_nav_items(&self.entries, &self.nav_query);
         if let Some(nav_menu) = &self.nav_menu {
             cx.update_entity(nav_menu, |menu, cx| {
-                menu.set_items(gallery_menu_nodes(&items), cx);
+                menu.set_items(items, cx);
                 menu.set_active_index(self.selected.to_string(), cx);
             });
         } else {
@@ -1039,7 +1027,7 @@ impl Gallery {
                 move |value, cx| {
                     let query = value.trim().to_lowercase();
                     let _ = gallery.update(cx, |gallery, cx| {
-                        gallery.schedule_nav_menu_refresh_for_query(query, cx);
+                        gallery.refresh_nav_menu_for_query(query, cx);
                     });
                 }
             });
@@ -1229,49 +1217,50 @@ fn theme_mode_segmented(mode: ThemeMode) -> Segmented {
     .value(mode.value())
 }
 
-fn gallery_nav_items(entries: &[demos::DemoEntry], query: &str) -> Vec<(usize, &'static str)> {
+fn gallery_nav_index(entries: &[demos::DemoEntry]) -> Vec<GalleryNavEntry> {
     entries
         .iter()
         .enumerate()
-        .filter(|(_, entry)| {
-            query.is_empty()
-                || entry.name.to_lowercase().contains(query)
-                || entry.description.to_lowercase().contains(query)
+        .map(|(index, entry)| GalleryNavEntry {
+            id: index.to_string().into(),
+            label: entry.name.into(),
+            search_text: format!("{} {}", entry.name, entry.description).to_lowercase(),
         })
-        .map(|(index, entry)| (index, entry.name))
-        .chain(
-            (query.is_empty() || "about 关于 updates 更新".contains(query))
-                .then_some((entries.len(), "About / 关于")),
-        )
+        .chain(std::iter::once(GalleryNavEntry {
+            id: entries.len().to_string().into(),
+            label: "About / 关于".into(),
+            search_text: "about 关于 updates 更新".into(),
+        }))
         .collect()
 }
 
-fn gallery_menu_nodes(items: &[(usize, &'static str)]) -> Vec<MenuNode> {
-    if items.is_empty() {
-        return vec![MenuNode::Item(MenuItem {
+fn gallery_nav_nodes(index: &[GalleryNavEntry], query: &str) -> Vec<MenuNode> {
+    let mut nodes: Vec<MenuNode> = index
+        .iter()
+        .filter(|entry| query.is_empty() || entry.search_text.contains(query))
+        .map(gallery_nav_node)
+        .collect();
+
+    if nodes.is_empty() {
+        nodes.push(MenuNode::Item(MenuItem {
             id: "empty".into(),
             label: "无匹配组件".into(),
             icon: None,
-        })];
+        }));
     }
 
-    items
-        .iter()
-        .map(|(index, name)| {
-            MenuNode::Item(MenuItem {
-                id: index.to_string().into(),
-                label: (*name).into(),
-                icon: None,
-            })
-        })
-        .collect()
+    nodes
 }
 
-fn build_gallery_menu(
-    items: Vec<(usize, &'static str)>,
-    selected: usize,
-    gallery: WeakEntity<Gallery>,
-) -> Menu {
+fn gallery_nav_node(entry: &GalleryNavEntry) -> MenuNode {
+    MenuNode::Item(MenuItem {
+        id: entry.id.clone(),
+        label: entry.label.clone(),
+        icon: None,
+    })
+}
+
+fn build_gallery_menu(items: Vec<MenuNode>, selected: usize, gallery: WeakEntity<Gallery>) -> Menu {
     Menu::new()
         .id("gallery-menu")
         .mode(MenuMode::Vertical)
@@ -1285,7 +1274,7 @@ fn build_gallery_menu(
                 cx.notify();
             });
         })
-        .with_items(gallery_menu_nodes(&items))
+        .with_items(items)
 }
 
 struct PortalLayer;
@@ -1386,10 +1375,11 @@ mod shell_regression_tests {
             .next()
             .unwrap();
 
-        assert!(source.contains("fn schedule_nav_menu_refresh_for_query"));
-        assert!(source.contains("timer(Duration::from_millis(24))"));
-        assert!(source.contains("fn apply_scheduled_nav_menu_refresh"));
-        assert!(source.contains("menu.set_items(gallery_menu_nodes(&items), cx)"));
+        assert!(source.contains("fn refresh_nav_menu_for_query"));
+        assert!(source.contains("fn gallery_nav_index"));
+        assert!(source.contains("fn gallery_nav_nodes"));
+        assert!(source.contains("menu.set_items(items, cx)"));
+        assert!(!source.contains("timer(Duration::from_millis(24))"));
         assert!(!source.contains(
             "move |_, cx| {
                     let _ = gallery.update(cx, |_gallery, cx| {

@@ -39,6 +39,7 @@ pub enum MenuMode {
     Horizontal,
 }
 
+#[derive(Clone)]
 /// Options that control menu node behavior.
 pub enum MenuNode {
     /// Uses the `Item` option for `MenuNode`.
@@ -49,6 +50,7 @@ pub enum MenuNode {
     Group(MenuItemGroup),
 }
 
+#[derive(Clone)]
 /// Data model used by menu item rendering.
 pub struct MenuItem {
     /// Stable identifier used for GPUI state, callbacks, and automation.
@@ -59,6 +61,7 @@ pub struct MenuItem {
     pub icon: Option<IconName>,
 }
 
+#[derive(Clone)]
 /// Fluent native GPUI component for rendering Liora sub menu.
 pub struct SubMenu {
     /// Stable identifier used for GPUI state, callbacks, and automation.
@@ -71,6 +74,7 @@ pub struct SubMenu {
     pub children: Vec<MenuNode>,
 }
 
+#[derive(Clone)]
 /// Fluent native GPUI component for rendering Liora menu item group.
 pub struct MenuItemGroup {
     /// Primary heading or title text displayed by the component.
