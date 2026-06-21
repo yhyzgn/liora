@@ -1313,55 +1313,58 @@ impl Render for GalleryNavMenu {
             .size_full()
             .overflow_hidden()
             .bg(theme.neutral.card)
-            .child(list(self.list_state.clone(), move |row, _window, _cx| {
-                let Some(entry_index) = visible.get(row).copied() else {
-                    return div()
-                        .h(px(50.0))
-                        .flex()
-                        .items_center()
-                        .px_4()
-                        .text_sm()
-                        .text_color(theme.neutral.text_3)
-                        .child("无匹配组件")
-                        .into_any_element();
-                };
-                let Some(entry) = entries.get(entry_index).cloned() else {
-                    return div().into_any_element();
-                };
-                let is_active = selected == entry_index;
-                let item_color = if is_active {
-                    theme.primary.base
-                } else {
-                    theme.neutral.text_1
-                };
-                let gallery = gallery.clone();
-
-                div()
-                    .id(("gallery-nav-item", entry_index))
-                    .cursor_pointer()
-                    .flex()
-                    .flex_row()
-                    .items_center()
-                    .justify_start()
-                    .h(px(50.0))
-                    .pl(px(20.0))
-                    .pr(px(16.0))
-                    .text_color(item_color)
-                    .bg(if is_active {
-                        theme.primary.base.opacity(0.1)
+            .child(
+                list(self.list_state.clone(), move |row, _window, _cx| {
+                    let Some(entry_index) = visible.get(row).copied() else {
+                        return div()
+                            .h(px(50.0))
+                            .flex()
+                            .items_center()
+                            .px_4()
+                            .text_sm()
+                            .text_color(theme.neutral.text_3)
+                            .child("无匹配组件")
+                            .into_any_element();
+                    };
+                    let Some(entry) = entries.get(entry_index).cloned() else {
+                        return div().into_any_element();
+                    };
+                    let is_active = selected == entry_index;
+                    let item_color = if is_active {
+                        theme.primary.base
                     } else {
-                        gpui::transparent_black()
-                    })
-                    .hover(|style| style.bg(theme.neutral.hover))
-                    .on_mouse_down(gpui::MouseButton::Left, move |_, _window, cx| {
-                        let _ = gallery.update(cx, |gallery, cx| {
-                            gallery.selected = entry_index;
-                            cx.notify();
-                        });
-                    })
-                    .child(div().ml_2().text_sm().child(entry.label.clone()))
-                    .into_any_element()
-            }))
+                        theme.neutral.text_1
+                    };
+                    let gallery = gallery.clone();
+
+                    div()
+                        .id(("gallery-nav-item", entry_index))
+                        .cursor_pointer()
+                        .flex()
+                        .flex_row()
+                        .items_center()
+                        .justify_start()
+                        .h(px(50.0))
+                        .pl(px(20.0))
+                        .pr(px(16.0))
+                        .text_color(item_color)
+                        .bg(if is_active {
+                            theme.primary.base.opacity(0.1)
+                        } else {
+                            gpui::transparent_black()
+                        })
+                        .hover(|style| style.bg(theme.neutral.hover))
+                        .on_mouse_down(gpui::MouseButton::Left, move |_, _window, cx| {
+                            let _ = gallery.update(cx, |gallery, cx| {
+                                gallery.selected = entry_index;
+                                cx.notify();
+                            });
+                        })
+                        .child(div().ml_2().text_sm().child(entry.label.clone()))
+                        .into_any_element()
+                })
+                .size_full(),
+            )
     }
 }
 
@@ -1495,6 +1498,7 @@ mod shell_regression_tests {
         assert!(source.contains("ListState::new"));
         assert!(source.contains("Arc<[GalleryNavEntry]>"));
         assert!(source.contains("list(self.list_state.clone()"));
+        assert!(source.contains(".size_full(),"));
         assert!(!source.contains("timer(Duration::from_millis(24))"));
         assert!(!source.contains("menu.set_items(items, cx)"));
         assert!(!source.contains(
