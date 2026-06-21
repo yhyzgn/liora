@@ -925,30 +925,17 @@ impl Gallery {
         selected: usize,
         cx: &mut Context<Self>,
     ) -> gpui::Entity<GalleryNavMenu> {
-        let query = self.current_nav_query(cx);
-
-        if self.nav_query == query {
-            if let Some(nav_menu) = &self.nav_menu {
-                cx.update_entity(nav_menu, |menu, cx| menu.set_selected(selected, cx));
-                return nav_menu.clone();
-            }
+        if let Some(nav_menu) = &self.nav_menu {
+            cx.update_entity(nav_menu, |menu, cx| menu.set_selected(selected, cx));
+            return nav_menu.clone();
         }
 
+        let query = self.nav_query.clone();
         let gallery = cx.entity().downgrade();
         let nav_menu =
             cx.new(|cx| GalleryNavMenu::new(self.nav_index.clone(), selected, &query, gallery, cx));
-        self.nav_query = query;
         self.nav_menu = Some(nav_menu.clone());
         nav_menu
-    }
-
-    fn current_nav_query(&self, cx: &Context<Self>) -> String {
-        self.nav_filter
-            .read(cx)
-            .value()
-            .to_string()
-            .trim()
-            .to_lowercase()
     }
 
     fn refresh_nav_menu_for_query(&mut self, query: String, cx: &mut Context<Self>) {
@@ -1247,12 +1234,9 @@ fn gallery_nav_visible_indices(index: &[GalleryNavEntry], query: &str) -> Vec<us
 
 // Keep Gallery search navigation separate from the reusable Menu component.
 // The generic Menu intentionally renders every node because it supports groups,
-// submenus, icons, and popovers; doing that on each search keystroke made the
-// sidebar pay full element-tree construction and layout cost even for a tiny
-// data set. This dedicated renderer keeps filtering as cheap index selection and
-// draws simple fixed-height rows directly. For Gallery-sized data sets, this
-// avoids both the generic Menu subtree cost and ListState reset/re-measure churn
-// when short queries expand back to many matches.
+// submenus, icons, and popovers. Gallery only needs a flat, fixed-height list, so
+// this renderer keeps filtering as cheap index selection and draws simple rows
+// directly without changing component-library menu behavior.
 struct GalleryNavMenu {
     entries: Arc<[GalleryNavEntry]>,
     visible: Arc<[usize]>,
@@ -1494,6 +1478,11 @@ mod shell_regression_tests {
             .unwrap();
 
         assert!(source.contains("fn refresh_nav_menu_for_query"));
+        assert!(!source.contains("fn current_nav_query"));
+        assert!(!source.contains(
+            "self.nav_filter
+            .read(cx)"
+        ));
         assert!(source.contains("fn gallery_nav_index"));
         assert!(source.contains("fn gallery_nav_visible_indices"));
         assert!(source.contains("struct GalleryNavMenu"));
