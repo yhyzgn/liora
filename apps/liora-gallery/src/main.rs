@@ -1,12 +1,12 @@
 use gpui::{
-    AnyView, App, Application, Component, Context, Global, Render, RenderImage, SharedString,
-    WeakEntity, Window, WindowOptions, div, img, prelude::*, px, size,
+    AnyView, App, Application, Component, Context, Global, ListAlignment, ListState, Render,
+    RenderImage, SharedString, WeakEntity, Window, WindowOptions, div, img, list, prelude::*, px,
+    size,
 };
 use liora_components::{
-    AppWindowFrame, Button, Card, Checkbox, Container, Dialog, Input, Menu, MenuItem, MenuMode,
-    MenuNode, Paragraph, Segmented, SegmentedOption, Space, Switch, Tag, Text, Title,
-    WindowFrameMode, apply_window_frame_mode, frame_mode_switch_row, init_liora, toast_info,
-    toast_success,
+    AppWindowFrame, Button, Card, Checkbox, Container, Dialog, Input, Paragraph, Segmented,
+    SegmentedOption, Space, Switch, Tag, Text, Title, WindowFrameMode, apply_window_frame_mode,
+    frame_mode_switch_row, init_liora, toast_info, toast_success,
 };
 use liora_core::{
     Config, LinuxDesktopIdentity, LinuxDesktopPngIcon, PassivePortal, Portal, ThemeMode,
@@ -38,7 +38,7 @@ pub struct Gallery {
     nav_index: Vec<GalleryNavEntry>,
     selected: usize,
     nav_filter: gpui::Entity<Input>,
-    nav_menu: Option<gpui::Entity<liora_components::Menu>>,
+    nav_menu: Option<gpui::Entity<GalleryNavMenu>>,
     nav_query: String,
     theme_mode: ThemeMode,
     theme_mode_segmented: gpui::Entity<Segmented>,
@@ -49,9 +49,8 @@ pub struct Gallery {
     install_plan: Option<InstallPlan>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct GalleryNavEntry {
-    id: SharedString,
     label: SharedString,
     search_text: String,
 }
@@ -850,14 +849,16 @@ impl Render for Gallery {
             .header(header)
             .header_height_lg()
             .aside(
-                Space::new()
-                    .vertical()
-                    .gap_sm()
-                    .child(self.nav_filter.clone())
-                    .child(nav_menu),
+                div()
+                    .flex()
+                    .flex_col()
+                    .h_full()
+                    .gap_2()
+                    .p_2()
+                    .child(div().flex_none().child(self.nav_filter.clone()))
+                    .child(div().flex_1().min_h_0().child(nav_menu)),
             )
             .aside_width_lg()
-            .aside_scroll()
             .main_scroll()
             .main_padding_xl()
             .child(content)
@@ -920,18 +921,23 @@ impl Gallery {
             )
     }
 
-    fn gallery_nav_menu(&mut self, selected: usize, cx: &mut Context<Self>) -> gpui::Entity<Menu> {
+    fn gallery_nav_menu(
+        &mut self,
+        selected: usize,
+        cx: &mut Context<Self>,
+    ) -> gpui::Entity<GalleryNavMenu> {
         let query = self.current_nav_query(cx);
 
         if self.nav_query == query {
             if let Some(nav_menu) = &self.nav_menu {
+                cx.update_entity(nav_menu, |menu, cx| menu.set_selected(selected, cx));
                 return nav_menu.clone();
             }
         }
 
-        let items = gallery_nav_nodes(&self.nav_index, &query);
         let gallery = cx.entity().downgrade();
-        let nav_menu = cx.new(move |_| build_gallery_menu(items, selected, gallery));
+        let nav_menu =
+            cx.new(|cx| GalleryNavMenu::new(self.nav_index.clone(), selected, &query, gallery, cx));
         self.nav_query = query;
         self.nav_menu = Some(nav_menu.clone());
         nav_menu
@@ -951,12 +957,10 @@ impl Gallery {
             return;
         }
 
-        let items = gallery_nav_nodes(&self.nav_index, &query);
         self.nav_query = query;
         if let Some(nav_menu) = &self.nav_menu {
             cx.update_entity(nav_menu, |menu, cx| {
-                menu.set_items(items, cx);
-                menu.set_active_index(self.selected.to_string(), cx);
+                menu.set_query(&self.nav_query, self.selected, cx);
             });
         } else {
             cx.notify();
@@ -1221,60 +1225,144 @@ fn gallery_nav_index(entries: &[demos::DemoEntry]) -> Vec<GalleryNavEntry> {
     entries
         .iter()
         .enumerate()
-        .map(|(index, entry)| GalleryNavEntry {
-            id: index.to_string().into(),
+        .map(|(_index, entry)| GalleryNavEntry {
             label: entry.name.into(),
             search_text: format!("{} {}", entry.name, entry.description).to_lowercase(),
         })
         .chain(std::iter::once(GalleryNavEntry {
-            id: entries.len().to_string().into(),
             label: "About / 关于".into(),
             search_text: "about 关于 updates 更新".into(),
         }))
         .collect()
 }
 
-fn gallery_nav_nodes(index: &[GalleryNavEntry], query: &str) -> Vec<MenuNode> {
-    let mut nodes: Vec<MenuNode> = index
+fn gallery_nav_visible_indices(index: &[GalleryNavEntry], query: &str) -> Vec<usize> {
+    index
         .iter()
-        .filter(|entry| query.is_empty() || entry.search_text.contains(query))
-        .map(gallery_nav_node)
-        .collect();
+        .enumerate()
+        .filter_map(|(idx, entry)| {
+            (query.is_empty() || entry.search_text.contains(query)).then_some(idx)
+        })
+        .collect()
+}
 
-    if nodes.is_empty() {
-        nodes.push(MenuNode::Item(MenuItem {
-            id: "empty".into(),
-            label: "无匹配组件".into(),
-            icon: None,
-        }));
+// Keep Gallery search navigation separate from the reusable Menu component.
+// The generic Menu intentionally renders every node because it supports groups,
+// submenus, icons, and popovers; doing that on each search keystroke made the
+// sidebar pay full element-tree construction and layout cost even for a tiny
+// data set. This dedicated list keeps filtering as cheap index selection and
+// lets GPUI render only the visible rows.
+struct GalleryNavMenu {
+    entries: Arc<[GalleryNavEntry]>,
+    visible: Arc<[usize]>,
+    selected: usize,
+    list_state: ListState,
+    gallery: WeakEntity<Gallery>,
+}
+
+impl GalleryNavMenu {
+    fn new(
+        entries: Vec<GalleryNavEntry>,
+        selected: usize,
+        query: &str,
+        gallery: WeakEntity<Gallery>,
+        _cx: &mut Context<Self>,
+    ) -> Self {
+        let visible = gallery_nav_visible_indices(&entries, query);
+        let list_state = ListState::new(visible.len().max(1), ListAlignment::Top, px(100.0));
+        Self {
+            entries: Arc::from(entries),
+            visible: Arc::from(visible),
+            selected,
+            list_state,
+            gallery,
+        }
     }
 
-    nodes
+    fn set_query(&mut self, query: &str, selected: usize, cx: &mut Context<Self>) {
+        let next_visible = gallery_nav_visible_indices(&self.entries, query);
+        let changed = self.visible.as_ref() != next_visible.as_slice() || self.selected != selected;
+        if !changed {
+            return;
+        }
+        self.visible = Arc::from(next_visible);
+        self.selected = selected;
+        self.list_state.reset(self.visible.len().max(1));
+        cx.notify();
+    }
+
+    fn set_selected(&mut self, selected: usize, cx: &mut Context<Self>) {
+        if self.selected == selected {
+            return;
+        }
+        self.selected = selected;
+        cx.notify();
+    }
 }
 
-fn gallery_nav_node(entry: &GalleryNavEntry) -> MenuNode {
-    MenuNode::Item(MenuItem {
-        id: entry.id.clone(),
-        label: entry.label.clone(),
-        icon: None,
-    })
-}
+impl Render for GalleryNavMenu {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let theme = cx.global::<Config>().theme.clone();
+        let entries = self.entries.clone();
+        let visible = self.visible.clone();
+        let selected = self.selected;
+        let gallery = self.gallery.clone();
 
-fn build_gallery_menu(items: Vec<MenuNode>, selected: usize, gallery: WeakEntity<Gallery>) -> Menu {
-    Menu::new()
-        .id("gallery-menu")
-        .mode(MenuMode::Vertical)
-        .default_active(selected.to_string())
-        .on_select(move |id, _, cx| {
-            let Ok(index) = id.parse::<usize>() else {
-                return;
-            };
-            let _ = gallery.update(cx, |gallery, cx| {
-                gallery.selected = index;
-                cx.notify();
-            });
-        })
-        .with_items(items)
+        div()
+            .relative()
+            .size_full()
+            .overflow_hidden()
+            .bg(theme.neutral.card)
+            .child(list(self.list_state.clone(), move |row, _window, _cx| {
+                let Some(entry_index) = visible.get(row).copied() else {
+                    return div()
+                        .h(px(50.0))
+                        .flex()
+                        .items_center()
+                        .px_4()
+                        .text_sm()
+                        .text_color(theme.neutral.text_3)
+                        .child("无匹配组件")
+                        .into_any_element();
+                };
+                let Some(entry) = entries.get(entry_index).cloned() else {
+                    return div().into_any_element();
+                };
+                let is_active = selected == entry_index;
+                let item_color = if is_active {
+                    theme.primary.base
+                } else {
+                    theme.neutral.text_1
+                };
+                let gallery = gallery.clone();
+
+                div()
+                    .id(("gallery-nav-item", entry_index))
+                    .cursor_pointer()
+                    .flex()
+                    .flex_row()
+                    .items_center()
+                    .justify_start()
+                    .h(px(50.0))
+                    .pl(px(20.0))
+                    .pr(px(16.0))
+                    .text_color(item_color)
+                    .bg(if is_active {
+                        theme.primary.base.opacity(0.1)
+                    } else {
+                        gpui::transparent_black()
+                    })
+                    .hover(|style| style.bg(theme.neutral.hover))
+                    .on_mouse_down(gpui::MouseButton::Left, move |_, _window, cx| {
+                        let _ = gallery.update(cx, |gallery, cx| {
+                            gallery.selected = entry_index;
+                            cx.notify();
+                        });
+                    })
+                    .child(div().ml_2().text_sm().child(entry.label.clone()))
+                    .into_any_element()
+            }))
+    }
 }
 
 struct PortalLayer;
@@ -1356,6 +1444,8 @@ impl gpui::RenderOnce for PortalLayer {
 
 #[cfg(test)]
 mod shell_regression_tests {
+    use super::{GalleryNavEntry, gallery_nav_visible_indices};
+
     #[test]
     fn close_confirm_body_allows_content_to_shrink_and_wrap() {
         let source = include_str!("main.rs")
@@ -1369,6 +1459,29 @@ mod shell_regression_tests {
     }
 
     #[test]
+    fn gallery_nav_visible_indices_preserve_original_selection_ids() {
+        let entries = vec![
+            GalleryNavEntry {
+                label: "Button".into(),
+                search_text: "button clickable".into(),
+            },
+            GalleryNavEntry {
+                label: "Input".into(),
+                search_text: "input search form".into(),
+            },
+            GalleryNavEntry {
+                label: "About / 关于".into(),
+                search_text: "about 关于 updates 更新".into(),
+            },
+        ];
+
+        assert_eq!(gallery_nav_visible_indices(&entries, ""), vec![0, 1, 2]);
+        assert_eq!(gallery_nav_visible_indices(&entries, "input"), vec![1]);
+        assert_eq!(gallery_nav_visible_indices(&entries, "关于"), vec![2]);
+        assert!(gallery_nav_visible_indices(&entries, "missing").is_empty());
+    }
+
+    #[test]
     fn gallery_search_refreshes_menu_without_full_gallery_notify() {
         let source = include_str!("main.rs")
             .split("mod shell_regression_tests")
@@ -1377,9 +1490,13 @@ mod shell_regression_tests {
 
         assert!(source.contains("fn refresh_nav_menu_for_query"));
         assert!(source.contains("fn gallery_nav_index"));
-        assert!(source.contains("fn gallery_nav_nodes"));
-        assert!(source.contains("menu.set_items(items, cx)"));
+        assert!(source.contains("fn gallery_nav_visible_indices"));
+        assert!(source.contains("struct GalleryNavMenu"));
+        assert!(source.contains("ListState::new"));
+        assert!(source.contains("Arc<[GalleryNavEntry]>"));
+        assert!(source.contains("list(self.list_state.clone()"));
         assert!(!source.contains("timer(Duration::from_millis(24))"));
+        assert!(!source.contains("menu.set_items(items, cx)"));
         assert!(!source.contains(
             "move |_, cx| {
                     let _ = gallery.update(cx, |_gallery, cx| {
