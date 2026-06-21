@@ -3,9 +3,10 @@ use gpui::{
     WindowOptions, div, img, prelude::*, px, size,
 };
 use liora_components::{
-    AppWindowFrame, Button, Card, Checkbox, Container, Dialog, Input, Menu, MenuMode, Paragraph,
-    Segmented, SegmentedOption, Space, Switch, Tag, Text, Title, WindowFrameMode,
-    apply_window_frame_mode, frame_mode_switch_row, init_liora, toast_info, toast_success,
+    AppWindowFrame, Button, Card, Checkbox, Container, Dialog, Input, Menu, MenuItem, MenuMode,
+    MenuNode, Paragraph, Segmented, SegmentedOption, Space, Switch, Tag, Text, Title,
+    WindowFrameMode, apply_window_frame_mode, frame_mode_switch_row, init_liora, toast_info,
+    toast_success,
 };
 use liora_core::{
     Config, LinuxDesktopIdentity, LinuxDesktopPngIcon, PassivePortal, Portal, ThemeMode,
@@ -564,6 +565,7 @@ fn show_gallery_close_confirm(cx: &mut App) {
                 .vertical()
                 .gap_lg()
                 .grow()
+                .shrink()
                 .child(Paragraph::with_text(
                     "你可以直接退出进程，或者关闭主窗口并让应用继续驻留在系统托盘。",
                 ))
@@ -910,13 +912,7 @@ impl Gallery {
     }
 
     fn gallery_nav_menu(&mut self, selected: usize, cx: &mut Context<Self>) -> gpui::Entity<Menu> {
-        let query = self
-            .nav_filter
-            .read(cx)
-            .value()
-            .to_string()
-            .trim()
-            .to_lowercase();
+        let query = self.current_nav_query(cx);
 
         if self.nav_query == query {
             if let Some(nav_menu) = &self.nav_menu {
@@ -924,27 +920,38 @@ impl Gallery {
             }
         }
 
-        let items = self
-            .entries
-            .iter()
-            .enumerate()
-            .filter(|(_, entry)| {
-                query.is_empty()
-                    || entry.name.to_lowercase().contains(&query)
-                    || entry.description.to_lowercase().contains(&query)
-            })
-            .map(|(index, entry)| (index, entry.name))
-            .chain(
-                (query.is_empty() || "about 关于 updates 更新".contains(&query))
-                    .then_some((self.entries.len(), "About / 关于")),
-            )
-            .collect::<Vec<_>>();
-
+        let items = gallery_nav_items(&self.entries, &query);
         let gallery = cx.entity().downgrade();
         let nav_menu = cx.new(move |_| build_gallery_menu(items, selected, gallery));
         self.nav_query = query;
         self.nav_menu = Some(nav_menu.clone());
         nav_menu
+    }
+
+    fn current_nav_query(&self, cx: &Context<Self>) -> String {
+        self.nav_filter
+            .read(cx)
+            .value()
+            .to_string()
+            .trim()
+            .to_lowercase()
+    }
+
+    fn refresh_nav_menu_for_query(&mut self, query: String, cx: &mut Context<Self>) {
+        if self.nav_query == query {
+            return;
+        }
+
+        let items = gallery_nav_items(&self.entries, &query);
+        self.nav_query = query;
+        if let Some(nav_menu) = &self.nav_menu {
+            cx.update_entity(nav_menu, |menu, cx| {
+                menu.set_items(gallery_menu_nodes(&items), cx);
+                menu.set_active_index(self.selected.to_string(), cx);
+            });
+        } else {
+            cx.notify();
+        }
     }
 
     fn render_about_panel(&self, cx: &mut Context<Self>) -> impl IntoElement {
@@ -1008,9 +1015,10 @@ impl Gallery {
         cx.update_entity(&self.nav_filter, |input, _cx| {
             input.set_on_change({
                 let gallery = gallery.clone();
-                move |_, cx| {
-                    let _ = gallery.update(cx, |_gallery, cx| {
-                        cx.notify();
+                move |value, cx| {
+                    let query = value.trim().to_lowercase();
+                    let _ = gallery.update(cx, |gallery, cx| {
+                        gallery.refresh_nav_menu_for_query(query, cx);
                     });
                 }
             });
@@ -1200,12 +1208,50 @@ fn theme_mode_segmented(mode: ThemeMode) -> Segmented {
     .value(mode.value())
 }
 
+fn gallery_nav_items(entries: &[demos::DemoEntry], query: &str) -> Vec<(usize, &'static str)> {
+    entries
+        .iter()
+        .enumerate()
+        .filter(|(_, entry)| {
+            query.is_empty()
+                || entry.name.to_lowercase().contains(query)
+                || entry.description.to_lowercase().contains(query)
+        })
+        .map(|(index, entry)| (index, entry.name))
+        .chain(
+            (query.is_empty() || "about 关于 updates 更新".contains(query))
+                .then_some((entries.len(), "About / 关于")),
+        )
+        .collect()
+}
+
+fn gallery_menu_nodes(items: &[(usize, &'static str)]) -> Vec<MenuNode> {
+    if items.is_empty() {
+        return vec![MenuNode::Item(MenuItem {
+            id: "empty".into(),
+            label: "无匹配组件".into(),
+            icon: None,
+        })];
+    }
+
+    items
+        .iter()
+        .map(|(index, name)| {
+            MenuNode::Item(MenuItem {
+                id: index.to_string().into(),
+                label: (*name).into(),
+                icon: None,
+            })
+        })
+        .collect()
+}
+
 fn build_gallery_menu(
     items: Vec<(usize, &'static str)>,
     selected: usize,
     gallery: WeakEntity<Gallery>,
 ) -> Menu {
-    let mut menu = Menu::new()
+    Menu::new()
         .id("gallery-menu")
         .mode(MenuMode::Vertical)
         .default_active(selected.to_string())
@@ -1217,17 +1263,8 @@ fn build_gallery_menu(
                 gallery.selected = index;
                 cx.notify();
             });
-        });
-
-    if items.is_empty() {
-        return menu.item("empty", "无匹配组件", None);
-    }
-
-    for (index, name) in items {
-        menu = menu.item(index.to_string(), name, None);
-    }
-
-    menu
+        })
+        .with_items(gallery_menu_nodes(&items))
 }
 
 struct PortalLayer;
@@ -1304,6 +1341,37 @@ impl gpui::RenderOnce for PortalLayer {
         }
 
         container.into_any_element()
+    }
+}
+
+#[cfg(test)]
+mod shell_regression_tests {
+    #[test]
+    fn close_confirm_body_allows_content_to_shrink_and_wrap() {
+        let source = include_str!("main.rs")
+            .split("mod shell_regression_tests")
+            .next()
+            .unwrap();
+
+        assert!(source.contains("fn show_gallery_close_confirm"));
+        assert!(source.contains(".shrink()"));
+        assert!(source.contains("Paragraph::with_text"));
+    }
+
+    #[test]
+    fn gallery_search_refreshes_menu_without_full_gallery_notify() {
+        let source = include_str!("main.rs")
+            .split("mod shell_regression_tests")
+            .next()
+            .unwrap();
+
+        assert!(source.contains("fn refresh_nav_menu_for_query"));
+        assert!(source.contains("menu.set_items(gallery_menu_nodes(&items), cx)"));
+        assert!(!source.contains(
+            "move |_, cx| {
+                    let _ = gallery.update(cx, |_gallery, cx| {
+                        cx.notify();"
+        ));
     }
 }
 

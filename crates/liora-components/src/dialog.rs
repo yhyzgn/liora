@@ -123,6 +123,7 @@ impl Render for DialogView {
                         .w_full()
                         .max_w(px(420.0))
                         .min_w(px(0.0))
+                        .mx_4()
                         .bg(theme.neutral.card)
                         .cursor_default()
                         .rounded(px(theme.radius.md))
@@ -170,6 +171,7 @@ impl Render for DialogView {
                                 .p_4()
                                 .min_w(px(0.0))
                                 .text_color(theme.neutral.text_2)
+                                .overflow_hidden()
                                 .child(content_fn(_window, cx)),
                         ),
                 )),
@@ -189,6 +191,8 @@ mod motion_tests {
         assert!(source.contains(".w_full()"));
         assert!(source.contains(".max_w(px(420.0))"));
         assert!(source.contains(".min_w(px(0.0))"));
+        assert!(source.contains(".mx_4()"));
+        assert!(source.contains(".overflow_hidden()"));
         assert!(source.contains(".whitespace_normal()"));
     }
 

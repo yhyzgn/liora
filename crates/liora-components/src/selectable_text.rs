@@ -21,11 +21,11 @@
 
 use crate::gpui_compat::element_id;
 use gpui::{
-    App, Bounds, ClipboardItem, Component, Context, Element, ElementId, Entity, FocusHandle,
-    Focusable, GlobalElementId, InspectorElementId, IntoElement, KeyDownEvent, LayoutId,
-    MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, PaintQuad, Pixels, Point, Render,
-    RenderOnce, SharedString, Style, TextRun, TextStyle, WhiteSpace, Window, actions, div, fill,
-    point, prelude::*, px, relative, size,
+    App, AvailableSpace, Bounds, ClipboardItem, Component, Context, Element, ElementId, Entity,
+    FocusHandle, Focusable, GlobalElementId, InspectorElementId, IntoElement, KeyDownEvent,
+    LayoutId, MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, PaintQuad, Pixels, Point,
+    Render, RenderOnce, SharedString, Style, TextRun, TextStyle, WhiteSpace, Window, actions, div,
+    fill, point, prelude::*, px, relative, size,
 };
 use liora_core::Config;
 use std::{
@@ -557,11 +557,17 @@ impl Render for SelectableTextState {
         })
         .detach();
 
-        div()
+        let mut wrapper = div()
             .id(element_id(format!("{:?}-selectable", self.id)))
             .key_context(self.key_context)
             .track_focus(&self.focus_handle(cx))
             .cursor_text()
+            .min_w(px(0.0));
+        if self.fill_width {
+            wrapper = wrapper.w_full().flex_shrink();
+        }
+
+        wrapper
             .on_key_down(cx.listener(Self::on_key_down))
             .on_action(cx.listener(Self::select_all))
             .on_action(cx.listener(Self::copy))
@@ -617,15 +623,46 @@ impl Element for SelectableTextElement {
         cx: &mut App,
     ) -> (LayoutId, Arc<SelectableTextLayout>) {
         let input = self.input.read(cx);
-        let layout = build_selectable_layout(input, window);
+        let text = input.text.clone();
+        let runs = input.runs.clone();
+        let font_size = input.font_size;
+        let line_height = input.line_height;
+        let wrap = input.wrap;
+        let fill_width = input.fill_width;
+
         let mut style = Style::default();
-        style.size.width = layout.width.into();
-        style.min_size.width = relative(1.).into();
-        style.size.height = layout.height.into();
-        if input.fill_width {
+        if fill_width {
             style.size.width = relative(1.).into();
+            style.min_size.width = px(0.0).into();
         }
-        (window.request_layout(style, [], cx), Arc::new(layout))
+
+        let layout_id =
+            window.request_measured_layout(style, move |known, available, window, _cx| {
+                let wrap_width = selectable_wrap_width(wrap, known.width, available.width);
+                let layout = build_selectable_layout_from_parts(
+                    text.clone(),
+                    font_size,
+                    line_height,
+                    runs.clone(),
+                    wrap_width,
+                    window,
+                );
+                size(
+                    if fill_width {
+                        known
+                            .width
+                            .or(wrap_width)
+                            .unwrap_or(layout.width)
+                            .max(px(0.0))
+                    } else {
+                        layout.width
+                    },
+                    layout.height,
+                )
+            });
+
+        let layout = Arc::new(build_selectable_layout(input, None, window));
+        (layout_id, layout)
     }
 
     fn prepaint(
@@ -638,6 +675,10 @@ impl Element for SelectableTextElement {
         cx: &mut App,
     ) -> SelectableTextPrepaint {
         let input = self.input.read(cx);
+        let actual_wrap_width =
+            (input.wrap == SelectableTextWrap::Normal).then_some(bounds.size.width.max(px(1.0)));
+        let actual_layout = Arc::new(build_selectable_layout(input, actual_wrap_width, window));
+        *layout = actual_layout;
         let mut selection_quads = Vec::new();
         let selected_range = selected_range_snapshot(&input.id);
         let mut y = bounds.top();
@@ -736,30 +777,37 @@ impl Element for SelectableTextElement {
 
 fn build_selectable_layout(
     input: &SelectableTextState,
+    wrap_width: Option<Pixels>,
     window: &mut Window,
 ) -> SelectableTextLayout {
-    let wrap_width = if input.wrap == SelectableTextWrap::Normal {
-        Some(window.viewport_size().width.max(px(1.0)))
-    } else {
-        None
-    };
+    build_selectable_layout_from_parts(
+        input.text.clone(),
+        input.font_size,
+        input.line_height,
+        input.runs.clone(),
+        wrap_width,
+        window,
+    )
+}
 
+fn build_selectable_layout_from_parts(
+    text: SharedString,
+    font_size: Pixels,
+    line_height: Pixels,
+    runs: Vec<TextRun>,
+    wrap_width: Option<Pixels>,
+    window: &mut Window,
+) -> SelectableTextLayout {
     let lines: Vec<gpui::WrappedLine> = window
         .text_system()
-        .shape_text(
-            input.text.clone(),
-            input.font_size,
-            &input.runs,
-            wrap_width,
-            None,
-        )
+        .shape_text(text, font_size, &runs, wrap_width, None)
         .map(|lines| lines.into_iter().collect())
         .unwrap_or_default();
 
     let mut width = px(1.0);
     let mut height = px(0.0);
     for line in &lines {
-        let line_size = line.size(input.line_height);
+        let line_size = line.size(line_height);
         width = width.max(line_size.width).ceil();
         height += line_size.height;
     }
@@ -769,6 +817,21 @@ fn build_selectable_layout(
         width,
         height,
     }
+}
+
+fn selectable_wrap_width(
+    wrap: SelectableTextWrap,
+    known_width: Option<Pixels>,
+    available_width: AvailableSpace,
+) -> Option<Pixels> {
+    if wrap != SelectableTextWrap::Normal {
+        return None;
+    }
+
+    known_width.or(match available_width {
+        AvailableSpace::Definite(width) => Some(width.max(px(1.0))),
+        AvailableSpace::MinContent | AvailableSpace::MaxContent => None,
+    })
 }
 
 fn add_wrapped_selection_quads(
@@ -865,6 +928,21 @@ fn previous_boundary(text: &str, mut offset: usize) -> usize {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn selectable_text_wraps_against_parent_available_width() {
+        let source = include_str!("selectable_text.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(source.contains("request_measured_layout"));
+        assert!(source.contains("selectable_wrap_width"));
+        assert!(source.contains("AvailableSpace::Definite"));
+        assert!(source.contains("wrapper = wrapper.w_full().flex_shrink()"));
+        assert!(source.contains(".min_w(px(0.0))"));
+        assert!(!source.contains("window.viewport_size().width.max(px(1.0))"));
+    }
 
     #[test]
     fn selectable_text_actions_include_copy_shortcuts() {

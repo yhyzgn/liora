@@ -136,9 +136,31 @@ impl Menu {
         self
     }
 
+    /// Replaces the rendered menu items while preserving focus, callbacks, and submenu state.
+    pub fn set_items(&mut self, items: Vec<MenuNode>, cx: &mut Context<Self>) {
+        self.items = items;
+        cx.notify();
+    }
+
+    /// Updates the active item without rebuilding the menu entity.
+    pub fn set_active_index(&mut self, index: impl Into<SharedString>, cx: &mut Context<Self>) {
+        let index = index.into();
+        if self.active_index.as_ref() == Some(&index) {
+            return;
+        }
+        self.active_index = Some(index);
+        cx.notify();
+    }
+
     /// Toggles whether the popup closes when escape occurs.
     pub fn close_on_escape(mut self, close: bool) -> Self {
         self.close_on_escape = close;
+        self
+    }
+
+    /// Replaces all menu nodes while constructing a menu.
+    pub fn with_items(mut self, items: Vec<MenuNode>) -> Self {
+        self.items = items;
         self
     }
 
@@ -716,6 +738,12 @@ pub struct SubMenuBuilder {
 }
 
 impl SubMenuBuilder {
+    /// Replaces all child menu nodes while constructing a submenu.
+    pub fn with_items(mut self, items: Vec<MenuNode>) -> Self {
+        self.children = items;
+        self
+    }
+
     /// Performs the item operation used by this component.
     pub fn item(
         mut self,
@@ -785,6 +813,12 @@ pub struct MenuGroupBuilder {
 }
 
 impl MenuGroupBuilder {
+    /// Replaces all child menu nodes while constructing a menu group.
+    pub fn with_items(mut self, items: Vec<MenuNode>) -> Self {
+        self.children = items;
+        self
+    }
+
     /// Performs the item operation used by this component.
     pub fn item(
         mut self,

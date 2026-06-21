@@ -442,21 +442,25 @@ impl Input {
 
     fn backspace(&mut self, _: &Backspace, _: &mut Window, cx: &mut Context<Self>) {
         if self.selected_range.is_empty() {
-            let p = self.prev_char(self.cursor_offset());
-            if p == self.cursor_offset() {
+            let cursor = self.cursor_offset();
+            let previous = self.prev_char(cursor);
+            if previous == cursor {
                 return;
             }
-            self.select_to(p, cx);
+            self.selected_range = previous..cursor;
+            self.selection_reversed = false;
         }
         self.internal_replace("", cx);
     }
     fn delete(&mut self, _: &Delete, _: &mut Window, cx: &mut Context<Self>) {
         if self.selected_range.is_empty() {
-            let n = self.next_char(self.cursor_offset());
-            if n == self.cursor_offset() {
+            let cursor = self.cursor_offset();
+            let next = self.next_char(cursor);
+            if next == cursor {
                 return;
             }
-            self.select_to(n, cx);
+            self.selected_range = cursor..next;
+            self.selection_reversed = false;
         }
         self.internal_replace("", cx);
     }
@@ -726,8 +730,11 @@ impl Input {
 
     fn reset_blink(&mut self, cx: &mut Context<Self>) {
         self.cursor_visible = true;
-        self.start_blink(cx);
-        cx.notify();
+        if self.blink_task.is_none() {
+            self.start_blink(cx);
+        } else {
+            cx.notify();
+        }
     }
 
     fn internal_replace(&mut self, new_text: &str, cx: &mut Context<Self>) {
@@ -1606,6 +1613,19 @@ impl Render for Input {
 
 #[cfg(test)]
 mod width_tests {
+    #[test]
+    fn input_backspace_does_not_spawn_a_new_blink_task_per_keypress() {
+        let source = include_str!("input.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(source.contains("if self.blink_task.is_none()"));
+        assert!(source.contains("self.start_blink(cx);"));
+        assert!(source.contains("self.selected_range = previous..cursor"));
+        assert!(!source.contains("self.select_to(p, cx);"));
+    }
+
     #[test]
     fn input_text_uses_theme_foreground_instead_of_window_default() {
         let source = include_str!("input.rs")

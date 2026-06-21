@@ -31,6 +31,7 @@ pub struct Space {
     gap: Option<DefiniteLength>,
     align: Option<SpaceAlign>,
     grow: bool,
+    shrink: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -54,6 +55,7 @@ impl Space {
             gap: None,
             align: None,
             grow: false,
+            shrink: false,
         }
     }
 
@@ -127,6 +129,12 @@ impl Space {
         self
     }
 
+    /// Allows the space container to shrink within constrained parents instead of forcing overflow.
+    pub fn shrink(mut self) -> Self {
+        self.shrink = true;
+        self
+    }
+
     /// Adds a child element to the component body.
     pub fn child(mut self, child: impl IntoElement) -> Self {
         self.children.push(child.into_any_element());
@@ -146,6 +154,9 @@ impl RenderOnce for Space {
         let mut div = gpui::div().flex();
         if self.grow {
             div = div.flex_1();
+        }
+        if self.shrink {
+            div = div.min_w(px(0.0)).flex_shrink();
         }
 
         if self.vertical {
@@ -203,5 +214,16 @@ mod tests {
     #[test]
     fn space_grow_tracks_flex_growth() {
         assert!(Space::new().grow().grow);
+    }
+
+    #[test]
+    fn space_shrink_tracks_flex_shrink() {
+        let source = include_str!("space.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(Space::new().shrink().shrink);
+        assert!(source.contains("div.min_w(px(0.0)).flex_shrink()"));
     }
 }
