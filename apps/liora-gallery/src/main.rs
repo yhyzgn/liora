@@ -1,6 +1,6 @@
 use gpui::{
-    AnyView, App, Application, Component, Context, Global, Render, RenderImage, WeakEntity, Window,
-    WindowOptions, div, img, prelude::*, px, size,
+    AnyView, App, Application, Component, Context, Global, Render, RenderImage, Task, WeakEntity,
+    Window, WindowOptions, div, img, prelude::*, px, size,
 };
 use liora_components::{
     AppWindowFrame, Button, Card, Checkbox, Container, Dialog, Input, Menu, MenuItem, MenuMode,
@@ -39,6 +39,8 @@ pub struct Gallery {
     nav_filter: gpui::Entity<Input>,
     nav_menu: Option<gpui::Entity<liora_components::Menu>>,
     nav_query: String,
+    nav_refresh_revision: u64,
+    nav_refresh_task: Option<Task<()>>,
     theme_mode: ThemeMode,
     theme_mode_segmented: gpui::Entity<Segmented>,
     frame_mode: WindowFrameMode,
@@ -127,6 +129,8 @@ fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
                 nav_filter: cx.new(|cx| Input::new("", cx).placeholder("搜索组件 / Search demos")),
                 nav_menu: None,
                 nav_query: String::new(),
+                nav_refresh_revision: 0,
+                nav_refresh_task: None,
                 theme_mode,
                 theme_mode_segmented: cx.new(move |_| theme_mode_segmented(theme_mode)),
                 frame_mode,
@@ -937,13 +941,30 @@ impl Gallery {
             .to_lowercase()
     }
 
-    fn refresh_nav_menu_for_query(&mut self, query: String, cx: &mut Context<Self>) {
+    fn schedule_nav_menu_refresh_for_query(&mut self, query: String, cx: &mut Context<Self>) {
         if self.nav_query == query {
             return;
         }
 
-        let items = gallery_nav_items(&self.entries, &query);
         self.nav_query = query;
+        self.nav_refresh_revision = self.nav_refresh_revision.wrapping_add(1);
+        let revision = self.nav_refresh_revision;
+        self.nav_refresh_task = Some(cx.spawn(async move |gallery, cx| {
+            cx.background_executor()
+                .timer(Duration::from_millis(24))
+                .await;
+            let _ = gallery.update(cx, |gallery, cx| {
+                if gallery.nav_refresh_revision != revision {
+                    return;
+                }
+                gallery.apply_scheduled_nav_menu_refresh(cx);
+                gallery.nav_refresh_task = None;
+            });
+        }));
+    }
+
+    fn apply_scheduled_nav_menu_refresh(&mut self, cx: &mut Context<Self>) {
+        let items = gallery_nav_items(&self.entries, &self.nav_query);
         if let Some(nav_menu) = &self.nav_menu {
             cx.update_entity(nav_menu, |menu, cx| {
                 menu.set_items(gallery_menu_nodes(&items), cx);
@@ -1018,7 +1039,7 @@ impl Gallery {
                 move |value, cx| {
                     let query = value.trim().to_lowercase();
                     let _ = gallery.update(cx, |gallery, cx| {
-                        gallery.refresh_nav_menu_for_query(query, cx);
+                        gallery.schedule_nav_menu_refresh_for_query(query, cx);
                     });
                 }
             });
@@ -1365,7 +1386,9 @@ mod shell_regression_tests {
             .next()
             .unwrap();
 
-        assert!(source.contains("fn refresh_nav_menu_for_query"));
+        assert!(source.contains("fn schedule_nav_menu_refresh_for_query"));
+        assert!(source.contains("timer(Duration::from_millis(24))"));
+        assert!(source.contains("fn apply_scheduled_nav_menu_refresh"));
         assert!(source.contains("menu.set_items(gallery_menu_nodes(&items), cx)"));
         assert!(!source.contains(
             "move |_, cx| {
