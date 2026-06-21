@@ -1,7 +1,6 @@
 use gpui::{
-    AnyView, App, Application, Component, Context, Global, ListAlignment, ListState, Render,
-    RenderImage, SharedString, WeakEntity, Window, WindowOptions, div, img, list, prelude::*, px,
-    size,
+    AnyView, App, Application, Component, Context, Global, Render, RenderImage, SharedString,
+    WeakEntity, Window, WindowOptions, div, img, prelude::*, px, size,
 };
 use liora_components::{
     AppWindowFrame, Button, Card, Checkbox, Container, Dialog, Input, Paragraph, Segmented,
@@ -1250,13 +1249,14 @@ fn gallery_nav_visible_indices(index: &[GalleryNavEntry], query: &str) -> Vec<us
 // The generic Menu intentionally renders every node because it supports groups,
 // submenus, icons, and popovers; doing that on each search keystroke made the
 // sidebar pay full element-tree construction and layout cost even for a tiny
-// data set. This dedicated list keeps filtering as cheap index selection and
-// lets GPUI render only the visible rows.
+// data set. This dedicated renderer keeps filtering as cheap index selection and
+// draws simple fixed-height rows directly. For Gallery-sized data sets, this
+// avoids both the generic Menu subtree cost and ListState reset/re-measure churn
+// when short queries expand back to many matches.
 struct GalleryNavMenu {
     entries: Arc<[GalleryNavEntry]>,
     visible: Arc<[usize]>,
     selected: usize,
-    list_state: ListState,
     gallery: WeakEntity<Gallery>,
 }
 
@@ -1269,12 +1269,10 @@ impl GalleryNavMenu {
         _cx: &mut Context<Self>,
     ) -> Self {
         let visible = gallery_nav_visible_indices(&entries, query);
-        let list_state = ListState::new(visible.len().max(1), ListAlignment::Top, px(100.0));
         Self {
             entries: Arc::from(entries),
             visible: Arc::from(visible),
             selected,
-            list_state,
             gallery,
         }
     }
@@ -1287,7 +1285,6 @@ impl GalleryNavMenu {
         }
         self.visible = Arc::from(next_visible);
         self.selected = selected;
-        self.list_state.reset(self.visible.len().max(1));
         cx.notify();
     }
 
@@ -1304,67 +1301,72 @@ impl Render for GalleryNavMenu {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
         let entries = self.entries.clone();
-        let visible = self.visible.clone();
         let selected = self.selected;
         let gallery = self.gallery.clone();
 
-        div()
+        let mut nav = div()
+            .id("gallery-nav-menu")
             .relative()
             .size_full()
-            .overflow_hidden()
-            .bg(theme.neutral.card)
-            .child(
-                list(self.list_state.clone(), move |row, _window, _cx| {
-                    let Some(entry_index) = visible.get(row).copied() else {
-                        return div()
-                            .h(px(50.0))
-                            .flex()
-                            .items_center()
-                            .px_4()
-                            .text_sm()
-                            .text_color(theme.neutral.text_3)
-                            .child("无匹配组件")
-                            .into_any_element();
-                    };
-                    let Some(entry) = entries.get(entry_index).cloned() else {
-                        return div().into_any_element();
-                    };
-                    let is_active = selected == entry_index;
-                    let item_color = if is_active {
-                        theme.primary.base
-                    } else {
-                        theme.neutral.text_1
-                    };
-                    let gallery = gallery.clone();
+            .overflow_y_scroll()
+            .bg(theme.neutral.card);
 
+        if self.visible.is_empty() {
+            return nav
+                .child(
                     div()
-                        .id(("gallery-nav-item", entry_index))
-                        .cursor_pointer()
-                        .flex()
-                        .flex_row()
-                        .items_center()
-                        .justify_start()
                         .h(px(50.0))
-                        .pl(px(20.0))
-                        .pr(px(16.0))
-                        .text_color(item_color)
-                        .bg(if is_active {
-                            theme.primary.base.opacity(0.1)
-                        } else {
-                            gpui::transparent_black()
-                        })
-                        .hover(|style| style.bg(theme.neutral.hover))
-                        .on_mouse_down(gpui::MouseButton::Left, move |_, _window, cx| {
-                            let _ = gallery.update(cx, |gallery, cx| {
-                                gallery.selected = entry_index;
-                                cx.notify();
-                            });
-                        })
-                        .child(div().ml_2().text_sm().child(entry.label.clone()))
-                        .into_any_element()
-                })
-                .size_full(),
-            )
+                        .flex()
+                        .items_center()
+                        .px_4()
+                        .text_sm()
+                        .text_color(theme.neutral.text_3)
+                        .child("无匹配组件"),
+                )
+                .into_any_element();
+        }
+
+        for &entry_index in self.visible.iter() {
+            let Some(entry) = entries.get(entry_index).cloned() else {
+                continue;
+            };
+            let is_active = selected == entry_index;
+            let item_color = if is_active {
+                theme.primary.base
+            } else {
+                theme.neutral.text_1
+            };
+            let gallery = gallery.clone();
+
+            nav = nav.child(
+                div()
+                    .id(("gallery-nav-item", entry_index))
+                    .cursor_pointer()
+                    .flex()
+                    .flex_row()
+                    .items_center()
+                    .justify_start()
+                    .h(px(50.0))
+                    .pl(px(20.0))
+                    .pr(px(16.0))
+                    .text_color(item_color)
+                    .bg(if is_active {
+                        theme.primary.base.opacity(0.1)
+                    } else {
+                        gpui::transparent_black()
+                    })
+                    .hover(|style| style.bg(theme.neutral.hover))
+                    .on_mouse_down(gpui::MouseButton::Left, move |_, _window, cx| {
+                        let _ = gallery.update(cx, |gallery, cx| {
+                            gallery.selected = entry_index;
+                            cx.notify();
+                        });
+                    })
+                    .child(div().ml_2().text_sm().child(entry.label.clone())),
+            );
+        }
+
+        nav.into_any_element()
     }
 }
 
@@ -1495,10 +1497,12 @@ mod shell_regression_tests {
         assert!(source.contains("fn gallery_nav_index"));
         assert!(source.contains("fn gallery_nav_visible_indices"));
         assert!(source.contains("struct GalleryNavMenu"));
-        assert!(source.contains("ListState::new"));
         assert!(source.contains("Arc<[GalleryNavEntry]>"));
-        assert!(source.contains("list(self.list_state.clone()"));
-        assert!(source.contains(".size_full(),"));
+        assert!(source.contains(r#".id("gallery-nav-menu")"#));
+        assert!(source.contains("overflow_y_scroll()"));
+        assert!(!source.contains("ListState::new"));
+        assert!(!source.contains("list(self.list_state.clone()"));
+        assert!(!source.contains("list_state.reset"));
         assert!(!source.contains("timer(Duration::from_millis(24))"));
         assert!(!source.contains("menu.set_items(items, cx)"));
         assert!(!source.contains(
