@@ -3903,3 +3903,12 @@ Fixed the reported `OtpInput` runtime crash caused by reading/updating the backi
 Adjusted `OtpInput` focus visuals after user feedback that the focused empty cell looked like a dark gray block. The active cell now uses `theme.primary.light_9` for the focus background and `theme.primary.base.opacity(0.85)` for the slim caret, so light and dark themes resolve through Liora semantic tokens instead of hard-coded dark/gray colors. Added source-level regression coverage to prevent reintroducing fixed RGB/black focus styling.
 
 Validation evidence: `cargo test -p liora-components otp -- --nocapture`, `cargo fmt --all --check`, `cargo check --workspace --all-targets`, `cargo test -p liora-gallery otp_input_demo -- --nocapture`, `cargo check -p liora-docs --bin check_snippets`, and `git diff --check -- . ':(exclude).omx'` passed.
+
+## 2026-06-25 P22 OtpInput blinking caret and Spinner layout polish
+
+Addressed the latest P22 review feedback:
+- `OtpInput` now owns a `cursor_visible`/`blink_task` pair and starts/stops a 500ms GPUI background blink loop with focus, resets the caret blink on click-to-cell positioning and input changes, and only renders the slim custom caret when the blink state is visible. The focus background remains theme-token based (`theme.primary.light_9`) rather than a dark block.
+- Spinner Gallery and Docs live demos/snippets now render fixed-width wrapped cards (`320px`) with `min_w(0)` text columns and `flex_none` spinner/status regions. This prevents the previous full-width row layout from squeezing titles into one-character vertical text at wide window sizes.
+- Added Docs regression coverage locking the Spinner fixed card/snippet layout.
+
+Validation evidence: `cargo test -p liora-components otp -- --nocapture`, `cargo test -p liora-gallery spinner_demo -- --nocapture`, `cargo test -p liora-gallery otp_input_demo -- --nocapture`, `cargo check -p liora-docs --bin check_snippets`, `cargo test -p liora-docs spinner_docs_live_and_snippets_keep_fixed_card_layout -- --nocapture`, `cargo fmt --all --check`, `cargo check --workspace --all-targets`, `cargo test --workspace`, `git diff --check -- . ':(exclude).omx'`, and `timeout 8s cargo run -p liora-gallery` (expected timeout after successful startup) passed.

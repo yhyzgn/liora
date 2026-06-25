@@ -22,10 +22,10 @@
 use crate::Input;
 use gpui::{
     App, Context, Entity, FocusHandle, Focusable, Hsla, IntoElement, MouseButton, Pixels, Render,
-    SharedString, Window, div, prelude::*, px,
+    SharedString, Task, Window, div, prelude::*, px,
 };
 use liora_core::Config;
-use std::ops::Range;
+use std::{ops::Range, time::Duration};
 
 type OtpInputChangeCallback = Box<dyn Fn(SharedString, &mut Context<OtpInput>) + 'static>;
 
@@ -52,6 +52,8 @@ pub struct OtpInput {
     disabled: bool,
     status: OtpInputStatus,
     on_change: Option<OtpInputChangeCallback>,
+    cursor_visible: bool,
+    blink_task: Option<Task<()>>,
 }
 
 impl OtpInput {
@@ -79,6 +81,8 @@ impl OtpInput {
             disabled: false,
             status: OtpInputStatus::Default,
             on_change: None,
+            cursor_visible: true,
+            blink_task: None,
         }
     }
 
@@ -176,6 +180,7 @@ impl OtpInput {
         cx.update_entity(&self.input, |input, cx| {
             input.set_selection(range, cx);
         });
+        self.reset_blink(cx);
         cx.notify();
     }
 
@@ -218,7 +223,34 @@ impl OtpInput {
             self.on_change = Some(on_change);
         }
 
+        self.reset_blink(cx);
         cx.notify();
+    }
+
+    fn start_blink(&mut self, cx: &mut Context<Self>) {
+        self.cursor_visible = true;
+        let executor = cx.background_executor().clone();
+        self.blink_task = Some(cx.spawn(async move |this, cx| {
+            loop {
+                executor.timer(Duration::from_millis(500)).await;
+                let result = this.update(cx, |otp, cx| {
+                    otp.cursor_visible = !otp.cursor_visible;
+                    cx.notify();
+                });
+                if result.is_err() {
+                    break;
+                }
+            }
+        }));
+    }
+
+    fn reset_blink(&mut self, cx: &mut Context<Self>) {
+        self.cursor_visible = true;
+        if self.blink_task.is_none() {
+            self.start_blink(cx);
+        } else {
+            cx.notify();
+        }
     }
 
     fn status_color(&self, theme: &liora_theme::Theme) -> Hsla {
@@ -241,6 +273,11 @@ impl Render for OtpInput {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
         let focused = self.focus_handle(cx).is_focused(window);
+        if focused && self.blink_task.is_none() {
+            self.start_blink(cx);
+        } else if !focused && self.blink_task.is_some() {
+            self.blink_task = None;
+        }
         let value = self.input.read(cx).value();
         let selected_range = self.input.read(cx).selected_range();
         let active_offset = if selected_range.is_empty() {
@@ -256,6 +293,7 @@ impl Render for OtpInput {
         let disabled = self.disabled;
         let masked = self.masked;
         let cell_size = self.cell_size;
+        let cursor_visible = self.cursor_visible;
 
         cx.update_entity(&self.input, |input, cx| {
             input.set_disabled(disabled, cx);
@@ -327,7 +365,7 @@ impl Render for OtpInput {
 
                 if let Some(text) = display_text {
                     cell.child(text)
-                } else if active {
+                } else if active && cursor_visible {
                     cell.child(
                         div()
                             .w(px(2.0))
@@ -411,6 +449,8 @@ mod tests {
     fn otp_source_uses_real_input_for_editing() {
         let source = include_str!("otp_input.rs");
         assert!(source.contains("input: Entity<Input>"));
+        assert!(source.contains("cursor_visible: bool"));
+        assert!(source.contains("blink_task: Option<Task<()>>"));
         assert!(source.contains("window.focus(&input.read(cx).focus_handle(cx))"));
         assert!(source.contains("input.set_selection(range, cx)"));
         let input_change_pipeline = [
@@ -422,6 +462,11 @@ mod tests {
         ]
         .join(".*");
         assert!(regex_like_in_order(source, &input_change_pipeline));
+        assert!(source.contains("fn start_blink(&mut self"));
+        assert!(source.contains("executor.timer(Duration::from_millis(500))"));
+        assert!(source.contains("self.reset_blink(cx)"));
+        assert!(source.contains("focused && self.blink_task.is_none()"));
+        assert!(source.contains("active && cursor_visible"));
         assert!(source.contains("cx.notify()"));
         let stale_handler_signature = ["fn handle_input_change(&mut self", ", cx"].join("");
         assert!(!source.contains(&stale_handler_signature));

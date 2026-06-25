@@ -1,5 +1,5 @@
 use gpui::{
-    AnyElement, AnyView, App, Component, Context, Entity, FontWeight, IntoElement, Render,
+    AnyElement, AnyView, App, Component, Context, Entity, FontWeight, Hsla, IntoElement, Render,
     RenderImage, RenderOnce, ScrollHandle, SharedString, WeakEntity, Window, div, img, prelude::*,
     px, rgb,
 };
@@ -3399,71 +3399,125 @@ impl Render for LiveDemoContent {
                     .text("Preparing workspace...")
                     .into_any_element(),
             ]),
-            "SpinnerSizes" | "SpinnerBasic" => demo_stack(vec![
-                spinner_live_card(
-                    "Small / inline",
-                    "Button labels and status bars",
-                    liora_components::Spinner::new().small(),
-                ),
-                spinner_live_card(
-                    "Default / row",
-                    "List rows and toolbar jobs",
-                    liora_components::Spinner::new(),
-                ),
-                spinner_live_card(
-                    "Large / panel",
-                    "Card-level refresh state",
-                    liora_components::Spinner::new().large(),
-                ),
-                spinner_live_card(
-                    "Custom icon",
-                    "RefreshCw with spin motion",
-                    liora_components::Spinner::new().icon(IconName::RefreshCw).size(px(22.0)),
-                ),
-            ]),
-            "SpinnerColors" => demo_stack(vec![
-                spinner_live_status_card("Syncing", "同步远端配置中", 0x2563eb),
-                spinner_live_status_card("Verifying", "等待校验服务返回", 0x16a34a),
-                spinner_live_status_card("Retrying", "网络不稳定，正在重试", 0xf59e0b),
-                spinner_live_status_card("Recovering", "错误恢复任务仍在运行", 0xdc2626),
-            ]),
-            "SpinnerComposition" => demo_stack(vec![
-                div()
-                    .flex()
-                    .items_center()
-                    .gap_3()
-                    .child(
-                        Button::new("Syncing")
-                            .primary()
-                            .icon_start(liora_components::Spinner::new().small().into_any_element()),
-                    )
-                    .child(
-                        Button::new("Exporting")
-                            .icon_start(liora_components::Spinner::new().small().into_any_element()),
-                    )
-                    .into_any_element(),
-                div()
-                    .flex()
-                    .items_center()
-                    .justify_between()
-                    .gap_4()
-                    .rounded_lg()
-                    .border_1()
-                    .border_color(rgb(0xe2e8f0))
-                    .bg(rgb(0xf8fafc))
-                    .p_3()
-                    .child(
-                        liora_components::Label::new("Fetching metrics")
-                            .custom_icon(liora_components::Spinner::new().small()),
-                    )
-                    .child(Text::new("12 jobs queued").xs())
-                    .into_any_element(),
-                spinner_live_card(
-                    "Background export",
-                    "Exporting reports.zip · 42%",
-                    liora_components::Spinner::new().icon(IconName::LoaderCircle).large(),
-                ),
-            ]),
+            "SpinnerSizes" | "SpinnerBasic" => {
+                let theme = _cx.global::<Config>().theme.clone();
+                let card_bg = theme.neutral.hover.opacity(0.56);
+                let card_alt_bg = theme.neutral.card;
+                let card_border = theme.neutral.border;
+                spinner_live_grid(vec![
+                    spinner_live_card(
+                        "Small / inline",
+                        "Button labels and status bars",
+                        liora_components::Spinner::new().small(),
+                        card_bg,
+                        card_border,
+                    ),
+                    spinner_live_card(
+                        "Default / row",
+                        "List rows and toolbar jobs",
+                        liora_components::Spinner::new(),
+                        card_alt_bg,
+                        card_border,
+                    ),
+                    spinner_live_card(
+                        "Large / panel",
+                        "Card-level refresh state",
+                        liora_components::Spinner::new().large(),
+                        card_bg,
+                        card_border,
+                    ),
+                    spinner_live_card(
+                        "Custom icon",
+                        "RefreshCw with spin motion",
+                        liora_components::Spinner::new().icon(IconName::RefreshCw).size(px(22.0)),
+                        card_alt_bg,
+                        card_border,
+                    ),
+                ])
+            }
+            "SpinnerColors" => {
+                let theme = _cx.global::<Config>().theme.clone();
+                let card_bg = theme.neutral.hover.opacity(0.56);
+                let card_alt_bg = theme.neutral.card;
+                let card_border = theme.neutral.border;
+                spinner_live_grid(vec![
+                    spinner_live_status_card(
+                        "Syncing",
+                        "同步远端配置中",
+                        0x2563eb,
+                        card_alt_bg,
+                        card_border,
+                    ),
+                    spinner_live_status_card(
+                        "Verifying",
+                        "等待校验服务返回",
+                        0x16a34a,
+                        card_bg,
+                        card_border,
+                    ),
+                    spinner_live_status_card(
+                        "Retrying",
+                        "网络不稳定，正在重试",
+                        0xf59e0b,
+                        card_alt_bg,
+                        card_border,
+                    ),
+                    spinner_live_status_card(
+                        "Recovering",
+                        "错误恢复任务仍在运行",
+                        0xdc2626,
+                        card_bg,
+                        card_border,
+                    ),
+                ])
+            }
+            "SpinnerComposition" => {
+                let theme = _cx.global::<Config>().theme.clone();
+                let card_bg = theme.neutral.hover.opacity(0.56);
+                let card_alt_bg = theme.neutral.card;
+                let card_border = theme.neutral.border;
+                demo_stack(vec![
+                    div()
+                        .flex()
+                        .items_center()
+                        .gap_3()
+                        .child(Button::new("Syncing").primary().icon_start(
+                            liora_components::Spinner::new().small().into_any_element(),
+                        ))
+                        .child(Button::new("Exporting").icon_start(
+                            liora_components::Spinner::new().small().into_any_element(),
+                        ))
+                        .into_any_element(),
+                    div()
+                        .w(px(320.0))
+                        .flex()
+                        .items_center()
+                        .justify_between()
+                        .gap_4()
+                        .rounded_lg()
+                        .border_1()
+                        .border_color(card_border)
+                        .bg(card_bg)
+                        .p_4()
+                        .child(div().flex_1().min_w(px(0.0)).child(
+                            liora_components::Label::new("Fetching metrics")
+                                .custom_icon(liora_components::Spinner::new().small()),
+                        ))
+                        .child(
+                            div()
+                                .flex_none()
+                                .child(Text::new("12 jobs queued").xs().nowrap()),
+                        )
+                        .into_any_element(),
+                    spinner_live_card(
+                        "Background export",
+                        "Exporting reports.zip · 42%",
+                        liora_components::Spinner::new().icon(IconName::LoaderCircle).large(),
+                        card_alt_bg,
+                        card_border,
+                    ),
+                ])
+            }
             "KbdBasic" => demo_row(vec![
                 liora_components::Kbd::new("⌘K").into_any_element(),
                 liora_components::Kbd::new("Ctrl").into_any_element(),
@@ -6018,54 +6072,74 @@ fn demo_row(children: Vec<AnyElement>) -> AnyElement {
         .into_any_element()
 }
 
+fn spinner_live_grid(children: Vec<AnyElement>) -> AnyElement {
+    div()
+        .flex()
+        .flex_wrap()
+        .gap_3()
+        .children(children)
+        .into_any_element()
+}
+
+fn spinner_live_text(title: &'static str, detail: &'static str) -> impl IntoElement {
+    div().flex_1().min_w(px(0.0)).child(
+        Space::new()
+            .vertical()
+            .gap_xs()
+            .child(Text::new(title).bold().nowrap())
+            .child(Text::new(detail).xs().wrap()),
+    )
+}
+
 fn spinner_live_card(
     title: &'static str,
     detail: &'static str,
     spinner: liora_components::Spinner,
+    bg: Hsla,
+    border: Hsla,
 ) -> AnyElement {
     div()
+        .w(px(320.0))
+        .min_h(px(84.0))
         .flex()
         .items_center()
-        .justify_between()
         .gap_4()
         .rounded_lg()
         .border_1()
-        .border_color(rgb(0xe2e8f0))
-        .bg(rgb(0xf8fafc))
-        .p_3()
-        .child(
-            Space::new()
-                .vertical()
-                .gap_xs()
-                .child(Text::new(title).bold())
-                .child(Text::new(detail).xs()),
-        )
-        .child(spinner)
+        .border_color(border)
+        .bg(bg)
+        .p_4()
+        .child(spinner_live_text(title, detail))
+        .child(div().flex_none().child(spinner))
         .into_any_element()
 }
 
-fn spinner_live_status_card(title: &'static str, detail: &'static str, color: u32) -> AnyElement {
+fn spinner_live_status_card(
+    title: &'static str,
+    detail: &'static str,
+    color: u32,
+    bg: Hsla,
+    border: Hsla,
+) -> AnyElement {
     div()
+        .w(px(320.0))
+        .min_h(px(84.0))
         .flex()
         .items_center()
-        .gap_3()
+        .gap_4()
         .rounded_lg()
         .border_1()
-        .border_color(rgb(0xe2e8f0))
-        .bg(rgb(0xffffff))
-        .p_3()
+        .border_color(border)
+        .bg(bg)
+        .p_4()
         .child(
-            liora_components::Spinner::new()
-                .large()
-                .color(rgb(color).into()),
+            div().flex_none().child(
+                liora_components::Spinner::new()
+                    .large()
+                    .color(rgb(color).into()),
+            ),
         )
-        .child(
-            Space::new()
-                .vertical()
-                .gap_xs()
-                .child(Text::new(title).bold())
-                .child(Text::new(detail).xs()),
-        )
+        .child(spinner_live_text(title, detail))
         .into_any_element()
 }
 
@@ -9719,6 +9793,25 @@ mod tests {
                 assert!(load_code_snippet(snippet).is_some());
             }
         }
+    }
+
+    #[test]
+    fn spinner_docs_live_and_snippets_keep_fixed_card_layout() {
+        let renderer = include_str!("markdown.rs");
+        let sizes = include_str!("../content/snippets/spinner/sizes.rs");
+        let colors = include_str!("../content/snippets/spinner/colors.rs");
+        let composition = include_str!("../content/snippets/spinner/composition.rs");
+
+        for source in [renderer, sizes, colors, composition] {
+            assert!(source.contains(".w(px(320.0))"));
+            assert!(source.contains(".flex_1().min_w(px(0.0))"));
+            assert!(source.contains(".flex_none()"));
+        }
+
+        assert!(renderer.contains("fn spinner_live_grid"));
+        assert!(renderer.contains("fn spinner_live_text"));
+        assert!(sizes.contains("fn spinner_snippet_grid"));
+        assert!(colors.contains("fn spinner_snippet_grid"));
     }
 
     #[test]
