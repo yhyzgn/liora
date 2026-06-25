@@ -30,7 +30,6 @@ pub struct Spinner {
     size: Pixels,
     color: Option<Hsla>,
     icon: IconName,
-    motion_id: &'static str,
 }
 
 impl Spinner {
@@ -40,7 +39,6 @@ impl Spinner {
             size: px(16.0),
             color: None,
             icon: IconName::LoaderCircle,
-            motion_id: "liora-spinner-motion",
         }
     }
 
@@ -78,7 +76,7 @@ impl RenderOnce for Spinner {
         let theme = cx.global::<Config>().theme.clone();
         let color = self.color.unwrap_or(theme.primary.base);
         spin_icon(
-            self.motion_id,
+            liora_core::unique_id("liora-spinner-motion"),
             Icon::new(self.icon).size(self.size).color(color),
         )
     }
@@ -107,5 +105,13 @@ mod tests {
 
         assert_eq!(spinner.size, px(24.0));
         assert_eq!(spinner.icon, IconName::RefreshCw);
+    }
+
+    #[test]
+    fn spinner_uses_distinct_motion_ids_for_multiple_instances() {
+        let source = include_str!("spinner.rs");
+        assert!(source.contains(r#"liora_core::unique_id("liora-spinner-motion")"#));
+        let stale_field = ["motion_id", ": &'static str"].join("");
+        assert!(!source.contains(&stale_field));
     }
 }

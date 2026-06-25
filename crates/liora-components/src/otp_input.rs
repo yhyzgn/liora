@@ -64,8 +64,12 @@ impl OtpInput {
             input: cx.new(move |cx| {
                 Input::new(value, cx)
                     .width(px(1.0))
-                    .on_change(move |_, cx| {
-                        let _ = owner.update(cx, |otp, cx| otp.handle_input_change(cx));
+                    .on_change(move |value, cx| {
+                        let owner = owner.clone();
+                        let value = SharedString::from(value.to_string());
+                        cx.defer(move |cx| {
+                            let _ = owner.update(cx, |otp, cx| otp.handle_input_change(value, cx));
+                        });
                     })
             }),
             length,
@@ -201,8 +205,7 @@ impl OtpInput {
         });
     }
 
-    fn handle_input_change(&mut self, cx: &mut Context<Self>) {
-        let raw = self.input.read(cx).value();
+    fn handle_input_change(&mut self, raw: SharedString, cx: &mut Context<Self>) {
         let normalized = normalize_otp_value(raw.as_ref(), self.length);
         if normalized != raw {
             cx.update_entity(&self.input, |input, cx| {
@@ -211,8 +214,7 @@ impl OtpInput {
         }
 
         if let Some(on_change) = self.on_change.take() {
-            let value = self.input.read(cx).value();
-            on_change(value, cx);
+            on_change(normalized, cx);
             self.on_change = Some(on_change);
         }
 
@@ -284,15 +286,9 @@ impl Render for OtpInput {
                 let text = value.map(|ch| if masked { '•' } else { ch });
                 let input = self.input.clone();
                 let host = cx.entity().clone();
-                let cell_text = if let Some(ch) = text {
-                    ch.to_string()
-                } else if active {
-                    "▌".to_string()
-                } else {
-                    "·".to_string()
-                };
+                let display_text = text.map(|ch| ch.to_string());
 
-                div()
+                let cell = div()
                     .w(cell_size)
                     .h(cell_size)
                     .rounded_md()
@@ -325,8 +321,21 @@ impl Render for OtpInput {
                                 cx.stop_propagation();
                             })
                     })
-                    .when(active, |s| s.shadow_sm())
-                    .child(cell_text)
+                    .when(active, |s| s.shadow_sm());
+
+                if let Some(text) = display_text {
+                    cell.child(text)
+                } else if active {
+                    cell.child(
+                        div()
+                            .w(px(2.0))
+                            .h(cell_size * 0.48)
+                            .rounded_full()
+                            .bg(theme.primary.base),
+                    )
+                } else {
+                    cell.child("·")
+                }
             }))
     }
 }
@@ -402,11 +411,22 @@ mod tests {
         assert!(source.contains("input: Entity<Input>"));
         assert!(source.contains("window.focus(&input.read(cx).focus_handle(cx))"));
         assert!(source.contains("input.set_selection(range, cx)"));
-        let input_change_pipeline =
-            ["Input::new(value, cx)", ".width(px(1.0))", ".on_change"].join(".*");
+        let input_change_pipeline = [
+            "Input::new(value, cx)",
+            ".width(px(1.0))",
+            ".on_change",
+            "cx.defer(move |cx|",
+            "otp.handle_input_change(value, cx)",
+        ]
+        .join(".*");
         assert!(regex_like_in_order(source, &input_change_pipeline));
-        assert!(source.contains("otp.handle_input_change(cx)"));
         assert!(source.contains("cx.notify()"));
+        let stale_handler_signature = ["fn handle_input_change(&mut self", ", cx"].join("");
+        assert!(!source.contains(&stale_handler_signature));
+        let stale_nested_read = ["let raw = self.input", ".read(cx)", ".value()"].join("");
+        assert!(!source.contains(&stale_nested_read));
+        let old_block_caret = char::from_u32(0x258c).unwrap();
+        assert!(!source.contains(old_block_caret));
         let click_change_bypass = ["host", ".emit_change(", "window"].join("");
         assert!(!source.contains(&click_change_bypass));
     }

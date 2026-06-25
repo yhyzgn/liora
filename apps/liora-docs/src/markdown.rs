@@ -3399,29 +3399,70 @@ impl Render for LiveDemoContent {
                     .text("Preparing workspace...")
                     .into_any_element(),
             ]),
-            "SpinnerSizes" | "SpinnerBasic" => demo_row(vec![
-                liora_components::Spinner::new().small().into_any_element(),
-                liora_components::Spinner::new().into_any_element(),
-                liora_components::Spinner::new().large().into_any_element(),
-                liora_components::Spinner::new()
-                    .icon(IconName::RefreshCw)
-                    .size(px(20.0))
-                    .into_any_element(),
+            "SpinnerSizes" | "SpinnerBasic" => demo_stack(vec![
+                spinner_live_card(
+                    "Small / inline",
+                    "Button labels and status bars",
+                    liora_components::Spinner::new().small(),
+                ),
+                spinner_live_card(
+                    "Default / row",
+                    "List rows and toolbar jobs",
+                    liora_components::Spinner::new(),
+                ),
+                spinner_live_card(
+                    "Large / panel",
+                    "Card-level refresh state",
+                    liora_components::Spinner::new().large(),
+                ),
+                spinner_live_card(
+                    "Custom icon",
+                    "RefreshCw with spin motion",
+                    liora_components::Spinner::new().icon(IconName::RefreshCw).size(px(22.0)),
+                ),
             ]),
-            "SpinnerColors" => demo_row(vec![
-                liora_components::Spinner::new().color(gpui::rgb(0x2563eb).into()).into_any_element(),
-                liora_components::Spinner::new().color(gpui::rgb(0x16a34a).into()).into_any_element(),
-                liora_components::Spinner::new().color(gpui::rgb(0xf59e0b).into()).into_any_element(),
-                liora_components::Spinner::new().color(gpui::rgb(0xdc2626).into()).into_any_element(),
+            "SpinnerColors" => demo_stack(vec![
+                spinner_live_status_card("Syncing", "同步远端配置中", 0x2563eb),
+                spinner_live_status_card("Verifying", "等待校验服务返回", 0x16a34a),
+                spinner_live_status_card("Retrying", "网络不稳定，正在重试", 0xf59e0b),
+                spinner_live_status_card("Recovering", "错误恢复任务仍在运行", 0xdc2626),
             ]),
-            "SpinnerComposition" => demo_row(vec![
-                Button::new("Syncing")
-                    .primary()
-                    .icon_start(liora_components::Spinner::new().small().into_any_element())
+            "SpinnerComposition" => demo_stack(vec![
+                div()
+                    .flex()
+                    .items_center()
+                    .gap_3()
+                    .child(
+                        Button::new("Syncing")
+                            .primary()
+                            .icon_start(liora_components::Spinner::new().small().into_any_element()),
+                    )
+                    .child(
+                        Button::new("Exporting")
+                            .icon_start(liora_components::Spinner::new().small().into_any_element()),
+                    )
                     .into_any_element(),
-                liora_components::Label::new("Fetching metrics")
-                    .custom_icon(liora_components::Spinner::new().small())
+                div()
+                    .flex()
+                    .items_center()
+                    .justify_between()
+                    .gap_4()
+                    .rounded_lg()
+                    .border_1()
+                    .border_color(rgb(0xe2e8f0))
+                    .bg(rgb(0xf8fafc))
+                    .p_3()
+                    .child(
+                        liora_components::Label::new("Fetching metrics")
+                            .custom_icon(liora_components::Spinner::new().small()),
+                    )
+                    .child(Text::new("12 jobs queued").xs())
                     .into_any_element(),
+                spinner_live_card(
+                    "Background export",
+                    "Exporting reports.zip · 42%",
+                    liora_components::Spinner::new().icon(IconName::LoaderCircle).large(),
+                ),
             ]),
             "KbdBasic" => demo_row(vec![
                 liora_components::Kbd::new("⌘K").into_any_element(),
@@ -5974,6 +6015,57 @@ fn demo_row(children: Vec<AnyElement>) -> AnyElement {
         .wrap()
         .gap_sm()
         .children(children)
+        .into_any_element()
+}
+
+fn spinner_live_card(
+    title: &'static str,
+    detail: &'static str,
+    spinner: liora_components::Spinner,
+) -> AnyElement {
+    div()
+        .flex()
+        .items_center()
+        .justify_between()
+        .gap_4()
+        .rounded_lg()
+        .border_1()
+        .border_color(rgb(0xe2e8f0))
+        .bg(rgb(0xf8fafc))
+        .p_3()
+        .child(
+            Space::new()
+                .vertical()
+                .gap_xs()
+                .child(Text::new(title).bold())
+                .child(Text::new(detail).xs()),
+        )
+        .child(spinner)
+        .into_any_element()
+}
+
+fn spinner_live_status_card(title: &'static str, detail: &'static str, color: u32) -> AnyElement {
+    div()
+        .flex()
+        .items_center()
+        .gap_3()
+        .rounded_lg()
+        .border_1()
+        .border_color(rgb(0xe2e8f0))
+        .bg(rgb(0xffffff))
+        .p_3()
+        .child(
+            liora_components::Spinner::new()
+                .large()
+                .color(rgb(color).into()),
+        )
+        .child(
+            Space::new()
+                .vertical()
+                .gap_xs()
+                .child(Text::new(title).bold())
+                .child(Text::new(detail).xs()),
+        )
         .into_any_element()
 }
 
