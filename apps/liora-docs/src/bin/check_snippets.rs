@@ -279,6 +279,10 @@ mod input_tag_duplicates;
 mod input_tag_limited;
 #[path = "../../content/snippets/kbd/basic.rs"]
 mod kbd_basic;
+#[path = "../../content/snippets/kbd/composition.rs"]
+mod kbd_composition;
+#[path = "../../content/snippets/kbd/sizes.rs"]
+mod kbd_sizes;
 #[path = "../../content/snippets/label/basic.rs"]
 mod label_basic;
 #[path = "../../content/snippets/layout/divider.rs"]
@@ -341,6 +345,12 @@ mod notification_types;
 mod operation_basic;
 #[path = "../../content/snippets/otp_input/basic.rs"]
 mod otp_input_basic;
+#[path = "../../content/snippets/otp_input/interactive.rs"]
+mod otp_input_interactive;
+#[path = "../../content/snippets/otp_input/masked.rs"]
+mod otp_input_masked;
+#[path = "../../content/snippets/otp_input/states.rs"]
+mod otp_input_states;
 #[path = "../../content/snippets/page_header/basic.rs"]
 mod page_header_basic;
 #[path = "../../content/snippets/page_header/extra.rs"]
@@ -479,6 +489,12 @@ mod sparkline_downsample;
 mod sparkline_styles;
 #[path = "../../content/snippets/spinner/basic.rs"]
 mod spinner_basic;
+#[path = "../../content/snippets/spinner/colors.rs"]
+mod spinner_colors;
+#[path = "../../content/snippets/spinner/composition.rs"]
+mod spinner_composition;
+#[path = "../../content/snippets/spinner/sizes.rs"]
+mod spinner_sizes;
 #[path = "../../content/snippets/splitter/basic.rs"]
 mod splitter_basic;
 #[path = "../../content/snippets/statistic/affix.rs"]

@@ -32,6 +32,7 @@ pub mod horizontal_list_demo;
 pub mod icon_demo;
 pub mod image_demo;
 pub mod input_tag_demo;
+pub mod kbd_demo;
 pub mod label_demo;
 pub mod layout_demo;
 pub mod line_chart_demo;
@@ -43,6 +44,7 @@ pub mod message_box_demo;
 pub mod message_demo;
 pub mod notification_demo;
 pub mod operation_demo;
+pub mod otp_input_demo;
 pub mod page_header_demo;
 pub mod pagination_demo;
 pub mod pie_chart_demo;
@@ -102,12 +104,12 @@ pub fn registry() -> Vec<DemoEntry> {
         DemoEntry {
             name: "Kbd 快捷键",
             description: "键盘快捷键 keycap 展示",
-            render: |cx| spinner_demo::render(cx).into(),
+            render: |cx| kbd_demo::render(cx).into(),
         },
         DemoEntry {
             name: "OtpInput 验证码输入",
-            description: "一次性验证码 / PIN 输入格展示",
-            render: |cx| spinner_demo::render(cx).into(),
+            description: "可交互一次性验证码 / PIN 输入",
+            render: |cx| otp_input_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Spinner 旋转加载",
@@ -614,8 +616,8 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "HeatBar" => Some(heat_bar_demo::render(cx).into()),
         "HorizontalList" => Some(horizontal_list_demo::render(cx).into()),
         "Label" => Some(label_demo::render(cx).into()),
-        "Kbd" => Some(spinner_demo::render(cx).into()),
-        "OtpInput" => Some(spinner_demo::render(cx).into()),
+        "Kbd" => Some(kbd_demo::render(cx).into()),
+        "OtpInput" => Some(otp_input_demo::render(cx).into()),
         "Spinner" => Some(spinner_demo::render(cx).into()),
         "Operation" => Some(operation_demo::render(cx).into()),
         "SegmentRatioBar" => Some(segment_ratio_bar_demo::render(cx).into()),

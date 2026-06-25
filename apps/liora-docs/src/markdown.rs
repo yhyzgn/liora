@@ -1183,8 +1183,20 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "bar_chart/custom.rs" => Some(include_str!("../content/snippets/bar_chart/custom.rs")),
         "label/basic.rs" => Some(include_str!("../content/snippets/label/basic.rs")),
         "kbd/basic.rs" => Some(include_str!("../content/snippets/kbd/basic.rs")),
+        "kbd/composition.rs" => Some(include_str!("../content/snippets/kbd/composition.rs")),
+        "kbd/sizes.rs" => Some(include_str!("../content/snippets/kbd/sizes.rs")),
         "otp_input/basic.rs" => Some(include_str!("../content/snippets/otp_input/basic.rs")),
+        "otp_input/states.rs" => Some(include_str!("../content/snippets/otp_input/states.rs")),
+        "otp_input/masked.rs" => Some(include_str!("../content/snippets/otp_input/masked.rs")),
+        "otp_input/interactive.rs" => {
+            Some(include_str!("../content/snippets/otp_input/interactive.rs"))
+        }
         "spinner/basic.rs" => Some(include_str!("../content/snippets/spinner/basic.rs")),
+        "spinner/composition.rs" => {
+            Some(include_str!("../content/snippets/spinner/composition.rs"))
+        }
+        "spinner/colors.rs" => Some(include_str!("../content/snippets/spinner/colors.rs")),
+        "spinner/sizes.rs" => Some(include_str!("../content/snippets/spinner/sizes.rs")),
         "operation/basic.rs" => Some(include_str!("../content/snippets/operation/basic.rs")),
         "segment_ratio_bar/top.rs" => {
             Some(include_str!("../content/snippets/segment_ratio_bar/top.rs"))
@@ -1832,6 +1844,7 @@ struct LiveDemoContent {
     form_selects: Vec<Entity<Select>>,
     form_switches: Vec<Entity<Switch>>,
     form_textareas: Vec<Entity<Textarea>>,
+    otp_inputs: Vec<Entity<liora_components::OtpInput>>,
     scroll_handle: ScrollHandle,
 }
 
@@ -1875,6 +1888,7 @@ impl LiveDemoContent {
         let mut form_selects = Vec::new();
         let mut form_switches = Vec::new();
         let mut form_textareas = Vec::new();
+        let mut otp_inputs = Vec::new();
         let scroll_handle = ScrollHandle::new();
 
         match component.as_ref() {
@@ -2005,6 +2019,25 @@ impl LiveDemoContent {
                 virtualized_trees.push(cx.new(|cx| docs_virtualized_tree(cx, true)));
             }
 
+            "OtpInputInteractive" => {
+                otp_inputs.push(cx.new(|cx| liora_components::OtpInput::new("", cx)));
+            }
+            "OtpInputMasked" => {
+                otp_inputs.push(cx.new(|cx| {
+                    liora_components::OtpInput::new("42", cx)
+                        .length(4, cx)
+                        .masked(true)
+                }));
+            }
+            "OtpInputStates" => {
+                otp_inputs
+                    .push(cx.new(|cx| liora_components::OtpInput::new("934201", cx).success()));
+                otp_inputs.push(cx.new(|cx| {
+                    liora_components::OtpInput::new("128", cx)
+                        .length(4, cx)
+                        .error()
+                }));
+            }
             "InputNumberBasic" => {
                 input_numbers.push(cx.new(|cx| InputNumber::new(10.0, cx).min(0.0).max(10.0)));
             }
@@ -2616,6 +2649,7 @@ impl LiveDemoContent {
             form_selects,
             form_switches,
             form_textareas,
+            otp_inputs,
             scroll_handle,
         }
     }
@@ -3365,27 +3399,69 @@ impl Render for LiveDemoContent {
                     .text("Preparing workspace...")
                     .into_any_element(),
             ]),
-            "SpinnerBasic" => demo_row(vec![
+            "SpinnerSizes" | "SpinnerBasic" => demo_row(vec![
                 liora_components::Spinner::new().small().into_any_element(),
                 liora_components::Spinner::new().into_any_element(),
                 liora_components::Spinner::new().large().into_any_element(),
                 liora_components::Spinner::new()
                     .icon(IconName::RefreshCw)
                     .size(px(20.0))
-                    .color(gpui::rgb(0x2563eb).into())
+                    .into_any_element(),
+            ]),
+            "SpinnerColors" => demo_row(vec![
+                liora_components::Spinner::new().color(gpui::rgb(0x2563eb).into()).into_any_element(),
+                liora_components::Spinner::new().color(gpui::rgb(0x16a34a).into()).into_any_element(),
+                liora_components::Spinner::new().color(gpui::rgb(0xf59e0b).into()).into_any_element(),
+                liora_components::Spinner::new().color(gpui::rgb(0xdc2626).into()).into_any_element(),
+            ]),
+            "SpinnerComposition" => demo_row(vec![
+                Button::new("Syncing")
+                    .primary()
+                    .icon_start(liora_components::Spinner::new().small().into_any_element())
+                    .into_any_element(),
+                liora_components::Label::new("Fetching metrics")
+                    .custom_icon(liora_components::Spinner::new().small())
                     .into_any_element(),
             ]),
             "KbdBasic" => demo_row(vec![
                 liora_components::Kbd::new("⌘K").into_any_element(),
-                liora_components::Kbd::new("Ctrl").small().into_any_element(),
-                liora_components::Kbd::new("Enter").large().into_any_element(),
+                liora_components::Kbd::new("Ctrl").into_any_element(),
+                liora_components::Kbd::new("Shift").into_any_element(),
+                liora_components::Kbd::new("Enter").into_any_element(),
                 liora_components::Kbd::new("Esc").into_any_element(),
             ]),
-            "OtpInputBasic" => demo_stack(vec![
-                liora_components::OtpInput::new("1284").length(6).active_index(4).into_any_element(),
-                liora_components::OtpInput::new("934201").length(6).success().into_any_element(),
-                liora_components::OtpInput::new("12 8").length(4).masked(true).error().into_any_element(),
+            "KbdSizes" => demo_row(vec![
+                liora_components::Kbd::new("⌘").small().into_any_element(),
+                liora_components::Kbd::new("Tab").into_any_element(),
+                liora_components::Kbd::new("Space").large().into_any_element(),
             ]),
+            "KbdComposition" => demo_row(vec![
+                liora_components::Kbd::new("Esc").color(gpui::rgb(0xdc2626).into()).into_any_element(),
+                liora_components::Kbd::new("⌘S")
+                    .bg(gpui::rgb(0xdcfce7).into())
+                    .color(gpui::rgb(0x166534).into())
+                    .into_any_element(),
+                Space::new()
+                    .gap_xs()
+                    .child(liora_components::Kbd::new("⌘"))
+                    .child(liora_components::Kbd::new("K"))
+                    .into_any_element(),
+            ]),
+            "OtpInputInteractive" | "OtpInputBasic" => self.otp_inputs.first().cloned().map_or_else(
+                || Text::new("OtpInput demo unavailable").into_any_element(),
+                |input| input.into_any_element(),
+            ),
+            "OtpInputMasked" => self.otp_inputs.first().cloned().map_or_else(
+                || Text::new("OtpInput masked demo unavailable").into_any_element(),
+                |input| input.into_any_element(),
+            ),
+            "OtpInputStates" => demo_stack(
+                self.otp_inputs
+                    .iter()
+                    .cloned()
+                    .map(IntoElement::into_any_element)
+                    .collect(),
+            ),
             "LinkVariants" => demo_row(vec![
                 Link::new("Default").href("https://github.com").into_any_element(),
                 Link::new("Primary").primary().href("https://github.com").into_any_element(),

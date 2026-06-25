@@ -31,6 +31,14 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 use std::ops::{Add, Range};
 
+fn clamp_to_char_boundary(text: &str, mut offset: usize) -> usize {
+    offset = offset.min(text.len());
+    while offset > 0 && !text.is_char_boundary(offset) {
+        offset -= 1;
+    }
+    offset
+}
+
 actions!(
     input,
     [
@@ -336,6 +344,15 @@ impl Input {
     /// Performs the selected range operation used by this component.
     pub fn selected_range(&self) -> Range<usize> {
         self.selected_range.clone()
+    }
+
+    /// Updates the current caret/selection range and keeps it inside valid UTF-8 boundaries.
+    pub fn set_selection(&mut self, range: Range<usize>, cx: &mut Context<Self>) {
+        let start = clamp_to_char_boundary(self.value.as_ref(), range.start);
+        let end = clamp_to_char_boundary(self.value.as_ref(), range.end);
+        self.selected_range = start.min(end)..start.max(end);
+        self.selection_reversed = false;
+        self.reset_blink(cx);
     }
 
     /// Performs the insert text operation used by this component.

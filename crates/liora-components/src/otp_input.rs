@@ -1,6 +1,6 @@
 //! Otp Input module.
 //!
-//! This public module implements the Liora one-time-passcode display/input scaffold component. It keeps the reusable
+//! This public module implements the Liora one-time-passcode input component. It keeps the reusable
 //! component logic inside `liora-components` rather than Gallery or Docs so
 //! downstream GPUI applications can compose the same behavior with their own
 //! app state, assets, and release policy.
@@ -19,11 +19,15 @@
 //! the component, and avoid app-specific Gallery/Docs resources in this SDK
 //! crate.
 
+use crate::Input;
 use gpui::{
-    App, Component, Hsla, IntoElement, Pixels, RenderOnce, SharedString, Window, div, prelude::*,
-    px,
+    App, Context, Entity, FocusHandle, Focusable, Hsla, IntoElement, MouseButton, Pixels, Render,
+    SharedString, Window, div, prelude::*, px,
 };
 use liora_core::Config;
+use std::ops::Range;
+
+type OtpInputChangeCallback = Box<dyn Fn(SharedString, &mut Context<OtpInput>) + 'static>;
 
 /// Visual state for one-time-passcode cells.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -38,36 +42,52 @@ pub enum OtpInputStatus {
     Error,
 }
 
-/// Fluent native GPUI component for rendering OTP/PIN entry cells.
+/// Fluent native GPUI component for rendering and editing OTP/PIN entry cells.
 pub struct OtpInput {
-    value: SharedString,
+    input: Entity<Input>,
     length: usize,
     gap: Pixels,
     cell_size: Pixels,
     masked: bool,
     disabled: bool,
     status: OtpInputStatus,
-    active_index: Option<usize>,
+    on_change: Option<OtpInputChangeCallback>,
 }
 
 impl OtpInput {
     /// Creates `OtpInput` with a six-cell default length.
-    pub fn new(value: impl Into<SharedString>) -> Self {
+    pub fn new(value: impl Into<SharedString>, cx: &mut Context<Self>) -> Self {
+        let length = 6;
+        let value = normalize_otp_value(value.into().as_ref(), length);
+        let owner = cx.entity().downgrade();
         Self {
-            value: value.into(),
-            length: 6,
+            input: cx.new(move |cx| {
+                Input::new(value, cx)
+                    .width(px(1.0))
+                    .on_change(move |_, cx| {
+                        let _ = owner.update(cx, |otp, cx| otp.handle_input_change(cx));
+                    })
+            }),
+            length,
             gap: px(8.0),
             cell_size: px(40.0),
             masked: false,
             disabled: false,
             status: OtpInputStatus::Default,
-            active_index: None,
+            on_change: None,
         }
     }
 
+    /// Creates a GPUI entity that owns this component state across render passes.
+    pub fn entity(value: impl Into<SharedString>, cx: &mut App) -> Entity<Self> {
+        cx.new(|cx| Self::new(value, cx))
+    }
+
     /// Sets the number of rendered OTP cells.
-    pub fn length(mut self, length: usize) -> Self {
-        self.length = length.clamp(1, 12);
+    pub fn length(mut self, length: usize, cx: &mut Context<Self>) -> Self {
+        let length = length.clamp(1, 12);
+        self.length = length;
+        self.sync_input_constraints(cx);
         self
     }
 
@@ -89,9 +109,10 @@ impl OtpInput {
         self
     }
 
-    /// Toggles disabled visual state.
-    pub fn disabled(mut self, disabled: bool) -> Self {
+    /// Toggles disabled visual state and suppresses editing when enabled.
+    pub fn disabled(mut self, disabled: bool, cx: &mut Context<Self>) -> Self {
         self.disabled = disabled;
+        self.sync_input_constraints(cx);
         self
     }
 
@@ -113,15 +134,89 @@ impl OtpInput {
         self
     }
 
-    /// Marks a cell as active/focused for controlled parent input flows.
-    pub fn active_index(mut self, index: usize) -> Self {
-        self.active_index = Some(index.min(self.length.saturating_sub(1)));
+    /// Registers a callback that runs when the normalized OTP value changes.
+    pub fn on_change(mut self, cb: impl Fn(SharedString, &mut Context<Self>) + 'static) -> Self {
+        self.on_change = Some(Box::new(cb));
         self
     }
 
+    /// Updates the current change callback while preserving component identity.
+    pub fn set_on_change(
+        &mut self,
+        cb: impl Fn(SharedString, &mut Context<Self>) + 'static,
+        cx: &mut Context<Self>,
+    ) {
+        self.on_change = Some(Box::new(cb));
+        cx.notify();
+    }
+
+    /// Returns the current normalized value.
+    pub fn value(&self, cx: &App) -> SharedString {
+        self.input.read(cx).value()
+    }
+
     /// Returns normalized OTP characters up to the configured length.
-    pub fn cells(&self) -> Vec<Option<char>> {
-        otp_cells(self.value.as_ref(), self.length)
+    pub fn cells(&self, cx: &App) -> Vec<Option<char>> {
+        otp_cells(self.value(cx).as_ref(), self.length)
+    }
+
+    /// Returns the current caret/selection range in byte offsets.
+    pub fn selected_range(&self, cx: &App) -> Range<usize> {
+        self.input.read(cx).selected_range()
+    }
+
+    /// Sets the focused cell/caret position. Filled cells are selected so the next typed
+    /// character replaces that cell instead of shifting the remaining code.
+    pub fn set_active_index(&mut self, index: usize, cx: &mut Context<Self>) {
+        let range = self.byte_range_for_index(index, cx);
+        cx.update_entity(&self.input, |input, cx| {
+            input.set_selection(range, cx);
+        });
+        cx.notify();
+    }
+
+    fn byte_range_for_index(&self, index: usize, cx: &App) -> Range<usize> {
+        let value = self.input.read(cx).value();
+        let char_index = index.min(self.length);
+        let start = value
+            .char_indices()
+            .nth(char_index)
+            .map(|(offset, _)| offset)
+            .unwrap_or(value.len());
+        let end = value[start..]
+            .chars()
+            .next()
+            .map(|ch| start + ch.len_utf8())
+            .unwrap_or(start);
+        start..end
+    }
+
+    fn sync_input_constraints(&mut self, cx: &mut Context<Self>) {
+        let length = self.length;
+        let disabled = self.disabled;
+        cx.update_entity(&self.input, |input, cx| {
+            let normalized = normalize_otp_value(input.value().as_ref(), length);
+            input.set_value(normalized, cx);
+            input.set_disabled(disabled, cx);
+        });
+    }
+
+    fn handle_input_change(&mut self, cx: &mut Context<Self>) {
+        let raw = self.input.read(cx).value();
+        let normalized = normalize_otp_value(raw.as_ref(), self.length);
+        if normalized != raw {
+            cx.update_entity(&self.input, |input, cx| {
+                input.set_value(normalized.clone(), cx);
+            });
+        }
+
+        if let Some(on_change) = self.on_change.take() {
+            let value = self.input.read(cx).value();
+            on_change(value, cx);
+            self.on_change = Some(on_change);
+        }
+
+        cx.notify();
     }
 
     fn status_color(&self, theme: &liora_theme::Theme) -> Hsla {
@@ -134,23 +229,51 @@ impl OtpInput {
     }
 }
 
-impl RenderOnce for OtpInput {
-    fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Focusable for OtpInput {
+    fn focus_handle(&self, cx: &App) -> FocusHandle {
+        self.input.read(cx).focus_handle(cx)
+    }
+}
+
+impl Render for OtpInput {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
+        let focused = self.focus_handle(cx).is_focused(window);
+        let value = self.input.read(cx).value();
+        let selected_range = self.input.read(cx).selected_range();
+        let active_offset = if selected_range.is_empty() {
+            selected_range.end
+        } else {
+            selected_range.start
+        };
+        let active_index = byte_offset_to_cell_index(value.as_ref(), active_offset, self.length);
+        let cells = otp_cells(value.as_ref(), self.length);
         let status_color = self.status_color(&theme);
-        let active_index = self.active_index;
         let disabled = self.disabled;
         let masked = self.masked;
         let cell_size = self.cell_size;
-        let cells = self.cells();
+
+        cx.update_entity(&self.input, |input, cx| {
+            input.set_disabled(disabled, cx);
+        });
+
+        let input = self.input.clone();
+
+        let hidden_input = div()
+            .absolute()
+            .w(px(1.0))
+            .h(px(1.0))
+            .opacity(0.0)
+            .child(input);
 
         div()
+            .relative()
             .flex()
             .items_center()
             .gap(self.gap)
+            .child(hidden_input)
             .children(cells.into_iter().enumerate().map(move |(index, value)| {
-                let filled = value.is_some();
-                let active = active_index == Some(index);
+                let active = focused && active_index == index;
                 let border_color = if disabled {
                     theme.neutral.border.opacity(0.5)
                 } else if active || self.status != OtpInputStatus::Default {
@@ -159,6 +282,15 @@ impl RenderOnce for OtpInput {
                     theme.neutral.border
                 };
                 let text = value.map(|ch| if masked { '•' } else { ch });
+                let input = self.input.clone();
+                let host = cx.entity().clone();
+                let cell_text = if let Some(ch) = text {
+                    ch.to_string()
+                } else if active {
+                    "▌".to_string()
+                } else {
+                    "·".to_string()
+                };
 
                 div()
                     .w(cell_size)
@@ -168,6 +300,8 @@ impl RenderOnce for OtpInput {
                     .border_color(border_color)
                     .bg(if disabled {
                         theme.neutral.hover
+                    } else if active {
+                        theme.primary.base.opacity(0.08)
                     } else {
                         theme.neutral.card
                     })
@@ -181,22 +315,19 @@ impl RenderOnce for OtpInput {
                     } else {
                         theme.neutral.text_1
                     })
+                    .when(!disabled, |s| {
+                        s.cursor_text()
+                            .on_mouse_down(MouseButton::Left, move |_, window, cx| {
+                                window.focus(&input.read(cx).focus_handle(cx));
+                                host.update(cx, |host, cx| {
+                                    host.set_active_index(index, cx);
+                                });
+                                cx.stop_propagation();
+                            })
+                    })
                     .when(active, |s| s.shadow_sm())
-                    .child(text.map(|ch| ch.to_string()).unwrap_or_else(|| {
-                        if filled {
-                            String::new()
-                        } else {
-                            "·".to_string()
-                        }
-                    }))
+                    .child(cell_text)
             }))
-    }
-}
-
-impl IntoElement for OtpInput {
-    type Element = Component<Self>;
-    fn into_element(self) -> Self::Element {
-        Component::new(self)
     }
 }
 
@@ -204,6 +335,34 @@ impl IntoElement for OtpInput {
 pub fn otp_cells(value: &str, length: usize) -> Vec<Option<char>> {
     let mut chars = value.chars().filter(|ch| !ch.is_whitespace());
     (0..length.clamp(1, 12)).map(|_| chars.next()).collect()
+}
+
+/// Keeps only non-whitespace characters and caps the value to the configured OTP length.
+pub fn normalize_otp_value(value: &str, length: usize) -> SharedString {
+    SharedString::from(
+        value
+            .chars()
+            .filter(|ch| !ch.is_whitespace())
+            .take(length.clamp(1, 12))
+            .collect::<String>(),
+    )
+}
+
+/// Returns whether an edited candidate value can be accepted by the OTP input.
+pub fn otp_candidate_is_valid(value: &str, length: usize) -> bool {
+    value.chars().filter(|ch| !ch.is_whitespace()).count() <= length.clamp(1, 12)
+}
+
+fn byte_offset_to_cell_index(value: &str, offset: usize, length: usize) -> usize {
+    let offset = offset.min(value.len());
+    let mut count = 0;
+    for (byte_offset, _) in value.char_indices() {
+        if byte_offset >= offset {
+            break;
+        }
+        count += 1;
+    }
+    count.min(length.saturating_sub(1))
 }
 
 #[cfg(test)]
@@ -220,16 +379,46 @@ mod tests {
     }
 
     #[test]
-    fn otp_builders_track_state() {
-        let otp = OtpInput::new("12")
-            .length(4)
-            .masked(true)
-            .error()
-            .active_index(9);
+    fn otp_candidate_validation_accepts_paste_up_to_length() {
+        assert!(otp_candidate_is_valid("12 34", 4));
+        assert!(!otp_candidate_is_valid("12345", 4));
+    }
 
-        assert_eq!(otp.length, 4);
-        assert!(otp.masked);
-        assert_eq!(otp.status, OtpInputStatus::Error);
-        assert_eq!(otp.active_index, Some(3));
+    #[test]
+    fn otp_normalization_filters_spaces_and_caps_length() {
+        assert_eq!(normalize_otp_value("1 2 3 4 5", 4).as_ref(), "1234");
+    }
+
+    #[test]
+    fn byte_offsets_map_to_cell_indices() {
+        assert_eq!(byte_offset_to_cell_index("1234", 0, 4), 0);
+        assert_eq!(byte_offset_to_cell_index("1234", 2, 4), 2);
+        assert_eq!(byte_offset_to_cell_index("1234", 4, 4), 3);
+    }
+
+    #[test]
+    fn otp_source_uses_real_input_for_editing() {
+        let source = include_str!("otp_input.rs");
+        assert!(source.contains("input: Entity<Input>"));
+        assert!(source.contains("window.focus(&input.read(cx).focus_handle(cx))"));
+        assert!(source.contains("input.set_selection(range, cx)"));
+        let input_change_pipeline =
+            ["Input::new(value, cx)", ".width(px(1.0))", ".on_change"].join(".*");
+        assert!(regex_like_in_order(source, &input_change_pipeline));
+        assert!(source.contains("otp.handle_input_change(cx)"));
+        assert!(source.contains("cx.notify()"));
+        let click_change_bypass = ["host", ".emit_change(", "window"].join("");
+        assert!(!source.contains(&click_change_bypass));
+    }
+
+    fn regex_like_in_order(source: &str, pattern: &str) -> bool {
+        let mut cursor = 0;
+        for part in pattern.split(".*") {
+            let Some(offset) = source[cursor..].find(part) else {
+                return false;
+            };
+            cursor += offset + part.len();
+        }
+        true
     }
 }

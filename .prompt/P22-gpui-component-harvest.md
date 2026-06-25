@@ -22,7 +22,7 @@ Initial wave:
 
 - ✅ `Spinner` — standalone inline loading indicator for buttons, status bars, rows, and toolbars.
 - ✅ `Kbd` — keyboard shortcut keycap display for menus, command palettes, empty states, and docs.
-- ✅ `OtpInput` — controlled OTP/PIN cell display for 2FA/device pairing flows.
+- ✅ `OtpInput` — interactive OTP/PIN input for 2FA/device pairing flows; click-to-focus, caret positioning, keyboard input, backspace, paste, mask/status/size demos.
 - ⬜ `DropdownButton`
 - ⬜ `Accordion`
 - ⬜ `Combobox`

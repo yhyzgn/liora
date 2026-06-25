@@ -3887,3 +3887,9 @@ Validation evidence:
 Started P22 from the committed `design/gpui-component-collection-list.md` research. First low-risk Wave A slice adds native `Spinner`, `Kbd`, and `OtpInput` components with Liora builder APIs, Gallery coverage, Docs pages, live demos, compile-checked snippets, and focused tests. Boundaries remain pure Rust + GPUI native; no WebView/DOM/Tauri path and no direct upstream API copying.
 
 Validation evidence: `cargo fmt --all --check`, `cargo check --workspace --all-targets`, `cargo test --workspace`, `cargo check -p liora-docs --bin check_snippets`, and `git diff --check -- . ':(exclude).omx'` passed.
+
+## 2026-06-25 P22 first controls split and OtpInput interaction fix
+
+Corrected the first P22 Wave A implementation after review: `Spinner`, `Kbd`, and `OtpInput` now have separate Gallery demo pages instead of sharing one aggregate page, and their Docs pages each include multiple focused effect/code sections. Reworked `OtpInput` from a static cell display into a real interactive component backed by Liora `Input`: it supports focus, click-to-cell positioning, keyboard input, backspace, paste normalization, masking, status styling, and size/length variants. Clicking a filled cell selects that cell so the next typed character replaces it instead of shifting/truncating the remaining OTP code. Preserved the design-list boundary: no direct gpui-component API copying, no WebView/DOM/Tauri path, and no parallel replacement for existing controls.
+
+Validation evidence: `cargo fmt --all --check`, `cargo check --workspace --all-targets`, `cargo test --workspace`, `cargo check -p liora-docs --bin check_snippets`, and `git diff --check -- . ':(exclude).omx'` passed.

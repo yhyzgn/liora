@@ -228,7 +228,7 @@
 |---|-------------------------|------|------|------|--------|
 | 1 | Spinner | `crates/liora-components/src/spinner.rs` | ✅ | ✅ | Implemented Wave A: standalone inline loading indicator with size/icon/color builders |
 | 2 | Kbd | `crates/liora-components/src/kbd.rs` | ✅ | ✅ | Implemented Wave A: keyboard shortcut keycap display with size/color/background builders |
-| 3 | OtpInput | `crates/liora-components/src/otp_input.rs` | ✅ | ✅ | Implemented Wave A: controlled OTP/PIN cell display with length/mask/status/active-index builders |
+| 3 | OtpInput | `crates/liora-components/src/otp_input.rs` | ✅ | ✅ | Implemented Wave A: interactive OTP/PIN input backed by Liora Input editing, with dedicated Gallery/Docs pages and length/mask/status/size demos |
 | 4 | DropdownButton | — | — | — | Planned Wave A |
 | 5 | Accordion | — | — | — | Planned Wave A |
 | 6 | Combobox | — | — | — | Planned Wave A; likely needs SearchableList/shared popup infrastructure |
