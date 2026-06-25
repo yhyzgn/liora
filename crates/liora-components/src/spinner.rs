@@ -21,7 +21,7 @@
 
 use crate::motion::spin_icon;
 use gpui::{App, Component, Hsla, IntoElement, Pixels, RenderOnce, Window, px};
-use liora_core::Config;
+use liora_core::{Config, stable_unique_id};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
@@ -75,10 +75,17 @@ impl RenderOnce for Spinner {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
         let color = self.color.unwrap_or(theme.primary.base);
-        spin_icon(
-            liora_core::unique_id("liora-spinner-motion"),
-            Icon::new(self.icon).size(self.size).color(color),
-        )
+        let motion_id = stable_unique_id(
+            format!(
+                "liora-spinner-motion:{:?}:{:?}:{:?}",
+                self.icon, self.size, color
+            ),
+            "liora-spinner-motion",
+            _window,
+            cx,
+        );
+
+        spin_icon(motion_id, Icon::new(self.icon).size(self.size).color(color))
     }
 }
 
@@ -108,9 +115,20 @@ mod tests {
     }
 
     #[test]
-    fn spinner_uses_distinct_motion_ids_for_multiple_instances() {
+    fn spinner_uses_stable_motion_ids_so_animation_can_continue() {
         let source = include_str!("spinner.rs");
-        assert!(source.contains(r#"liora_core::unique_id("liora-spinner-motion")"#));
+        assert!(source.contains("stable_unique_id("));
+        assert!(source.contains("liora-spinner-motion:{:?}:{:?}:{:?}"));
+        assert!(source.contains("spin_icon(motion_id"));
+        let render_body = source
+            .split("impl RenderOnce for Spinner")
+            .nth(1)
+            .expect("Spinner should implement RenderOnce")
+            .split("impl IntoElement for Spinner")
+            .next()
+            .expect("RenderOnce block should end before IntoElement");
+        assert!(!render_body.contains(r#"liora_core::unique_id("liora-spinner-motion")"#));
+        assert!(render_body.contains("Icon::new(self.icon).size(self.size).color(color)"));
         let stale_field = ["motion_id", ": &'static str"].join("");
         assert!(!source.contains(&stale_field));
     }

@@ -3912,3 +3912,9 @@ Addressed the latest P22 review feedback:
 - Added Docs regression coverage locking the Spinner fixed card/snippet layout.
 
 Validation evidence: `cargo test -p liora-components otp -- --nocapture`, `cargo test -p liora-gallery spinner_demo -- --nocapture`, `cargo test -p liora-gallery otp_input_demo -- --nocapture`, `cargo check -p liora-docs --bin check_snippets`, `cargo test -p liora-docs spinner_docs_live_and_snippets_keep_fixed_card_layout -- --nocapture`, `cargo fmt --all --check`, `cargo check --workspace --all-targets`, `cargo test --workspace`, `git diff --check -- . ':(exclude).omx'`, and `timeout 8s cargo run -p liora-gallery` (expected timeout after successful startup) passed.
+
+## 2026-06-25 P22 Spinner finalization
+
+Completed the Spinner-specific cleanup requested in the current thread. Spinner remains a direct `Icon`-based control like Loading, with a stable animation id so rotation keeps running, and Gallery/Docs now render separate dedicated Spinner pages with richer usage cards. Added `IconAssetSource` to `liora-icons` and wired Gallery/Docs `Application::with_assets(...)` so Lucide SVG icons render correctly from their bundled absolute paths.
+
+Validation evidence: `cargo test -p liora-icons -- --nocapture`, `cargo test -p liora-components spinner -- --nocapture`, `cargo test -p liora-gallery spinner_demo -- --nocapture`, `cargo test -p liora-docs spinner_docs_live_and_snippets_keep_fixed_card_layout -- --nocapture`, `cargo check -p liora-docs --bin check_snippets`, `cargo fmt --all --check`, `git diff --check -- . ':(exclude).omx'`, `cargo run -p liora-gallery` startup, and a desktop screenshot showing the Spinner page rendered with visible Spinner content.

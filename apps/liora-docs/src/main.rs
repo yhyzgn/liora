@@ -37,17 +37,19 @@ struct DocsTrayState {
 impl Global for DocsTrayState {}
 
 fn run_docs() {
-    Application::new().run(|cx: &mut App| {
-        init_liora(cx);
-        register_docs_desktop_identity();
+    Application::new()
+        .with_assets(liora_icons::IconAssetSource)
+        .run(|cx: &mut App| {
+            init_liora(cx);
+            register_docs_desktop_identity();
 
-        install_docs_tray(cx);
-        if let Some(handle) = open_docs_window(cx) {
-            if cx.has_global::<DocsTrayState>() {
-                cx.global_mut::<DocsTrayState>().window = Some(handle);
+            install_docs_tray(cx);
+            if let Some(handle) = open_docs_window(cx) {
+                if cx.has_global::<DocsTrayState>() {
+                    cx.global_mut::<DocsTrayState>().window = Some(handle);
+                }
             }
-        }
-    });
+        });
 }
 
 fn open_docs_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
@@ -557,6 +559,7 @@ mod shell_tests {
         let source = include_str!("main.rs");
 
         assert!(source.contains("register_docs_desktop_identity();"));
+        assert!(source.contains("with_assets(liora_icons::IconAssetSource)"));
         assert!(source.contains(r#"app_id: Some("liora-docs".into())"#));
         assert!(source.contains(r#"app_id: "liora-docs""#));
         assert!(source.contains("packaging/linux/liora-docs.desktop"));

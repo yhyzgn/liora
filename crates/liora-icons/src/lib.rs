@@ -5,11 +5,11 @@
 //! require a web icon runtime.
 
 use gpui::{
-    App, Component, DefiniteLength, Hsla, IntoElement, Radians, RenderOnce, SharedString,
-    Transformation, Window, prelude::*, px,
+    App, AssetSource, Component, DefiniteLength, Hsla, IntoElement, Radians, RenderOnce,
+    SharedString, Transformation, Window, prelude::*, px,
 };
 use liora_core::Config;
-use std::borrow::Cow;
+use std::{borrow::Cow, fs};
 
 /// Converts icon identifiers into SVG asset paths that `Icon` can render.
 pub trait IntoIconPath {
@@ -25,6 +25,32 @@ impl IntoIconPath for &str {
 impl IntoIconPath for String {
     fn icon_path(&self) -> Cow<'static, str> {
         Cow::Owned(self.clone())
+    }
+}
+
+/// File-backed asset source for Liora SVG icons.
+///
+/// GPUI's `svg().path(...)` resolves through the application asset source.
+/// `liora-icons-lucide` exposes bundled SVGs as absolute file paths, so apps
+/// that render those icons should pass this to `Application::with_assets(...)`.
+#[derive(Debug, Default, Clone, Copy)]
+pub struct IconAssetSource;
+
+impl AssetSource for IconAssetSource {
+    fn load(&self, path: &str) -> gpui::Result<Option<Cow<'static, [u8]>>> {
+        let path = path.strip_prefix("file://").unwrap_or(path);
+        if path.is_empty() {
+            return Ok(None);
+        }
+        match fs::read(path) {
+            Ok(bytes) => Ok(Some(Cow::Owned(bytes))),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+
+    fn list(&self, _path: &str) -> gpui::Result<Vec<SharedString>> {
+        Ok(Vec::new())
     }
 }
 
@@ -139,6 +165,27 @@ mod tests {
         assert_eq!(
             Icon::new("loader").rotation(gpui::radians(1.0)).rotation,
             Some(gpui::radians(1.0))
+        );
+    }
+
+    #[test]
+    fn icon_asset_source_loads_absolute_svg_files() {
+        use gpui::AssetSource;
+
+        let path = format!(
+            "{}/../liora-icons-lucide/assets/svgs/loader-circle.svg",
+            env!("CARGO_MANIFEST_DIR")
+        );
+        let bytes = IconAssetSource
+            .load(&path)
+            .expect("icon asset loading should not error")
+            .expect("loader-circle svg should exist");
+        assert!(std::str::from_utf8(&bytes).unwrap().contains("<svg"));
+        assert!(
+            IconAssetSource
+                .load("/definitely/missing/liora.svg")
+                .unwrap()
+                .is_none()
         );
     }
 }

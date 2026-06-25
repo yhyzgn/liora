@@ -105,17 +105,19 @@ struct GalleryTrayState {
 impl Global for GalleryTrayState {}
 
 fn run_gallery() {
-    Application::new().run(|cx: &mut App| {
-        init_liora(cx);
-        register_gallery_desktop_identity();
+    Application::new()
+        .with_assets(liora_icons::IconAssetSource)
+        .run(|cx: &mut App| {
+            init_liora(cx);
+            register_gallery_desktop_identity();
 
-        install_gallery_tray(cx);
-        if let Some(handle) = open_gallery_window(cx) {
-            if cx.has_global::<GalleryTrayState>() {
-                cx.global_mut::<GalleryTrayState>().window = Some(handle);
+            install_gallery_tray(cx);
+            if let Some(handle) = open_gallery_window(cx) {
+                if cx.has_global::<GalleryTrayState>() {
+                    cx.global_mut::<GalleryTrayState>().window = Some(handle);
+                }
             }
-        }
-    });
+        });
 }
 
 fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
@@ -649,6 +651,7 @@ mod shell_tests {
         assert!(source.contains("Menu::new()"));
         assert!(source.contains(".no_shrink()"));
         assert!(source.contains("init_liora(cx)"));
+        assert!(source.contains("with_assets(liora_icons::IconAssetSource)"));
         assert!(source.contains("nav_filter"));
         assert!(source.contains("nav_menu: Option"));
         assert!(source.contains("self.nav_menu = Some"));
