@@ -76,6 +76,9 @@ const EMPTY_DOC: &str = include_str!("../content/pages/empty.md");
 const FORM_DOC: &str = include_str!("../content/pages/form.md");
 const HEAT_BAR_DOC: &str = include_str!("../content/pages/heat_bar.md");
 const LABEL_DOC: &str = include_str!("../content/pages/label.md");
+const SPINNER_DOC: &str = include_str!("../content/pages/spinner.md");
+const OTP_INPUT_DOC: &str = include_str!("../content/pages/otp_input.md");
+const KBD_DOC: &str = include_str!("../content/pages/kbd.md");
 const OPERATION_DOC: &str = include_str!("../content/pages/operation.md");
 const SEGMENT_RATIO_BAR_DOC: &str = include_str!("../content/pages/segment_ratio_bar.md");
 const SIGNAL_METER_DOC: &str = include_str!("../content/pages/signal_meter.md");
@@ -318,6 +321,10 @@ const DOC_PAGES: &[DocPage] = &[
         markdown: INPUT_TAG_DOC,
     },
     DocPage {
+        title: "Kbd",
+        markdown: KBD_DOC,
+    },
+    DocPage {
         title: "Label",
         markdown: LABEL_DOC,
     },
@@ -356,6 +363,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Operation",
         markdown: OPERATION_DOC,
+    },
+    DocPage {
+        title: "OtpInput",
+        markdown: OTP_INPUT_DOC,
     },
     DocPage {
         title: "PageHeader",
@@ -428,6 +439,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Sparkline",
         markdown: SPARKLINE_DOC,
+    },
+    DocPage {
+        title: "Spinner",
+        markdown: SPINNER_DOC,
     },
     DocPage {
         title: "Splitter",
@@ -1167,6 +1182,9 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "bar_chart/stacked.rs" => Some(include_str!("../content/snippets/bar_chart/stacked.rs")),
         "bar_chart/custom.rs" => Some(include_str!("../content/snippets/bar_chart/custom.rs")),
         "label/basic.rs" => Some(include_str!("../content/snippets/label/basic.rs")),
+        "kbd/basic.rs" => Some(include_str!("../content/snippets/kbd/basic.rs")),
+        "otp_input/basic.rs" => Some(include_str!("../content/snippets/otp_input/basic.rs")),
+        "spinner/basic.rs" => Some(include_str!("../content/snippets/spinner/basic.rs")),
         "operation/basic.rs" => Some(include_str!("../content/snippets/operation/basic.rs")),
         "segment_ratio_bar/top.rs" => {
             Some(include_str!("../content/snippets/segment_ratio_bar/top.rs"))
@@ -3346,6 +3364,27 @@ impl Render for LiveDemoContent {
                 Loading::new()
                     .text("Preparing workspace...")
                     .into_any_element(),
+            ]),
+            "SpinnerBasic" => demo_row(vec![
+                liora_components::Spinner::new().small().into_any_element(),
+                liora_components::Spinner::new().into_any_element(),
+                liora_components::Spinner::new().large().into_any_element(),
+                liora_components::Spinner::new()
+                    .icon(IconName::RefreshCw)
+                    .size(px(20.0))
+                    .color(gpui::rgb(0x2563eb).into())
+                    .into_any_element(),
+            ]),
+            "KbdBasic" => demo_row(vec![
+                liora_components::Kbd::new("⌘K").into_any_element(),
+                liora_components::Kbd::new("Ctrl").small().into_any_element(),
+                liora_components::Kbd::new("Enter").large().into_any_element(),
+                liora_components::Kbd::new("Esc").into_any_element(),
+            ]),
+            "OtpInputBasic" => demo_stack(vec![
+                liora_components::OtpInput::new("1284").length(6).active_index(4).into_any_element(),
+                liora_components::OtpInput::new("934201").length(6).success().into_any_element(),
+                liora_components::OtpInput::new("12 8").length(4).masked(true).error().into_any_element(),
             ]),
             "LinkVariants" => demo_row(vec![
                 Link::new("Default").href("https://github.com").into_any_element(),

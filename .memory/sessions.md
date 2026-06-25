@@ -3881,3 +3881,9 @@ Validation evidence:
 - `git diff --check -- . ':(exclude).omx'` passed.
 - `timeout 10s cargo run -p liora-gallery` and `timeout 10s cargo run -p liora-docs` reached expected timeout status.
 - Full pass printed `MIN_PATCH_FULL_GATE_PASS`.
+
+## 2026-06-25 P22 gpui-component harvest kickoff
+
+Started P22 from the committed `design/gpui-component-collection-list.md` research. First low-risk Wave A slice adds native `Spinner`, `Kbd`, and `OtpInput` components with Liora builder APIs, Gallery coverage, Docs pages, live demos, compile-checked snippets, and focused tests. Boundaries remain pure Rust + GPUI native; no WebView/DOM/Tauri path and no direct upstream API copying.
+
+Validation evidence: `cargo fmt --all --check`, `cargo check --workspace --all-targets`, `cargo test --workspace`, `cargo check -p liora-docs --bin check_snippets`, and `git diff --check -- . ':(exclude).omx'` passed.

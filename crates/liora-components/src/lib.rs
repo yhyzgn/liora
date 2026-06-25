@@ -81,6 +81,7 @@ pub mod image;
 pub mod input;
 pub mod input_number;
 pub mod input_tag;
+pub mod kbd;
 pub mod label;
 pub mod layout_helpers;
 pub mod line_chart;
@@ -93,6 +94,7 @@ pub mod message_box;
 pub mod motion;
 pub mod notification;
 pub mod operation;
+pub mod otp_input;
 pub mod page_header;
 pub mod pagination;
 pub mod paragraph;
@@ -117,6 +119,7 @@ pub mod skeleton;
 pub mod slider;
 pub mod space;
 pub mod sparkline;
+pub mod spinner;
 pub mod splitter;
 pub mod statistic;
 pub mod steps;
@@ -186,6 +189,7 @@ pub use image::*;
 pub use input::*;
 pub use input_number::*;
 pub use input_tag::*;
+pub use kbd::*;
 pub use label::*;
 pub use line_chart::*;
 pub use link::*;
@@ -199,6 +203,7 @@ pub use message_box::*;
 pub use motion::*;
 pub use notification::*;
 pub use operation::*;
+pub use otp_input::*;
 pub use page_header::*;
 pub use pagination::*;
 pub use paragraph::*;
@@ -223,6 +228,7 @@ pub use skeleton::*;
 pub use slider::*;
 pub use space::*;
 pub use sparkline::*;
+pub use spinner::*;
 pub use splitter::*;
 pub use statistic::*;
 pub use steps::*;
@@ -348,6 +354,7 @@ mod application_init_api_tests {
             ("input_number.rs", include_str!("input_number.rs")),
             ("input_tag.rs", include_str!("input_tag.rs")),
             ("label.rs", include_str!("label.rs")),
+            ("kbd.rs", include_str!("kbd.rs")),
             ("layout_helpers.rs", include_str!("layout_helpers.rs")),
             ("line_chart.rs", include_str!("line_chart.rs")),
             ("link.rs", include_str!("link.rs")),
@@ -359,6 +366,7 @@ mod application_init_api_tests {
             ("motion.rs", include_str!("motion.rs")),
             ("notification.rs", include_str!("notification.rs")),
             ("operation.rs", include_str!("operation.rs")),
+            ("otp_input.rs", include_str!("otp_input.rs")),
             ("page_header.rs", include_str!("page_header.rs")),
             ("pagination.rs", include_str!("pagination.rs")),
             ("paragraph.rs", include_str!("paragraph.rs")),
@@ -382,6 +390,7 @@ mod application_init_api_tests {
             ("skeleton.rs", include_str!("skeleton.rs")),
             ("slider.rs", include_str!("slider.rs")),
             ("space.rs", include_str!("space.rs")),
+            ("spinner.rs", include_str!("spinner.rs")),
             ("sparkline.rs", include_str!("sparkline.rs")),
             ("splitter.rs", include_str!("splitter.rs")),
             ("statistic.rs", include_str!("statistic.rs")),

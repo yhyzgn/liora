@@ -22,6 +22,11 @@ Local implementation phases are complete through P21. Current repository-owned s
 P12/P21 external-policy items remain protected-environment work: crates.io SDK publication approval, real macOS notarization, Windows signing, destructive system-level installs, formal license replacement if any, and real `v*` release publication.
 
 
+## P22 gpui-component Harvest — 2026-06-25
+
+P22 has started from `design/gpui-component-collection-list.md`. First Wave A low-risk controls are in progress: Spinner, Kbd, and OtpInput are being added as Liora-native GPUI components with Gallery/Docs/snippet coverage. Remaining Wave A candidates: DropdownButton, Accordion, Combobox.
+
+
 ## P19 Dashboard State/Data Flow — 2026-06-18
 
 P19 is complete. Documented dashboard-style state/data-flow patterns in native Docs and folded shell-level search/filtering/refresh feedback into Gallery. Business mock models stay out of `liora-components`.

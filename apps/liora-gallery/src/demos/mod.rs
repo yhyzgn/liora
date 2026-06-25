@@ -59,6 +59,7 @@ pub mod segmented_demo;
 pub mod signal_meter_demo;
 pub mod skeleton_demo;
 pub mod sparkline_demo;
+pub mod spinner_demo;
 pub mod splitter_demo;
 pub mod statistic_demo;
 pub mod steps_demo;
@@ -97,6 +98,21 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "Button 按钮",
             description: "常用的操作按钮",
             render: |cx| button_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "Kbd 快捷键",
+            description: "键盘快捷键 keycap 展示",
+            render: |cx| spinner_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "OtpInput 验证码输入",
+            description: "一次性验证码 / PIN 输入格展示",
+            render: |cx| spinner_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "Spinner 旋转加载",
+            description: "细粒度内联加载状态",
+            render: |cx| spinner_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Theme 主题系统",
@@ -598,6 +614,9 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "HeatBar" => Some(heat_bar_demo::render(cx).into()),
         "HorizontalList" => Some(horizontal_list_demo::render(cx).into()),
         "Label" => Some(label_demo::render(cx).into()),
+        "Kbd" => Some(spinner_demo::render(cx).into()),
+        "OtpInput" => Some(spinner_demo::render(cx).into()),
+        "Spinner" => Some(spinner_demo::render(cx).into()),
         "Operation" => Some(operation_demo::render(cx).into()),
         "SegmentRatioBar" => Some(segment_ratio_bar_demo::render(cx).into()),
         "SignalMeter" => Some(signal_meter_demo::render(cx).into()),

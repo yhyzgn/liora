@@ -221,3 +221,14 @@
 | 7 | Tour | `crates/liora-components/src/tour.rs` | ✅ | ✅ | Implemented Wave 4 |
 | 8 | VirtualizedTable | `crates/liora-components/src/virtualized_table.rs` | ✅ | ✅ | Implemented Wave 5 |
 | 9 | VirtualizedTree | `crates/liora-components/src/virtualized_tree.rs` | ✅ | ✅ | Implemented Wave 6 |
+
+## P22 gpui-component Harvest 🧭 Active
+
+| # | Component / Enhancement | File | Demo | Docs | Status |
+|---|-------------------------|------|------|------|--------|
+| 1 | Spinner | `crates/liora-components/src/spinner.rs` | ✅ | ✅ | Implemented Wave A: standalone inline loading indicator with size/icon/color builders |
+| 2 | Kbd | `crates/liora-components/src/kbd.rs` | ✅ | ✅ | Implemented Wave A: keyboard shortcut keycap display with size/color/background builders |
+| 3 | OtpInput | `crates/liora-components/src/otp_input.rs` | ✅ | ✅ | Implemented Wave A: controlled OTP/PIN cell display with length/mask/status/active-index builders |
+| 4 | DropdownButton | — | — | — | Planned Wave A |
+| 5 | Accordion | — | — | — | Planned Wave A |
+| 6 | Combobox | — | — | — | Planned Wave A; likely needs SearchableList/shared popup infrastructure |

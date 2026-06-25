@@ -277,6 +277,8 @@ mod input_tag_basic;
 mod input_tag_duplicates;
 #[path = "../../content/snippets/input_tag/limited.rs"]
 mod input_tag_limited;
+#[path = "../../content/snippets/kbd/basic.rs"]
+mod kbd_basic;
 #[path = "../../content/snippets/label/basic.rs"]
 mod label_basic;
 #[path = "../../content/snippets/layout/divider.rs"]
@@ -337,6 +339,8 @@ mod message_types;
 mod notification_types;
 #[path = "../../content/snippets/operation/basic.rs"]
 mod operation_basic;
+#[path = "../../content/snippets/otp_input/basic.rs"]
+mod otp_input_basic;
 #[path = "../../content/snippets/page_header/basic.rs"]
 mod page_header_basic;
 #[path = "../../content/snippets/page_header/extra.rs"]
@@ -473,6 +477,8 @@ mod sparkline_cards;
 mod sparkline_downsample;
 #[path = "../../content/snippets/sparkline/styles.rs"]
 mod sparkline_styles;
+#[path = "../../content/snippets/spinner/basic.rs"]
+mod spinner_basic;
 #[path = "../../content/snippets/splitter/basic.rs"]
 mod splitter_basic;
 #[path = "../../content/snippets/statistic/affix.rs"]
