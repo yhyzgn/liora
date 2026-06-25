@@ -251,6 +251,8 @@ impl Render for OtpInput {
         let active_index = byte_offset_to_cell_index(value.as_ref(), active_offset, self.length);
         let cells = otp_cells(value.as_ref(), self.length);
         let status_color = self.status_color(&theme);
+        let focus_bg = theme.primary.light_9;
+        let focus_caret_color = theme.primary.base.opacity(0.85);
         let disabled = self.disabled;
         let masked = self.masked;
         let cell_size = self.cell_size;
@@ -297,7 +299,7 @@ impl Render for OtpInput {
                     .bg(if disabled {
                         theme.neutral.hover
                     } else if active {
-                        theme.primary.base.opacity(0.08)
+                        focus_bg
                     } else {
                         theme.neutral.card
                     })
@@ -331,7 +333,7 @@ impl Render for OtpInput {
                             .w(px(2.0))
                             .h(cell_size * 0.48)
                             .rounded_full()
-                            .bg(theme.primary.base),
+                            .bg(focus_caret_color),
                     )
                 } else {
                     cell.child("·")
@@ -429,6 +431,21 @@ mod tests {
         assert!(!source.contains(old_block_caret));
         let click_change_bypass = ["host", ".emit_change(", "window"].join("");
         assert!(!source.contains(&click_change_bypass));
+    }
+
+    #[test]
+    fn otp_focus_visuals_use_theme_tokens() {
+        let source = include_str!("otp_input.rs");
+        assert!(source.contains("let focus_bg = theme.primary.light_9"));
+        assert!(source.contains("let focus_caret_color = theme.primary.base.opacity(0.85)"));
+        assert!(source.contains(".bg(focus_bg)"));
+        assert!(source.contains(".bg(focus_caret_color)"));
+        let stale_focus_bg = ["theme.primary.base", ".opacity(0.08)"].join("");
+        assert!(!source.contains(&stale_focus_bg));
+        let hardcoded_rgb = ["rgb", "(0x"].join("");
+        assert!(!source.contains(&hardcoded_rgb));
+        let black_token = ["gpui", "::black()"].join("");
+        assert!(!source.contains(&black_token));
     }
 
     fn regex_like_in_order(source: &str, pattern: &str) -> bool {

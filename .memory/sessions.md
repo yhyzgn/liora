@@ -3897,3 +3897,9 @@ Validation evidence: `cargo fmt --all --check`, `cargo check --workspace --all-t
 ## 2026-06-25 P22 OtpInput crash fix and Spinner demo clarity
 
 Fixed the reported `OtpInput` runtime crash caused by reading/updating the backing `Input` entity while GPUI was already updating that same `Input`. The `Input::on_change` bridge now captures the callback value and defers parent `OtpInput` normalization/change notification until after the current update cycle, avoiding GPUI double-lease panics. The focused empty cell no longer renders a dark block character; it renders a slim themed caret inside the cell. Spinner examples were expanded from isolated icons into visible status cards with text, borders/backgrounds, semantic colors, and composition rows in both Gallery and Docs live demos/snippets. Spinner now uses a fresh motion id per instance instead of one shared animation id.
+
+## 2026-06-25 P22 OtpInput theme-aware focus visual
+
+Adjusted `OtpInput` focus visuals after user feedback that the focused empty cell looked like a dark gray block. The active cell now uses `theme.primary.light_9` for the focus background and `theme.primary.base.opacity(0.85)` for the slim caret, so light and dark themes resolve through Liora semantic tokens instead of hard-coded dark/gray colors. Added source-level regression coverage to prevent reintroducing fixed RGB/black focus styling.
+
+Validation evidence: `cargo test -p liora-components otp -- --nocapture`, `cargo fmt --all --check`, `cargo check --workspace --all-targets`, `cargo test -p liora-gallery otp_input_demo -- --nocapture`, `cargo check -p liora-docs --bin check_snippets`, and `git diff --check -- . ':(exclude).omx'` passed.
