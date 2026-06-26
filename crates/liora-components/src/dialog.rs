@@ -23,7 +23,7 @@ use crate::gpui_compat::element_id;
 use crate::motion::{fade_in, pop_in};
 use gpui::{
     AnyElement, App, Context, FocusHandle, Focusable, IntoElement, KeyBinding, MouseButton, Render,
-    SharedString, Subscription, Window, actions, div, prelude::*, px,
+    SharedString, Window, actions, div, prelude::*, px,
 };
 use liora_core::Config;
 use liora_icons::Icon;
@@ -34,13 +34,14 @@ type DialogCloseCallback = Arc<dyn Fn(&mut Window, &mut App) + 'static>;
 
 #[derive(Default)]
 struct ActiveDialogRuntime {
-    stack: Vec<SharedString>,
     close_on_escape: HashMap<SharedString, bool>,
     on_close: HashMap<SharedString, DialogCloseCallback>,
-    escape_interceptor: Option<Subscription>,
 }
 
 impl gpui::Global for ActiveDialogRuntime {}
+
+struct DialogEscapeInterceptorInstalled;
+impl gpui::Global for DialogEscapeInterceptorInstalled {}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum DialogEscapeDecision {
@@ -54,17 +55,14 @@ fn ensure_dialog_runtime(cx: &mut App) {
         cx.set_global(ActiveDialogRuntime::default());
     }
 
-    if cx
-        .global::<ActiveDialogRuntime>()
-        .escape_interceptor
-        .is_none()
-    {
-        let subscription = cx.intercept_keystrokes(|event, window, cx| {
+    if !cx.has_global::<DialogEscapeInterceptorInstalled>() {
+        cx.intercept_keystrokes(|event, window, cx| {
             if event.keystroke.key == "escape" {
                 close_top_dialog_from_window(window, cx);
             }
-        });
-        cx.global_mut::<ActiveDialogRuntime>().escape_interceptor = Some(subscription);
+        })
+        .detach();
+        cx.set_global(DialogEscapeInterceptorInstalled);
     }
 }
 
@@ -76,8 +74,6 @@ fn register_dialog_runtime(
 ) {
     ensure_dialog_runtime(cx);
     let runtime = cx.global_mut::<ActiveDialogRuntime>();
-    runtime.stack.retain(|existing| existing != &id);
-    runtime.stack.push(id.clone());
     runtime.close_on_escape.insert(id.clone(), close_on_escape);
     runtime.on_close.insert(id, on_close);
 }
@@ -87,7 +83,6 @@ fn unregister_dialog_runtime(id: &SharedString, cx: &mut App) {
         return;
     }
     let runtime = cx.global_mut::<ActiveDialogRuntime>();
-    runtime.stack.retain(|existing| existing != id);
     runtime.close_on_escape.remove(id);
     runtime.on_close.remove(id);
 }
@@ -97,7 +92,6 @@ fn clear_dialog_runtime(cx: &mut App) {
         return;
     }
     let runtime = cx.global_mut::<ActiveDialogRuntime>();
-    runtime.stack.clear();
     runtime.close_on_escape.clear();
     runtime.on_close.clear();
 }
@@ -144,6 +138,7 @@ fn close_dialog_by_id(id: SharedString, window: &mut Window, cx: &mut App) {
     } else {
         unregister_dialog_runtime(&id, cx);
         liora_core::clear_modal(&id, cx);
+        cx.refresh_windows();
     }
 }
 
@@ -397,11 +392,14 @@ mod motion_tests {
         assert!(source.contains("window.defer(cx, move |window, _| window.focus(&focus_handle))"));
         assert!(source.contains("s.on_action(cx.listener({"));
         assert!(source.contains("struct ActiveDialogRuntime"));
+        assert!(source.contains("struct DialogEscapeInterceptorInstalled"));
         assert!(source.contains("cx.intercept_keystrokes"));
+        assert!(source.contains(".detach();"));
         assert!(full_source.contains("cx.on_action(|_: &DialogClose, cx|"));
         assert!(source.contains("close_top_dialog_from_window"));
         assert!(source.contains("close_top_dialog_if_escape_enabled"));
         assert!(full_source.contains("unregister_dialog_runtime(&id_for_close, cx)"));
+        assert!(full_source.contains("cx.refresh_windows();"));
     }
 }
 
@@ -413,7 +411,6 @@ mod runtime_tests {
         let mut runtime = ActiveDialogRuntime::default();
         for (id, close_on_escape) in entries {
             let id: SharedString = id.to_string().into();
-            runtime.stack.push(id.clone());
             runtime.close_on_escape.insert(id, *close_on_escape);
         }
         runtime
@@ -458,8 +455,7 @@ mod runtime_tests {
 
     #[test]
     fn dialog_escape_decision_uses_active_modal_as_source_of_truth() {
-        let mut runtime = runtime_with(&[("dialog-a", true), ("stale-dialog", false)]);
-        runtime.stack.push("even-more-stale".to_string().into());
+        let runtime = runtime_with(&[("dialog-a", true), ("stale-dialog", false)]);
 
         assert_eq!(
             dialog_escape_decision_for(Some(&runtime), Some(&"dialog-a".into())),
@@ -469,6 +465,30 @@ mod runtime_tests {
             dialog_escape_decision_for(Some(&runtime), Some(&"tour-a".into())),
             DialogEscapeDecision::Ignore
         );
+    }
+
+    #[test]
+    fn dialog_escape_interceptor_is_process_once_not_runtime_state() {
+        let source = include_str!("dialog.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+        let runtime_struct = source
+            .split("struct ActiveDialogRuntime")
+            .nth(1)
+            .and_then(|part| {
+                part.split("impl gpui::Global for ActiveDialogRuntime")
+                    .next()
+            })
+            .expect("ActiveDialogRuntime should be defined before its Global impl");
+
+        assert!(source.contains("struct DialogEscapeInterceptorInstalled"));
+        assert!(source.contains("!cx.has_global::<DialogEscapeInterceptorInstalled>()"));
+        assert!(source.contains("cx.set_global(DialogEscapeInterceptorInstalled)"));
+        assert!(source.contains(".detach();"));
+        assert!(!runtime_struct.contains("Subscription"));
+        assert!(!runtime_struct.contains("escape_interceptor"));
+        assert!(!runtime_struct.contains("stack"));
     }
 }
 
@@ -548,6 +568,7 @@ impl Dialog {
             unregister_dialog_runtime(&id_for_close, cx);
             liora_core::clear_modal(&id_for_close, cx);
             user_on_close(window, cx);
+            cx.refresh_windows();
         });
         let id_for_view = id.clone();
         let close_callback_for_view = close_callback.clone();
@@ -568,12 +589,14 @@ impl Dialog {
 
         register_dialog_runtime(id.clone(), close_on_escape, close_callback, cx);
         liora_core::set_active_modal(id, view.into(), cx);
+        cx.refresh_windows();
     }
 
     /// Performs the close operation used by this component.
     pub fn close(cx: &mut App) {
         clear_dialog_runtime(cx);
         liora_core::clear_active_modal(cx);
+        cx.refresh_windows();
     }
 
     /// Performs the close id operation used by this component.
@@ -581,5 +604,6 @@ impl Dialog {
         let id = id.into();
         unregister_dialog_runtime(&id, cx);
         liora_core::clear_modal(&id, cx);
+        cx.refresh_windows();
     }
 }
