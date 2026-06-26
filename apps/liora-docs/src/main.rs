@@ -469,7 +469,8 @@ fn show_docs_close_confirm(cx: &mut App) {
         .id("docs-close-confirm")
         .title("关闭 Liora Docs？")
         .close_on_click_outside(false)
-        .close_on_escape(false)
+        .close_on_escape(true)
+        .on_close(|_, cx| reset_docs_close_confirm(cx))
         .content(move |_window, cx| {
             let remember_for_checkbox = remember.clone();
             let remember_for_exit = remember.clone();
@@ -500,9 +501,7 @@ fn show_docs_close_confirm(cx: &mut App) {
                                 cx.global_mut::<TrayControlCenter>()
                                     .set_remembered_close_action(TrayCloseAction::HideToTray);
                             }
-                            if cx.has_global::<DocsTrayState>() {
-                                cx.global_mut::<DocsTrayState>().close_dialog_open = false;
-                            }
+                            reset_docs_close_confirm(cx);
                             prepare_docs_hide_to_tray(cx);
                             Dialog::close(cx);
                             window.remove_window();
@@ -514,15 +513,19 @@ fn show_docs_close_confirm(cx: &mut App) {
                                 cx.global_mut::<TrayControlCenter>()
                                     .set_remembered_close_action(TrayCloseAction::ExitProcess);
                             }
-                            if cx.has_global::<DocsTrayState>() {
-                                cx.global_mut::<DocsTrayState>().close_dialog_open = false;
-                            }
+                            reset_docs_close_confirm(cx);
                             Dialog::close(cx);
                             cx.quit();
                         })),
                 )
         })
         .show(cx);
+}
+
+fn reset_docs_close_confirm(cx: &mut App) {
+    if cx.has_global::<DocsTrayState>() {
+        cx.global_mut::<DocsTrayState>().close_dialog_open = false;
+    }
 }
 
 fn docs_tray_icon(name: &str) -> Option<liora_tray::TrayIconImage> {
@@ -569,5 +572,24 @@ mod shell_tests {
         assert!(source.contains("../assets/app-icons/liora-docs-128.png"));
         assert!(source.contains("../assets/app-icons/liora-docs.png"));
         assert!(source.contains("../assets/app-icons/liora-docs.svg"));
+    }
+
+    #[test]
+    fn close_confirm_dismissal_resets_flag_and_escape_is_enabled() {
+        let source = include_str!("main.rs");
+
+        let confirm = source
+            .split("fn show_docs_close_confirm")
+            .nth(1)
+            .expect("Docs close confirmation should exist")
+            .split("fn docs_tray_icon")
+            .next()
+            .expect("Docs close confirmation should appear before tray icon helper");
+
+        assert!(confirm.contains(".close_on_escape(true)"));
+        assert!(!confirm.contains(".close_on_escape(false)"));
+        assert!(confirm.contains(".on_close(|_, cx| reset_docs_close_confirm(cx))"));
+        assert_eq!(confirm.matches("reset_docs_close_confirm(cx);").count(), 2);
+        assert!(source.contains("fn reset_docs_close_confirm(cx: &mut App)"));
     }
 }

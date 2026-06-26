@@ -45,6 +45,7 @@ pub struct Dialog {
     content: Arc<dyn Fn(&mut Window, &mut Context<DialogView>) -> AnyElement + 'static>,
     close_on_click_outside: bool,
     close_on_escape: bool,
+    on_close: Arc<dyn Fn(&mut Window, &mut App) + 'static>,
 }
 
 /// Fluent native GPUI component for rendering Liora dialog view.
@@ -207,6 +208,19 @@ mod motion_tests {
         assert!(source.contains("pop_in("));
         assert!(source.contains("panel-motion"));
     }
+
+    #[test]
+    fn dialog_exposes_on_close_for_host_state_cleanup() {
+        let source = include_str!("dialog.rs");
+        let impl_source = source
+            .split("impl Dialog {")
+            .nth(1)
+            .expect("Dialog builder implementation should exist");
+
+        assert!(source.contains("on_close: Arc<dyn Fn(&mut Window, &mut App)"));
+        assert!(impl_source.contains("pub fn on_close("));
+        assert!(impl_source.contains("user_on_close(window, cx);"));
+    }
 }
 
 impl Dialog {
@@ -223,6 +237,7 @@ impl Dialog {
             content: Arc::new(|_, _| div().child("Dialog Content").into_any_element()),
             close_on_click_outside: true,
             close_on_escape: true,
+            on_close: Arc::new(|_, _| {}),
         }
     }
 
@@ -250,6 +265,12 @@ impl Dialog {
         self
     }
 
+    /// Registers a callback invoked when the dialog is dismissed by its built-in close controls.
+    pub fn on_close(mut self, f: impl Fn(&mut Window, &mut App) + 'static) -> Self {
+        self.on_close = Arc::new(f);
+        self
+    }
+
     /// Sets the rendered content element or text for this component.
     pub fn content<F, E>(mut self, f: F) -> Self
     where
@@ -267,6 +288,7 @@ impl Dialog {
         let content = self.content;
         let close_on_click_outside = self.close_on_click_outside;
         let close_on_escape = self.close_on_escape;
+        let user_on_close = self.on_close;
 
         let id_for_close = id.clone();
         let view = cx.new(|_cx| {
@@ -276,8 +298,9 @@ impl Dialog {
                 content,
                 close_on_click_outside,
                 close_on_escape,
-                move |_window, _cx| {
-                    liora_core::clear_modal(&id_for_close, _cx);
+                move |window, cx| {
+                    liora_core::clear_modal(&id_for_close, cx);
+                    user_on_close(window, cx);
                 },
             )
         });

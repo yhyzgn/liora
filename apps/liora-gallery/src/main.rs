@@ -561,7 +561,8 @@ fn show_gallery_close_confirm(cx: &mut App) {
         .id("gallery-close-confirm")
         .title("关闭 Liora Gallery？")
         .close_on_click_outside(false)
-        .close_on_escape(false)
+        .close_on_escape(true)
+        .on_close(|_, cx| reset_gallery_close_confirm(cx))
         .content(move |_window, cx| {
             let remember_for_checkbox = remember.clone();
             let remember_for_exit = remember.clone();
@@ -593,9 +594,7 @@ fn show_gallery_close_confirm(cx: &mut App) {
                                 cx.global_mut::<TrayControlCenter>()
                                     .set_remembered_close_action(TrayCloseAction::HideToTray);
                             }
-                            if cx.has_global::<GalleryTrayState>() {
-                                cx.global_mut::<GalleryTrayState>().close_dialog_open = false;
-                            }
+                            reset_gallery_close_confirm(cx);
                             prepare_gallery_hide_to_tray(cx);
                             Dialog::close(cx);
                             window.remove_window();
@@ -607,15 +606,19 @@ fn show_gallery_close_confirm(cx: &mut App) {
                                 cx.global_mut::<TrayControlCenter>()
                                     .set_remembered_close_action(TrayCloseAction::ExitProcess);
                             }
-                            if cx.has_global::<GalleryTrayState>() {
-                                cx.global_mut::<GalleryTrayState>().close_dialog_open = false;
-                            }
+                            reset_gallery_close_confirm(cx);
                             Dialog::close(cx);
                             cx.quit();
                         })),
                 )
         })
         .show(cx);
+}
+
+fn reset_gallery_close_confirm(cx: &mut App) {
+    if cx.has_global::<GalleryTrayState>() {
+        cx.global_mut::<GalleryTrayState>().close_dialog_open = false;
+    }
 }
 
 fn gallery_tray_icon(name: &str) -> Option<liora_tray::TrayIconImage> {
@@ -1476,6 +1479,31 @@ mod shell_regression_tests {
         assert!(source.contains("fn show_gallery_close_confirm"));
         assert!(source.contains(".shrink()"));
         assert!(source.contains("Paragraph::with_text"));
+    }
+
+    #[test]
+    fn close_confirm_dismissal_resets_flag_and_escape_is_enabled() {
+        let source = include_str!("main.rs")
+            .split("mod shell_regression_tests")
+            .next()
+            .unwrap();
+
+        let confirm = source
+            .split("fn show_gallery_close_confirm")
+            .nth(1)
+            .expect("Gallery close confirmation should exist")
+            .split("fn gallery_tray_icon")
+            .next()
+            .expect("Gallery close confirmation should appear before tray icon helper");
+
+        assert!(confirm.contains(".close_on_escape(true)"));
+        assert!(!confirm.contains(".close_on_escape(false)"));
+        assert!(confirm.contains(".on_close(|_, cx| reset_gallery_close_confirm(cx))"));
+        assert_eq!(
+            confirm.matches("reset_gallery_close_confirm(cx);").count(),
+            2
+        );
+        assert!(source.contains("fn reset_gallery_close_confirm(cx: &mut App)"));
     }
 
     #[test]
