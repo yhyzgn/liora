@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.6 - 2026-06-26
+
+- Embedded a Windows Common Controls v6 manifest into both Gallery and Docs executables so GPUI's `TaskDialogIndirect` dependency resolves on Windows 11 raw `.exe` and debug builds.
+- Added packaging validation coverage for the shared Windows manifest and app `build.rs` embedding paths.
+- Fixed the packager config unit test to normalize path separators, matching Windows runner output.
+
 ## 0.1.5 - 2026-06-19
 
 - Removed Gallery/Docs-specific bundled tray icon assets from the reusable `liora-tray` SDK crate.

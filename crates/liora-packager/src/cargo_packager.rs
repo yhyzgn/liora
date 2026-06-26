@@ -359,8 +359,9 @@ mod tests {
         assert!(text.contains("[nsis]"));
         assert!(text.contains("installMode = \"currentUser\""));
         assert!(!text.contains("fragmentPaths"));
-        assert!(text.contains("hicolor/16x16/apps/liora-gallery.png"));
-        assert!(text.contains("hicolor/512x512/apps/liora-gallery.png"));
+        let normalized_text = text.replace('\\', "/");
+        assert!(normalized_text.contains("hicolor/16x16/apps/liora-gallery.png"));
+        assert!(normalized_text.contains("hicolor/512x512/apps/liora-gallery.png"));
     }
 
     #[test]
