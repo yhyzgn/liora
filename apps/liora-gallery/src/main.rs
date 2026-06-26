@@ -34,7 +34,8 @@ use std::{
 
 pub struct Gallery {
     entries: Vec<demos::DemoEntry>,
-    demos: Vec<AnyView>,
+    active_demo_index: Option<usize>,
+    active_demo: Option<AnyView>,
     nav_index: Vec<GalleryNavEntry>,
     selected: usize,
     nav_filter: gpui::Entity<Input>,
@@ -127,12 +128,12 @@ fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
 
         let entries = demos::registry();
         let nav_index = gallery_nav_index(&entries);
-        let demos = entries.iter().map(|entry| (entry.render)(cx)).collect();
         let view = cx.new(|cx| {
             let theme_mode = cx.global::<Config>().theme_mode;
-            Gallery {
+            let gallery = Gallery {
                 entries,
-                demos,
+                active_demo_index: None,
+                active_demo: None,
                 nav_index,
                 selected: 0,
                 nav_filter: cx.new(|cx| Input::new("", cx).placeholder("搜索组件 / Search demos")),
@@ -146,10 +147,10 @@ fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
                 refresh_revision: 0,
                 updater_status: UpdatePanelStatus::Idle,
                 install_plan: None,
-            }
+            };
+            gallery.wire_shell_controls(cx);
+            gallery
         });
-        let auto_update_view = view.clone();
-        cx.defer(move |cx| download_gallery_update(auto_update_view.clone(), cx));
         window.on_window_should_close(cx, |window, cx| {
             handle_gallery_window_should_close(window, cx)
         });
@@ -758,11 +759,10 @@ impl Render for Gallery {
         let selected = self.selected.min(self.entries.len());
         self.selected = selected;
 
-        self.wire_shell_controls(cx);
         let nav_menu = self.gallery_nav_menu(selected, cx);
 
-        let selected_entry = self.entries.get(selected);
-        let selected_demo = self.demos.get(selected).cloned();
+        let selected_entry = self.entries.get(selected).copied();
+        let selected_demo = self.selected_demo(selected, cx);
         let selected_label = selected_entry
             .map(|entry| entry.name.to_string())
             .unwrap_or_else(|| "About".into());
@@ -946,6 +946,23 @@ impl Gallery {
             cx.new(|cx| GalleryNavMenu::new(self.nav_index.clone(), selected, &query, gallery, cx));
         self.nav_menu = Some(nav_menu.clone());
         nav_menu
+    }
+
+    fn selected_demo(&mut self, selected: usize, cx: &mut Context<Self>) -> Option<AnyView> {
+        let Some(entry) = self.entries.get(selected).copied() else {
+            self.clear_active_demo();
+            return None;
+        };
+        if self.active_demo_index != Some(selected) {
+            self.active_demo = Some((entry.render)(cx));
+            self.active_demo_index = Some(selected);
+        }
+        self.active_demo.clone()
+    }
+
+    fn clear_active_demo(&mut self) {
+        self.active_demo_index = None;
+        self.active_demo = None;
     }
 
     fn set_nav_query_deferred(&mut self, query: String, cx: &mut Context<Self>) {
@@ -1315,6 +1332,7 @@ impl Render for GalleryNavMenu {
         let visible = self.visible.clone();
         let selected = self.selected;
         let gallery = self.gallery.clone();
+        let nav_menu = cx.entity().downgrade();
 
         div()
             .id("gallery-nav-menu")
@@ -1350,6 +1368,7 @@ impl Render for GalleryNavMenu {
                                     theme.neutral.text_1
                                 };
                                 let gallery = gallery.clone();
+                                let nav_menu = nav_menu.clone();
 
                                 div()
                                     .id(("gallery-nav-item", entry_index))
@@ -1371,9 +1390,14 @@ impl Render for GalleryNavMenu {
                                     .on_mouse_down(
                                         gpui::MouseButton::Left,
                                         move |_, _window, cx| {
+                                            let _ = nav_menu.update(cx, |menu, cx| {
+                                                menu.set_selected(entry_index, cx);
+                                            });
                                             let _ = gallery.update(cx, |gallery, cx| {
-                                                gallery.selected = entry_index;
-                                                cx.notify();
+                                                if gallery.selected != entry_index {
+                                                    gallery.selected = entry_index;
+                                                    cx.notify();
+                                                }
                                             });
                                         },
                                     )
@@ -1554,6 +1578,9 @@ mod shell_regression_tests {
         assert!(source.contains(r#".id("gallery-nav-menu")"#));
         assert!(source.contains("uniform_list("));
         assert!(source.contains(".track_scroll(self.scroll_handle.clone())"));
+        assert!(source.contains("let nav_menu = cx.entity().downgrade();"));
+        assert!(source.contains("menu.set_selected(entry_index, cx);"));
+        assert!(source.contains("if gallery.selected != entry_index"));
         assert!(!source.contains("ListState::new"));
         assert!(!source.contains("list(self.list_state.clone()"));
         assert!(!source.contains("list_state.reset"));
@@ -1565,6 +1592,60 @@ mod shell_regression_tests {
                     let _ = gallery.update(cx, |_gallery, cx| {
                         cx.notify();"
         ));
+    }
+
+    #[test]
+    fn gallery_nav_does_not_eagerly_build_every_demo_or_rebind_controls_on_render() {
+        let source = include_str!("main.rs")
+            .split("mod shell_regression_tests")
+            .next()
+            .unwrap();
+        let open_window = source
+            .split("fn open_gallery_window")
+            .nth(1)
+            .expect("Gallery window bootstrap should exist")
+            .split("fn gallery_window_options")
+            .next()
+            .expect("bootstrap should appear before window options");
+        let render = source
+            .split("impl Render for Gallery")
+            .nth(1)
+            .expect("Gallery render impl should exist")
+            .split("impl Gallery")
+            .next()
+            .expect("Gallery render impl should appear before methods");
+
+        assert!(source.contains("active_demo_index: Option<usize>"));
+        assert!(source.contains("active_demo: Option<AnyView>"));
+        assert!(source.contains("fn selected_demo(&mut self"));
+        assert!(source.contains("self.active_demo = Some((entry.render)(cx));"));
+        assert!(source.contains("fn clear_active_demo(&mut self)"));
+        assert!(!open_window.contains("let demo_cache = vec![None; entries.len()];"));
+        assert!(!open_window.contains("entries.iter().map(|entry| (entry.render)(cx)).collect()"));
+        assert!(!source.contains("demo_cache: Vec<Option<AnyView>>"));
+        assert!(!source.contains("demos: Vec<AnyView>"));
+        assert!(!source.contains("self.demos.get(selected)"));
+        assert!(!render.contains("self.wire_shell_controls(cx);"));
+    }
+
+    #[test]
+    fn gallery_startup_does_not_auto_download_updates_on_ui_thread() {
+        let source = include_str!("main.rs")
+            .split("mod shell_regression_tests")
+            .next()
+            .unwrap();
+        let open_window = source
+            .split("fn open_gallery_window")
+            .nth(1)
+            .expect("Gallery window bootstrap should exist")
+            .split("fn gallery_window_options")
+            .next()
+            .expect("bootstrap should appear before window options");
+
+        assert!(!open_window.contains("download_gallery_update("));
+        assert!(!open_window.contains("auto_update_view"));
+        assert!(source.contains("Button::new(\"检查更新 / Check\")"));
+        assert!(source.contains("Button::new(\"下载更新 / Download\")"));
     }
 }
 
