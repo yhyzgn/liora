@@ -11,6 +11,17 @@ use gpui::{
 use liora_core::Config;
 use std::{borrow::Cow, fs};
 
+/// Virtual asset prefix used for SVGs embedded directly in the binary.
+///
+/// `liora-icons-lucide` uses this prefix so raw release executables can render
+/// bundled icons without shipping a separate `assets/svgs` directory.
+pub const INLINE_SVG_ASSET_PREFIX: &str = "liora-icon-inline:";
+
+/// Builds a virtual SVG asset path from embedded SVG source text.
+pub fn inline_svg_asset_path(svg: &'static str) -> Cow<'static, str> {
+    Cow::Owned(format!("{INLINE_SVG_ASSET_PREFIX}{svg}"))
+}
+
 /// Converts icon identifiers into SVG asset paths that `Icon` can render.
 pub trait IntoIconPath {
     /// Returns the SVG asset path used by the icon renderer.
@@ -28,16 +39,21 @@ impl IntoIconPath for String {
     }
 }
 
-/// File-backed asset source for Liora SVG icons.
+/// Asset source for Liora SVG icons.
 ///
 /// GPUI's `svg().path(...)` resolves through the application asset source.
-/// `liora-icons-lucide` exposes bundled SVGs as absolute file paths, so apps
-/// that render those icons should pass this to `Application::with_assets(...)`.
+/// `IconAssetSource` can load both embedded Lucide SVG payloads and explicit
+/// filesystem SVG paths, so release raw executables do not need a source-tree
+/// `assets/svgs` directory next to the binary.
 #[derive(Debug, Default, Clone, Copy)]
 pub struct IconAssetSource;
 
 impl AssetSource for IconAssetSource {
     fn load(&self, path: &str) -> gpui::Result<Option<Cow<'static, [u8]>>> {
+        if let Some(svg) = path.strip_prefix(INLINE_SVG_ASSET_PREFIX) {
+            return Ok(Some(Cow::Owned(svg.as_bytes().to_vec())));
+        }
+
         let path = path.strip_prefix("file://").unwrap_or(path);
         if path.is_empty() {
             return Ok(None);
@@ -187,5 +203,22 @@ mod tests {
                 .unwrap()
                 .is_none()
         );
+    }
+
+    #[test]
+    fn icon_asset_source_loads_embedded_svg_payloads() {
+        use gpui::AssetSource;
+
+        let path = format!(
+            "{}{}",
+            INLINE_SVG_ASSET_PREFIX, r#"<svg viewBox="0 0 24 24"><path d="M1 1h22v22H1z"/></svg>"#
+        );
+        let bytes = IconAssetSource
+            .load(&path)
+            .expect("embedded icon asset loading should not error")
+            .expect("embedded SVG payload should load");
+        let svg = std::str::from_utf8(&bytes).unwrap();
+        assert!(svg.contains("<svg"));
+        assert!(svg.contains("viewBox"));
     }
 }

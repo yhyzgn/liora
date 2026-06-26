@@ -4,7 +4,7 @@
 //! listing every lower-level crate separately:
 //!
 //! ```toml
-//! liora = "0.1.7"
+//! liora = "0.1.8"
 //! ```
 //!
 //! The facade keeps each domain available under a stable module name while also

@@ -72,6 +72,23 @@ fn try_main() -> io::Result<()> {
     writeln!(f, "        }}")?;
     writeln!(f, "    }}")?;
     writeln!(f, "}}")?;
+    writeln!(f, "impl IconName {{")?;
+    writeln!(
+        f,
+        "    /// Returns the embedded SVG source for this Lucide icon."
+    )?;
+    writeln!(f, "    pub fn svg_source(&self) -> &'static str {{")?;
+    writeln!(f, "        match self {{")?;
+    for (v, file) in &entries {
+        writeln!(
+            f,
+            "    IconName::{} => include_str!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"/assets/svgs/{}\")),",
+            v, file
+        )?;
+    }
+    writeln!(f, "        }}")?;
+    writeln!(f, "    }}")?;
+    writeln!(f, "}}")?;
     println!("cargo:rerun-if-changed=assets/svgs/");
     Ok(())
 }

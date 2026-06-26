@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.8 - 2026-06-26
+
+- Embedded Lucide SVG icon payloads into `liora-icons-lucide` virtual asset paths so raw Gallery/Docs executables render icons on Windows and Linux without access to the build machine source tree.
+- Kept `IconAssetSource` compatible with explicit filesystem SVG paths while adding embedded SVG payload loading for release binaries.
+- Added regression coverage ensuring Lucide `IconName` paths do not contain `CARGO_MANIFEST_DIR` and can be loaded through `IconAssetSource`.
+
 ## 0.1.7 - 2026-06-26
 
 - Hardened the Windows CI packager test again for TOML-escaped Windows backslashes before re-running the release pipeline.
