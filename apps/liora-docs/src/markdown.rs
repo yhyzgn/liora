@@ -7637,9 +7637,10 @@ pub fn render_docs_shell(
 ) -> Entity<DocsShell> {
     let view = cx.new(|cx| {
         let theme_mode = cx.global::<Config>().theme_mode;
-        DocsShell {
+        let shell = DocsShell {
             selected: 0,
             nav_menu: None,
+            nav_scroll: ScrollHandle::new(),
             page_views: vec![None; DOC_PAGES.len()],
             update_status: UpdatePanelStatus::Idle,
             install_plan: None,
@@ -7649,7 +7650,9 @@ pub fn render_docs_shell(
             frame_mode_switch: cx.new(|cx| Switch::new(frame_mode.is_custom(), cx)),
             on_frame_mode_change,
             on_close,
-        }
+        };
+        shell.wire_shell_controls(cx);
+        shell
     });
     let auto_update_view = view.clone();
     cx.defer(move |cx| download_docs_update(auto_update_view.clone(), cx));
@@ -7695,6 +7698,7 @@ impl UpdatePanelStatus {
 pub struct DocsShell {
     selected: usize,
     nav_menu: Option<Entity<Menu>>,
+    nav_scroll: ScrollHandle,
     page_views: Vec<Option<Entity<DocsPageView>>>,
     update_status: UpdatePanelStatus,
     install_plan: Option<InstallPlan>,
@@ -7770,8 +7774,6 @@ impl Render for DocsShell {
             page_view.into_any_element()
         };
         let theme = cx.global::<Config>().theme.clone();
-        self.wire_shell_controls(cx);
-
         let shell = Container::new()
             .header(
                 div()
@@ -7811,9 +7813,17 @@ impl Render for DocsShell {
                     )),
             )
             .header_height_lg()
-            .aside(nav_menu)
+            .aside(
+                div()
+                    .id("liora-docs-nav-scroll")
+                    .h_full()
+                    .min_h_0()
+                    .w_full()
+                    .overflow_y_scroll()
+                    .track_scroll(&self.nav_scroll)
+                    .child(div().flex_none().w_full().child(nav_menu)),
+            )
             .aside_width_lg()
-            .aside_scroll()
             .main_padding_xl()
             .child(
                 div()
@@ -8287,7 +8297,11 @@ impl DocsShell {
     }
 
     fn nav_menu(&mut self, selected: usize, cx: &mut Context<Self>) -> Entity<Menu> {
+        let active_id = selected.to_string();
         if let Some(nav_menu) = &self.nav_menu {
+            cx.update_entity(nav_menu, |menu, cx| {
+                menu.set_active_index(active_id, cx);
+            });
             return nav_menu.clone();
         }
 
@@ -8308,8 +8322,10 @@ fn build_docs_menu(selected: usize, docs: WeakEntity<DocsShell>) -> Menu {
                 return;
             };
             let _ = docs.update(cx, |docs, cx| {
-                docs.selected = index;
-                cx.notify();
+                if docs.selected != index {
+                    docs.selected = index;
+                    cx.notify();
+                }
             });
         });
 
@@ -9292,6 +9308,15 @@ mod tests {
         assert!(ok_branch.contains("window.activate_window()"));
         assert!(source.contains("frame_mode_switch"));
         assert!(source.contains("Menu::new()"));
+        assert!(source.contains("nav_menu: Option<Entity<Menu>>"));
+        assert!(source.contains("nav_scroll: ScrollHandle"));
+        assert!(source.contains("ScrollHandle::new()"));
+        assert!(source.contains(r#".id("liora-docs-nav-scroll")"#));
+        assert!(source.contains(".overflow_y_scroll()"));
+        assert!(source.contains(".track_scroll(&self.nav_scroll)"));
+        assert!(source.contains("menu.set_active_index(active_id, cx);"));
+        assert!(source.contains("if docs.selected != index"));
+        assert!(source.contains("shell.wire_shell_controls(cx);"));
         assert!(source.contains("check_docs_update"));
         assert!(source.contains("About / Updates"));
         assert!(source.contains("docs_status_bar_icon"));
@@ -9301,12 +9326,21 @@ mod tests {
         assert!(source.contains("virtual_list: Entity<VirtualizedList>"));
         assert!(source.contains("measure_all_items_for_scrollbar"));
         assert!(source.contains(".flex_1().min_h_0().child(page_view)"));
+        let docs_shell_bootstrap = &source[source
+            .find("pub fn render_docs_shell")
+            .expect("DocsShell bootstrap should exist")
+            ..source
+                .find("pub struct DocsShell")
+                .expect("DocsShell struct should follow bootstrap")];
+        assert!(docs_shell_bootstrap.contains("shell.wire_shell_controls(cx);"));
         let docs_shell_render = &source[source
             .find("impl Render for DocsShell")
             .expect("DocsShell render should exist")
             ..source
                 .find("struct DocsPageView")
                 .expect("DocsPageView should follow DocsShell")];
+        assert!(!docs_shell_render.contains("self.wire_shell_controls(cx);"));
+        assert!(!docs_shell_render.contains(".aside_scroll()"));
         assert!(!docs_shell_render.contains(".main_scroll()"));
         assert!(source.contains("DocsPortalLayer"));
     }
