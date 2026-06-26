@@ -41,7 +41,7 @@
 | **P19 Dashboard State/Data Flow** | `.prompt/P19-dashboard-state-and-data-flow.md` | ✅ 已完成：Dashboard 数据模型、过滤、刷新、状态分支、Dashboard State 文档和回归测试 |
 | **P20 Theme/Interaction Polish** | `.prompt/P20-theme-and-interaction-polish.md` | ✅ 已完成：System/Light/Dark 主题入口、dark subtle token、浮层/Loading mask token 化、Theme Gallery/Docs 页面和回归测试 |
 | **P21 Release Candidate Readiness** | `.prompt/P21-release-candidate-readiness.md` | ✅ 已完成：0.1.x RC checklist、显式 package metadata、README/CHANGELOG/prompt/memory 同步和 release-boundary 回归测试 |
-| **P22 gpui-component 采集阶段** | `.prompt/P22-gpui-component-harvest.md` | 🧭 已启动：从 `design/gpui-component-collection-list.md` 采集增量控件，Wave A 已落地 Spinner/Kbd/OtpInput，后续继续 DropdownButton/Accordion/Combobox |
+| **P22 gpui-component 采集阶段** | `.prompt/P22-gpui-component-harvest.md` | 🧭 已启动：从 `design/gpui-component-collection-list.md` 采集增量控件，Wave A 已落地 Spinner/Kbd/OtpInput/DropdownButton，后续继续 Accordion/Combobox |
 
 ---
 
@@ -139,7 +139,7 @@ liora/
 - P18 Dashboard Polish/API Ergonomics 阶段；P19 Dashboard State/Data Flow 阶段已完成并已回流：Dashboard app-shell 能力放在 Gallery/Docs；dashboard/sample 专用 helper、业务 sample/model 不进入核心组件库；Docs 保留 `Dashboard Patterns`/`Dashboard State` 作为 app-layer 模式说明。详见 `.prompt/P18-dashboard-polish-and-api-ergonomics.md`。
 - P20 Theme/Interaction Polish 阶段已完成：System/Light/Dark 成为正式主题入口，dark subtle token 改为透明 overlay，Dialog/Drawer/Tour/Loading/CodeEditor/WindowFrame 等关键路径完成 token 化，并新增 Gallery Theme demo 与 Docs Theme 页面。详见 `.prompt/P20-theme-and-interaction-polish.md`。
 - P21 Release Candidate Readiness 阶段已完成：新增 `docs/release-candidate-checklist.md` 作为 0.1.x RC checklist，显式补齐 package metadata，刷新 README/CHANGELOG/prompt/memory，并用回归测试锁住 Gallery/Docs canonical app、LicenseRef-Liora、纯 Rust + GPUI native 和 protected release 边界。详见 `.prompt/P21-release-candidate-readiness.md`。
-- P22 gpui-component Harvest 阶段已启动：基于 `design/gpui-component-collection-list.md`，先做低风险高收益组件。已实现 `Spinner`、`Kbd`、`OtpInput` 并接入 Gallery/Docs/snippets/tests；后续建议继续 `DropdownButton`、`Accordion`、`Combobox`。详见 `.prompt/P22-gpui-component-harvest.md`。
+- P22 gpui-component Harvest 阶段已启动：基于 `design/gpui-component-collection-list.md`，先做低风险高收益组件。已实现 `Spinner`、`Kbd`、`OtpInput`、`DropdownButton` 并接入 Gallery/Docs/snippets/tests；后续建议继续 `Accordion`、`Combobox`。详见 `.prompt/P22-gpui-component-harvest.md`。
 
 ### 4.1.2 应用与示例边界红线
 

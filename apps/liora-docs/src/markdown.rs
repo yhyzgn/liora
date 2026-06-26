@@ -7,16 +7,16 @@ use liora_components::{
     Affix, AffixPosition, Alert, AlertType, Anchor, AnchorLink, AnchorTarget, AppWindowFrame,
     Autocomplete, AutocompleteItem, Avatar, Backtop, Badge, BadgeType, Button, ButtonColors, Card,
     Checkbox, CheckboxGroup, CheckboxOptionStyle, CodeBlock as LioraCodeBlock, CodeDiagnostic,
-    CodeEditor, CodeLanguage, CodeTheme, Container, Dropdown, Flex, Form, FormItem, HorizontalList,
-    Image, Input, InputNumber, InputNumberControlsPosition, Link, Loading, Menu, MenuMode,
-    NotificationType, Paragraph, Popconfirm, Popover, Preview, Progress, ProgressStatus, QrCode,
-    QrEcLevel, QrFinderStyle, QrGradientDirection, QrModuleStyle, Radio, RadioGroup,
-    RadioOptionStyle, Rate, Result as LioraResult, ResultStatus, Segmented, SegmentedOption,
-    Select, Skeleton, SkeletonItem, SkeletonVariant, Slider, Space, Statistic, Switch,
-    Tag as LioraTag, Text, Textarea, Timer, TimerFormat, TimerUnit, Title, Transfer, TransferItem,
-    Tree, TreeNode, Upload, UploadFile, UploadStatus, VirtualizedList, VirtualizedTable,
-    VirtualizedTree, WindowFrameMode, frame_mode_switch_row, show_notification, toast_error,
-    toast_info, toast_success, toast_warning,
+    CodeEditor, CodeLanguage, CodeTheme, Container, Dropdown, DropdownButton, DropdownButtonItem,
+    Flex, Form, FormItem, HorizontalList, Image, Input, InputNumber, InputNumberControlsPosition,
+    Link, Loading, Menu, MenuMode, NotificationType, Paragraph, Popconfirm, Popover, Preview,
+    Progress, ProgressStatus, QrCode, QrEcLevel, QrFinderStyle, QrGradientDirection, QrModuleStyle,
+    Radio, RadioGroup, RadioOptionStyle, Rate, Result as LioraResult, ResultStatus, Segmented,
+    SegmentedOption, Select, Skeleton, SkeletonItem, SkeletonVariant, Slider, Space, Statistic,
+    Switch, Tag as LioraTag, Text, Textarea, Timer, TimerFormat, TimerUnit, Title, Transfer,
+    TransferItem, Tree, TreeNode, Upload, UploadFile, UploadStatus, VirtualizedList,
+    VirtualizedTable, VirtualizedTree, WindowFrameMode, frame_mode_switch_row, show_notification,
+    toast_error, toast_info, toast_success, toast_warning,
 };
 use liora_core::{
     Config, PassivePortal, Placement, Portal, ThemeMode, apply_theme_mode, clear_popover,
@@ -72,6 +72,7 @@ const DESCRIPTIONS_DOC: &str = include_str!("../content/pages/descriptions.md");
 const DIALOG_DOC: &str = include_str!("../content/pages/dialog.md");
 const DRAWER_DOC: &str = include_str!("../content/pages/drawer.md");
 const DROPDOWN_DOC: &str = include_str!("../content/pages/dropdown.md");
+const DROPDOWN_BUTTON_DOC: &str = include_str!("../content/pages/dropdown_button.md");
 const EMPTY_DOC: &str = include_str!("../content/pages/empty.md");
 const FORM_DOC: &str = include_str!("../content/pages/form.md");
 const HEAT_BAR_DOC: &str = include_str!("../content/pages/heat_bar.md");
@@ -283,6 +284,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Dropdown",
         markdown: DROPDOWN_DOC,
+    },
+    DocPage {
+        title: "DropdownButton",
+        markdown: DROPDOWN_BUTTON_DOC,
     },
     DocPage {
         title: "Empty",
@@ -1382,6 +1387,18 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "dropdown/placements.rs" => {
             Some(include_str!("../content/snippets/dropdown/placements.rs"))
         }
+        "dropdown_button/basic.rs" => {
+            Some(include_str!("../content/snippets/dropdown_button/basic.rs"))
+        }
+        "dropdown_button/split.rs" => {
+            Some(include_str!("../content/snippets/dropdown_button/split.rs"))
+        }
+        "dropdown_button/item_states.rs" => Some(include_str!(
+            "../content/snippets/dropdown_button/item_states.rs"
+        )),
+        "dropdown_button/sizes.rs" => {
+            Some(include_str!("../content/snippets/dropdown_button/sizes.rs"))
+        }
         "message_box/basic.rs" => Some(include_str!("../content/snippets/message_box/basic.rs")),
         "message_box/manual_close.rs" => Some(include_str!(
             "../content/snippets/message_box/manual_close.rs"
@@ -1604,6 +1621,9 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         }
         "gallery/dropdown_demo.rs" => Some(include_str!(
             "../../liora-gallery/src/demos/dropdown_demo.rs"
+        )),
+        "gallery/dropdown_button_demo.rs" => Some(include_str!(
+            "../../liora-gallery/src/demos/dropdown_button_demo.rs"
         )),
         "gallery/empty_demo.rs" => {
             Some(include_str!("../../liora-gallery/src/demos/empty_demo.rs"))
@@ -5013,6 +5033,10 @@ impl Render for LiveDemoContent {
             "DropdownBasic" => docs_dropdown_basic().into_any_element(),
             "DropdownPlacements" => docs_dropdown_placements().into_any_element(),
             "DropdownCloseStrategy" => docs_dropdown_close_strategy().into_any_element(),
+            "DropdownButtonBasic" => docs_dropdown_button_basic().into_any_element(),
+            "DropdownButtonSplit" => docs_dropdown_button_split().into_any_element(),
+            "DropdownButtonItemStates" => docs_dropdown_button_item_states().into_any_element(),
+            "DropdownButtonSizes" => docs_dropdown_button_sizes().into_any_element(),
             "MessageBoxBasic" => docs_message_box_basic().into_any_element(),
             "MessageBoxManualClose" => docs_message_box_manual_close().into_any_element(),
             "NotificationTypes" => docs_notification_types().into_any_element(),
@@ -6623,6 +6647,87 @@ fn docs_dropdown_close_strategy() -> Dropdown {
         .close_on_escape(false)
         .item("Save draft", |_, _| toast_info!("Save draft"))
         .item("Duplicate", |_, _| toast_info!("Duplicate"))
+}
+
+fn docs_dropdown_button_basic() -> impl IntoElement {
+    Space::new().wrap().gap_md().children([
+        DropdownButton::new("Actions")
+            .id("docs-dropdown-button-actions")
+            .primary()
+            .item("Create task", |_, _| toast_success!("Create task"))
+            .item("Duplicate", |_, _| toast_info!("Duplicate"))
+            .item("Archive", |_, _| toast_info!("Archive")),
+        DropdownButton::new("Export")
+            .id("docs-dropdown-button-export")
+            .icon_start(IconName::Download)
+            .item("Export CSV", |_, _| toast_info!("Export CSV"))
+            .item("Export JSON", |_, _| toast_info!("Export JSON")),
+    ])
+}
+
+fn docs_dropdown_button_split() -> impl IntoElement {
+    Space::new().wrap().gap_md().children([
+        DropdownButton::new("Deploy")
+            .id("docs-dropdown-button-split-deploy")
+            .primary()
+            .split(true)
+            .icon_start(IconName::Rocket)
+            .on_click(|_, _| toast_success!("Deploy clicked"))
+            .menu_item(
+                DropdownButtonItem::new("Preview deployment", |_, _| {
+                    toast_info!("Preview deployment")
+                })
+                .icon(IconName::Eye),
+            )
+            .menu_item(
+                DropdownButtonItem::new("Rollback", |_, _| toast_info!("Rollback"))
+                    .icon(IconName::Undo2),
+            )
+            .danger_item("Delete release", |_, _| toast_info!("Delete release")),
+        DropdownButton::new("Save")
+            .id("docs-dropdown-button-split-save")
+            .success()
+            .split(true)
+            .on_click(|_, _| toast_success!("Saved"))
+            .item("Save as draft", |_, _| toast_info!("Save as draft"))
+            .disabled_item("Locked by reviewer"),
+    ])
+}
+
+fn docs_dropdown_button_item_states() -> DropdownButton {
+    DropdownButton::new("Item states")
+        .id("docs-dropdown-button-item-states")
+        .menu_item(
+            DropdownButtonItem::new("Rename", |_, _| toast_info!("Rename")).icon(IconName::Pencil),
+        )
+        .menu_item(
+            DropdownButtonItem::new("Move", |_, _| toast_info!("Move")).icon(IconName::FolderInput),
+        )
+        .disabled_item("No permission")
+        .danger_item("Delete permanently", |_, _| {
+            toast_info!("Delete permanently")
+        })
+}
+
+fn docs_dropdown_button_sizes() -> impl IntoElement {
+    Space::new().wrap().gap_md().children([
+        DropdownButton::new("Small")
+            .id("docs-dropdown-button-small")
+            .small()
+            .item("Action", |_, _| toast_info!("Small action")),
+        DropdownButton::new("Large top")
+            .id("docs-dropdown-button-large-top")
+            .large()
+            .warning()
+            .secondary()
+            .placement(Placement::TopEnd)
+            .item("Action", |_, _| toast_info!("Large action")),
+        DropdownButton::new("Manual close")
+            .id("docs-dropdown-button-manual-close")
+            .close_on_click_outside(false)
+            .close_on_escape(false)
+            .item("Item click still closes", |_, _| toast_info!("Item click")),
+    ])
 }
 
 fn docs_message_box_basic() -> impl IntoElement {
@@ -9726,6 +9831,16 @@ mod tests {
                     "dropdown/basic.rs",
                     "dropdown/placements.rs",
                     "dropdown/close_strategy.rs",
+                ][..],
+            ),
+            (
+                include_str!("../content/pages/dropdown_button.md"),
+                "DropdownButtonBasic",
+                &[
+                    "dropdown_button/basic.rs",
+                    "dropdown_button/split.rs",
+                    "dropdown_button/item_states.rs",
+                    "dropdown_button/sizes.rs",
                 ][..],
             ),
             (

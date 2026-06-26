@@ -23,6 +23,7 @@ pub mod date_time_picker_demo;
 pub mod descriptions_demo;
 pub mod dialog_demo;
 pub mod drawer_demo;
+pub mod dropdown_button_demo;
 pub mod dropdown_demo;
 pub mod empty_demo;
 pub mod form_controls_demo;
@@ -115,6 +116,11 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "Spinner 旋转加载",
             description: "细粒度内联加载状态",
             render: |cx| spinner_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "DropdownButton 下拉按钮",
+            description: "主操作与更多命令组合按钮",
+            render: |cx| dropdown_button_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Theme 主题系统",
@@ -611,6 +617,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Dialog" => Some(dialog_demo::render(cx).into()),
         "Drawer" => Some(drawer_demo::render(cx).into()),
         "Dropdown" => Some(dropdown_demo::render(cx).into()),
+        "DropdownButton" => Some(dropdown_button_demo::render(cx).into()),
         "Empty" => Some(empty_demo::render(cx).into()),
         "Form" => Some(form_demo::render(cx).into()),
         "HeatBar" => Some(heat_bar_demo::render(cx).into()),

@@ -24,7 +24,7 @@ P12/P21 external-policy items remain protected-environment work: crates.io SDK p
 
 ## P22 gpui-component Harvest — 2026-06-25
 
-P22 has started from `design/gpui-component-collection-list.md`. First Wave A low-risk controls are in progress: Spinner, Kbd, and OtpInput are being added as Liora-native GPUI components with Gallery/Docs/snippet coverage. Remaining Wave A candidates: DropdownButton, Accordion, Combobox.
+P22 has started from `design/gpui-component-collection-list.md`. First Wave A low-risk controls now include Spinner, Kbd, OtpInput, and DropdownButton as Liora-native GPUI components with Gallery/Docs/snippet coverage. Remaining Wave A candidates: Accordion and Combobox.
 
 
 ## P19 Dashboard State/Data Flow — 2026-06-18
