@@ -22,8 +22,8 @@
 use crate::gpui_compat::element_id;
 use crate::motion::{fade_in, pop_in};
 use gpui::{
-    AnyElement, App, Context, IntoElement, KeyBinding, MouseButton, Render, SharedString, Window,
-    actions, div, prelude::*, px,
+    AnyElement, App, Context, FocusHandle, Focusable, IntoElement, KeyBinding, MouseButton, Render,
+    SharedString, Window, actions, div, prelude::*, px,
 };
 use liora_core::Config;
 use liora_icons::Icon;
@@ -56,6 +56,8 @@ pub struct DialogView {
     close_on_click_outside: bool,
     close_on_escape: bool,
     on_close: Arc<dyn Fn(&mut Window, &mut App) + 'static>,
+    focus_handle: FocusHandle,
+    focus_requested: bool,
 }
 
 impl DialogView {
@@ -66,6 +68,7 @@ impl DialogView {
         close_on_click_outside: bool,
         close_on_escape: bool,
         on_close: impl Fn(&mut Window, &mut App) + 'static,
+        focus_handle: FocusHandle,
     ) -> Self {
         Self {
             id,
@@ -74,12 +77,20 @@ impl DialogView {
             close_on_click_outside,
             close_on_escape,
             on_close: Arc::new(on_close),
+            focus_handle,
+            focus_requested: false,
         }
     }
 }
 
+impl Focusable for DialogView {
+    fn focus_handle(&self, _cx: &App) -> FocusHandle {
+        self.focus_handle.clone()
+    }
+}
+
 impl Render for DialogView {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
         let id = self.id.clone();
         let title = self.title.clone();
@@ -87,11 +98,18 @@ impl Render for DialogView {
         let on_close = self.on_close.clone();
         let close_on_click_outside = self.close_on_click_outside;
         let close_on_escape = self.close_on_escape;
+        let focus_handle = self.focus_handle(cx);
+        if !self.focus_requested {
+            self.focus_requested = true;
+            let focus_handle = focus_handle.clone();
+            window.defer(cx, move |window, _| window.focus(&focus_handle));
+        }
 
         fade_in(
             element_id(format!("{id}-overlay-motion")),
             div()
                 .id(id.clone())
+                .track_focus(&focus_handle)
                 .absolute()
                 .size_full()
                 .cursor_default()
@@ -173,7 +191,7 @@ impl Render for DialogView {
                                 .min_w(px(0.0))
                                 .text_color(theme.neutral.text_2)
                                 .overflow_hidden()
-                                .child(content_fn(_window, cx)),
+                                .child(content_fn(window, cx)),
                         ),
                 )),
         )
@@ -220,6 +238,20 @@ mod motion_tests {
         assert!(source.contains("on_close: Arc<dyn Fn(&mut Window, &mut App)"));
         assert!(impl_source.contains("pub fn on_close("));
         assert!(impl_source.contains("user_on_close(window, cx);"));
+    }
+
+    #[test]
+    fn dialog_focuses_itself_so_escape_actions_dispatch() {
+        let source = include_str!("dialog.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(source.contains("impl Focusable for DialogView"));
+        assert!(source.contains("focus_handle: FocusHandle"));
+        assert!(source.contains(".track_focus(&focus_handle)"));
+        assert!(source.contains("window.defer(cx, move |window, _| window.focus(&focus_handle))"));
+        assert!(source.contains("s.on_action(cx.listener({"));
     }
 }
 
@@ -291,7 +323,8 @@ impl Dialog {
         let user_on_close = self.on_close;
 
         let id_for_close = id.clone();
-        let view = cx.new(|_cx| {
+        let view = cx.new(|cx| {
+            let focus_handle = cx.focus_handle();
             DialogView::new(
                 id.clone(),
                 title,
@@ -302,6 +335,7 @@ impl Dialog {
                     liora_core::clear_modal(&id_for_close, cx);
                     user_on_close(window, cx);
                 },
+                focus_handle,
             )
         });
 
