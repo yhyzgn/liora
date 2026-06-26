@@ -1,3 +1,4 @@
+pub mod accordion_demo;
 pub mod affix_demo;
 pub mod alert_demo;
 pub mod anchor_demo;
@@ -463,6 +464,11 @@ pub fn registry() -> Vec<DemoEntry> {
             render: |cx| card_demo::render(cx).into(),
         },
         DemoEntry {
+            name: "Accordion 手风琴",
+            description: "独立手风琴信息折叠",
+            render: |cx| accordion_demo::render(cx).into(),
+        },
+        DemoEntry {
             name: "Collapse 折叠面板",
             description: "内容收纳容器",
             render: |cx| collapse_demo::render(cx).into(),
@@ -589,6 +595,7 @@ pub fn registry() -> Vec<DemoEntry> {
 /// Render the same native demo used by Liora Gallery for Liora Docs.
 pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
     match component {
+        "Accordion" => Some(accordion_demo::render(cx).into()),
         "Affix" => Some(affix_demo::render(cx).into()),
         "Alert" => Some(alert_demo::render(cx).into()),
         "AreaChart" => Some(area_chart_demo::render(cx).into()),
@@ -811,6 +818,7 @@ mod tests {
     fn navigation_demos_use_liora_layout_primitives() {
         for (file_name, source) in [
             ("breadcrumb_demo.rs", include_str!("breadcrumb_demo.rs")),
+            ("accordion_demo.rs", include_str!("accordion_demo.rs")),
             ("collapse_demo.rs", include_str!("collapse_demo.rs")),
             ("menu_demo.rs", include_str!("menu_demo.rs")),
             ("steps_demo.rs", include_str!("steps_demo.rs")),

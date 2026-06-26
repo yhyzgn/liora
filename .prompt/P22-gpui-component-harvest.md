@@ -24,7 +24,7 @@ Initial wave:
 - ✅ `Kbd` — keyboard shortcut keycap display for menus, command palettes, empty states, and docs.
 - ✅ `OtpInput` — interactive OTP/PIN input for 2FA/device pairing flows; click-to-focus, caret positioning, keyboard input, backspace, paste, mask/status/size demos.
 - ✅ `DropdownButton` — split-capable dropdown command button with Gallery/Docs/snippet coverage
-- ⬜ `Accordion`
+- ✅ `Accordion`
 - ⬜ `Combobox`
 
 ## Required pattern for each new component

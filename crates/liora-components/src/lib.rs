@@ -35,6 +35,7 @@
 //! Liora components render native GPUI element trees. This crate does not require
 //! Tauri, WebView, HTML/CSS, DOM, or a browser runtime.
 
+pub mod accordion;
 pub mod affix;
 pub mod alert;
 pub mod anchor;
@@ -146,6 +147,7 @@ pub mod virtualized_tree;
 pub mod watermark;
 pub mod window_frame;
 
+pub use accordion::*;
 pub use affix::*;
 pub use alert::*;
 pub use anchor::*;
@@ -309,6 +311,7 @@ mod application_init_api_tests {
     #[test]
     fn component_modules_have_english_module_documentation() {
         let modules = [
+            ("accordion.rs", include_str!("accordion.rs")),
             ("affix.rs", include_str!("affix.rs")),
             ("alert.rs", include_str!("alert.rs")),
             ("anchor.rs", include_str!("anchor.rs")),

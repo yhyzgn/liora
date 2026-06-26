@@ -45,6 +45,7 @@ const DASHBOARD_STATE_DOC: &str = include_str!("../content/pages/dashboard_state
 const THEME_SYSTEM_DOC: &str = include_str!("../content/pages/theme_system.md");
 const ABOUT_DOC: &str = include_str!("../content/pages/about.md");
 
+const ACCORDION_DOC: &str = include_str!("../content/pages/accordion.md");
 const AFFIX_DOC: &str = include_str!("../content/pages/affix.md");
 const ALERT_DOC: &str = include_str!("../content/pages/alert.md");
 const AREA_CHART_DOC: &str = include_str!("../content/pages/area_chart.md");
@@ -184,6 +185,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "About",
         markdown: ABOUT_DOC,
+    },
+    DocPage {
+        title: "Accordion",
+        markdown: ACCORDION_DOC,
     },
     DocPage {
         title: "Affix",
@@ -1024,6 +1029,9 @@ fn parse_block_attr(attrs: &str, key: &str) -> Option<SharedString> {
 
 fn load_code_snippet(path: &str) -> Option<&'static str> {
     match path {
+        "accordion/basic.rs" => Some(include_str!("../content/snippets/accordion/basic.rs")),
+        "accordion/multiple.rs" => Some(include_str!("../content/snippets/accordion/multiple.rs")),
+        "accordion/states.rs" => Some(include_str!("../content/snippets/accordion/states.rs")),
         "quick_start/run.sh" => Some(include_str!("../content/snippets/quick_start/run.sh")),
         "quick_start/deps_fedora.sh" => Some(include_str!(
             "../content/snippets/quick_start/deps_fedora.sh"
@@ -9756,6 +9764,15 @@ mod tests {
                     "cascader/disabled.rs",
                     "cascader/filterable.rs",
                     "cascader/lazy.rs",
+                ][..],
+            ),
+            (
+                include_str!("../content/pages/accordion.md"),
+                "Accordion",
+                &[
+                    "accordion/basic.rs",
+                    "accordion/multiple.rs",
+                    "accordion/states.rs",
                 ][..],
             ),
             (

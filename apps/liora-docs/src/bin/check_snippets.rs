@@ -9,6 +9,12 @@
 
 #[path = "../../content/snippets/about/doc_rule.rs"]
 mod about_doc_rule;
+#[path = "../../content/snippets/accordion/basic.rs"]
+mod accordion_basic;
+#[path = "../../content/snippets/accordion/multiple.rs"]
+mod accordion_multiple;
+#[path = "../../content/snippets/accordion/states.rs"]
+mod accordion_states;
 #[path = "../../content/snippets/affix/bottom.rs"]
 mod affix_bottom;
 #[path = "../../content/snippets/affix/container.rs"]

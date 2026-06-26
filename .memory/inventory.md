@@ -230,5 +230,5 @@
 | 2 | Kbd | `crates/liora-components/src/kbd.rs` | ✅ | ✅ | Implemented Wave A: keyboard shortcut keycap display with size/color/background builders |
 | 3 | OtpInput | `crates/liora-components/src/otp_input.rs` | ✅ | ✅ | Implemented Wave A: interactive OTP/PIN input backed by Liora Input editing, with dedicated Gallery/Docs pages and length/mask/status/size demos |
 | 4 | DropdownButton | `crates/liora-components/src/dropdown_button.rs` | ✅ | ✅ | Implemented Wave A: split-capable dropdown command button with item icons, disabled/danger states, placement, close policy, sizes, and semantic variants |
-| 5 | Accordion | — | — | — | Planned Wave A |
+| 5 | Accordion | `crates/liora-components/src/accordion.rs` | `apps/liora-gallery/src/demos/accordion_demo.rs` | `apps/liora-docs/content/pages/accordion.md` | Done Wave A |
 | 6 | Combobox | — | — | — | Planned Wave A; likely needs SearchableList/shared popup infrastructure |
