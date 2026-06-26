@@ -513,4 +513,20 @@ mod tests {
         assert!(source.contains("pub fn remeasure(&self)"));
         assert!(source.contains("pub fn remeasure_items"));
     }
+
+    #[test]
+    fn draggable_row_shell_centers_handle_vertically() {
+        let source = include_str!("virtualized_list.rs");
+        let shell_start = source
+            .find("let mut shell = div()")
+            .expect("draggable row shell should be present");
+        let shell_end = source[shell_start..]
+            .find(".rounded_md()")
+            .expect("shell layout should include rounded styling");
+        let shell_layout = &source[shell_start..shell_start + shell_end];
+
+        assert!(shell_layout.contains(".flex_row()"));
+        assert!(shell_layout.contains(".items_center()"));
+        assert!(!shell_layout.contains(".items_start()"));
+    }
 }

@@ -202,7 +202,7 @@ pub fn drag_handle(color: Hsla, active: bool, width: Pixels) -> Div {
         .flex()
         .flex_none()
         .w(width)
-        .items_start()
+        .h_full()
         .items_center()
         .justify_center()
         .cursor_pointer()
@@ -283,5 +283,18 @@ mod tests {
             ),
             (px(40.0), px(0.0))
         );
+    }
+
+    #[test]
+    fn drag_handle_centers_icon_across_list_orientations() {
+        let source = include_str!("draggable.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(!source.contains(".items_start()"));
+        assert!(source.contains(".h_full()"));
+        assert!(source.contains(".items_center()"));
+        assert!(source.contains(".justify_center()"));
     }
 }
