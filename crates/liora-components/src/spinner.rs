@@ -19,7 +19,7 @@
 //! the component, and avoid app-specific Gallery/Docs resources in this SDK
 //! crate.
 
-use crate::motion::spin_icon;
+use crate::motion::spin_icon_with_duration;
 use gpui::{App, Component, Hsla, IntoElement, Pixels, RenderOnce, Window, px};
 use liora_core::{Config, stable_unique_id};
 use liora_icons::Icon;
@@ -85,7 +85,11 @@ impl RenderOnce for Spinner {
             cx,
         );
 
-        spin_icon(motion_id, Icon::new(self.icon).size(self.size).color(color))
+        spin_icon_with_duration(
+            motion_id,
+            Icon::new(self.icon).size(self.size).color(color),
+            std::time::Duration::from_millis(900),
+        )
     }
 }
 
@@ -119,7 +123,8 @@ mod tests {
         let source = include_str!("spinner.rs");
         assert!(source.contains("stable_unique_id("));
         assert!(source.contains("liora-spinner-motion:{:?}:{:?}:{:?}"));
-        assert!(source.contains("spin_icon(motion_id"));
+        assert!(source.contains("spin_icon_with_duration("));
+        assert!(source.contains("Duration::from_millis(900)"));
         let render_body = source
             .split("impl RenderOnce for Spinner")
             .nth(1)

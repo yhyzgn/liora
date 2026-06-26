@@ -23,6 +23,8 @@ use gpui::{Animation, AnimationElement, AnimationExt, ElementId, IntoElement, St
 use liora_icons::Icon;
 use std::{f32::consts::TAU, time::Duration};
 
+const SMOOTH_SPIN_ANIMATION_SECS: f32 = 86_400.0;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Options that control motion duration behavior.
 pub enum MotionDuration {
@@ -210,10 +212,26 @@ where
 
 /// Performs the spin icon operation used by this component.
 pub fn spin_icon(id: impl Into<ElementId>, icon: Icon) -> AnimationElement<Icon> {
+    spin_icon_with_duration(id, icon, MotionDuration::Slow.as_duration())
+}
+
+/// Performs the spin icon operation with an explicit cycle duration.
+pub fn spin_icon_with_duration(
+    id: impl Into<ElementId>,
+    icon: Icon,
+    cycle_duration: Duration,
+) -> AnimationElement<Icon> {
+    let cycle_secs = cycle_duration.as_secs_f32().max(0.1);
     icon.with_animation(
         ElementId::from(id.into()),
-        repeating_motion_animation(MotionDuration::Slow, MotionEasing::Linear),
-        |icon, delta| icon.rotation(radians(delta * TAU)),
+        Animation::new(Duration::from_secs_f32(SMOOTH_SPIN_ANIMATION_SECS))
+            .repeat()
+            .with_easing(|delta| delta),
+        move |icon, delta| {
+            let elapsed_secs = delta * SMOOTH_SPIN_ANIMATION_SECS;
+            let turn = (elapsed_secs / cycle_secs).fract();
+            icon.rotation(radians(turn * TAU))
+        },
     )
 }
 
@@ -324,6 +342,22 @@ mod tests {
         let eased = (animation.easing)(0.7);
 
         assert!((0.0..=1.0).contains(&eased));
+    }
+
+    #[test]
+    fn spin_icon_uses_the_long_cycle_slow_motion_preset() {
+        assert_eq!(
+            MotionDuration::Slow.as_duration(),
+            Duration::from_millis(900)
+        );
+    }
+
+    #[test]
+    fn spin_icon_with_duration_keeps_the_rotation_helper_explicit() {
+        let custom = Animation::new(Duration::from_secs_f32(SMOOTH_SPIN_ANIMATION_SECS)).repeat();
+
+        assert!(custom.duration >= Duration::from_secs(60));
+        assert!(!custom.oneshot);
     }
 
     #[test]
