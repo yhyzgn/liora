@@ -372,7 +372,7 @@ fn request_gallery_window_close(window: &mut Window, cx: &mut App) {
         TrayCloseAction::Ask => {
             if !cx.global::<GalleryTrayState>().close_dialog_open {
                 cx.global_mut::<GalleryTrayState>().close_dialog_open = true;
-                show_gallery_close_confirm(cx);
+                show_gallery_close_confirm(window, cx);
             }
         }
     }
@@ -526,7 +526,7 @@ fn toggle_gallery_window(cx: &mut App) {
     }
 }
 
-fn handle_gallery_window_should_close(_window: &mut Window, cx: &mut App) -> bool {
+fn handle_gallery_window_should_close(window: &mut Window, cx: &mut App) -> bool {
     if !cx.has_global::<GalleryTrayState>() || !cx.has_global::<TrayControlCenter>() {
         return true;
     }
@@ -547,19 +547,20 @@ fn handle_gallery_window_should_close(_window: &mut Window, cx: &mut App) -> boo
         TrayCloseAction::Ask => {
             if !cx.global::<GalleryTrayState>().close_dialog_open {
                 cx.global_mut::<GalleryTrayState>().close_dialog_open = true;
-                show_gallery_close_confirm(cx);
+                show_gallery_close_confirm(window, cx);
             }
             false
         }
     }
 }
 
-fn show_gallery_close_confirm(cx: &mut App) {
+fn show_gallery_close_confirm(window: &mut Window, cx: &mut App) {
     let remember = Arc::new(AtomicBool::new(false));
 
     Dialog::new()
         .id("gallery-close-confirm")
         .title("关闭 Liora Gallery？")
+        .immediate()
         .close_on_click_outside(false)
         .close_on_escape(true)
         .on_close(|_, cx| reset_gallery_close_confirm(cx))
@@ -612,7 +613,7 @@ fn show_gallery_close_confirm(cx: &mut App) {
                         })),
                 )
         })
-        .show(cx);
+        .show_in_window(window, cx);
 }
 
 fn reset_gallery_close_confirm(cx: &mut App) {
@@ -1498,6 +1499,8 @@ mod shell_regression_tests {
 
         assert!(confirm.contains(".close_on_escape(true)"));
         assert!(!confirm.contains(".close_on_escape(false)"));
+        assert!(confirm.contains(".immediate()"));
+        assert!(confirm.contains(".show_in_window(window, cx)"));
         assert!(confirm.contains(".on_close(|_, cx| reset_gallery_close_confirm(cx))"));
         assert_eq!(
             confirm.matches("reset_gallery_close_confirm(cx);").count(),

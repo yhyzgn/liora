@@ -186,6 +186,7 @@ pub struct Dialog {
     content: Arc<dyn Fn(&mut Window, &mut Context<DialogView>) -> AnyElement + 'static>,
     close_on_click_outside: bool,
     close_on_escape: bool,
+    animated: bool,
     on_close: Arc<dyn Fn(&mut Window, &mut App) + 'static>,
 }
 
@@ -196,6 +197,7 @@ pub struct DialogView {
     content: Arc<dyn Fn(&mut Window, &mut Context<Self>) -> AnyElement + 'static>,
     close_on_click_outside: bool,
     close_on_escape: bool,
+    animated: bool,
     on_close: Arc<dyn Fn(&mut Window, &mut App) + 'static>,
     focus_handle: FocusHandle,
     focus_requested: bool,
@@ -208,8 +210,10 @@ impl DialogView {
         content: Arc<dyn Fn(&mut Window, &mut Context<Self>) -> AnyElement + 'static>,
         close_on_click_outside: bool,
         close_on_escape: bool,
+        animated: bool,
         on_close: impl Fn(&mut Window, &mut App) + 'static,
         focus_handle: FocusHandle,
+        focus_requested: bool,
     ) -> Self {
         Self {
             id,
@@ -217,9 +221,10 @@ impl DialogView {
             content,
             close_on_click_outside,
             close_on_escape,
+            animated,
             on_close: Arc::new(on_close),
             focus_handle,
-            focus_requested: false,
+            focus_requested,
         }
     }
 }
@@ -237,105 +242,116 @@ impl Render for DialogView {
         let title = self.title.clone();
         let content_fn = self.content.clone();
         let on_close = self.on_close.clone();
+        let on_close_for_close_button = on_close.clone();
+        let on_close_for_outside_click = on_close.clone();
+        let on_close_for_escape = on_close;
         let close_on_click_outside = self.close_on_click_outside;
         let close_on_escape = self.close_on_escape;
+        let animated = self.animated;
         let focus_handle = self.focus_handle(cx);
-        if !self.focus_requested {
+        if !self.focus_requested && animated {
             self.focus_requested = true;
             let focus_handle = focus_handle.clone();
             window.defer(cx, move |window, _| window.focus(&focus_handle));
+        } else if !self.focus_requested {
+            self.focus_requested = true;
         }
 
-        fade_in(
-            element_id(format!("{id}-overlay-motion")),
-            div()
-                .id(id.clone())
-                .track_focus(&focus_handle)
-                .absolute()
-                .size_full()
-                .cursor_default()
-                .bg(theme.neutral.overlay)
-                .flex()
-                .items_center()
-                .justify_center()
-                .on_mouse_move(|_, _, cx| {
-                    cx.stop_propagation();
+        let panel = div()
+            .w_full()
+            .max_w(px(420.0))
+            .min_w(px(0.0))
+            .mx_4()
+            .bg(theme.neutral.card)
+            .cursor_default()
+            .rounded(px(theme.radius.md))
+            .shadow_xl()
+            .on_mouse_move(|_, _, cx| {
+                cx.stop_propagation();
+            })
+            .on_mouse_down(MouseButton::Left, |_, _, cx| {
+                cx.stop_propagation();
+            }) // Consume click so it doesn't trigger the background
+            .child(
+                div()
+                    .p_4()
+                    .min_w(px(0.0))
+                    .border_b_1()
+                    .border_color(theme.neutral.border)
+                    .flex()
+                    .justify_between()
+                    .items_center()
+                    .child(
+                        div()
+                            .min_w(px(0.0))
+                            .flex_1()
+                            .font_weight(gpui::FontWeight::BOLD)
+                            .text_color(theme.neutral.text_1)
+                            .whitespace_normal()
+                            .child(title),
+                    )
+                    .child(
+                        div()
+                            .id(element_id(format!("{id}-close-btn")))
+                            .cursor_pointer()
+                            .child(
+                                Icon::new(IconName::X)
+                                    .size(px(16.0))
+                                    .color(theme.neutral.icon),
+                            )
+                            .on_mouse_down(MouseButton::Left, move |_, window, cx| {
+                                on_close_for_close_button(window, cx);
+                            }),
+                    ),
+            )
+            .child(
+                div()
+                    .p_4()
+                    .min_w(px(0.0))
+                    .text_color(theme.neutral.text_2)
+                    .overflow_hidden()
+                    .child(content_fn(window, cx)),
+            );
+
+        let overlay = div()
+            .id(id.clone())
+            .track_focus(&focus_handle)
+            .absolute()
+            .size_full()
+            .cursor_default()
+            .bg(theme.neutral.overlay)
+            .flex()
+            .items_center()
+            .justify_center()
+            .on_mouse_move(|_, _, cx| {
+                cx.stop_propagation();
+            })
+            .when(close_on_click_outside, |s| {
+                s.on_mouse_down(MouseButton::Left, {
+                    let on_close = on_close_for_outside_click.clone();
+                    move |_, window, cx| {
+                        on_close(window, cx);
+                    }
                 })
-                .when(close_on_click_outside, |s| {
-                    s.on_mouse_down(MouseButton::Left, {
-                        let on_close = on_close.clone();
-                        move |_, window, cx| {
-                            on_close(window, cx);
-                        }
-                    })
-                })
-                .when(close_on_escape, |s| {
-                    s.on_action(cx.listener({
-                        let on_close = on_close.clone();
-                        move |_, _action: &DialogClose, window, cx| {
-                            on_close(window, cx);
-                        }
-                    }))
-                })
-                .child(pop_in(
-                    element_id(format!("{id}-panel-motion")),
-                    div()
-                        .w_full()
-                        .max_w(px(420.0))
-                        .min_w(px(0.0))
-                        .mx_4()
-                        .bg(theme.neutral.card)
-                        .cursor_default()
-                        .rounded(px(theme.radius.md))
-                        .shadow_xl()
-                        .on_mouse_move(|_, _, cx| {
-                            cx.stop_propagation();
-                        })
-                        .on_mouse_down(MouseButton::Left, |_, _, cx| {
-                            cx.stop_propagation();
-                        }) // Consume click so it doesn't trigger the background
-                        .child(
-                            div()
-                                .p_4()
-                                .min_w(px(0.0))
-                                .border_b_1()
-                                .border_color(theme.neutral.border)
-                                .flex()
-                                .justify_between()
-                                .items_center()
-                                .child(
-                                    div()
-                                        .min_w(px(0.0))
-                                        .flex_1()
-                                        .font_weight(gpui::FontWeight::BOLD)
-                                        .text_color(theme.neutral.text_1)
-                                        .whitespace_normal()
-                                        .child(title),
-                                )
-                                .child(
-                                    div()
-                                        .id(element_id(format!("{id}-close-btn")))
-                                        .cursor_pointer()
-                                        .child(
-                                            Icon::new(IconName::X)
-                                                .size(px(16.0))
-                                                .color(theme.neutral.icon),
-                                        )
-                                        .on_mouse_down(MouseButton::Left, move |_, window, cx| {
-                                            on_close(window, cx);
-                                        }),
-                                ),
-                        )
-                        .child(
-                            div()
-                                .p_4()
-                                .min_w(px(0.0))
-                                .text_color(theme.neutral.text_2)
-                                .overflow_hidden()
-                                .child(content_fn(window, cx)),
-                        ),
-                )),
-        )
+            })
+            .when(close_on_escape, |s| {
+                s.on_action(cx.listener({
+                    let on_close = on_close_for_escape.clone();
+                    move |_, _action: &DialogClose, window, cx| {
+                        on_close(window, cx);
+                    }
+                }))
+            });
+
+        if animated {
+            fade_in(
+                element_id(format!("{id}-overlay-motion")),
+                overlay.child(pop_in(element_id(format!("{id}-panel-motion")), panel)),
+            )
+            .into_any_element()
+        } else {
+            overlay.child(panel).into_any_element()
+        }
     }
 }
 
@@ -369,11 +385,32 @@ mod motion_tests {
     }
 
     #[test]
+    fn dialog_can_skip_intro_motion_for_latency_sensitive_surfaces() {
+        let source = include_str!("dialog.rs");
+        let impl_source = source
+            .rsplit("\nimpl Dialog {")
+            .next()
+            .expect("Dialog builder implementation should exist");
+
+        assert!(source.contains("animated: bool"));
+        assert!(source.contains("if animated {"));
+        assert!(source.contains("overlay.child(panel).into_any_element()"));
+        assert!(impl_source.contains("pub fn animated(mut self, animated: bool) -> Self"));
+        assert!(impl_source.contains("pub fn immediate(self) -> Self"));
+        assert!(impl_source.contains("self.animated(false)"));
+        assert!(
+            impl_source.contains("pub fn show_in_window(self, window: &mut Window, cx: &mut App)")
+        );
+        assert!(impl_source.contains("window.focus(&focus_handle)"));
+        assert!(impl_source.contains("window.refresh()"));
+    }
+
+    #[test]
     fn dialog_exposes_on_close_for_host_state_cleanup() {
         let source = include_str!("dialog.rs");
         let impl_source = source
-            .split("impl Dialog {")
-            .nth(1)
+            .rsplit("\nimpl Dialog {")
+            .next()
             .expect("Dialog builder implementation should exist");
 
         assert!(source.contains("on_close: Arc<dyn Fn(&mut Window, &mut App)"));
@@ -389,6 +426,7 @@ mod motion_tests {
         assert!(source.contains("impl Focusable for DialogView"));
         assert!(source.contains("focus_handle: FocusHandle"));
         assert!(source.contains(".track_focus(&focus_handle)"));
+        assert!(source.contains("!self.focus_requested && animated"));
         assert!(source.contains("window.defer(cx, move |window, _| window.focus(&focus_handle))"));
         assert!(source.contains("s.on_action(cx.listener({"));
         assert!(source.contains("struct ActiveDialogRuntime"));
@@ -510,6 +548,7 @@ impl Dialog {
             content: Arc::new(|_, _| div().child("Dialog Content").into_any_element()),
             close_on_click_outside: true,
             close_on_escape: true,
+            animated: true,
             on_close: Arc::new(|_, _| {}),
         }
     }
@@ -538,6 +577,17 @@ impl Dialog {
         self
     }
 
+    /// Toggles whether the dialog uses its default intro motion.
+    pub fn animated(mut self, animated: bool) -> Self {
+        self.animated = animated;
+        self
+    }
+
+    /// Disables intro motion so latency-sensitive host flows can appear immediately.
+    pub fn immediate(self) -> Self {
+        self.animated(false)
+    }
+
     /// Registers a callback invoked when the dialog is dismissed by its built-in close controls.
     pub fn on_close(mut self, f: impl Fn(&mut Window, &mut App) + 'static) -> Self {
         self.on_close = Arc::new(f);
@@ -556,11 +606,22 @@ impl Dialog {
 
     /// Performs the show operation used by this component.
     pub fn show(self, cx: &mut App) {
+        self.show_with_window(None, cx);
+    }
+
+    /// Shows the dialog from an existing window and focuses the dialog before the next render pass.
+    pub fn show_in_window(self, window: &mut Window, cx: &mut App) {
+        self.show_with_window(Some(window), cx);
+    }
+
+    fn show_with_window(self, focus_window: Option<&mut Window>, cx: &mut App) {
+        let focus_requested = focus_window.is_some() || !self.animated;
         let id = self.id;
         let title = self.title;
         let content = self.content;
         let close_on_click_outside = self.close_on_click_outside;
         let close_on_escape = self.close_on_escape;
+        let animated = self.animated;
         let user_on_close = self.on_close;
 
         let id_for_close = id.clone();
@@ -580,15 +641,23 @@ impl Dialog {
                 content,
                 close_on_click_outside,
                 close_on_escape,
+                animated,
                 move |window, cx| {
                     close_callback_for_view(window, cx);
                 },
                 focus_handle,
+                focus_requested,
             )
         });
+        let view_for_focus = view.clone();
 
         register_dialog_runtime(id.clone(), close_on_escape, close_callback, cx);
         liora_core::set_active_modal(id, view.into(), cx);
+        if let Some(window) = focus_window {
+            let focus_handle = view_for_focus.read(cx).focus_handle(cx);
+            window.focus(&focus_handle);
+            window.refresh();
+        }
         cx.refresh_windows();
     }
 
