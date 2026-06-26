@@ -359,9 +359,17 @@ mod tests {
         assert!(text.contains("[nsis]"));
         assert!(text.contains("installMode = \"currentUser\""));
         assert!(!text.contains("fragmentPaths"));
-        let normalized_text = text.replace('\\', "/");
+        let normalized_text = normalized_test_paths(&text);
         assert!(normalized_text.contains("hicolor/16x16/apps/liora-gallery.png"));
         assert!(normalized_text.contains("hicolor/512x512/apps/liora-gallery.png"));
+    }
+
+    fn normalized_test_paths(text: &str) -> String {
+        let mut normalized = text.replace('\\', "/");
+        while normalized.contains("//") {
+            normalized = normalized.replace("//", "/");
+        }
+        normalized
     }
 
     #[test]

@@ -1,6 +1,6 @@
 [package]
 name = "liora-packager"
-version = "0.1.6"
+version = "0.1.7"
 edition = "2024"
 description = "Packaging metadata and release artifact helpers for Liora native GPUI applications."
 license-file = "../../LICENSE.md"

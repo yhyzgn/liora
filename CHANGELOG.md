@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.7 - 2026-06-26
+
+- Hardened the Windows CI packager test again for TOML-escaped Windows backslashes before re-running the release pipeline.
+
 ## 0.1.6 - 2026-06-26
 
 - Embedded a Windows Common Controls v6 manifest into both Gallery and Docs executables so GPUI's `TaskDialogIndirect` dependency resolves on Windows 11 raw `.exe` and debug builds.
