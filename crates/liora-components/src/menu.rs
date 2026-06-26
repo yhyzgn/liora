@@ -22,7 +22,8 @@
 use crate::gpui_compat::element_id;
 use crate::{Popover, motion::pop_in};
 use gpui::{
-    AnyElement, App, Context, IntoElement, Render, SharedString, Window, div, prelude::*, px,
+    AnyElement, App, Context, IntoElement, MouseButton, Render, SharedString, Window, div,
+    prelude::*, px,
 };
 use liora_core::{Config, Placement};
 use liora_icons::Icon;
@@ -312,11 +313,14 @@ impl Menu {
                 gpui::transparent_black()
             })
             .hover(|s| s.bg(theme.neutral.hover))
-            .on_click(cx.listener(move |this, _, window, cx| {
-                if this.select_item(id.clone(), window, cx) {
-                    cx.notify();
-                }
-            }))
+            .on_mouse_down(
+                MouseButton::Left,
+                cx.listener(move |this, _, window, cx| {
+                    if this.select_item(id.clone(), window, cx) {
+                        cx.notify();
+                    }
+                }),
+            )
             .when_some(item.icon, |s, icon| {
                 s.child(Icon::new(icon).size(px(18.0)).color(item_color))
             })
@@ -596,11 +600,14 @@ impl Menu {
                 gpui::transparent_black()
             })
             .hover(|s| s.bg(theme.neutral.hover))
-            .on_click(cx.listener(move |this, _, window, cx| {
-                if this.select_item(id.clone(), window, cx) {
-                    cx.notify();
-                }
-            }))
+            .on_mouse_down(
+                MouseButton::Left,
+                cx.listener(move |this, _, window, cx| {
+                    if this.select_item(id.clone(), window, cx) {
+                        cx.notify();
+                    }
+                }),
+            )
             .when_some(item.icon, |s, icon| {
                 s.child(Icon::new(icon).size(px(18.0)).color(item_color))
             })
@@ -928,6 +935,8 @@ mod tests {
         assert!(source.contains("-> bool"));
         assert!(source.contains("let changed = self.active_index.as_ref() != Some(&id);"));
         assert!(source.contains("if changed {"));
+        assert!(source.contains(".on_mouse_down("));
+        assert!(source.contains("MouseButton::Left"));
         assert!(source.contains("if this.select_item(id.clone(), window, cx)"));
         assert!(source.contains(".w_full()"));
         assert!(

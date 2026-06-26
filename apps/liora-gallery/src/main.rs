@@ -1,11 +1,12 @@
 use gpui::{
-    AnyView, App, Application, Component, Context, Global, Render, RenderImage, SharedString,
-    Window, WindowOptions, div, img, prelude::*, px, size,
+    AnyView, App, Application, Component, Context, Global, Render, RenderImage, ScrollHandle,
+    SharedString, Window, WindowOptions, div, img, prelude::*, px, size,
 };
 use liora_components::{
     AppWindowFrame, Button, Card, Checkbox, Container, Dialog, Input, Menu, MenuMode, MenuNode,
-    Paragraph, Segmented, SegmentedOption, Space, Switch, Tag, Text, Title, WindowFrameMode,
-    apply_window_frame_mode, frame_mode_switch_row, init_liora, toast_info, toast_success,
+    Paragraph, Segmented, SegmentedOption, Space, Spinner, Switch, Tag, Text, Title,
+    WindowFrameMode, apply_window_frame_mode, frame_mode_switch_row, init_liora, toast_info,
+    toast_success,
 };
 use liora_core::{
     Config, LinuxDesktopIdentity, LinuxDesktopPngIcon, PassivePortal, Portal, ThemeMode,
@@ -35,10 +36,12 @@ pub struct Gallery {
     entries: Vec<demos::DemoEntry>,
     active_demo_index: Option<usize>,
     active_demo: Option<AnyView>,
+    pending_demo_index: Option<usize>,
     nav_index: Vec<GalleryNavEntry>,
     selected: usize,
     nav_filter: gpui::Entity<Input>,
     nav_menu: Option<gpui::Entity<Menu>>,
+    nav_scroll: ScrollHandle,
     nav_query: String,
     nav_refresh_pending: bool,
     theme_mode: ThemeMode,
@@ -133,10 +136,12 @@ fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
                 entries,
                 active_demo_index: None,
                 active_demo: None,
+                pending_demo_index: None,
                 nav_index,
                 selected: 0,
                 nav_filter: cx.new(|cx| Input::new("", cx).placeholder("搜索组件 / Search demos")),
                 nav_menu: None,
+                nav_scroll: ScrollHandle::new(),
                 nav_query: String::new(),
                 nav_refresh_pending: false,
                 theme_mode,
@@ -825,20 +830,21 @@ impl Render for Gallery {
 
         let content_body = if selected == self.entries.len() {
             self.render_about_panel(cx).into_any_element()
-        } else if let (Some(selected_entry), Some(selected_demo)) = (selected_entry, selected_demo)
-        {
-            Space::new()
+        } else if let Some(selected_entry) = selected_entry {
+            let header = Space::new()
                 .vertical()
-                .gap_lg()
-                .child(
-                    Space::new()
-                        .vertical()
-                        .gap_xs()
-                        .child(Title::new(selected_entry.name).h3())
-                        .child(Paragraph::with_text(selected_entry.description)),
-                )
-                .child(selected_demo)
-                .into_any_element()
+                .gap_xs()
+                .child(Title::new(selected_entry.name).h3())
+                .child(Paragraph::with_text(selected_entry.description));
+
+            let mut panel = Space::new().vertical().gap_lg().child(header);
+            if let Some(selected_demo) = selected_demo {
+                panel = panel.child(selected_demo);
+            } else {
+                panel = panel.child(self.render_demo_loading_panel(selected_entry.name, cx));
+            }
+
+            panel.into_any_element()
         } else {
             Paragraph::with_text("No gallery entry selected.").into_any_element()
         };
@@ -864,10 +870,18 @@ impl Render for Gallery {
                     .gap_2()
                     .p_2()
                     .child(div().flex_none().child(self.nav_filter.clone()))
-                    .child(div().flex_1().min_h_0().child(nav_menu)),
+                    .child(
+                        div()
+                            .id("gallery-nav-scroll")
+                            .flex_1()
+                            .min_h_0()
+                            .w_full()
+                            .overflow_y_scroll()
+                            .track_scroll(&self.nav_scroll)
+                            .child(div().flex_none().w_full().child(nav_menu)),
+                    ),
             )
             .aside_width_lg()
-            .aside_scroll()
             .main_scroll()
             .main_padding_xl()
             .child(content)
@@ -970,16 +984,60 @@ impl Gallery {
             self.clear_active_demo();
             return None;
         };
-        if self.active_demo_index != Some(selected) {
-            self.active_demo = Some((entry.render)(cx));
-            self.active_demo_index = Some(selected);
+        if self.active_demo_index == Some(selected) {
+            self.pending_demo_index = None;
+            return self.active_demo.clone();
         }
-        self.active_demo.clone()
+
+        if self.pending_demo_index != Some(selected) {
+            self.active_demo_index = None;
+            self.active_demo = None;
+            self.pending_demo_index = Some(selected);
+            let gallery = cx.entity().clone();
+            cx.spawn(async move |_gallery, cx| {
+                cx.background_executor()
+                    .timer(Duration::from_millis(1))
+                    .await;
+                let _ = gallery.update(cx, |gallery, cx| {
+                    if gallery.selected != selected || gallery.pending_demo_index != Some(selected)
+                    {
+                        return;
+                    }
+                    gallery.active_demo = Some((entry.render)(cx));
+                    gallery.active_demo_index = Some(selected);
+                    gallery.pending_demo_index = None;
+                    cx.notify();
+                });
+            })
+            .detach();
+        }
+
+        None
     }
 
     fn clear_active_demo(&mut self) {
         self.active_demo_index = None;
         self.active_demo = None;
+        self.pending_demo_index = None;
+    }
+
+    fn render_demo_loading_panel(
+        &self,
+        selected_name: &'static str,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement {
+        let theme = cx.global::<Config>().theme.clone();
+
+        div()
+            .flex()
+            .items_center()
+            .justify_center()
+            .w_full()
+            .min_h(px(180.0))
+            .gap_3()
+            .text_color(theme.neutral.text_3)
+            .child(Spinner::new().small().color(theme.primary.base))
+            .child(Text::new(format!("正在加载 {selected_name}…")).sm())
     }
 
     fn set_nav_query_deferred(&mut self, query: String, cx: &mut Context<Self>) {
@@ -1517,6 +1575,8 @@ mod shell_regression_tests {
         assert!(source.contains("fn gallery_nav_item_id"));
         assert!(source.contains("fn gallery_nav_index_from_id"));
         assert!(source.contains("nav_menu: Option<gpui::Entity<Menu>>"));
+        assert!(source.contains("nav_scroll: ScrollHandle"));
+        assert!(source.contains("ScrollHandle::new()"));
         assert!(source.contains(r#".id("gallery-nav-menu")"#));
         assert!(source.contains(".mode(MenuMode::Vertical)"));
         assert!(source.contains(".with_items(items)"));
@@ -1532,6 +1592,16 @@ mod shell_regression_tests {
         assert!(!source.contains("list(self.list_state.clone()"));
         assert!(!source.contains("list_state.reset"));
         assert!(!source.contains("timer(Duration::from_millis(24))"));
+        let shell = source
+            .split("let shell = Container::new()")
+            .nth(1)
+            .expect("Gallery shell should exist")
+            .split("AppWindowFrame::new")
+            .next()
+            .expect("shell should end before app frame");
+        assert!(shell.contains(r#".id("gallery-nav-scroll")"#));
+        assert!(shell.contains(".overflow_y_scroll()"));
+        assert!(shell.contains(".track_scroll(&self.nav_scroll)"));
         assert!(!source.contains("gallery.refresh_nav_menu_for_query(query, cx);"));
         assert!(!source.contains(
             "move |_, cx| {
@@ -1563,14 +1633,20 @@ mod shell_regression_tests {
 
         assert!(source.contains("active_demo_index: Option<usize>"));
         assert!(source.contains("active_demo: Option<AnyView>"));
+        assert!(source.contains("pending_demo_index: Option<usize>"));
         assert!(source.contains("fn selected_demo(&mut self"));
-        assert!(source.contains("self.active_demo = Some((entry.render)(cx));"));
+        assert!(source.contains("cx.spawn(async move |_gallery, cx|"));
+        assert!(source.contains("timer(Duration::from_millis(1))"));
+        assert!(source.contains("self.render_demo_loading_panel"));
+        assert!(source.contains("self.active_demo = None;"));
+        assert!(source.contains("gallery.active_demo = Some((entry.render)(cx));"));
         assert!(source.contains("fn clear_active_demo(&mut self)"));
         assert!(!open_window.contains("let demo_cache = vec![None; entries.len()];"));
         assert!(!open_window.contains("entries.iter().map(|entry| (entry.render)(cx)).collect()"));
         assert!(!source.contains("demo_cache: Vec<Option<AnyView>>"));
         assert!(!source.contains("demos: Vec<AnyView>"));
         assert!(!source.contains("self.demos.get(selected)"));
+        assert!(!render.contains("self.active_demo = Some((entry.render)(cx));"));
         assert!(!render.contains("self.wire_shell_controls(cx);"));
     }
 
