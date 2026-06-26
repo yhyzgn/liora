@@ -39,7 +39,7 @@ pub enum MenuMode {
     Horizontal,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 /// Options that control menu node behavior.
 pub enum MenuNode {
     /// Uses the `Item` option for `MenuNode`.
@@ -50,7 +50,7 @@ pub enum MenuNode {
     Group(MenuItemGroup),
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 /// Data model used by menu item rendering.
 pub struct MenuItem {
     /// Stable identifier used for GPUI state, callbacks, and automation.
@@ -61,7 +61,7 @@ pub struct MenuItem {
     pub icon: Option<IconName>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 /// Fluent native GPUI component for rendering Liora sub menu.
 pub struct SubMenu {
     /// Stable identifier used for GPUI state, callbacks, and automation.
@@ -74,7 +74,7 @@ pub struct SubMenu {
     pub children: Vec<MenuNode>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 /// Fluent native GPUI component for rendering Liora menu item group.
 pub struct MenuItemGroup {
     /// Primary heading or title text displayed by the component.
@@ -142,6 +142,9 @@ impl Menu {
 
     /// Replaces the rendered menu items while preserving focus, callbacks, and submenu state.
     pub fn set_items(&mut self, items: Vec<MenuNode>, cx: &mut Context<Self>) {
+        if self.items == items {
+            return;
+        }
         self.items = items;
         cx.notify();
     }
@@ -236,11 +239,15 @@ impl Menu {
         cx.notify();
     }
 
-    fn select_item(&mut self, id: SharedString, window: &mut Window, cx: &mut App) {
-        self.active_index = Some(id.clone());
+    fn select_item(&mut self, id: SharedString, window: &mut Window, cx: &mut App) -> bool {
+        let changed = self.active_index.as_ref() != Some(&id);
+        if changed {
+            self.active_index = Some(id.clone());
+        }
         if let Some(on_select) = &self.on_select {
             (on_select)(id, window, cx);
         }
+        changed
     }
 
     fn render_node(
@@ -294,6 +301,7 @@ impl Menu {
             .items_center()
             .justify_center()
             .when(!self.is_collapsed, |s| s.justify_start())
+            .w_full()
             .h(px(50.0))
             .pl(padding_left)
             .pr(if self.is_collapsed { px(0.0) } else { px(16.0) })
@@ -305,8 +313,9 @@ impl Menu {
             })
             .hover(|s| s.bg(theme.neutral.hover))
             .on_click(cx.listener(move |this, _, window, cx| {
-                this.select_item(id.clone(), window, cx);
-                cx.notify();
+                if this.select_item(id.clone(), window, cx) {
+                    cx.notify();
+                }
             }))
             .when_some(item.icon, |s, icon| {
                 s.child(Icon::new(icon).size(px(18.0)).color(item_color))
@@ -342,8 +351,8 @@ impl Menu {
                     .flex()
                     .items_center()
                     .justify_center()
-                    .h(px(50.0))
                     .w_full()
+                    .h(px(50.0))
                     .text_color(submenu_color)
                     .hover(|s| s.bg(theme.neutral.hover))
                     .when_some(submenu.icon, |s, icon| {
@@ -430,6 +439,7 @@ impl Menu {
                                 .flex_row()
                                 .items_center()
                                 .gap_2()
+                                .w_full()
                                 .px_3()
                                 .py_2()
                                 .rounded(px(theme.radius.sm))
@@ -444,8 +454,9 @@ impl Menu {
                                     let popover_id = popover_id.clone();
                                     move |_, window, cx| {
                                         let _ = menu_handle.update(cx, |this, cx| {
-                                            this.select_item(id.clone(), window, cx);
-                                            cx.notify();
+                                            if this.select_item(id.clone(), window, cx) {
+                                                cx.notify();
+                                            }
                                         });
                                         liora_core::clear_popover(&popover_id, cx);
                                     }
@@ -472,6 +483,7 @@ impl Menu {
                         .items_center()
                         .justify_between()
                         .gap_2()
+                        .w_full()
                         .h(px(50.0))
                         .pl(padding_left)
                         .pr_4()
@@ -585,8 +597,9 @@ impl Menu {
             })
             .hover(|s| s.bg(theme.neutral.hover))
             .on_click(cx.listener(move |this, _, window, cx| {
-                this.select_item(id.clone(), window, cx);
-                cx.notify();
+                if this.select_item(id.clone(), window, cx) {
+                    cx.notify();
+                }
             }))
             .when_some(item.icon, |s, icon| {
                 s.child(Icon::new(icon).size(px(18.0)).color(item_color))
@@ -698,6 +711,7 @@ impl Menu {
                             .flex_row()
                             .items_center()
                             .gap_2()
+                            .w_full()
                             .px_3()
                             .py_2()
                             .rounded(px(theme.radius.sm))
@@ -712,8 +726,9 @@ impl Menu {
                                 let popover_id = popover_id.clone();
                                 move |_, window, cx| {
                                     let _ = menu_handle.update(cx, |this, cx| {
-                                        this.select_item(id.clone(), window, cx);
-                                        cx.notify();
+                                        if this.select_item(id.clone(), window, cx) {
+                                            cx.notify();
+                                        }
                                     });
                                     liora_core::clear_popover(&popover_id, cx);
                                 }
@@ -883,5 +898,42 @@ impl Render for Menu {
                     .iter()
                     .map(|node| self.render_node(node, 0, &theme, cx)),
             )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn menu_nodes_are_comparable_so_item_refreshes_can_skip_noops() {
+        let items = vec![MenuNode::Item(MenuItem {
+            id: "one".into(),
+            label: "One".into(),
+            icon: None,
+        })];
+
+        assert!(items == items.clone());
+    }
+
+    #[test]
+    fn menu_source_keeps_items_full_width_and_avoids_redundant_select_notify() {
+        let source = include_str!("menu.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(source.contains("if self.items == items"));
+        assert!(source.contains("fn select_item(&mut self"));
+        assert!(source.contains("-> bool"));
+        assert!(source.contains("let changed = self.active_index.as_ref() != Some(&id);"));
+        assert!(source.contains("if changed {"));
+        assert!(source.contains("if this.select_item(id.clone(), window, cx)"));
+        assert!(source.contains(".w_full()"));
+        assert!(
+            !source.contains(
+                "this.select_item(id.clone(), window, cx);\n                cx.notify();"
+            )
+        );
     }
 }
