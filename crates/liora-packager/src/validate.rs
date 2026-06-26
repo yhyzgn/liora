@@ -1,4 +1,7 @@
-use std::{fmt, fs, path::PathBuf};
+use std::{
+    fmt, fs,
+    path::{Path, PathBuf},
+};
 
 use crate::known_apps;
 
@@ -89,6 +92,30 @@ impl ValidationReport {
             Err(_) => self.require_path(label, path),
         }
     }
+
+    fn require_text_contains(
+        &mut self,
+        label: impl Into<String>,
+        path: PathBuf,
+        required: &[&str],
+    ) {
+        let label = label.into();
+        match fs::read_to_string(&path) {
+            Ok(text) => {
+                for value in required {
+                    if !text.contains(value) {
+                        self.errors.push(ValidationError::InvalidAsset {
+                            label,
+                            path,
+                            reason: format!("missing required text: {value}"),
+                        });
+                        return;
+                    }
+                }
+            }
+            Err(_) => self.require_path(label, path),
+        }
+    }
 }
 
 /// Validates that all required packaging assets, metadata files, and icon resources exist.
@@ -129,13 +156,39 @@ pub fn validate_packaging_layout(root: impl Into<PathBuf>) -> ValidationReport {
                 b"\x89PNG\r\n\x1a\n",
             );
         }
-        report.require_path(
-            format!("{} Windows resource build script", metadata.name),
-            metadata.windows_resource_build_script_path(&root),
-        );
+        validate_windows_manifest_and_build_script(&mut report, &root, &metadata);
     }
 
     report
+}
+
+fn validate_windows_manifest_and_build_script(
+    report: &mut ValidationReport,
+    root: &Path,
+    metadata: &crate::AppMetadata,
+) {
+    let manifest_path = metadata.windows_common_controls_manifest_path(root);
+    report.require_text_contains(
+        "Windows Common Controls v6 manifest",
+        manifest_path,
+        &[
+            "Microsoft.Windows.Common-Controls",
+            "version=\"6.0.0.0\"",
+            "publicKeyToken=\"6595b64144ccf1df\"",
+            "processorArchitecture=\"*\"",
+            "requestedExecutionLevel level=\"asInvoker\"",
+        ],
+    );
+
+    report.require_text_contains(
+        format!("{} Windows resource build script", metadata.name),
+        metadata.windows_resource_build_script_path(root),
+        &[
+            metadata.windows_common_controls_manifest_include_path(),
+            ".set_manifest(WINDOWS_APP_MANIFEST)",
+            "cargo:rerun-if-changed=../../packaging/windows/common-controls-v6.manifest",
+        ],
+    );
 }
 
 fn require_icon_set(
@@ -176,6 +229,18 @@ mod tests {
                 .errors
                 .iter()
                 .any(|error| error.to_string().contains("packaging directory"))
+        );
+    }
+
+    #[test]
+    fn current_layout_embeds_windows_common_controls_manifest() {
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let report = validate_packaging_layout(root);
+
+        assert!(
+            report.is_ok(),
+            "packaging validation should pass for current layout: {:#?}",
+            report.errors
         );
     }
 }

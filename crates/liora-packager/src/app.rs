@@ -139,6 +139,18 @@ impl AppMetadata {
         root.join("apps").join(&self.binary).join("build.rs")
     }
 
+    /// Returns the filesystem path for the shared Windows application manifest.
+    pub fn windows_common_controls_manifest_path(&self, root: &Path) -> PathBuf {
+        root.join("packaging")
+            .join("windows")
+            .join("common-controls-v6.manifest")
+    }
+
+    /// Returns the repository-relative manifest path used by app build scripts.
+    pub fn windows_common_controls_manifest_include_path(&self) -> &'static str {
+        "../../packaging/windows/common-controls-v6.manifest"
+    }
+
     /// Returns the filesystem path for the icon png resource.
     pub fn icon_png_path(&self, root: &Path) -> PathBuf {
         root.join("packaging")
