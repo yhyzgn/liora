@@ -3924,3 +3924,9 @@ Validation evidence: `cargo test -p liora-icons -- --nocapture`, `cargo test -p 
 After user feedback that Spinner still felt stepped and too slow, kept the no-short-repeat-boundary continuous spin helper but reduced per-frame angular jump by setting standalone `Spinner` to a 1200ms cycle instead of the faster 900ms cycle. This keeps the direct `Icon`-based implementation and stable motion id while making the visible angle delta smaller frame-to-frame.
 
 Validation evidence: `cargo test -p liora-components spinner -- --nocapture`, `cargo test -p liora-components motion -- --nocapture`, `cargo test -p liora-gallery spinner_demo -- --nocapture`, `cargo fmt --all --check`, and `git diff --check -- . ':(exclude).omx'` passed.
+
+## 2026-06-26 P22 Spinner smoothness refinement
+
+Refined the standalone `Spinner` motion after follow-up feedback that the 1200ms cycle was much better but still slightly stepped. Kept the direct `Icon`-based implementation and stable animation id, then increased only the standalone Spinner cycle to 1350ms so each frame advances a smaller angle without falling back to the earlier too-slow 1800ms feel. Shared `Loading`/button `spin_icon(...)` behavior remains unchanged.
+
+Validation evidence: `cargo test -p liora-components spinner -- --nocapture`, `cargo test -p liora-components motion -- --nocapture`, `cargo test -p liora-gallery spinner_demo -- --nocapture`, `cargo check -p liora-components -p liora-gallery --all-targets`, `cargo fmt --all --check`, and `git diff --check -- . ':(exclude).omx'` passed.
