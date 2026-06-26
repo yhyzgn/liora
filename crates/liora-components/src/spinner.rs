@@ -88,7 +88,7 @@ impl RenderOnce for Spinner {
         spin_icon_with_duration(
             motion_id,
             Icon::new(self.icon).size(self.size).color(color),
-            std::time::Duration::from_millis(900),
+            std::time::Duration::from_millis(1200),
         )
     }
 }
@@ -124,7 +124,7 @@ mod tests {
         assert!(source.contains("stable_unique_id("));
         assert!(source.contains("liora-spinner-motion:{:?}:{:?}:{:?}"));
         assert!(source.contains("spin_icon_with_duration("));
-        assert!(source.contains("Duration::from_millis(900)"));
+        assert!(source.contains("Duration::from_millis(1200)"));
         let render_body = source
             .split("impl RenderOnce for Spinner")
             .nth(1)

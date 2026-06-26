@@ -3918,3 +3918,9 @@ Validation evidence: `cargo test -p liora-components otp -- --nocapture`, `cargo
 Completed the Spinner-specific cleanup requested in the current thread. Spinner remains a direct `Icon`-based control like Loading, with a stable animation id so rotation keeps running, and Gallery/Docs now render separate dedicated Spinner pages with richer usage cards. Added `IconAssetSource` to `liora-icons` and wired Gallery/Docs `Application::with_assets(...)` so Lucide SVG icons render correctly from their bundled absolute paths.
 
 Validation evidence: `cargo test -p liora-icons -- --nocapture`, `cargo test -p liora-components spinner -- --nocapture`, `cargo test -p liora-gallery spinner_demo -- --nocapture`, `cargo test -p liora-docs spinner_docs_live_and_snippets_keep_fixed_card_layout -- --nocapture`, `cargo check -p liora-docs --bin check_snippets`, `cargo fmt --all --check`, `git diff --check -- . ':(exclude).omx'`, `cargo run -p liora-gallery` startup, and a desktop screenshot showing the Spinner page rendered with visible Spinner content.
+
+## 2026-06-26 P22 Spinner smoothness tuning
+
+After user feedback that Spinner still felt stepped and too slow, kept the no-short-repeat-boundary continuous spin helper but reduced per-frame angular jump by setting standalone `Spinner` to a 1200ms cycle instead of the faster 900ms cycle. This keeps the direct `Icon`-based implementation and stable motion id while making the visible angle delta smaller frame-to-frame.
+
+Validation evidence: `cargo test -p liora-components spinner -- --nocapture`, `cargo test -p liora-components motion -- --nocapture`, `cargo test -p liora-gallery spinner_demo -- --nocapture`, `cargo fmt --all --check`, and `git diff --check -- . ':(exclude).omx'` passed.
