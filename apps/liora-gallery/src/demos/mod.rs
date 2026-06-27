@@ -100,7 +100,7 @@ pub struct DemoEntry {
 }
 
 pub fn registry() -> Vec<DemoEntry> {
-    let mut entries = vec![
+    let entries = vec![
         DemoEntry {
             name: "Button 按钮",
             description: "常用的操作按钮",
@@ -598,15 +598,6 @@ pub fn registry() -> Vec<DemoEntry> {
         },
     ];
 
-    entries.sort_by(|a, b| {
-        let a_chart = a.name.contains("Chart");
-        let b_chart = b.name.contains("Chart");
-        match (a_chart, b_chart) {
-            (true, false) => std::cmp::Ordering::Greater,
-            (false, true) => std::cmp::Ordering::Less,
-            _ => a.name.cmp(b.name),
-        }
-    });
     entries
 }
 
@@ -721,22 +712,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn registry_entries_are_sorted_with_charts_grouped_last() {
+    fn registry_preserves_manual_default_demo_order() {
         let entries = registry();
         let names = entries.iter().map(|entry| entry.name).collect::<Vec<_>>();
-        let chart_start = names
-            .iter()
-            .position(|name| name.contains("Chart"))
-            .expect("chart demos should be present");
-        let (regular, charts) = names.split_at(chart_start);
-        let mut sorted_regular = regular.to_vec();
-        sorted_regular.sort();
-        let mut sorted_charts = charts.to_vec();
-        sorted_charts.sort();
 
-        assert_eq!(regular, sorted_regular);
-        assert_eq!(charts, sorted_charts);
-        assert!(charts.iter().all(|name| name.contains("Chart")));
+        assert_eq!(names.first(), Some(&"Button 按钮"));
+        assert!(names.contains(&"AreaChart 面积图"));
+        assert!(names.contains(&"RingChart 圆环图"));
     }
 
     #[test]

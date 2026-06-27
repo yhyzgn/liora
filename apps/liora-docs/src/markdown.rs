@@ -21,6 +21,7 @@ use liora_components::{
 use liora_core::{
     Config, PassivePortal, Placement, Portal, ThemeMode, apply_theme_mode, clear_popover,
 };
+use liora_gallery::category;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 use liora_updater::{
@@ -8349,10 +8350,11 @@ impl DocsShell {
 }
 
 fn build_docs_menu(selected: usize, docs: WeakEntity<DocsShell>) -> Menu {
-    let mut menu = Menu::new()
+    Menu::new()
         .id("liora-docs-menu")
         .mode(MenuMode::Vertical)
         .default_active(selected.to_string())
+        .with_items(docs_nav_menu_items())
         .on_select(move |id, _, cx| {
             let Ok(index) = id.parse::<usize>() else {
                 return;
@@ -8363,13 +8365,53 @@ fn build_docs_menu(selected: usize, docs: WeakEntity<DocsShell>) -> Menu {
                     cx.notify();
                 }
             });
-        });
+        })
+}
 
-    for (index, page) in DOC_PAGES.iter().enumerate() {
-        menu = menu.item(index.to_string(), page.title, None);
+fn docs_nav_menu_items() -> Vec<liora_components::MenuNode> {
+    let mut indices = (0..DOC_PAGES.len()).collect::<Vec<_>>();
+    indices.sort_by(|left, right| {
+        let left_page = &DOC_PAGES[*left];
+        let right_page = &DOC_PAGES[*right];
+        let left_category = category::category_for(left_page.title);
+        let right_category = category::category_for(right_page.title);
+        left_category
+            .order()
+            .cmp(&right_category.order())
+            .then_with(|| {
+                category::component_key(left_page.title)
+                    .cmp(category::component_key(right_page.title))
+            })
+            .then_with(|| left.cmp(right))
+    });
+
+    let mut groups = Vec::new();
+    for group_category in category::Category::ALL {
+        let children = indices
+            .iter()
+            .filter_map(|page_index| {
+                let page = &DOC_PAGES[*page_index];
+                (category::category_for(page.title) == *group_category).then(|| {
+                    liora_components::MenuNode::Item(liora_components::MenuItem {
+                        id: page_index.to_string().into(),
+                        label: page.title.into(),
+                        icon: None,
+                    })
+                })
+            })
+            .collect::<Vec<_>>();
+
+        if !children.is_empty() {
+            groups.push(liora_components::MenuNode::Group(
+                liora_components::MenuItemGroup {
+                    title: group_category.name().into(),
+                    children,
+                },
+            ));
+        }
     }
 
-    menu
+    groups
 }
 
 fn render_list(
@@ -8457,6 +8499,32 @@ impl InlineSegment {
 mod tests {
     use super::*;
 
+    fn docs_menu_group<'a>(
+        items: &'a [liora_components::MenuNode],
+        title: &str,
+    ) -> &'a liora_components::MenuItemGroup {
+        items
+            .iter()
+            .find_map(|node| match node {
+                liora_components::MenuNode::Group(group) if group.title.as_ref() == title => {
+                    Some(group)
+                }
+                _ => None,
+            })
+            .unwrap_or_else(|| panic!("missing docs nav group {title}"))
+    }
+
+    fn docs_menu_group_labels(group: &liora_components::MenuItemGroup) -> Vec<&str> {
+        group
+            .children
+            .iter()
+            .map(|node| match node {
+                liora_components::MenuNode::Item(item) => item.label.as_ref(),
+                _ => panic!("Docs nav groups should contain leaf items"),
+            })
+            .collect()
+    }
+
     #[test]
     fn docs_shell_registers_theme_system_page() {
         let titles = DOC_PAGES.iter().map(|page| page.title).collect::<Vec<_>>();
@@ -8466,6 +8534,45 @@ mod tests {
         assert!(THEME_SYSTEM_DOC.contains("attach_system_theme_observer"));
         assert!(THEME_SYSTEM_DOC.contains("observe_window_appearance"));
         assert!(load_code_snippet("theme/system_mode.rs").is_some());
+    }
+
+    #[test]
+    fn docs_nav_menu_items_group_pages_by_category_then_title() {
+        let items = docs_nav_menu_items();
+
+        let guide_group = docs_menu_group(&items, "指南");
+        assert!(docs_menu_group_labels(guide_group).starts_with(&[
+            "Adoption Guide",
+            "Architecture",
+            "Authoring",
+        ]));
+        assert!(docs_menu_group_labels(guide_group).contains(&"Dashboard Patterns"));
+
+        let window_group = docs_menu_group(&items, "窗体控件");
+        assert!(docs_menu_group_labels(window_group).starts_with(&[
+            "Container",
+            "Dialog",
+            "Drawer"
+        ]));
+
+        let form_group = docs_menu_group(&items, "表单控件");
+        assert!(docs_menu_group_labels(form_group).starts_with(&[
+            "Autocomplete",
+            "Cascader",
+            "Checkbox"
+        ]));
+
+        let chart_group = docs_menu_group(&items, "图表控件");
+        assert_eq!(
+            docs_menu_group_labels(chart_group),
+            vec![
+                "AreaChart",
+                "BarChart",
+                "LineChart",
+                "PieChart",
+                "RingChart"
+            ]
+        );
     }
 
     #[test]
@@ -8916,7 +9023,7 @@ mod tests {
     }
 
     #[test]
-    fn component_docs_cover_gallery_registry_order() {
+    fn component_docs_cover_gallery_registry_coverage() {
         let docs_titles = DOC_PAGES.iter().map(|page| page.title).collect::<Vec<_>>();
         let gallery_keys = liora_gallery::demos::registry()
             .into_iter()
@@ -8931,13 +9038,6 @@ mod tests {
                 "missing reusable gallery demo for {key}"
             );
         }
-
-        let docs_component_order = docs_titles
-            .iter()
-            .filter(|title| gallery_keys.contains(title))
-            .copied()
-            .collect::<Vec<_>>();
-        assert_eq!(docs_component_order, gallery_keys);
     }
 
     #[test]

@@ -14,7 +14,7 @@ use liora_core::{
     ensure_linux_desktop_identity, linux_desktop_entry, linux_desktop_png_icon_path,
     load_app_fonts, startup_maximized_window_bounds,
 };
-use liora_gallery::demos;
+use liora_gallery::{category, demos};
 use liora_tray::{
     LioraTray, MouseButton, MouseButtonState, TrayCloseAction, TrayCommand, TrayConfig,
     TrayControlCenter, TrayIconEvent, default_liora_tray_menu, icon_from_png_bytes, solid_icon,
@@ -1409,7 +1409,7 @@ fn gallery_nav_index_from_id(id: &str) -> Option<usize> {
 }
 
 fn gallery_nav_menu_items(index: &[GalleryNavEntry], query: &str) -> Vec<MenuNode> {
-    let visible = gallery_nav_visible_indices(index, query);
+    let mut visible = gallery_nav_visible_indices(index, query);
     if visible.is_empty() {
         return vec![MenuNode::Item(liora_components::MenuItem {
             id: "gallery-nav-empty".into(),
@@ -1418,17 +1418,46 @@ fn gallery_nav_menu_items(index: &[GalleryNavEntry], query: &str) -> Vec<MenuNod
         })];
     }
 
-    visible
-        .into_iter()
-        .filter_map(|entry_index| {
-            let entry = index.get(entry_index)?;
-            Some(MenuNode::Item(liora_components::MenuItem {
-                id: gallery_nav_item_id(entry_index),
-                label: entry.label.clone(),
-                icon: None,
-            }))
-        })
-        .collect()
+    visible.sort_by(|left, right| {
+        let left_entry = &index[*left];
+        let right_entry = &index[*right];
+        let left_category = category::category_for(left_entry.label.as_ref());
+        let right_category = category::category_for(right_entry.label.as_ref());
+        left_category
+            .order()
+            .cmp(&right_category.order())
+            .then_with(|| {
+                category::component_key(left_entry.label.as_ref())
+                    .cmp(category::component_key(right_entry.label.as_ref()))
+            })
+            .then_with(|| left.cmp(right))
+    });
+
+    let mut groups: Vec<MenuNode> = Vec::new();
+    for group_category in category::Category::ALL {
+        let children = visible
+            .iter()
+            .filter_map(|entry_index| {
+                let entry = index.get(*entry_index)?;
+                (category::category_for(entry.label.as_ref()) == *group_category).then(|| {
+                    MenuNode::Item(liora_components::MenuItem {
+                        id: gallery_nav_item_id(*entry_index),
+                        label: entry.label.clone(),
+                        icon: None,
+                    })
+                })
+            })
+            .collect::<Vec<_>>();
+
+        if !children.is_empty() {
+            groups.push(MenuNode::Group(liora_components::MenuItemGroup {
+                title: group_category.name().into(),
+                children,
+            }));
+        }
+    }
+
+    groups
 }
 
 struct PortalLayer;
@@ -1557,8 +1586,8 @@ mod shell_regression_tests {
     fn sample_nav_entries() -> Vec<GalleryNavEntry> {
         vec![
             GalleryNavEntry {
-                label: "Button".into(),
-                search_text: "button clickable".into(),
+                label: "Shell".into(),
+                search_text: "shell frame window".into(),
             },
             GalleryNavEntry {
                 label: "Input".into(),
@@ -1568,14 +1597,40 @@ mod shell_regression_tests {
                 label: "About / 关于".into(),
                 search_text: "about 关于 updates 更新".into(),
             },
+            GalleryNavEntry {
+                label: "Dialog".into(),
+                search_text: "dialog frame window".into(),
+            },
         ]
+    }
+
+    fn menu_group_labels(group: &liora_components::MenuItemGroup) -> Vec<&str> {
+        group
+            .children
+            .iter()
+            .map(|node| match node {
+                liora_components::MenuNode::Item(item) => item.label.as_ref(),
+                _ => panic!("Gallery nav groups should contain leaf items"),
+            })
+            .collect()
+    }
+
+    fn menu_group_ids(group: &liora_components::MenuItemGroup) -> Vec<&str> {
+        group
+            .children
+            .iter()
+            .map(|node| match node {
+                liora_components::MenuNode::Item(item) => item.id.as_ref(),
+                _ => panic!("Gallery nav groups should contain leaf items"),
+            })
+            .collect()
     }
 
     #[test]
     fn gallery_nav_visible_indices_preserve_original_selection_ids() {
         let entries = sample_nav_entries();
 
-        assert_eq!(gallery_nav_visible_indices(&entries, ""), vec![0, 1, 2]);
+        assert_eq!(gallery_nav_visible_indices(&entries, ""), vec![0, 1, 2, 3]);
         assert_eq!(gallery_nav_visible_indices(&entries, "input"), vec![1]);
         assert_eq!(gallery_nav_visible_indices(&entries, "关于"), vec![2]);
         assert!(gallery_nav_visible_indices(&entries, "missing").is_empty());
@@ -1585,22 +1640,50 @@ mod shell_regression_tests {
     }
 
     #[test]
-    fn gallery_nav_menu_items_use_original_indices_as_menu_ids() {
+    fn gallery_nav_menu_items_group_by_component_category_then_label() {
         let entries = sample_nav_entries();
-        let items = gallery_nav_menu_items(&entries, "input");
+        let items = gallery_nav_menu_items(&entries, "");
 
-        assert_eq!(items.len(), 1);
-        let liora_components::MenuNode::Item(item) = &items[0] else {
-            panic!("Gallery nav should build flat Menu items");
+        assert_eq!(items.len(), 3);
+
+        let liora_components::MenuNode::Group(window_group) = &items[0] else {
+            panic!("Gallery nav should group visible menu items by component category");
         };
-        assert_eq!(item.id.as_ref(), "gallery-nav-1");
-        assert_eq!(item.label.as_ref(), "Input");
+        assert_eq!(window_group.title.as_ref(), "窗体控件");
+        assert_eq!(menu_group_labels(window_group), vec!["Dialog", "Shell"]);
+
+        let liora_components::MenuNode::Group(form_group) = &items[1] else {
+            panic!("Form controls should be grouped after window controls");
+        };
+        assert_eq!(form_group.title.as_ref(), "表单控件");
+        assert_eq!(menu_group_labels(form_group), vec!["Input"]);
+        assert_eq!(menu_group_ids(form_group), vec!["gallery-nav-1"]);
+
+        let liora_components::MenuNode::Group(other_group) = &items[2] else {
+            panic!("About should be kept in the Other group");
+        };
+        assert_eq!(other_group.title.as_ref(), "其他");
+        assert_eq!(menu_group_labels(other_group), vec!["About / 关于"]);
 
         let empty_items = gallery_nav_menu_items(&entries, "missing");
         let liora_components::MenuNode::Item(empty_item) = &empty_items[0] else {
             panic!("Gallery nav empty state should still be a Menu item");
         };
         assert_eq!(empty_item.id.as_ref(), "gallery-nav-empty");
+    }
+
+    #[test]
+    fn gallery_nav_filter_keeps_matching_groups_only() {
+        let entries = sample_nav_entries();
+        let items = gallery_nav_menu_items(&entries, "input");
+
+        assert_eq!(items.len(), 1);
+        let liora_components::MenuNode::Group(form_group) = &items[0] else {
+            panic!("Filtered Gallery nav should keep category headings for matching items");
+        };
+        assert_eq!(form_group.title.as_ref(), "表单控件");
+        assert_eq!(menu_group_labels(form_group), vec!["Input"]);
+        assert_eq!(menu_group_ids(form_group), vec!["gallery-nav-1"]);
     }
 
     #[test]
