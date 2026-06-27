@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="Accordion"}::
+::LioraDemo{component="AccordionBasic"}::
 
 ### 代码
 
@@ -16,6 +16,8 @@
 ## 多开模式
 
 ### 效果
+
+::LioraDemo{component="AccordionMultiple"}::
 
 多开模式允许多个分组同时展开，适合配置面板或需要并列查看的文档区块。
 
@@ -27,6 +29,8 @@
 ## 禁用与视觉状态
 
 ### 效果
+
+::LioraDemo{component="AccordionStates"}::
 
 禁用项保留标题与说明但阻止交互，用于展示不可用能力、权限限制或分阶段开放的内容。
 

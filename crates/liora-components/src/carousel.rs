@@ -20,12 +20,13 @@
 //! crate.
 
 use gpui::{
-    AnyElement, App, Component, Hsla, IntoElement, Pixels, RenderOnce, SharedString, Window, div,
-    prelude::*, px,
+    AnyElement, App, Component, Hsla, IntoElement, MouseButton, Pixels, RenderOnce, SharedString,
+    Window, div, prelude::*, px,
 };
 use liora_core::Config;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
+use std::sync::Arc;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 /// Options that control carousel direction behavior.
@@ -98,7 +99,7 @@ pub struct Carousel {
     interval_ms: u64,
     show_arrows: bool,
     pause_on_hover: bool,
-    on_change: Option<Box<dyn Fn(usize, &mut Window, &mut App) + 'static>>,
+    on_change: Option<Arc<dyn Fn(usize, &mut Window, &mut App) + 'static>>,
 }
 
 impl Carousel {
@@ -176,7 +177,7 @@ impl Carousel {
     }
     /// Registers a callback that runs when change occurs.
     pub fn on_change(mut self, cb: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
-        self.on_change = Some(Box::new(cb));
+        self.on_change = Some(Arc::new(cb));
         self
     }
     /// Performs the item count operation used by this component.
@@ -209,6 +210,9 @@ impl RenderOnce for Carousel {
         let theme = cx.global::<Config>().theme.clone();
         let active_index = self.resolved_active_index();
         let count = self.items.len();
+        let previous_target = self.previous_index();
+        let next_target = self.next_index();
+        let on_change = self.on_change.clone();
         let mut items = self.items;
         let active_item =
             active_index.and_then(|idx| (idx < items.len()).then(|| items.remove(idx)));
@@ -297,20 +301,32 @@ impl RenderOnce for Carousel {
                     .child(Icon::new(icon).size(px(18.0)).color(theme.neutral.text_1))
             };
             frame = frame
-                .child(
-                    div()
-                        .absolute()
-                        .left(px(14.0))
-                        .top_1_2()
-                        .child(arrow(IconName::ChevronLeft)),
-                )
-                .child(
-                    div()
-                        .absolute()
-                        .right(px(14.0))
-                        .top_1_2()
-                        .child(arrow(IconName::ChevronRight)),
-                );
+                .child(div().absolute().left(px(14.0)).top_1_2().child(
+                    arrow(IconName::ChevronLeft).when_some(
+                        previous_target.and_then(|target| {
+                            on_change.clone().map(|callback| (target, callback))
+                        }),
+                        |s, (target, callback)| {
+                            s.on_mouse_down(MouseButton::Left, move |_, window, cx| {
+                                callback(target, window, cx);
+                                cx.stop_propagation();
+                            })
+                        },
+                    ),
+                ))
+                .child(div().absolute().right(px(14.0)).top_1_2().child(
+                    arrow(IconName::ChevronRight).when_some(
+                        next_target.and_then(|target| {
+                            on_change.clone().map(|callback| (target, callback))
+                        }),
+                        |s, (target, callback)| {
+                            s.on_mouse_down(MouseButton::Left, move |_, window, cx| {
+                                callback(target, window, cx);
+                                cx.stop_propagation();
+                            })
+                        },
+                    ),
+                ));
         }
 
         let make_dots = || {
@@ -321,6 +337,7 @@ impl RenderOnce for Carousel {
                 .gap_2()
                 .children((0..count).map(|idx| {
                     let active_dot = Some(idx) == active_index;
+                    let dot_target = idx;
                     div()
                         .w(if active_dot { px(22.0) } else { px(7.0) })
                         .h(px(7.0))
@@ -329,6 +346,13 @@ impl RenderOnce for Carousel {
                             accent
                         } else {
                             theme.neutral.border
+                        })
+                        .cursor_pointer()
+                        .when_some(on_change.clone(), |s, callback| {
+                            s.on_mouse_down(MouseButton::Left, move |_, window, cx| {
+                                callback(dot_target, window, cx);
+                                cx.stop_propagation();
+                            })
                         })
                         .into_any_element()
                 }))
@@ -377,6 +401,21 @@ mod tests {
             CarouselItem::new("B"),
             CarouselItem::new("C").accent(rgb(0x16a34a).into()),
         ]
+    }
+
+    #[test]
+    fn carousel_controls_wire_pointer_events_to_on_change() {
+        let source = include_str!("carousel.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(source.contains(".on_mouse_down(MouseButton::Left"));
+        assert!(source.contains("on_change"));
+        assert!(source.contains("previous_target"));
+        assert!(source.contains("next_target"));
+        assert!(source.contains("dot_target"));
+        assert!(source.contains("cx.stop_propagation();"));
     }
 
     #[test]

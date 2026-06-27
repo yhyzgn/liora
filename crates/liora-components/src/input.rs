@@ -1552,7 +1552,7 @@ impl Render for Input {
             row = row.child(
                 gpui::div()
                     .flex_none()
-                    .items_start()
+                    .h_full()
                     .bg(theme.neutral.hover)
                     .border_r_1()
                     .border_color(theme.neutral.border)
@@ -1645,7 +1645,7 @@ impl Render for Input {
             row = row.child(
                 gpui::div()
                     .flex_none()
-                    .items_start()
+                    .h_full()
                     .bg(theme.neutral.hover)
                     .border_l_1()
                     .border_color(theme.neutral.border)
@@ -1674,6 +1674,36 @@ mod width_tests {
         assert!(source.contains("self.start_blink(cx);"));
         assert!(source.contains("self.selected_range = previous..cursor"));
         assert!(!source.contains("self.select_to(p, cx);"));
+    }
+
+    #[test]
+    fn prepend_and_append_shells_fill_input_height() {
+        let source = include_str!("input.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+        let prepend_region = source
+            .split("if let Some(ref p_render) = self.prepend")
+            .nth(1)
+            .and_then(|region| region.split("let mut inner =").next())
+            .expect("prepend render region should exist");
+        let append_region = source
+            .split("if let Some(ref a_render) = self.append")
+            .nth(1)
+            .and_then(|region| {
+                region
+                    .split(
+                        "row
+    }",
+                    )
+                    .next()
+            })
+            .expect("append render region should exist");
+
+        assert!(prepend_region.contains(".h_full()"));
+        assert!(append_region.contains(".h_full()"));
+        assert!(!prepend_region.contains(".items_start()"));
+        assert!(!append_region.contains(".items_start()"));
     }
 
     #[test]

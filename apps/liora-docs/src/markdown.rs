@@ -12,12 +12,12 @@ use liora_components::{
     Link, Loading, Menu, MenuMode, NotificationType, Paragraph, Popconfirm, Popover, Preview,
     Progress, ProgressStatus, QrCode, QrEcLevel, QrFinderStyle, QrGradientDirection, QrModuleStyle,
     Radio, RadioGroup, RadioOptionStyle, Rate, Result as LioraResult, ResultStatus, Segmented,
-    SegmentedOption, Select, Sidebar, Skeleton, SkeletonItem, SkeletonVariant, Slider, Space,
-    Statistic, Switch, Tag as LioraTag, Text, Textarea, Timer, TimerFormat, TimerUnit, Title,
-    TitleBar, TitleBarContentAlign, Transfer, TransferItem, Tree, TreeNode, Upload, UploadFile,
-    UploadStatus, VirtualizedList, VirtualizedTable, VirtualizedTree, WindowControlsPosition,
-    WindowFrameMode, frame_mode_switch_row, show_notification, toast_error, toast_info,
-    toast_success, toast_warning,
+    SegmentedOption, Select, Shell, Sidebar, Skeleton, SkeletonItem, SkeletonVariant, Slider,
+    Space, Statistic, Switch, Tag as LioraTag, Text, Textarea, Timer, TimerFormat, TimerUnit,
+    Title, TitleBar, TitleBarContentAlign, Transfer, TransferItem, Tree, TreeNode, Upload,
+    UploadFile, UploadStatus, VirtualizedList, VirtualizedTable, VirtualizedTree,
+    WindowControlsPosition, WindowFrameMode, frame_mode_switch_row, show_notification, toast_error,
+    toast_info, toast_success, toast_warning,
 };
 use liora_core::{
     Config, PassivePortal, Placement, Portal, ThemeMode, apply_theme_mode, clear_popover,
@@ -1896,6 +1896,7 @@ struct LiveDemoContent {
     paginations: Vec<Entity<liora_components::Pagination>>,
     tabs: Vec<Entity<liora_components::Tabs>>,
     scrollbars: Vec<Entity<liora_components::Scrollbar>>,
+    accordions: Vec<Entity<liora_components::Accordion>>,
     table_sort_key: Option<SharedString>,
     table_sort_order: Option<liora_components::TableSortOrder>,
     color_pickers: Vec<Entity<liora_components::ColorPicker>>,
@@ -1942,6 +1943,7 @@ impl LiveDemoContent {
         let mut paginations = Vec::new();
         let mut tabs = Vec::new();
         let mut scrollbars = Vec::new();
+        let mut accordions = Vec::new();
         let mut color_pickers = Vec::new();
         let mut time_pickers = Vec::new();
         let mut cascaders = Vec::new();
@@ -1963,6 +1965,34 @@ impl LiveDemoContent {
         let scroll_handle = ScrollHandle::new();
 
         match component.as_ref() {
+            "ShellBasic" | "ShellFullProduct" => {
+                menus.push(cx.new(|_| docs_product_menu("docs-shell-main-menu-live")));
+                menus.push(cx.new(|_| docs_inspector_menu("docs-shell-inspector-menu-live")));
+            }
+            "ShellContentFirst" => {
+                menus.push(cx.new(|_| docs_compact_menu("docs-shell-compact-menu-live")));
+            }
+            "SidebarBasic" | "SidebarBrand" => {
+                menus.push(cx.new(|_| docs_workspace_menu("docs-sidebar-brand-menu-live")));
+            }
+            "SidebarScrollable" => {
+                menus.push(cx.new(|_| docs_long_workspace_menu("docs-sidebar-long-menu-live")));
+            }
+            "SidebarInspector" => {
+                menus.push(cx.new(|_| docs_inspector_menu("docs-sidebar-inspector-menu-live")));
+            }
+            "SidebarIconRail" => {
+                menus.push(cx.new(|_| docs_icon_rail_menu("docs-sidebar-icon-menu-live")));
+            }
+            "Accordion" | "AccordionBasic" => {
+                accordions.push(cx.new(|_| docs_accordion_basic_demo()));
+            }
+            "AccordionMultiple" => {
+                accordions.push(cx.new(|_| docs_accordion_multiple_demo()));
+            }
+            "AccordionStates" => {
+                accordions.push(cx.new(|_| docs_accordion_states_demo()));
+            }
             "AutocompleteBasic" => {
                 let suggestions = basic_autocomplete_items();
                 autocompletes.push(cx.new(move |cx| {
@@ -2701,6 +2731,7 @@ impl LiveDemoContent {
             paginations,
             tabs,
             scrollbars,
+            accordions,
             table_sort_key: None,
             table_sort_order: None,
             color_pickers,
@@ -4881,13 +4912,32 @@ impl Render for LiveDemoContent {
             "ContainerSpace" => container_space_demo(),
             "ContainerDivider" => container_divider_demo(),
             "ContainerLayout" => container_layout_demo(),
-            "ShellBasic" | "ShellFullProduct" | "ShellContentFirst" | "ShellMinimal" => liora_gallery::demos::render_doc_demo("Shell", _cx)
-                .map(|view| view.into_any_element())
-                .unwrap_or_else(|| Paragraph::with_text("Shell demo is not available.").into_any_element()),
-            "SidebarBasic" | "SidebarBrand" | "SidebarScrollable" | "SidebarInspector"
-            | "SidebarIconRail" | "SidebarCustomSlots" => liora_gallery::demos::render_doc_demo("Sidebar", _cx)
-                .map(|view| view.into_any_element())
-                .unwrap_or_else(|| Paragraph::with_text("Sidebar demo is not available.").into_any_element()),
+            "ShellBasic" | "ShellFullProduct" => self.docs_shell_full_product_demo(_cx),
+            "ShellContentFirst" => self.docs_shell_content_first_demo(_cx),
+            "ShellMinimal" => docs_shell_minimal_demo(&_cx.global::<Config>().theme),
+            "SidebarBasic" | "SidebarBrand" => self.docs_sidebar_brand_demo(_cx),
+            "SidebarScrollable" => self.docs_sidebar_scrollable_demo(_cx),
+            "SidebarInspector" => self.docs_sidebar_inspector_demo(_cx),
+            "SidebarIconRail" => self.docs_sidebar_icon_rail_demo(_cx),
+            "SidebarCustomSlots" => docs_sidebar_custom_slots_demo(&_cx.global::<Config>().theme),
+            "Accordion" | "AccordionBasic" => self
+                .accordions
+                .first()
+                .cloned()
+                .map(|accordion| Card::new(accordion).no_shadow().into_any_element())
+                .unwrap_or_else(|| Paragraph::with_text("Missing Accordion demo").into_any_element()),
+            "AccordionMultiple" => self
+                .accordions
+                .first()
+                .cloned()
+                .map(|accordion| Card::new(accordion).no_shadow().into_any_element())
+                .unwrap_or_else(|| Paragraph::with_text("Missing Accordion demo").into_any_element()),
+            "AccordionStates" => self
+                .accordions
+                .first()
+                .cloned()
+                .map(|accordion| Card::new(accordion).no_shadow().into_any_element())
+                .unwrap_or_else(|| Paragraph::with_text("Missing Accordion demo").into_any_element()),
             "TitleBarBasic" | "TitleBarControls" => docs_titlebar_controls_demo(&_cx.global::<Config>().theme),
             "TitleBarCommandCenter" => docs_titlebar_command_demo(&_cx.global::<Config>().theme),
             "TitleBarBorderless" => docs_titlebar_borderless_demo(&_cx.global::<Config>().theme),
@@ -5425,6 +5475,331 @@ impl LiveDemoContent {
         }
 
         table.into_any_element()
+    }
+
+    fn docs_shell_full_product_demo(&self, cx: &mut Context<Self>) -> AnyElement {
+        let theme = cx.global::<Config>().theme.clone();
+        Card::new(
+            Flex::new().height_units(520.0).overflow_hidden().child(
+                Shell::new(
+                    Card::new(
+                        Space::new()
+                            .vertical()
+                            .gap_sm()
+                            .child(Title::new("Dashboard workspace").h4())
+                            .child(Text::new("The main region scrolls independently."))
+                            .child(Button::new("Primary action").primary()),
+                    )
+                    .no_shadow(),
+                )
+                .id("docs-shell-full-product-live")
+                .mode(WindowFrameMode::Custom)
+                .titlebar(
+                    TitleBar::new()
+                        .title("Liora Product")
+                        .subtitle("Full shell composition")
+                        .icon(Icon::new(IconName::Sparkles).size_units(16.0))
+                        .height_units(56.0)
+                        .background(theme.neutral.card)
+                        .border_color(theme.neutral.border)
+                        .title_color(theme.neutral.text_1)
+                        .subtitle_color(theme.neutral.text_3)
+                        .window_controls(true)
+                        .action(Button::new("Sync").small())
+                        .action(Button::new("Publish").small().primary()),
+                )
+                .header(
+                    Space::new()
+                        .gap_sm()
+                        .child(Text::new("Production").bold())
+                        .child(Text::new("All systems nominal").sm()),
+                )
+                .header_height_units(54.0)
+                .header_background(theme.neutral.card)
+                .header_border_color(theme.primary.light_7)
+                .sidebar(
+                    Sidebar::new()
+                        .id("docs-shell-left-sidebar-live")
+                        .expanded_width_units(238.0)
+                        .brand("Workspace")
+                        .brand_subtitle("Product navigation")
+                        .logo(Icon::new(IconName::Blocks).size_units(18.0))
+                        .background(theme.neutral.card)
+                        .border_color(theme.neutral.border)
+                        .header_padding_units(12.0)
+                        .content_padding_units(6.0)
+                        .footer_padding_units(10.0)
+                        .gap_units(8.0)
+                        .scrollable()
+                        .child(self.menus[0].clone())
+                        .footer(Text::new("v0.1 shell").xs()),
+                )
+                .right_sidebar(
+                    Sidebar::new()
+                        .id("docs-shell-right-sidebar-live")
+                        .right()
+                        .expanded_width_units(210.0)
+                        .brand("Inspector")
+                        .brand_subtitle("Context panel")
+                        .logo(Icon::new(IconName::PanelRight).size_units(18.0))
+                        .background(theme.neutral.popover)
+                        .border_color(theme.neutral.border)
+                        .header_padding_units(10.0)
+                        .content_padding_units(8.0)
+                        .footer_padding_units(10.0)
+                        .gap_units(8.0)
+                        .scrollable()
+                        .child(self.menus[1].clone())
+                        .content(Text::new("Selection properties render here.").sm())
+                        .footer(Button::new("Open details").small()),
+                )
+                .main(Text::new("Additional dashboard content can be appended."))
+                .footer(Text::new("Workspace ready").xs())
+                .footer_height_units(42.0)
+                .footer_background(theme.neutral.card)
+                .footer_border_color(theme.primary.light_7)
+                .main_scroll()
+                .main_padding_units(16.0)
+                .body_background(theme.neutral.body)
+                .main_background(theme.neutral.card)
+                .main_rounded_units(18.0)
+                .overlay(Text::new("Overlay slot").xs())
+                .overlay_position(liora_components::ShellOverlayPosition::BottomRight)
+                .overlay_inset_units(18.0),
+            ),
+        )
+        .no_shadow()
+        .into_any_element()
+    }
+
+    fn docs_shell_content_first_demo(&self, cx: &mut Context<Self>) -> AnyElement {
+        let theme = cx.global::<Config>().theme.clone();
+        Card::new(
+            Flex::new().height_units(420.0).overflow_hidden().child(
+                Shell::new(
+                    Card::new(
+                        Space::new()
+                            .vertical()
+                            .gap_sm()
+                            .child(Title::new("Document canvas").h4())
+                            .child(Text::new("System frame mode keeps platform decorations."))
+                            .child(Button::new("Edit page").primary()),
+                    )
+                    .no_shadow(),
+                )
+                .id("docs-shell-content-first-live")
+                .mode(WindowFrameMode::System)
+                .header(
+                    Space::new()
+                        .gap_sm()
+                        .child(Text::new("Docs workspace").bold())
+                        .child(Text::new("System frame + app shell").sm()),
+                )
+                .header_height_units(58.0)
+                .header_background(theme.primary.light_9)
+                .header_border_color(theme.primary.light_7)
+                .sidebar(
+                    Sidebar::new()
+                        .id("docs-shell-content-sidebar-live")
+                        .expanded_width_units(210.0)
+                        .brand("Docs")
+                        .brand_subtitle("Compact nav")
+                        .logo(Icon::new(IconName::BookOpen).size_units(18.0))
+                        .background(theme.primary.light_9)
+                        .border_color(theme.primary.light_7)
+                        .header_padding_units(12.0)
+                        .content_padding_units(6.0)
+                        .footer_padding_units(10.0)
+                        .gap_units(8.0)
+                        .scrollable()
+                        .child(self.menus[2].clone()),
+                )
+                .right_sidebar(
+                    Sidebar::new()
+                        .id("docs-shell-context-note-live")
+                        .right()
+                        .expanded_width_units(190.0)
+                        .brand("Context")
+                        .brand_subtitle("Page metadata")
+                        .logo(Icon::new(IconName::Info).size_units(18.0))
+                        .content(Text::new("Use this region for metadata or help.")),
+                )
+                .footer(Text::new("Autosaved just now").xs())
+                .footer_height_units(38.0)
+                .footer_background(theme.primary.light_9)
+                .footer_border_color(theme.primary.light_7)
+                .main_padding_units(18.0)
+                .main_scroll()
+                .body_gap_units(10.0)
+                .body_background(theme.neutral.body)
+                .main_background(theme.neutral.card)
+                .main_rounded_units(18.0),
+            ),
+        )
+        .no_shadow()
+        .into_any_element()
+    }
+
+    fn docs_sidebar_brand_demo(&self, cx: &mut Context<Self>) -> AnyElement {
+        let theme = cx.global::<Config>().theme.clone();
+        Card::new(
+            Flex::new()
+                .height_units(392.0)
+                .row()
+                .overflow_hidden()
+                .child(
+                    Sidebar::new()
+                        .id("docs-sidebar-brand-live")
+                        .left()
+                        .expanded_width_units(286.0)
+                        .min_width_units(220.0)
+                        .max_width_units(360.0)
+                        .resizable()
+                        .header_padding_units(14.0)
+                        .content_padding_units(8.0)
+                        .footer_padding_units(12.0)
+                        .gap_units(8.0)
+                        .rounded_units(16.0)
+                        .background(theme.neutral.card)
+                        .border_color(theme.neutral.border)
+                        .brand("Liora Workspace")
+                        .brand_subtitle("Native GPUI shell")
+                        .logo(
+                            Icon::new(IconName::Sparkles)
+                                .size_units(20.0)
+                                .color(theme.primary.base),
+                        )
+                        .brand_action(Button::new("+").small().primary())
+                        .scrollable()
+                        .child(self.menus[3].clone())
+                        .footer(
+                            Space::new()
+                                .gap_sm()
+                                .child(Button::new("New").small())
+                                .child(Button::new("Settings").small()),
+                        ),
+                ),
+        )
+        .no_shadow()
+        .into_any_element()
+    }
+
+    fn docs_sidebar_scrollable_demo(&self, cx: &mut Context<Self>) -> AnyElement {
+        let theme = cx.global::<Config>().theme.clone();
+        Card::new(
+            Flex::new()
+                .height_units(320.0)
+                .row()
+                .overflow_hidden()
+                .child(
+                    Sidebar::new()
+                        .id("docs-sidebar-long-scroll-live")
+                        .expanded_width_units(316.0)
+                        .header_padding_units(16.0)
+                        .content_padding_units(6.0)
+                        .footer_padding_units(10.0)
+                        .gap_units(10.0)
+                        .rounded_units(18.0)
+                        .background(theme.neutral.card)
+                        .border_color(theme.neutral.border)
+                        .header(
+                            Space::new()
+                                .gap_sm()
+                                .child(
+                                    Icon::new(IconName::Sparkles)
+                                        .size_units(22.0)
+                                        .color(theme.primary.base),
+                                )
+                                .child(Text::new("Liora Product").bold())
+                                .child(Button::new("Pro").small().primary()),
+                        )
+                        .scrollable()
+                        .child(self.menus[4].clone())
+                        .footer(
+                            Space::new()
+                                .gap_sm()
+                                .child(Text::new("Pinned footer").xs())
+                                .child(Button::new("Upgrade").small().primary()),
+                        ),
+                ),
+        )
+        .no_shadow()
+        .into_any_element()
+    }
+
+    fn docs_sidebar_inspector_demo(&self, cx: &mut Context<Self>) -> AnyElement {
+        let theme = cx.global::<Config>().theme.clone();
+        Card::new(
+            Flex::new()
+                .height_units(340.0)
+                .row()
+                .justify_end()
+                .overflow_hidden()
+                .child(
+                    Sidebar::new()
+                        .id("docs-sidebar-inspector-live")
+                        .right()
+                        .expanded_width_units(268.0)
+                        .brand("Inspector")
+                        .brand_subtitle("Selection details")
+                        .logo(Icon::new(IconName::PanelRight).size_units(20.0))
+                        .brand_action(Button::new("Pin").small())
+                        .background(theme.neutral.popover)
+                        .border_color(theme.neutral.border)
+                        .rounded_units(14.0)
+                        .header_padding_units(12.0)
+                        .content_padding_units(10.0)
+                        .footer_padding_units(12.0)
+                        .gap_units(6.0)
+                        .scrollable()
+                        .child(self.menus[5].clone())
+                        .content(
+                            Space::new()
+                                .vertical()
+                                .gap_sm()
+                                .child(Text::new("Width 268 px"))
+                                .child(Text::new("Mode Full"))
+                                .child(Text::new("Pinned Yes")),
+                        )
+                        .footer(Text::new("Updates when selection changes.").xs()),
+                ),
+        )
+        .no_shadow()
+        .into_any_element()
+    }
+
+    fn docs_sidebar_icon_rail_demo(&self, cx: &mut Context<Self>) -> AnyElement {
+        let theme = cx.global::<Config>().theme.clone();
+        Card::new(
+            Flex::new()
+                .height_units(316.0)
+                .row()
+                .overflow_hidden()
+                .child(
+                    Sidebar::new()
+                        .id("docs-sidebar-icon-rail-live")
+                        .collapse_mode(liora_components::SidebarCollapseMode::IconsOnly)
+                        .collapsed_width_units(72.0)
+                        .expanded_width_units(260.0)
+                        .header_padding_units(10.0)
+                        .content_padding_units(8.0)
+                        .footer_padding_units(10.0)
+                        .gap_units(8.0)
+                        .background(theme.primary.light_9)
+                        .border_color(theme.primary.light_7)
+                        .rounded_units(18.0)
+                        .logo(
+                            Icon::new(IconName::Sparkles)
+                                .size_units(20.0)
+                                .color(theme.primary.base),
+                        )
+                        .scrollable()
+                        .child(self.menus[6].clone())
+                        .footer(Icon::new(IconName::Settings).size_units(18.0)),
+                ),
+        )
+        .no_shadow()
+        .into_any_element()
     }
 
     fn virtualized_table_sortable_demo(&self, cx: &mut Context<Self>) -> AnyElement {
@@ -6122,6 +6497,204 @@ fn docs_virtualized_tree(cx: &mut Context<VirtualizedTree>, checkable: bool) -> 
     }
 
     tree
+}
+
+fn docs_product_menu(id: &'static str) -> Menu {
+    Menu::new()
+        .id(id)
+        .mode(MenuMode::Vertical)
+        .default_active("dashboard")
+        .item("dashboard", "Dashboard", Some(IconName::LayoutDashboard))
+        .item("components", "Components", Some(IconName::Component))
+        .item("releases", "Releases", Some(IconName::Rocket))
+        .item("settings", "Settings", Some(IconName::Settings))
+}
+
+fn docs_inspector_menu(id: &'static str) -> Menu {
+    Menu::new()
+        .id(id)
+        .mode(MenuMode::Vertical)
+        .default_active("layout")
+        .item("layout", "Layout", Some(IconName::PanelRight))
+        .item("tokens", "Tokens", Some(IconName::Palette))
+        .item("events", "Events", Some(IconName::Activity))
+}
+
+fn docs_compact_menu(id: &'static str) -> Menu {
+    Menu::new()
+        .id(id)
+        .mode(MenuMode::Vertical)
+        .default_active("overview")
+        .item("overview", "Overview", Some(IconName::BookOpen))
+        .item("authoring", "Authoring", Some(IconName::PencilLine))
+        .item("release", "Release", Some(IconName::Rocket))
+}
+
+fn docs_workspace_menu(id: &'static str) -> Menu {
+    Menu::new()
+        .id(id)
+        .mode(MenuMode::Vertical)
+        .default_active("dashboard")
+        .item("dashboard", "Dashboard", Some(IconName::LayoutDashboard))
+        .item("projects", "Projects", Some(IconName::Blocks))
+        .item("components", "Components", Some(IconName::Component))
+        .item("settings", "Settings", Some(IconName::Settings))
+}
+
+fn docs_long_workspace_menu(id: &'static str) -> Menu {
+    Menu::new()
+        .id(id)
+        .mode(MenuMode::Vertical)
+        .default_active("overview")
+        .item("overview", "Overview", Some(IconName::LayoutDashboard))
+        .item("activity", "Activity", Some(IconName::Activity))
+        .item("inbox", "Inbox", Some(IconName::Inbox))
+        .item("calendar", "Calendar", Some(IconName::CalendarDays))
+        .item("files", "Files", Some(IconName::Files))
+        .item("components", "Components", Some(IconName::Component))
+        .item("packages", "Packages", Some(IconName::Package))
+        .item("experiments", "Experiments", Some(IconName::FlaskConical))
+        .item("analytics", "Analytics", Some(IconName::ChartNoAxesColumn))
+        .item("reports", "Reports", Some(IconName::FileText))
+        .item("automations", "Automations", Some(IconName::Bot))
+        .item("integrations", "Integrations", Some(IconName::Plug))
+        .item("members", "Members", Some(IconName::Users))
+        .item("billing", "Billing", Some(IconName::CreditCard))
+        .item("support", "Support", Some(IconName::MessagesSquare))
+        .item("settings", "Settings", Some(IconName::Settings))
+}
+
+fn docs_icon_rail_menu(id: &'static str) -> Menu {
+    Menu::new()
+        .id(id)
+        .mode(MenuMode::Vertical)
+        .default_active("home")
+        .collapse(true)
+        .item("home", "Home", Some(IconName::House))
+        .item("search", "Search", Some(IconName::Search))
+        .item("inbox", "Inbox", Some(IconName::Inbox))
+        .item("settings", "Settings", Some(IconName::Settings))
+}
+
+fn docs_shell_minimal_demo(theme: &Theme) -> AnyElement {
+    Card::new(
+        Flex::new().height_units(300.0).overflow_hidden().child(
+            Shell::new(
+                Space::new()
+                    .vertical()
+                    .gap_md()
+                    .child(Title::new("Embedded surface").h4())
+                    .child(Text::new(
+                        "Keep consistent shell background, padding, and overlay policy.",
+                    ))
+                    .child(Button::new("Run preview").primary()),
+            )
+            .id("docs-shell-minimal-live")
+            .main_padding_units(24.0)
+            .main_background(theme.neutral.card)
+            .main_rounded_units(18.0)
+            .overlay(Text::new("Overlay slot").xs())
+            .overlay_position(liora_components::ShellOverlayPosition::BottomRight)
+            .overlay_inset_units(18.0)
+            .background(theme.neutral.body),
+        ),
+    )
+    .no_shadow()
+    .into_any_element()
+}
+
+fn docs_sidebar_custom_slots_demo(theme: &Theme) -> AnyElement {
+    Card::new(
+        Flex::new()
+            .height_units(336.0)
+            .row()
+            .overflow_hidden()
+            .child(
+                Sidebar::new()
+                    .id("docs-sidebar-custom-slots-live")
+                    .expanded_width_units(320.0)
+                    .header_padding_units(14.0)
+                    .content_padding_units(12.0)
+                    .footer_padding_units(14.0)
+                    .gap_units(10.0)
+                    .background(theme.warning.light_9)
+                    .border(false)
+                    .rounded_units(20.0)
+                    .header(
+                        Space::new()
+                            .gap_sm()
+                            .child(Icon::new(IconName::Rocket).size_units(20.0))
+                            .child(Text::new("Release cockpit").bold()),
+                    )
+                    .children([
+                        docs_quick_stat("Open PRs", "12"),
+                        docs_quick_stat("Queued jobs", "7"),
+                        docs_quick_stat("Warnings", "3"),
+                    ])
+                    .footer(
+                        Space::new()
+                            .vertical()
+                            .gap_sm()
+                            .child(Text::new("Custom footer slot").xs().bold())
+                            .child(Button::new("Review release").small().primary()),
+                    ),
+            ),
+    )
+    .no_shadow()
+    .into_any_element()
+}
+
+fn docs_quick_stat(label: &'static str, value: &'static str) -> impl IntoElement {
+    Space::new()
+        .gap_sm()
+        .child(Text::new(label).xs())
+        .child(Text::new(value).bold())
+}
+
+fn docs_accordion_basic_demo() -> liora_components::Accordion {
+    liora_components::Accordion::new()
+        .id("docs-accordion-basic-live")
+        .default_open("account")
+        .item_with_description(
+            "account",
+            "Account",
+            "Sign-in, security, and notifications",
+            |_, _| Text::new("Only one panel stays open in the default single mode."),
+        )
+        .item_with_description(
+            "billing",
+            "Billing",
+            "Payment methods and invoices",
+            |_, _| Text::new("Use Accordion for FAQ and settings sections."),
+        )
+}
+
+fn docs_accordion_multiple_demo() -> liora_components::Accordion {
+    liora_components::Accordion::new()
+        .id("docs-accordion-multiple-live")
+        .multiple()
+        .default_open("status")
+        .default_open("deploy")
+        .item("status", "Service status", |_, _| {
+            Text::new("Multiple panels can stay expanded.")
+        })
+        .item("deploy", "Deploy checks", |_, _| {
+            Text::new("Good for checklists and audits.")
+        })
+}
+
+fn docs_accordion_states_demo() -> liora_components::Accordion {
+    liora_components::Accordion::new()
+        .id("docs-accordion-states-live")
+        .large()
+        .bordered(false)
+        .default_open("enabled")
+        .item("enabled", "Enabled item", |_, _| {
+            Text::new("Large borderless rows work well in docs.")
+        })
+        .disabled_item("locked", "Disabled item", |_, _| {
+            Text::new("Disabled panels do not toggle.")
+        })
 }
 
 fn docs_titlebar_surface(theme: &Theme, titlebar: TitleBar) -> impl IntoElement {
@@ -9794,6 +10367,43 @@ mod tests {
     }
 
     #[test]
+    fn docs_do_not_render_whole_gallery_pages_for_split_component_examples() {
+        let source = include_str!("markdown.rs")
+            .split("mod tests")
+            .next()
+            .unwrap();
+
+        for key in [
+            "ShellFullProduct",
+            "ShellContentFirst",
+            "ShellMinimal",
+            "SidebarBrand",
+            "SidebarScrollable",
+            "SidebarInspector",
+            "SidebarIconRail",
+            "SidebarCustomSlots",
+            "AccordionBasic",
+            "AccordionMultiple",
+            "AccordionStates",
+        ] {
+            assert!(
+                source.contains(key),
+                "{key} should have an explicit docs renderer"
+            );
+        }
+
+        assert!(source.contains("docs_shell_full_product_demo"));
+        assert!(source.contains("docs_shell_content_first_demo"));
+        assert!(source.contains("docs_shell_minimal_demo"));
+        assert!(source.contains("docs_sidebar_brand_demo"));
+        assert!(source.contains("docs_sidebar_scrollable_demo"));
+        assert!(source.contains("docs_accordion_basic_demo"));
+        assert!(ACCORDION_DOC.contains("AccordionBasic"));
+        assert!(ACCORDION_DOC.contains("AccordionMultiple"));
+        assert!(ACCORDION_DOC.contains("AccordionStates"));
+    }
+
+    #[test]
     fn corrected_component_pages_split_each_effect_before_its_code() {
         for (page, first_demo, snippets) in [
             (
@@ -10125,7 +10735,7 @@ mod tests {
             ),
             (
                 include_str!("../content/pages/accordion.md"),
-                "Accordion",
+                "AccordionBasic",
                 &[
                     "accordion/basic.rs",
                     "accordion/multiple.rs",
