@@ -20,6 +20,7 @@
 //! crate.
 
 use crate::gpui_compat::element_id;
+use crate::gpui_compat::focus_window;
 use crate::motion::pop_in;
 use gpui::{
     App, Context, FocusHandle, Focusable, Hsla, KeyBinding, MouseButton, Render, Rgba,
@@ -140,7 +141,7 @@ impl Render for Radio {
             row = row.on_mouse_down(
                 MouseButton::Left,
                 cx.listener(|this, _, window, _cx| {
-                    window.focus(&this.focus_handle);
+                    focus_window(window, &this.focus_handle, _cx);
                 }),
             );
             row = row.on_mouse_up(

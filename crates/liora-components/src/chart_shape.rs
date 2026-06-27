@@ -20,6 +20,7 @@
 //! crate.
 
 use crate::chart::ChartLineStyle;
+#[cfg(not(liora_gpui_latest_api))]
 use crate::gpui_compat::PixelsExt;
 use gpui::{PathBuilder, PathStyle, Pixels, Point, StrokeOptions, point, px};
 use lyon_tessellation::{LineCap, LineJoin};

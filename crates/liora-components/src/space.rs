@@ -19,6 +19,7 @@
 //! the component, and avoid app-specific Gallery/Docs resources in this SDK
 //! crate.
 
+use crate::gpui_compat::FlexShrinkCompat;
 use gpui::{
     AnyElement, App, Component, DefiniteLength, IntoElement, RenderOnce, Window, prelude::*, px,
 };
@@ -156,7 +157,7 @@ impl RenderOnce for Space {
             div = div.flex_1();
         }
         if self.shrink {
-            div = div.min_w(px(0.0)).flex_shrink();
+            div = div.min_w(px(0.0)).shrink_one();
         }
 
         if self.vertical {
@@ -224,6 +225,6 @@ mod tests {
             .unwrap();
 
         assert!(Space::new().shrink().shrink);
-        assert!(source.contains("div.min_w(px(0.0)).flex_shrink()"));
+        assert!(source.contains("div.min_w(px(0.0)).shrink_one()"));
     }
 }

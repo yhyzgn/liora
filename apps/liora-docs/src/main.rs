@@ -1,6 +1,6 @@
 mod markdown;
 
-use gpui::{App, AppContext, Application, Global, Window, WindowOptions, px, size};
+use gpui::{App, AppContext, Global, Window, WindowOptions, px, size};
 use liora_components::{
     Button, Checkbox, Dialog, Paragraph, Space, WindowFrameMode, apply_window_frame_mode,
     init_liora,
@@ -37,7 +37,7 @@ struct DocsTrayState {
 impl Global for DocsTrayState {}
 
 fn run_docs() {
-    Application::new()
+    gpui_platform::application()
         .with_assets(liora_icons::IconAssetSource)
         .run(|cx: &mut App| {
             init_liora(cx);
@@ -563,6 +563,7 @@ mod shell_tests {
         let source = include_str!("main.rs");
 
         assert!(source.contains("register_docs_desktop_identity();"));
+        assert!(source.contains("gpui_platform::application()"));
         assert!(source.contains("with_assets(liora_icons::IconAssetSource)"));
         assert!(source.contains(r#"app_id: Some("liora-docs".into())"#));
         assert!(source.contains(r#"app_id: "liora-docs""#));

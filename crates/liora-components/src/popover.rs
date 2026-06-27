@@ -19,6 +19,7 @@
 //! the component, and avoid app-specific Gallery/Docs resources in this SDK
 //! crate.
 
+use crate::gpui_compat::AnchorCorner;
 use crate::{gpui_compat::element_id, motion::pop_in};
 use gpui::{
     AnyElement, App, Bounds, Component, Context, ElementId, GlobalElementId, InspectorElementId,
@@ -202,20 +203,20 @@ fn popover_anchor_point(
     }
 }
 
-fn popover_anchor_corner(placement: Placement) -> gpui::Corner {
+fn popover_anchor_corner(placement: Placement) -> AnchorCorner {
     match placement {
-        Placement::Top => gpui::Corner::BottomLeft,
-        Placement::TopStart => gpui::Corner::BottomLeft,
-        Placement::TopEnd => gpui::Corner::BottomRight,
-        Placement::Bottom => gpui::Corner::TopLeft,
-        Placement::BottomStart => gpui::Corner::TopLeft,
-        Placement::BottomEnd => gpui::Corner::TopRight,
-        Placement::Left => gpui::Corner::TopRight,
-        Placement::LeftStart => gpui::Corner::TopRight,
-        Placement::LeftEnd => gpui::Corner::BottomRight,
-        Placement::Right => gpui::Corner::TopLeft,
-        Placement::RightStart => gpui::Corner::TopLeft,
-        Placement::RightEnd => gpui::Corner::BottomLeft,
+        Placement::Top => AnchorCorner::BottomLeft,
+        Placement::TopStart => AnchorCorner::BottomLeft,
+        Placement::TopEnd => AnchorCorner::BottomRight,
+        Placement::Bottom => AnchorCorner::TopLeft,
+        Placement::BottomStart => AnchorCorner::TopLeft,
+        Placement::BottomEnd => AnchorCorner::TopRight,
+        Placement::Left => AnchorCorner::TopRight,
+        Placement::LeftStart => AnchorCorner::TopRight,
+        Placement::LeftEnd => AnchorCorner::BottomRight,
+        Placement::Right => AnchorCorner::TopLeft,
+        Placement::RightStart => AnchorCorner::TopLeft,
+        Placement::RightEnd => AnchorCorner::BottomLeft,
     }
 }
 

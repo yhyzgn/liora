@@ -20,6 +20,7 @@
 //! crate.
 
 use crate::gpui_compat::element_id;
+use crate::gpui_compat::{box_shadow, focus_window};
 use crate::motion::pop_in;
 use gpui::{
     AnyElement, App, Bounds, Context, Element, ElementId, Entity, FocusHandle, Focusable,
@@ -505,7 +506,7 @@ impl Cascader {
         self.is_open = !self.is_open;
         if self.is_open {
             self.active_path = self.selected_path.clone();
-            window.focus(&self.focus_handle);
+            focus_window(window, &self.focus_handle, cx);
         }
         cx.notify();
     }
@@ -619,12 +620,12 @@ impl Render for Cascader {
                         .rounded(px(theme.radius.md))
                         .border_1()
                         .border_color(theme.neutral.border)
-                        .shadow(vec![gpui::BoxShadow {
-                            color: theme.neutral.border,
-                            offset: gpui::point(px(0.0), px(4.0)),
-                            blur_radius: px(14.0),
-                            spread_radius: px(0.0),
-                        }])
+                        .shadow(vec![box_shadow(
+                            theme.neutral.border,
+                            gpui::point(px(0.0), px(4.0)),
+                            px(14.0),
+                            px(0.0),
+                        )])
                         .occlude()
                         .on_mouse_down(MouseButton::Left, |_, _, cx| {
                             cx.stop_propagation();

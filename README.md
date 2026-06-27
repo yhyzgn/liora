@@ -185,11 +185,11 @@ cargo doc --workspace --no-deps
 A Liora-powered GPUI app should initialize theme/config, initialize global services used by selected components, register component key bindings, and then open a GPUI window.
 
 ```rust
-use gpui::{App, Application};
+use gpui::App;
 use liora::init_liora;
 
 fn main() {
-    Application::new().run(|cx: &mut App| {
+    gpui_platform::application().run(|cx: &mut App| {
         // Initializes Liora core/theme state, component services, and key bindings.
         init_liora(cx);
 
@@ -248,16 +248,16 @@ Liora is more than a component catalog:
 
 ## GPUI dependency and local patch policy
 
-Published Liora SDK crates depend directly on the official Zed crates.io package `gpui = "0.2.2"` (`repository = "https://github.com/zed-industries/zed"`). They must not use renamed or community forks, and they must not vendor, publish, or force the local `third_party/zed` patch.
-
-Gallery and Docs build the same way by default: official crates.io `gpui`, with platform features enabled only in the final app crates. The repository keeps `third_party/zed` only as non-published upstream-source reference material for the Linux startup-window patch discussion. If you need to verify that local patch, do it on a throwaway branch and apply it only at an application root:
+Liora depends on the official Zed upstream repository, pinned by commit for reproducible builds:
 
 ```toml
-[patch.crates-io]
-gpui = { path = "third_party/zed/crates/gpui" }
+gpui = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", version = "0.2.2", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", version = "0.1.0", default-features = false }
 ```
 
-Do not commit that override to publishable Liora crate manifests, and do not publish Liora crates with any `[patch]` section or path GPUI dependency. Downstream products should also stay on official Zed `gpui` unless they deliberately own an application-level upstream-source verification branch.
+Library crates keep `default-features = false`; final app crates enable platform features on `gpui` and `gpui_platform` in target-specific dependencies. Do not use renamed or community forks such as `open-gpui`, and do not publish Liora crates with local path GPUI dependencies or `[patch]` overrides.
+
+The repository keeps `third_party/zed` only as non-published upstream-source reference material for prior Linux startup-window patch work and PR comparison. Current development should use the official `zed-industries/zed` git dependency above. If a temporary local patch is needed for app-only verification, keep it on a throwaway branch and never commit it to publishable SDK manifests.
 
 ## Native packaging
 

@@ -20,6 +20,7 @@
 //! crate.
 
 use crate::gpui_compat::element_id;
+use crate::gpui_compat::focus_window;
 use crate::motion::{MotionDuration, MotionEasing, motion_animation, slide_snap};
 use gpui::{
     AnimationExt, App, Context, FocusHandle, Focusable, Hsla, KeyBinding, MouseButton, Render,
@@ -205,7 +206,7 @@ impl Render for Switch {
             el = el.on_mouse_down(
                 MouseButton::Left,
                 cx.listener(|this, _, window, _cx| {
-                    window.focus(&this.focus_handle);
+                    focus_window(window, &this.focus_handle, _cx);
                 }),
             );
         } else {

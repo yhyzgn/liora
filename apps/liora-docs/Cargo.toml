@@ -20,6 +20,7 @@ path = "src/bin/check_snippets.rs"
 
 [dependencies]
 gpui.workspace = true
+gpui_platform.workspace = true
 image.workspace = true
 liora-core = { path = "../../crates/liora-core" }
 liora-theme = { path = "../../crates/liora-theme" }
@@ -33,12 +34,15 @@ pulldown-cmark = "0.13.3"
 
 [target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
 gpui = { workspace = true, features = ["wayland", "x11", "font-kit"] }
+gpui_platform = { workspace = true, features = ["wayland", "x11", "font-kit"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 gpui = { workspace = true, features = ["font-kit"] }
+gpui_platform = { workspace = true, features = ["font-kit"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 gpui.workspace = true
+gpui_platform.workspace = true
 
 [target.'cfg(target_os = "windows")'.build-dependencies]
 winresource = "0.1.31"

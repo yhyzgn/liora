@@ -1,6 +1,6 @@
 use gpui::{
-    AnyView, App, Application, Component, Context, Global, Render, RenderImage, ScrollHandle,
-    SharedString, Window, WindowOptions, div, img, prelude::*, px, size,
+    AnyView, App, Component, Context, Global, Render, RenderImage, ScrollHandle, SharedString,
+    Window, WindowOptions, div, img, prelude::*, px, size,
 };
 use liora_components::{
     AppWindowFrame, Button, Card, Checkbox, Container, Dialog, Input, Menu, MenuMode, MenuNode,
@@ -108,7 +108,7 @@ struct GalleryTrayState {
 impl Global for GalleryTrayState {}
 
 fn run_gallery() {
-    Application::new()
+    gpui_platform::application()
         .with_assets(liora_icons::IconAssetSource)
         .run(|cx: &mut App| {
             init_liora(cx);
@@ -660,6 +660,7 @@ mod shell_tests {
         assert!(source.contains("Menu::new()"));
         assert!(source.contains(".no_shrink()"));
         assert!(source.contains("init_liora(cx)"));
+        assert!(source.contains("gpui_platform::application()"));
         assert!(source.contains("with_assets(liora_icons::IconAssetSource)"));
         assert!(source.contains("nav_filter"));
         assert!(source.contains("nav_menu: Option"));

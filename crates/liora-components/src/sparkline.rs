@@ -23,6 +23,7 @@ use crate::chart::{ChartLineStyle, ChartPoint, downsample_index_range};
 use crate::chart_shape::{
     area_path, line_path_with_style, smooth_area_path, smooth_line_path_with_style,
 };
+#[cfg(not(liora_gpui_latest_api))]
 use crate::gpui_compat::PixelsExt;
 use gpui::{
     App, Background, Component, ElementId, Hsla, IntoElement, Pixels, RenderOnce, SharedString,

@@ -19,6 +19,7 @@
 //! the component, and avoid app-specific Gallery/Docs resources in this SDK
 //! crate.
 
+use crate::gpui_compat::focus_window;
 use gpui::{
     App, Bounds, Context, Element, ElementId, Entity, FocusHandle, Focusable, GlobalElementId,
     InspectorElementId, LayoutId, MouseButton, MouseMoveEvent, Pixels, Point, Render, Style,
@@ -103,7 +104,7 @@ impl Slider {
         if self.disabled {
             return;
         }
-        window.focus(&self.focus_handle);
+        focus_window(window, &self.focus_handle, cx);
         self.is_dragging = true;
         self.update_value_from_mouse(event.position, window, cx);
     }

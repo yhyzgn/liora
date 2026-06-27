@@ -20,6 +20,7 @@
 //! crate.
 
 use crate::gpui_compat::element_id;
+use crate::gpui_compat::{focus_window, named_child_id, paint_shaped_line};
 use gpui::{
     App, Bounds, ClipboardItem, Component, Context, ElementId, Entity, FocusHandle, Focusable,
     FontStyle, FontWeight, GlobalElementId, Hsla, IntoElement, LayoutId, MouseButton,
@@ -647,7 +648,7 @@ fn should_render_code_now(
         return true;
     }
 
-    let state_key = ElementId::NamedChild(Box::new(id), SharedString::from("deferred-code-ready"));
+    let state_key = named_child_id(id, SharedString::from("deferred-code-ready"));
     let ready = window.use_keyed_state(state_key, cx, |_, _| false);
 
     if !*ready.read(cx) {
@@ -769,10 +770,7 @@ fn render_code_content(
     );
 
     if selectable {
-        let state_key = ElementId::NamedChild(
-            Box::new(id.clone()),
-            SharedString::from("selectable-code-text"),
-        );
+        let state_key = named_child_id(id.clone(), SharedString::from("selectable-code-text"));
         let initial_id = id.clone();
         let initial_code = code.clone();
         let initial_runs = runs.clone();
@@ -793,10 +791,7 @@ fn render_code_content(
         });
         SelectableCodeTextView { input }.into_any_element()
     } else {
-        let state_key = ElementId::NamedChild(
-            Box::new(id.clone()),
-            SharedString::from("read-only-code-text"),
-        );
+        let state_key = named_child_id(id.clone(), SharedString::from("read-only-code-text"));
         let initial_code = code.clone();
         let initial_runs = runs.clone();
         let initial_theme = theme.clone();
@@ -1339,9 +1334,12 @@ impl Element for ReadOnlyCodeElement {
     ) {
         let line_height = self.input.read(cx).line_height();
         for line in &prepaint.layout.lines {
-            let _ = line.shaped.paint(
+            let _ = paint_shaped_line(
+                &line.shaped,
                 point(bounds.left(), bounds.top() + line.y),
                 line_height,
+                gpui::TextAlign::Left,
+                None,
                 window,
                 cx,
             );
@@ -1586,7 +1584,7 @@ impl SelectableCodeText {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        window.focus(&self.focus_handle);
+        focus_window(window, &self.focus_handle, cx);
         let idx = self.index_for_point(event.position);
         let changed = with_selectable_state(&self.id, |state| {
             let was_selecting = state.selecting;
@@ -1839,7 +1837,7 @@ impl Element for SelectableCodeElement {
         let hitbox = prepaint.hitbox.clone();
         window.on_mouse_event(move |event: &MouseDownEvent, phase, window, cx| {
             if phase.bubble() && event.button == MouseButton::Left && hitbox.is_hovered(window) {
-                window.focus(&focus_handle_for_down);
+                focus_window(window, &focus_handle_for_down, cx);
                 input.update(cx, |input, cx| input.on_mouse_down(event, window, cx));
                 cx.stop_propagation();
             }
@@ -1864,9 +1862,12 @@ impl Element for SelectableCodeElement {
         }
 
         for line in &prepaint.layout.lines {
-            let _ = line.shaped.paint(
+            let _ = paint_shaped_line(
+                &line.shaped,
                 point(bounds.left(), bounds.top() + line.y),
                 self.input.read(cx).line_height(),
+                gpui::TextAlign::Left,
+                None,
                 window,
                 cx,
             );

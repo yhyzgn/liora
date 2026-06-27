@@ -20,6 +20,7 @@
 //! crate.
 
 use crate::gpui_compat::element_id;
+use crate::gpui_compat::{box_shadow, focus_window};
 use crate::motion::pop_in;
 use gpui::{
     App, Bounds, Context, ElementId, Entity, FocusHandle, Focusable, Hsla, MouseButton, Pixels,
@@ -282,7 +283,7 @@ impl Select {
     fn toggle_open(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.is_open = !self.is_open;
         if self.is_open {
-            window.focus(&self.focus_handle);
+            focus_window(window, &self.focus_handle, cx);
         }
         cx.notify();
     }
@@ -437,12 +438,12 @@ impl Render for Select {
                         .rounded(gpui::px(theme.radius.md))
                         .border_1()
                         .border_color(theme.neutral.border)
-                        .shadow(vec![gpui::BoxShadow {
-                            color: theme.neutral.border,
-                            offset: gpui::point(gpui::px(0.0), gpui::px(4.0)),
-                            blur_radius: gpui::px(12.0),
-                            spread_radius: gpui::px(0.0),
-                        }])
+                        .shadow(vec![box_shadow(
+                            theme.neutral.border,
+                            gpui::point(gpui::px(0.0), gpui::px(4.0)),
+                            gpui::px(12.0),
+                            gpui::px(0.0),
+                        )])
                         .children(options.iter().enumerate().map(|(idx, label)| {
                             let is_selected = Some(idx) == selected_idx;
                             let entity = entity.clone();

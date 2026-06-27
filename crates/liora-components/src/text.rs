@@ -19,6 +19,7 @@
 //! the component, and avoid app-specific Gallery/Docs resources in this SDK
 //! crate.
 
+use crate::gpui_compat::FlexShrinkCompat;
 use crate::{SelectableText, SelectableTextOptions, SelectableTextWrap};
 use gpui::{
     App, Component, ElementId, FontStyle, FontWeight, Hsla, IntoElement, Pixels, RenderOnce,
@@ -272,7 +273,7 @@ impl RenderOnce for Text {
         if self.wrap {
             el = el.whitespace_normal();
             if self.fill_width_on_wrap {
-                el = el.w_full().flex_shrink();
+                el = el.w_full().shrink_one();
             }
         } else {
             el = el.whitespace_nowrap();

@@ -48,7 +48,7 @@ Liora currently records detailed implementation history in `.memory/sessions.md`
 
 ### Fixed
 
-- 0.1.2 dependency correction: switched every published Liora crate and maintained app from the non-official `open-gpui` packages to the official Zed crates.io `gpui = "0.2.2"`, removed the separate `gpui_platform` dependency, and updated app bootstraps to use `gpui::Application::new()`.
+- 0.1.x dependency correction: switched every maintained Liora crate and app from non-official `open-gpui` packages / stale crates.io-only GPUI usage to official `zed-industries/zed` git dependencies pinned at `2c346f60a76fe3f0367ef924927f50a6efdf5718`; `gpui` and `gpui_platform` now share the same upstream revision, and app bootstraps use the official `gpui_platform::application()` entry point.
 - Release and documentation guardrails now assert that SDK packages use official Zed GPUI only, with no renamed fork dependency, no `[patch]` section, and no bundled `third_party/zed` path dependency.
 
 ### Added

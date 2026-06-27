@@ -21,6 +21,7 @@
 
 use crate::chart::{ChartAxisLabel, ChartOptions, ChartPalette, default_y_format};
 use crate::chart_scale::{ScaleLinear, ScalePoint};
+use crate::gpui_compat::paint_shaped_line;
 use gpui::{
     App, Background, Hsla, Pixels, SharedString, TextAlign, TextRun, Window, fill, point, px, size,
 };
@@ -113,5 +114,13 @@ pub fn paint_chart_label_aligned(
     let line = window
         .text_system()
         .shape_line(text, px(11.0), &[run], None);
-    let _ = line.paint(origin, px(14.0), window, cx);
+    let _ = paint_shaped_line(
+        &line,
+        origin,
+        px(14.0),
+        gpui::TextAlign::Left,
+        None,
+        window,
+        cx,
+    );
 }

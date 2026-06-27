@@ -11,7 +11,7 @@
 | 属性 | 值 |
 |------|-----|
 | 语言 | Rust edition 2024 |
-| UI 框架 | GPUI 0.2.2 (git = "https://github.com/zed-industries/zed") |
+| UI 框架 | GPUI（官方 `zed-industries/zed` git 依赖，按 `Cargo.toml`/`Cargo.lock` pin 到明确 revision） |
 | 参考规范 | Element-Plus 2.x (https://element-plus.org/zh-CN/) |
 | 架构 | Cargo Workspace Monorepo |
 | 目标 | ~76+ 个企业级组件, 分阶段交付；P9 作为延后高级组件补全 backlog；P10 原生统计图组件；P11 系统托盘/进程常驻阶段；P12 原生安装器打包阶段；P13 高级控件扩展阶段；P14 延后高级组件补全阶段；P15 质量收口阶段；P16 对外采用准备阶段；P17 真实 Dashboard Dogfooding 阶段；P18 Dashboard Polish/API Ergonomics 阶段；P19 Dashboard State/Data Flow 阶段；P20 Theme/Interaction Polish 阶段；P21 Release Candidate Readiness 阶段 |
@@ -141,6 +141,15 @@ liora/
 - P21 Release Candidate Readiness 阶段已完成：新增 `docs/release-candidate-checklist.md` 作为 0.1.x RC checklist，显式补齐 package metadata，刷新 README/CHANGELOG/prompt/memory，并用回归测试锁住 Gallery/Docs canonical app、LicenseRef-Liora、纯 Rust + GPUI native 和 protected release 边界。详见 `.prompt/P21-release-candidate-readiness.md`。
 - P22 gpui-component Harvest 阶段已启动：基于 `design/gpui-component-collection-list.md`，先做低风险高收益组件。已实现 `Spinner`、`Kbd`、`OtpInput`、`DropdownButton` 并接入 Gallery/Docs/snippets/tests；后续建议继续 `Accordion`、`Combobox`。详见 `.prompt/P22-gpui-component-harvest.md`。
 
+
+### 4.1.3 官方来源优先红线（永久规范）
+
+- 涉及 GPUI / Zed、平台集成、窗口行为、打包安装、CI 发布、更新器、第三方 API 或系统能力时，必须先查看官方仓库源码、官方示例、官方文档或官方 release notes，再开始实现。
+- 证据优先级：官方 `zed-industries/zed` 当前依赖 revision 的源码与 examples > 官方文档/release notes > 本地可复现实验。禁止仅凭记忆猜 API、猜平台行为或用“野路子”绕实现。
+- Liora 只能依赖官方 GPUI / Zed 来源；禁止漂移到 `open-gpui` 等非官方 fork。临时本地 patch 只能用于 Gallery/Docs app-only 验证，并且不得耦合进发布到 crates.io 的 SDK 包。
+- 每次升级或适配 GPUI/平台 API 时，必须确认 `Cargo.toml`/`Cargo.lock` 的真实来源与 revision，并用编译、测试或最小运行验证证明实现有效。
+- 项目保持纯 Rust + GPUI native；禁止引入 Tauri/WebView/HTML/CSS/DOM/browser runtime。
+
 ### 4.1.2 应用与示例边界红线
 
 - 不再新增独立 `examples/*-app` 作为 sample 应用；采用、dogfooding、真实组合验证统一进入 `apps/liora-gallery` 和 `apps/liora-docs`。
@@ -224,7 +233,7 @@ impl IntoElement for MyComponent {
 ### 5.2 类型和 Context
 
 ```rust
-// GPUI 0.2.2 关键类型
+// 官方 Zed GPUI 当前 pinned revision 的关键类型
 gpui::App              // 应用全局
 gpui::Context<'_, V>   // 视图上下文 (可读 Global)
 gpui::Window           // 窗口句柄
@@ -246,12 +255,13 @@ fn render(&mut self, _w: &mut Window, _cx: &mut Context<Self>) -> impl IntoEleme
 liora-core/Cargo.toml:     gpui = { workspace = true }
 liora-theme/Cargo.toml:    gpui = { workspace = true }
 
-# App — 显式启用
+# App — 显式启用平台 feature
 liora-gallery/Cargo.toml:
   gpui = { workspace = true, features = ["wayland", "x11", "font-kit"] }
+  gpui_platform = { workspace = true, features = ["wayland", "x11", "font-kit"] }
   ```
 
-### 5.4 不在 GPUI 0.2.2 中的 API
+### 5.4 不在当前官方 Zed GPUI pinned revision 中的 API
 
 ```
 ❌ RenderOnce    → 使用 Render

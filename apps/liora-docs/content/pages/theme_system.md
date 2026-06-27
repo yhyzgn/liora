@@ -33,9 +33,9 @@ Gallery 和 Docs 都使用同一套接入方式：
 1. `liora::init_liora(cx)` 初始化默认跟随系统，并统一注册组件全局服务和 key bindings。
 2. 如果产品需要固定启动主题，调用 `liora::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)`。
 3. 最大化启动窗口使用 `startup_maximized_window_bounds(cx, fallback)`：它保留 GPUI 的 `WindowBounds::Maximized` 语义，并把当前显示器可用区域作为 restore/fallback bounds。
-4. 发布到 crates.io 的 Liora SDK 不耦合、不嵌入本仓库 `third_party/zed` 下的 GPUI patch；SDK 依赖面保持在 Zed 官方 crates.io `gpui = "0.2.2"`，避免把应用根 manifest 才能决定的 backend patch 传播给库用户。
-5. Gallery / Docs 默认也按官方 crates.io `gpui` 构建；如需本地验证 Linux 首帧最大化修复，只能在临时分支的应用 root 使用 `[patch.crates-io] gpui = { path = "third_party/zed/crates/gpui" }`。不要把这种 override 提交到发布 SDK manifest，也不要发布到 Liora crates。
-6. 注意：发布路径只能使用官方 crates.io `gpui`；`third_party/zed` 是未发布的本地验证材料，不是 SDK 依赖。
+4. Liora SDK 不耦合、不嵌入本仓库 `third_party/zed` 下的 GPUI patch；当前依赖面使用 Zed 官方 `zed-industries/zed` git revision `2c346f60a76fe3f0367ef924927f50a6efdf5718`，并让 `gpui` 与 `gpui_platform` 保持同一 revision。
+5. Gallery / Docs 也按同一官方 git revision 构建，并只在最终 app crate 中启用平台 feature。不要把本地 path GPUI、`[patch]` override 或非官方 fork 写入可发布 SDK manifest。
+6. 注意：`third_party/zed` 是未发布的上游源码对照材料，不是 SDK 依赖；如需临时验证本地 patch，只能放在 app-only 临时分支。
 7. 窗口选项保留 `show: false` 并在 `open_window` 返回 handle 后调用 `window.activate_window()`，与 Zed 主窗口显示时机保持一致；但 Linux 尺寸首帧正确性最终取决于应用选择的 GPUI backend 是否在平台窗口创建阶段处理初始 `Maximized` / `Fullscreen` 状态。
 8. 在 `open_window` 回调一开始、创建 root view 之前调用 `attach_system_theme_observer(window, cx)`；它会先同步一次，再保活 `observe_window_appearance` 以跟随后续系统变化。
 9. Linux / FreeBSD 启动时，`System` 会优先读取同步可用的桌面偏好（`GTK_THEME`、GTK settings、`gsettings org.gnome.desktop.interface color-scheme`），避免 GPUI Linux 后端默认 `Light` 等待 xdg-desktop-portal 异步回传时造成首帧浅色。

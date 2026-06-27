@@ -32,6 +32,7 @@ use crate::chart_shape::{
     area_path, finite_line_points, line_path, line_soft_edge_path, smooth_area_path,
     smooth_line_path,
 };
+#[cfg(not(liora_gpui_latest_api))]
 use crate::gpui_compat::PixelsExt;
 use crate::{Empty, Space, Text};
 use gpui::{

@@ -20,6 +20,7 @@
 //! crate.
 
 use crate::Input;
+use crate::gpui_compat::focus_window;
 use gpui::{
     App, Context, Entity, FocusHandle, Focusable, Hsla, IntoElement, MouseButton, Pixels, Render,
     SharedString, Task, Window, div, prelude::*, px,
@@ -354,7 +355,7 @@ impl Render for OtpInput {
                     .when(!disabled, |s| {
                         s.cursor_text()
                             .on_mouse_down(MouseButton::Left, move |_, window, cx| {
-                                window.focus(&input.read(cx).focus_handle(cx));
+                                focus_window(window, &input.read(cx).focus_handle(cx), cx);
                                 host.update(cx, |host, cx| {
                                     host.set_active_index(index, cx);
                                 });

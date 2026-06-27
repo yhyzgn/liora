@@ -7424,8 +7424,8 @@ fn explain_reference_statement(statement: &str) -> String {
         "Iterates through the collection and applies the nested behavior."
     } else if text.starts_with("return ") {
         "Returns early from the function with the selected value."
-    } else if text.starts_with("Application::new") {
-        "Creates the GPUI application runtime before opening windows."
+    } else if text.starts_with("gpui_platform::application") {
+        "Creates the official GPUI platform application runtime before opening windows."
     } else if text.contains("init_liora_with_mode") {
         "Initializes Liora with an explicit Light, Dark, or System theme mode."
     } else if text.contains("init_liora") {
@@ -8693,9 +8693,13 @@ mod tests {
         let core_source = include_str!("../../../crates/liora-core/src/lib.rs");
         let liora_package = include_str!("../../../crates/liora-core/Cargo.toml");
 
-        assert!(root_cargo.contains(r#"gpui = { version = "0.2.2", default-features = false }"#));
+        assert!(root_cargo.contains(r#"gpui = { git = "https://github.com/zed-industries/zed""#));
+        assert!(
+            root_cargo
+                .contains(r#"gpui_platform = { git = "https://github.com/zed-industries/zed""#)
+        );
         assert!(!root_cargo.contains(concat!("package = \"open-", "gpui\"")));
-        assert!(!root_cargo.contains(concat!("gpui", "_platform")));
+        assert!(root_cargo.contains(concat!("gpui", "_platform")));
         assert!(!root_cargo.contains("[patch.crates-io]"));
         assert!(!liora_package.contains("third_party/zed"));
         assert!(!liora_package.contains("[patch"));
@@ -8711,14 +8715,13 @@ mod tests {
             assert!(doc.contains("gpui"));
             assert!(doc.contains("third_party/zed"));
             assert!(doc.contains("not") || doc.contains("不"));
-            assert!(doc.contains("[patch.crates-io]"));
-            assert!(!doc.contains(concat!("open-", "gpui")));
-            assert!(!doc.contains(concat!("gpui", "_platform")));
+            assert!(doc.contains("[patch") || doc.contains("path override"));
+            assert!(!doc.contains(concat!("package = \"open-", "gpui\"")));
         }
 
-        assert!(THEME_SYSTEM_DOC.contains("发布到 crates.io 的 Liora SDK 不耦合"));
+        assert!(THEME_SYSTEM_DOC.contains("Liora SDK 不耦合"));
         assert!(ARCHITECTURE_DOC.contains("不能包含 `[patch.crates-io]`"));
-        assert!(patch_readme.contains("official crates.io `gpui`"));
+        assert!(patch_readme.contains("official") || patch_readme.contains("upstream"));
         assert!(!THEME_SYSTEM_DOC.contains("Liora 的 patched GPUI 会"));
         assert!(!core_source.contains("Liora uses a patched GPUI build"));
     }
@@ -8754,7 +8757,7 @@ mod tests {
         }
 
         assert!(checklist.contains("LicenseRef-Liora"));
-        assert!(checklist.contains("official crates.io `gpui = \"0.2.2\"`"));
+        assert!(checklist.contains("official `https://github.com/zed-industries/zed` git sources"));
         assert!(checklist.contains("third_party/zed"));
         assert!(checklist.contains("must not contain renamed GPUI fork dependencies"));
         assert!(checklist.contains("pure Rust + GPUI native"));
@@ -8777,10 +8780,8 @@ mod tests {
         assert!(readme.contains("Quality gates"));
         assert!(readme.contains("Technical differentiators"));
         assert!(readme.contains("GPUI dependency and local patch policy"));
-        assert!(readme.contains(
-            "Published Liora SDK crates depend directly on the official Zed crates.io package"
-        ));
-        assert!(readme.contains("must not use renamed or community forks"));
+        assert!(readme.contains("official Zed upstream repository"));
+        assert!(readme.contains("Do not use renamed or community forks"));
         let readme_zh = include_str!("../../../README.zh-CN.md");
         assert!(readme_zh.contains("纯 Rust + GPUI 原生"));
         assert!(readme_zh.contains("assets/liora-logo.svg"));
@@ -8788,7 +8789,7 @@ mod tests {
         assert!(readme_zh.contains("运行时模型"));
         assert!(readme_zh.contains("技术创新点"));
         assert!(readme_zh.contains("GPUI 依赖与本地 patch 策略"));
-        assert!(readme_zh.contains("不能使用重命名 fork 或社区 fork"));
+        assert!(readme_zh.contains("禁止使用 `open-gpui` 等重命名或社区 fork"));
         let repo_metadata = include_str!("../../../assets/github-repository-metadata.md");
         assert!(repo_metadata.contains("Pure Rust + GPUI native enterprise UI component library"));
         assert!(repo_metadata.contains("rust-desktop"));

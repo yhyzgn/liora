@@ -31,7 +31,7 @@ Liora 不包含 Web 渲染层。以下技术不属于本项目解法：HTML、CS
 
 Liora 代码基本围绕 GPUI 的几个核心抽象组织：
 
-1. **Application loop**：`gpui::Application::new().run` 启动原生事件循环。
+1. **Application loop**：`gpui_platform::application().run` 启动原生事件循环。
 2. **Global App state**：`App` 保存全局配置、主题和服务，例如 Message manager。
 3. **Window**：每个窗口有自己的焦点、输入、布局和绘制上下文。
 4. **View Entity**：`cx.new(|cx| MyView::new(cx))` 创建持久 View；组件状态应放在 Entity 中。
@@ -44,7 +44,7 @@ Liora 代码基本围绕 GPUI 的几个核心抽象组织：
 
 应用入口一般按这个顺序：
 
-1. `gpui::Application::new().run(...)` 启动官方 GPUI 事件循环。
+1. `gpui_platform::application().run(...)` 启动官方 GPUI 事件循环。
 2. `liora::init_liora(cx)` 统一注册主题配置、组件全局服务和 key bindings。
 3. `cx.open_window(WindowOptions { ... }, |_, cx| cx.new(...))` 打开窗口。
 4. 根 View 渲染 `Container`、页面内容和 Portal / Message overlay。
@@ -99,9 +99,9 @@ Workspace 中的 `gpui` 设置为 `default-features = false`。原因是：
 - app crate 才知道自己要运行在哪个平台。
 - `liora-docs` 和 `liora-gallery` 作为最终应用，通过 target-specific dependencies 启用平台 feature：Linux/FreeBSD 启用 `wayland`、`x11`、`font-kit`；macOS 启用 `font-kit`；Windows 使用官方 GPUI Windows 后端。
 
-发布 SDK 还有一条额外边界：`liora`、`liora-core`、`liora-components`、`liora-packager` 等 crates.io 包必须直接依赖 Zed 官方 crates.io `gpui = "0.2.2"`，不能依赖重命名 fork，不能包含 `[patch.crates-io]`，也不能把 `third_party/zed` path 依赖写入可发布 manifest。Cargo patch 是应用根 package 的解析决策；库 crate 不能可靠地替下游应用选择 GPUI backend。
+发布 SDK 还有一条额外边界：`liora`、`liora-core`、`liora-components`、`liora-packager` 等包必须依赖 Zed 官方 `zed-industries/zed` git 来源，并让 `gpui` 与 `gpui_platform` pin 到同一个 revision（当前 `2c346f60a76fe3f0367ef924927f50a6efdf5718`）。不能依赖重命名 fork，不能包含 `[patch.crates-io]` / `[patch."https://github.com/zed-industries/zed"]`，也不能把 `third_party/zed` path 依赖写入可发布 manifest。
 
-本仓库保留 `third_party/zed` 只用于本地 Gallery / Docs 首帧窗口状态验证和 upstream PR 对照。正常开发和发布都使用官方 crates.io `gpui`。需要验证该 patch 时，只能在临时分支、应用 root 使用 `[patch.crates-io] gpui = { path = "third_party/zed/crates/gpui" }`，且该 override 不进入 SDK 发布物。
+本仓库保留 `third_party/zed` 只用于早期 Gallery / Docs 首帧窗口状态验证和 upstream PR 对照。正常开发和发布都使用官方 `zed-industries/zed` git dependency。需要验证本地 patch 时，只能在临时 app-only 分支使用 path override，且该 override 不进入 SDK 发布物。
 
 这也是外部项目接入 Liora 时应遵守的策略：平台 feature 与 GPUI backend override 都由最终应用显式选择，Liora SDK 只提供兼容官方 GPUI 的组件与初始化 API。
 

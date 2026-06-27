@@ -1,10 +1,10 @@
 //! Minimal Liora application bootstrap.
 
-use gpui::{App, Application};
+use gpui::App;
 use liora_components::{ThemeMode, init_liora, init_liora_with_mode};
 
 fn main() {
-    Application::new().run(|cx: &mut App| {
+    gpui_platform::application().run(|cx: &mut App| {
         // Default: follow the operating system theme and initialize component runtime.
         init_liora(cx);
 

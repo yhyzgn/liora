@@ -19,7 +19,9 @@
 //! the component, and avoid app-specific Gallery/Docs resources in this SDK
 //! crate.
 
+use crate::gpui_compat::FlexShrinkCompat;
 use crate::gpui_compat::element_id;
+use crate::gpui_compat::{focus_window, paint_wrapped_line};
 use gpui::{
     App, AvailableSpace, Bounds, ClipboardItem, Component, Context, Element, ElementId, Entity,
     FocusHandle, Focusable, GlobalElementId, InspectorElementId, IntoElement, KeyDownEvent,
@@ -381,7 +383,7 @@ impl SelectableTextState {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        window.focus(&self.focus_handle);
+        focus_window(window, &self.focus_handle, cx);
         let idx = self.index_for_point(event.position);
         let changed = with_selection_state(&self.id, |state| {
             let was_selecting = state.selecting;
@@ -564,7 +566,7 @@ impl Render for SelectableTextState {
             .cursor_text()
             .min_w(px(0.0));
         if self.fill_width {
-            wrapper = wrapper.w_full().flex_shrink();
+            wrapper = wrapper.w_full().shrink_one();
         }
 
         wrapper
@@ -737,7 +739,7 @@ impl Element for SelectableTextElement {
         let hitbox = prepaint.hitbox.clone();
         window.on_mouse_event(move |event: &MouseDownEvent, phase, window, cx| {
             if phase.bubble() && event.button == MouseButton::Left && hitbox.is_hovered(window) {
-                window.focus(&focus_handle_for_down);
+                focus_window(window, &focus_handle_for_down, cx);
                 input.update(cx, |input, cx| input.on_mouse_down(event, window, cx));
                 cx.stop_propagation();
             }
@@ -769,7 +771,7 @@ impl Element for SelectableTextElement {
         for line in &prepaint.layout.lines {
             let _ =
                 line.paint_background(origin, line_height, text_align, Some(bounds), window, cx);
-            let _ = line.paint(origin, line_height, text_align, Some(bounds), window, cx);
+            let _ = paint_wrapped_line(line, origin, line_height, text_align, bounds, window, cx);
             origin.y += line.size(line_height).height;
         }
     }
@@ -939,7 +941,7 @@ mod tests {
         assert!(source.contains("request_measured_layout"));
         assert!(source.contains("selectable_wrap_width"));
         assert!(source.contains("AvailableSpace::Definite"));
-        assert!(source.contains("wrapper = wrapper.w_full().flex_shrink()"));
+        assert!(source.contains("wrapper = wrapper.w_full().shrink_one()"));
         assert!(source.contains(".min_w(px(0.0))"));
         assert!(!source.contains("window.viewport_size().width.max(px(1.0))"));
     }
