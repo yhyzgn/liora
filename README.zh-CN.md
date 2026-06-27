@@ -727,6 +727,55 @@ impl Render for LoginForm {
 }
 ```
 
+`Mention` 也是输入类有状态组件，应作为 `Entity<Mention>` 保存在父 View 中。候选项的 `value` 是真正写回输入框的机器可读值；用户点击候选或按 `Enter` 时，Liora 会把当前触发符查询替换为 `trigger + item.value + 空格`，然后触发 `on_select`。
+
+```rust
+use gpui::{Context, Entity, Render, Window};
+use liora::components::{Card, Mention, MentionItem, Space, Text, toast_success};
+
+struct AssigneeField {
+    people: Entity<Mention>,
+    issue: Entity<Mention>,
+}
+
+impl AssigneeField {
+    fn new(cx: &mut Context<Self>) -> Self {
+        Self {
+            people: cx.new(|cx| {
+                Mention::new(
+                    vec![
+                        MentionItem::new("alice", "Alice Chen").description("Design systems"),
+                        MentionItem::new("bob", "Bob Smith").description("Release engineering"),
+                    ],
+                    cx,
+                )
+                .placeholder("Type @ to mention a teammate")
+                .on_select(|item, _window, cx| {
+                    toast_success(format!("Selected @{}", item.value), cx);
+                })
+            }),
+            issue: cx.new(|cx| {
+                Mention::new(vec![MentionItem::new("128", "#128 Improve chart hover")], cx)
+                    .trigger('#')
+                    .placeholder("Type # to reference an issue")
+            }),
+        }
+    }
+}
+
+impl Render for AssigneeField {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        Space::new()
+            .vertical()
+            .child(Text::new("Mention selection writes back to the input value."))
+            .child(Card::new(self.people.clone()))
+            .child(Card::new(self.issue.clone()))
+    }
+}
+```
+
+例如输入 `hello @al` 后选择 `value = "alice"` 的候选项，会得到 `hello @alice `；设置 `trigger('#')` 后，输入 `fix #1` 并选择 `value = "128"` 会得到 `fix #128 `。
+
 ### 导航菜单
 
 ```rust

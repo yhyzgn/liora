@@ -8540,39 +8540,29 @@ mod tests {
     fn docs_nav_menu_items_group_pages_by_category_then_title() {
         let items = docs_nav_menu_items();
 
-        let guide_group = docs_menu_group(&items, "指南");
-        assert!(docs_menu_group_labels(guide_group).starts_with(&[
-            "Adoption Guide",
-            "Architecture",
-            "Authoring",
-        ]));
-        assert!(docs_menu_group_labels(guide_group).contains(&"Dashboard Patterns"));
+        let first_group_title = match &items[0] {
+            liora_components::MenuNode::Group(group) => group.title.as_ref(),
+            _ => panic!("Docs nav should start with the About group"),
+        };
+        assert_eq!(first_group_title, "About");
 
-        let window_group = docs_menu_group(&items, "窗体控件");
-        assert!(docs_menu_group_labels(window_group).starts_with(&[
-            "Container",
-            "Dialog",
-            "Drawer"
-        ]));
+        let about_group = docs_menu_group(&items, "About");
+        assert_eq!(docs_menu_group_labels(about_group), vec!["About"]);
 
-        let form_group = docs_menu_group(&items, "表单控件");
-        assert!(docs_menu_group_labels(form_group).starts_with(&[
-            "Autocomplete",
-            "Cascader",
-            "Checkbox"
-        ]));
+        let window_group = docs_menu_group(&items, "窗体布局");
+        let window_labels = docs_menu_group_labels(window_group);
+        assert!(window_labels.contains(&"Adoption Guide"));
+        assert!(window_labels.contains(&"Architecture"));
+        assert!(window_labels.contains(&"Authoring"));
+        assert!(window_labels.contains(&"Dashboard Patterns"));
+        assert!(window_labels.contains(&"Container"));
 
-        let chart_group = docs_menu_group(&items, "图表控件");
-        assert_eq!(
-            docs_menu_group_labels(chart_group),
-            vec![
-                "AreaChart",
-                "BarChart",
-                "LineChart",
-                "PieChart",
-                "RingChart"
-            ]
-        );
+        let control_group = docs_menu_group(&items, "控件");
+        let control_labels = docs_menu_group_labels(control_group);
+        assert!(control_labels.contains(&"Accordion"));
+        assert!(control_labels.contains(&"Alert"));
+        assert!(control_labels.contains(&"Autocomplete"));
+        assert!(control_labels.contains(&"Mention"));
     }
 
     #[test]

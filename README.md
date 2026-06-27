@@ -728,6 +728,55 @@ impl Render for LoginForm {
 }
 ```
 
+`Mention` is also a stateful input-style component. Store it as an `Entity<Mention>` and provide machine-readable item values. When a user clicks a suggestion or presses `Enter`, Liora replaces the active trigger query with `trigger + item.value + trailing space`, then calls `on_select`.
+
+```rust
+use gpui::{Context, Entity, Render, Window};
+use liora::components::{Card, Mention, MentionItem, Space, Text, toast_success};
+
+struct AssigneeField {
+    people: Entity<Mention>,
+    issue: Entity<Mention>,
+}
+
+impl AssigneeField {
+    fn new(cx: &mut Context<Self>) -> Self {
+        Self {
+            people: cx.new(|cx| {
+                Mention::new(
+                    vec![
+                        MentionItem::new("alice", "Alice Chen").description("Design systems"),
+                        MentionItem::new("bob", "Bob Smith").description("Release engineering"),
+                    ],
+                    cx,
+                )
+                .placeholder("Type @ to mention a teammate")
+                .on_select(|item, _window, cx| {
+                    toast_success(format!("Selected @{}", item.value), cx);
+                })
+            }),
+            issue: cx.new(|cx| {
+                Mention::new(vec![MentionItem::new("128", "#128 Improve chart hover")], cx)
+                    .trigger('#')
+                    .placeholder("Type # to reference an issue")
+            }),
+        }
+    }
+}
+
+impl Render for AssigneeField {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        Space::new()
+            .vertical()
+            .child(Text::new("Mention selection writes back to the input value."))
+            .child(Card::new(self.people.clone()))
+            .child(Card::new(self.issue.clone()))
+    }
+}
+```
+
+For example, typing `hello @al` and selecting the item whose `value` is `alice` produces `hello @alice `. With `trigger('#')`, typing `fix #1` and selecting value `128` produces `fix #128 `.
+
 ### Navigation menu
 
 ```rust

@@ -52,13 +52,13 @@ impl Render for MentionDemo {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         page(
             "Mention 提及",
-            "输入触发符后展示候选项，用于 @成员、#事项或命令引用；候选支持鼠标 hover 高亮、点击选择，以及键盘 Up/Down + Enter 选择。",
+            "输入触发符后展示候选项，用于 @成员、#事项或命令引用；候选支持鼠标 hover 高亮、点击选择，以及键盘 Up/Down + Enter 选择并回填输入框。",
             Space::new()
                 .vertical()
                 .gap_lg()
                 .child(section(
                     "@ 成员提及",
-                    "输入 @ 后展示人员候选；移动鼠标会同步高亮，点击或按 Enter 会触发 on_select。",
+                    "输入 @ 后展示人员候选；移动鼠标会同步高亮，点击或按 Enter 会把 @查询 替换为 @value 并触发 on_select。",
                     Card::new(self.people.clone()),
                 ))
                 .child(section(

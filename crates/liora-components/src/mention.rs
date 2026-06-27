@@ -188,6 +188,14 @@ impl Mention {
     }
 
     fn select_item(&mut self, item: MentionItem, window: &mut Window, cx: &mut Context<Self>) {
+        let input = self.input.clone();
+        let trigger = self.trigger;
+        let value = item.value.clone();
+        cx.update_entity(&input, |input, cx| {
+            let next = apply_mention_selection(input.value().as_ref(), trigger, value.as_ref());
+            input.set_value(next, cx);
+        });
+        self.selected_index = 0;
         if let Some(cb) = self.on_select.clone() {
             cb(item, window, cx);
         }
@@ -326,6 +334,30 @@ fn mention_query(text: &str, trigger: char) -> Option<&str> {
     }
 }
 
+fn apply_mention_selection(text: &str, trigger: char, value: &str) -> String {
+    let mention = format!("{trigger}{value} ");
+    let Some(last) = text.rfind(trigger) else {
+        let separator = if text.is_empty() || text.ends_with(char::is_whitespace) {
+            ""
+        } else {
+            " "
+        };
+        return format!("{text}{separator}{mention}");
+    };
+    let query_start = last + trigger.len_utf8();
+    let query = &text[query_start..];
+    if query.chars().any(char::is_whitespace) {
+        let separator = if text.is_empty() || text.ends_with(char::is_whitespace) {
+            ""
+        } else {
+            " "
+        };
+        format!("{text}{separator}{mention}")
+    } else {
+        format!("{}{}", &text[..last], mention)
+    }
+}
+
 fn filter_suggestions(items: &[MentionItem], query: &str, limit: usize) -> Vec<MentionItem> {
     let query = query.to_lowercase();
     items
@@ -348,6 +380,24 @@ mod tests {
         assert_eq!(Mention::query_for_text("hello @al", '@'), Some("al"));
         assert_eq!(Mention::query_for_text("hello @al ice", '@'), None);
     }
+
+    #[test]
+    fn mention_selection_replaces_active_query_with_triggered_value() {
+        assert_eq!(
+            apply_mention_selection("hello @al", '@', "alice"),
+            "hello @alice "
+        );
+        assert_eq!(apply_mention_selection("fix #1", '#', "128"), "fix #128 ");
+        assert_eq!(
+            apply_mention_selection("ping @al and @bo", '@', "bob"),
+            "ping @al and @bob "
+        );
+        assert_eq!(
+            apply_mention_selection("hello", '@', "alice"),
+            "hello @alice "
+        );
+    }
+
     #[test]
     fn mention_filter_matches_value_or_label_and_caps() {
         let items = vec![
@@ -376,6 +426,8 @@ mod tests {
         assert!(source.contains("fn move_selection"));
         assert!(source.contains("fn select_active"));
         assert!(source.contains("fn hover_option"));
+        assert!(source.contains("apply_mention_selection"));
+        assert!(source.contains("input.set_value"));
         assert!(source.contains(".on_mouse_move("));
         assert!(source.contains(".on_mouse_down(MouseButton::Left"));
         assert!(source.contains(".on_action(cx.listener(Self::move_up_action))"));

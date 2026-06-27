@@ -1149,6 +1149,47 @@ impl Gallery {
                     Space::new()
                         .vertical()
                         .gap_md()
+                        .child(Title::new("What this app validates").h4())
+                        .child(Paragraph::with_text(
+                            "Gallery 不只是组件截图集合，而是 Liora SDK 的真实集成测试应用：它同时覆盖 Shell、TitleBar、Sidebar、Menu、Portal、Theme、托盘常驻、字体加载、更新检查和安装器资产选择。",
+                        ))
+                        .child(
+                            Space::new()
+                                .gap_sm()
+                                .wrap()
+                                .child(Tag::new("Dogfooding").round(true))
+                                .child(Tag::new("Theme parity").round(true))
+                                .child(Tag::new("Installer assets").round(true))
+                                .child(Tag::new("No WebView").round(true)),
+                        ),
+                )
+                .no_shadow(),
+            )
+            .child(
+                Card::new(
+                    Space::new()
+                        .vertical()
+                        .gap_md()
+                        .child(Title::new("Developer contract").h4())
+                        .child(Paragraph::with_text(
+                            "Gallery 示例应优先使用 Liora 组件和 layout helpers。除应用入口、prelude、unit 等必要上下文外，不应在示例布局中直接写 GPUI 原生元素；如果示例需要绕过封装，说明 SDK 控件扩展点还不够完整。",
+                        ))
+                        .child(
+                            Space::new()
+                                .gap_sm()
+                                .wrap()
+                                .child(Tag::new("Liora components first").round(true))
+                                .child(Tag::new("Official Zed GPUI only").round(true))
+                                .child(Tag::new("README sync on API changes").round(true)),
+                        ),
+                )
+                .no_shadow(),
+            )
+            .child(
+                Card::new(
+                    Space::new()
+                        .vertical()
+                        .gap_md()
                         .child(Text::new(self.updater_status.label()).text_color(theme.primary.base).bold())
                         .child(
                             Space::new()
@@ -1651,24 +1692,24 @@ mod shell_regression_tests {
 
         assert_eq!(items.len(), 3);
 
-        let liora_components::MenuNode::Group(window_group) = &items[0] else {
+        let liora_components::MenuNode::Group(about_group) = &items[0] else {
+            panic!("About should be the first standalone Gallery nav group");
+        };
+        assert_eq!(about_group.title.as_ref(), "About");
+        assert_eq!(menu_group_labels(about_group), vec!["About / 关于"]);
+
+        let liora_components::MenuNode::Group(window_group) = &items[1] else {
             panic!("Gallery nav should group visible menu items by component category");
         };
-        assert_eq!(window_group.title.as_ref(), "窗体控件");
+        assert_eq!(window_group.title.as_ref(), "窗体布局");
         assert_eq!(menu_group_labels(window_group), vec!["Dialog", "Shell"]);
 
-        let liora_components::MenuNode::Group(form_group) = &items[1] else {
-            panic!("Form controls should be grouped after window controls");
+        let liora_components::MenuNode::Group(control_group) = &items[2] else {
+            panic!("Controls should be grouped after window layout entries");
         };
-        assert_eq!(form_group.title.as_ref(), "表单控件");
-        assert_eq!(menu_group_labels(form_group), vec!["Input"]);
-        assert_eq!(menu_group_ids(form_group), vec!["gallery-nav-1"]);
-
-        let liora_components::MenuNode::Group(other_group) = &items[2] else {
-            panic!("About should be kept in the Other group");
-        };
-        assert_eq!(other_group.title.as_ref(), "其他");
-        assert_eq!(menu_group_labels(other_group), vec!["About / 关于"]);
+        assert_eq!(control_group.title.as_ref(), "控件");
+        assert_eq!(menu_group_labels(control_group), vec!["Input"]);
+        assert_eq!(menu_group_ids(control_group), vec!["gallery-nav-1"]);
 
         let empty_items = gallery_nav_menu_items(&entries, "missing");
         let liora_components::MenuNode::Item(empty_item) = &empty_items[0] else {
@@ -1683,12 +1724,12 @@ mod shell_regression_tests {
         let items = gallery_nav_menu_items(&entries, "input");
 
         assert_eq!(items.len(), 1);
-        let liora_components::MenuNode::Group(form_group) = &items[0] else {
+        let liora_components::MenuNode::Group(control_group) = &items[0] else {
             panic!("Filtered Gallery nav should keep category headings for matching items");
         };
-        assert_eq!(form_group.title.as_ref(), "表单控件");
-        assert_eq!(menu_group_labels(form_group), vec!["Input"]);
-        assert_eq!(menu_group_ids(form_group), vec!["gallery-nav-1"]);
+        assert_eq!(control_group.title.as_ref(), "控件");
+        assert_eq!(menu_group_labels(control_group), vec!["Input"]);
+        assert_eq!(menu_group_ids(control_group), vec!["gallery-nav-1"]);
     }
 
     #[test]
