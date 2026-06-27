@@ -25,6 +25,7 @@ pub mod date_picker_demo;
 pub mod date_time_picker_demo;
 pub mod descriptions_demo;
 pub mod dialog_demo;
+pub mod dock_layout_demo;
 pub mod drawer_demo;
 pub mod dropdown_button_demo;
 pub mod dropdown_demo;
@@ -237,6 +238,11 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "TextView 文档视图",
             description: "轻量文档块和 Markdown 子集渲染",
             render: |cx| text_view_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "DockLayout 停靠布局",
+            description: "工作台侧边面板、底部面板和中心 tabs",
+            render: |cx| dock_layout_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Settings UI 设置页",
@@ -670,6 +676,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "DateTimePicker" => Some(date_time_picker_demo::render(cx).into()),
         "Descriptions" => Some(descriptions_demo::render(cx).into()),
         "Dialog" => Some(dialog_demo::render(cx).into()),
+        "DockLayout" => Some(dock_layout_demo::render(cx).into()),
         "Drawer" => Some(drawer_demo::render(cx).into()),
         "Dropdown" => Some(dropdown_demo::render(cx).into()),
         "DropdownButton" => Some(dropdown_button_demo::render(cx).into()),

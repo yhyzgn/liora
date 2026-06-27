@@ -81,6 +81,7 @@ const DATE_TIME_PICKER_DOC: &str = include_str!("../content/pages/date_time_pick
 const DESCRIPTIONS_DOC: &str = include_str!("../content/pages/descriptions.md");
 const DIALOG_DOC: &str = include_str!("../content/pages/dialog.md");
 const DRAWER_DOC: &str = include_str!("../content/pages/drawer.md");
+const DOCK_LAYOUT_DOC: &str = include_str!("../content/pages/dock_layout.md");
 const DROPDOWN_DOC: &str = include_str!("../content/pages/dropdown.md");
 const DROPDOWN_BUTTON_DOC: &str = include_str!("../content/pages/dropdown_button.md");
 const EMPTY_DOC: &str = include_str!("../content/pages/empty.md");
@@ -301,6 +302,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Dialog",
         markdown: DIALOG_DOC,
+    },
+    DocPage {
+        title: "DockLayout",
+        markdown: DOCK_LAYOUT_DOC,
     },
     DocPage {
         title: "Drawer",
@@ -1677,6 +1682,12 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         }
         "drawer/placements.rs" => Some(include_str!("../content/snippets/drawer/placements.rs")),
         "drawer/sizes.rs" => Some(include_str!("../content/snippets/drawer/sizes.rs")),
+        "dock_layout/workbench.rs" => {
+            Some(include_str!("../content/snippets/dock_layout/workbench.rs"))
+        }
+        "dock_layout/inspector.rs" => {
+            Some(include_str!("../content/snippets/dock_layout/inspector.rs"))
+        }
         "drawer/manual_close.rs" => {
             Some(include_str!("../content/snippets/drawer/manual_close.rs"))
         }
@@ -3273,6 +3284,26 @@ impl Render for LiveDemoContent {
             "TypographyParagraph" => Card::new(docs_typography_paragraph(_cx)).no_shadow().into_any_element(),
 
 
+            "DockLayoutWorkbench" => demo_row(vec![
+                liora_components::DockLayout::new()
+                    .height_lg()
+                    .panel_gap(gpui::px(6.0))
+                    .panel(liora_components::DockPanel::new("explorer", "Explorer", liora_components::DockEdge::Left, demo_stack(vec![Text::new("src").into_any_element(), Text::new("crates").into_any_element(), Text::new("apps").into_any_element()])).size(gpui::px(220.0)))
+                    .panel(liora_components::DockPanel::new("terminal", "Terminal", liora_components::DockEdge::Bottom, Text::new("cargo check --workspace --all-targets")).size(gpui::px(132.0)))
+                    .tab(liora_components::DockTab::new("main", "main.rs", Text::new("fn main() { init_liora(cx); }").wrap()))
+                    .tab(liora_components::DockTab::new("readme", "README.md", Text::new("# Liora\nNative GPUI component library.").wrap()))
+                    .into_any_element(),
+            ]),
+            "DockLayoutInspector" => demo_row(vec![
+                liora_components::DockLayout::new()
+                    .height(gpui::px(460.0))
+                    .panel_gap(gpui::px(6.0))
+                    .panel(liora_components::DockPanel::new("outline", "Outline", liora_components::DockEdge::Left, demo_stack(vec![Text::new("App").into_any_element(), Text::new("Shell").into_any_element(), Text::new("Content").into_any_element()])).size(gpui::px(180.0)))
+                    .panel(liora_components::DockPanel::new("props", "Properties", liora_components::DockEdge::Right, demo_stack(vec![Text::new("theme").into_any_element(), Text::new("state").into_any_element(), Text::new("events").into_any_element()])).size(gpui::px(220.0)))
+                    .panel(liora_components::DockPanel::new("logs", "Logs", liora_components::DockEdge::Bottom, Text::new("Ready • 0 errors")).size(gpui::px(96.0)))
+                    .tab(liora_components::DockTab::new("preview", "Preview", demo_stack(vec![liora_components::Tag::new("Live").success().into_any_element(), Text::new("Center content remains flexible.").into_any_element()])))
+                    .into_any_element(),
+            ]),
             "TextViewBlocks" => demo_row(vec![
                 liora_components::TextView::new([
                     liora_components::TextViewBlock::heading(2, "Application bootstrap"),
@@ -12241,6 +12272,11 @@ mod tests {
                     "dialog/manual_close.rs",
                     "dialog/custom_content.rs",
                 ][..],
+            ),
+            (
+                include_str!("../content/pages/dock_layout.md"),
+                "DockLayoutWorkbench",
+                &["dock_layout/workbench.rs", "dock_layout/inspector.rs"][..],
             ),
             (
                 include_str!("../content/pages/drawer.md"),

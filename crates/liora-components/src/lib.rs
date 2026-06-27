@@ -71,6 +71,7 @@ pub mod date_time_picker;
 pub mod descriptions;
 pub mod dialog;
 pub mod divider;
+pub mod dock_layout;
 pub mod draggable;
 pub mod drawer;
 pub mod dropdown;
@@ -192,6 +193,7 @@ pub use date_time_picker::*;
 pub use descriptions::*;
 pub use dialog::*;
 pub use divider::*;
+pub use dock_layout::*;
 pub use draggable::*;
 pub use drawer::*;
 pub use dropdown::*;
@@ -382,6 +384,7 @@ mod application_init_api_tests {
             ("descriptions.rs", include_str!("descriptions.rs")),
             ("dialog.rs", include_str!("dialog.rs")),
             ("divider.rs", include_str!("divider.rs")),
+            ("dock_layout.rs", include_str!("dock_layout.rs")),
             ("draggable.rs", include_str!("draggable.rs")),
             ("drawer.rs", include_str!("drawer.rs")),
             ("dropdown.rs", include_str!("dropdown.rs")),
@@ -1152,6 +1155,7 @@ mod component_backlog_export_tests {
         assert!(source.contains("pub mod settings;"));
         assert!(source.contains("pub mod candlestick_chart;"));
         assert!(source.contains("pub mod text_view;"));
+        assert!(source.contains("pub mod dock_layout;"));
         assert!(source.contains("pub use searchable_list::*;"));
         assert!(source.contains("pub use combobox::*;"));
         assert!(source.contains("pub use status_bar::*;"));
@@ -1159,5 +1163,6 @@ mod component_backlog_export_tests {
         assert!(source.contains("pub use settings::*;"));
         assert!(source.contains("pub use candlestick_chart::*;"));
         assert!(source.contains("pub use text_view::*;"));
+        assert!(source.contains("pub use dock_layout::*;"));
     }
 }
