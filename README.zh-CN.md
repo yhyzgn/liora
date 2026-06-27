@@ -746,7 +746,7 @@ let menu = Menu::new()
 
 ### TitleBar 和 Sidebar 应用框架
 
-`TitleBar` 负责原生自定义标题栏、拖动区域和窗口控制按钮；`Sidebar` 负责侧栏宽度、固定 header/footer 和滚动内容区。`Menu`、`Input` 等有状态组件仍应保存在父 View 的 `Entity<T>` 字段中。
+`TitleBar` 负责原生自定义标题栏、拖动区域和窗口控制按钮；`Sidebar` 负责侧栏宽度、固定 header/footer 和滚动内容区。`Menu`、`Input` 等有状态组件仍应保存在父 View 的 `Entity<T>` 字段中。当 `Sidebar` 放入 `Container::aside(...)` 时，需要加 `.aside_passthrough()`，让 `Sidebar` 自己管理宽度，避免 `Container` 再包一层默认侧栏导致布局错乱。
 
 ```rust
 use gpui::{Context, Entity, Render, Window};
@@ -787,6 +787,7 @@ impl Render for AppShell {
                         .child(self.menu.clone())
                         .footer(Flex::new().padding_md().child(Text::new("v1.0"))),
                 )
+                .aside_passthrough()
                 .child(
                     Flex::new().padding_lg().child(
                         Card::new(

@@ -33,6 +33,7 @@ pub struct Container {
     header_height: Pixels,
     footer_height: Pixels,
     aside_width: Pixels,
+    aside_passthrough: bool,
     aside_scroll: bool,
     main_scroll: bool,
     main_padding: Option<Pixels>,
@@ -51,6 +52,7 @@ impl Container {
             header_height: px(48.0),
             footer_height: px(48.0),
             aside_width: px(200.0),
+            aside_passthrough: false,
             aside_scroll: false,
             main_scroll: false,
             main_padding: None,
@@ -116,6 +118,16 @@ impl Container {
         self.aside_width(px(280.0))
     }
 
+    /// Lets the aside child own its width, border, and scroll shell.
+    ///
+    /// Use this when the aside child is a self-sizing shell component such as
+    /// [`crate::Sidebar`]. Without passthrough, `Container` wraps the aside in
+    /// its own fixed-width panel for simple inline aside content.
+    pub fn aside_passthrough(mut self) -> Self {
+        self.aside_passthrough = true;
+        self
+    }
+
     /// Sets the aside scroll value used by the component.
     pub fn aside_scroll(mut self) -> Self {
         self.aside_scroll = true;
@@ -151,6 +163,7 @@ impl RenderOnce for Container {
         let main_children = self.main;
         let overlays = self.overlays;
         let aside_width = self.aside_width;
+        let aside_passthrough = self.aside_passthrough;
         let aside_scroll = self.aside_scroll;
         let main_scroll = self.main_scroll;
         let main_padding = self.main_padding;
@@ -196,16 +209,21 @@ impl RenderOnce for Container {
 
         let mut body = gpui::div().flex().flex_1().min_h_0().flex_row();
         if let Some(a) = self.aside {
-            let aside_el = gpui::div()
-                .flex_none()
-                .w(aside_width)
-                .h_full()
-                .min_h_0()
-                .border_r_1()
-                .border_color(theme.neutral.border)
-                .id(aside_id)
-                .when(aside_scroll, |s| s.overflow_y_scroll())
-                .child(a);
+            let aside_el = if aside_passthrough {
+                a
+            } else {
+                gpui::div()
+                    .flex_none()
+                    .w(aside_width)
+                    .h_full()
+                    .min_h_0()
+                    .border_r_1()
+                    .border_color(theme.neutral.border)
+                    .id(aside_id)
+                    .when(aside_scroll, |s| s.overflow_y_scroll())
+                    .child(a)
+                    .into_any_element()
+            };
             if aside_right {
                 body = body.child(main);
                 body = body.child(aside_el);
@@ -268,6 +286,13 @@ mod tests {
     }
 
     #[test]
+    fn container_supports_passthrough_aside_for_self_sizing_shell_components() {
+        let container = Container::new().aside_passthrough();
+
+        assert!(container.aside_passthrough);
+    }
+
+    #[test]
     fn container_scroll_regions_use_distinct_stable_id_keys() {
         let production = include_str!("container.rs")
             .split("#[cfg(test)]")
@@ -300,10 +325,15 @@ mod tests {
             .and_then(|part| part.split("let mut body = gpui::div()").next())
             .expect("Container main region should exist");
         let aside_region = production
-            .split("let aside_el = gpui::div()")
+            .split("} else {")
             .nth(1)
-            .and_then(|part| part.split("if aside_right").next())
-            .expect("Container aside region should exist");
+            .and_then(|part| part.split("};").next())
+            .expect("Container wrapped aside region should exist");
+        let passthrough_region = production
+            .split("let aside_el = if aside_passthrough {")
+            .nth(1)
+            .and_then(|part| part.split("} else {").next())
+            .expect("Container passthrough aside branch should exist");
 
         assert!(
             main_region.contains(".flex_1()")
@@ -316,7 +346,11 @@ mod tests {
             aside_region.contains(".h_full()")
                 && aside_region.contains(".min_h_0()")
                 && aside_region.contains(".when(aside_scroll, |s| s.overflow_y_scroll())"),
-            "aside scroll region needs min_h_0 with h_full so child scroll views stay bounded"
+            "wrapped aside scroll region needs min_h_0 with h_full so it forms a bounded viewport"
+        );
+        assert!(
+            passthrough_region.contains("a") && !passthrough_region.contains(".w(aside_width)"),
+            "passthrough aside must let self-sizing children such as Sidebar own their width"
         );
     }
 }

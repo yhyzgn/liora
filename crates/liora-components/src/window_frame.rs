@@ -80,6 +80,22 @@ pub fn apply_window_frame_mode(mut options: WindowOptions, mode: WindowFrameMode
     options
 }
 
+/// Requests the runtime GPUI decoration mode for an already-open window.
+///
+/// This avoids destroying and recreating the current window from inside a UI
+/// control event handler. Reopening during the same event dispatch can leave
+/// GPUI with a removed window while the original event/render chain is still
+/// unwinding. Apps should still call [`apply_window_frame_mode`] when opening
+/// the first window so the initial platform window is created with matching
+/// decorations.
+pub fn request_window_frame_mode(window: &mut Window, mode: WindowFrameMode) {
+    let decorations = match mode {
+        WindowFrameMode::System => WindowDecorations::Server,
+        WindowFrameMode::Custom => WindowDecorations::Client,
+    };
+    window.request_decorations(decorations);
+}
+
 /// Convenience control for switching between system and custom frames.
 pub fn frame_mode_switch_row(switch: impl IntoElement, mode: WindowFrameMode) -> impl IntoElement {
     Space::new()
@@ -203,6 +219,12 @@ mod tests {
                 .is_some_and(|titlebar| !titlebar.appears_transparent)
         );
         assert_eq!(system.window_decorations, Some(WindowDecorations::Server));
+        let production = include_str!("window_frame.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+        assert!(production.contains("pub fn request_window_frame_mode"));
+        assert!(production.contains("window.request_decorations(decorations)"));
     }
 
     #[test]

@@ -61,6 +61,7 @@ pub mod scrollbar_demo;
 pub mod segment_ratio_bar_demo;
 pub mod segmented_demo;
 pub mod shell_demo;
+pub mod sidebar_demo;
 pub mod signal_meter_demo;
 pub mod skeleton_demo;
 pub mod sparkline_demo;
@@ -75,6 +76,7 @@ pub mod theme_demo;
 pub mod time_picker_demo;
 pub mod timeline_demo;
 pub mod timer_demo;
+pub mod titlebar_demo;
 pub mod tooltip_demo;
 pub mod tour_demo;
 pub mod transfer_demo;
@@ -505,6 +507,16 @@ pub fn registry() -> Vec<DemoEntry> {
             render: |cx| shell_demo::render(cx).into(),
         },
         DemoEntry {
+            name: "Sidebar 侧栏",
+            description: "独立侧栏布局、滚动与 header/footer",
+            render: |cx| sidebar_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "TitleBar 标题栏",
+            description: "独立自定义标题栏、操作区与变体",
+            render: |cx| titlebar_demo::render(cx).into(),
+        },
+        DemoEntry {
             name: "VirtualizedList 虚拟列表",
             description: "可见区渲染长列表",
             render: |cx| virtualized_list_demo::render(cx).into(),
@@ -669,7 +681,9 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Rate" => Some(form_controls_demo::render_rate(cx)),
         "Result" => Some(result_demo::render(cx).into()),
         "Scrollbar" => Some(scrollbar_demo::render(cx).into()),
+        "Sidebar" => Some(sidebar_demo::render(cx).into()),
         "Shell" => Some(shell_demo::render(cx).into()),
+        "TitleBar" => Some(titlebar_demo::render(cx).into()),
         "Segmented" => Some(segmented_demo::render(cx).into()),
         "Select" => Some(form_controls_demo::render_select(cx)),
         "Skeleton" => Some(skeleton_demo::render(cx).into()),

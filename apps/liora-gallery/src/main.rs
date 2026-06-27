@@ -6,7 +6,7 @@ use liora_components::{
     AppWindowFrame, Button, Card, Checkbox, Container, Dialog, Input, Menu, MenuMode, MenuNode,
     Paragraph, Segmented, SegmentedOption, Sidebar, Space, Spinner, Switch, Tag, Text, Title,
     WindowFrameMode, apply_window_frame_mode, frame_mode_switch_row, init_liora_with_options,
-    toast_info, toast_success,
+    request_window_frame_mode, toast_info, toast_success,
 };
 use liora_core::{
     Config, FontConfig, FontLoadMode, FontLoadOptions, LinuxDesktopIdentity, LinuxDesktopPngIcon,
@@ -389,24 +389,14 @@ fn set_gallery_frame_mode(mode: WindowFrameMode, window: &mut Window, cx: &mut A
             return;
         }
         state.frame_mode = mode;
-        state.window = None;
         state.window_visible = true;
     }
 
+    request_window_frame_mode(window, mode);
     toast_info!(
         "Gallery window frame switched to {}",
         if mode.is_custom() { "custom" } else { "system" }
     );
-    window.remove_window();
-    cx.defer(move |cx| {
-        if let Some(handle) = open_gallery_window(cx)
-            && cx.has_global::<GalleryTrayState>()
-        {
-            let state = cx.global_mut::<GalleryTrayState>();
-            state.window = Some(handle);
-            state.window_visible = true;
-        }
-    });
 }
 
 fn request_gallery_window_close(window: &mut Window, cx: &mut App) {
@@ -717,6 +707,7 @@ mod shell_tests {
         assert!(source.contains("nav_filter"));
         assert!(source.contains("nav_menu: Option"));
         assert!(source.contains(r#".id("gallery-sidebar")"#));
+        assert!(source.contains(".aside_passthrough()"));
         assert!(source.contains("self.nav_menu = Some"));
         assert!(source.contains("frame_mode_switch"));
         assert!(source.contains("AppWindowFrame::new"));
@@ -934,6 +925,7 @@ impl Render for Gallery {
                     .header(div().w_full().p_2().child(self.nav_filter.clone()))
                     .child(nav_menu),
             )
+            .aside_passthrough()
             .main_scroll()
             .main_padding_xl()
             .child(content)
@@ -1208,9 +1200,15 @@ impl Gallery {
             });
         });
 
+        let gallery = cx.entity().clone();
         cx.update_entity(&self.frame_mode_switch, |switch, _cx| {
-            switch.set_on_change(|enabled, window, cx| {
-                set_gallery_frame_mode(WindowFrameMode::from_custom(enabled), window, cx);
+            switch.set_on_change(move |enabled, window, cx| {
+                let mode = WindowFrameMode::from_custom(enabled);
+                set_gallery_frame_mode(mode, window, cx);
+                let _ = gallery.update(cx, |gallery, cx| {
+                    gallery.frame_mode = mode;
+                    cx.notify();
+                });
             });
         });
     }
@@ -1654,6 +1652,7 @@ mod shell_regression_tests {
         assert!(shell.contains(".expanded_width(px(280.0))"));
         assert!(shell.contains(".scrollable()"));
         assert!(shell.contains(".child(nav_menu)"));
+        assert!(shell.contains(".aside_passthrough()"));
         assert!(!shell.contains(r#".id("gallery-nav-scroll")"#));
         assert!(!shell.contains(".track_scroll(&self.nav_scroll)"));
         assert!(!source.contains("gallery.refresh_nav_menu_for_query(query, cx);"));
@@ -1662,6 +1661,25 @@ mod shell_regression_tests {
                     let _ = gallery.update(cx, |_gallery, cx| {
                         cx.notify();"
         ));
+    }
+
+    #[test]
+    fn gallery_frame_mode_switch_updates_current_window_without_reopening() {
+        let source = include_str!("main.rs")
+            .split("mod shell_regression_tests")
+            .next()
+            .unwrap();
+        let handler = source
+            .split("fn set_gallery_frame_mode")
+            .nth(1)
+            .expect("Gallery frame mode handler should exist")
+            .split("fn request_gallery_window_close")
+            .next()
+            .expect("Gallery frame mode handler should end before close handler");
+
+        assert!(handler.contains("request_window_frame_mode"));
+        assert!(!handler.contains("window.remove_window()"));
+        assert!(!handler.contains("open_gallery_window"));
     }
 
     #[test]

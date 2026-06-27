@@ -747,7 +747,7 @@ let menu = Menu::new()
 
 ### App shell with TitleBar and Sidebar
 
-`TitleBar` owns native custom titlebar chrome and window-control areas. `Sidebar` owns app navigation panel layout, width, fixed header/footer slots, and scrolling. Keep stateful controls such as `Menu` in the parent view as `Entity<T>` fields.
+`TitleBar` owns native custom titlebar chrome and window-control areas. `Sidebar` owns app navigation panel layout, width, fixed header/footer slots, and scrolling. Keep stateful controls such as `Menu` in the parent view as `Entity<T>` fields. When `Sidebar` is placed in `Container::aside(...)`, add `.aside_passthrough()` so the sidebar owns its own width instead of being wrapped by the container's default aside panel.
 
 ```rust
 use gpui::{Context, Entity, Render, Window};
@@ -788,6 +788,7 @@ impl Render for AppShell {
                         .child(self.menu.clone())
                         .footer(Flex::new().padding_md().child(Text::new("v1.0"))),
                 )
+                .aside_passthrough()
                 .child(
                     Flex::new().padding_lg().child(
                         Card::new(

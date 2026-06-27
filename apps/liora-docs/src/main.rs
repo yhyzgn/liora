@@ -3,7 +3,7 @@ mod markdown;
 use gpui::{App, AppContext, Global, Window, WindowOptions, px, size};
 use liora_components::{
     Button, Checkbox, Dialog, Paragraph, Space, WindowFrameMode, apply_window_frame_mode,
-    init_liora_with_options,
+    init_liora_with_options, request_window_frame_mode,
 };
 use liora_core::{
     FontConfig, FontLoadMode, FontLoadOptions, LinuxDesktopIdentity, LinuxDesktopPngIcon,
@@ -294,24 +294,14 @@ fn set_docs_frame_mode(mode: WindowFrameMode, window: &mut Window, cx: &mut App)
             return;
         }
         state.frame_mode = mode;
-        state.window = None;
         state.window_visible = true;
     }
 
+    request_window_frame_mode(window, mode);
     liora_components::toast_info!(
         "Docs window frame switched to {}",
         if mode.is_custom() { "custom" } else { "system" }
     );
-    window.remove_window();
-    cx.defer(move |cx| {
-        if let Some(handle) = open_docs_window(cx)
-            && cx.has_global::<DocsTrayState>()
-        {
-            let state = cx.global_mut::<DocsTrayState>();
-            state.window = Some(handle);
-            state.window_visible = true;
-        }
-    });
 }
 
 fn request_docs_window_close(window: &mut Window, cx: &mut App) {
@@ -626,6 +616,22 @@ mod shell_tests {
         assert!(source.contains("../assets/app-icons/liora-docs-128.png"));
         assert!(source.contains("../assets/app-icons/liora-docs.png"));
         assert!(source.contains("../assets/app-icons/liora-docs.svg"));
+    }
+
+    #[test]
+    fn docs_frame_mode_switch_updates_current_window_without_reopening() {
+        let source = include_str!("main.rs");
+        let handler = source
+            .split("fn set_docs_frame_mode")
+            .nth(1)
+            .expect("Docs frame mode handler should exist")
+            .split("fn request_docs_window_close")
+            .next()
+            .expect("Docs frame mode handler should end before close handler");
+
+        assert!(handler.contains("request_window_frame_mode"));
+        assert!(!handler.contains("window.remove_window()"));
+        assert!(!handler.contains("open_docs_window"));
     }
 
     #[test]

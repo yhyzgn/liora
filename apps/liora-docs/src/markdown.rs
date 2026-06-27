@@ -43,6 +43,7 @@ const DASHBOARD_APP_DOC: &str = include_str!("../content/pages/dashboard_app.md"
 const DASHBOARD_PATTERNS_DOC: &str = include_str!("../content/pages/dashboard_patterns.md");
 const DASHBOARD_STATE_DOC: &str = include_str!("../content/pages/dashboard_state.md");
 const THEME_SYSTEM_DOC: &str = include_str!("../content/pages/theme_system.md");
+const TITLEBAR_DOC: &str = include_str!("../content/pages/titlebar.md");
 const ABOUT_DOC: &str = include_str!("../content/pages/about.md");
 
 const ACCORDION_DOC: &str = include_str!("../content/pages/accordion.md");
@@ -112,6 +113,7 @@ const RADIO_DOC: &str = include_str!("../content/pages/radio.md");
 const RATE_DOC: &str = include_str!("../content/pages/rate.md");
 const RESULT_DOC: &str = include_str!("../content/pages/result.md");
 const SCROLLBAR_DOC: &str = include_str!("../content/pages/scrollbar.md");
+const SIDEBAR_DOC: &str = include_str!("../content/pages/sidebar.md");
 const SHELL_DOC: &str = include_str!("../content/pages/shell.md");
 const SEGMENTED_DOC: &str = include_str!("../content/pages/segmented.md");
 const SELECT_DOC: &str = include_str!("../content/pages/select.md");
@@ -440,6 +442,10 @@ const DOC_PAGES: &[DocPage] = &[
         markdown: SHELL_DOC,
     },
     DocPage {
+        title: "Sidebar",
+        markdown: SIDEBAR_DOC,
+    },
+    DocPage {
         title: "SignalMeter",
         markdown: SIGNAL_METER_DOC,
     },
@@ -506,6 +512,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Timer",
         markdown: TIMER_DOC,
+    },
+    DocPage {
+        title: "TitleBar",
+        markdown: TITLEBAR_DOC,
     },
     DocPage {
         title: "Tooltip",
@@ -1455,6 +1465,8 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "splitter/basic.rs" => Some(include_str!("../content/snippets/splitter/basic.rs")),
         "scrollbar/basic.rs" => Some(include_str!("../content/snippets/scrollbar/basic.rs")),
         "shell/basic.rs" => Some(include_str!("../content/snippets/shell/basic.rs")),
+        "sidebar/basic.rs" => Some(include_str!("../content/snippets/sidebar/basic.rs")),
+        "titlebar/basic.rs" => Some(include_str!("../content/snippets/titlebar/basic.rs")),
         "descriptions/basic.rs" => Some(include_str!("../content/snippets/descriptions/basic.rs")),
         "descriptions/border.rs" => {
             Some(include_str!("../content/snippets/descriptions/border.rs"))
@@ -4847,6 +4859,12 @@ impl Render for LiveDemoContent {
             "ShellBasic" => liora_gallery::demos::render_doc_demo("Shell", _cx)
                 .map(|view| view.into_any_element())
                 .unwrap_or_else(|| Paragraph::with_text("Shell demo is not available.").into_any_element()),
+            "SidebarBasic" => liora_gallery::demos::render_doc_demo("Sidebar", _cx)
+                .map(|view| view.into_any_element())
+                .unwrap_or_else(|| Paragraph::with_text("Sidebar demo is not available.").into_any_element()),
+            "TitleBarBasic" => liora_gallery::demos::render_doc_demo("TitleBar", _cx)
+                .map(|view| view.into_any_element())
+                .unwrap_or_else(|| Paragraph::with_text("TitleBar demo is not available.").into_any_element()),
             "SplitterBasic" => liora_components::Splitter::new()
                 .height_md()
                 .bordered()
@@ -7835,6 +7853,7 @@ impl Render for DocsShell {
                     .scrollable()
                     .child(nav_menu),
             )
+            .aside_passthrough()
             .main_padding_xl()
             .child(
                 div()
@@ -8287,10 +8306,16 @@ impl DocsShell {
             });
         });
 
+        let docs = cx.entity().clone();
         let on_frame_mode_change = self.on_frame_mode_change;
         cx.update_entity(&self.frame_mode_switch, |switch, _cx| {
             switch.set_on_change(move |enabled, window, cx| {
-                on_frame_mode_change(WindowFrameMode::from_custom(enabled), window, cx);
+                let mode = WindowFrameMode::from_custom(enabled);
+                on_frame_mode_change(mode, window, cx);
+                let _ = docs.update(cx, |docs, cx| {
+                    docs.frame_mode = mode;
+                    cx.notify();
+                });
             });
         });
     }
@@ -9318,6 +9343,7 @@ mod tests {
 
         assert!(source.contains("Container::new()"));
         assert!(docs_shell_render.contains("Sidebar::new()"));
+        assert!(docs_shell_render.contains(".aside_passthrough()"));
         assert!(source.contains("AppWindowFrame::new"));
         assert!(docs_shell_render.contains(r#".id("docs-sidebar")"#));
         assert!(!docs_shell_render.contains(".aside_width_lg()"));
