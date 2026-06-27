@@ -5612,7 +5612,9 @@ impl LiveDemoContent {
                         .footer_padding_units(10.0)
                         .gap_units(8.0)
                         .scrollable()
-                        .child(self.menus[2].clone()),
+                        .child(self.menus.first().cloned().unwrap_or_else(|| {
+                            cx.new(|_| docs_compact_menu("docs-shell-compact-menu-fallback"))
+                        })),
                 )
                 .right_sidebar(
                     Sidebar::new()
@@ -5671,7 +5673,9 @@ impl LiveDemoContent {
                         )
                         .brand_action(Button::new("+").small().primary())
                         .scrollable()
-                        .child(self.menus[3].clone())
+                        .child(self.menus.first().cloned().unwrap_or_else(|| {
+                            cx.new(|_| docs_workspace_menu("docs-sidebar-brand-menu-fallback"))
+                        }))
                         .footer(
                             Space::new()
                                 .gap_sm()
@@ -5714,7 +5718,9 @@ impl LiveDemoContent {
                                 .child(Button::new("Pro").small().primary()),
                         )
                         .scrollable()
-                        .child(self.menus[4].clone())
+                        .child(self.menus.first().cloned().unwrap_or_else(|| {
+                            cx.new(|_| docs_long_workspace_menu("docs-sidebar-long-menu-fallback"))
+                        }))
                         .footer(
                             Space::new()
                                 .gap_sm()
@@ -5752,7 +5758,9 @@ impl LiveDemoContent {
                         .footer_padding_units(12.0)
                         .gap_units(6.0)
                         .scrollable()
-                        .child(self.menus[5].clone())
+                        .child(self.menus.first().cloned().unwrap_or_else(|| {
+                            cx.new(|_| docs_inspector_menu("docs-sidebar-inspector-menu-fallback"))
+                        }))
                         .content(
                             Space::new()
                                 .vertical()
@@ -5794,7 +5802,9 @@ impl LiveDemoContent {
                                 .color(theme.primary.base),
                         )
                         .scrollable()
-                        .child(self.menus[6].clone())
+                        .child(self.menus.first().cloned().unwrap_or_else(|| {
+                            cx.new(|_| docs_icon_rail_menu("docs-sidebar-icon-menu-fallback"))
+                        }))
                         .footer(Icon::new(IconName::Settings).size_units(18.0)),
                 ),
         )
@@ -10363,6 +10373,27 @@ mod tests {
         ] {
             assert!(source.contains(&format!("src=\"{snippet}\"")));
             assert!(load_code_snippet(snippet).is_some());
+        }
+    }
+
+    #[test]
+    fn split_sidebar_live_demos_use_component_local_menu_indices() {
+        let source = include_str!("markdown.rs")
+            .split("mod tests")
+            .next()
+            .unwrap();
+
+        for stale_index in [
+            "self.menus[2]",
+            "self.menus[3]",
+            "self.menus[4]",
+            "self.menus[5]",
+            "self.menus[6]",
+        ] {
+            assert!(
+                !source.contains(stale_index),
+                "split sidebar demos must not use stale whole-page menu index {stale_index}"
+            );
         }
     }
 
