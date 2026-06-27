@@ -20,7 +20,7 @@
 //! crate.
 
 use crate::gpui_compat::element_id;
-use crate::{Popover, motion::pop_in};
+use crate::{Flex, Popover, motion::pop_in};
 use gpui::{
     AnyElement, App, Context, IntoElement, MouseButton, Render, SharedString, Window, div,
     prelude::*, px,
@@ -297,6 +297,7 @@ impl Menu {
         div()
             .id(element_id(format!("{}-item-{}", self.id, id)))
             .cursor_pointer()
+            .block_mouse_except_scroll()
             .flex()
             .flex_row()
             .items_center()
@@ -352,6 +353,7 @@ impl Menu {
                 div()
                     .id(element_id(format!("{}-collapsed-submenu-{}", self.id, id)))
                     .cursor_pointer()
+                    .block_mouse_except_scroll()
                     .flex()
                     .items_center()
                     .justify_center()
@@ -439,6 +441,7 @@ impl Menu {
                                     id
                                 )))
                                 .cursor_pointer()
+                                .block_mouse_except_scroll()
                                 .flex()
                                 .flex_row()
                                 .items_center()
@@ -586,6 +589,7 @@ impl Menu {
         div()
             .id(element_id(format!("{}-horizontal-item-{}", self.id, id)))
             .cursor_pointer()
+            .block_mouse_except_scroll()
             .flex()
             .flex_row()
             .items_center()
@@ -629,6 +633,7 @@ impl Menu {
             div()
                 .id(element_id(format!("{}-horizontal-submenu-{}", self.id, id)))
                 .cursor_pointer()
+                .block_mouse_except_scroll()
                 .flex()
                 .flex_row()
                 .items_center()
@@ -714,6 +719,7 @@ impl Menu {
                                 id
                             )))
                             .cursor_pointer()
+                            .block_mouse_except_scroll()
                             .flex()
                             .flex_row()
                             .items_center()
@@ -892,19 +898,35 @@ impl Render for Menu {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
 
-        div()
-            .flex()
-            .w_full()
-            .bg(theme.neutral.card)
-            .when(self.mode == MenuMode::Vertical, |s| s.flex_col())
-            .when(self.mode == MenuMode::Horizontal, |s| {
-                s.flex_row().border_b_1().border_color(theme.neutral.border)
-            })
-            .children(
-                self.items
-                    .iter()
-                    .map(|node| self.render_node(node, 0, &theme, cx)),
-            )
+        match self.mode {
+            MenuMode::Vertical => Flex::new()
+                .id(self.id.clone())
+                .column()
+                .w_full()
+                .min_h_0()
+                .flex_1()
+                .overflow_y_scroll()
+                .bg(theme.neutral.card)
+                .children(
+                    self.items
+                        .iter()
+                        .map(|node| self.render_node(node, 0, &theme, cx)),
+                )
+                .into_any_element(),
+            MenuMode::Horizontal => div()
+                .flex()
+                .w_full()
+                .bg(theme.neutral.card)
+                .border_b_1()
+                .border_color(theme.neutral.border)
+                .flex_row()
+                .children(
+                    self.items
+                        .iter()
+                        .map(|node| self.render_node(node, 0, &theme, cx)),
+                )
+                .into_any_element(),
+        }
     }
 }
 
@@ -936,9 +958,14 @@ mod tests {
         assert!(source.contains("let changed = self.active_index.as_ref() != Some(&id);"));
         assert!(source.contains("if changed {"));
         assert!(source.contains(".on_mouse_down("));
+        assert!(source.contains(".block_mouse_except_scroll()"));
         assert!(source.contains("MouseButton::Left"));
         assert!(source.contains("if this.select_item(id.clone(), window, cx)"));
         assert!(source.contains(".w_full()"));
+        assert!(source.contains(".overflow_y_scroll()"));
+        assert!(source.contains(".min_h_0()"));
+        assert!(source.contains("Flex::new()"));
+        assert!(source.contains(".id(self.id.clone())"));
         assert!(
             !source.contains(
                 "this.select_item(id.clone(), window, cx);\n                cx.notify();"

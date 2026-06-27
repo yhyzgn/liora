@@ -1,6 +1,6 @@
 use gpui::{
-    AnyView, App, Component, Context, Global, Render, RenderImage, ScrollHandle, SharedString,
-    Window, WindowOptions, div, img, prelude::*, px, size,
+    AnyView, App, Component, Context, Global, Render, RenderImage, SharedString, Window,
+    WindowOptions, div, img, prelude::*, px, size,
 };
 use liora_components::{
     AppWindowFrame, Button, Card, Checkbox, Container, Dialog, Input, Menu, MenuMode, MenuNode,
@@ -41,7 +41,6 @@ pub struct Gallery {
     selected: usize,
     nav_filter: gpui::Entity<Input>,
     nav_menu: Option<gpui::Entity<Menu>>,
-    nav_scroll: ScrollHandle,
     nav_query: String,
     nav_refresh_pending: bool,
     theme_mode: ThemeMode,
@@ -141,7 +140,6 @@ fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
                 selected: 0,
                 nav_filter: cx.new(|cx| Input::new("", cx).placeholder("搜索组件 / Search demos")),
                 nav_menu: None,
-                nav_scroll: ScrollHandle::new(),
                 nav_query: String::new(),
                 nav_refresh_pending: false,
                 theme_mode,
@@ -873,17 +871,7 @@ impl Render for Gallery {
                     .gap_2()
                     .p_2()
                     .child(div().flex_none().child(self.nav_filter.clone()))
-                    .child(
-                        div()
-                            .id("gallery-nav-scroll")
-                            .flex_1()
-                            .min_h_0()
-                            .h_full()
-                            .w_full()
-                            .overflow_y_scroll()
-                            .track_scroll(&self.nav_scroll)
-                            .child(div().flex_none().w_full().child(nav_menu)),
-                    ),
+                    .child(nav_menu),
             )
             .aside_width_lg()
             .main_scroll()
@@ -1578,8 +1566,6 @@ mod shell_regression_tests {
         assert!(source.contains("fn gallery_nav_item_id"));
         assert!(source.contains("fn gallery_nav_index_from_id"));
         assert!(source.contains("nav_menu: Option<gpui::Entity<Menu>>"));
-        assert!(source.contains("nav_scroll: ScrollHandle"));
-        assert!(source.contains("ScrollHandle::new()"));
         assert!(source.contains(r#".id("gallery-nav-menu")"#));
         assert!(source.contains(".mode(MenuMode::Vertical)"));
         assert!(source.contains(".with_items(items)"));
@@ -1603,11 +1589,12 @@ mod shell_regression_tests {
             .split("AppWindowFrame::new")
             .next()
             .expect("shell should end before app frame");
-        assert!(shell.contains(r#".id("gallery-nav-scroll")"#));
         assert!(shell.contains(".h_full()"));
         assert!(shell.contains(".min_h_0()"));
-        assert!(shell.contains(".overflow_y_scroll()"));
-        assert!(shell.contains(".track_scroll(&self.nav_scroll)"));
+        assert!(shell.contains(".child(nav_menu)"));
+        assert!(!shell.contains(r#".id("gallery-nav-scroll")"#));
+        assert!(!shell.contains(".overflow_y_scroll()"));
+        assert!(!shell.contains(".track_scroll(&self.nav_scroll)"));
         assert!(!source.contains("gallery.refresh_nav_menu_for_query(query, cx);"));
         assert!(!source.contains(
             "move |_, cx| {

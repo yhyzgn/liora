@@ -7648,7 +7648,6 @@ pub fn render_docs_shell(
         let shell = DocsShell {
             selected: 0,
             nav_menu: None,
-            nav_scroll: ScrollHandle::new(),
             page_views: vec![None; DOC_PAGES.len()],
             update_status: UpdatePanelStatus::Idle,
             install_plan: None,
@@ -7706,7 +7705,6 @@ impl UpdatePanelStatus {
 pub struct DocsShell {
     selected: usize,
     nav_menu: Option<Entity<Menu>>,
-    nav_scroll: ScrollHandle,
     page_views: Vec<Option<Entity<DocsPageView>>>,
     update_status: UpdatePanelStatus,
     install_plan: Option<InstallPlan>,
@@ -7823,13 +7821,12 @@ impl Render for DocsShell {
             .header_height_lg()
             .aside(
                 div()
-                    .id("liora-docs-nav-scroll")
+                    .flex()
+                    .flex_col()
                     .h_full()
                     .min_h_0()
                     .w_full()
-                    .overflow_y_scroll()
-                    .track_scroll(&self.nav_scroll)
-                    .child(div().flex_none().w_full().child(nav_menu)),
+                    .child(nav_menu),
             )
             .aside_width_lg()
             .main_padding_xl()
@@ -9333,11 +9330,6 @@ mod tests {
         assert!(source.contains("frame_mode_switch"));
         assert!(source.contains("Menu::new()"));
         assert!(source.contains("nav_menu: Option<Entity<Menu>>"));
-        assert!(source.contains("nav_scroll: ScrollHandle"));
-        assert!(source.contains("ScrollHandle::new()"));
-        assert!(source.contains(r#".id("liora-docs-nav-scroll")"#));
-        assert!(source.contains(".overflow_y_scroll()"));
-        assert!(source.contains(".track_scroll(&self.nav_scroll)"));
         assert!(source.contains("menu.set_active_index(active_id, cx);"));
         assert!(source.contains("if docs.selected != index"));
         assert!(source.contains("shell.wire_shell_controls(cx);"));
@@ -9345,7 +9337,6 @@ mod tests {
         assert!(source.contains("About / Updates"));
         assert!(source.contains("docs_status_bar_icon"));
         assert!(source.contains("../assets/status-bar-icons/ready.png"));
-        assert!(source.contains(".aside_scroll()"));
         assert!(source.contains("VirtualizedList::new"));
         assert!(source.contains("virtual_list: Entity<VirtualizedList>"));
         assert!(source.contains("measure_all_items_for_scrollbar"));
@@ -9357,6 +9348,8 @@ mod tests {
                 .find("pub struct DocsShell")
                 .expect("DocsShell struct should follow bootstrap")];
         assert!(docs_shell_bootstrap.contains("shell.wire_shell_controls(cx);"));
+        assert!(!docs_shell_bootstrap.contains("nav_scroll: ScrollHandle"));
+        assert!(!docs_shell_bootstrap.contains("ScrollHandle::new()"));
         let docs_shell_render = &source[source
             .find("impl Render for DocsShell")
             .expect("DocsShell render should exist")
@@ -9364,6 +9357,10 @@ mod tests {
                 .find("struct DocsPageView")
                 .expect("DocsPageView should follow DocsShell")];
         assert!(!docs_shell_render.contains("self.wire_shell_controls(cx);"));
+        assert!(!docs_shell_render.contains(r#".id("liora-docs-nav-scroll")"#));
+        assert!(!docs_shell_render.contains(".overflow_y_scroll()"));
+        assert!(!docs_shell_render.contains(".track_scroll(&self.nav_scroll)"));
+        assert!(docs_shell_render.contains(".child(nav_menu)"));
         assert!(!docs_shell_render.contains(".aside_scroll()"));
         assert!(!docs_shell_render.contains(".main_scroll()"));
         assert!(source.contains("DocsPortalLayer"));
