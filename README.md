@@ -1253,14 +1253,14 @@ impl Render for OrdersView {
 
 | Category | Components |
 |---|---|
-| Basic and layout | `Button`, `ButtonGroup`, `Icon`, `Link`, `Text`, `Title`, `Paragraph`, `Space`, `Divider`, `Row`, `Col`, `Container`, `Shell`, `Sidebar`, `TitleBar`, `Flex`, `Scrollbar`, `Splitter`, `Affix`, `Backtop` |
-| Form controls | `Input`, `InputNumber`, `Textarea`, `Checkbox`, `CheckboxGroup`, `Radio`, `RadioGroup`, `Switch`, `Select`, `Slider`, `Form`, `FormItem`, `Rate`, `DatePicker`, `TimePicker`, `DateTimePicker`, `Upload`, `Cascader`, `Transfer`, `ColorPicker`, `Autocomplete`, `InputTag`, `Mention`, `TreeSelect`, `OtpInput` |
-| Feedback and overlays | `Alert`, `Tooltip`, `Popover`, `Popconfirm`, `Dialog`, `Drawer`, `Message`, `Notification`, `MessageBox`, `Loading`, `Dropdown`, `DropdownButton`, `Preview`, `Tour` |
-| Navigation | `Menu`, `Tabs`, `Breadcrumb`, `Steps`, `PageHeader`, `Anchor`, `Accordion` |
-| Data display | `Table`, `VirtualizedTable`, `VirtualizedTree`, `VirtualizedList`, `Progress`, `Skeleton`, `Empty`, `Result`, `Descriptions`, `Timeline`, `Tree`, `Pagination`, `Statistic`, `Segmented`, `Tag`, `Avatar`, `Badge`, `Calendar`, `Carousel`, `Image`, `Watermark`, `Kbd` |
-| Charts and metrics | `LineChart`, `AreaChart`, `BarChart`, `PieChart`, `RingChart`, `Sparkline`, `SignalMeter`, `HeatBar`, `SegmentRatioBar` |
-| Editing and utility | `CodeBlock`, `CodeEditor`, `QrCode`, `Timer`, `Label`, `Operation`, draggable list helpers |
-| App shell and platform | `Shell`, `AppWindowFrame`, `TitleBar`, `Sidebar`, `WindowFrameMode`, `liora-tray`, Linux desktop identity helpers, package metadata helpers, updater helpers |
+| Basic and layout | `Button`, `ButtonGroup`, `Icon`, `Link`, `Text`, `Title`, `Paragraph`, `Space`, `Divider`, `Row`, `Col`, `Container`, `Shell`, `Sidebar`, `TitleBar`, `Flex`, `Scrollbar`, `ScrollableMask`, `Splitter`, `DockLayout`, `Affix`, `Backtop` |
+| Form controls | `Input`, `InputNumber`, `Textarea`, `Checkbox`, `CheckboxGroup`, `Radio`, `RadioGroup`, `Switch`, `Select`, `Slider`, `Form`, `FormItem`, `Rate`, `DatePicker`, `TimePicker`, `DateTimePicker`, `Upload`, `Cascader`, `Transfer`, `ColorPicker`, `Autocomplete`, `InputTag`, `Mention`, `TreeSelect`, `Combobox`, `SearchableList`, `OtpInput`, `Toggle`, `ToggleGroup` |
+| Feedback and overlays | `Alert`, `Tooltip`, `Popover`, `Popconfirm`, `Dialog`, `Drawer`, `Message`, `Notification`, `MessageBox`, `Loading`, `Dropdown`, `DropdownButton`, `Preview`, `Tour`, `Sheet`, `HoverCard`, `FocusTrap` |
+| Navigation | `Menu`, `Tabs`, `Breadcrumb`, `Steps`, `PageHeader`, `Anchor`, `Accordion`, `NativeMenu` |
+| Data display | `Table`, `VirtualizedTable`, `VirtualizedTree`, `VirtualizedList`, `Progress`, `Skeleton`, `Empty`, `Result`, `Descriptions`, `Timeline`, `Tree`, `Pagination`, `Statistic`, `Segmented`, `Tag`, `Avatar`, `Badge`, `Calendar`, `Carousel`, `Image`, `Watermark`, `Kbd`, `GroupBox`, `TextView`, `StatusBar`, `SettingsPage`, `SettingsGroup`, `SettingsItem` |
+| Charts and metrics | `LineChart`, `AreaChart`, `BarChart`, `PieChart`, `RingChart`, `Sparkline`, `SignalMeter`, `HeatBar`, `SegmentRatioBar`, `CandlestickChart` |
+| Editing and utility | `CodeBlock`, `CodeEditor`, `QrCode`, `Timer`, `Label`, `Operation`, `Clipboard`, draggable list helpers |
+| App shell and platform | `Shell`, `AppWindowFrame`, `TitleBar`, `Sidebar`, `WindowFrameMode`, `StatusBar`, `DockLayout`, `NativeMenu`, `liora-tray`, Linux desktop identity helpers, package metadata helpers, updater helpers |
 
 ## Native packaging
 

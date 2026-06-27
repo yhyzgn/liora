@@ -1252,14 +1252,14 @@ impl Render for OrdersView {
 
 | 分类 | 组件 |
 |---|---|
-| Basic / Layout 基础布局 | `Button`, `ButtonGroup`, `Icon`, `Link`, `Text`, `Title`, `Paragraph`, `Space`, `Divider`, `Row`, `Col`, `Container`, `Shell`, `Sidebar`, `TitleBar`, `Flex`, `Scrollbar`, `Splitter`, `Affix`, `Backtop` |
-| Form 表单 | `Input`, `InputNumber`, `Textarea`, `Checkbox`, `CheckboxGroup`, `Radio`, `RadioGroup`, `Switch`, `Select`, `Slider`, `Form`, `FormItem`, `Rate`, `DatePicker`, `TimePicker`, `DateTimePicker`, `Upload`, `Cascader`, `Transfer`, `ColorPicker`, `Autocomplete`, `InputTag`, `Mention`, `TreeSelect`, `OtpInput` |
-| Feedback / Overlay 反馈浮层 | `Alert`, `Tooltip`, `Popover`, `Popconfirm`, `Dialog`, `Drawer`, `Message`, `Notification`, `MessageBox`, `Loading`, `Dropdown`, `DropdownButton`, `Preview`, `Tour` |
-| Navigation 导航 | `Menu`, `Tabs`, `Breadcrumb`, `Steps`, `PageHeader`, `Anchor`, `Accordion` |
-| Data 数据展示 | `Table`, `VirtualizedTable`, `VirtualizedTree`, `VirtualizedList`, `Progress`, `Skeleton`, `Empty`, `Result`, `Descriptions`, `Timeline`, `Tree`, `Pagination`, `Statistic`, `Segmented`, `Tag`, `Avatar`, `Badge`, `Calendar`, `Carousel`, `Image`, `Watermark`, `Kbd` |
-| Charts / Metrics 图表指标 | `LineChart`, `AreaChart`, `BarChart`, `PieChart`, `RingChart`, `Sparkline`, `SignalMeter`, `HeatBar`, `SegmentRatioBar` |
-| Editing / Utility 编辑工具 | `CodeBlock`, `CodeEditor`, `QrCode`, `Timer`, `Label`, `Operation`, draggable list helpers |
-| App shell / Platform 平台 | `Shell`, `AppWindowFrame`, `TitleBar`, `Sidebar`, `WindowFrameMode`, `liora-tray`, Linux desktop identity helpers, package metadata helpers, updater helpers |
+| Basic / Layout 基础布局 | `Button`, `ButtonGroup`, `Icon`, `Link`, `Text`, `Title`, `Paragraph`, `Space`, `Divider`, `Row`, `Col`, `Container`, `Shell`, `Sidebar`, `TitleBar`, `Flex`, `Scrollbar`, `ScrollableMask`, `Splitter`, `DockLayout`, `Affix`, `Backtop` |
+| Form 表单 | `Input`, `InputNumber`, `Textarea`, `Checkbox`, `CheckboxGroup`, `Radio`, `RadioGroup`, `Switch`, `Select`, `Slider`, `Form`, `FormItem`, `Rate`, `DatePicker`, `TimePicker`, `DateTimePicker`, `Upload`, `Cascader`, `Transfer`, `ColorPicker`, `Autocomplete`, `InputTag`, `Mention`, `TreeSelect`, `Combobox`, `SearchableList`, `OtpInput`, `Toggle`, `ToggleGroup` |
+| Feedback / Overlay 反馈浮层 | `Alert`, `Tooltip`, `Popover`, `Popconfirm`, `Dialog`, `Drawer`, `Message`, `Notification`, `MessageBox`, `Loading`, `Dropdown`, `DropdownButton`, `Preview`, `Tour`, `Sheet`, `HoverCard`, `FocusTrap` |
+| Navigation 导航 | `Menu`, `Tabs`, `Breadcrumb`, `Steps`, `PageHeader`, `Anchor`, `Accordion`, `NativeMenu` |
+| Data 数据展示 | `Table`, `VirtualizedTable`, `VirtualizedTree`, `VirtualizedList`, `Progress`, `Skeleton`, `Empty`, `Result`, `Descriptions`, `Timeline`, `Tree`, `Pagination`, `Statistic`, `Segmented`, `Tag`, `Avatar`, `Badge`, `Calendar`, `Carousel`, `Image`, `Watermark`, `Kbd`, `GroupBox`, `TextView`, `StatusBar`, `SettingsPage`, `SettingsGroup`, `SettingsItem` |
+| Charts / Metrics 图表指标 | `LineChart`, `AreaChart`, `BarChart`, `PieChart`, `RingChart`, `Sparkline`, `SignalMeter`, `HeatBar`, `SegmentRatioBar`, `CandlestickChart` |
+| Editing / Utility 编辑工具 | `CodeBlock`, `CodeEditor`, `QrCode`, `Timer`, `Label`, `Operation`, `Clipboard`, draggable list helpers |
+| App shell / Platform 平台 | `Shell`, `AppWindowFrame`, `TitleBar`, `Sidebar`, `WindowFrameMode`, `StatusBar`, `DockLayout`, `NativeMenu`, `liora-tray`, Linux desktop identity helpers, package metadata helpers, updater helpers |
 
 ## 原生打包
 
