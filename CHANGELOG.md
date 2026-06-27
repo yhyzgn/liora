@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.12 - 2026-06-28
+
+- Enforced Docs component examples as strict one-effect / one-code pairs for every component use case.
+- Split repeated Docs live demos for Calendar, Carousel, InputTag, Mention, TreeSelect, and Watermark into precise per-example renderers.
+- Added missing live effect previews for CodeBlock, QrCode decode, Timer result snapshots, Tour variants, Tray integration patterns, and Typography paragraph snippets.
+- Added regression tests so component docs cannot batch multiple effects before code or ship code-only examples.
+
 ## 0.1.11 - 2026-06-27
 
 - Added the high-level `Shell` component with customizable titlebar, header, left/right sidebars, main content, footer, and positioned overlay slots.
