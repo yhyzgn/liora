@@ -129,7 +129,7 @@ fn gallery_liora_options() -> LioraOptions {
     LioraOptions::system().with_fonts(
         FontConfig::system()
             .with_ui_families(["PingFang SC", "Segoe UI", "Arial"])
-            .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"]),
+            .with_code_families(["Consolas", "JetBrains Mono", "SF Mono", "Monospace"]),
     )
 }
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.11 - 2026-06-27
+
+- Added the high-level `Shell` component with customizable titlebar, header, left/right sidebars, main content, footer, and positioned overlay slots.
+- Expanded Shell docs, README examples, and Gallery demos to show custom/system frame, inspector, embedded, themed, scrollable, and overlay layouts without raw GPUI layout in app examples.
+- Replaced single font-family configuration with ordered UI/code fallback lists through `FontConfig::with_ui_families` and `FontConfig::with_code_families`.
+- Updated Gallery and Docs font configuration to use ordered platform fallback stacks.
+
 ## 0.1.10 - 2026-06-27
 
 - Fix Windows release packaging by avoiding duplicate MANIFEST resources when GPUI already provides the Windows application manifest.
