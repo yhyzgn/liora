@@ -16,284 +16,1089 @@
   </p>
 
   <p>
-    <img alt="Rust 2024" src="https://img.shields.io/badge/Rust-2024-dea584?logo=rust&logoColor=white">
-    <img alt="GPUI native" src="https://img.shields.io/badge/GPUI-native-7c3aed">
-    <img alt="Pure Rust" src="https://img.shields.io/badge/runtime-pure%20rust%20native-10b981">
-    <img alt="LicenseRef-Liora" src="https://img.shields.io/badge/license-LicenseRef--Liora-64748b">
+    <a href="https://crates.io/crates/liora"><img alt="crates.io liora" src="https://img.shields.io/crates/v/liora.svg?label=liora"></a>
+    <img alt="MSRV 1.95" src="https://img.shields.io/badge/rustc-1.95%2B-dea584?logo=rust&logoColor=white">
+    <img alt="Rust 2024" src="https://img.shields.io/badge/edition-2024-dea584?logo=rust&logoColor=white">
+    <img alt="GPUI native" src="https://img.shields.io/badge/GPUI-official%20Zed%20git-7c3aed">
+    <img alt="Pure Rust" src="https://img.shields.io/badge/runtime-pure%20Rust%20native-10b981">
     <img alt="Native packaging" src="https://img.shields.io/badge/packaging-native-0ea5e9">
+    <img alt="LicenseRef-Liora" src="https://img.shields.io/badge/license-LicenseRef--Liora-64748b">
   </p>
 </div>
 
 ---
 
+## 目录
+
+- [Liora 是什么？](#liora-是什么)
+- [你可以用 Liora 构建什么？](#你可以用-liora-构建什么)
+- [环境要求](#环境要求)
+- [如何选择依赖方式](#如何选择依赖方式)
+- [GPUI 依赖与本地 patch 策略](#gpui-依赖与本地-patch-策略)
+- [快速开始：创建一个 Liora 应用](#快速开始创建一个-liora-应用)
+- [应用初始化](#应用初始化)
+- [窗口启动、系统主题与图标](#窗口启动系统主题与图标)
+- [liora 下各个模块怎么用](#liora-下各个模块怎么用)
+- [组件代码示例](#组件代码示例)
+- [高级用法](#高级用法)
+- [组件清单](#组件清单)
+- [原生打包](#原生打包)
+- [常见问题与排查](#常见问题与排查)
+- [质量门禁](#质量门禁)
+- [README 同步规范](#readme-同步规范)
+- [License](#license)
+
 ## Liora 是什么？
 
-**Liora** 是一个用于构建精致、企业级 **Rust 原生桌面 UI** 的 [GPUI](https://github.com/zed-industries/zed) 组件库工作区。它把 Element Plus 风格的组件分类和 API 体验带到 Rust Native 桌面应用中，覆盖基础元素、表单、反馈浮层、导航、数据展示、高级输入、原生图表、虚拟化数据视图、代码展示/编辑、系统托盘，以及安装器打包基础设施。
+**Liora** 是一套用于构建精致桌面应用的 **Rust + GPUI 原生组件 SDK**。它提供顶层 `liora` facade crate，同时把核心运行时、主题 token、组件、图标、系统托盘、打包元数据和 GitHub Release 更新流程拆成独立模块，方便不同规模的应用接入。
 
-Liora 明确不是 Web 外壳。基于 Liora 的应用必须保持 **纯 Rust + GPUI 原生** 路线：
+Liora 明确不是 Web 外壳：
 
 - 不使用 Tauri runtime；
 - 不引入 WebView、HTML/CSS/DOM 或浏览器应用壳；
-- 不引入 Web 图表运行时、SVG DOM 图表层或前端构建链；
-- Gallery 和 Docs 都是 GPUI 原生应用，用真实应用壳展示组件库能力。
+- 不使用 Web 图表运行时或前端 bundler；
+- Gallery 和 Docs 都是真实 GPUI 原生应用，并使用和下游应用相同的公开 SDK 表面。
 
-## 为什么选择 Liora？
+## 你可以用 Liora 构建什么？
 
-Rust 桌面团队通常需要的不只是几个底层 primitive。Liora 专注补齐从 GPUI 底层布局代码到真实产品界面之间的“企业级组件层”。
+当你想用 Rust 构建桌面应用，并且需要以下能力时，适合使用 Liora：
 
-| 需求 | Liora 的回答 |
+| 需求 | Liora 的方案 |
 |---|---|
-| 原生桌面 UI | GPUI 元素树、原生窗口、原生文本/布局/绘制路径。 |
-| 企业组件覆盖 | 参考 Element Plus 的分类体系，覆盖表单、反馈、数据、导航、图表和高级控件。 |
-| 真实应用表面 | `liora-gallery` 与 `liora-docs` 展示完整原生应用接入、主题切换、搜索过滤、托盘、文档渲染和 Dashboard 式组合。 |
-| 主题系统 | Light、Dark、System 三种主题入口，语义 token 与组件级 variant。 |
-| 应用一条 git 依赖接入 | 应用按 commit pin 住本仓库的 `liora` facade：core、theme、components、icons、tray、packaging 与通用 updater helpers。 |
-| 原生分发 | `liora-packager` + `xtask package` 校验安装器信息、manifest、checksum、签名策略和打包计划。 |
-| 清晰架构边界 | 可复用组件进入 `liora-components`；产品数据模型与页面组合代码留在应用层。 |
+| 原生桌面 UI | GPUI 窗口、GPUI 元素树、原生文本/布局/绘制路径。 |
+| 企业级组件覆盖 | 参考 Element Plus 的组件体系，覆盖布局、表单、浮层、导航、数据展示、图表和高级输入。 |
+| 一行初始化应用 | `liora::init_liora(cx)` 初始化核心状态、组件服务和 key bindings。 |
+| Light/Dark/System 主题 | `ThemeMode`、语义 token、运行时切换和系统外观跟随。 |
+| 系统托盘应用 | `liora-tray` 基于 `tray-icon` 和 `muda` 封装稳定命令模型。 |
+| 原生发布产物 | `liora-packager` + `xtask package` 校验并生成 Linux、macOS、Windows 的打包计划。 |
+| 更新能力 | `liora-updater` 检查 GitHub Releases、选择 asset、校验 SHA-256，并返回明确安装计划。 |
 
-## 能力亮点
+## 环境要求
 
-- **一站式 SDK facade**：应用开发优先依赖 `liora`；需要更窄依赖面时再使用 `liora-components`、`liora-theme`、`liora-packager` 等 focused crates。
-- **70+ 原生 UI 组件**，覆盖 Basic、Form、Feedback、Data、Navigation、Others 等分类。
-- **Element Plus 启发的 API 风格**，结合 Rust builder 与 GPUI 渲染范式。
-- **原生图表**：Line、Area、Bar、Pie、Ring、Sparkline、scale、grid、legend、降采样与 hover hit testing。
-- **高级控件**：CodeEditor、CodeBlock、二维码、Timer、SignalMeter、HeatBar、SegmentRatioBar、拖动列表、Tour、TreeSelect、Mention、InputTag、Watermark、VirtualizedTable/Tree。
-- **浮层与交互系统**：Tooltip、Popover、Popconfirm、Dialog、Drawer、Dropdown、Message、Notification、MessageBox、Loading、Preview、Tour。
-- **原生 Docs 渲染器**：Markdown 只作为输入格式，最终渲染为 Liora/GPUI 原生节点；代码片段与 Markdown 分离并参与编译检查。
-- **系统托盘 facade**：`liora-tray` 基于 `tray-icon` + `muda`，支持动态图标、N 级菜单、checkbox 菜单、稳定命令与进程常驻。
-- **安装器流水线**：package 信息校验、`cargo-packager` 配置生成、RPM 补充配置、portable `.tar.gz`、manifest、checksum、release notes 和 CI validation gate。
-- **可复用更新流水线**：`liora-updater` 可检查任意配置仓库的 GitHub Releases，按应用名/平台命名规则选择资产，下载到缓存，校验 SHA-256 manifest，并返回明确安装计划。Liora Gallery/Docs 只是基于通用 API 的内置预设。
-- **质量门禁**：workspace fmt/check/test、Docs snippet check、package validate、release-readiness、GUI startup smoke。
-
-## 组件覆盖
-
-| 分类 | 组件与能力 |
+| 项 | 要求 |
 |---|---|
-| Basic 基础 | Button、ButtonGroup、Icon、Link、Text、Title、Paragraph、Space、Divider、Row、Col、Container、Scrollbar、Splitter、CodeBlock |
-| Form 表单 | Input、InputNumber、Textarea、Checkbox、CheckboxGroup、Radio、RadioGroup、Switch、Select、Slider、Form、FormItem、Rate、DatePicker、TimePicker、DateTimePicker、Upload、Cascader、Transfer、ColorPicker、Autocomplete、InputTag、Mention、TreeSelect |
-| Feedback / Overlay 反馈浮层 | Tooltip、Popover、Popconfirm、Dialog、Drawer、Message、Notification、Alert、Loading、MessageBox、Dropdown、Card、Collapse、Preview、Tour |
-| Navigation 导航 | Menu、Tabs、Breadcrumb、Steps、PageHeader、Affix、Backtop、Anchor |
-| Data 数据展示 | Table、VirtualizedTable、VirtualizedTree、VirtualizedList、Progress、Skeleton、Empty、Result、Descriptions、Timeline、Tree、Pagination、Statistic、Segmented、Tag、Avatar、Badge、Calendar、Carousel、Image、Watermark |
-| Charts / Metrics 图表指标 | LineChart、AreaChart、BarChart、PieChart、RingChart、Sparkline、SignalMeter、HeatBar、SegmentRatioBar |
-| Editing / Utility 编辑与工具 | CodeEditor、QrCode、Timer、Label、Operation、横向/纵向拖动列表模式 |
-| Platform / App shell 平台能力 | `liora-tray`、自定义窗口框架、Gallery 应用壳组合、Docs adoption pages、packaging helpers |
+| Rust | `rustc 1.95+`，Rust edition 2024。 |
+| UI 后端 | 官方 Zed GPUI git 依赖，并 pin 到 Liora 验证过的 revision。 |
+| Linux 原生依赖 | GTK3、Wayland/X11、xkbcommon、fontconfig/freetype、Vulkan、ALSA、`pkg-config`；Fedora 可参考 `scripts/install-fedora-deps.sh`。 |
+| macOS | Release workflow 覆盖 Apple Silicon；需要 Xcode Command Line Tools。 |
+| Windows | MSVC toolchain；GPUI Windows backend 会通过 `windows-manifest` 提供应用 manifest。 |
 
-## 仓库结构
+## 如何选择依赖方式
 
-```text
-liora/
-├── crates/
-│   ├── liora/                 # one-stop SDK facade for application dependencies
-│   ├── liora-core/            # 全局配置、主题初始化、popper/portal 状态、唯一 ID
-│   ├── liora-theme/           # 语义 token、Light/Dark/System 主题支持
-│   ├── liora-components/      # 可复用 GPUI 组件
-│   ├── liora-icons/           # 原生 icon trait 与 helper
-│   ├── liora-icons-lucide/    # 生成的 Lucide icon 名称与 path 适配
-│   ├── liora-tray/            # 面向 GPUI app 的 tray-icon + muda facade
-│   ├── liora-packager/        # package info、manifest、checksum、backend config
-│   └── liora-updater/         # GitHub Release 检查、下载、校验与安装计划
-├── apps/
-│   ├── liora-gallery/         # 原生组件看板与展示应用
-│   └── liora-docs/            # 原生文档 app 与 Markdown renderer
-├── xtask/                     # cargo run -p xtask -- package ...
-├── packaging/                 # icons、desktop/metainfo、macOS/Windows/Linux package 资源
-└── Cargo.toml                 # workspace root
-```
-
-## 快速开始
-
-### 1. 安装依赖
-
-安装 Rust stable，以及 GPUI 在当前平台需要的原生依赖。Linux 常见开发依赖包括 GTK3、Wayland/X11、xkbcommon、fontconfig/freetype、Vulkan、ALSA 与 `pkg-config`。仓库中也提供了面向 Fedora 的 `scripts/install-fedora-deps.sh`。
-
-### 2. 在应用中添加 Liora
-
-Liora 已发布到 crates.io；同时，GPUI 应解析到 Liora 开发与验证时使用的官方 Zed 仓库 revision。应用侧正常依赖 Liora，然后用 Cargo patch 把 `gpui` 的 registry fallback 覆盖到匹配的官方 Zed git revision：
+大多数应用应该直接依赖顶层 facade：
 
 ```toml
 [dependencies]
 liora = "0.1"
+```
+
+只有当你明确需要更窄依赖面时，才直接依赖底层 focused crates：
+
+```toml
+[dependencies]
+liora-components = "0.1"
+liora-core = "0.1"
+liora-theme = "0.1"
+liora-icons = "0.1"
+liora-icons-lucide = "0.1"
+liora-tray = "0.1"
+liora-updater = "0.1"
+liora-packager = "0.1"
+```
+
+`liora` facade 重新导出了稳定模块名：
+
+```rust
+use liora::{components, core, icons, icons_lucide, theme, tray};
+use liora::prelude::*;
+
+#[cfg(feature = "updater")]
+use liora::updater;
+
+#[cfg(feature = "packager")]
+use liora::packager;
+```
+
+如果应用不需要 packaging 或 updater helper，可以关闭默认 feature：
+
+```toml
+[dependencies]
+liora = { version = "0.1", default-features = false }
+
+# 或者只保留 updater：
+liora = { version = "0.1", default-features = false, features = ["updater"] }
+```
+
+## GPUI 依赖与本地 patch 策略
+
+Liora **只能使用官方 Zed GPUI**。禁止使用 `open-gpui` 等重命名或社区 fork。
+
+为什么需要额外配置 GPUI：
+
+1. `liora` 各个 crate 已发布到 crates.io。
+2. 当前 Liora 面向比 registry 里旧的 `gpui 0.2.2` 更新的官方 Zed GPUI git revision 开发。
+3. Cargo 不允许 crates.io 包强制所有下游应用使用 git-only transitive dependency。
+4. 因此 Liora 发布包使用 Cargo 支持的 multiple-location dependency：发布时保留 registry fallback，本地开发时使用官方 Zed git rev。
+5. 最终应用必须在根 `Cargo.toml` 添加 `[patch.crates-io]`，把所有传递依赖中的 `gpui` 统一解析到官方 Zed commit。
+
+应用推荐使用以下 manifest 模式：
+
+```toml
+[package]
+name = "acme-notes"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+liora = "0.1"
+
+# 什么时候需要手动添加 gpui？
+# 当你的 crate 直接写到这些内容时：
+# - gpui::App / Window / Context / Render / RenderOnce
+# - gpui::div(), px(), size(), Entity<T>
+# - 函数签名中出现 fn render(..., cx: &mut gpui::Context<Self>)
 gpui = { version = "0.2.2", default-features = false }
 
-# 会打开窗口的最终应用也需要直接依赖 gpui_platform。
+# 什么时候需要手动添加 gpui_platform？
+# 最终会打开窗口的 binary crate 使用 gpui_platform::application().run(...) 时需要。
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", default-features = false }
+
+[target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
+gpui = { version = "0.2.2", default-features = false, features = ["wayland", "x11", "font-kit"] }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", default-features = false, features = ["wayland", "x11", "font-kit"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+gpui = { version = "0.2.2", default-features = false, features = ["font-kit"] }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", default-features = false, features = ["font-kit"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+gpui = { version = "0.2.2", default-features = false }
 gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", default-features = false }
 
 [patch.crates-io]
 gpui = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718" }
 ```
 
-只有在工作区需要更窄依赖面时，才直接依赖 crates.io 上的 `liora-components` 等底层 crate。通常推荐依赖顶层 `liora` facade。
-
-### Updater 模块
-
-`liora-updater` 已包含在默认的 git `liora` facade 中，也可以从 crates.io 单独依赖：
-
-```bash
-cargo add liora-updater
-```
-
-它提供面向你自己应用的可复用 GitHub Release 更新层：可以配置 owner/repo、当前 tag、应用名、平台 selector、缓存目录、checksum asset 名称和安装器偏好。Gallery 和 Docs 使用 Liora 预设，但其他产品不需要绑定这些预设。
+什么时候必须手动添加 `gpui`？看这个例子：
 
 ```rust
-use liora_updater::{
-    AssetKind, AssetSelector, Platform, UpdateRequest, Updater,
-};
+// 因为这个文件直接使用 gpui 类型和宏，所以需要直接依赖 gpui。
+use gpui::{App, Context, IntoElement, Render, Window, div, px};
+use liora::components::{Button, Title};
 
-let platform = Platform::current().expect("supported desktop platform");
-let request = UpdateRequest::new(
-    "acme-notes",
-    "v0.3.0",
-    platform,
-    std::env::temp_dir().join("acme-notes-updates"),
-)
-.selector(
-    AssetSelector::for_platform(platform)
-        .matching_prefix("acme-notes")
-        .kind_priority([AssetKind::Installer, AssetKind::RawExecutable]),
-);
+struct RootView;
 
-if let Some(update) = Updater::new("acme", "acme-notes")
-    .with_checksum_asset_name("SHA256SUMS.txt")
-    .prepare_update(&request)?
-{
-    // 在 UI 中展示 update.release_tag()、update.asset.name 和 update.install_plan。
-    // 只有在用户显式点击安装时，才运行 update.install_plan.install()。
+impl Render for RootView {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        div()
+            .p(px(24.0))
+            .child(Title::new("Acme Notes").h2())
+            .child(Button::new("Create note").primary())
+    }
 }
-# Ok::<(), liora_updater::UpdaterError>(())
+
+fn needs_gpui_app_type(_cx: &mut App) {}
 ```
 
-updater 可以自动检查、下载、校验更新资产；安装仍保持为可见用户动作，因为部分安装器需要系统提权或替换正在运行的可执行文件。
+什么时候可以不直接使用 `gpui`？如果只是做数据模型、主题值、更新请求或打包元数据 helper，不打开窗口、不写 GPUI 类型签名，就可以只依赖 focused Liora crate。
 
-### 3. 运行原生 Gallery
+本仓库保留 `third_party/zed` 仅作为早期 Linux 启动窗口 patch 工作和 upstream PR 对照的未发布源码材料。当前开发应使用上面的官方 `zed-industries/zed` git 依赖。如确需临时本地 patch 做 app-only 验证，必须保持在可发布 SDK manifest 之外，并明确记录边界。
+
+## 快速开始：创建一个 Liora 应用
+
+### 1. 创建应用
 
 ```bash
-cargo run -p liora-gallery
+cargo new acme-notes
+cd acme-notes
 ```
 
-Gallery 在 GPUI 原生窗口中展示组件 demo、主题切换、搜索过滤、托盘控制、toast 和产品式组合布局。
+### 2. 添加依赖
 
-### 4. 运行原生 Docs app
+可以直接复制 [GPUI 依赖与本地 patch 策略](#gpui-依赖与本地-patch-策略) 中的 manifest，也可以先使用这个覆盖 Linux/macOS/Windows 的紧凑版本：
 
-```bash
-cargo run -p liora-docs
+```toml
+[package]
+name = "acme-notes"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+liora = "0.1"
+gpui = { version = "0.2.2", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", default-features = false }
+
+[target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
+gpui = { version = "0.2.2", default-features = false, features = ["wayland", "x11", "font-kit"] }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", default-features = false, features = ["wayland", "x11", "font-kit"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+gpui = { version = "0.2.2", default-features = false, features = ["font-kit"] }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", default-features = false, features = ["font-kit"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+gpui = { version = "0.2.2", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", default-features = false }
+
+[patch.crates-io]
+gpui = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718" }
 ```
 
-Docs app 说明接入方式和组件用法。它会把 Markdown 内容渲染成原生 Liora/GPUI 元素，并展示来自 `apps/liora-docs/content/snippets/` 的编译检查片段。
-
-### 5. 检查工作区
-
-```bash
-cargo fmt --all --check
-cargo check --workspace --all-targets
-cargo test --workspace
-cargo check -p liora-docs --bin check_snippets
-cargo doc --workspace --no-deps
-```
-
-## 最小应用形态
-
-一个使用 Liora 的 GPUI 应用应先初始化主题/配置，初始化所需全局服务，注册组件 key bindings，再打开 GPUI 窗口。
+### 3. 写入 `src/main.rs`
 
 ```rust
-use gpui::App;
+use gpui::{App, AppContext, Context, IntoElement, Render, Window, WindowOptions, div, px};
+use liora::components::{Button, Card, Space, Tag, Text, Title};
 use liora::init_liora;
+
+struct RootView;
+
+impl Render for RootView {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        div().p(px(24.0)).child(
+            Card::new(
+                Space::new()
+                    .vertical()
+                    .child(Title::new("Acme Notes").h2())
+                    .child(Text::new("A native Rust desktop app powered by GPUI and Liora."))
+                    .child(
+                        Space::new()
+                            .child(Button::new("New note").primary())
+                            .child(Button::new("Import"))
+                            .child(Tag::new("Pure Rust").success()),
+                    ),
+            )
+            .title("Welcome")
+            .width_lg(),
+        )
+    }
+}
 
 fn main() {
     gpui_platform::application().run(|cx: &mut App| {
-        // 初始化 Liora core/theme 状态、组件服务和 key bindings。
+        // 一次调用完成 theme/config、overlay/message 服务，以及交互控件 key bindings。
         init_liora(cx);
 
-        // cx.open_window(...)
+        let _ = cx.open_window(
+            WindowOptions {
+                titlebar: Some(gpui::TitlebarOptions {
+                    title: Some("Acme Notes".into()),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            },
+            |_, cx| cx.new(|_| RootView),
+        );
     });
 }
 ```
 
-`liora::init_liora(cx)` 默认跟随系统主题，并统一初始化组件服务与 key bindings。当产品需要显式选择启动主题时，使用 `liora::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)`。如果只依赖底层 components crate，仍可使用 `liora_components::init_liora(...)`。对于 `Input`、`Switch`、`Select`、`CodeEditor` 等有内部状态的控件，使用 `Entity<T>` 以保证 focus 和内部状态在重渲染后仍然稳定。Gallery 和 Docs 是应用壳初始化、key binding 注册、主题切换、托盘、toast 与组合模式的编译检查参考。
+### 4. 运行
 
-Liora 默认不会内置或强制使用某个 UI 字体。普通文本走 GPUI 的平台/系统 UI 字体，代码类区域走 GPUI 的通用 monospace 字体；只有应用显式配置时才会使用自定义字体。需要使用内置或用户选择的字体时，先调用 `liora::load_custom_fonts(cx, ...)` 注册字体字节，再通过 `liora::init_liora_with_options(cx, LioraOptions::system().with_fonts(...))` 传入 family 名称，或运行时用 `liora::set_font_config(cx, ...)` 更新。
+```bash
+cargo run
+```
 
-## 组件 API 示例
+### 5. 对照完整应用参考
 
-Liora 组件采用 builder 风格，并通过 GPUI 原生元素渲染：
+在本仓库中运行：
+
+```bash
+cargo run -p liora-gallery
+cargo run -p liora-docs
+```
+
+`liora-gallery` 是组件展示和应用壳参考；`liora-docs` 是原生文档应用和 Markdown renderer。
+
+## 应用初始化
+
+普通应用推荐使用 facade 入口：
 
 ```rust
-use gpui::{div, IntoElement, RenderOnce};
-use liora::components::{Button, Space, Tag, Text, Title};
+use gpui::App;
+use liora::{ThemeMode, init_liora, init_liora_with_mode, init_liora_with_options};
+use liora::{FontConfig, LioraOptions, load_custom_fonts};
 
-struct WelcomePanel;
+fn init_default(cx: &mut App) {
+    // 推荐默认：跟随系统主题。
+    init_liora(cx);
+}
 
-impl RenderOnce for WelcomePanel {
-    fn render(self, _window: &mut gpui::Window, _cx: &mut gpui::App) -> impl IntoElement {
-        div()
-            .child(Title::new("Native Rust UI").level(2))
-            .child(Text::new("Build enterprise desktop screens with GPUI and Liora."))
-            .child(
-                Space::new()
-                    .child(Button::new("Open Gallery").primary())
-                    .child(Tag::new("Pure Rust").success()),
-            )
+fn init_dark(cx: &mut App) {
+    // 显式指定启动主题。
+    init_liora_with_mode(cx, ThemeMode::Dark);
+}
+
+fn init_with_fonts(cx: &mut App) -> gpui::Result<()> {
+    // 先注册应用自己的字体字节。这里的路径请替换成你的资产路径。
+    load_custom_fonts(cx, [std::borrow::Cow::Borrowed(include_bytes!("../assets/Inter-Regular.ttf"))])?;
+
+    let fonts = FontConfig::system()
+        .with_ui_family("Inter")
+        .with_code_family("JetBrains Mono");
+
+    init_liora_with_options(cx, LioraOptions::system().with_fonts(fonts));
+    Ok(())
+}
+```
+
+如果你只依赖 focused components crate，也可以使用对应初始化入口：
+
+```rust
+use gpui::App;
+use liora_components::{ThemeMode, init_liora, init_liora_with_mode};
+
+fn init_components_only(cx: &mut App) {
+    init_liora(cx);
+    init_liora_with_mode(cx, ThemeMode::System);
+}
+```
+
+注意区分：
+
+```rust
+// 高层应用初始化：core theme + portals + MessageManager + component key bindings。
+liora::init_liora(cx);
+liora_components::init_liora(cx);
+
+// 低层 core-only 初始化：适合自定义组件 crate 或自己替换服务时使用。
+liora_core::init_liora_with_mode(cx, liora_core::ThemeMode::System);
+```
+
+## 窗口启动、系统主题与图标
+
+正式应用建议先用隐藏窗口创建，创建 root view 前附加系统主题观察器，`open_window` 返回后再激活窗口。这个模式可以避免首帧主题闪烁，也与 Gallery/Docs 的原生应用写法一致。
+
+```rust
+use gpui::{App, AppContext, Context, Render, Window, WindowOptions, px, size};
+use liora::components::{Title, apply_window_frame_mode, WindowFrameMode};
+use liora::{attach_system_theme_observer, init_liora, startup_maximized_window_bounds};
+
+struct RootView;
+
+impl Render for RootView {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        Title::new("Maximized Liora window").h2()
+    }
+}
+
+fn main() {
+    gpui_platform::application().run(|cx: &mut App| {
+        init_liora(cx);
+
+        let options = apply_window_frame_mode(
+            WindowOptions {
+                show: false,
+                app_id: Some("acme-notes".into()),
+                window_bounds: Some(startup_maximized_window_bounds(
+                    cx,
+                    size(px(1440.0), px(900.0)),
+                )),
+                titlebar: Some(gpui::TitlebarOptions {
+                    title: Some("Acme Notes".into()),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            },
+            WindowFrameMode::Server,
+        );
+
+        if let Ok(handle) = cx.open_window(options, |window, cx| {
+            attach_system_theme_observer(window, cx);
+            cx.new(|_| RootView)
+        }) {
+            let any_handle: gpui::AnyWindowHandle = handle.into();
+            let _ = any_handle.update(cx, |_, window, _| window.activate_window());
+        }
+    });
+}
+```
+
+Linux/Wayland 下，任务栏图标由 desktop identity 解析，而不是由应用直接设置 window icon。应用需要让 `WindowOptions.app_id`、`.desktop` 文件和 icon theme 名称保持一致：
+
+```rust
+use liora::core::{
+    LinuxDesktopIdentity, LinuxDesktopPngIcon, ensure_linux_desktop_identity,
+    linux_desktop_entry, linux_desktop_png_icon_path,
+};
+
+fn register_linux_identity() {
+    let icon_name = "acme-notes";
+    let desktop_entry = linux_desktop_entry(
+        icon_name,
+        "Acme Notes",
+        "Native notes app built with Liora",
+        icon_name,
+    );
+
+    let _ = ensure_linux_desktop_identity(LinuxDesktopIdentity {
+        app_id: icon_name,
+        desktop_entry: &desktop_entry,
+        png_icons: &[LinuxDesktopPngIcon {
+            size: 512,
+            bytes: include_bytes!("../assets/acme-notes-512.png"),
+        }],
+    });
+
+    let _icon_path = linux_desktop_png_icon_path(icon_name, 512);
+}
+```
+
+## liora 下各个模块怎么用
+
+### `liora`
+
+推荐应用依赖。常用导出：
+
+```rust
+use liora::{init_liora, init_liora_with_mode, init_liora_with_options};
+use liora::{FontConfig, LioraOptions, ThemeMode};
+use liora::{components, core, icons, icons_lucide, theme, tray};
+```
+
+### `liora-core`
+
+核心运行时、主题配置、窗口 helper、Linux desktop identity、popper/portal 状态、唯一 ID 和主题切换：
+
+```rust
+use liora::core::{apply_theme_mode, sync_system_theme, ThemeMode};
+
+fn set_dark(window: &mut gpui::Window, cx: &mut gpui::App) {
+    apply_theme_mode(window, cx, ThemeMode::Dark);
+}
+
+fn follow_system_again(window: &mut gpui::Window, cx: &mut gpui::App) {
+    apply_theme_mode(window, cx, ThemeMode::System);
+    sync_system_theme(window, cx);
+}
+```
+
+### `liora-theme`
+
+语义 token 和共享组件枚举：
+
+```rust
+use liora::theme::{ButtonSize, ButtonVariant, Theme};
+
+let light = Theme::light();
+let dark = Theme::dark();
+let primary_variant = ButtonVariant::Primary;
+let large = ButtonSize::Large;
+let surface = light.neutral.card;
+```
+
+### `liora-components`
+
+可复用原生控件。大多数无状态组件可以 inline 构造：
+
+```rust
+use liora::components::{Button, Progress, Space, Tag, Text, Title};
+
+let header = Space::new()
+    .vertical()
+    .child(Title::new("Deployments").h3())
+    .child(Text::new("Production rollout status"))
+    .child(Progress::new(72.0).primary().show_text(true))
+    .child(Tag::new("Healthy").success());
+```
+
+有内部状态的控件应放在 `gpui::Entity<T>` 字段里，这样焦点、选区、弹窗状态、文本值才能跨 render 保持稳定：
+
+```rust
+use gpui::{Context, Entity, Render, Window};
+use liora::components::{Input, Switch};
+
+struct SettingsView {
+    search: Entity<Input>,
+    notifications: Entity<Switch>,
+}
+
+impl SettingsView {
+    fn new(cx: &mut Context<Self>) -> Self {
+        Self {
+            search: cx.new(|cx| Input::new("", cx).placeholder("Search settings")),
+            notifications: cx.new(|cx| Switch::new(true, cx)),
+        }
+    }
+}
+
+impl Render for SettingsView {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        gpui::div()
+            .child(self.search.clone())
+            .child(self.notifications.clone())
     }
 }
 ```
 
-组件在 render 路径中从 Liora 全局配置读取主题。不要使用 `.build(theme)` 这类传入主题对象的 API 模式。
+### `liora-icons` 与 `liora-icons-lucide`
 
-## 技术创新点
+图标 primitive 与内置 Lucide icon 名称：
 
-Liora 不只是组件列表，还把原生桌面应用常见的工程问题一起纳入库级设计：
+```rust
+use liora::icons::Icon;
+use liora::icons_lucide::IconName;
+use liora::components::Button;
 
-- **一条依赖完成接入**：`liora` 重新导出公开 SDK 模块，让应用 manifest 保持简洁，同时底层 focused crates 仍可独立使用。
-- **一次性应用初始化**：`init_liora(cx)` 统一完成 core 配置、组件服务和键盘绑定，应用不需要逐个控件重复注册。
-- **原生 Markdown 文档**：Markdown 只负责内容编写，运行中的 Docs app 会把它渲染为 Liora/GPUI 节点，并检查外部 Rust 片段。
-- **无浏览器层的原生图表**：图表使用 Rust 数据结构、GPUI paint path、hit testing 和降采样，不依赖 WebView 图表运行时。
-- **应用壳级覆盖**：托盘常驻、toast、主题切换、可搜索组件导航和 Dashboard 式布局都在真实原生应用中验证。
-- **打包意识内建**：安装器信息、manifest、checksum、后端配置和 dry-run 安装计划与代码一起验证。
-
-## 文档地图
-
-| 资源 | 用途 |
-|---|---|
-| `apps/liora-docs` | 原生文档 app、Adoption Guide、组件页和编译检查 snippets。 |
-| `apps/liora-gallery` | 原生组件 Gallery 与 app-shell 参考表面。 |
-| `apps/liora-docs/content/pages/` | 由原生 Docs app 渲染的 Markdown 页面。 |
-| `apps/liora-docs/content/snippets/` | Markdown 引用的外部代码片段，并由 `check_snippets` 检查。 |
-
-## GPUI 依赖与本地 patch 策略
-
-Liora 依赖官方 Zed upstream 仓库，并用 commit pin 住以保证本地开发构建可复现。发布到 crates.io 时使用 Cargo 支持的 multiple-location dependency：工作区本地解析到官方 Zed git rev，而 crates.io 包中保留 `gpui = 0.2.2` registry fallback。
-
-```toml
-[dependencies]
-liora = "0.1"
-gpui = { version = "0.2.2", default-features = false }
-
-# 会打开窗口的最终应用也需要直接依赖 gpui_platform。
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", default-features = false }
-
-[patch.crates-io]
-gpui = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718" }
+let save = Button::new("Save").primary().icon_prefix(IconName::Save);
+let icon = Icon::new(IconName::Settings).size(18.0);
 ```
 
-这里的 `[patch.crates-io]` 是有意设计：它会把所有传递依赖中的 `gpui`，包括 Liora 内部依赖，统一解析到你选择的官方 Zed commit。如果没有这个 patch，Cargo 会尝试使用过旧的 registry `gpui 0.2.2` fallback，现代 Liora 组件可能无法编译。library crate 保持 `default-features = false`；最终 app crate 通过 target-specific dependencies 在 `gpui` 与 `gpui_platform` 上启用平台 feature。禁止使用 `open-gpui` 等重命名或社区 fork。
+如果应用使用 `gpui_platform::application()` 并渲染内置 Lucide SVG payload，建议安装 Liora icon asset source：
 
-本仓库保留 `third_party/zed` 仅作为早期 Linux 启动窗口 patch 工作和 upstream PR 对照的未发布源码材料。当前开发应使用上面的官方 `zed-industries/zed` git 依赖。如确需临时本地 patch 做 app-only 验证，只能放在临时分支，且不得写入任何可发布 SDK manifest。
+```rust
+fn main() {
+    gpui_platform::application()
+        .with_assets(liora_icons::IconAssetSource)
+        .run(|cx| {
+            liora::init_liora(cx);
+            // open windows...
+        });
+}
+```
+
+### `liora-tray`
+
+系统托盘 facade：
+
+```rust
+use liora::tray::{
+    LioraTray, TrayCommand, TrayConfig, TrayMenuItemSpec, icon_from_png_bytes,
+};
+
+fn install_tray() -> liora::tray::Result<()> {
+    let icon = icon_from_png_bytes(include_bytes!("../assets/tray-default.png"))?;
+    let config = TrayConfig::new("acme-notes")
+        .tooltip("Acme Notes")
+        .icon(icon)
+        .menu(vec![
+            TrayMenuItemSpec::action("Show", TrayCommand::Show),
+            TrayMenuItemSpec::check("Start at login", TrayCommand::Custom("login".into()), false),
+            TrayMenuItemSpec::separator(),
+            TrayMenuItemSpec::submenu(
+                "Status",
+                vec![
+                    TrayMenuItemSpec::action("Online", TrayCommand::SetIcon("online".into())),
+                    TrayMenuItemSpec::action("Busy", TrayCommand::SetIcon("busy".into())),
+                ],
+            ),
+            TrayMenuItemSpec::separator(),
+            TrayMenuItemSpec::action("Quit", TrayCommand::Quit),
+        ]);
+
+    let tray = LioraTray::install(config)?;
+
+    // 在应用事件循环中用 tray.command_for_event(&event) 映射平台菜单事件。
+    // Linux/FreeBSD 下需要定期调用 liora::tray::pump_platform_events()。
+
+    drop(tray);
+    Ok(())
+}
+```
+
+### `liora-updater`
+
+适合你自己应用的 GitHub Release 更新流程：
+
+```rust
+use liora::updater::{AssetKind, AssetSelector, Platform, UpdateRequest, Updater};
+
+fn check_for_update() -> Result<(), liora::updater::UpdaterError> {
+    let platform = Platform::current().expect("supported desktop platform");
+    let request = UpdateRequest::new(
+        "acme-notes",
+        "v0.3.0",
+        platform,
+        std::env::temp_dir().join("acme-notes-updates"),
+    )
+    .selector(
+        AssetSelector::for_platform(platform)
+            .matching_prefix("acme-notes")
+            .kind_priority([AssetKind::Installer, AssetKind::RawExecutable]),
+    );
+
+    if let Some(update) = Updater::new("acme", "acme-notes")
+        .with_checksum_asset_name("SHA256SUMS.txt")
+        .prepare_update(&request)?
+    {
+        println!("new version: {}", update.release.tag);
+        println!("asset: {}", update.asset.name);
+        println!("install plan: {:?}", update.install_plan);
+        // 只有用户明确点击安装时才执行安装动作。
+    }
+
+    Ok(())
+}
+```
+
+### `liora-packager`
+
+可复用的打包元数据与校验 helper。大多数应用可以复制本仓库 `xtask` 模式，也可以直接使用已发布的库：
+
+```rust
+use liora::packager::validate_packaging_layout;
+
+fn validate_release_inputs() {
+    let report = validate_packaging_layout(std::env::current_dir().unwrap());
+    if !report.is_ok() {
+        for error in report.errors {
+            eprintln!("{error}");
+        }
+    }
+}
+```
+
+## 组件代码示例
+
+### 布局与卡片
+
+```rust
+use gpui::{div, px};
+use liora::components::{Button, Card, Flex, Space, Statistic, Tag, Text, Title};
+
+let dashboard = Flex::new()
+    .gap(px(16.0))
+    .child(
+        Card::new(
+            Space::new()
+                .vertical()
+                .child(Title::new("Revenue").h3())
+                .child(Statistic::new("MRR", "$42,800"))
+                .child(Tag::new("+12.4%").success()),
+        )
+        .width_lg(),
+    )
+    .child(
+        Card::new(
+            div()
+                .child(Text::new("Ship a native desktop dashboard without a WebView."))
+                .child(Button::new("Open report").primary()),
+        )
+        .title("Summary")
+        .hoverable(),
+    );
+```
+
+### Button、Tag、Progress 与 toast
+
+```rust
+use liora::components::{
+    Button, Progress, Space, Tag, toast_error, toast_success,
+};
+
+let actions = Space::new()
+    .child(Button::new("Save").primary().on_click(|_, _window, cx| {
+        toast_success("Saved", cx);
+    }))
+    .child(Button::new("Delete").danger().on_click(|_, _window, cx| {
+        toast_error("Deletion failed in this demo", cx);
+    }))
+    .child(Tag::new("Draft").warning())
+    .child(Progress::new(48.0).show_text(true));
+```
+
+### 表单与状态控件
+
+```rust
+use gpui::{Context, Entity, Render, Window};
+use liora::components::{Button, Checkbox, Form, FormItem, Input, Space};
+
+struct LoginForm {
+    email: Entity<Input>,
+    remember: Entity<Checkbox>,
+}
+
+impl LoginForm {
+    fn new(cx: &mut Context<Self>) -> Self {
+        Self {
+            email: cx.new(|cx| Input::new("", cx).placeholder("name@example.com").clearable(true)),
+            remember: cx.new(|cx| Checkbox::new(true, cx)),
+        }
+    }
+}
+
+impl Render for LoginForm {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        Form::new()
+            .child(FormItem::new().label("Email").child(self.email.clone()))
+            .child(FormItem::new().label("Remember me").child(self.remember.clone()))
+            .child(Space::new().child(Button::new("Sign in").primary()))
+    }
+}
+```
+
+### 导航菜单
+
+```rust
+use liora::components::Menu;
+use liora::icons_lucide::IconName;
+
+let menu = Menu::new()
+    .id("main-nav")
+    .item("dashboard", "Dashboard", Some(IconName::LayoutDashboard))
+    .submenu("settings", "Settings", Some(IconName::Settings), |menu| {
+        menu.item("profile", "Profile", None)
+            .item("security", "Security", None)
+    })
+    .on_select(|id, _window, _cx| {
+        eprintln!("selected menu item: {id}");
+    });
+```
+
+### 图表与指标
+
+```rust
+use gpui::rgb;
+use liora::components::{
+    AreaChart, BarChart, ChartPoint, ChartSeries, HeatBar, HeatBarItem, LineChart, PieChart, Sparkline,
+};
+
+let revenue = ChartSeries::new("Revenue", [
+    ChartPoint::new("Mon", 12.0),
+    ChartPoint::new("Tue", 18.0),
+    ChartPoint::new("Wed", 16.0),
+    ChartPoint::new("Thu", 24.0),
+    ChartPoint::new("Fri", 32.0),
+]);
+let costs = ChartSeries::new("Costs", [
+    ChartPoint::new("Mon", 8.0),
+    ChartPoint::new("Tue", 9.0),
+    ChartPoint::new("Wed", 11.0),
+    ChartPoint::new("Thu", 13.0),
+    ChartPoint::new("Fri", 15.0),
+]);
+
+let line = LineChart::new([revenue.clone(), costs.clone()])
+    .show_grid(true)
+    .show_axis(true)
+    .show_legend(true)
+    .show_tooltip(true);
+
+let area = AreaChart::new([revenue.clone()]).show_tooltip(true);
+let bars = BarChart::new([revenue.clone(), costs.clone()]).grouped();
+let pie = PieChart::new([revenue.clone(), costs.clone()]).show_percentage_labels(true);
+let spark = Sparkline::new([3.0, 4.0, 8.0, 6.0, 12.0]).show_last_point(true);
+
+let heat = HeatBar::new([
+    HeatBarItem::new("Low", 18, rgb(0x22, 0xc5, 0x5e).into()),
+    HeatBarItem::new("Medium", 42, rgb(0xf5, 0x9e, 0x0b).into()),
+    HeatBarItem::new("High", 9, rgb(0xef, 0x44, 0x44).into()),
+]);
+```
+
+### 代码展示与编辑器
+
+```rust
+use gpui::{Context, Entity, Render, Window};
+use liora::components::{CodeBlock, CodeDiagnostic, CodeEditor};
+
+let snippet = CodeBlock::new("cargo run -p liora-gallery")
+    .language("bash")
+    .copyable(true);
+
+struct EditorView {
+    editor: Entity<CodeEditor>,
+}
+
+impl EditorView {
+    fn new(cx: &mut Context<Self>) -> Self {
+        Self {
+            editor: cx.new(|cx| {
+                CodeEditor::new("fn main() { println!(\"hello\"); }", cx)
+                    .language("rust")
+                    .diagnostics(vec![CodeDiagnostic::info(1, 1, "Example diagnostic")])
+            }),
+        }
+    }
+}
+
+impl Render for EditorView {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        self.editor.clone()
+    }
+}
+```
+
+### 二维码、上传、图片与预览
+
+```rust
+use liora::components::{Button, Image, Preview, QrCode, Space, Upload};
+
+let utilities = Space::new()
+    .vertical()
+    .child(QrCode::new("https://github.com/yhyzgn/liora").show_text(true))
+    .child(Image::new("file:///tmp/screenshot.png").width(gpui::px(240.0)))
+    .child(Preview::new("file:///tmp/screenshot.png").child(Button::new("Preview image")))
+    .child(Upload::new().width_lg());
+```
+
+### 虚拟化数据
+
+```rust
+use gpui::{Context, IntoElement};
+use liora::components::{TableColumn, TreeNode, VirtualizedTable, VirtualizedTree};
+
+fn build_table(cx: &mut Context<MyView>) -> gpui::Entity<VirtualizedTable> {
+    let rows = vec![
+        ("Liora".to_string(), "Ready".to_string()),
+        ("GPUI".to_string(), "Native".to_string()),
+    ];
+
+    cx.new(|_| {
+        VirtualizedTable::new(
+            vec![TableColumn::new("name", "Name"), TableColumn::new("status", "Status")],
+            rows.len(),
+            move |row, key, _window, _cx| {
+                let value = match key.as_ref() {
+                    "name" => rows[row].0.clone(),
+                    "status" => rows[row].1.clone(),
+                    _ => String::new(),
+                };
+                liora::components::Text::new(value).into_any_element()
+            },
+        )
+    })
+}
+
+fn build_tree(cx: &mut Context<MyView>) -> gpui::Entity<VirtualizedTree> {
+    cx.new(|cx| {
+        VirtualizedTree::new(
+            vec![TreeNode::new("root", "Workspace").child(TreeNode::new("src", "src"))],
+            cx,
+        )
+        .show_checkbox(true)
+    })
+}
+
+struct MyView;
+```
+
+## 高级用法
+
+### 运行时主题切换
+
+```rust
+use liora::components::{Segmented, SegmentedOption};
+use liora::core::{ThemeMode, apply_theme_mode};
+
+fn theme_switcher(current: ThemeMode) -> Segmented {
+    Segmented::new(vec![
+        SegmentedOption::new("System", "system"),
+        SegmentedOption::new("Light", "light"),
+        SegmentedOption::new("Dark", "dark"),
+    ])
+    .value(current.value())
+    .on_change(|value, window, cx| {
+        if let Some(mode) = ThemeMode::from_value(value.as_ref()) {
+            apply_theme_mode(window, cx, mode);
+        }
+    })
+}
+```
+
+### 自定义字体且保留系统默认策略
+
+```rust
+use std::borrow::Cow;
+use liora::{FontConfig, LioraOptions, init_liora_with_options, load_custom_fonts, set_font_config};
+
+fn init_with_brand_fonts(cx: &mut gpui::App) -> gpui::Result<()> {
+    load_custom_fonts(cx, [
+        Cow::Borrowed(include_bytes!("../assets/Inter-Regular.ttf")),
+        Cow::Borrowed(include_bytes!("../assets/JetBrainsMono-Regular.ttf")),
+    ])?;
+
+    init_liora_with_options(
+        cx,
+        LioraOptions::system().with_fonts(
+            FontConfig::system()
+                .with_ui_family("Inter")
+                .with_code_family("JetBrains Mono"),
+        ),
+    );
+    Ok(())
+}
+
+fn reset_to_system_fonts(cx: &mut gpui::App) {
+    set_font_config(cx, FontConfig::system());
+}
+```
+
+### 浮层与 portal 渲染
+
+大多数应用只需要 `liora::init_liora(cx)`。如果你自己实现根 shell 并手动管理 overlay layer，应在窗口根部渲染 portal：
+
+```rust
+use liora::core::{
+    render_active_drawer_in_window, render_active_modal_in_window, render_active_popover_in_window,
+};
+
+fn render_overlays(window: &mut gpui::Window, cx: &mut gpui::App) {
+    render_active_popover_in_window(window, cx);
+    render_active_modal_in_window(window, cx);
+    render_active_drawer_in_window(window, cx);
+}
+```
+
+### 应用状态留在应用层
+
+不要把产品数据模型放进 `liora-components`。应用状态应存在自己的 GPUI view/entity 中，只把展示值和回调传给组件：
+
+```rust
+use gpui::{Context, IntoElement, Render, Window};
+use liora::components::{Empty, Table, TableColumn, TableRow, Tag, Text};
+
+struct OrdersView {
+    rows: Vec<(String, String)>,
+}
+
+impl Render for OrdersView {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        if self.rows.is_empty() {
+            Empty::new().description("No orders yet").into_any_element()
+        } else {
+            let rows = self.rows.iter().map(|(id, status)| {
+                TableRow::new()
+                    .cell("id", Text::new(id.clone()))
+                    .cell("status", Tag::new(status.clone()).success())
+            });
+
+            Table::new(vec![TableColumn::new("id", "Order"), TableColumn::new("status", "Status")])
+                .rows(rows)
+                .into_any_element()
+        }
+    }
+}
+```
+
+## 组件清单
+
+| 分类 | 组件 |
+|---|---|
+| Basic / Layout 基础布局 | `Button`, `ButtonGroup`, `Icon`, `Link`, `Text`, `Title`, `Paragraph`, `Space`, `Divider`, `Row`, `Col`, `Container`, `Flex`, `Scrollbar`, `Splitter`, `Affix`, `Backtop` |
+| Form 表单 | `Input`, `InputNumber`, `Textarea`, `Checkbox`, `CheckboxGroup`, `Radio`, `RadioGroup`, `Switch`, `Select`, `Slider`, `Form`, `FormItem`, `Rate`, `DatePicker`, `TimePicker`, `DateTimePicker`, `Upload`, `Cascader`, `Transfer`, `ColorPicker`, `Autocomplete`, `InputTag`, `Mention`, `TreeSelect`, `OtpInput` |
+| Feedback / Overlay 反馈浮层 | `Alert`, `Tooltip`, `Popover`, `Popconfirm`, `Dialog`, `Drawer`, `Message`, `Notification`, `MessageBox`, `Loading`, `Dropdown`, `DropdownButton`, `Preview`, `Tour` |
+| Navigation 导航 | `Menu`, `Tabs`, `Breadcrumb`, `Steps`, `PageHeader`, `Anchor`, `Accordion` |
+| Data 数据展示 | `Table`, `VirtualizedTable`, `VirtualizedTree`, `VirtualizedList`, `Progress`, `Skeleton`, `Empty`, `Result`, `Descriptions`, `Timeline`, `Tree`, `Pagination`, `Statistic`, `Segmented`, `Tag`, `Avatar`, `Badge`, `Calendar`, `Carousel`, `Image`, `Watermark`, `Kbd` |
+| Charts / Metrics 图表指标 | `LineChart`, `AreaChart`, `BarChart`, `PieChart`, `RingChart`, `Sparkline`, `SignalMeter`, `HeatBar`, `SegmentRatioBar` |
+| Editing / Utility 编辑工具 | `CodeBlock`, `CodeEditor`, `QrCode`, `Timer`, `Label`, `Operation`, draggable list helpers |
+| App shell / Platform 平台 | `WindowFrame`, `liora-tray`, Linux desktop identity helpers, package metadata helpers, updater helpers |
 
 ## 原生打包
 
-仓库内打包准备由已发布的 `liora-packager` 库和仓库本地 `xtask` 命令包装提供：
+仓库内打包能力由已发布的 `liora-packager` 库和本地 `xtask` 命令包装提供：
 
 ```bash
 cargo run -p xtask -- package validate
 cargo run -p xtask -- package release-readiness
-cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build
-cargo run -p xtask -- package install-smoke --all-apps --format platform-defaults --dry-run
+cargo run -p xtask -- package build --all-apps
+cargo run -p xtask -- package ci --app gallery --format platform-defaults --skip-build
+cargo run -p xtask -- package smoke --app gallery --format platform-defaults
+cargo run -p xtask -- package install-smoke --app gallery --format platform-defaults --dry-run
 ```
 
-打包流水线可生成 AppImage、`.deb`、`.rpm`、macOS `.app` / `.dmg`、Windows NSIS / MSI，以及 Liora portable `.tar.gz` 的后端配置或产物。签名、公证、安装器 smoke 和发布动作与日常开发命令分离，避免影响应用代码保持纯 Rust + GPUI native 的架构边界。
+当前发布产物覆盖：
+
+| 平台 | 原始可执行程序 | Gallery 安装器/包 |
+|---|---|---|
+| Linux x64 | `liora-docs`, `liora-gallery` | AppImage、`.deb`、`.rpm`、portable `.tar.gz` |
+| macOS arm64 | `liora-docs`, `liora-gallery` | `.dmg` |
+| Windows x64 | `liora-docs.exe`, `liora-gallery.exe` | NSIS setup `.exe`、MSI |
+
+打包规则：
+
+- 应用保持纯 Rust + GPUI 原生；
+- app 图标、托盘图标、状态图标放在各自 app-owned asset 目录中；
+- 使用 `liora-packager`/`xtask` 管理 package metadata，不引入 Web runtime；
+- Windows app build script 只嵌入 icon/file metadata；GPUI Windows backend 已经提供 application manifest。
+
+## 常见问题与排查
+
+### Cargo 选中了 `gpui 0.2.2`，Liora 编译失败
+
+你的应用缺少根级 patch：
+
+```toml
+[patch.crates-io]
+gpui = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718" }
+```
+
+用以下命令确认：
+
+```bash
+cargo tree -i gpui
+cargo tree -p gpui
+```
+
+### `use of unresolved crate gpui` 或 `gpui_platform`
+
+当你的 binary crate 命名 GPUI 类型或启动 app runtime 时，需要直接加依赖：
+
+```toml
+[dependencies]
+gpui = { version = "0.2.2", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", default-features = false }
+```
+
+### Linux 缺 GTK、Wayland、X11、Vulkan、ALSA 或字体包导致构建失败
+
+安装平台原生依赖。Fedora-like 系统可参考并调整：
+
+```bash
+scripts/install-fedora-deps.sh
+```
+
+Debian/Ubuntu-like 系统需要安装等价的 `libgtk-3-dev`、Wayland/X11/xkbcommon、fontconfig/freetype、Vulkan、ALSA 和 `pkg-config` 包。
+
+### 标题栏图标正常，但 Linux 任务栏图标空白
+
+Wayland 下需要注册 desktop identity，并让 `WindowOptions.app_id` 与 desktop entry/icon name 一致。Compositor 会通过 `.desktop` 和 icon theme 解析任务栏图标。
+
+```rust
+WindowOptions {
+    app_id: Some("acme-notes".into()),
+    ..Default::default()
+}
+```
+
+### Dark/System 主题启动时闪一下
+
+窗口使用 `show: false` 创建，在 `open_window` 回调一开始调用 `attach_system_theme_observer(window, cx)`，并在 `open_window` 返回 handle 后调用 `window.activate_window()`。
+
+### Input 文本或焦点每次 render 后重置
+
+把有状态控件放在 `gpui::Entity<T>` 字段中，不要在每次 render 中重新构造：
+
+```rust
+struct ViewState {
+    input: gpui::Entity<liora::components::Input>,
+}
+```
+
+### toast macro panic，提示缺少 `MessageManager`
+
+使用 `liora::init_liora(cx)` 或 `liora_components::init_liora(cx)`。如果你刻意只使用 `liora_core`，需要自己初始化组件服务后再调用 toast helpers。
+
+### Windows 链接失败，提示重复 `MANIFEST` resource
+
+使用 GPUI Windows backend 时，不要在 app `build.rs` 中再嵌入 Windows Common Controls manifest。只嵌入 icon 和 file metadata；Windows 下 `gpui_platform` 会启用 GPUI 的 `windows-manifest` feature。
+
+### Release package 里文件太多
+
+GitHub Release assets 只上传面向用户的 raw binaries、installers/packages 和 `SHA256SUMS.txt`。生成的 notes/config 文件应放在 release body 或 CI artifacts 中，不作为用户下载资产。
+
+### 下一步应该读哪些文档？
+
+- `apps/liora-docs/content/pages/quick_start.md`：接入说明。
+- `apps/liora-docs/content/pages/theme_system.md`：启动主题和窗口行为。
+- `apps/liora-docs/content/pages/packaging_workflow.md`：发布打包流程。
+- `apps/liora-gallery/src/demos/`：逐组件使用示例。
 
 ## 质量门禁
 
-发布或提交变更前，运行项目使用的本地检查：
+发布或提交变更前运行：
 
 ```bash
 cargo fmt --all --check
@@ -302,39 +1107,68 @@ cargo test --workspace
 cargo check -p liora-docs --bin check_snippets
 cargo doc --workspace --no-deps
 cargo run -p xtask -- package validate
-cargo run -p xtask -- package ci --all-apps --format platform-defaults --dry-run --skip-build
+cargo run -p xtask -- package release-readiness
+cargo run -p xtask -- package ci --app gallery --format platform-defaults --dry-run --skip-build
+cargo run -p xtask -- package install-smoke --app gallery --format platform-defaults --dry-run
 ```
 
-组件变更应同时包含可复用组件 API、Gallery 覆盖、原生 Docs 内容、外部 snippets，以及针对计算或交互行为的聚焦测试。
+Release 构建还应运行：
+
+```bash
+cargo build --workspace --release
+cargo run --release -p xtask -- package validate
+cargo run --release -p xtask -- package release-readiness
+```
 
 ## 设计原则
 
-Liora 围绕几个面向产品的原则设计：
-
-- **Native first**：所有组件都走 GPUI 元素树、原生文本、原生输入和原生绘制路径。
-- **应用级默认值**：主题、浮层、消息、键盘与选择行为应通过一次初始化完成。
-- **组合优先**：组件提供 builder 风格 API，并保持可复用；产品页面和数据模型应留在应用层。
+- **Native first**：所有组件走 GPUI 元素树、原生文本、原生输入和原生绘制路径。
+- **应用级默认值**：主题、浮层、消息、键盘和选择行为通过一次初始化完成。
+- **组合优先**：组件暴露 builder 风格 API；产品数据和页面组合留在应用层。
 - **Token 驱动视觉**：Light/Dark/System 主题使用语义 token 管理表面、文本、边框、遮罩和交互状态。
-- **性能感知的数据 UI**：图表与虚拟化视图内置降采样、hit testing、缓存上限和可视区域渲染模式。
+- **性能感知数据 UI**：图表和虚拟化视图包含降采样、hit testing、缓存上限和可视区域渲染模式。
 
 ## 运行时模型
 
-`liora::init_liora(cx)` 是使用 facade crate 时推荐的应用入口。只依赖 focused components crate 时，可使用同等能力的 `liora_components::init_liora(cx)`。它会初始化 Liora core/theme 状态、组件全局服务，以及交互控件所需的 key bindings。
+`liora::init_liora(cx)` 是使用 facade crate 时推荐的应用入口。它会初始化 Liora core/theme 状态、全局组件服务，以及交互控件 key bindings。
 
-当产品需要显式选择启动主题时，使用 `liora::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)`。运行时主题切换仍使用 `liora_core::apply_theme_mode(window, cx, mode)`。
+当产品需要显式选择启动主题时，使用 `liora::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)`。运行时主题切换使用 `liora_core` 或 facade `core` 模块中的 `apply_theme_mode(window, cx, mode)`。
 
 字体默认保持系统原生：Liora 不默认加载品牌字体，也不会把整个 UI 映射到 Zed 专用字体别名。自定义字体通过 `FontConfig`、`LioraOptions`、`load_custom_fonts` 和 `set_font_config` 显式启用。
 
-`Input`、`Switch`、`Select`、`CodeEditor` 等有状态控件应存放在 `gpui::Entity<T>` 字段中，以便焦点、展开状态、选区和文本值在重渲染后保持稳定。
+`Input`、`Switch`、`Select`、`TreeSelect`、`CodeEditor` 和虚拟化视图等有状态控件应放在 `gpui::Entity<T>` 字段中，以便焦点、展开状态、选区、滚动状态和文本值在重渲染后保持稳定。
+
+## 技术创新点
+
+- **一条依赖完成接入**：`liora` facade 重新导出常用 SDK 模块，应用 manifest 不需要零散添加多个 Liora crate。
+- **一次性应用初始化**：`init_liora(cx)` 集中处理 core 配置、组件服务和键盘绑定。
+- **原生 Markdown 文档**：Docs app 把 Markdown 内容渲染为 Liora/GPUI 节点，并检查外部 Rust 片段。
+- **无浏览器层的原生图表**：图表使用 Rust 数据结构、GPUI paint path、hit testing 和降采样。
+- **应用壳能力覆盖**：托盘常驻、toast、主题切换、可搜索组件导航和真实布局都在原生应用中验证。
+- **打包意识内建**：安装器信息、manifest、checksum、backend config 和 dry-run 安装计划与代码一起验证。
+
+## README 同步规范
+
+以后任何代码改动都必须先问：**README 是否需要同步修改？**
+
+当你修改以下内容时，必须在同一个变更中更新 `README.md` 和 `README.zh-CN.md`：
+
+- public crate 名称、feature 或依赖说明；
+- GPUI revision、patch 策略或平台 feature flags；
+- 初始化 API、主题行为、字体、图标、窗口启动或托盘行为；
+- 组件名称、主要组件 API、示例或应用壳模式；
+- 打包、updater、release assets、CI 命令、MSRV 或排错说明。
+
+如果 README 不需要变化，也要在最终变更说明中明确写出“不需要同步 README”。
 
 ## 贡献
 
 提交 PR 前请阅读 `CONTRIBUTING.md`。关键边界：
 
-- 保持 Liora 为纯 Rust + GPUI native。
-- 不引入 Tauri、WebView、HTML/CSS/DOM、browser runtime 或 web chart shell。
-- 不重新新增独立 `examples/minimal-app` 或 `examples/dashboard-app`。
-- 不把产品数据模型或页面级 helper 放进 `liora-components`。
+- 保持 Liora 为纯 Rust + GPUI 原生；
+- 不引入 Tauri、WebView、HTML/CSS/DOM、browser runtime 或 web chart shell；
+- 不把产品数据模型或页面级 helper 放进 `liora-components`；
+- 保持 Gallery、Docs、snippets、tests 和中英文 README 与公开行为同步。
 
 ## License
 

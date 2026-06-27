@@ -33,6 +33,14 @@ cargo check -p liora-docs
 cargo doc --workspace --no-deps
 ```
 
+## README synchronization
+
+Every feature, bug fix, dependency update, platform behavior change, packaging change, or release-process change must explicitly check whether `README.md` and `README.zh-CN.md` need updates.
+
+Update both READMEs in the same change when public behavior changes, especially for crate names/features, dependency instructions, GPUI revision or `[patch.crates-io]` policy, initialization APIs, theming, fonts, icons, window startup, tray behavior, component catalog/API examples, updater behavior, packaging, release assets, CI commands, MSRV, or troubleshooting guidance.
+
+If README does not need a change, state that explicitly in the final PR/change summary.
+
 ## Component documentation standard
 
 Every public component or new public configuration should have:

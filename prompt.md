@@ -142,6 +142,13 @@ liora/
 - P22 gpui-component Harvest 阶段已启动：基于 `design/gpui-component-collection-list.md`，先做低风险高收益组件。已实现 `Spinner`、`Kbd`、`OtpInput`、`DropdownButton` 并接入 Gallery/Docs/snippets/tests；后续建议继续 `Accordion`、`Combobox`。详见 `.prompt/P22-gpui-component-harvest.md`。
 
 
+### 4.1.4 README 同步红线（永久规范）
+
+- 以后任何新功能开发、问题修复、依赖调整、平台行为调整、发布/打包流程调整，都必须显式检查是否需要同步 `README.md` 和 `README.zh-CN.md`。
+- 如果改动影响 public crate 名称、features、依赖方式、GPUI revision / `[patch.crates-io]` 策略、初始化 API、主题/字体/图标/窗口/托盘行为、组件清单、组件主要 API、updater、packaging、release assets、CI 命令、MSRV 或常见问题排查，必须在同一个变更中更新中英文 README。
+- 如果确认 README 不需要变化，最终总结中必须明确说明“README 不需要同步修改”，不能默认省略。
+- README 中的示例应尽量可复制、可编译，并以仓库当前 API、Gallery/Docs 和官方 Zed GPUI revision 为准；禁止凭记忆写过期 API 或野路子示例。
+
 ### 4.1.3 官方来源优先红线（永久规范）
 
 - 涉及 GPUI / Zed、平台集成、窗口行为、打包安装、CI 发布、更新器、第三方 API 或系统能力时，必须先查看官方仓库源码、官方示例、官方文档或官方 release notes，再开始实现。
