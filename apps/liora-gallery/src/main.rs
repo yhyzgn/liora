@@ -763,7 +763,8 @@ impl Render for Gallery {
         let selected = self.selected.min(self.entries.len());
         self.selected = selected;
 
-        let nav_menu = self.gallery_nav_menu(selected, cx);
+        let nav_menu = AnyView::from(self.gallery_nav_menu(selected, cx))
+            .cached(gpui::StyleRefinement::default());
 
         let selected_entry = self.entries.get(selected).copied();
         let selected_demo = self.selected_demo(selected, cx);
@@ -946,16 +947,15 @@ impl Gallery {
 
     fn gallery_nav_menu(&mut self, selected: usize, cx: &mut Context<Self>) -> gpui::Entity<Menu> {
         let active_id = gallery_nav_item_id(selected);
-        let items = gallery_nav_menu_items(&self.nav_index, &self.nav_query);
 
         if let Some(nav_menu) = &self.nav_menu {
             cx.update_entity(nav_menu, |menu, cx| {
-                menu.set_items(items, cx);
                 menu.set_active_index(active_id, cx);
             });
             return nav_menu.clone();
         }
 
+        let items = gallery_nav_menu_items(&self.nav_index, &self.nav_query);
         let gallery = cx.entity().downgrade();
         let nav_menu = cx.new(|_cx| {
             Menu::new()
@@ -1582,6 +1582,7 @@ mod shell_regression_tests {
         assert!(source.contains(".with_items(items)"));
         assert!(source.contains(".on_select(move |id"));
         assert!(source.contains("menu.set_items(items, cx);"));
+        assert!(source.contains("fn refresh_nav_menu_for_current_query"));
         assert!(source.contains("menu.set_active_index(active_id, cx);"));
         assert!(source.contains("if gallery.selected != entry_index"));
         assert!(!source.contains("struct GalleryNavMenu"));
@@ -1608,6 +1609,28 @@ mod shell_regression_tests {
                     let _ = gallery.update(cx, |_gallery, cx| {
                         cx.notify();"
         ));
+    }
+
+    #[test]
+    fn gallery_nav_menu_does_not_rebuild_filtered_items_during_parent_render() {
+        let source = include_str!("main.rs");
+        let render_update = source
+            .split("if let Some(nav_menu) = &self.nav_menu")
+            .nth(1)
+            .and_then(|part| part.split("return nav_menu.clone();").next())
+            .unwrap();
+
+        assert!(!render_update.contains("gallery_nav_menu_items"));
+        assert!(render_update.contains("menu.set_active_index(active_id, cx);"));
+    }
+
+    #[test]
+    fn gallery_nav_menu_is_cached_across_parent_input_repaints() {
+        let source = include_str!("main.rs");
+
+        assert!(source.contains("let nav_menu = AnyView::from"));
+        assert!(source.contains("self.gallery_nav_menu(selected, cx)"));
+        assert!(source.contains(".cached(gpui::StyleRefinement::default())"));
     }
 
     #[test]
