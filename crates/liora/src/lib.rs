@@ -4,13 +4,19 @@
 //! listing every lower-level crate separately:
 //!
 //! ```toml
-//! liora = { git = "https://github.com/yhyzgn/liora", rev = "<liora-commit>" }
+//! [dependencies]
+//! liora = "0.1"
+//! gpui = { version = "0.2.2", default-features = false }
+//!
+//! [patch.crates-io]
+//! gpui = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718" }
 //! ```
 //!
-//! Keep the application `gpui` and `gpui_platform` dependencies pinned to the
-//! official Zed revision documented by the adopted Liora commit. The GPUI-facing
-//! SDK crates are intentionally git-only while they track newer upstream GPUI
-//! APIs than the stale crates.io GPUI line.
+//! The published crates use Cargo's registry fallback for `gpui = 0.2.2`, then
+//! applications override that fallback with a matching official Zed GPUI git
+//! revision. This keeps Liora available through crates.io without coupling the
+//! SDK to a community fork or forcing downstream projects onto the stale
+//! registry implementation.
 //!
 //! The facade keeps each domain available under a stable module name while also
 //! re-exporting the most common application setup entry points.

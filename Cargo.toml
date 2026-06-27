@@ -42,7 +42,7 @@ derive_more = { version = "2.1.1", features = ["add", "add_assign", "deref", "de
 env_logger = "0.11"
 futures = "0.3.32"
 futures-concurrency = "7.7.1"
-gpui = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", default-features = false }
+gpui = { version = "0.2.2", git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", default-features = false }
 gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", default-features = false }
 hdrhistogram = "7"
 image = "0.25.1"

@@ -8,7 +8,7 @@ This page documents the packaging pipeline used by this repository and the piece
 
 Liora publishes three kinds of release outputs:
 
-- Git-only GPUI SDK — `liora` is the one-stop facade for apps that pin this repository by commit; `liora-theme`, `liora-core`, `liora-icons`, `liora-icons-lucide`, `liora-components`, and `liora-tray` follow the same git-only policy because they depend on official Zed GPUI git APIs.
+- crates.io GPUI SDK — `liora` is the one-stop facade published to crates.io; `liora-theme`, `liora-core`, `liora-icons`, `liora-icons-lucide`, `liora-components`, and `liora-tray` are published with Cargo's `gpui = 0.2.2` registry fallback and are verified through a downstream `[patch.crates-io]` override to the official Zed GPUI git revision.
 - `liora-docs` raw executables — cross-platform runnable documentation binaries for Linux, macOS, and Windows.
 - `liora-gallery` raw executables plus installers — the component gallery is both directly downloadable as a binary and packaged into the planned native installer formats.
 
@@ -19,7 +19,7 @@ The reusable packaging logic lives in:
 - `xtask` — command-line entry point used locally and by CI.
 - `.github/workflows/ci.yml` — ordinary quality gate for every pull request and `main` push.
 - `.github/workflows/package.yml` — GitHub Actions preview/release pipeline for native app binaries and Gallery installers.
-- `.github/workflows/release-sdk.yml` — GitHub Actions workflow that audits the git-only GPUI SDK metadata and packages/publishes only the crates.io utility crates (`liora-packager`, `liora-updater`).
+- `.github/workflows/release-sdk.yml` — GitHub Actions workflow that audits SDK crate metadata, packages the publishable crates, verifies a patched downstream consumer, and publishes all Liora SDK crates to crates.io in dependency order.
 - `packaging/` — icons, desktop metadata, macOS/Windows/Linux package resources.
 
 ## Local Commands
@@ -72,11 +72,11 @@ Liora intentionally separates ordinary quality gates from packaging/release gene
 | --- | --- | --- | --- |
 | `.github/workflows/ci.yml` | pull requests, `main` pushes, manual dispatch | Fast correctness gate split into two jobs: `rust-quality` runs formatting, workspace check/test, and docs snippets with native Linux build dependencies; `packaging-dry-run` runs package metadata validation, packaging dry-run, and install-smoke dry-run with only lightweight packaging prerequisites. | No. It must not upload installers or mutate GitHub Releases. |
 | `.github/workflows/package.yml` | `main` pushes, `v*` tags, manual dispatch | Native app release matrix for Linux/macOS/Windows: build raw release binaries for Docs/Gallery, generate installer/package artifacts for Gallery only, smoke Gallery package outputs, and plan Gallery install/uninstall checks. | Only `v*` tag runs publish GitHub Release assets. `main` runs produce preview Actions artifacts for QA. |
-| `.github/workflows/release-sdk.yml` | manual dispatch, `v*` tags | Utility-crate pipeline: static manifest audit verifies GPUI-dependent SDK crates are git-only `publish = false`, verifies official `zed-industries/zed` git pins have no crates.io version fallback, and runs `cargo package` for `liora-packager` and `liora-updater`. | Only explicit `publish=true` manual runs or `v*` tags publish the utility crates to crates.io. Package verification alone never publishes. |
+| `.github/workflows/release-sdk.yml` | manual dispatch, `v*` tags | SDK crate pipeline: static manifest audit verifies official `zed-industries/zed` pins, crates.io publish metadata, Cargo multiple-location `gpui` fallback, package archives, and a patched downstream consumer smoke check. | Only explicit `publish=true` manual runs or `v*` tags publish SDK crates to crates.io. Package verification alone never publishes. |
 
-Because Cargo does not allow crates.io packages to depend on git-only dependencies, the GPUI-facing Liora SDK crates intentionally remain git-only while Liora tracks a newer official Zed GPUI revision. Downstream applications should depend on `liora` by git `rev` and use the matching official `gpui` / `gpui_platform` `rev`. Only utility crates without GPUI git dependencies (`liora-packager` and `liora-updater`) are published to crates.io.
+Because Cargo does not allow crates.io packages to depend on git-only dependencies, Liora publishes SDK crates with Cargo's multiple-location `gpui` dependency: local development uses the official Zed git rev, while crates.io receives the registry fallback. Downstream applications should depend on `liora` from crates.io and add `[patch.crates-io] gpui = { git = "https://github.com/zed-industries/zed", rev = "..." }` so every transitive GPUI dependency resolves to the matching official Zed commit.
 
-Keep `ci.yml` small and dependency-light enough to run on every code change. The workflow intentionally separates `rust-quality` from `packaging-dry-run` so package metadata changes can fail quickly without waiting for the full native workspace test job, and so packaging dry-run does not inherit GTK/Wayland/X11 dependencies it does not use. Keep `package.yml` responsible for expensive platform-specific app builds, raw binary staging, Gallery installer artifacts, grouped changelog generation, and GitHub Release publishing. Keep `release-sdk.yml` responsible for git-only SDK metadata audits plus crates.io utility-crate package verification/publication; it is the only workflow that may read `CRATES_IO_TOKEN` or call `cargo publish`. If a new package validation can run without real backend artifacts, add it to both workflows: `ci.yml` as a dry-run gate and `package.yml` before packaging. If a step builds installers, uploads artifacts, or calls `gh release`, it belongs only in `package.yml`. If a step publishes crates.io utility crates, it belongs only in `release-sdk.yml`.
+Keep `ci.yml` small and dependency-light enough to run on every code change. The workflow intentionally separates `rust-quality` from `packaging-dry-run` so package metadata changes can fail quickly without waiting for the full native workspace test job, and so packaging dry-run does not inherit GTK/Wayland/X11 dependencies it does not use. Keep `package.yml` responsible for expensive platform-specific app builds, raw binary staging, Gallery installer artifacts, grouped changelog generation, and GitHub Release publishing. Keep `release-sdk.yml` responsible for SDK metadata audits, patched-consumer verification, and crates.io package publication; it is the only workflow that may read `CRATES_IO_TOKEN` or call `cargo publish`. If a new package validation can run without real backend artifacts, add it to both workflows: `ci.yml` as a dry-run gate and `package.yml` before packaging. If a step builds installers, uploads artifacts, or calls `gh release`, it belongs only in `package.yml`. If a step publishes crates.io SDK crates, it belongs only in `release-sdk.yml`.
 
 ## CI Pipeline Steps
 
@@ -217,7 +217,7 @@ For a real signed public release, create a protected `vX.Y.Z` tag that matches `
 The repository-owned release-candidate checklist lives at `docs/release-candidate-checklist.md`. It covers the Liora 0.1.x release gate:
 
 - local validation commands for formatting, workspace checks/tests, snippet checks, Rustdoc, packaging validation, release-readiness, dry-run packaging, install-smoke dry-run, and Gallery/Docs GUI smoke;
-- package metadata expectations: GPUI-dependent SDK crates (`liora`, `liora-theme`, `liora-core`, `liora-icons`, `liora-icons-lucide`, `liora-components`, `liora-tray`) use the repository license file but stay git-only with `publish = false`; utility crates (`liora-packager`, `liora-updater`) are crates.io-publishable; apps and `xtask` remain `publish = false`;
+- package metadata expectations: SDK crates (`liora`, `liora-theme`, `liora-core`, `liora-icons`, `liora-icons-lucide`, `liora-components`, `liora-tray`, `liora-packager`, `liora-updater`) use the repository license file and are crates.io-publishable; apps and `xtask` remain `publish = false`;
 - the canonical app boundary: Gallery and Docs only, with no standalone `minimal-app` or `dashboard-app`;
 - protected release-only work such as real `vX.Y.Z` tag publication, macOS notarization, Windows signing, and destructive system installer smoke tests.
 
@@ -231,4 +231,4 @@ If another GPUI project wants to reuse this packaging approach, copy the structu
 4. Use preview builds on branch pushes and release builds on version tags.
 5. Upload installer/package artifacts for QA and releases.
 6. Keep a neutral portable archive backend if users need a direct unpack-and-run fallback independent of distro package managers.
-7. Split crates.io utility-crate publishing from app artifact publishing, and keep the crates.io token out of native app packaging jobs.
+7. Split crates.io SDK publishing from app artifact publishing, and keep the crates.io token out of native app packaging jobs.

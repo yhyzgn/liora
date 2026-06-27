@@ -43,16 +43,19 @@ fn main() {
 
 ## Dependency shape
 
-For a downstream project, pin Liora by git commit and pin GPUI to Liora's matching official Zed revision:
+For a downstream project, use Liora from crates.io and patch Cargo's `gpui` registry fallback to Liora's matching official Zed revision:
 
 ```toml
 [dependencies]
-liora = { git = "https://github.com/yhyzgn/liora", rev = "<liora-commit>" }
-gpui = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", default-features = false }
+liora = "0.1"
+gpui = { version = "0.2.2", default-features = false }
 gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", default-features = false }
+
+[patch.crates-io]
+gpui = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718" }
 ```
 
-For local monorepo development, use `liora = { path = "../liora/crates/liora" }` while keeping `gpui` and `gpui_platform` sourced from the official Zed repository at the same revision across the app and Liora. GPUI-facing Liora SDK crates intentionally do not publish to crates.io while they depend on Zed git APIs; `liora-packager` and `liora-updater` remain crates.io utility crates.
+For local monorepo development, use `liora = { path = "../liora/crates/liora" }` while keeping `gpui` patched to the official Zed repository revision across the app and Liora. The published SDK crates rely on Cargo's supported registry fallback plus downstream `[patch.crates-io]` override so consumers can choose the matching official GPUI rev without using community forks.
 
 ## Component adoption checklist
 

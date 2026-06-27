@@ -8558,7 +8558,7 @@ mod tests {
             PACKAGING_WORKFLOW_DOC.contains("Only `v*` tag runs publish GitHub Release assets")
         );
         assert!(PACKAGING_WORKFLOW_DOC.contains("CRATES_IO_TOKEN"));
-        assert!(PACKAGING_WORKFLOW_DOC.contains("GPUI-dependent SDK crates are git-only"));
+        assert!(PACKAGING_WORKFLOW_DOC.contains("multiple-location `gpui` dependency"));
         assert!(
             PACKAGING_WORKFLOW_DOC
                 .contains("Docs is released as cross-platform raw executables only")
@@ -8570,7 +8570,7 @@ mod tests {
         );
         assert!(PACKAGING_WORKFLOW_DOC.contains("If a step builds installers, uploads artifacts, or calls `gh release`, it belongs only in `package.yml`."));
         assert!(PACKAGING_WORKFLOW_DOC.contains(
-            "If a step publishes crates.io utility crates, it belongs only in `release-sdk.yml`."
+            "If a step publishes crates.io SDK crates, it belongs only in `release-sdk.yml`."
         ));
     }
 
@@ -8607,10 +8607,10 @@ mod tests {
         assert!(package.contains("LIORA_MACOS_CODESIGN_IDENTITY"));
         assert!(package.contains("LIORA_WINDOWS_SIGNTOOL_CERT_PATH"));
         assert!(sdk.contains("CRATES_IO_TOKEN"));
-        assert!(sdk.contains("Audit git-only GPUI SDK and crates.io utility metadata"));
-        assert!(sdk.contains("cargo package -p liora-packager"));
-        assert!(sdk.contains("cargo package -p liora-updater"));
-        assert!(sdk.contains("liora-packager liora-updater"));
+        assert!(sdk.contains("Audit crates.io SDK metadata"));
+        assert!(sdk.contains("Package independently publishable crates"));
+        assert!(sdk.contains("Verify patched crates.io consumer"));
+        assert!(sdk.contains("liora-theme liora-core liora-icons liora-icons-lucide liora-components liora-tray liora-packager liora-updater liora"));
         assert!(sdk.contains("cargo publish -p"));
         assert!(!sdk.contains(concat!("cargo publish -p \"$crate\" ", "--", "token")));
     }
@@ -8650,7 +8650,7 @@ mod tests {
             "Runtime model",
             "liora::init_liora(cx)",
             "liora::init_liora_with_mode",
-            r#"liora = { git = "https://github.com/yhyzgn/liora""#,
+            r#"liora = "0.1""#,
             "Native packaging",
             "Quality gates",
             "Technical differentiators",
@@ -8667,7 +8667,7 @@ mod tests {
             "运行时模型",
             "liora::init_liora(cx)",
             "liora::init_liora_with_mode",
-            r#"liora = { git = "https://github.com/yhyzgn/liora""#,
+            r#"liora = "0.1""#,
             "原生打包",
             "质量门禁",
             "技术创新点",
@@ -8689,7 +8689,9 @@ mod tests {
         let core_source = include_str!("../../../crates/liora-core/src/lib.rs");
         let liora_package = include_str!("../../../crates/liora-core/Cargo.toml");
 
-        assert!(root_cargo.contains(r#"gpui = { git = "https://github.com/zed-industries/zed""#));
+        assert!(root_cargo.contains(
+            r#"gpui = { version = "0.2.2", git = "https://github.com/zed-industries/zed""#
+        ));
         assert!(
             root_cargo
                 .contains(r#"gpui_platform = { git = "https://github.com/zed-industries/zed""#)
@@ -8721,7 +8723,7 @@ mod tests {
         }
 
         assert!(THEME_SYSTEM_DOC.contains("Liora SDK 不耦合"));
-        assert!(ARCHITECTURE_DOC.contains("不能包含 `[patch.crates-io]`"));
+        assert!(ARCHITECTURE_DOC.contains("最终应用通过 `[patch.crates-io]`"));
         assert!(patch_readme.contains("official") || patch_readme.contains("upstream"));
         assert!(!THEME_SYSTEM_DOC.contains("Liora 的 patched GPUI 会"));
         assert!(!core_source.contains("Liora uses a patched GPUI build"));
@@ -8758,9 +8760,10 @@ mod tests {
         }
 
         assert!(checklist.contains("LicenseRef-Liora"));
-        assert!(checklist.contains("official `https://github.com/zed-industries/zed` git sources"));
+        assert!(checklist.contains("multiple-location `gpui = 0.2.2` registry fallback"));
         assert!(checklist.contains("third_party/zed"));
         assert!(checklist.contains("must not contain renamed GPUI fork dependencies"));
+        assert!(checklist.contains("Downstream applications must use `[patch.crates-io]`"));
         assert!(checklist.contains("pure Rust + GPUI native"));
         assert!(checklist.contains("apps/liora-gallery"));
         assert!(checklist.contains("apps/liora-docs"));
@@ -8776,7 +8779,7 @@ mod tests {
         assert!(readme.contains("Runtime model"));
         assert!(readme.contains("liora::init_liora(cx)"));
         assert!(readme.contains("liora::init_liora_with_mode"));
-        assert!(readme.contains(r#"liora = { git = "https://github.com/yhyzgn/liora""#));
+        assert!(readme.contains(r#"liora = "0.1""#));
         assert!(readme.contains("Native packaging"));
         assert!(readme.contains("Quality gates"));
         assert!(readme.contains("Technical differentiators"));
@@ -8819,9 +8822,9 @@ mod tests {
             !package_workflow
                 .contains("package ci --all-apps --format platform-defaults --skip-build")
         );
-        assert!(sdk_workflow.contains("Publish Liora crates.io utility crates"));
+        assert!(sdk_workflow.contains("Publish Liora crates.io SDK crates"));
         assert!(sdk_workflow.contains("CRATES_IO_TOKEN"));
-        assert!(sdk_workflow.contains("liora-packager liora-updater"));
+        assert!(sdk_workflow.contains("liora-theme liora-core liora-icons liora-icons-lucide liora-components liora-tray liora-packager liora-updater liora"));
         assert!(package_workflow.contains("SHA256SUMS.txt"));
         assert!(package_workflow.contains("portable-staging/*|*.md|*.toml|*.json|*/checksums.txt"));
         assert!(!package_workflow.contains("cp release-notes.md release-assets/release-notes.md"));
@@ -8842,7 +8845,7 @@ mod tests {
         for manifest in gpui_sdk_manifests {
             assert!(manifest.contains(r#"license-file = "../../LICENSE.md""#));
             assert!(manifest.contains(r#"repository = "https://github.com/yhyzgn/liora""#));
-            assert!(manifest.contains("publish = false"));
+            assert!(manifest.contains("publish = true"));
             assert!(manifest.contains(r#"description = ""#));
         }
 

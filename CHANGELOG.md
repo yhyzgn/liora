@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.9 - 2026-06-27
+
+- Publish all Liora SDK crates to crates.io with Cargo gpui registry fallback and downstream official Zed GPUI patch guidance.
+- Update release-sdk workflow to publish SDK crates in dependency order and verify a patched downstream consumer.
+- Refresh README, Docs, and release checklist for the crates.io + official Zed GPUI patch policy.
+
 ## 0.1.8 - 2026-06-26
 
 - Embedded Lucide SVG icon payloads into `liora-icons-lucide` virtual asset paths so raw Gallery/Docs executables render icons on Windows and Linux without access to the build machine source tree.

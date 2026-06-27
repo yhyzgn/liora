@@ -1,10 +1,10 @@
-name: Publish Liora crates.io utility crates
+name: Publish Liora crates.io SDK crates
 
 on:
   workflow_dispatch:
     inputs:
       publish:
-        description: "Publish crates.io utility crates after package verification"
+        description: "Publish crates.io SDK crates after package and patched-consumer verification"
         required: true
         default: "false"
         type: choice
@@ -19,11 +19,12 @@ permissions:
   contents: read
 
 env:
-  CRATES_IO_CRATES: "liora-packager liora-updater"
+  CRATES_IO_CRATES: "liora-theme liora-core liora-icons liora-icons-lucide liora-components liora-tray liora-packager liora-updater liora"
+  ZED_GPUI_REV: "2c346f60a76fe3f0367ef924927f50a6efdf5718"
 
 jobs:
-  package-utility-crates:
-    name: Package crates.io utility crates
+  package-sdk-crates:
+    name: Package and verify crates.io SDK crates
     runs-on: ubuntu-24.04
 
     steps:
@@ -33,6 +34,23 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Install Linux GPUI dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libasound2-dev \
+            libfontconfig1-dev \
+            libfreetype6-dev \
+            libgtk-3-dev \
+            libwayland-dev \
+            libx11-dev \
+            libxcb1-dev \
+            libxkbcommon-dev \
+            pkg-config \
+            vulkan-tools
+
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
 
@@ -40,7 +58,7 @@ jobs:
         shell: bash
         run: echo "$(dirname "$(rustup which cargo)")" >> "$GITHUB_PATH"
 
-      - name: Audit git-only GPUI SDK and crates.io utility metadata
+      - name: Audit crates.io SDK metadata
         shell: bash
         run: |
           set -euo pipefail
@@ -49,64 +67,86 @@ jobs:
           import tomllib
 
           root_manifest = Path("Cargo.toml").read_text()
-          assert "[patch.crates-io]" not in root_manifest, "workspace must not patch crates.io GPUI packages"
+          assert "[patch.crates-io]" not in root_manifest, "workspace must not force crates.io patches"
           assert "[patch.\"https://github.com/zed-industries/zed\"]" not in root_manifest, "workspace must not force local Zed GPUI patches"
           root = tomllib.loads(root_manifest)
           gpui_dep = root["workspace"]["dependencies"]["gpui"]
+          assert gpui_dep["version"] == "0.2.2", "published packages need Cargo's registry fallback for gpui"
+          assert gpui_dep["git"] == "https://github.com/zed-industries/zed"
+          assert gpui_dep["rev"], "gpui must be pinned by official Zed rev for local development"
+          assert gpui_dep["default-features"] is False
+
           gpui_platform_dep = root["workspace"]["dependencies"]["gpui_platform"]
-          for dep_name, dep in [("gpui", gpui_dep), ("gpui_platform", gpui_platform_dep)]:
-              assert dep["git"] == "https://github.com/zed-industries/zed", dep_name
-              assert dep["rev"], f"{dep_name} must be pinned by rev"
-              assert "version" not in dep, f"{dep_name} must not fall back to crates.io"
-              assert dep["default-features"] is False, dep_name
+          assert gpui_platform_dep["git"] == "https://github.com/zed-industries/zed"
+          assert "version" not in gpui_platform_dep, "gpui_platform is app-only and not published on crates.io"
+          assert gpui_platform_dep["rev"] == gpui_dep["rev"]
+          assert gpui_platform_dep["default-features"] is False
 
-          git_only = [
-              "liora",
-              "liora-theme",
-              "liora-core",
-              "liora-icons",
-              "liora-icons-lucide",
-              "liora-components",
-              "liora-tray",
-          ]
-          crates_io = ["liora-packager", "liora-updater"]
-          for crate in git_only:
+          crates = "liora-theme liora-core liora-icons liora-icons-lucide liora-components liora-tray liora-packager liora-updater liora".split()
+          for crate in crates:
               path = Path("crates") / crate / "Cargo.toml"
               package = tomllib.loads(path.read_text())["package"]
-              assert package["publish"] is False, f"{crate} is GPUI-git-only and must not publish to crates.io"
-              assert package["repository"] == "https://github.com/yhyzgn/liora"
-              assert package.get("description")
-
-          for crate in crates_io:
-              path = Path("crates") / crate / "Cargo.toml"
-              package = tomllib.loads(path.read_text())["package"]
-              assert package["publish"] is True, f"{crate} should remain crates.io publishable"
+              assert package["publish"] is True, f"{crate} should be publishable to crates.io"
               assert package["license-file"] == "../../LICENSE.md"
               assert package["repository"] == "https://github.com/yhyzgn/liora"
               assert package.get("description")
-          print("Git-only GPUI SDK and crates.io utility metadata OK")
+          print("crates.io SDK metadata OK")
           PY
 
-      - name: Package crates.io utility crates
+      - name: Package independently publishable crates
         shell: bash
         run: |
           set -euo pipefail
-          cargo package -p liora-packager
-          cargo package -p liora-updater
+          # Crates that depend on unpublished sibling versions are validated by
+          # the patched consumer smoke test below and published sequentially in
+          # the publish job after each dependency appears in the registry index.
+          for crate in liora-theme liora-tray liora-packager liora-updater; do
+            cargo package -p "$crate" --no-verify
+          done
 
-      - name: Upload utility crate preflight artifact
+      - name: Verify patched crates.io consumer
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+          cat > "$tmp/Cargo.toml" <<EOF
+          [package]
+          name = "liora-crates-io-consumer-smoke"
+          version = "0.0.0"
+          edition = "2024"
+          publish = false
+
+          [dependencies]
+          gpui = { version = "0.2.2", default-features = false }
+          liora = { path = "$PWD/crates/liora", default-features = true }
+
+          [patch.crates-io]
+          gpui = { git = "https://github.com/zed-industries/zed", rev = "$ZED_GPUI_REV" }
+          EOF
+          mkdir -p "$tmp/src"
+          cat > "$tmp/src/main.rs" <<'EOF'
+          use liora::{ThemeMode, components::Button, init_liora_with_mode};
+
+          fn main() {
+              let _ = ThemeMode::System;
+              let _ = Button::new("Smoke");
+              let _init: fn(&mut gpui::App, ThemeMode) = init_liora_with_mode;
+          }
+          EOF
+          cargo check --manifest-path "$tmp/Cargo.toml"
+
+      - name: Upload SDK crate preflight artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: liora-crates-io-utility-preflight
-          path: |
-            target/package/liora-packager-*.crate
-            target/package/liora-updater-*.crate
+          name: liora-crates-io-sdk-preflight
+          path: target/package/liora-*.crate
           if-no-files-found: error
           retention-days: 30
 
-  publish-utility-crates:
-    name: Publish crates.io utility crates
-    needs: package-utility-crates
+  publish-sdk-crates:
+    name: Publish crates.io SDK crates
+    needs: package-sdk-crates
     if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.publish == 'true'
     runs-on: ubuntu-24.04
     environment: crates-io
@@ -132,7 +172,7 @@ jobs:
         run: |
           set -euo pipefail
           if [[ -z "${CARGO_REGISTRY_TOKEN:-}" ]]; then
-            echo "CRATES_IO_TOKEN is required to publish crates.io utility crates." >&2
+            echo "CRATES_IO_TOKEN is required to publish crates.io SDK crates." >&2
             exit 1
           fi
 
@@ -142,9 +182,16 @@ jobs:
 
           crate_dir() {
             case "$1" in
+              liora-theme) echo "crates/liora-theme" ;;
+              liora-core) echo "crates/liora-core" ;;
+              liora-icons) echo "crates/liora-icons" ;;
+              liora-icons-lucide) echo "crates/liora-icons-lucide" ;;
+              liora-components) echo "crates/liora-components" ;;
+              liora-tray) echo "crates/liora-tray" ;;
               liora-packager) echo "crates/liora-packager" ;;
               liora-updater) echo "crates/liora-updater" ;;
-              *) echo "unknown crates.io utility crate: $1" >&2; exit 1 ;;
+              liora) echo "crates/liora" ;;
+              *) echo "unknown crates.io SDK crate: $1" >&2; exit 1 ;;
             esac
           }
 
@@ -154,6 +201,20 @@ jobs:
             local status
             status="$(curl -sS -A "liora-release-sdk/${GITHUB_RUN_ID:-local} (https://github.com/yhyzgn/liora)" -o /dev/null -w '%{http_code}' "https://crates.io/api/v1/crates/${crate}/${version}")"
             [[ "$status" == "200" ]]
+          }
+
+          wait_for_crate() {
+            local crate="$1"
+            local version="$2"
+            for attempt in {1..30}; do
+              if crate_exists "$crate" "$version"; then
+                return 0
+              fi
+              echo "Waiting for ${crate} ${version} to appear in crates.io index (${attempt}/30)..."
+              sleep 10
+            done
+            echo "Timed out waiting for ${crate} ${version} to appear in crates.io." >&2
+            return 1
           }
 
           for crate in $CRATES_IO_CRATES; do
@@ -170,5 +231,6 @@ jobs:
             fi
 
             echo "Publishing ${crate} ${version}..."
-            cargo publish -p "$crate"
+            cargo publish -p "$crate" --no-verify
+            wait_for_crate "$crate" "$version"
           done

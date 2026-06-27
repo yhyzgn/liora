@@ -4,21 +4,27 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-# Official Zed GPUI crates. Pin gpui and gpui_platform to the same upstream revision.
-gpui = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", default-features = false }
+# Liora SDK from crates.io.
+liora = "0.1"
+
+# Keep gpui as a registry dependency, then patch it to the official Zed revision below.
+gpui = { version = "0.2.2", default-features = false }
+
+# gpui_platform is not published on crates.io; final applications depend on it directly from Zed.
 gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", default-features = false }
 
-# Use the facade crate for application development. Pin this to the Liora commit you adopted.
-liora = { git = "https://github.com/yhyzgn/liora", rev = "<liora-commit>" }
+[patch.crates-io]
+# This override makes Liora's transitive gpui dependency use the same official Zed commit.
+gpui = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718" }
 
 [target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
-gpui = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", default-features = false, features = ["wayland", "x11", "font-kit"] }
+gpui = { version = "0.2.2", default-features = false, features = ["wayland", "x11", "font-kit"] }
 gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", default-features = false, features = ["wayland", "x11", "font-kit"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
-gpui = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", default-features = false, features = ["font-kit"] }
+gpui = { version = "0.2.2", default-features = false, features = ["font-kit"] }
 gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", default-features = false, features = ["font-kit"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
-gpui = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", default-features = false }
+gpui = { version = "0.2.2", default-features = false }
 gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", default-features = false }

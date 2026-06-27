@@ -8,8 +8,8 @@ This checklist defines the repository-owned readiness gate for the Liora 0.1.x r
 - Runtime boundary: pure Rust + GPUI native apps only. Do not introduce Tauri, WebView, HTML/CSS/DOM, WASM chart runtimes, or browser shells.
 - Canonical apps: `apps/liora-gallery` and `apps/liora-docs`.
 - Removed sample-app boundary: do not re-add `examples/minimal-app`, `examples/dashboard-app`, `liora-minimal-app`, or `liora-dashboard-app`; their useful adoption and dogfooding behavior lives in Gallery and Docs.
-- Package policy: GPUI-dependent SDK crates (`liora`, `liora-theme`, `liora-core`, `liora-icons`, `liora-icons-lucide`, `liora-components`, `liora-tray`) use the repository license file but remain git-only with `publish = false`; utility crates (`liora-packager`, `liora-updater`) publish to crates.io. App packages and the repository-local `xtask` wrapper remain private workspace packages. `LicenseRef-Liora` remains the explicit package/install metadata until the owner replaces it with formal OSS or commercial terms.
-- GPUI source policy: public SDK manifests must resolve `gpui` and `gpui_platform` from official `https://github.com/zed-industries/zed` git sources at the same pinned revision (currently `2c346f60a76fe3f0367ef924927f50a6efdf5718`) and must not contain renamed GPUI fork dependencies, `[patch.crates-io]`, `[patch."https://github.com/zed-industries/zed"]`, `third_party/zed`, or local path GPUI overrides. The `third_party/zed` snapshot is app-root-only historical verification/reference material and is not part of Liora crates.
+- Package policy: SDK crates (`liora`, `liora-theme`, `liora-core`, `liora-icons`, `liora-icons-lucide`, `liora-components`, `liora-tray`, `liora-packager`, `liora-updater`) use the repository license file and publish to crates.io. App packages and the repository-local `xtask` wrapper remain private workspace packages. `LicenseRef-Liora` remains the explicit package/install metadata until the owner replaces it with formal OSS or commercial terms.
+- GPUI source policy: public SDK manifests must use official `https://github.com/zed-industries/zed` for local development and Cargo's multiple-location `gpui = 0.2.2` registry fallback for crates.io publishing. Downstream applications must use `[patch.crates-io]` to resolve `gpui` to the matching official Zed revision (currently `2c346f60a76fe3f0367ef924927f50a6efdf5718`). Manifests must not contain renamed GPUI fork dependencies, `[patch."https://github.com/zed-industries/zed"]`, `third_party/zed`, or local path GPUI overrides. The `third_party/zed` snapshot is app-root-only historical verification/reference material and is not part of Liora crates.
 
 ## Local RC gates
 
@@ -36,7 +36,7 @@ The GUI smoke commands are expected to exit with status `124` under `timeout` af
 
 Before a tag release, verify these files agree:
 
-- `Cargo.toml` and every workspace package manifest include repository-owned metadata. GPUI-dependent SDK crates (`liora`, `liora-theme`, `liora-core`, `liora-icons`, `liora-icons-lucide`, `liora-components`, `liora-tray`) use `license-file = "../../LICENSE.md"` and `publish = false`; utility crates (`liora-packager`, `liora-updater`) use `license-file = "../../LICENSE.md"` and `publish = true`; apps and `xtask` keep `license = "LicenseRef-Liora"` and `publish = false`.
+- `Cargo.toml` and every workspace package manifest include repository-owned metadata. SDK crates (`liora`, `liora-theme`, `liora-core`, `liora-icons`, `liora-icons-lucide`, `liora-components`, `liora-tray`, `liora-packager`, `liora-updater`) use `license-file = "../../LICENSE.md"` and `publish = true`; apps and `xtask` keep `license = "LicenseRef-Liora"` and `publish = false`.
 - `README.md`, `CHANGELOG.md`, `prompt.md`, `.prompt/P21-release-candidate-readiness.md`, and `.memory/state.md` all describe the same RC boundary.
 - `docs/packaging-installer-technical-plan.md` and `apps/liora-docs/content/pages/packaging_workflow.md` keep packaging as a pure native installer pipeline.
 - `.github/workflows/ci.yml` remains validation-only and must not publish installers or mutate GitHub Releases.
@@ -49,7 +49,7 @@ These items are intentionally outside local developer machines and ordinary CI d
 1. Create and push a real `vX.Y.Z` tag only after the local RC gates pass and the tag matches `crates/liora-packager/Cargo.toml`.
 2. For signed releases, configure macOS signing/notarization inputs (`codesign`, `notarytool`, `stapler`) and Windows signing inputs (`signtool`, timestamp server, certificate secrets), then set `LIORA_REQUIRE_SIGNING=true`; unsigned first-release builds are allowed when that variable is absent.
 3. Run real system-level install/uninstall smoke tests for `.deb`, `.rpm`, AppImage, macOS app/dmg, NSIS, and MSI on dedicated runners or test machines.
-4. Publish GitHub Release app assets only through the protected `package.yml` release path; publish crates.io utility crates only through `release-sdk.yml` with `CRATES_IO_TOKEN`.
+4. Publish GitHub Release app assets only through the protected `package.yml` release path; publish crates.io SDK crates only through `release-sdk.yml` with `CRATES_IO_TOKEN`.
 5. Change license metadata only when the owner formally chooses the replacement license.
 
 ## Completion definition

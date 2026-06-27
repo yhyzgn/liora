@@ -1,11 +1,11 @@
 [package]
 name = "liora-theme"
-version = "0.1.8"
+version = "0.1.9"
 edition = "2024"
 description = "Liora design tokens and theme data for native GPUI components."
 license-file = "../../LICENSE.md"
 repository = "https://github.com/yhyzgn/liora"
-publish = false
+publish = true
 
 [dependencies]
 gpui.workspace = true
