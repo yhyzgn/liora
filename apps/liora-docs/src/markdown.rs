@@ -12,9 +12,9 @@ use liora_components::{
     Link, Loading, Menu, MenuMode, NotificationType, Paragraph, Popconfirm, Popover, Preview,
     Progress, ProgressStatus, QrCode, QrEcLevel, QrFinderStyle, QrGradientDirection, QrModuleStyle,
     Radio, RadioGroup, RadioOptionStyle, Rate, Result as LioraResult, ResultStatus, Segmented,
-    SegmentedOption, Select, Skeleton, SkeletonItem, SkeletonVariant, Slider, Space, Statistic,
-    Switch, Tag as LioraTag, Text, Textarea, Timer, TimerFormat, TimerUnit, Title, Transfer,
-    TransferItem, Tree, TreeNode, Upload, UploadFile, UploadStatus, VirtualizedList,
+    SegmentedOption, Select, Sidebar, Skeleton, SkeletonItem, SkeletonVariant, Slider, Space,
+    Statistic, Switch, Tag as LioraTag, Text, Textarea, Timer, TimerFormat, TimerUnit, Title,
+    Transfer, TransferItem, Tree, TreeNode, Upload, UploadFile, UploadStatus, VirtualizedList,
     VirtualizedTable, VirtualizedTree, WindowFrameMode, frame_mode_switch_row, show_notification,
     toast_error, toast_info, toast_success, toast_warning,
 };
@@ -112,6 +112,7 @@ const RADIO_DOC: &str = include_str!("../content/pages/radio.md");
 const RATE_DOC: &str = include_str!("../content/pages/rate.md");
 const RESULT_DOC: &str = include_str!("../content/pages/result.md");
 const SCROLLBAR_DOC: &str = include_str!("../content/pages/scrollbar.md");
+const SHELL_DOC: &str = include_str!("../content/pages/shell.md");
 const SEGMENTED_DOC: &str = include_str!("../content/pages/segmented.md");
 const SELECT_DOC: &str = include_str!("../content/pages/select.md");
 const SKELETON_DOC: &str = include_str!("../content/pages/skeleton.md");
@@ -433,6 +434,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Select",
         markdown: SELECT_DOC,
+    },
+    DocPage {
+        title: "Shell",
+        markdown: SHELL_DOC,
     },
     DocPage {
         title: "SignalMeter",
@@ -1449,6 +1454,7 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "container/layout.rs" => Some(include_str!("../content/snippets/container/layout.rs")),
         "splitter/basic.rs" => Some(include_str!("../content/snippets/splitter/basic.rs")),
         "scrollbar/basic.rs" => Some(include_str!("../content/snippets/scrollbar/basic.rs")),
+        "shell/basic.rs" => Some(include_str!("../content/snippets/shell/basic.rs")),
         "descriptions/basic.rs" => Some(include_str!("../content/snippets/descriptions/basic.rs")),
         "descriptions/border.rs" => {
             Some(include_str!("../content/snippets/descriptions/border.rs"))
@@ -4838,6 +4844,9 @@ impl Render for LiveDemoContent {
             "ContainerSpace" => container_space_demo(),
             "ContainerDivider" => container_divider_demo(),
             "ContainerLayout" => container_layout_demo(),
+            "ShellBasic" => liora_gallery::demos::render_doc_demo("Shell", _cx)
+                .map(|view| view.into_any_element())
+                .unwrap_or_else(|| Paragraph::with_text("Shell demo is not available.").into_any_element()),
             "SplitterBasic" => liora_components::Splitter::new()
                 .height_md()
                 .bordered()
@@ -7820,15 +7829,12 @@ impl Render for DocsShell {
             )
             .header_height_lg()
             .aside(
-                div()
-                    .flex()
-                    .flex_col()
-                    .h_full()
-                    .min_h_0()
-                    .w_full()
+                Sidebar::new()
+                    .id("docs-sidebar")
+                    .expanded_width(px(280.0))
+                    .scrollable()
                     .child(nav_menu),
             )
-            .aside_width_lg()
             .main_padding_xl()
             .child(
                 div()
@@ -9304,9 +9310,17 @@ mod tests {
     #[test]
     fn docs_shell_uses_native_container_and_menu() {
         let source = include_str!("markdown.rs");
+        let docs_shell_render = source
+            .split("let shell = Container::new()")
+            .nth(1)
+            .and_then(|part| part.split("AppWindowFrame::new").next())
+            .expect("Docs shell should build a Container before AppWindowFrame");
 
         assert!(source.contains("Container::new()"));
+        assert!(docs_shell_render.contains("Sidebar::new()"));
         assert!(source.contains("AppWindowFrame::new"));
+        assert!(docs_shell_render.contains(r#".id("docs-sidebar")"#));
+        assert!(!docs_shell_render.contains(".aside_width_lg()"));
         assert!(source.contains("theme_mode_segmented"));
         assert!(source.contains("ThemeMode::System"));
         let docs_main = include_str!("main.rs");
@@ -9331,6 +9345,7 @@ mod tests {
             .expect("Docs should handle opened window")..];
         assert!(ok_branch.contains("window.activate_window()"));
         assert!(source.contains("frame_mode_switch"));
+        assert!(source.contains("Sidebar::new()"));
         assert!(source.contains("Menu::new()"));
         assert!(source.contains("nav_menu: Option<Entity<Menu>>"));
         assert!(source.contains("menu.set_active_index(active_id, cx);"));
@@ -9703,6 +9718,11 @@ mod tests {
                     "container/divider.rs",
                     "container/layout.rs",
                 ][..],
+            ),
+            (
+                include_str!("../content/pages/shell.md"),
+                "ShellBasic",
+                &["shell/basic.rs"][..],
             ),
             (
                 include_str!("../content/pages/splitter.md"),

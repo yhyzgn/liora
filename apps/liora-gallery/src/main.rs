@@ -4,7 +4,7 @@ use gpui::{
 };
 use liora_components::{
     AppWindowFrame, Button, Card, Checkbox, Container, Dialog, Input, Menu, MenuMode, MenuNode,
-    Paragraph, Segmented, SegmentedOption, Space, Spinner, Switch, Tag, Text, Title,
+    Paragraph, Segmented, SegmentedOption, Sidebar, Space, Spinner, Switch, Tag, Text, Title,
     WindowFrameMode, apply_window_frame_mode, frame_mode_switch_row, init_liora_with_options,
     toast_info, toast_success,
 };
@@ -708,6 +708,7 @@ mod shell_tests {
         let source = include_str!("main.rs");
 
         assert!(source.contains("Container::new()"));
+        assert!(source.contains("Sidebar::new()"));
         assert!(source.contains("Menu::new()"));
         assert!(source.contains(".no_shrink()"));
         assert!(source.contains("init_liora(cx)"));
@@ -715,6 +716,7 @@ mod shell_tests {
         assert!(source.contains("with_assets(liora_icons::IconAssetSource)"));
         assert!(source.contains("nav_filter"));
         assert!(source.contains("nav_menu: Option"));
+        assert!(source.contains(r#".id("gallery-sidebar")"#));
         assert!(source.contains("self.nav_menu = Some"));
         assert!(source.contains("frame_mode_switch"));
         assert!(source.contains("AppWindowFrame::new"));
@@ -757,6 +759,14 @@ mod shell_tests {
         assert!(ok_branch.contains("window.activate_window()"));
         assert!(source.contains("Gallery theme switched"));
         assert!(source.contains("About / 关于"));
+        let production_shell = source
+            .rsplit("let shell = Container::new()")
+            .next()
+            .expect("Gallery production shell should exist")
+            .split("AppWindowFrame::new")
+            .next()
+            .expect("Gallery shell should end before app frame");
+        assert!(!production_shell.contains(".aside_width_lg()"));
         assert!(source.contains("check_gallery_update"));
         assert!(source.contains("PingFangSC-Regular.ttf"));
         assert!(source.contains("require_family(\"PingFang SC\")"));
@@ -917,17 +927,13 @@ impl Render for Gallery {
             .header(header)
             .header_height_lg()
             .aside(
-                div()
-                    .flex()
-                    .flex_col()
-                    .h_full()
-                    .min_h_0()
-                    .gap_2()
-                    .p_2()
-                    .child(div().flex_none().child(self.nav_filter.clone()))
+                Sidebar::new()
+                    .id("gallery-sidebar")
+                    .expanded_width(px(280.0))
+                    .scrollable()
+                    .header(div().w_full().p_2().child(self.nav_filter.clone()))
                     .child(nav_menu),
             )
-            .aside_width_lg()
             .main_scroll()
             .main_padding_xl()
             .child(content)
@@ -1637,17 +1643,18 @@ mod shell_regression_tests {
         assert!(!source.contains("list_state.reset"));
         assert!(!source.contains("timer(Duration::from_millis(24))"));
         let shell = source
-            .split("let shell = Container::new()")
-            .nth(1)
+            .rsplit("let shell = Container::new()")
+            .next()
             .expect("Gallery shell should exist")
             .split("AppWindowFrame::new")
             .next()
             .expect("shell should end before app frame");
-        assert!(shell.contains(".h_full()"));
-        assert!(shell.contains(".min_h_0()"));
+        assert!(shell.contains("Sidebar::new()"));
+        assert!(shell.contains(r#".id("gallery-sidebar")"#));
+        assert!(shell.contains(".expanded_width(px(280.0))"));
+        assert!(shell.contains(".scrollable()"));
         assert!(shell.contains(".child(nav_menu)"));
         assert!(!shell.contains(r#".id("gallery-nav-scroll")"#));
-        assert!(!shell.contains(".overflow_y_scroll()"));
         assert!(!shell.contains(".track_scroll(&self.nav_scroll)"));
         assert!(!source.contains("gallery.refresh_nav_menu_for_query(query, cx);"));
         assert!(!source.contains(

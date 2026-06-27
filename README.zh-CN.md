@@ -399,7 +399,7 @@ fn main() {
                 }),
                 ..Default::default()
             },
-            WindowFrameMode::Server,
+            WindowFrameMode::System,
         );
 
         if let Ok(handle) = cx.open_window(options, |window, cx| {
@@ -744,6 +744,73 @@ let menu = Menu::new()
     });
 ```
 
+### TitleBar 和 Sidebar 应用框架
+
+`TitleBar` 负责原生自定义标题栏、拖动区域和窗口控制按钮；`Sidebar` 负责侧栏宽度、固定 header/footer 和滚动内容区。`Menu`、`Input` 等有状态组件仍应保存在父 View 的 `Entity<T>` 字段中。
+
+```rust
+use gpui::{Context, Entity, Render, Window};
+use liora::components::{
+    AppWindowFrame, Button, Card, Container, Flex, Menu, MenuMode, Sidebar, Space, Text, Title,
+    TitleBar, WindowFrameMode,
+};
+use liora::icons_lucide::IconName;
+
+struct AppShell {
+    menu: Entity<Menu>,
+}
+
+impl AppShell {
+    fn new(cx: &mut Context<Self>) -> Self {
+        Self {
+            menu: cx.new(|_| {
+                Menu::new()
+                    .id("main-nav")
+                    .mode(MenuMode::Vertical)
+                    .default_active("dashboard")
+                    .item("dashboard", "Dashboard", Some(IconName::LayoutDashboard))
+                    .item("settings", "Settings", Some(IconName::Settings))
+            }),
+        }
+    }
+}
+
+impl Render for AppShell {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        AppWindowFrame::new(
+            "Acme Notes",
+            Container::new()
+                .aside(
+                    Sidebar::new()
+                        .id("app-sidebar")
+                        .header(Flex::new().padding_md().child(Text::new("Workspace")))
+                        .child(self.menu.clone())
+                        .footer(Flex::new().padding_md().child(Text::new("v1.0"))),
+                )
+                .child(
+                    Flex::new().padding_lg().child(
+                        Card::new(
+                            Space::new()
+                                .vertical()
+                                .gap_sm()
+                                .child(Title::new("Dashboard").h3())
+                                .child(Text::new("Main content goes here.")),
+                        )
+                        .no_shadow(),
+                    ),
+                ),
+        )
+        .mode(WindowFrameMode::Custom)
+        .titlebar(
+            TitleBar::new()
+                .title("Acme Notes")
+                .subtitle("Native GPUI app")
+                .action(Button::new("New").small()),
+        )
+    }
+}
+```
+
 ### 图表与指标
 
 ```rust
@@ -1085,14 +1152,14 @@ impl Render for OrdersView {
 
 | 分类 | 组件 |
 |---|---|
-| Basic / Layout 基础布局 | `Button`, `ButtonGroup`, `Icon`, `Link`, `Text`, `Title`, `Paragraph`, `Space`, `Divider`, `Row`, `Col`, `Container`, `Flex`, `Scrollbar`, `Splitter`, `Affix`, `Backtop` |
+| Basic / Layout 基础布局 | `Button`, `ButtonGroup`, `Icon`, `Link`, `Text`, `Title`, `Paragraph`, `Space`, `Divider`, `Row`, `Col`, `Container`, `Sidebar`, `TitleBar`, `Flex`, `Scrollbar`, `Splitter`, `Affix`, `Backtop` |
 | Form 表单 | `Input`, `InputNumber`, `Textarea`, `Checkbox`, `CheckboxGroup`, `Radio`, `RadioGroup`, `Switch`, `Select`, `Slider`, `Form`, `FormItem`, `Rate`, `DatePicker`, `TimePicker`, `DateTimePicker`, `Upload`, `Cascader`, `Transfer`, `ColorPicker`, `Autocomplete`, `InputTag`, `Mention`, `TreeSelect`, `OtpInput` |
 | Feedback / Overlay 反馈浮层 | `Alert`, `Tooltip`, `Popover`, `Popconfirm`, `Dialog`, `Drawer`, `Message`, `Notification`, `MessageBox`, `Loading`, `Dropdown`, `DropdownButton`, `Preview`, `Tour` |
 | Navigation 导航 | `Menu`, `Tabs`, `Breadcrumb`, `Steps`, `PageHeader`, `Anchor`, `Accordion` |
 | Data 数据展示 | `Table`, `VirtualizedTable`, `VirtualizedTree`, `VirtualizedList`, `Progress`, `Skeleton`, `Empty`, `Result`, `Descriptions`, `Timeline`, `Tree`, `Pagination`, `Statistic`, `Segmented`, `Tag`, `Avatar`, `Badge`, `Calendar`, `Carousel`, `Image`, `Watermark`, `Kbd` |
 | Charts / Metrics 图表指标 | `LineChart`, `AreaChart`, `BarChart`, `PieChart`, `RingChart`, `Sparkline`, `SignalMeter`, `HeatBar`, `SegmentRatioBar` |
 | Editing / Utility 编辑工具 | `CodeBlock`, `CodeEditor`, `QrCode`, `Timer`, `Label`, `Operation`, draggable list helpers |
-| App shell / Platform 平台 | `WindowFrame`, `liora-tray`, Linux desktop identity helpers, package metadata helpers, updater helpers |
+| App shell / Platform 平台 | `AppWindowFrame`, `TitleBar`, `Sidebar`, `WindowFrameMode`, `liora-tray`, Linux desktop identity helpers, package metadata helpers, updater helpers |
 
 ## 原生打包
 

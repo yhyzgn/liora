@@ -116,6 +116,7 @@ pub mod segment_ratio_bar;
 pub mod segmented;
 pub mod select;
 pub mod selectable_text;
+pub mod sidebar;
 pub mod signal_meter;
 pub mod skeleton;
 pub mod slider;
@@ -135,6 +136,7 @@ pub mod time_picker;
 pub mod timeline;
 pub mod timer;
 pub mod title;
+pub mod titlebar;
 pub mod tooltip;
 pub mod tour;
 pub mod transfer;
@@ -235,6 +237,7 @@ pub use segment_ratio_bar::*;
 pub use segmented::*;
 pub use select::*;
 pub use selectable_text::*;
+pub use sidebar::*;
 pub use signal_meter::*;
 pub use skeleton::*;
 pub use slider::*;
@@ -254,6 +257,7 @@ pub use time_picker::*;
 pub use timeline::*;
 pub use timer::*;
 pub use title::*;
+pub use titlebar::*;
 pub use tooltip::*;
 pub use tour::*;
 pub use transfer::*;
@@ -988,9 +992,37 @@ mod visual_theme_consistency_tests {
             .split("#[cfg(test)]")
             .next()
             .unwrap_or_default();
-        assert!(window_frame.contains("theme.danger.base"));
-        assert!(window_frame.contains("theme.neutral.inverted"));
+        let titlebar = include_str!("titlebar.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap_or_default();
+        assert!(window_frame.contains("TitleBar"));
+        assert!(titlebar.contains("theme.danger.base"));
+        assert!(titlebar.contains("theme.neutral.inverted"));
         assert!(!window_frame.contains("gpui::red()"));
         assert!(!window_frame.contains("gpui::white()"));
+        assert!(!titlebar.contains("gpui::red()"));
+        assert!(!titlebar.contains("gpui::white()"));
+    }
+}
+
+#[cfg(test)]
+mod shell_component_api_tests {
+    use super::*;
+
+    #[test]
+    fn titlebar_and_sidebar_public_builders_are_available() {
+        let _titlebar = TitleBar::new()
+            .title("Liora")
+            .subtitle("Native GPUI shell")
+            .window_controls(true)
+            .draggable(true);
+
+        let _sidebar = Sidebar::new()
+            .id("app-sidebar")
+            .expanded_width(gpui::px(280.0))
+            .collapsed_width(gpui::px(64.0))
+            .scrollable()
+            .collapse_mode(SidebarCollapseMode::Full);
     }
 }

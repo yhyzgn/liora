@@ -400,7 +400,7 @@ fn main() {
                 }),
                 ..Default::default()
             },
-            WindowFrameMode::Server,
+            WindowFrameMode::System,
         );
 
         if let Ok(handle) = cx.open_window(options, |window, cx| {
@@ -745,6 +745,73 @@ let menu = Menu::new()
     });
 ```
 
+### App shell with TitleBar and Sidebar
+
+`TitleBar` owns native custom titlebar chrome and window-control areas. `Sidebar` owns app navigation panel layout, width, fixed header/footer slots, and scrolling. Keep stateful controls such as `Menu` in the parent view as `Entity<T>` fields.
+
+```rust
+use gpui::{Context, Entity, Render, Window};
+use liora::components::{
+    AppWindowFrame, Button, Card, Container, Flex, Menu, MenuMode, Sidebar, Space, Text, Title,
+    TitleBar, WindowFrameMode,
+};
+use liora::icons_lucide::IconName;
+
+struct AppShell {
+    menu: Entity<Menu>,
+}
+
+impl AppShell {
+    fn new(cx: &mut Context<Self>) -> Self {
+        Self {
+            menu: cx.new(|_| {
+                Menu::new()
+                    .id("main-nav")
+                    .mode(MenuMode::Vertical)
+                    .default_active("dashboard")
+                    .item("dashboard", "Dashboard", Some(IconName::LayoutDashboard))
+                    .item("settings", "Settings", Some(IconName::Settings))
+            }),
+        }
+    }
+}
+
+impl Render for AppShell {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        AppWindowFrame::new(
+            "Acme Notes",
+            Container::new()
+                .aside(
+                    Sidebar::new()
+                        .id("app-sidebar")
+                        .header(Flex::new().padding_md().child(Text::new("Workspace")))
+                        .child(self.menu.clone())
+                        .footer(Flex::new().padding_md().child(Text::new("v1.0"))),
+                )
+                .child(
+                    Flex::new().padding_lg().child(
+                        Card::new(
+                            Space::new()
+                                .vertical()
+                                .gap_sm()
+                                .child(Title::new("Dashboard").h3())
+                                .child(Text::new("Main content goes here.")),
+                        )
+                        .no_shadow(),
+                    ),
+                ),
+        )
+        .mode(WindowFrameMode::Custom)
+        .titlebar(
+            TitleBar::new()
+                .title("Acme Notes")
+                .subtitle("Native GPUI app")
+                .action(Button::new("New").small()),
+        )
+    }
+}
+```
+
 ### Charts and metrics
 
 ```rust
@@ -1086,14 +1153,14 @@ impl Render for OrdersView {
 
 | Category | Components |
 |---|---|
-| Basic and layout | `Button`, `ButtonGroup`, `Icon`, `Link`, `Text`, `Title`, `Paragraph`, `Space`, `Divider`, `Row`, `Col`, `Container`, `Flex`, `Scrollbar`, `Splitter`, `Affix`, `Backtop` |
+| Basic and layout | `Button`, `ButtonGroup`, `Icon`, `Link`, `Text`, `Title`, `Paragraph`, `Space`, `Divider`, `Row`, `Col`, `Container`, `Sidebar`, `TitleBar`, `Flex`, `Scrollbar`, `Splitter`, `Affix`, `Backtop` |
 | Form controls | `Input`, `InputNumber`, `Textarea`, `Checkbox`, `CheckboxGroup`, `Radio`, `RadioGroup`, `Switch`, `Select`, `Slider`, `Form`, `FormItem`, `Rate`, `DatePicker`, `TimePicker`, `DateTimePicker`, `Upload`, `Cascader`, `Transfer`, `ColorPicker`, `Autocomplete`, `InputTag`, `Mention`, `TreeSelect`, `OtpInput` |
 | Feedback and overlays | `Alert`, `Tooltip`, `Popover`, `Popconfirm`, `Dialog`, `Drawer`, `Message`, `Notification`, `MessageBox`, `Loading`, `Dropdown`, `DropdownButton`, `Preview`, `Tour` |
 | Navigation | `Menu`, `Tabs`, `Breadcrumb`, `Steps`, `PageHeader`, `Anchor`, `Accordion` |
 | Data display | `Table`, `VirtualizedTable`, `VirtualizedTree`, `VirtualizedList`, `Progress`, `Skeleton`, `Empty`, `Result`, `Descriptions`, `Timeline`, `Tree`, `Pagination`, `Statistic`, `Segmented`, `Tag`, `Avatar`, `Badge`, `Calendar`, `Carousel`, `Image`, `Watermark`, `Kbd` |
 | Charts and metrics | `LineChart`, `AreaChart`, `BarChart`, `PieChart`, `RingChart`, `Sparkline`, `SignalMeter`, `HeatBar`, `SegmentRatioBar` |
 | Editing and utility | `CodeBlock`, `CodeEditor`, `QrCode`, `Timer`, `Label`, `Operation`, draggable list helpers |
-| App shell and platform | `WindowFrame`, `liora-tray`, Linux desktop identity helpers, package metadata helpers, updater helpers |
+| App shell and platform | `AppWindowFrame`, `TitleBar`, `Sidebar`, `WindowFrameMode`, `liora-tray`, Linux desktop identity helpers, package metadata helpers, updater helpers |
 
 ## Native packaging
 

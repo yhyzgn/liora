@@ -60,6 +60,7 @@ pub mod ring_chart_demo;
 pub mod scrollbar_demo;
 pub mod segment_ratio_bar_demo;
 pub mod segmented_demo;
+pub mod shell_demo;
 pub mod signal_meter_demo;
 pub mod skeleton_demo;
 pub mod sparkline_demo;
@@ -499,6 +500,11 @@ pub fn registry() -> Vec<DemoEntry> {
             render: |cx| container_demo::render(cx).into(),
         },
         DemoEntry {
+            name: "Shell 应用框架",
+            description: "TitleBar、Sidebar 和 Container 应用框架",
+            render: |cx| shell_demo::render(cx).into(),
+        },
+        DemoEntry {
             name: "VirtualizedList 虚拟列表",
             description: "可见区渲染长列表",
             render: |cx| virtualized_list_demo::render(cx).into(),
@@ -663,6 +669,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Rate" => Some(form_controls_demo::render_rate(cx)),
         "Result" => Some(result_demo::render(cx).into()),
         "Scrollbar" => Some(scrollbar_demo::render(cx).into()),
+        "Shell" => Some(shell_demo::render(cx).into()),
         "Segmented" => Some(segmented_demo::render(cx).into()),
         "Select" => Some(form_controls_demo::render_select(cx)),
         "Skeleton" => Some(skeleton_demo::render(cx).into()),
