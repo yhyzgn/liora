@@ -299,6 +299,7 @@ impl Menu {
             .cursor_pointer()
             .block_mouse_except_scroll()
             .flex()
+            .flex_none()
             .flex_row()
             .items_center()
             .justify_center()
@@ -355,6 +356,7 @@ impl Menu {
                     .cursor_pointer()
                     .block_mouse_except_scroll()
                     .flex()
+                    .flex_none()
                     .items_center()
                     .justify_center()
                     .w_full()
@@ -480,12 +482,14 @@ impl Menu {
             let toggle_id = id.clone();
             div()
                 .flex()
+                .flex_none()
                 .flex_col()
                 .child(
                     div()
                         .id(element_id(format!("{}-submenu-{}", self.id, id)))
                         .cursor_pointer()
                         .flex()
+                        .flex_none()
                         .flex_row()
                         .items_center()
                         .justify_between()
@@ -549,9 +553,11 @@ impl Menu {
 
         div()
             .flex()
+            .flex_none()
             .flex_col()
             .child(
                 div()
+                    .flex_none()
                     .h(px(30.0))
                     .pl(padding_left)
                     .flex()
@@ -966,6 +972,10 @@ mod tests {
         assert!(source.contains(".min_h_0()"));
         assert!(source.contains("Flex::new()"));
         assert!(source.contains(".id(self.id.clone())"));
+        assert!(
+            source.matches(".flex_none()").count() >= 4,
+            "vertical menu rows must opt out of flex shrinking so fixed-height items create real overflow for Menu-owned scrolling"
+        );
         assert!(
             !source.contains(
                 "this.select_item(id.clone(), window, cx);\n                cx.notify();"

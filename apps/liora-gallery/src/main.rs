@@ -762,8 +762,7 @@ impl Render for Gallery {
         let selected = self.selected.min(self.entries.len());
         self.selected = selected;
 
-        let nav_menu = AnyView::from(self.gallery_nav_menu(selected, cx))
-            .cached(gpui::StyleRefinement::default().flex().flex_col().flex_1());
+        let nav_menu = self.gallery_nav_menu(selected, cx);
 
         let selected_entry = self.entries.get(selected).copied();
         let selected_demo = self.selected_demo(selected, cx);
@@ -1617,15 +1616,19 @@ mod shell_regression_tests {
     }
 
     #[test]
-    fn gallery_nav_menu_is_cached_across_parent_input_repaints() {
+    fn gallery_nav_menu_uses_real_layout_tree_for_scrollable_menu() {
         let source = include_str!("main.rs");
+        let render = source
+            .split("impl Render for Gallery")
+            .nth(1)
+            .expect("Gallery render impl should exist")
+            .split("impl Gallery")
+            .next()
+            .expect("Gallery render impl should end before inherent impl");
 
-        assert!(source.contains("let nav_menu = AnyView::from"));
-        assert!(source.contains("self.gallery_nav_menu(selected, cx)"));
-        assert!(source.contains(".cached("));
-        assert!(source.contains("gpui::StyleRefinement::default()"));
-        assert!(source.contains(".flex_col()"));
-        assert!(source.contains(".flex_1()"));
+        assert!(render.contains("let nav_menu = self.gallery_nav_menu(selected, cx);"));
+        assert!(!render.contains("AnyView::from(self.gallery_nav_menu(selected, cx))"));
+        assert!(!render.contains(".cached("));
     }
 
     #[test]
