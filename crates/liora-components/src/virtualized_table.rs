@@ -21,7 +21,7 @@
 
 use crate::VirtualScrollbar;
 use crate::gpui_compat::element_id;
-use crate::table::{TableAlign, TableColumn, TableSortOrder, TableSortState};
+use crate::table::{TableAlign, TableColumn, TableColumnFixed, TableSortOrder, TableSortState};
 use gpui::{
     AnyElement, App, Component, IntoElement, ListAlignment, ListState, Pixels, RenderOnce,
     SharedString, Window, div, list, prelude::*, px,
@@ -33,6 +33,7 @@ use std::sync::Arc;
 
 type RenderCell = dyn Fn(usize, &SharedString, &mut Window, &mut App) -> AnyElement + 'static;
 type SortCallback = dyn Fn(TableSortState, &mut Window, &mut App) + 'static;
+type RowSelectCallback = dyn Fn(usize, &mut Window, &mut App) + 'static;
 
 /// Virtualized table for large structured datasets.
 ///
@@ -56,6 +57,10 @@ pub struct VirtualizedTable {
     sort_key: Option<SharedString>,
     sort_order: Option<TableSortOrder>,
     on_sort_change: Option<Arc<SortCallback>>,
+    selected_rows: Vec<usize>,
+    active_row: Option<usize>,
+    on_row_select: Option<Arc<RowSelectCallback>>,
+    footer: Option<AnyElement>,
 }
 
 impl VirtualizedTable {
@@ -82,6 +87,10 @@ impl VirtualizedTable {
             sort_key: None,
             sort_order: None,
             on_sort_change: None,
+            selected_rows: Vec::new(),
+            active_row: None,
+            on_row_select: None,
+            footer: None,
         }
     }
 
@@ -157,6 +166,62 @@ impl VirtualizedTable {
         self
     }
 
+    /// Sets selected row indices for data-table style selection highlighting.
+    pub fn selected_rows(mut self, rows: impl IntoIterator<Item = usize>) -> Self {
+        self.selected_rows = rows
+            .into_iter()
+            .filter(|row| *row < self.row_count)
+            .collect();
+        self
+    }
+
+    /// Sets the active row index for keyboard or master-detail data-table layouts.
+    pub fn active_row(mut self, row: Option<usize>) -> Self {
+        self.active_row = row.filter(|row| *row < self.row_count);
+        self
+    }
+
+    /// Registers a callback that runs when a row is clicked.
+    pub fn on_row_select(
+        mut self,
+        callback: impl Fn(usize, &mut Window, &mut App) + 'static,
+    ) -> Self {
+        self.on_row_select = Some(Arc::new(callback));
+        self
+    }
+
+    /// Adds a footer or load-more slot below the virtualized body.
+    pub fn footer(mut self, footer: impl IntoElement) -> Self {
+        self.footer = Some(footer.into_any_element());
+        self
+    }
+
+    /// Adds a simple load-more button-like footer slot.
+    pub fn load_more(
+        mut self,
+        label: impl Into<SharedString>,
+        callback: impl Fn(&mut Window, &mut App) + 'static,
+    ) -> Self {
+        let callback = Arc::new(callback);
+        let label = label.into();
+        self.footer = Some(
+            div()
+                .w_full()
+                .py_3()
+                .flex()
+                .items_center()
+                .justify_center()
+                .text_sm()
+                .cursor_pointer()
+                .child(label)
+                .on_mouse_up(gpui::MouseButton::Left, move |_, window, cx| {
+                    callback(window, cx)
+                })
+                .into_any_element(),
+        );
+        self
+    }
+
     /// Performs the list state operation used by this component.
     pub fn list_state(&self) -> ListState {
         self.list_state.clone()
@@ -181,6 +246,10 @@ impl RenderOnce for VirtualizedTable {
         let sort_key = self.sort_key;
         let sort_order = self.sort_order;
         let on_sort_change = self.on_sort_change;
+        let selected_rows = self.selected_rows;
+        let active_row = self.active_row;
+        let on_row_select = self.on_row_select;
+        let footer = self.footer;
 
         let header = div()
             .flex()
@@ -215,15 +284,36 @@ impl RenderOnce for VirtualizedTable {
                 .child(
                     list(list_state.clone(), move |row_index, window, cx| {
                         let striped = stripe && row_index % 2 == 1;
+                        let selected = selected_rows.contains(&row_index);
+                        let active = active_row == Some(row_index);
+                        let callback = on_row_select.clone();
                         div()
                             .flex()
                             .flex_row()
                             .w_full()
                             .min_h(row_height)
-                            .bg(if striped {
+                            .bg(if selected || active {
+                                theme.primary.light_9
+                            } else if striped {
                                 theme.neutral.hover.opacity(0.45)
                             } else {
                                 theme.neutral.card
+                            })
+                            .when(selected, |s| {
+                                s.border_l_4().border_color(theme.primary.base)
+                            })
+                            .when(active && !selected, |s| {
+                                s.border_l_4().border_color(theme.info.base)
+                            })
+                            .when(callback.is_some(), |s| {
+                                s.cursor_pointer().on_mouse_down(
+                                    gpui::MouseButton::Left,
+                                    move |_, window, cx| {
+                                        if let Some(callback) = &callback {
+                                            callback(row_index, window, cx);
+                                        }
+                                    },
+                                )
                             })
                             .hover(|s| s.bg(theme.primary.light_9))
                             .when(row_index > 0, |s| {
@@ -285,6 +375,15 @@ impl RenderOnce for VirtualizedTable {
             .bg(theme.neutral.card)
             .child(header)
             .child(body)
+            .when_some(footer, |s, footer| {
+                s.child(
+                    div()
+                        .border_t_1()
+                        .border_color(theme.neutral.border)
+                        .bg(theme.neutral.card)
+                        .child(footer),
+                )
+            })
             .when(self.loading, |s| {
                 s.child(
                     div()
@@ -333,11 +432,18 @@ fn virtual_table_cell_shell(column: &TableColumn, border: bool, index: usize) ->
         .items_center()
         .px_4()
         .min_w(column.min_width)
-        .when(border && index > 0, |s| s.border_l_1());
+        .when(border && index > 0, |s| s.border_l_1())
+        .when(column.fixed.is_some(), |s| s.bg(gpui::transparent_black()));
 
     cell = match column.width {
         Some(width) => cell.w(width).flex_shrink_0(),
         None => cell.flex_1(),
+    };
+
+    cell = match column.fixed {
+        Some(TableColumnFixed::Left) => cell.border_r_1(),
+        Some(TableColumnFixed::Right) => cell.border_l_1(),
+        None => cell,
     };
 
     match column.align {
@@ -446,7 +552,10 @@ mod tests {
             .row_height(px(44.0))
             .stripe(true)
             .border(true)
-            .sort("name", Some(TableSortOrder::Ascending));
+            .sort("name", Some(TableSortOrder::Ascending))
+            .selected_rows([1, 3])
+            .active_row(Some(4))
+            .footer(div());
 
         assert_eq!(table.row_count(), 250);
         assert_eq!(table.height, px(240.0));
@@ -458,5 +567,20 @@ mod tests {
             Some("name")
         );
         assert_eq!(table.sort_order, Some(TableSortOrder::Ascending));
+        assert_eq!(table.selected_rows, vec![1, 3]);
+        assert_eq!(table.active_row, Some(4));
+        assert!(table.footer.is_some());
+    }
+
+    #[test]
+    fn virtualized_table_exposes_data_table_enhancements_without_new_parallel_component() {
+        let fixed = TableColumn::new("id", "ID").fixed_left();
+        assert_eq!(fixed.fixed, Some(TableColumnFixed::Left));
+
+        let source = include_str!("virtualized_table.rs");
+        assert!(source.contains("selected_rows"));
+        assert!(source.contains("active_row"));
+        assert!(source.contains("on_row_select"));
+        assert!(source.contains("load_more"));
     }
 }

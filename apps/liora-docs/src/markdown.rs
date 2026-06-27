@@ -1193,6 +1193,9 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "virtualized_table/sortable.rs" => Some(include_str!(
             "../content/snippets/virtualized_table/sortable.rs"
         )),
+        "virtualized_table/data_table.rs" => Some(include_str!(
+            "../content/snippets/virtualized_table/data_table.rs"
+        )),
         "virtualized_tree/basic.rs" => Some(include_str!(
             "../content/snippets/virtualized_tree/basic.rs"
         )),
@@ -3389,6 +3392,11 @@ impl Render for LiveDemoContent {
             ),
             "VirtualizedTableBasic" => virtualized_table_demo(false, None, None).into_any_element(),
             "VirtualizedTableSortable" => self.virtualized_table_sortable_demo(_cx),
+            "VirtualizedTableDataTable" => virtualized_table_demo(false, None, None)
+                .selected_rows([1, 3, 5])
+                .active_row(Some(8))
+                .load_more("加载更多数据", |_, _| {})
+                .into_any_element(),
             "VirtualizedTreeBasic" | "VirtualizedTreeCheckable" => demo_stack(
                 self.virtualized_trees
                     .iter()

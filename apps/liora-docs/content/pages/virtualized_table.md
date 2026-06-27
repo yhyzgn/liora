@@ -31,6 +31,17 @@
 ```rust src="virtualized_table/sortable.rs"
 ```
 
+## DataTable 增强：选择、固定列和 load more
+
+### 效果
+
+::LioraDemo{component="VirtualizedTableDataTable"}::
+
+### 代码
+
+```rust src="virtualized_table/data_table.rs"
+```
+
 ## 设计说明
 
 `VirtualizedTable` 和普通 `Table` 的差异在于数据流：普通 `Table` 接收完整 `TableRow` 列表；虚拟表格只接收总行数和单元格渲染闭包。这样可以避免万级行一次性创建所有 GPUI 元素，也避免把 frame-local 元素缓存到组件状态中。

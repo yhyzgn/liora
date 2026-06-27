@@ -733,6 +733,8 @@ mod virtualized_list_basic;
 mod virtualized_list_draggable;
 #[path = "../../content/snippets/virtualized_table/basic.rs"]
 mod virtualized_table_basic;
+#[path = "../../content/snippets/virtualized_table/data_table.rs"]
+mod virtualized_table_data_table;
 #[path = "../../content/snippets/virtualized_table/sortable.rs"]
 mod virtualized_table_sortable;
 #[path = "../../content/snippets/virtualized_tree/basic.rs"]

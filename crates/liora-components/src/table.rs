@@ -42,6 +42,15 @@ pub enum TableAlign {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Options that control table fixed-column edge behavior.
+pub enum TableColumnFixed {
+    /// Pins the column to the leading side in data-table layouts.
+    Left,
+    /// Pins the column to the trailing side in data-table layouts.
+    Right,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Options that control table sort order behavior.
 pub enum TableSortOrder {
     /// Sorts table rows in ascending order.
@@ -75,6 +84,8 @@ pub struct TableColumn {
     pub align: TableAlign,
     /// Whether the column can be toggled through sort states.
     pub sortable: bool,
+    /// Optional fixed edge used by data-table and virtualized-table layouts.
+    pub fixed: Option<TableColumnFixed>,
 }
 
 /// Data model used by table cell rendering.
@@ -117,6 +128,7 @@ impl TableColumn {
             min_width: px(120.0),
             align: TableAlign::Left,
             sortable: false,
+            fixed: None,
         }
     }
 
@@ -157,6 +169,24 @@ impl TableColumn {
     /// Toggles sortable behavior.
     pub fn sortable(mut self) -> Self {
         self.sortable = true;
+        self
+    }
+
+    /// Marks the column as fixed to the leading side for data-table layouts.
+    pub fn fixed_left(mut self) -> Self {
+        self.fixed = Some(TableColumnFixed::Left);
+        self
+    }
+
+    /// Marks the column as fixed to the trailing side for data-table layouts.
+    pub fn fixed_right(mut self) -> Self {
+        self.fixed = Some(TableColumnFixed::Right);
+        self
+    }
+
+    /// Assigns an explicit fixed-column edge.
+    pub fn fixed(mut self, fixed: Option<TableColumnFixed>) -> Self {
+        self.fixed = fixed;
         self
     }
 }

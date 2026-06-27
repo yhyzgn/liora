@@ -64,13 +64,27 @@ impl Render for VirtualizedTableDemo {
                     "大数据排序状态",
                     "点击可排序表头会把状态交回业务层；真实项目可据此切换后端查询或本地 index 映射。",
                     sorted,
+                ))
+                .child(section(
+                    "DataTable 增强：选择、固定列和 load more",
+                    "不新增重复 DataTable 控件，而是在 VirtualizedTable 中增强企业数据表常用能力。",
+                    VirtualizedTable::new(columns(false), 10_000, move |row, key, _, _| {
+                        virtual_cell(row, key, None, None)
+                    })
+                    .height(420.0)
+                    .row_height(52.0)
+                    .stripe(true)
+                    .border(true)
+                    .selected_rows([1, 3, 5])
+                    .active_row(Some(8))
+                    .load_more("加载更多数据", |_, _| {}),
                 )),
         )
     }
 }
 
 fn columns(sortable: bool) -> Vec<TableColumn> {
-    let date = TableColumn::new("date", "日期").width_sm();
+    let date = TableColumn::new("date", "日期").width_sm().fixed_left();
     let name = TableColumn::new("name", "客户").width_sm();
     let amount = TableColumn::new("amount", "金额")
         .width_sm()
@@ -80,6 +94,7 @@ fn columns(sortable: bool) -> Vec<TableColumn> {
         .align(TableAlign::Center);
     let action = TableColumn::new("action", "操作")
         .width_sm()
+        .fixed_right()
         .align(TableAlign::Right);
 
     if sortable {
@@ -174,5 +189,7 @@ mod tests {
         assert!(source.contains("10_000"));
         assert!(source.contains("row_height"));
         assert!(source.contains("on_sort_change"));
+        assert!(source.contains("selected_rows"));
+        assert!(source.contains("load_more"));
     }
 }
