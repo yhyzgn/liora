@@ -555,6 +555,12 @@ mod statistic_basic;
 mod statistic_icons;
 #[path = "../../content/snippets/statistic/layout.rs"]
 mod statistic_layout;
+#[path = "../../content/snippets/status_bar/custom.rs"]
+mod status_bar_custom;
+#[path = "../../content/snippets/status_bar/shell.rs"]
+mod status_bar_shell;
+#[path = "../../content/snippets/status_bar/tones.rs"]
+mod status_bar_tones;
 #[path = "../../content/snippets/steps/basic.rs"]
 mod steps_basic;
 #[path = "../../content/snippets/steps/description.rs"]

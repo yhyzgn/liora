@@ -70,6 +70,7 @@ pub mod sparkline_demo;
 pub mod spinner_demo;
 pub mod splitter_demo;
 pub mod statistic_demo;
+pub mod status_bar_demo;
 pub mod steps_demo;
 pub mod table_demo;
 pub mod tabs_demo;
@@ -655,6 +656,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Kbd" => Some(kbd_demo::render(cx).into()),
         "OtpInput" => Some(otp_input_demo::render(cx).into()),
         "Spinner" => Some(spinner_demo::render(cx).into()),
+        "StatusBar" => Some(status_bar_demo::render(cx).into()),
         "Operation" => Some(operation_demo::render(cx).into()),
         "SegmentRatioBar" => Some(segment_ratio_bar_demo::render(cx).into()),
         "SignalMeter" => Some(signal_meter_demo::render(cx).into()),

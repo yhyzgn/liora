@@ -87,6 +87,7 @@ const FORM_DOC: &str = include_str!("../content/pages/form.md");
 const HEAT_BAR_DOC: &str = include_str!("../content/pages/heat_bar.md");
 const LABEL_DOC: &str = include_str!("../content/pages/label.md");
 const SPINNER_DOC: &str = include_str!("../content/pages/spinner.md");
+const STATUS_BAR_DOC: &str = include_str!("../content/pages/status_bar.md");
 const OTP_INPUT_DOC: &str = include_str!("../content/pages/otp_input.md");
 const KBD_DOC: &str = include_str!("../content/pages/kbd.md");
 const OPERATION_DOC: &str = include_str!("../content/pages/operation.md");
@@ -480,6 +481,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Spinner",
         markdown: SPINNER_DOC,
+    },
+    DocPage {
+        title: "StatusBar",
+        markdown: STATUS_BAR_DOC,
     },
     DocPage {
         title: "Splitter",
@@ -1255,6 +1260,9 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         }
         "spinner/colors.rs" => Some(include_str!("../content/snippets/spinner/colors.rs")),
         "spinner/sizes.rs" => Some(include_str!("../content/snippets/spinner/sizes.rs")),
+        "status_bar/shell.rs" => Some(include_str!("../content/snippets/status_bar/shell.rs")),
+        "status_bar/tones.rs" => Some(include_str!("../content/snippets/status_bar/tones.rs")),
+        "status_bar/custom.rs" => Some(include_str!("../content/snippets/status_bar/custom.rs")),
         "operation/basic.rs" => Some(include_str!("../content/snippets/operation/basic.rs")),
         "segment_ratio_bar/top.rs" => {
             Some(include_str!("../content/snippets/segment_ratio_bar/top.rs"))
@@ -3178,6 +3186,10 @@ impl Render for LiveDemoContent {
             "TrayNestedMenu" => Card::new(docs_tray_nested_menu()).no_shadow().into_any_element(),
             "TypographyParagraph" => Card::new(docs_typography_paragraph(_cx)).no_shadow().into_any_element(),
 
+
+            "StatusBarShell" => docs_status_bar_shell(),
+            "StatusBarTones" => docs_status_bar_tones(),
+            "StatusBarCustom" => docs_status_bar_custom(),
             "SearchableListBasic" => docs_searchable_list_basic(),
             "SearchableListFiltered" => docs_searchable_list_filtered(),
             "SearchableListEmpty" => docs_searchable_list_empty(),
@@ -5466,6 +5478,105 @@ impl Render for LiveDemoContent {
             ),
         }
     }
+}
+
+fn docs_status_bar_shell() -> AnyElement {
+    docs_status_bar_preview(
+        liora_components::StatusBar::new()
+            .left_item(
+                liora_components::StatusBarItem::new("Ready")
+                    .success()
+                    .icon(IconName::CircleCheck)
+                    .pill(),
+            )
+            .left_item(
+                liora_components::StatusBarItem::new("Syncing")
+                    .loading(true)
+                    .info(),
+            )
+            .center_item(
+                liora_components::StatusBarItem::new("src/main.rs")
+                    .primary()
+                    .icon(IconName::FileCode),
+            )
+            .right_item(liora_components::StatusBarItem::new("UTF-8").compact())
+            .right_item(liora_components::StatusBarItem::new("Ln 42, Col 7").compact())
+            .right_item(liora_components::StatusBarItem::new("v0.1.12").pill()),
+    )
+}
+
+fn docs_status_bar_tones() -> AnyElement {
+    docs_status_bar_preview(
+        liora_components::StatusBar::new()
+            .left_item(
+                liora_components::StatusBarItem::new("Connected")
+                    .success()
+                    .icon(IconName::Wifi)
+                    .detail("42ms")
+                    .pill(),
+            )
+            .left_item(
+                liora_components::StatusBarItem::new("Queue")
+                    .warning()
+                    .icon(IconName::Clock3)
+                    .detail("3 jobs"),
+            )
+            .center_item(
+                liora_components::StatusBarItem::new("Preview mode")
+                    .primary()
+                    .icon(IconName::Monitor),
+            )
+            .right_item(
+                liora_components::StatusBarItem::new("Offline cache")
+                    .danger()
+                    .icon(IconName::WifiOff)
+                    .pill(),
+            ),
+    )
+}
+
+fn docs_status_bar_custom() -> AnyElement {
+    docs_status_bar_preview(
+        liora_components::StatusBar::new()
+            .height(px(38.0))
+            .left_item(
+                liora_components::StatusBarItem::new("Workspace: Liora").icon(IconName::FolderOpen),
+            )
+            .center_item(liora_components::StatusBarItem::custom(
+                Space::new()
+                    .gap_sm()
+                    .child(
+                        Button::new("Run")
+                            .small()
+                            .primary()
+                            .icon_start(IconName::Play),
+                    )
+                    .child(Button::new("Build").small().icon_start(IconName::Hammer)),
+            ))
+            .right_item(
+                liora_components::StatusBarItem::new("Native GPUI")
+                    .info()
+                    .pill(),
+            ),
+    )
+}
+
+fn docs_status_bar_preview(status_bar: liora_components::StatusBar) -> AnyElement {
+    div()
+        .w(px(720.0))
+        .rounded_lg()
+        .border_1()
+        .overflow_hidden()
+        .child(
+            div()
+                .min_h(px(112.0))
+                .flex()
+                .items_center()
+                .justify_center()
+                .child(Text::new("Application workspace").sm()),
+        )
+        .child(status_bar)
+        .into_any_element()
 }
 
 fn docs_combobox_framework_items() -> Vec<liora_components::SearchableListItem> {

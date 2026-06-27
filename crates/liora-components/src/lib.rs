@@ -128,6 +128,7 @@ pub mod sparkline;
 pub mod spinner;
 pub mod splitter;
 pub mod statistic;
+pub mod status_bar;
 pub mod steps;
 pub mod switch;
 pub mod table;
@@ -252,6 +253,7 @@ pub use sparkline::*;
 pub use spinner::*;
 pub use splitter::*;
 pub use statistic::*;
+pub use status_bar::*;
 pub use steps::*;
 pub use switch::*;
 pub use table::*;
@@ -1135,7 +1137,9 @@ mod component_backlog_export_tests {
             .expect("production exports should precede tests");
         assert!(source.contains("pub mod searchable_list;"));
         assert!(source.contains("pub mod combobox;"));
+        assert!(source.contains("pub mod status_bar;"));
         assert!(source.contains("pub use searchable_list::*;"));
         assert!(source.contains("pub use combobox::*;"));
+        assert!(source.contains("pub use status_bar::*;"));
     }
 }
