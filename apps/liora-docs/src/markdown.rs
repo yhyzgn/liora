@@ -139,6 +139,7 @@ const SWITCH_DOC: &str = include_str!("../content/pages/switch.md");
 const TABLE_DOC: &str = include_str!("../content/pages/table.md");
 const TABS_DOC: &str = include_str!("../content/pages/tabs.md");
 const TAG_DOC: &str = include_str!("../content/pages/tag.md");
+const TEXT_VIEW_DOC: &str = include_str!("../content/pages/text_view.md");
 const TEXTAREA_DOC: &str = include_str!("../content/pages/textarea.md");
 const TIME_PICKER_DOC: &str = include_str!("../content/pages/time_picker.md");
 const TIMER_DOC: &str = include_str!("../content/pages/timer.md");
@@ -524,6 +525,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Tag",
         markdown: TAG_DOC,
+    },
+    DocPage {
+        title: "TextView",
+        markdown: TEXT_VIEW_DOC,
     },
     DocPage {
         title: "Textarea",
@@ -1330,6 +1335,9 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "input_number/precision.rs" => Some(include_str!(
             "../content/snippets/input_number/precision.rs"
         )),
+        "text_view/blocks.rs" => Some(include_str!("../content/snippets/text_view/blocks.rs")),
+        "text_view/markdown.rs" => Some(include_str!("../content/snippets/text_view/markdown.rs")),
+        "text_view/inline.rs" => Some(include_str!("../content/snippets/text_view/inline.rs")),
         "textarea/basic.rs" => Some(include_str!("../content/snippets/textarea/basic.rs")),
         "textarea/limit.rs" => Some(include_str!("../content/snippets/textarea/limit.rs")),
         "checkbox/basic.rs" => Some(include_str!("../content/snippets/checkbox/basic.rs")),
@@ -3236,6 +3244,45 @@ impl Render for LiveDemoContent {
             "TypographyParagraph" => Card::new(docs_typography_paragraph(_cx)).no_shadow().into_any_element(),
 
 
+            "TextViewBlocks" => demo_row(vec![
+                liora_components::TextView::new([
+                    liora_components::TextViewBlock::heading(2, "Application bootstrap"),
+                    liora_components::TextViewBlock::paragraph("Initialize Liora once, then compose native GPUI windows with reusable components."),
+                    liora_components::TextViewBlock::quote("TextView is lightweight; use Docs for full documentation chrome."),
+                    liora_components::TextViewBlock::unordered([
+                        "Native selectable text",
+                        "Theme-aware quote and code surfaces",
+                        "Copyable code blocks",
+                    ]),
+                    liora_components::TextViewBlock::code("liora_components::init_liora(cx);", "rust"),
+                ])
+                .framed(true)
+                .max_width(gpui::px(760.0))
+                .into_any_element(),
+            ]),
+            "TextViewMarkdown" => demo_row(vec![
+                liora_components::TextView::from_plain_markdown(
+                    "# Release notes\n\nLiora renders app documents as native GPUI elements.\n\n> Keep SDK docs close to product behavior.\n\n1. Parse a small Markdown subset\n2. Render reusable component blocks\n\n```rust\nTextView::from_plain_markdown(markdown)\n```",
+                )
+                .framed(true)
+                .max_width(gpui::px(760.0))
+                .into_any_element(),
+            ]),
+            "TextViewInline" => demo_row(vec![
+                liora_components::TextView::new([
+                    liora_components::TextViewBlock::heading(3, "Inline help"),
+                    liora_components::TextViewBlock::paragraph("Use max_width for readable line length and selectable(false) for decorative guidance."),
+                    liora_components::TextViewBlock::Divider,
+                    liora_components::TextViewBlock::ordered([
+                        "Keep content concise",
+                        "Use real components",
+                        "Avoid browser runtime",
+                    ]),
+                ])
+                .selectable(false)
+                .max_width(gpui::px(680.0))
+                .into_any_element(),
+            ]),
             "SettingsPageBasic" => docs_settings_page_basic(self),
             "SettingsSensitive" => docs_settings_sensitive(self),
             "SheetPlacements" => demo_row(vec![

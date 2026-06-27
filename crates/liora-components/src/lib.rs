@@ -138,6 +138,7 @@ pub mod table;
 pub mod tabs;
 pub mod tag;
 pub mod text;
+pub mod text_view;
 pub mod textarea;
 pub mod time_picker;
 pub mod timeline;
@@ -266,6 +267,7 @@ pub use table::*;
 pub use tabs::*;
 pub use tag::*;
 pub use text::*;
+pub use text_view::*;
 pub use textarea::*;
 pub use time_picker::*;
 pub use timeline::*;
@@ -440,6 +442,7 @@ mod application_init_api_tests {
             ("tabs.rs", include_str!("tabs.rs")),
             ("tag.rs", include_str!("tag.rs")),
             ("text.rs", include_str!("text.rs")),
+            ("text_view.rs", include_str!("text_view.rs")),
             ("textarea.rs", include_str!("textarea.rs")),
             ("time_picker.rs", include_str!("time_picker.rs")),
             ("timeline.rs", include_str!("timeline.rs")),
@@ -1148,11 +1151,13 @@ mod component_backlog_export_tests {
         assert!(source.contains("pub mod sheet;"));
         assert!(source.contains("pub mod settings;"));
         assert!(source.contains("pub mod candlestick_chart;"));
+        assert!(source.contains("pub mod text_view;"));
         assert!(source.contains("pub use searchable_list::*;"));
         assert!(source.contains("pub use combobox::*;"));
         assert!(source.contains("pub use status_bar::*;"));
         assert!(source.contains("pub use sheet::*;"));
         assert!(source.contains("pub use settings::*;"));
         assert!(source.contains("pub use candlestick_chart::*;"));
+        assert!(source.contains("pub use text_view::*;"));
     }
 }

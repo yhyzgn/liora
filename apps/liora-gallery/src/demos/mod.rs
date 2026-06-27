@@ -78,6 +78,7 @@ pub mod steps_demo;
 pub mod table_demo;
 pub mod tabs_demo;
 pub mod tag_demo;
+pub mod text_view_demo;
 pub mod theme_demo;
 pub mod time_picker_demo;
 pub mod timeline_demo;
@@ -231,6 +232,11 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "Rate 评分",
             description: "独立评分用法",
             render: |cx| form_controls_demo::render_rate(cx),
+        },
+        DemoEntry {
+            name: "TextView 文档视图",
+            description: "轻量文档块和 Markdown 子集渲染",
+            render: |cx| text_view_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Settings UI 设置页",
@@ -722,6 +728,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Steps" => Some(steps_demo::render(cx).into()),
         "Switch" => Some(form_controls_demo::render_switch(cx)),
         "Table" => Some(table_demo::render(cx).into()),
+        "TextView" => Some(text_view_demo::render(cx).into()),
         "Theme" => Some(theme_demo::render(cx).into()),
         "Tabs" => Some(tabs_demo::render(cx).into()),
         "Tag" => Some(tag_demo::render(cx).into()),

@@ -625,6 +625,12 @@ mod tag_sizes;
 mod tag_themes;
 #[path = "../../content/snippets/tag/types.rs"]
 mod tag_types;
+#[path = "../../content/snippets/text_view/blocks.rs"]
+mod text_view_blocks;
+#[path = "../../content/snippets/text_view/inline.rs"]
+mod text_view_inline;
+#[path = "../../content/snippets/text_view/markdown.rs"]
+mod text_view_markdown;
 #[path = "../../content/snippets/textarea/basic.rs"]
 mod textarea_basic;
 #[path = "../../content/snippets/textarea/limit.rs"]
