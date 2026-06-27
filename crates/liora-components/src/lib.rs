@@ -49,6 +49,7 @@ pub mod breadcrumb;
 pub mod button;
 pub mod button_group;
 pub mod calendar;
+pub mod candlestick_chart;
 pub mod card;
 pub mod carousel;
 pub mod cascader;
@@ -169,6 +170,7 @@ pub use breadcrumb::*;
 pub use button::*;
 pub use button_group::*;
 pub use calendar::*;
+pub use candlestick_chart::*;
 pub use card::*;
 pub use carousel::*;
 pub use cascader::*;
@@ -360,6 +362,7 @@ mod application_init_api_tests {
             ("card.rs", include_str!("card.rs")),
             ("carousel.rs", include_str!("carousel.rs")),
             ("cascader.rs", include_str!("cascader.rs")),
+            ("candlestick_chart.rs", include_str!("candlestick_chart.rs")),
             ("chart.rs", include_str!("chart.rs")),
             ("chart_frame.rs", include_str!("chart_frame.rs")),
             ("chart_scale.rs", include_str!("chart_scale.rs")),
@@ -1144,10 +1147,12 @@ mod component_backlog_export_tests {
         assert!(source.contains("pub mod status_bar;"));
         assert!(source.contains("pub mod sheet;"));
         assert!(source.contains("pub mod settings;"));
+        assert!(source.contains("pub mod candlestick_chart;"));
         assert!(source.contains("pub use searchable_list::*;"));
         assert!(source.contains("pub use combobox::*;"));
         assert!(source.contains("pub use status_bar::*;"));
         assert!(source.contains("pub use sheet::*;"));
         assert!(source.contains("pub use settings::*;"));
+        assert!(source.contains("pub use candlestick_chart::*;"));
     }
 }

@@ -117,6 +117,12 @@ mod button_types;
 mod calendar_events;
 #[path = "../../content/snippets/calendar/range.rs"]
 mod calendar_range;
+#[path = "../../content/snippets/candlestick_chart/basic.rs"]
+mod candlestick_chart_basic;
+#[path = "../../content/snippets/candlestick_chart/custom.rs"]
+mod candlestick_chart_custom;
+#[path = "../../content/snippets/candlestick_chart/dense.rs"]
+mod candlestick_chart_dense;
 #[path = "../../content/snippets/card/basic.rs"]
 mod card_basic;
 #[path = "../../content/snippets/card/footer.rs"]

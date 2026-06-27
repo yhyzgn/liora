@@ -62,6 +62,7 @@ const AVATAR_DOC: &str = include_str!("../content/pages/avatar.md");
 const BACKTOP_DOC: &str = include_str!("../content/pages/backtop.md");
 const BADGE_DOC: &str = include_str!("../content/pages/badge.md");
 const BAR_CHART_DOC: &str = include_str!("../content/pages/bar_chart.md");
+const CANDLESTICK_CHART_DOC: &str = include_str!("../content/pages/candlestick_chart.md");
 const BREADCRUMB_DOC: &str = include_str!("../content/pages/breadcrumb.md");
 const CALENDAR_DOC: &str = include_str!("../content/pages/calendar.md");
 const BUTTON_DOC: &str = include_str!("../content/pages/button.md");
@@ -603,6 +604,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "BarChart",
         markdown: BAR_CHART_DOC,
+    },
+    DocPage {
+        title: "CandlestickChart",
+        markdown: CANDLESTICK_CHART_DOC,
     },
     DocPage {
         title: "LineChart",
@@ -1247,6 +1252,15 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "badge/dot.rs" => Some(include_str!("../content/snippets/badge/dot.rs")),
         "input_number/basic.rs" => Some(include_str!("../content/snippets/input_number/basic.rs")),
         "bar_chart/basic.rs" => Some(include_str!("../content/snippets/bar_chart/basic.rs")),
+        "candlestick_chart/basic.rs" => Some(include_str!(
+            "../content/snippets/candlestick_chart/basic.rs"
+        )),
+        "candlestick_chart/custom.rs" => Some(include_str!(
+            "../content/snippets/candlestick_chart/custom.rs"
+        )),
+        "candlestick_chart/dense.rs" => Some(include_str!(
+            "../content/snippets/candlestick_chart/dense.rs"
+        )),
         "bar_chart/grouped.rs" => Some(include_str!("../content/snippets/bar_chart/grouped.rs")),
         "bar_chart/gradient.rs" => Some(include_str!("../content/snippets/bar_chart/gradient.rs")),
         "bar_chart/per_bar_gradient.rs" => Some(include_str!(
@@ -4067,6 +4081,54 @@ impl Render for LiveDemoContent {
                         .horizontal_between(),
                 )
                 .width_lg()
+                .into_any_element(),
+            ]),
+            "CandlestickChartBasic" => demo_row(vec![
+                liora_components::CandlestickChart::new([
+                    liora_components::CandlestickPoint::new("Mon", 102.0, 112.0, 98.0, 109.0).volume(12_400.0),
+                    liora_components::CandlestickPoint::new("Tue", 109.0, 115.0, 104.0, 106.0).volume(15_800.0),
+                    liora_components::CandlestickPoint::new("Wed", 106.0, 121.0, 105.0, 118.0).volume(18_600.0),
+                    liora_components::CandlestickPoint::new("Thu", 118.0, 124.0, 111.0, 114.0).volume(16_100.0),
+                    liora_components::CandlestickPoint::new("Fri", 114.0, 128.0, 113.0, 126.0).volume(21_900.0),
+                ])
+                .height(gpui::px(320.0))
+                .show_legend(true)
+                .tooltip_hit_radius(gpui::px(12.0))
+                .into_any_element(),
+            ]),
+            "CandlestickChartCustom" => demo_row(vec![
+                liora_components::CandlestickChart::new([
+                    liora_components::CandlestickPoint::new("09:30", 88.0, 94.0, 85.0, 92.0),
+                    liora_components::CandlestickPoint::new("10:00", 92.0, 96.0, 89.0, 90.0),
+                    liora_components::CandlestickPoint::new("10:30", 90.0, 101.0, 88.0, 99.0),
+                    liora_components::CandlestickPoint::new("11:00", 99.0, 103.0, 95.0, 97.0),
+                    liora_components::CandlestickPoint::new("11:30", 97.0, 108.0, 96.0, 106.0),
+                ])
+                .height(gpui::px(300.0))
+                .up_color(gpui::rgb(0x14b8a6).into())
+                .down_color(gpui::rgb(0xf43f5e).into())
+                .body_width(gpui::px(12.0))
+                .wick_width(gpui::px(2.0))
+                .max_axis_labels(5)
+                .into_any_element(),
+            ]),
+            "CandlestickChartDense" => demo_row(vec![
+                liora_components::CandlestickChart::new((0..48).map(|index| {
+                    let base = 110.0 + (index as f64 * 0.36) + ((index % 7) as f64 - 3.0) * 1.6;
+                    let open = base + ((index % 5) as f64 - 2.0) * 0.9;
+                    let close = base + (((index + 2) % 5) as f64 - 2.0) * 1.2;
+                    let high = open.max(close) + 3.0 + (index % 4) as f64;
+                    let low = open.min(close) - 2.6 - (index % 3) as f64;
+                    liora_components::CandlestickPoint::new(format!("D{}", index + 1), open, high, low, close)
+                }))
+                .height(gpui::px(340.0))
+                .up_color(gpui::green())
+                .down_color(gpui::red())
+                .max_render_points(28)
+                .max_axis_labels(8)
+                .max_value_labels(8)
+                .show_value_labels(true)
+                .value_label_content(liora_components::ChartValueLabelContent::Value)
                 .into_any_element(),
             ]),
             "BarChartBasic" => demo_row(vec![

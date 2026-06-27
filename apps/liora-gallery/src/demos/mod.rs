@@ -11,6 +11,7 @@ pub mod bar_chart_demo;
 pub mod breadcrumb_demo;
 pub mod button_demo;
 pub mod calendar_demo;
+pub mod candlestick_chart_demo;
 pub mod card_demo;
 pub mod carousel_demo;
 pub mod cascader_demo;
@@ -205,6 +206,11 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "Switch 开关",
             description: "独立开关用法",
             render: |cx| form_controls_demo::render_switch(cx),
+        },
+        DemoEntry {
+            name: "CandlestickChart K 线图",
+            description: "OHLC 蜡烛图和行情区间展示",
+            render: |cx| candlestick_chart_demo::render(cx).into(),
         },
         DemoEntry {
             name: "SearchableList 可搜索列表",
@@ -646,6 +652,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "InputTag" => Some(input_tag_demo::render(cx).into()),
         "Card" => Some(card_demo::render(cx).into()),
         "Cascader" => Some(cascader_demo::render(cx).into()),
+        "CandlestickChart" => Some(candlestick_chart_demo::render(cx).into()),
         "Checkbox" => Some(form_controls_demo::render_checkbox(cx)),
         "CodeBlock" => Some(code_block_demo::render(cx).into()),
         "CodeEditor" => Some(code_editor_demo::render(cx).into()),
