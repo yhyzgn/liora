@@ -18,6 +18,7 @@ pub mod code_block_demo;
 pub mod code_editor_demo;
 pub mod collapse_demo;
 pub mod color_picker_demo;
+pub mod combobox_demo;
 pub mod container_demo;
 pub mod date_picker_demo;
 pub mod date_time_picker_demo;
@@ -58,6 +59,7 @@ pub mod qr_code_demo;
 pub mod result_demo;
 pub mod ring_chart_demo;
 pub mod scrollbar_demo;
+pub mod searchable_list_demo;
 pub mod segment_ratio_bar_demo;
 pub mod segmented_demo;
 pub mod shell_demo;
@@ -152,6 +154,11 @@ pub fn registry() -> Vec<DemoEntry> {
             render: |cx| tag_demo::render(cx).into(),
         },
         DemoEntry {
+            name: "Combobox 组合选择器",
+            description: "可搜索单选/多选下拉，支持分组和 footer",
+            render: |cx| combobox_demo::render(cx).into(),
+        },
+        DemoEntry {
             name: "Autocomplete 自动补全",
             description: "输入建议与快捷选择",
             render: |cx| autocomplete_demo::render(cx).into(),
@@ -195,6 +202,11 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "Switch 开关",
             description: "独立开关用法",
             render: |cx| form_controls_demo::render_switch(cx),
+        },
+        DemoEntry {
+            name: "SearchableList 可搜索列表",
+            description: "可复用的过滤、分组和选择列表底座",
+            render: |cx| searchable_list_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Select 选择器",
@@ -626,6 +638,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "CodeEditor" => Some(code_editor_demo::render(cx).into()),
         "Collapse" => Some(collapse_demo::render(cx).into()),
         "ColorPicker" => Some(color_picker_demo::render(cx).into()),
+        "Combobox" => Some(combobox_demo::render(cx).into()),
         "Container" => Some(container_demo::render(cx).into()),
         "DatePicker" => Some(date_picker_demo::render(cx).into()),
         "DateTimePicker" => Some(date_time_picker_demo::render(cx).into()),
@@ -672,6 +685,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Rate" => Some(form_controls_demo::render_rate(cx)),
         "Result" => Some(result_demo::render(cx).into()),
         "Scrollbar" => Some(scrollbar_demo::render(cx).into()),
+        "SearchableList" => Some(searchable_list_demo::render(cx).into()),
         "Sidebar" => Some(sidebar_demo::render(cx).into()),
         "Shell" => Some(shell_demo::render(cx).into()),
         "TitleBar" => Some(titlebar_demo::render(cx).into()),

@@ -73,6 +73,7 @@ const CODE_BLOCK_DOC: &str = include_str!("../content/pages/code_block.md");
 const CODE_EDITOR_DOC: &str = include_str!("../content/pages/code_editor.md");
 const COLLAPSE_DOC: &str = include_str!("../content/pages/collapse.md");
 const COLOR_PICKER_DOC: &str = include_str!("../content/pages/color_picker.md");
+const COMBOBOX_DOC: &str = include_str!("../content/pages/combobox.md");
 const CONTAINER_DOC: &str = include_str!("../content/pages/container.md");
 const DATE_PICKER_DOC: &str = include_str!("../content/pages/date_picker.md");
 const DATE_TIME_PICKER_DOC: &str = include_str!("../content/pages/date_time_picker.md");
@@ -119,6 +120,7 @@ const RADIO_DOC: &str = include_str!("../content/pages/radio.md");
 const RATE_DOC: &str = include_str!("../content/pages/rate.md");
 const RESULT_DOC: &str = include_str!("../content/pages/result.md");
 const SCROLLBAR_DOC: &str = include_str!("../content/pages/scrollbar.md");
+const SEARCHABLE_LIST_DOC: &str = include_str!("../content/pages/searchable_list.md");
 const SIDEBAR_DOC: &str = include_str!("../content/pages/sidebar.md");
 const SHELL_DOC: &str = include_str!("../content/pages/shell.md");
 const SEGMENTED_DOC: &str = include_str!("../content/pages/segmented.md");
@@ -270,6 +272,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "ColorPicker",
         markdown: COLOR_PICKER_DOC,
+    },
+    DocPage {
+        title: "Combobox",
+        markdown: COMBOBOX_DOC,
     },
     DocPage {
         title: "Container",
@@ -430,6 +436,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Scrollbar",
         markdown: SCROLLBAR_DOC,
+    },
+    DocPage {
+        title: "SearchableList",
+        markdown: SEARCHABLE_LIST_DOC,
     },
     DocPage {
         title: "SegmentRatioBar",
@@ -1184,6 +1194,19 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "tag/themes.rs" => Some(include_str!("../content/snippets/tag/themes.rs")),
         "tag/sizes.rs" => Some(include_str!("../content/snippets/tag/sizes.rs")),
         "tag/round.rs" => Some(include_str!("../content/snippets/tag/round.rs")),
+        "combobox/basic.rs" => Some(include_str!("../content/snippets/combobox/basic.rs")),
+        "combobox/grouped.rs" => Some(include_str!("../content/snippets/combobox/grouped.rs")),
+        "combobox/multiple.rs" => Some(include_str!("../content/snippets/combobox/multiple.rs")),
+        "combobox/footer.rs" => Some(include_str!("../content/snippets/combobox/footer.rs")),
+        "searchable_list/basic.rs" => {
+            Some(include_str!("../content/snippets/searchable_list/basic.rs"))
+        }
+        "searchable_list/filtered.rs" => Some(include_str!(
+            "../content/snippets/searchable_list/filtered.rs"
+        )),
+        "searchable_list/empty.rs" => {
+            Some(include_str!("../content/snippets/searchable_list/empty.rs"))
+        }
         "autocomplete/basic.rs" => Some(include_str!("../content/snippets/autocomplete/basic.rs")),
         "autocomplete/custom.rs" => {
             Some(include_str!("../content/snippets/autocomplete/custom.rs"))
@@ -1887,6 +1910,7 @@ struct LiveDemoContent {
     component: SharedString,
     gallery_demo: Option<AnyView>,
     autocompletes: Vec<Entity<Autocomplete>>,
+    comboboxes: Vec<Entity<liora_components::Combobox>>,
     input_numbers: Vec<Entity<InputNumber>>,
     textareas: Vec<Entity<Textarea>>,
     checkboxes: Vec<Entity<Checkbox>>,
@@ -1937,6 +1961,7 @@ impl LiveDemoContent {
     fn new(component: SharedString, cx: &mut Context<Self>) -> Self {
         let gallery_demo = liora_gallery::demos::render_doc_demo(component.as_ref(), cx);
         let mut autocompletes = Vec::new();
+        let mut comboboxes = Vec::new();
         let mut input_numbers = Vec::new();
         let mut textareas = Vec::new();
         let mut checkboxes = Vec::new();
@@ -2076,6 +2101,40 @@ impl LiveDemoContent {
                     Autocomplete::new(suggestions, cx)
                         .placeholder("Disabled")
                         .disabled(true)
+                }));
+            }
+
+            "ComboboxBasic" => {
+                comboboxes.push(cx.new(|cx| {
+                    liora_components::Combobox::new(docs_combobox_framework_items(), cx)
+                        .placeholder("Choose framework")
+                }));
+            }
+            "ComboboxGrouped" => {
+                comboboxes.push(cx.new(|cx| {
+                    liora_components::Combobox::new(docs_combobox_component_items(), cx)
+                        .placeholder("Search components")
+                        .width(px(340.0))
+                }));
+            }
+            "ComboboxMultiple" => {
+                comboboxes.push(cx.new(|cx| {
+                    liora_components::Combobox::new(docs_combobox_component_items(), cx)
+                        .multiple()
+                        .selected_values(vec!["button", "combobox"])
+                        .placeholder("Pick multiple components")
+                        .width(px(340.0))
+                }));
+            }
+            "ComboboxFooter" => {
+                comboboxes.push(cx.new(|cx| {
+                    liora_components::Combobox::new(docs_combobox_component_items(), cx)
+                        .placeholder("Create or select")
+                        .width(px(340.0))
+                        .footer(|_, _| {
+                            liora_components::combobox_create_footer("Create component")
+                                .into_any_element()
+                        })
                 }));
             }
             "InputBasic" => {
@@ -2758,6 +2817,7 @@ impl LiveDemoContent {
             component,
             gallery_demo,
             autocompletes,
+            comboboxes,
             input_numbers,
             textareas,
             checkboxes,
@@ -3117,6 +3177,17 @@ impl Render for LiveDemoContent {
             "TrayCloseConfirm" => Card::new(docs_tray_close_confirm()).no_shadow().into_any_element(),
             "TrayNestedMenu" => Card::new(docs_tray_nested_menu()).no_shadow().into_any_element(),
             "TypographyParagraph" => Card::new(docs_typography_paragraph(_cx)).no_shadow().into_any_element(),
+
+            "SearchableListBasic" => docs_searchable_list_basic(),
+            "SearchableListFiltered" => docs_searchable_list_filtered(),
+            "SearchableListEmpty" => docs_searchable_list_empty(),
+            "ComboboxBasic" | "ComboboxGrouped" | "ComboboxMultiple" | "ComboboxFooter" => demo_stack(
+                self.comboboxes
+                    .iter()
+                    .cloned()
+                    .map(Entity::into_any_element)
+                    .collect(),
+            ),
             "AutocompleteBasic"
             | "AutocompleteCustom"
             | "AutocompleteNoSuffix"
@@ -5395,6 +5466,54 @@ impl Render for LiveDemoContent {
             ),
         }
     }
+}
+
+fn docs_combobox_framework_items() -> Vec<liora_components::SearchableListItem> {
+    vec![
+        liora_components::SearchableListItem::labeled("gpui", "GPUI")
+            .description("Native Rust UI runtime"),
+        liora_components::SearchableListItem::labeled("liora", "Liora")
+            .description("Component SDK"),
+        liora_components::SearchableListItem::labeled("iced", "Iced")
+            .description("Cross-platform Rust GUI"),
+    ]
+}
+
+fn docs_combobox_component_items() -> Vec<liora_components::SearchableListItem> {
+    vec![
+        liora_components::SearchableListItem::labeled("button", "Button").group("Basic"),
+        liora_components::SearchableListItem::labeled("input", "Input").group("Basic"),
+        liora_components::SearchableListItem::labeled("combobox", "Combobox").group("Input"),
+        liora_components::SearchableListItem::labeled("sidebar", "Sidebar").group("Shell"),
+        liora_components::SearchableListItem::labeled("status-bar", "StatusBar").group("Shell"),
+        liora_components::SearchableListItem::labeled("dock-layout", "DockLayout")
+            .group("Shell")
+            .disabled(true),
+    ]
+}
+
+fn docs_searchable_list_basic() -> AnyElement {
+    liora_components::SearchableList::new(docs_combobox_component_items())
+        .selected("combobox")
+        .width(px(340.0))
+        .into_any_element()
+}
+
+fn docs_searchable_list_filtered() -> AnyElement {
+    liora_components::SearchableList::new(docs_combobox_component_items())
+        .query("shell")
+        .selected_values(vec!["status-bar"])
+        .width(px(340.0))
+        .into_any_element()
+}
+
+fn docs_searchable_list_empty() -> AnyElement {
+    liora_components::SearchableList::new(docs_combobox_component_items())
+        .query("not-found")
+        .empty_text("No component found")
+        .max_items(2)
+        .width(px(340.0))
+        .into_any_element()
 }
 
 fn layout_divider_demo() -> AnyElement {

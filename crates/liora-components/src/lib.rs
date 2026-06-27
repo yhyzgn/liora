@@ -63,6 +63,7 @@ pub mod code_editor;
 pub mod col;
 pub mod collapse;
 pub mod color_picker;
+pub mod combobox;
 pub mod container;
 pub mod date_picker;
 pub mod date_time_picker;
@@ -112,6 +113,7 @@ pub mod rate;
 pub mod result;
 pub mod row;
 pub mod scrollbar;
+pub mod searchable_list;
 pub mod segment_ratio_bar;
 pub mod segmented;
 pub mod select;
@@ -177,6 +179,7 @@ pub use code_editor::*;
 pub use col::*;
 pub use collapse::*;
 pub use color_picker::*;
+pub use combobox::*;
 pub use container::*;
 pub use date_picker::*;
 pub use date_time_picker::*;
@@ -234,6 +237,7 @@ pub use rate::*;
 pub use result::*;
 pub use row::*;
 pub use scrollbar::*;
+pub use searchable_list::*;
 pub use segment_ratio_bar::*;
 pub use segmented::*;
 pub use select::*;
@@ -1119,5 +1123,19 @@ mod shell_component_api_tests {
             .main_scroll()
             .main_padding_units(24.0)
             .background(gpui::transparent_black());
+    }
+}
+#[cfg(test)]
+mod component_backlog_export_tests {
+    #[test]
+    fn search_and_combobox_modules_are_exported() {
+        let source = include_str!("lib.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .expect("production exports should precede tests");
+        assert!(source.contains("pub mod searchable_list;"));
+        assert!(source.contains("pub mod combobox;"));
+        assert!(source.contains("pub use searchable_list::*;"));
+        assert!(source.contains("pub use combobox::*;"));
     }
 }

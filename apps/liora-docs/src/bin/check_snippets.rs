@@ -169,6 +169,14 @@ mod color_picker_compact;
 mod color_picker_disabled;
 #[path = "../../content/snippets/color_picker/presets.rs"]
 mod color_picker_presets;
+#[path = "../../content/snippets/combobox/basic.rs"]
+mod combobox_basic;
+#[path = "../../content/snippets/combobox/footer.rs"]
+mod combobox_footer;
+#[path = "../../content/snippets/combobox/grouped.rs"]
+mod combobox_grouped;
+#[path = "../../content/snippets/combobox/multiple.rs"]
+mod combobox_multiple;
 #[path = "../../content/snippets/container/divider.rs"]
 mod container_divider;
 #[path = "../../content/snippets/container/layout.rs"]
@@ -455,6 +463,12 @@ mod ring_chart_custom;
 mod ring_chart_external;
 #[path = "../../content/snippets/scrollbar/basic.rs"]
 mod scrollbar_basic;
+#[path = "../../content/snippets/searchable_list/basic.rs"]
+mod searchable_list_basic;
+#[path = "../../content/snippets/searchable_list/empty.rs"]
+mod searchable_list_empty;
+#[path = "../../content/snippets/searchable_list/filtered.rs"]
+mod searchable_list_filtered;
 #[path = "../../content/snippets/segment_ratio_bar/both.rs"]
 mod segment_ratio_bar_both;
 #[path = "../../content/snippets/segment_ratio_bar/bottom.rs"]
