@@ -21,10 +21,25 @@
 
 use crate::Input;
 use crate::gpui_compat::element_id;
-use gpui::{App, Context, Entity, Render, SharedString, Window, div, prelude::*, px};
+use gpui::{
+    App, Context, Entity, KeyBinding, MouseButton, Render, SharedString, Window, actions, div,
+    prelude::*, px,
+};
 use liora_core::Config;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
+
+actions!(
+    mention,
+    [
+        #[doc = "Keyboard action that moves mention selection upward."]
+        MentionUp,
+        #[doc = "Keyboard action that moves mention selection downward."]
+        MentionDown,
+        #[doc = "Keyboard action that selects the active mention option."]
+        MentionEnter
+    ]
+);
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 /// Data model used by mention item rendering.
@@ -66,6 +81,15 @@ pub struct Mention {
 }
 
 impl Mention {
+    /// Registers GPUI key bindings required for keyboard interaction.
+    pub fn register_key_bindings(cx: &mut App) {
+        cx.bind_keys([
+            KeyBinding::new("up", MentionUp, None),
+            KeyBinding::new("down", MentionDown, None),
+            KeyBinding::new("enter", MentionEnter, None),
+        ]);
+    }
+
     /// Creates `Mention` with default theme-driven styling and no optional callbacks attached.
     pub fn new(suggestions: Vec<MentionItem>, cx: &mut Context<Self>) -> Self {
         Self {
@@ -120,6 +144,67 @@ impl Mention {
     pub fn filtered_suggestions(&self, query: &str) -> Vec<MentionItem> {
         filter_suggestions(&self.suggestions, query, self.max_suggestions)
     }
+
+    fn current_suggestions(&self, cx: &App) -> Vec<MentionItem> {
+        let text = self.input.read(cx).value().to_string();
+        let Some(query) = mention_query(&text, self.trigger) else {
+            return Vec::new();
+        };
+        self.filtered_suggestions(query)
+    }
+
+    fn move_selection(&mut self, delta: isize, cx: &mut Context<Self>) {
+        let suggestions = self.current_suggestions(cx);
+        if suggestions.is_empty() {
+            self.selected_index = 0;
+            return;
+        }
+        let len = suggestions.len();
+        let current = self.selected_index.min(len - 1);
+        self.selected_index = if delta < 0 {
+            current.checked_sub(1).unwrap_or(len - 1)
+        } else {
+            (current + 1) % len
+        };
+        cx.notify();
+    }
+
+    fn select_active(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let suggestions = self.current_suggestions(cx);
+        let Some(item) = suggestions
+            .get(self.selected_index.min(suggestions.len().saturating_sub(1)))
+            .cloned()
+        else {
+            return;
+        };
+        self.select_item(item, window, cx);
+    }
+
+    fn hover_option(&mut self, index: usize, cx: &mut Context<Self>) {
+        if self.selected_index != index {
+            self.selected_index = index;
+            cx.notify();
+        }
+    }
+
+    fn select_item(&mut self, item: MentionItem, window: &mut Window, cx: &mut Context<Self>) {
+        if let Some(cb) = self.on_select.clone() {
+            cb(item, window, cx);
+        }
+        cx.notify();
+    }
+
+    fn move_up_action(&mut self, _: &MentionUp, _: &mut Window, cx: &mut Context<Self>) {
+        self.move_selection(-1, cx);
+    }
+
+    fn move_down_action(&mut self, _: &MentionDown, _: &mut Window, cx: &mut Context<Self>) {
+        self.move_selection(1, cx);
+    }
+
+    fn enter_action(&mut self, _: &MentionEnter, window: &mut Window, cx: &mut Context<Self>) {
+        self.select_active(window, cx);
+    }
 }
 
 impl Render for Mention {
@@ -142,7 +227,7 @@ impl Render for Mention {
         } else {
             Vec::new()
         };
-        let on_select = self.on_select.clone();
+        let entity = cx.entity().clone();
 
         div()
             .id(liora_core::unique_id("mention"))
@@ -180,6 +265,12 @@ impl Render for Mention {
                                     gpui::transparent_black()
                                 })
                                 .hover(|s| s.bg(theme.neutral.hover))
+                                .on_mouse_move({
+                                    let entity = entity.clone();
+                                    move |_, _, cx| {
+                                        entity.update(cx, |this, cx| this.hover_option(idx, cx));
+                                    }
+                                })
                                 .child(
                                     Icon::new(IconName::AtSign)
                                         .size(px(15.0))
@@ -204,15 +295,24 @@ impl Render for Mention {
                                             )
                                         }),
                                 );
-                            if let Some(cb) = on_select.clone() {
-                                row = row.on_click(move |_, window, cx| {
-                                    cb(selected_item.clone(), window, cx)
-                                });
-                            }
+                            row = row.on_mouse_down(MouseButton::Left, {
+                                let entity = entity.clone();
+                                move |_, window, cx| {
+                                    let selected_item = selected_item.clone();
+                                    entity.update(cx, |this, cx| {
+                                        this.selected_index = idx;
+                                        this.select_item(selected_item, window, cx);
+                                    });
+                                    cx.stop_propagation();
+                                }
+                            });
                             row.into_any_element()
                         })),
                 )
             })
+            .on_action(cx.listener(Self::move_up_action))
+            .on_action(cx.listener(Self::move_down_action))
+            .on_action(cx.listener(Self::enter_action))
     }
 }
 
@@ -258,5 +358,28 @@ mod tests {
         let out = filter_suggestions(&items, "o", 1);
         assert_eq!(out.len(), 1);
         assert_eq!(out[0].value.as_ref(), "bob");
+    }
+
+    #[test]
+    fn mention_popup_supports_mouse_hover_click_and_keyboard_selection() {
+        let source = include_str!("mention.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap_or_default();
+
+        assert!(source.contains("MentionUp"));
+        assert!(source.contains("MentionDown"));
+        assert!(source.contains("MentionEnter"));
+        assert!(source.contains("KeyBinding::new(\"up\", MentionUp"));
+        assert!(source.contains("KeyBinding::new(\"down\", MentionDown"));
+        assert!(source.contains("KeyBinding::new(\"enter\", MentionEnter"));
+        assert!(source.contains("fn move_selection"));
+        assert!(source.contains("fn select_active"));
+        assert!(source.contains("fn hover_option"));
+        assert!(source.contains(".on_mouse_move("));
+        assert!(source.contains(".on_mouse_down(MouseButton::Left"));
+        assert!(source.contains(".on_action(cx.listener(Self::move_up_action))"));
+        assert!(source.contains(".on_action(cx.listener(Self::move_down_action))"));
+        assert!(source.contains(".on_action(cx.listener(Self::enter_action))"));
     }
 }

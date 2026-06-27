@@ -318,6 +318,7 @@ fn register_liora_key_bindings(cx: &mut gpui::App) {
     ColorPicker::register_key_bindings(cx);
     DatePicker::register_key_bindings(cx);
     DateTimePicker::register_key_bindings(cx);
+    Mention::register_key_bindings(cx);
     Popover::register_key_bindings(cx);
     Select::register_key_bindings(cx);
     TimePicker::register_key_bindings(cx);
@@ -522,6 +523,7 @@ mod application_init_api_tests {
             "ColorPicker",
             "DatePicker",
             "DateTimePicker",
+            "Mention",
             "Popover",
             "Select",
             "TimePicker",
@@ -697,6 +699,7 @@ mod overlay_escape_coverage_tests {
             "DateTimePicker",
             "Dialog",
             "Drawer",
+            "Mention",
             "Popover",
             "Preview",
             "Select",

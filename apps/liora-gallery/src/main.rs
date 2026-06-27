@@ -184,13 +184,14 @@ fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
         let nav_index = gallery_nav_index(&entries);
         let view = cx.new(|cx| {
             let theme_mode = cx.global::<Config>().theme_mode;
+            let selected = default_gallery_selection(&entries);
             let gallery = Gallery {
                 entries,
                 active_demo_index: None,
                 active_demo: None,
                 pending_demo_index: None,
                 nav_index,
-                selected: 0,
+                selected,
                 nav_filter: cx.new(|cx| Input::new("", cx).placeholder("搜索组件 / Search demos")),
                 nav_menu: None,
                 nav_query: String::new(),
@@ -1390,6 +1391,10 @@ fn gallery_nav_index(entries: &[demos::DemoEntry]) -> Vec<GalleryNavEntry> {
         .collect()
 }
 
+fn default_gallery_selection(entries: &[demos::DemoEntry]) -> usize {
+    entries.len()
+}
+
 fn gallery_nav_visible_indices(index: &[GalleryNavEntry], query: &str) -> Vec<usize> {
     index
         .iter()
@@ -1792,6 +1797,28 @@ mod shell_regression_tests {
         assert!(render.contains("let nav_menu = self.gallery_nav_menu(selected, cx);"));
         assert!(!render.contains("AnyView::from(self.gallery_nav_menu(selected, cx))"));
         assert!(!render.contains(".cached("));
+    }
+
+    #[test]
+    fn gallery_defaults_to_component_overview_instead_of_button_demo() {
+        let source = include_str!("main.rs")
+            .split("mod shell_regression_tests")
+            .next()
+            .unwrap();
+
+        assert!(
+            source.contains("fn default_gallery_selection"),
+            "Gallery should centralize its startup selection instead of relying on registry order"
+        );
+        assert!(
+            source.contains("let selected = default_gallery_selection(&entries);")
+                && source.contains("selected,"),
+            "Gallery startup should use the explicit default selection"
+        );
+        assert!(
+            !source.contains("selected: 0,"),
+            "Gallery should not default to the first registry item because that currently selects Button"
+        );
     }
 
     #[test]

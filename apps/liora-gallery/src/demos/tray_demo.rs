@@ -539,13 +539,18 @@ fn menu_trigger_button(
     enabled: bool,
     entity: Entity<TrayDemo>,
 ) -> Button {
-    let mut button = Button::new(label).small();
+    let command_id = command.id();
+    let mut button = Button::new(label)
+        .id(gpui::ElementId::from(format!(
+            "tray-preview-command-{}",
+            sanitize_command_id(&command_id)
+        )))
+        .small();
     if !enabled {
         button = button.disabled(true);
     }
     button.on_click(move |_, _, cx| {
-        dispatch_tray_command(cx, command.clone());
-        let _ = entity.update(cx, |_, cx| cx.notify());
+        dispatch_preview_tray_command(cx, command.clone(), entity.clone());
     })
 }
 
@@ -656,7 +661,7 @@ fn icon_button(label: &'static str, icon: &'static str, entity: Entity<TrayDemo>
         .primary()
         .small()
         .on_click(move |_, _, cx| {
-            dispatch_tray_command(cx, TrayCommand::SetIcon(icon.into()));
+            dispatch_live_tray_command(cx, TrayCommand::SetIcon(icon.into()));
             let _ = entity.update(cx, |demo, cx| {
                 demo.active_icon = icon;
                 cx.notify();
@@ -670,8 +675,7 @@ fn tray_command_button(
     entity: Entity<TrayDemo>,
 ) -> Button {
     Button::new(label).small().on_click(move |_, _, cx| {
-        dispatch_tray_command(cx, command.clone());
-        let _ = entity.update(cx, |_, cx| cx.notify());
+        dispatch_preview_tray_command(cx, command.clone(), entity.clone());
     })
 }
 
@@ -683,7 +687,7 @@ fn toggle_auto_show_button(auto_show: bool, entity: Entity<TrayDemo>) -> Button 
     })
     .small()
     .on_click(move |_, _, cx| {
-        dispatch_tray_command(cx, TrayCommand::Custom("auto-show".into()));
+        dispatch_live_tray_command(cx, TrayCommand::Custom("auto-show".into()));
         let _ = entity.update(cx, |demo, cx| {
             demo.auto_show = !demo.auto_show;
             cx.notify();
@@ -700,7 +704,7 @@ fn toggle_resident_button(resident_enabled: bool, entity: Entity<TrayDemo>) -> B
     .small()
     .warning()
     .on_click(move |_, _, cx| {
-        dispatch_tray_command(cx, TrayCommand::Custom("resident-enabled".into()));
+        dispatch_live_tray_command(cx, TrayCommand::Custom("resident-enabled".into()));
         let _ = entity.update(cx, |demo, cx| {
             demo.resident_enabled = !demo.resident_enabled;
             demo.tray_visible = demo.resident_enabled;
@@ -717,7 +721,7 @@ fn toggle_tray_visible_button(tray_visible: bool, entity: Entity<TrayDemo>) -> B
     })
     .small()
     .on_click(move |_, _, cx| {
-        dispatch_tray_command(cx, TrayCommand::Custom("tray-visible".into()));
+        dispatch_live_tray_command(cx, TrayCommand::Custom("tray-visible".into()));
         let _ = entity.update(cx, |demo, cx| {
             demo.tray_visible = !demo.tray_visible;
             if demo.tray_visible {
@@ -853,10 +857,58 @@ fn command_mapping_row(theme: &Theme, command: TrayCommand) -> Flex {
         )
 }
 
-fn dispatch_tray_command(cx: &mut App, command: TrayCommand) {
+fn dispatch_preview_tray_command(cx: &mut App, command: TrayCommand, entity: Entity<TrayDemo>) {
+    let _ = entity.update(cx, |demo, cx| {
+        match command {
+            TrayCommand::Show => {
+                demo.auto_show = true;
+            }
+            TrayCommand::Hide => {
+                demo.resident_enabled = true;
+                demo.tray_visible = true;
+            }
+            TrayCommand::Toggle => {
+                demo.auto_show = !demo.auto_show;
+            }
+            TrayCommand::Quit => {
+                demo.remembered_close_action = TrayCloseAction::ExitProcess;
+            }
+            TrayCommand::SetIcon(name) => {
+                demo.active_icon = match name.as_str() {
+                    "syncing" => "syncing",
+                    "error" => "error",
+                    _ => "default",
+                };
+            }
+            TrayCommand::Custom(name) if name == "auto-show" => {
+                demo.auto_show = !demo.auto_show;
+            }
+            TrayCommand::Custom(name) if name == "resident-enabled" => {
+                demo.resident_enabled = !demo.resident_enabled;
+                demo.tray_visible = demo.resident_enabled;
+            }
+            TrayCommand::Custom(name) if name == "tray-visible" => {
+                demo.tray_visible = !demo.tray_visible;
+                if demo.tray_visible {
+                    demo.resident_enabled = true;
+                }
+            }
+            TrayCommand::Custom(_) => {}
+        }
+        cx.notify();
+    });
+}
+
+fn dispatch_live_tray_command(cx: &mut App, command: TrayCommand) {
     if cx.has_global::<TrayControlCenter>() {
         cx.global::<TrayControlCenter>().dispatch(command);
     }
+}
+
+fn sanitize_command_id(id: &str) -> String {
+    id.chars()
+        .map(|ch| if ch.is_ascii_alphanumeric() { ch } else { '-' })
+        .collect()
 }
 
 #[cfg(test)]
@@ -896,5 +948,38 @@ mod tests {
             !source.contains("Card::new(\n        Space::new()\n            .vertical()\n            .gap_px(4.0)\n            .child(\n                Space::new()\n                    .gap_sm()\n                    .child(Tag::new(kind).small())"),
             "tray menu rows should not be rendered as stacked Cards because that does not resemble platform tray menus"
         );
+    }
+
+    #[test]
+    fn tray_demo_preview_actions_do_not_control_the_real_window_or_process() {
+        let source = include_str!("tray_demo.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap_or_default();
+
+        assert!(
+            source.contains("fn dispatch_preview_tray_command"),
+            "preview buttons should update the demo model without dispatching destructive window/process commands"
+        );
+        assert!(
+            source.contains("fn dispatch_live_tray_command"),
+            "live controls should keep an explicit path for commands that intentionally touch the real tray"
+        );
+        assert!(
+            source.contains("tray-preview-command-"),
+            "preview menu controls should use stable unique ids derived from command ids"
+        );
+
+        let preview_dispatch = source
+            .split("fn dispatch_preview_tray_command")
+            .nth(1)
+            .expect("preview dispatch helper should exist")
+            .split("fn dispatch_live_tray_command")
+            .next()
+            .expect("preview dispatch helper should be before live dispatch helper");
+        assert!(!preview_dispatch.contains(".dispatch(command"));
+        assert!(!preview_dispatch.contains("TrayCommand::Quit => cx.quit()"));
+        assert!(!preview_dispatch.contains("TrayCommand::Hide => hide_gallery_window"));
+        assert!(!preview_dispatch.contains("TrayCommand::Toggle => toggle_gallery_window"));
     }
 }
