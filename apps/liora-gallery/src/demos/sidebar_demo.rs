@@ -9,6 +9,7 @@ use liora_theme::Theme;
 pub fn render(cx: &mut App) -> Entity<SidebarDemo> {
     cx.new(|cx| SidebarDemo {
         menu: cx.new(|_| workspace_menu()),
+        long_menu: cx.new(|_| long_workspace_menu()),
         inspector_menu: cx.new(|_| inspector_menu()),
         icon_menu: cx.new(|_| icon_only_menu()),
     })
@@ -16,6 +17,7 @@ pub fn render(cx: &mut App) -> Entity<SidebarDemo> {
 
 pub struct SidebarDemo {
     menu: Entity<Menu>,
+    long_menu: Entity<Menu>,
     inspector_menu: Entity<Menu>,
     icon_menu: Entity<Menu>,
 }
@@ -61,6 +63,38 @@ impl Render for SidebarDemo {
                                     .gap_sm()
                                     .child(Button::new("New").small())
                                     .child(Button::new("Settings").small()),
+                            ),
+                    ))
+                    .no_shadow(),
+                ))
+                .child(section(
+                    "Scrollable product navigation",
+                    "长菜单会在 Sidebar 内容区内滚动，header/footer 固定不动；这个例子也展示更宽松的 logo + brand header。",
+                    Card::new(demo_surface(&theme, 320.0).child(
+                        Sidebar::new()
+                            .id("sidebar-long-scroll-demo")
+                            .expanded_width_units(316.0)
+                            .header_padding_units(16.0)
+                            .content_padding_units(6.0)
+                            .footer_padding_units(10.0)
+                            .gap_units(10.0)
+                            .rounded_units(18.0)
+                            .background(theme.neutral.card)
+                            .border_color(theme.neutral.border)
+                            .header(roomy_brand_header(&theme))
+                            .scrollable()
+                            .child(self.long_menu.clone())
+                            .footer(
+                                Flex::new()
+                                    .row()
+                                    .align_center()
+                                    .justify_between()
+                                    .child(
+                                        Text::new("Pinned footer")
+                                            .xs()
+                                            .text_color(theme.neutral.text_3),
+                                    )
+                                    .child(Button::new("Upgrade").small().primary()),
                             ),
                     ))
                     .no_shadow(),
@@ -177,6 +211,31 @@ fn workspace_menu() -> Menu {
         .item("settings", "Settings", Some(IconName::Settings))
 }
 
+fn long_workspace_menu() -> Menu {
+    Menu::new()
+        .id("sidebar-long-menu")
+        .mode(MenuMode::Vertical)
+        .default_active("overview")
+        .item("overview", "Overview", Some(IconName::LayoutDashboard))
+        .item("activity", "Activity", Some(IconName::Activity))
+        .item("inbox", "Inbox", Some(IconName::Inbox))
+        .item("calendar", "Calendar", Some(IconName::CalendarDays))
+        .item("files", "Files", Some(IconName::Files))
+        .item("components", "Components", Some(IconName::Component))
+        .item("packages", "Packages", Some(IconName::Package))
+        .item("experiments", "Experiments", Some(IconName::FlaskConical))
+        .item("analytics", "Analytics", Some(IconName::ChartNoAxesColumn))
+        .item("reports", "Reports", Some(IconName::FileText))
+        .item("automations", "Automations", Some(IconName::Bot))
+        .item("integrations", "Integrations", Some(IconName::Plug))
+        .item("members", "Members", Some(IconName::Users))
+        .item("roles", "Roles", Some(IconName::ShieldCheck))
+        .item("billing", "Billing", Some(IconName::CreditCard))
+        .item("support", "Support", Some(IconName::MessagesSquare))
+        .item("settings", "Settings", Some(IconName::Settings))
+        .item("changelog", "Changelog", Some(IconName::ScrollText))
+}
+
 fn inspector_menu() -> Menu {
     Menu::new()
         .id("sidebar-inspector-menu")
@@ -215,6 +274,53 @@ fn shell_stage(theme: &Theme) -> Flex {
         .border_color(theme.neutral.border)
         .bg(theme.neutral.body)
         .padding_md()
+}
+
+fn roomy_brand_header(theme: &Theme) -> Flex {
+    Flex::new()
+        .row()
+        .align_center()
+        .gap_md()
+        .padding_md()
+        .rounded_units(16.0)
+        .bg(theme.primary.light_9)
+        .border()
+        .border_color(theme.primary.light_7)
+        .child(roomy_logo_tile(theme))
+        .child(
+            Space::new()
+                .vertical()
+                .gap_xs()
+                .grow()
+                .shrink()
+                .child(
+                    Text::new("Liora Product")
+                        .bold()
+                        .text_color(theme.neutral.text_1),
+                )
+                .child(
+                    Text::new("Scrollable navigation shell")
+                        .xs()
+                        .text_color(theme.neutral.text_3),
+                ),
+        )
+        .child(Button::new("Pro").small().primary())
+}
+
+fn roomy_logo_tile(theme: &Theme) -> Flex {
+    Flex::new()
+        .row()
+        .center()
+        .flex_none()
+        .width_px(46.0)
+        .height_units(46.0)
+        .rounded_units(16.0)
+        .bg(theme.primary.base)
+        .child(
+            Icon::new(IconName::Sparkles)
+                .size_units(22.0)
+                .color(theme.neutral.inverted),
+        )
 }
 
 fn liora_logo_tile(theme: &Theme) -> Icon {
@@ -356,5 +462,20 @@ mod tests {
         assert!(!source.contains("div()"));
         assert!(!source.contains("gpui::Div"));
         assert!(!source.contains("gpui::div"));
+    }
+    #[test]
+    fn sidebar_demo_covers_long_menu_scrolling_and_roomy_brand_header() {
+        let source = include_str!("sidebar_demo.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(source.contains("long_menu: Entity<Menu>"));
+        assert!(source.contains("long_workspace_menu()"));
+        assert!(source.contains("roomy_brand_header("));
+        assert!(source.contains("roomy_logo_tile("));
+        assert!(source.contains(".content_padding_units(6.0)"));
+        assert!(source.contains(".footer_padding_units(10.0)"));
+        assert!(source.matches(".item(").count() >= 18);
     }
 }
