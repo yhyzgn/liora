@@ -1,8 +1,10 @@
-use gpui::{App, Entity, IntoElement, Render, Window, div, prelude::*, px, rgb};
+use gpui::{App, AppContext, Entity, IntoElement, Render, Window};
 use liora_components::layout_helpers::{page, section};
-use liora_components::{Button, Card, Menu, MenuMode, Sidebar, Space, Text};
+use liora_components::{Button, Card, Flex, Menu, MenuMode, Sidebar, Space, Text};
+use liora_core::Config;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
+use liora_theme::Theme;
 
 pub fn render(cx: &mut App) -> Entity<SidebarDemo> {
     cx.new(|cx| SidebarDemo {
@@ -19,80 +21,80 @@ pub struct SidebarDemo {
 }
 
 impl Render for SidebarDemo {
-    fn render(&mut self, _window: &mut Window, _cx: &mut gpui::Context<Self>) -> impl IntoElement {
+    fn render(&mut self, _window: &mut Window, cx: &mut gpui::Context<Self>) -> impl IntoElement {
+        let theme = cx.global::<Config>().theme.clone();
+
         page(
             "Sidebar 侧栏",
-            "单独展示 Sidebar 的品牌头部、左右位置、折叠策略、固定 header/footer、滚动内容区和完全自定义插槽。",
+            "单独展示 Sidebar 的品牌头部、左右位置、折叠策略、固定 header/footer、滚动内容区和完全自定义插槽。所有背景、边框和文字都来自当前主题 token。",
             Space::new()
                 .vertical()
                 .gap_xl()
                 .child(section(
                     "Brand workspace sidebar",
                     "常见应用导航：顶部 logo + brand、可滚动菜单、底部操作区、独立宽度和圆角。",
-                    Card::new(
-                        div().h(px(380.0)).flex().child(
-                            Sidebar::new()
-                                .id("sidebar-brand-demo")
-                                .left()
-                                .position(liora_components::SidebarPosition::Left)
-                                .expanded_width(px(286.0))
-                                .min_width(px(220.0))
-                                .max_width(px(360.0))
-                                .resizable()
-                                .header_padding(px(14.0))
-                                .content_padding(px(8.0))
-                                .footer_padding(px(12.0))
-                                .gap(px(8.0))
-                                .rounded(px(16.0))
-                                .background(rgb(0xffffff).into())
-                                .border_color(rgb(0xe2e8f0).into())
-                                .border(true)
-                                .brand("Liora Workspace")
-                                .brand_subtitle("Native GPUI shell")
-                                .logo(liora_logo_tile())
-                                .brand_action(Button::new("+").small().primary())
-                                .scrollable()
-                                .child(self.menu.clone())
-                                .footer(
-                                    Space::new()
-                                        .gap_sm()
-                                        .child(Button::new("New").small())
-                                        .child(Button::new("Settings").small()),
-                                ),
-                        ),
-                    )
+                    Card::new(demo_surface(&theme, 392.0).child(
+                        Sidebar::new()
+                            .id("sidebar-brand-demo")
+                            .left()
+                            .position(liora_components::SidebarPosition::Left)
+                            .expanded_width_units(286.0)
+                            .min_width_units(220.0)
+                            .max_width_units(360.0)
+                            .resizable()
+                            .header_padding_units(14.0)
+                            .content_padding_units(8.0)
+                            .footer_padding_units(12.0)
+                            .gap_units(8.0)
+                            .rounded_units(16.0)
+                            .background(theme.neutral.card)
+                            .border_color(theme.neutral.border)
+                            .border(true)
+                            .brand("Liora Workspace")
+                            .brand_subtitle("Native GPUI shell")
+                            .logo(liora_logo_tile(&theme))
+                            .brand_action(Button::new("+").small().primary())
+                            .scrollable()
+                            .child(self.menu.clone())
+                            .footer(
+                                Space::new()
+                                    .gap_sm()
+                                    .child(Button::new("New").small())
+                                    .child(Button::new("Settings").small()),
+                            ),
+                    ))
                     .no_shadow(),
                 ))
                 .child(section(
                     "Right inspector sidebar",
                     "右侧检查器适合属性面板、预览详情或辅助信息；边框会自动切换到左侧。",
                     Card::new(
-                        div()
-                            .h(px(320.0))
-                            .flex()
+                        demo_surface(&theme, 340.0)
                             .justify_end()
-                            .bg(rgb(0xf8fafc))
-                            .rounded(px(12.0))
                             .child(
                                 Sidebar::new()
                                     .id("sidebar-inspector-demo")
                                     .right()
-                                    .expanded_width(px(260.0))
-                                    .header_padding(px(12.0))
-                                    .content_padding(px(10.0))
-                                    .footer_padding(px(12.0))
-                                    .gap(px(6.0))
-                                    .background(rgb(0xffffff).into())
-                                    .border_color(rgb(0xcbd5e1).into())
-                                    .rounded(px(14.0))
+                                    .expanded_width_units(268.0)
+                                    .header_padding_units(12.0)
+                                    .content_padding_units(10.0)
+                                    .footer_padding_units(12.0)
+                                    .gap_units(6.0)
+                                    .background(theme.neutral.popover)
+                                    .border_color(theme.neutral.border)
+                                    .rounded_units(14.0)
                                     .brand("Inspector")
                                     .brand_subtitle("Selection details")
-                                    .logo(Icon::new(IconName::PanelRight).size(px(20.0)))
+                                    .logo(Icon::new(IconName::PanelRight).size_units(20.0))
                                     .brand_action(Button::new("Pin").small())
                                     .scrollable()
                                     .child(self.inspector_menu.clone())
-                                    .content(property_stack())
-                                    .footer(Text::new("Updates when selection changes.").xs()),
+                                    .content(property_stack(&theme))
+                                    .footer(
+                                        Text::new("Updates when selection changes.")
+                                            .xs()
+                                            .text_color(theme.neutral.text_3),
+                                    ),
                             ),
                     )
                     .no_shadow(),
@@ -100,63 +102,64 @@ impl Render for SidebarDemo {
                 .child(section(
                     "Collapsed icon rail",
                     "IconsOnly 模式使用 collapsed_width，适合极窄导航栏或可折叠 shell。",
-                    Card::new(
-                        div().h(px(300.0)).flex().child(
-                            Sidebar::new()
-                                .id("sidebar-icon-rail-demo")
-                                .collapse_mode(liora_components::SidebarCollapseMode::IconsOnly)
-                                .collapsed_width(px(72.0))
-                                .expanded_width(px(260.0))
-                                .header_padding(px(10.0))
-                                .content_padding(px(8.0))
-                                .footer_padding(px(10.0))
-                                .gap(px(8.0))
-                                .background(rgb(0xf5f3ff).into())
-                                .border_color(rgb(0xddd6fe).into())
-                                .rounded(px(18.0))
-                                .logo(liora_logo_tile())
-                                .scrollable()
-                                .child(self.icon_menu.clone())
-                                .footer(
-                                    div()
-                                        .flex()
-                                        .justify_center()
-                                        .child(Icon::new(IconName::Settings).size(px(18.0))),
-                                ),
-                        ),
-                    )
+                    Card::new(demo_surface(&theme, 316.0).child(
+                        Sidebar::new()
+                            .id("sidebar-icon-rail-demo")
+                            .collapse_mode(liora_components::SidebarCollapseMode::IconsOnly)
+                            .collapsed_width_units(72.0)
+                            .expanded_width_units(260.0)
+                            .header_padding_units(10.0)
+                            .content_padding_units(8.0)
+                            .footer_padding_units(10.0)
+                            .gap_units(8.0)
+                            .background(theme.primary.light_9)
+                            .border_color(theme.primary.light_7)
+                            .rounded_units(18.0)
+                            .logo(liora_logo_tile(&theme))
+                            .scrollable()
+                            .child(self.icon_menu.clone())
+                            .footer(
+                                Flex::new()
+                                    .row()
+                                    .justify_center()
+                                    .child(Icon::new(IconName::Settings).size_units(18.0)),
+                            ),
+                    ))
                     .no_shadow(),
                 ))
                 .child(section(
                     "Fully custom slots",
-                    "当品牌 API 不够用时，可直接替换 header/content/footer，并用 children 批量组合任何 GPUI 元素。",
-                    Card::new(
-                        div().h(px(320.0)).flex().child(
-                            Sidebar::new()
-                                .id("sidebar-custom-slots-demo")
-                                .expanded_width(px(320.0))
-                                .header_padding(px(14.0))
-                                .content_padding(px(12.0))
-                                .footer_padding(px(14.0))
-                                .gap(px(10.0))
-                                .background(rgb(0xfffbeb).into())
-                                .border(false)
-                                .rounded(px(20.0))
-                                .header(custom_header())
-                                .children([
-                                    quick_stat("Open PRs", "12", rgb(0xd97706).into()),
-                                    quick_stat("Queued jobs", "7", rgb(0x2563eb).into()),
-                                    quick_stat("Warnings", "3", rgb(0xdc2626).into()),
-                                ])
-                                .footer(
-                                    Space::new()
-                                        .vertical()
-                                        .gap_sm()
-                                        .child(Text::new("Custom footer slot").xs().bold())
-                                        .child(Button::new("Review release").small().primary()),
-                                ),
-                        ),
-                    )
+                    "当品牌 API 不够用时，可直接替换 header/content/footer，并用 children 批量组合任何 Liora 元素。",
+                    Card::new(demo_surface(&theme, 336.0).child(
+                        Sidebar::new()
+                            .id("sidebar-custom-slots-demo")
+                            .expanded_width_units(320.0)
+                            .header_padding_units(14.0)
+                            .content_padding_units(12.0)
+                            .footer_padding_units(14.0)
+                            .gap_units(10.0)
+                            .background(theme.warning.light_9)
+                            .border(false)
+                            .rounded_units(20.0)
+                            .header(custom_header(&theme))
+                            .children([
+                                quick_stat(&theme, "Open PRs", "12", theme.warning.base),
+                                quick_stat(&theme, "Queued jobs", "7", theme.info.base),
+                                quick_stat(&theme, "Warnings", "3", theme.danger.base),
+                            ])
+                            .footer(
+                                Space::new()
+                                    .vertical()
+                                    .gap_sm()
+                                    .child(
+                                        Text::new("Custom footer slot")
+                                            .xs()
+                                            .bold()
+                                            .text_color(theme.neutral.text_2),
+                                    )
+                                    .child(Button::new("Review release").small().primary()),
+                            ),
+                    ))
                     .no_shadow(),
                 )),
         )
@@ -196,72 +199,84 @@ fn icon_only_menu() -> Menu {
         .item("settings", "Settings", Some(IconName::Settings))
 }
 
-fn liora_logo_tile() -> impl IntoElement {
-    div()
-        .size(px(34.0))
-        .rounded(px(12.0))
-        .bg(rgb(0x6366f1))
-        .shadow_md()
-        .child(
-            div()
-                .m(px(8.0))
-                .size(px(18.0))
-                .rounded_full()
-                .bg(rgb(0x22d3ee))
-                .opacity(0.86),
-        )
+fn demo_surface(theme: &Theme, height: f32) -> Flex {
+    shell_stage(theme)
+        .height_units(height)
+        .row()
+        .align_start()
+        .overflow_hidden()
 }
 
-fn property_stack() -> impl IntoElement {
+fn shell_stage(theme: &Theme) -> Flex {
+    Flex::new()
+        .w_full()
+        .rounded_units(18.0)
+        .border()
+        .border_color(theme.neutral.border)
+        .bg(theme.neutral.body)
+        .padding_md()
+}
+
+fn liora_logo_tile(theme: &Theme) -> Icon {
+    Icon::new(IconName::Sparkles)
+        .size_units(20.0)
+        .color(theme.primary.base)
+}
+
+fn property_stack(theme: &Theme) -> Space {
     Space::new()
         .vertical()
         .gap_sm()
-        .child(property_row("Width", "286 px"))
-        .child(property_row("Mode", "Full"))
-        .child(property_row("Pinned", "Yes"))
+        .child(property_row(theme, "Width", "268 px"))
+        .child(property_row(theme, "Mode", "Full"))
+        .child(property_row(theme, "Pinned", "Yes"))
 }
 
-fn property_row(label: &'static str, value: &'static str) -> impl IntoElement {
-    div()
-        .flex()
+fn property_row(theme: &Theme, label: &'static str, value: &'static str) -> Flex {
+    Flex::new()
+        .row()
         .justify_between()
-        .px_2()
-        .py_1()
-        .rounded(px(8.0))
-        .bg(rgb(0x1e293b))
-        .child(Text::new(label).xs().text_color(rgb(0x94a3b8).into()))
+        .padding_x_units(8.0)
+        .padding_y_px(4.0)
+        .rounded_units(8.0)
+        .bg(theme.neutral.hover)
+        .child(Text::new(label).xs().text_color(theme.neutral.text_3))
         .child(
             Text::new(value)
                 .xs()
                 .bold()
-                .text_color(rgb(0xf8fafc).into()),
+                .text_color(theme.neutral.text_1),
         )
 }
 
-fn custom_header() -> impl IntoElement {
+fn custom_header(theme: &Theme) -> Space {
     Space::new()
         .vertical()
         .gap_sm()
         .child(
             Text::new("Release cockpit")
                 .bold()
-                .text_color(rgb(0x78350f).into()),
+                .text_color(theme.neutral.text_1),
         )
-        .child(Text::new("Everything here is supplied by the app.").xs())
+        .child(
+            Text::new("Everything here is supplied by the app.")
+                .xs()
+                .text_color(theme.neutral.text_3),
+        )
 }
 
-fn quick_stat(label: &'static str, value: &'static str, color: gpui::Hsla) -> impl IntoElement {
-    div()
-        .flex()
+fn quick_stat(theme: &Theme, label: &'static str, value: &'static str, color: gpui::Hsla) -> Flex {
+    Flex::new()
+        .row()
         .justify_between()
-        .items_center()
-        .px_3()
-        .py_2()
-        .rounded(px(12.0))
-        .bg(rgb(0xffffff))
-        .border_1()
+        .align_center()
+        .padding_x_units(12.0)
+        .padding_y_px(8.0)
+        .rounded_units(12.0)
+        .bg(theme.neutral.card)
+        .border()
         .border_color(color.opacity(0.24))
-        .child(Text::new(label).sm())
+        .child(Text::new(label).sm().text_color(theme.neutral.text_2))
         .child(Text::new(value).bold().text_color(color))
 }
 
@@ -280,24 +295,24 @@ mod tests {
             ".right()",
             ".position(",
             ".collapse_mode(",
-            ".expanded_width(",
-            ".collapsed_width(",
-            ".min_width(",
-            ".max_width(",
+            ".expanded_width_units(",
+            ".collapsed_width_units(",
+            ".min_width_units(",
+            ".max_width_units(",
             ".resizable()",
             ".scrollable()",
             ".brand(",
             ".brand_subtitle(",
             ".logo(",
             ".brand_action(",
-            ".header_padding(",
-            ".content_padding(",
-            ".footer_padding(",
-            ".gap(",
+            ".header_padding_units(",
+            ".content_padding_units(",
+            ".footer_padding_units(",
+            ".gap_units(",
             ".background(",
             ".border_color(",
             ".border(",
-            ".rounded(",
+            ".rounded_units(",
             ".header(",
             ".child(",
             ".content(",
@@ -313,5 +328,33 @@ mod tests {
         assert!(source.contains("menu: Entity<Menu>"));
         assert!(!source.contains(concat!("TitleBa", "r::new()")));
         assert!(!source.contains(concat!("AppWindow", "Frame::new")));
+    }
+
+    #[test]
+    fn sidebar_demo_uses_theme_tokens_and_stable_showcase_layouts() {
+        let source = include_str!("sidebar_demo.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(source.contains("cx.global::<Config>().theme"));
+        assert!(source.contains("shell_stage("));
+        assert!(source.contains("demo_surface("));
+        assert!(source.contains("theme.neutral.card"));
+        assert!(source.contains("theme.neutral.border"));
+        assert!(!source.contains("rgb("));
+    }
+
+    #[test]
+    fn sidebar_demo_does_not_build_raw_gpui_layout_elements() {
+        let source = include_str!("sidebar_demo.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(!source.contains(" div,"));
+        assert!(!source.contains("div()"));
+        assert!(!source.contains("gpui::Div"));
+        assert!(!source.contains("gpui::div"));
     }
 }

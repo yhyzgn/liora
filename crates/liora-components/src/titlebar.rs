@@ -174,10 +174,20 @@ impl TitleBar {
         self
     }
 
+    /// Sets the titlebar height from application-facing design units.
+    pub fn height_units(self, height: f32) -> Self {
+        self.height(px(height))
+    }
+
     /// Sets horizontal padding for the draggable content region.
     pub fn padding_x(mut self, padding: impl Into<Pixels>) -> Self {
         self.padding_x = padding.into();
         self
+    }
+
+    /// Sets horizontal padding from application-facing design units.
+    pub fn padding_x_units(self, padding: f32) -> Self {
+        self.padding_x(px(padding))
     }
 
     /// Sets spacing between leading elements and title/center content.
@@ -186,10 +196,20 @@ impl TitleBar {
         self
     }
 
+    /// Sets spacing between leading elements and title/center content from design units.
+    pub fn gap_units(self, gap: f32) -> Self {
+        self.gap(px(gap))
+    }
+
     /// Sets spacing between right-side actions and window controls.
     pub fn actions_gap(mut self, gap: impl Into<Pixels>) -> Self {
         self.actions_gap = gap.into();
         self
+    }
+
+    /// Sets spacing between right-side actions and window controls from design units.
+    pub fn actions_gap_units(self, gap: f32) -> Self {
+        self.actions_gap(px(gap))
     }
 
     /// Overrides the titlebar background color.
@@ -228,10 +248,20 @@ impl TitleBar {
         self
     }
 
+    /// Sets the primary title font size from application-facing design units.
+    pub fn title_size_units(self, size: f32) -> Self {
+        self.title_size(px(size))
+    }
+
     /// Sets the secondary title font size.
     pub fn subtitle_size(mut self, size: impl Into<Pixels>) -> Self {
         self.subtitle_size = size.into();
         self
+    }
+
+    /// Sets the secondary title font size from application-facing design units.
+    pub fn subtitle_size_units(self, size: f32) -> Self {
+        self.subtitle_size(px(size))
     }
 
     /// Aligns the titlebar's main draggable content region.
@@ -505,6 +535,36 @@ mod tests {
 
     #[test]
     fn titlebar_builder_tracks_high_customization_options() {
+        let titlebar = TitleBar::new()
+            .padding_x(px(20.0))
+            .gap(px(10.0))
+            .actions_gap(px(6.0))
+            .background(gpui::transparent_black())
+            .border_color(gpui::transparent_black())
+            .border(false)
+            .title_color(gpui::transparent_black())
+            .subtitle_color(gpui::transparent_black())
+            .title_size(px(15.0))
+            .subtitle_size(px(12.0))
+            .content_align(TitleBarContentAlign::Center)
+            .window_controls_position(WindowControlsPosition::Left)
+            .leading("leading")
+            .center("center")
+            .action("action")
+            .height_units(50.0)
+            .padding_x_units(21.0)
+            .gap_units(11.0)
+            .actions_gap_units(7.0)
+            .title_size_units(16.0)
+            .subtitle_size_units(13.0);
+
+        assert_eq!(titlebar.height, px(50.0));
+        assert_eq!(titlebar.padding_x, px(21.0));
+        assert_eq!(titlebar.gap, px(11.0));
+        assert_eq!(titlebar.actions_gap, px(7.0));
+        assert_eq!(titlebar.title_size, px(16.0));
+        assert_eq!(titlebar.subtitle_size, px(13.0));
+
         let titlebar = TitleBar::new()
             .padding_x(px(20.0))
             .gap(px(10.0))

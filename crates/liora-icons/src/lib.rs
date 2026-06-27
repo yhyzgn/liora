@@ -97,6 +97,11 @@ impl Icon {
         self
     }
 
+    /// Sets an explicit icon size from application-facing design units.
+    pub fn size_units(self, size: f32) -> Self {
+        self.size(px(size))
+    }
+
     /// Applies the predefined size xs sizing preset.
     pub fn size_xs(self) -> Self {
         self.size(px(12.0))
@@ -170,6 +175,10 @@ mod tests {
 
     #[test]
     fn icon_size_helpers_set_common_demo_sizes() {
+        assert_eq!(
+            Icon::new("home").size_units(16.0).size,
+            Some(px(16.0).into())
+        );
         assert_eq!(Icon::new("home").size_xs().size, Some(px(12.0).into()));
         assert_eq!(Icon::new("home").size_md().size, Some(px(18.0).into()));
         assert_eq!(Icon::new("home").size_lg().size, Some(px(24.0).into()));

@@ -129,10 +129,20 @@ impl Sidebar {
         self
     }
 
+    /// Sets the expanded width from application-facing design units.
+    pub fn expanded_width_units(self, width: f32) -> Self {
+        self.expanded_width(px(width))
+    }
+
     /// Sets the collapsed width.
     pub fn collapsed_width(mut self, width: impl Into<Pixels>) -> Self {
         self.collapsed_width = width.into();
         self
+    }
+
+    /// Sets the collapsed width from application-facing design units.
+    pub fn collapsed_width_units(self, width: f32) -> Self {
+        self.collapsed_width(px(width))
     }
 
     /// Sets the minimum width reserved for future resizable sidebars.
@@ -141,10 +151,20 @@ impl Sidebar {
         self
     }
 
+    /// Sets the minimum width from application-facing design units.
+    pub fn min_width_units(self, width: f32) -> Self {
+        self.min_width(px(width))
+    }
+
     /// Sets the maximum width reserved for future resizable sidebars.
     pub fn max_width(mut self, width: impl Into<Pixels>) -> Self {
         self.max_width = width.into();
         self
+    }
+
+    /// Sets the maximum width from application-facing design units.
+    pub fn max_width_units(self, width: f32) -> Self {
+        self.max_width(px(width))
     }
 
     /// Marks the sidebar as resizable for API-forward compatibility.
@@ -189,10 +209,20 @@ impl Sidebar {
         self
     }
 
+    /// Sets header padding from application-facing design units.
+    pub fn header_padding_units(self, padding: f32) -> Self {
+        self.header_padding(px(padding))
+    }
+
     /// Sets padding around the scrollable content area.
     pub fn content_padding(mut self, padding: impl Into<Pixels>) -> Self {
         self.content_padding = padding.into();
         self
+    }
+
+    /// Sets content padding from application-facing design units.
+    pub fn content_padding_units(self, padding: f32) -> Self {
+        self.content_padding(px(padding))
     }
 
     /// Sets padding around the fixed footer area.
@@ -201,10 +231,20 @@ impl Sidebar {
         self
     }
 
+    /// Sets footer padding from application-facing design units.
+    pub fn footer_padding_units(self, padding: f32) -> Self {
+        self.footer_padding(px(padding))
+    }
+
     /// Sets vertical spacing between the header, content, and footer slots.
     pub fn gap(mut self, gap: impl Into<Pixels>) -> Self {
         self.gap = gap.into();
         self
+    }
+
+    /// Sets vertical spacing between slots from application-facing design units.
+    pub fn gap_units(self, gap: f32) -> Self {
+        self.gap(px(gap))
     }
 
     /// Overrides the sidebar background color.
@@ -229,6 +269,11 @@ impl Sidebar {
     pub fn rounded(mut self, radius: impl Into<Pixels>) -> Self {
         self.radius = Some(radius.into());
         self
+    }
+
+    /// Sets the sidebar outer corner radius from application-facing design units.
+    pub fn rounded_units(self, radius: f32) -> Self {
+        self.rounded(px(radius))
     }
 
     /// Sets the fixed header slot.
@@ -384,10 +429,10 @@ mod tests {
             .id("nav")
             .right()
             .collapse_mode(SidebarCollapseMode::IconsOnly)
-            .expanded_width(px(300.0))
-            .collapsed_width(px(72.0))
-            .min_width(px(200.0))
-            .max_width(px(480.0))
+            .expanded_width_units(300.0)
+            .collapsed_width_units(72.0)
+            .min_width_units(200.0)
+            .max_width_units(480.0)
             .resizable()
             .scrollable()
             .header("header")
@@ -415,14 +460,14 @@ mod tests {
             .brand_subtitle("Native GPUI")
             .logo("logo")
             .brand_action("action")
-            .header_padding(px(14.0))
-            .content_padding(px(10.0))
-            .footer_padding(px(12.0))
-            .gap(px(8.0))
+            .header_padding_units(14.0)
+            .content_padding_units(10.0)
+            .footer_padding_units(12.0)
+            .gap_units(8.0)
             .background(gpui::transparent_black())
             .border_color(gpui::transparent_black())
             .border(false)
-            .rounded(px(18.0))
+            .rounded_units(18.0)
             .content("secondary")
             .footer("footer");
 
