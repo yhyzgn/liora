@@ -149,7 +149,7 @@ impl Render for PopoverView {
                         element_id(format!("{}-motion", id)),
                         div()
                             .id(element_id(format!("{}-content", id)))
-                            .flex_shrink_0() // Ensure content is not squeezed by flex layout
+                            .flex_none()
                             .cursor_default()
                             .occlude()
                             .max_w(max_w)
@@ -162,7 +162,8 @@ impl Render for PopoverView {
                             .on_mouse_down(MouseButton::Left, |_, _, cx| {
                                 cx.stop_propagation();
                             }) // Consume click so it doesn't trigger the background
-                            .bg(theme.neutral.card)
+                            .bg(theme.neutral.popover)
+                            .text_color(theme.neutral.text_1)
                             .border_1()
                             .border_color(theme.neutral.border)
                             .rounded(px(theme.radius.md))
@@ -483,6 +484,19 @@ mod tests {
             ".p_4()
                             .child(content)"
         ));
+    }
+
+    #[test]
+    fn popover_shell_is_intrinsic_sized_and_theme_tokened() {
+        let source = include_str!("popover.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(source.contains(".flex_none()"));
+        assert!(source.contains(".bg(theme.neutral.popover)"));
+        assert!(source.contains(".text_color(theme.neutral.text_1)"));
+        assert!(!source.contains(".bg(theme.neutral.card)"));
     }
 
     #[test]
