@@ -24,6 +24,8 @@ use gpui::{
     AnyElement, App, Component, IntoElement, RenderOnce, SharedString, Window, div, prelude::*,
 };
 use liora_core::{Config, Placement, clear_popover};
+use liora_icons::Icon;
+use liora_icons_lucide::IconName;
 use std::sync::Arc;
 
 /// Fluent native GPUI component for rendering Liora popconfirm.
@@ -153,9 +155,16 @@ impl RenderOnce for Popconfirm {
                             .flex_row()
                             .items_center()
                             .gap_2()
-                            .child(div().text_color(theme.warning.base).child("⚠️"))
+                            .child(
+                                div().flex_none().text_color(theme.warning.base).child(
+                                    Icon::new(IconName::TriangleAlert)
+                                        .size(gpui::px(16.0))
+                                        .color(theme.warning.base),
+                                ),
+                            )
                             .child(
                                 div()
+                                    .min_w(gpui::px(0.0))
                                     .font_weight(gpui::FontWeight::BOLD)
                                     .child(title.clone()),
                             ),
@@ -207,5 +216,18 @@ mod padding_regression_tests {
             .unwrap();
 
         assert!(source.contains(".flush_content()"));
+    }
+
+    #[test]
+    fn popconfirm_uses_fixed_native_icon_instead_of_emoji_glyph() {
+        let source = include_str!("popconfirm.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(source.contains("IconName::TriangleAlert"));
+        assert!(source.contains("Icon::new"));
+        assert!(source.contains(".flex_none()"));
+        assert!(!source.contains("⚠️"));
     }
 }
