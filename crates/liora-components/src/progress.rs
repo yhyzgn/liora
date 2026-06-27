@@ -19,8 +19,6 @@
 //! the component, and avoid app-specific Gallery/Docs resources in this SDK
 //! crate.
 
-#[cfg(not(liora_gpui_latest_api))]
-use crate::gpui_compat::PixelsExt;
 use crate::gpui_compat::element_id;
 use crate::motion::{MotionDuration, MotionEasing, motion_animation};
 use gpui::{

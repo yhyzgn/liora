@@ -5,7 +5,7 @@ edition = "2024"
 description = "Enterprise-style native GPUI component library for Liora applications."
 license-file = "../../LICENSE.md"
 repository = "https://github.com/yhyzgn/liora"
-publish = true
+publish = false
 
 [dependencies]
 gpui.workspace = true

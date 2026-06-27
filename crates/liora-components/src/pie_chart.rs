@@ -25,8 +25,6 @@ use crate::chart::{
     has_chart_data,
 };
 use crate::chart_frame::paint_chart_label_aligned;
-#[cfg(not(liora_gpui_latest_api))]
-use crate::gpui_compat::PixelsExt;
 use crate::{Empty, Space, Text};
 use gpui::{
     App, Bounds, Component, ElementId, Hsla, InteractiveElement, IntoElement, ParentElement,

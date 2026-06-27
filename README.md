@@ -47,7 +47,7 @@ Rust desktop teams often need more than a handful of primitives. Liora focuses o
 | Enterprise component coverage | Element Plus-style categories and APIs across forms, feedback, data, navigation, charts, and advanced controls. |
 | Real app surfaces | `liora-gallery` and `liora-docs` show complete native application setup, theme switching, search/filtering, tray behavior, docs rendering, and dashboard-style composition. |
 | Theming | Light, Dark, and System theme modes with semantic tokens and component-level variants. |
-| One dependency for apps | `cargo add liora` exposes the maintained SDK facade: core, theme, components, icons, tray, packaging, and generic updater helpers. |
+| One git dependency for apps | `liora` is consumed from this repository at a pinned commit and exposes the SDK facade: core, theme, components, icons, tray, packaging, and generic updater helpers. |
 | Native distribution | `liora-packager` + `xtask package` validate installer information, manifests, checksums, signing policy, and package generation plans. |
 | Clear architecture boundary | Reusable components stay in `liora-components`; product-specific data models and screen composition stay in applications. |
 
@@ -108,15 +108,20 @@ Install Rust stable and the native dependencies required by GPUI on your platfor
 
 ### 2. Add Liora to an app
 
-```bash
-cargo add liora
+Liora's GPUI-facing SDK crates are git-only because they use the official Zed GPUI repository at a pinned revision newer than the stale crates.io GPUI line. Pin Liora and GPUI together in your app manifest:
+
+```toml
+[dependencies]
+liora = { git = "https://github.com/yhyzgn/liora", rev = "<liora-commit>" }
+gpui = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", default-features = false }
 ```
 
-Use lower-level crates such as `liora-components` or `liora-packager` only when a workspace needs a narrower dependency surface.
+Use lower-level Liora crates by git/path only when a workspace needs a narrower dependency surface. `liora-packager` and `liora-updater` are independent utility crates and remain available from crates.io.
 
 ### Updater module
 
-`liora-updater` is included in the default `liora` facade and can also be used directly:
+`liora-updater` is included in the default git `liora` facade and can also be used directly from crates.io:
 
 ```bash
 cargo add liora-updater
@@ -230,7 +235,7 @@ Themes are read from Liora global config inside render paths. Avoid passing them
 
 Liora is more than a component catalog:
 
-- **One-dependency adoption**: `liora` re-exports the maintained public SDK modules so app manifests stay compact while focused crates remain independently usable.
+- **One-dependency adoption**: the git-only `liora` facade re-exports the maintained public SDK modules so app manifests stay compact while focused utility crates remain independently usable.
 - **One-call application setup**: `init_liora(cx)` centralizes core configuration, component services, and keyboard bindings so applications do not repeat per-widget setup.
 - **Native Markdown documentation**: Markdown stays as authored content, while the running Docs app renders it into Liora/GPUI nodes and verifies external Rust snippets.
 - **Native charts without a browser layer**: chart primitives use Rust data structures, GPUI paint paths, hit testing, and downsampling instead of a WebView chart runtime.
@@ -251,11 +256,11 @@ Liora is more than a component catalog:
 Liora depends on the official Zed upstream repository, pinned by commit for reproducible builds:
 
 ```toml
-gpui = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", version = "0.2.2", default-features = false }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", version = "0.1.0", default-features = false }
+gpui = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "2c346f60a76fe3f0367ef924927f50a6efdf5718", default-features = false }
 ```
 
-Library crates keep `default-features = false`; final app crates enable platform features on `gpui` and `gpui_platform` in target-specific dependencies. Do not use renamed or community forks such as `open-gpui`, and do not publish Liora crates with local path GPUI dependencies or `[patch]` overrides.
+Library crates keep `default-features = false`; final app crates enable platform features on `gpui` and `gpui_platform` in target-specific dependencies. Do not use renamed or community forks such as `open-gpui`, and do not add a `version` fallback to GPUI dependencies. Crates.io cannot publish packages that depend on git-only GPUI sources, so GPUI-dependent Liora SDK crates intentionally use `publish = false`; applications should depend on Liora by git `rev` and on the matching official Zed GPUI `rev`.
 
 The repository keeps `third_party/zed` only as non-published upstream-source reference material for prior Linux startup-window patch work and PR comparison. Current development should use the official `zed-industries/zed` git dependency above. If a temporary local patch is needed for app-only verification, keep it on a throwaway branch and never commit it to publishable SDK manifests.
 

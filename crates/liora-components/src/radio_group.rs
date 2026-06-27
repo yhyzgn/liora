@@ -19,7 +19,6 @@
 //! the component, and avoid app-specific Gallery/Docs resources in this SDK
 //! crate.
 
-use crate::gpui_compat::focus_window;
 use gpui::{
     AnyElement, App, Context, FocusHandle, Focusable, Hsla, KeyBinding, MouseButton, MouseUpEvent,
     Pixels, Render, Rgba, SharedString, Window, prelude::*, px,
@@ -693,7 +692,7 @@ impl Render for RadioGroup {
             col = col.on_mouse_down(
                 MouseButton::Left,
                 cx.listener(|this, _, window, _cx| {
-                    focus_window(window, &this.focus_handle, _cx);
+                    window.focus(&this.focus_handle, _cx);
                 }),
             );
         }

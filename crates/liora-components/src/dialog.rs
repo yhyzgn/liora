@@ -20,7 +20,6 @@
 //! crate.
 
 use crate::gpui_compat::element_id;
-use crate::gpui_compat::focus_window;
 use crate::motion::{fade_in, pop_in};
 use gpui::{
     AnyElement, App, Context, FocusHandle, Focusable, IntoElement, KeyBinding, MouseButton, Render,
@@ -253,9 +252,7 @@ impl Render for DialogView {
         if !self.focus_requested && animated {
             self.focus_requested = true;
             let focus_handle = focus_handle.clone();
-            window.defer(cx, move |window, cx| {
-                focus_window(window, &focus_handle, cx)
-            });
+            window.defer(cx, move |window, cx| window.focus(&focus_handle, cx));
         } else if !self.focus_requested {
             self.focus_requested = true;
         }
@@ -404,9 +401,7 @@ mod motion_tests {
         assert!(
             impl_source.contains("pub fn show_in_window(self, window: &mut Window, cx: &mut App)")
         );
-        assert!(
-            impl_source.contains("crate::gpui_compat::focus_window(window, &focus_handle, cx)")
-        );
+        assert!(impl_source.contains("window.focus(&focus_handle, cx)"));
         assert!(impl_source.contains("window.refresh()"));
     }
 
@@ -433,7 +428,7 @@ mod motion_tests {
         assert!(source.contains(".track_focus(&focus_handle)"));
         assert!(source.contains("!self.focus_requested && animated"));
         assert!(source.contains("window.defer(cx, move |window, cx|"));
-        assert!(source.contains("focus_window(window, &focus_handle, cx)"));
+        assert!(source.contains("window.focus(&focus_handle, cx)"));
         assert!(source.contains("s.on_action(cx.listener({"));
         assert!(source.contains("struct ActiveDialogRuntime"));
         assert!(source.contains("struct DialogEscapeInterceptorInstalled"));
@@ -661,7 +656,7 @@ impl Dialog {
         liora_core::set_active_modal(id, view.into(), cx);
         if let Some(window) = focus_window {
             let focus_handle = view_for_focus.read(cx).focus_handle(cx);
-            crate::gpui_compat::focus_window(window, &focus_handle, cx);
+            window.focus(&focus_handle, cx);
             window.refresh();
         }
         cx.refresh_windows();

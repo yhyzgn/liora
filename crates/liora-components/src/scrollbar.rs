@@ -19,7 +19,6 @@
 //! the component, and avoid app-specific Gallery/Docs resources in this SDK
 //! crate.
 
-use crate::gpui_compat::{scroll_handle_max_offset_y, scrollbar_max_offset_y};
 use gpui::{
     AnyElement, App, Bounds, Context, DispatchPhase, Element, GlobalElementId, Hitbox,
     HitboxBehavior, InspectorElementId, IntoElement, LayoutId, ListState, MouseButton,
@@ -272,7 +271,7 @@ fn set_virtual_scrollbar_position(
     grab_offset: Pixels,
 ) {
     let viewport = list_state.viewport_bounds();
-    let max_offset_y = scrollbar_max_offset_y(list_state);
+    let max_offset_y = list_state.max_offset_for_scrollbar().y;
     if max_offset_y <= px(0.0) || viewport.size.height <= px(0.0) {
         return;
     }
@@ -289,7 +288,7 @@ fn set_virtual_scrollbar_position(
 
 fn virtual_thumb_metrics(list_state: &ListState, width: Pixels) -> Option<ThumbMetrics> {
     let viewport = list_state.viewport_bounds();
-    let max_offset_y = scrollbar_max_offset_y(list_state);
+    let max_offset_y = list_state.max_offset_for_scrollbar().y;
     let offset = list_state.scroll_px_offset_for_scrollbar();
     let viewport_h = viewport.size.height;
     let content_h = viewport_h + max_offset_y;
@@ -363,7 +362,7 @@ fn scroll_handle_thumb_metrics(
     width: Pixels,
 ) -> Option<ThumbMetrics> {
     let viewport_bounds = scroll_handle.bounds();
-    let max_offset_y = scroll_handle_max_offset_y(scroll_handle);
+    let max_offset_y = scroll_handle.max_offset().y;
     let offset = scroll_handle.offset();
 
     let viewport_h = viewport_bounds.size.height;

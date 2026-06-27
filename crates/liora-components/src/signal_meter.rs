@@ -19,8 +19,6 @@
 //! the component, and avoid app-specific Gallery/Docs resources in this SDK
 //! crate.
 
-#[cfg(not(liora_gpui_latest_api))]
-use crate::gpui_compat::PixelsExt;
 use gpui::{
     App, Background, BorderStyle, Bounds, Component, Corners, Edges, Hsla, IntoElement, Pixels,
     RenderOnce, Window, point, prelude::*, px, quad, size,

@@ -4,8 +4,13 @@
 //! listing every lower-level crate separately:
 //!
 //! ```toml
-//! liora = "0.1.8"
+//! liora = { git = "https://github.com/yhyzgn/liora", rev = "<liora-commit>" }
 //! ```
+//!
+//! Keep the application `gpui` and `gpui_platform` dependencies pinned to the
+//! official Zed revision documented by the adopted Liora commit. The GPUI-facing
+//! SDK crates are intentionally git-only while they track newer upstream GPUI
+//! APIs than the stale crates.io GPUI line.
 //!
 //! The facade keeps each domain available under a stable module name while also
 //! re-exporting the most common application setup entry points.

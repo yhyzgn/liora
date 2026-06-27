@@ -52,13 +52,9 @@ impl RenderOnce for ButtonGroup {
             .flex_row()
             .items_center()
             .children(self.buttons.into_iter().enumerate().map(|(i, btn)| {
-                // Note: In GPUI 0.2.2, we don't have an easy way to override
-                // internal parts of Button from outside without adding more fields to Button.
-                // For now, we'll just render them side-by-side.
-                // Real ButtonGroup implementation would need Button to support custom corners.
-
-                // To keep it simple for now, we'll just use the flex row.
-                // In a future update, we can add .rounded_none(), .rounded_left(), etc. to Button.
+                // Button currently owns its corner styling internally, so the group
+                // renders adjacent actions in one flex row until Button exposes
+                // explicit grouped-corner controls.
                 if i > 0 && i < count {
                     // btn = btn.margin_left(px(-1.0)); // overlap borders
                 }

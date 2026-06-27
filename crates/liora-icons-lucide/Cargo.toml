@@ -5,7 +5,7 @@ edition = "2024"
 description = "Bundled Lucide icon paths rendered through Liora native GPUI icon primitives."
 license-file = "../../LICENSE.md"
 repository = "https://github.com/yhyzgn/liora"
-publish = true
+publish = false
 
 [dependencies]
 gpui = { workspace = true }

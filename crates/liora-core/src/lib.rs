@@ -119,10 +119,10 @@ impl ThemeMode {
 
 /// Return startup bounds for a window that should request GPUI maximized state.
 ///
-/// This helper is intentionally limited to stable crates.io GPUI APIs. It
-/// preserves the caller's `WindowBounds::Maximized` intent and uses the primary
-/// display bounds as the restore/fallback geometry; exact first-frame behavior
-/// is decided by the GPUI backend selected by the application root.
+/// This helper uses the official pinned Zed GPUI git API surface. It preserves
+/// the caller's `WindowBounds::Maximized` intent and uses the primary display
+/// bounds as the restore/fallback geometry; exact first-frame behavior is
+/// decided by the upstream GPUI backend selected by the application root.
 pub fn startup_maximized_window_bounds(
     cx: &App,
     fallback_size: gpui::Size<Pixels>,

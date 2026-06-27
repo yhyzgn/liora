@@ -19,7 +19,6 @@
 //! the component, and avoid app-specific Gallery/Docs resources in this SDK
 //! crate.
 
-use crate::gpui_compat::{focus_window, paint_shaped_line};
 use gpui::{
     AnyElement, App, Bounds, Context, Element, ElementId, ElementInputHandler, Entity,
     EntityInputHandler, FocusHandle, Focusable, GlobalElementId, InspectorElementId, IntoElement,
@@ -659,7 +658,7 @@ impl Input {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        focus_window(window, &self.focus_handle, cx);
+        window.focus(&self.focus_handle, cx);
         if self.value.is_empty() {
             self.move_to(0, cx);
             return;
@@ -1418,8 +1417,7 @@ impl Element for InputElement {
             window.paint_quad(s);
         }
         for (line, y) in &prepaint.lines {
-            let _ = paint_shaped_line(
-                line,
+            let _ = line.paint(
                 point(bounds.left(), *y),
                 window.line_height(),
                 gpui::TextAlign::Left,
