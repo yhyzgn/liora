@@ -14,9 +14,10 @@ use liora_components::{
     Radio, RadioGroup, RadioOptionStyle, Rate, Result as LioraResult, ResultStatus, Segmented,
     SegmentedOption, Select, Sidebar, Skeleton, SkeletonItem, SkeletonVariant, Slider, Space,
     Statistic, Switch, Tag as LioraTag, Text, Textarea, Timer, TimerFormat, TimerUnit, Title,
-    Transfer, TransferItem, Tree, TreeNode, Upload, UploadFile, UploadStatus, VirtualizedList,
-    VirtualizedTable, VirtualizedTree, WindowFrameMode, frame_mode_switch_row, show_notification,
-    toast_error, toast_info, toast_success, toast_warning,
+    TitleBar, TitleBarContentAlign, Transfer, TransferItem, Tree, TreeNode, Upload, UploadFile,
+    UploadStatus, VirtualizedList, VirtualizedTable, VirtualizedTree, WindowControlsPosition,
+    WindowFrameMode, frame_mode_switch_row, show_notification, toast_error, toast_info,
+    toast_success, toast_warning,
 };
 use liora_core::{
     Config, PassivePortal, Placement, Portal, ThemeMode, apply_theme_mode, clear_popover,
@@ -24,6 +25,7 @@ use liora_core::{
 use liora_gallery::category;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
+use liora_theme::Theme;
 use liora_updater::{
     AssetKind, InstallAction, InstallPlan, LioraApp, Platform, UpdateRequest, Updater,
     liora_asset_selector,
@@ -1075,6 +1077,7 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         )),
         "quick_start/verify.sh" => Some(include_str!("../content/snippets/quick_start/verify.sh")),
         "quick_start/init.rs" => Some(include_str!("../content/snippets/quick_start/init.rs")),
+        "quick_start/fonts.rs" => Some(include_str!("../content/snippets/quick_start/fonts.rs")),
         "quick_start/components.rs" => Some(include_str!(
             "../content/snippets/quick_start/components.rs"
         )),
@@ -1466,8 +1469,29 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "splitter/basic.rs" => Some(include_str!("../content/snippets/splitter/basic.rs")),
         "scrollbar/basic.rs" => Some(include_str!("../content/snippets/scrollbar/basic.rs")),
         "shell/basic.rs" => Some(include_str!("../content/snippets/shell/basic.rs")),
+        "shell/full_product.rs" => Some(include_str!("../content/snippets/shell/full_product.rs")),
+        "shell/content_first.rs" => {
+            Some(include_str!("../content/snippets/shell/content_first.rs"))
+        }
+        "shell/minimal.rs" => Some(include_str!("../content/snippets/shell/minimal.rs")),
         "sidebar/basic.rs" => Some(include_str!("../content/snippets/sidebar/basic.rs")),
+        "sidebar/brand.rs" => Some(include_str!("../content/snippets/sidebar/brand.rs")),
+        "sidebar/scrollable.rs" => Some(include_str!("../content/snippets/sidebar/scrollable.rs")),
+        "sidebar/inspector.rs" => Some(include_str!("../content/snippets/sidebar/inspector.rs")),
+        "sidebar/icon_rail.rs" => Some(include_str!("../content/snippets/sidebar/icon_rail.rs")),
+        "sidebar/custom_slots.rs" => {
+            Some(include_str!("../content/snippets/sidebar/custom_slots.rs"))
+        }
         "titlebar/basic.rs" => Some(include_str!("../content/snippets/titlebar/basic.rs")),
+        "titlebar/window_controls.rs" => Some(include_str!(
+            "../content/snippets/titlebar/window_controls.rs"
+        )),
+        "titlebar/command_center.rs" => Some(include_str!(
+            "../content/snippets/titlebar/command_center.rs"
+        )),
+        "titlebar/borderless.rs" => {
+            Some(include_str!("../content/snippets/titlebar/borderless.rs"))
+        }
         "descriptions/basic.rs" => Some(include_str!("../content/snippets/descriptions/basic.rs")),
         "descriptions/border.rs" => {
             Some(include_str!("../content/snippets/descriptions/border.rs"))
@@ -4857,15 +4881,16 @@ impl Render for LiveDemoContent {
             "ContainerSpace" => container_space_demo(),
             "ContainerDivider" => container_divider_demo(),
             "ContainerLayout" => container_layout_demo(),
-            "ShellBasic" => liora_gallery::demos::render_doc_demo("Shell", _cx)
+            "ShellBasic" | "ShellFullProduct" | "ShellContentFirst" | "ShellMinimal" => liora_gallery::demos::render_doc_demo("Shell", _cx)
                 .map(|view| view.into_any_element())
                 .unwrap_or_else(|| Paragraph::with_text("Shell demo is not available.").into_any_element()),
-            "SidebarBasic" => liora_gallery::demos::render_doc_demo("Sidebar", _cx)
+            "SidebarBasic" | "SidebarBrand" | "SidebarScrollable" | "SidebarInspector"
+            | "SidebarIconRail" | "SidebarCustomSlots" => liora_gallery::demos::render_doc_demo("Sidebar", _cx)
                 .map(|view| view.into_any_element())
                 .unwrap_or_else(|| Paragraph::with_text("Sidebar demo is not available.").into_any_element()),
-            "TitleBarBasic" => liora_gallery::demos::render_doc_demo("TitleBar", _cx)
-                .map(|view| view.into_any_element())
-                .unwrap_or_else(|| Paragraph::with_text("TitleBar demo is not available.").into_any_element()),
+            "TitleBarBasic" | "TitleBarControls" => docs_titlebar_controls_demo(&_cx.global::<Config>().theme),
+            "TitleBarCommandCenter" => docs_titlebar_command_demo(&_cx.global::<Config>().theme),
+            "TitleBarBorderless" => docs_titlebar_borderless_demo(&_cx.global::<Config>().theme),
             "SplitterBasic" => liora_components::Splitter::new()
                 .height_md()
                 .bordered()
@@ -6097,6 +6122,146 @@ fn docs_virtualized_tree(cx: &mut Context<VirtualizedTree>, checkable: bool) -> 
     }
 
     tree
+}
+
+fn docs_titlebar_surface(theme: &Theme, titlebar: TitleBar) -> impl IntoElement {
+    Flex::new()
+        .w_full()
+        .overflow_hidden()
+        .rounded_units(14.0)
+        .border()
+        .border_color(theme.neutral.border)
+        .bg(theme.neutral.card)
+        .child(titlebar)
+}
+
+fn docs_titlebar_controls_demo(theme: &Theme) -> AnyElement {
+    Card::new(
+        Space::new()
+            .vertical()
+            .gap_md()
+            .child(
+                Text::new("Right controls / brand shell")
+                    .xs()
+                    .bold()
+                    .text_color(theme.neutral.text_2),
+            )
+            .child(docs_titlebar_surface(
+                theme,
+                TitleBar::new()
+                    .id("docs-titlebar-controls-right-live")
+                    .title("Liora Studio")
+                    .subtitle("Theme-aware native chrome")
+                    .icon(Icon::new(IconName::Sparkles).size_units(16.0))
+                    .height_units(62.0)
+                    .padding_x_units(20.0)
+                    .gap_units(12.0)
+                    .actions_gap_units(8.0)
+                    .background(theme.neutral.card)
+                    .border_color(theme.neutral.border)
+                    .title_color(theme.neutral.text_1)
+                    .subtitle_color(theme.neutral.text_3)
+                    .content_align(TitleBarContentAlign::Start)
+                    .window_controls_position(WindowControlsPosition::Right)
+                    .window_controls(true)
+                    .action(Button::new("Share").small())
+                    .action(Button::new("Deploy").small().primary()),
+            ))
+            .child(
+                Text::new("Left controls / utility titlebar")
+                    .xs()
+                    .bold()
+                    .text_color(theme.neutral.text_2),
+            )
+            .child(docs_titlebar_surface(
+                theme,
+                TitleBar::new()
+                    .id("docs-titlebar-controls-left-live")
+                    .title("Inspector")
+                    .subtitle("Left controls + manual drag policy")
+                    .icon(Icon::new(IconName::SlidersHorizontal).size_units(16.0))
+                    .compact()
+                    .draggable(false)
+                    .background(theme.neutral.popover)
+                    .border_color(theme.neutral.border)
+                    .title_color(theme.neutral.text_1)
+                    .subtitle_color(theme.neutral.text_3)
+                    .content_align(TitleBarContentAlign::End)
+                    .window_controls_position(WindowControlsPosition::Left)
+                    .window_controls(true)
+                    .action(Button::new("Reset").small()),
+            )),
+    )
+    .no_shadow()
+    .into_any_element()
+}
+
+fn docs_titlebar_command_demo(theme: &Theme) -> AnyElement {
+    Card::new(docs_titlebar_surface(
+        theme,
+        TitleBar::new()
+            .id("docs-titlebar-command-live")
+            .title("Command shell")
+            .subtitle("Centered slot")
+            .leading(
+                Space::new()
+                    .gap_xs()
+                    .child(
+                        Icon::new(IconName::Circle)
+                            .size_units(10.0)
+                            .color(theme.success.base),
+                    )
+                    .child(Text::new("Online").xs().bold()),
+            )
+            .center(
+                Space::new()
+                    .gap_sm()
+                    .child(
+                        Icon::new(IconName::Search)
+                            .size_units(14.0)
+                            .color(theme.primary.base),
+                    )
+                    .child(Text::new("Search commands or files…").sm()),
+            )
+            .actions([
+                Button::new("Inspect").small(),
+                Button::new("Publish").small().primary(),
+            ])
+            .height_units(58.0)
+            .padding_x_units(18.0)
+            .gap_units(10.0)
+            .actions_gap_units(8.0)
+            .background(theme.neutral.card)
+            .border_color(theme.neutral.border)
+            .title_color(theme.neutral.text_1)
+            .subtitle_color(theme.neutral.text_3)
+            .content_align(TitleBarContentAlign::Center)
+            .window_controls(false),
+    ))
+    .no_shadow()
+    .into_any_element()
+}
+
+fn docs_titlebar_borderless_demo(theme: &Theme) -> AnyElement {
+    Card::new(docs_titlebar_surface(
+        theme,
+        TitleBar::new()
+            .id("docs-titlebar-borderless-live")
+            .borderless()
+            .border(false)
+            .title("Preview canvas")
+            .subtitle("Embedded toolbar")
+            .height_units(46.0)
+            .padding_x_units(16.0)
+            .background(theme.primary.light_9)
+            .border_color(theme.primary.light_7)
+            .title_color(theme.neutral.text_1)
+            .subtitle_color(theme.neutral.text_2)
+            .window_controls(false)
+            .actions([Button::new("Fit").small(), Button::new("Export").small()]),
+    ))
+    .no_shadow()
+    .into_any_element()
 }
 
 fn docs_virtualized_tree_data() -> Vec<TreeNode> {
@@ -8373,8 +8538,8 @@ fn docs_nav_menu_items() -> Vec<liora_components::MenuNode> {
     indices.sort_by(|left, right| {
         let left_page = &DOC_PAGES[*left];
         let right_page = &DOC_PAGES[*right];
-        let left_category = category::category_for(left_page.title);
-        let right_category = category::category_for(right_page.title);
+        let left_category = docs_nav_category_for(left_page.title);
+        let right_category = docs_nav_category_for(right_page.title);
         left_category
             .order()
             .cmp(&right_category.order())
@@ -8391,7 +8556,7 @@ fn docs_nav_menu_items() -> Vec<liora_components::MenuNode> {
             .iter()
             .filter_map(|page_index| {
                 let page = &DOC_PAGES[*page_index];
-                (category::category_for(page.title) == *group_category).then(|| {
+                (docs_nav_category_for(page.title) == *group_category).then(|| {
                     liora_components::MenuNode::Item(liora_components::MenuItem {
                         id: page_index.to_string().into(),
                         label: page.title.into(),
@@ -8412,6 +8577,23 @@ fn docs_nav_menu_items() -> Vec<liora_components::MenuNode> {
     }
 
     groups
+}
+
+fn docs_nav_category_for(title: &str) -> category::Category {
+    match category::component_key(title) {
+        "About" | "Overview" | "Quick" | "Quick Start" | "Architecture" | "Packaging"
+        | "Packaging Workflow" | "Release" | "Release Candidate" | "Adoption"
+        | "Adoption Guide" | "Gallery" | "Gallery Dogfooding" | "Dashboard"
+        | "Dashboard Patterns" | "Dashboard State" | "Live" | "Live Demo" | "Authoring" => {
+            category::Category::About
+        }
+        "Shell" | "TitleBar" | "Sidebar" | "Container" | "Dialog" | "Drawer" | "MessageBox"
+        | "Popconfirm" | "Popover" | "Tooltip" | "Tour" | "Tray" | "PageHeader" | "Layout"
+        | "Space" | "Affix" | "Anchor" | "Backtop" | "Splitter" | "Scrollbar" => {
+            category::Category::WindowLayout
+        }
+        _ => category::Category::Control,
+    }
 }
 
 fn render_list(
@@ -8526,6 +8708,30 @@ mod tests {
     }
 
     #[test]
+    fn quick_start_documents_app_level_font_customization() {
+        assert!(QUICK_START_DOC.contains("## 7. 应用级字体自定义"));
+        assert!(QUICK_START_DOC.contains(r#"src="quick_start/fonts.rs""#));
+        assert!(QUICK_START_DOC.contains("Gallery 和 Docs 当前采用同一策略"));
+        assert!(load_code_snippet("quick_start/fonts.rs").is_some());
+    }
+
+    #[test]
+    fn gallery_and_docs_share_pingfang_font_bootstrap_policy() {
+        let gallery = include_str!("../../liora-gallery/src/main.rs");
+        let docs = include_str!("main.rs");
+
+        for source in [gallery, docs] {
+            assert!(source.contains("FontLoadMode::ExternalThenEmbedded"));
+            assert!(source.contains("PingFangSC-Regular.ttf"));
+            assert!(source.contains(r#"require_family("PingFang SC")"#));
+            assert!(source.contains(r#"with_ui_families(["PingFang SC", "Segoe UI", "Arial"])"#));
+            assert!(source.contains(
+                r#"with_code_families(["Consolas", "JetBrains Mono", "SF Mono", "Monospace"])"#
+            ));
+        }
+    }
+
+    #[test]
     fn docs_shell_registers_theme_system_page() {
         let titles = DOC_PAGES.iter().map(|page| page.title).collect::<Vec<_>>();
         assert!(titles.contains(&"Theme"));
@@ -8547,15 +8753,36 @@ mod tests {
         assert_eq!(first_group_title, "About");
 
         let about_group = docs_menu_group(&items, "About");
-        assert_eq!(docs_menu_group_labels(about_group), vec!["About"]);
+        let about_labels = docs_menu_group_labels(about_group);
+        for title in [
+            "About",
+            "Overview",
+            "Quick Start",
+            "Architecture",
+            "Packaging Workflow",
+            "Release Candidate",
+            "Adoption Guide",
+            "Gallery Dogfooding",
+            "Dashboard Patterns",
+            "Dashboard State",
+            "Live Demo",
+            "Authoring",
+        ] {
+            assert!(
+                about_labels.contains(&title),
+                "{title} should be grouped with About because it is docs/project guidance, not a layout or control component"
+            );
+        }
 
         let window_group = docs_menu_group(&items, "窗体布局");
         let window_labels = docs_menu_group_labels(window_group);
-        assert!(window_labels.contains(&"Adoption Guide"));
-        assert!(window_labels.contains(&"Architecture"));
-        assert!(window_labels.contains(&"Authoring"));
-        assert!(window_labels.contains(&"Dashboard Patterns"));
         assert!(window_labels.contains(&"Container"));
+        assert!(window_labels.contains(&"Shell"));
+        assert!(window_labels.contains(&"Sidebar"));
+        assert!(window_labels.contains(&"TitleBar"));
+        assert!(!window_labels.contains(&"Architecture"));
+        assert!(!window_labels.contains(&"Authoring"));
+        assert!(!window_labels.contains(&"Dashboard Patterns"));
 
         let control_group = docs_menu_group(&items, "控件");
         let control_labels = docs_menu_group_labels(control_group);
@@ -9031,6 +9258,64 @@ mod tests {
     }
 
     #[test]
+    fn docs_cover_recent_gallery_shell_sidebar_titlebar_tray_mention_changes() {
+        let titles = DOC_PAGES.iter().map(|page| page.title).collect::<Vec<_>>();
+        for title in ["Shell", "Sidebar", "TitleBar", "Tray", "Mention"] {
+            assert!(
+                titles.contains(&title),
+                "missing docs page for recent Gallery page {title}"
+            );
+        }
+
+        assert!(SHELL_DOC.contains("ShellFullProduct"));
+        assert!(SHELL_DOC.contains("ShellContentFirst"));
+        assert!(SHELL_DOC.contains("ShellMinimal"));
+        for snippet in [
+            "shell/full_product.rs",
+            "shell/content_first.rs",
+            "shell/minimal.rs",
+        ] {
+            assert!(SHELL_DOC.contains(&format!("src=\"{snippet}\"")));
+            assert!(load_code_snippet(snippet).is_some());
+        }
+
+        assert!(SIDEBAR_DOC.contains("SidebarBrand"));
+        assert!(SIDEBAR_DOC.contains("SidebarScrollable"));
+        assert!(SIDEBAR_DOC.contains("SidebarInspector"));
+        assert!(SIDEBAR_DOC.contains("SidebarIconRail"));
+        assert!(SIDEBAR_DOC.contains("SidebarCustomSlots"));
+        for snippet in [
+            "sidebar/brand.rs",
+            "sidebar/scrollable.rs",
+            "sidebar/inspector.rs",
+            "sidebar/icon_rail.rs",
+            "sidebar/custom_slots.rs",
+        ] {
+            assert!(SIDEBAR_DOC.contains(&format!("src=\"{snippet}\"")));
+            assert!(load_code_snippet(snippet).is_some());
+        }
+
+        assert!(TITLEBAR_DOC.contains("TitleBarControls"));
+        assert!(TITLEBAR_DOC.contains("TitleBarCommandCenter"));
+        assert!(TITLEBAR_DOC.contains("TitleBarBorderless"));
+        for snippet in [
+            "titlebar/window_controls.rs",
+            "titlebar/command_center.rs",
+            "titlebar/borderless.rs",
+        ] {
+            assert!(TITLEBAR_DOC.contains(&format!("src=\"{snippet}\"")));
+            assert!(load_code_snippet(snippet).is_some());
+        }
+
+        assert!(TRAY_DOC.contains("TrayControlCenter"));
+        assert!(TRAY_DOC.contains("状态栏驻留"));
+        assert!(MENTION_DOC.contains("Up"));
+        assert!(MENTION_DOC.contains("Down"));
+        assert!(MENTION_DOC.contains("Enter"));
+        assert!(MENTION_DOC.contains("回填"));
+    }
+
+    #[test]
     fn component_effect_sections_keep_code_next_to_effect() {
         let gallery_keys = liora_gallery::demos::registry()
             .into_iter()
@@ -9054,10 +9339,16 @@ mod tests {
             );
 
             let mut remaining = page.markdown;
-            while let Some(effect_start) = remaining.find("::LioraDemo") {
+            while let Some(effect_start) = remaining.find("LioraDemo") {
                 let after_effect = &remaining[effect_start..];
                 let next_section = after_effect.find("\n## ").unwrap_or(after_effect.len());
                 let current_example = &after_effect[..next_section];
+                assert_eq!(
+                    current_example.matches("LioraDemo").count(),
+                    1,
+                    "{} should not batch multiple effects before one code block; keep one example followed by its code",
+                    page.title
+                );
                 assert!(
                     current_example.contains("\n### 代码\n"),
                     "{} has an effect without adjacent code",
@@ -9066,6 +9357,16 @@ mod tests {
                 assert!(
                     current_example.contains("```rust src="),
                     "{} adjacent code should be sourced from an authored file",
+                    page.title
+                );
+                let code_heading = current_example.find("\n### 代码\n").unwrap();
+                let code_block = current_example[code_heading..]
+                    .find("```rust src=")
+                    .map(|offset| code_heading + offset)
+                    .expect("checked above");
+                assert!(
+                    code_heading < code_block,
+                    "{} should show the effect first and the code immediately after it",
                     page.title
                 );
                 remaining = &after_effect[next_section..];
@@ -9837,8 +10138,12 @@ mod tests {
             ),
             (
                 include_str!("../content/pages/shell.md"),
-                "ShellBasic",
-                &["shell/basic.rs"][..],
+                "ShellFullProduct",
+                &[
+                    "shell/full_product.rs",
+                    "shell/content_first.rs",
+                    "shell/minimal.rs",
+                ][..],
             ),
             (
                 include_str!("../content/pages/splitter.md"),

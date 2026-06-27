@@ -2,15 +2,61 @@
 
 `Sidebar` 是 Liora 的自管理侧栏组件。它拥有自己的宽度、边框、圆角、背景、固定 header/footer、可滚动内容区，以及常见的顶部 brand/logo 区域，适合承载 `Menu`、过滤器、工作区信息或账号入口。
 
-## 独立侧栏
+本页同步 Gallery 当前的 Sidebar 用例，覆盖品牌区、长菜单滚动、右侧 inspector、折叠图标栏和完全自定义插槽。
+
+## 品牌工作区侧栏
 
 ### 效果
 
-:::LioraDemo{component="SidebarBasic"}::
+::LioraDemo{component="SidebarBrand"}::
 
 ### 代码
 
-```rust src="sidebar/basic.rs"
+```rust src="sidebar/brand.rs"
+```
+
+## 长菜单滚动
+
+### 效果
+
+::LioraDemo{component="SidebarScrollable"}::
+
+### 代码
+
+```rust src="sidebar/scrollable.rs"
+```
+
+## 右侧检查器
+
+### 效果
+
+::LioraDemo{component="SidebarInspector"}::
+
+### 代码
+
+```rust src="sidebar/inspector.rs"
+```
+
+## 折叠图标栏
+
+### 效果
+
+::LioraDemo{component="SidebarIconRail"}::
+
+### 代码
+
+```rust src="sidebar/icon_rail.rs"
+```
+
+## 完全自定义插槽
+
+### 效果
+
+::LioraDemo{component="SidebarCustomSlots"}::
+
+### 代码
+
+```rust src="sidebar/custom_slots.rs"
 ```
 
 ## 使用建议

@@ -1,16 +1,40 @@
 # Shell
 
-`Shell` 是 Liora 的高层应用框架控件，统一封装应用窗口常见区域：可选自定义 `TitleBar`、header、left sidebar、right sidebar / inspector、scrollable main、footer 和 overlay。它适合大多数产品型桌面应用；只有在需要更底层控制时，才直接组合 `AppWindowFrame`、`Container`、`TitleBar` 和 `Sidebar`。
+`Shell` 是 Liora 的高层应用框架控件，统一封装应用窗口常见区域：可选自定义 `TitleBar`、header、left sidebar、right sidebar / inspector、可滚动 main、footer 和 overlay。它适合大多数产品型桌面应用；只有在需要更底层控制时，才直接组合 `AppWindowFrame`、`Container`、`TitleBar` 和 `Sidebar`。
 
-## 组合应用框架
+本页同步 Gallery 当前的 Shell 用例：每一个效果后面都紧跟对应代码，避免先堆效果再集中展示代码。
+
+## 完整产品框架
 
 ### 效果
 
-:::LioraDemo{component="ShellBasic"}::
+::LioraDemo{component="ShellFullProduct"}::
 
 ### 代码
 
-```rust src="shell/basic.rs"
+```rust src="shell/full_product.rs"
+```
+
+## System frame 内容优先工作区
+
+### 效果
+
+::LioraDemo{component="ShellContentFirst"}::
+
+### 代码
+
+```rust src="shell/content_first.rs"
+```
+
+## 嵌入式 Shell
+
+### 效果
+
+::LioraDemo{component="ShellMinimal"}::
+
+### 代码
+
+```rust src="shell/minimal.rs"
 ```
 
 ## 使用建议

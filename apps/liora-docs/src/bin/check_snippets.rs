@@ -425,6 +425,8 @@ mod qr_code_style;
 mod quick_start_component_view;
 #[path = "../../content/snippets/quick_start/components.rs"]
 mod quick_start_components;
+#[path = "../../content/snippets/quick_start/fonts.rs"]
+mod quick_start_fonts;
 #[path = "../../content/snippets/quick_start/init.rs"]
 mod quick_start_init;
 #[path = "../../content/snippets/quick_start/main_window.rs"]
@@ -473,6 +475,26 @@ mod segmented_block;
 mod segmented_disabled;
 #[path = "../../content/snippets/select/basic.rs"]
 mod select_basic;
+#[path = "../../content/snippets/shell/basic.rs"]
+mod shell_basic;
+#[path = "../../content/snippets/shell/content_first.rs"]
+mod shell_content_first;
+#[path = "../../content/snippets/shell/full_product.rs"]
+mod shell_full_product;
+#[path = "../../content/snippets/shell/minimal.rs"]
+mod shell_minimal;
+#[path = "../../content/snippets/sidebar/basic.rs"]
+mod sidebar_basic;
+#[path = "../../content/snippets/sidebar/brand.rs"]
+mod sidebar_brand;
+#[path = "../../content/snippets/sidebar/custom_slots.rs"]
+mod sidebar_custom_slots;
+#[path = "../../content/snippets/sidebar/icon_rail.rs"]
+mod sidebar_icon_rail;
+#[path = "../../content/snippets/sidebar/inspector.rs"]
+mod sidebar_inspector;
+#[path = "../../content/snippets/sidebar/scrollable.rs"]
+mod sidebar_scrollable;
 #[path = "../../content/snippets/signal_meter/levels.rs"]
 mod signal_meter_levels;
 #[path = "../../content/snippets/signal_meter/mobile.rs"]
@@ -603,6 +625,14 @@ mod timer_count_up;
 mod timer_result;
 #[path = "../../content/snippets/timer/units.rs"]
 mod timer_units;
+#[path = "../../content/snippets/titlebar/basic.rs"]
+mod titlebar_basic;
+#[path = "../../content/snippets/titlebar/borderless.rs"]
+mod titlebar_borderless;
+#[path = "../../content/snippets/titlebar/command_center.rs"]
+mod titlebar_command_center;
+#[path = "../../content/snippets/titlebar/window_controls.rs"]
+mod titlebar_window_controls;
 #[path = "../../content/snippets/tooltip/basic.rs"]
 mod tooltip_basic;
 #[path = "../../content/snippets/tooltip/more.rs"]

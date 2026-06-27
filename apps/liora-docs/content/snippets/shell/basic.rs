@@ -1,6 +1,6 @@
 //! Application shell with custom titlebar and sidebar navigation.
 
-use gpui::{App, Context, Entity, IntoElement, Render, Window};
+use gpui::{App, AppContext, Context, Entity, IntoElement, Render, Window};
 use liora_components::{
     Button, Card, Menu, MenuMode, Shell, ShellOverlayPosition, Sidebar, Space, Text, Title,
     TitleBar, WindowFrameMode,

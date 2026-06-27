@@ -99,9 +99,25 @@ GPUI 的推荐写法是：状态放在 View 字段里，渲染时把这些字段
 - 事件回调用 `cx.listener(...)` 或组件自己的 `on_click` / `on_change` API。
 - 修改 View 自身状态后调用 `cx.notify()`，让 GPUI 安排下一帧重绘。
 - 需要弹层或全局提示的应用，要在根布局末尾渲染对应 Portal / Message 层。
-- 字体默认走系统：系统已安装字体只需通过 `FontConfig::system().with_ui_families([...]).with_code_families([...])` 指定有序 family 兜底列表；私有字体先用 `liora::load_app_fonts` / `load_fonts_from_dir` / `load_font_assets` / `load_embedded_fonts` 注册，再用 `LioraOptions::system().with_fonts(...)` 初始化，或运行时调用 `liora::set_font_config(cx, ...)`。原生桌面发布优先使用 TTF/OTF/TTC/OTC；如果必须确认某个 family 已被 GPUI 后端识别，给 `FontLoadOptions` 加 `.require_family("...")` 并检查 `FontLoadReport::missing_required_families`。
+- 字体默认走系统；如果要像 Gallery/Docs 一样指定应用级字体，请先注册字体资源，再在 `LioraOptions::system().with_fonts(...)` 中指定有序 fallback family。详见下一节“应用级字体自定义”。
 
-## 7. 运行和验证
+## 7. 应用级字体自定义
+
+Liora 把字体分成两个步骤：**加载资源** 和 **选择 family**。系统已安装字体不需要加载文件，直接用 `FontConfig::system().with_ui_families([...]).with_code_families([...])` 指定有序兜底列表即可；随应用分发的私有字体要先通过 `load_app_fonts` / `load_fonts_from_dir` / `load_font_assets` / `load_embedded_fonts` 注册，再用 `init_liora_with_options(...)` 或运行时 `set_font_config(...)` 生效。
+
+Gallery 和 Docs 当前采用同一策略：源码运行时扫描 `apps/<app>/assets/fonts`；安装包或 portable archive 优先使用可执行程序旁边的外部 `assets/fonts`；裸可执行程序则内嵌一个较小的 `PingFangSC-Regular.ttf` 作为 fallback。这样既能保证 `cargo run -p liora-gallery` / `cargo run -p liora-docs` 可直接看到 PingFang SC，也避免把完整字体族全部塞进二进制。
+
+```rust src="quick_start/fonts.rs"
+```
+
+注意事项：
+
+- 支持的输入扩展名包括 `ttf`、`otf`、`ttc`、`otc`、`woff`、`woff2`，但实际解析能力取决于官方 GPUI 在当前平台的字体后端。
+- 原生桌面发布优先使用 `ttf` / `otf` / `ttc` / `otc`；如果使用 `woff` / `woff2`，务必配合 `FontLoadOptions::require_family(...)` 检查目标 family 是否真的可见。
+- `with_ui_families([...])` 和 `with_code_families([...])` 都是有序 fallback 列表，不是单个 family。建议把品牌字体放前面，把跨平台系统字体放后面。
+- 字体资源属于应用级资产。SDK 只提供加载和配置 API，不会强制把某套字体耦合进所有下游应用。
+
+## 8. 运行和验证
 
 ```shell src="quick_start/verify.sh"
 ```
