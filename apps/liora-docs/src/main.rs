@@ -57,8 +57,8 @@ fn run_docs() {
 fn docs_liora_options() -> LioraOptions {
     LioraOptions::system().with_fonts(
         FontConfig::system()
-            .with_ui_family("PingFang SC")
-            .with_code_family("Monospace"),
+            .with_ui_families(["PingFang SC", "Segoe UI", "Arial"])
+            .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"]),
     )
 }
 

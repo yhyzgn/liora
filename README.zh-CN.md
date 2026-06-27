@@ -334,8 +334,8 @@ fn init_dark(cx: &mut App) {
 fn init_with_system_font_names(cx: &mut App) {
     // 这里不加载任何字体文件，GPUI 会从操作系统字体中解析这些 family 名称。
     let fonts = FontConfig::system()
-        .with_ui_family("Segoe UI")
-        .with_code_family("JetBrains Mono");
+        .with_ui_families(["Segoe UI", "PingFang SC", "Arial"])
+        .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"]);
 
     init_liora_with_options(cx, LioraOptions::system().with_fonts(fonts));
 }
@@ -993,7 +993,7 @@ fn theme_switcher(current: ThemeMode) -> Segmented {
 
 Liora 把 **字体资源加载** 和 **字体族选择** 拆成两步：
 
-1. 如果字体已经安装在用户系统里，不需要加载文件，直接用 `FontConfig` 指定 family 名称。
+1. 如果字体已经安装在用户系统里，不需要加载文件，直接用 `FontConfig` 指定有序 family 兜底列表。
 2. 如果应用自带私有字体，先用 `load_app_fonts`、`load_fonts_from_dir`、`load_font_assets`、`load_embedded_fonts`，或底层兼容函数 `load_custom_fonts` 注册字体字节。
 3. 然后在启动时通过 `LioraOptions::with_fonts(...)`，或运行时通过 `set_font_config(...)` 选择 UI/code 字体族。
 
@@ -1009,8 +1009,8 @@ fn init_with_system_fonts(cx: &mut gpui::App) {
         cx,
         LioraOptions::system().with_fonts(
             FontConfig::system()
-                .with_ui_family("Segoe UI")       // Windows 示例；也可以换成任意已安装字体。
-                .with_code_family("JetBrains Mono"), // 代码字体也可以来自系统字体。
+                .with_ui_families(["Segoe UI", "PingFang SC", "Arial"]) // 按顺序自动降级。
+                .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"]),
         ),
     );
 }
@@ -1019,8 +1019,8 @@ fn switch_to_system_ui_and_monospace_code(cx: &mut gpui::App) {
     set_font_config(
         cx,
         FontConfig::system()
-            .with_ui_family("PingFang SC")
-            .with_code_family("Monospace"),
+            .with_ui_families(["PingFang SC", "Segoe UI", "Arial"])
+            .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"]),
     );
 }
 ```
@@ -1048,7 +1048,9 @@ fn init_with_embedded_font(cx: &mut gpui::App) {
 
     init_liora_with_options(
         cx,
-        LioraOptions::system().with_fonts(FontConfig::system().with_ui_family("Inter")),
+        LioraOptions::system().with_fonts(
+            FontConfig::system().with_ui_families(["Inter", "Segoe UI", "Arial"]),
+        ),
     );
 }
 ```
@@ -1101,8 +1103,8 @@ fn init_with_external_then_embedded(cx: &mut gpui::App) {
         cx,
         LioraOptions::system().with_fonts(
             FontConfig::system()
-                .with_ui_family("PingFang SC")
-                .with_code_family("Monospace"),
+                .with_ui_families(["PingFang SC", "Segoe UI", "Arial"])
+                .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"]),
         ),
     );
 }
@@ -1336,7 +1338,7 @@ cargo run --release -p xtask -- package release-readiness
 
 当产品需要显式选择启动主题时，使用 `liora::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)`。运行时主题切换使用 `liora_core` 或 facade `core` 模块中的 `apply_theme_mode(window, cx, mode)`。
 
-字体默认保持系统原生：Liora 不默认加载品牌字体，也不会把整个 UI 映射到 Zed 专用字体别名。自定义字体通过 `FontConfig`、`LioraOptions`、`load_app_fonts`、`load_fonts_from_dir`、`load_font_assets`、`load_embedded_fonts`、底层 `load_custom_fonts` 和 `set_font_config` 显式启用。
+字体默认保持系统原生：Liora 不默认加载品牌字体，也不会把整个 UI 映射到 Zed 专用字体别名。自定义字体通过有序 `FontConfig` 兜底列表、`LioraOptions`、`load_app_fonts`、`load_fonts_from_dir`、`load_font_assets`、`load_embedded_fonts`、底层 `load_custom_fonts` 和 `set_font_config` 显式启用。
 
 `Input`、`Switch`、`Select`、`TreeSelect`、`CodeEditor` 和虚拟化视图等有状态控件应放在 `gpui::Entity<T>` 字段中，以便焦点、展开状态、选区、滚动状态和文本值在重渲染后保持稳定。
 

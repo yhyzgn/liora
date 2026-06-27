@@ -21,21 +21,24 @@ pub use fonts::*;
 
 static NEXT_UNIQUE_ID: AtomicU64 = AtomicU64::new(1);
 
-/// Font families used by Liora-rendered UI and code surfaces.
+/// Ordered font fallback lists used by Liora-rendered UI and code surfaces.
 ///
-/// The default value intentionally leaves both families unset, so GPUI keeps
-/// using its platform/system defaults (`.SystemUIFont` for normal text and the
-/// platform monospace fallback for code-oriented surfaces). Applications that
-/// want branded typography can load font bytes with [`load_custom_fonts`] and
-/// then set one or both family names through [`FontConfig`].
+/// The default value intentionally leaves the UI list empty, so GPUI keeps using
+/// its platform/system default (`.SystemUIFont`) for normal text. The code list
+/// is also optional; when it is empty, Liora asks GPUI for the generic
+/// `Monospace` family for code-oriented surfaces. Applications that want
+/// branded typography can load font bytes with [`load_custom_fonts`] and then
+/// provide ordered fallback lists through [`FontConfig`].
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct FontConfig {
-    /// Optional family inherited by normal Liora UI text.
-    pub ui_family: Option<SharedString>,
-    /// Optional family used by code blocks, editors, keyboard badges, and
-    /// inline code. When unset, Liora asks GPUI for the platform monospace
-    /// family instead of a bundled or Zed-specific font.
-    pub code_family: Option<SharedString>,
+    /// Ordered UI font candidates. The first currently available family wins;
+    /// if none are visible to GPUI, the final candidate is used as the declared
+    /// fallback.
+    pub ui_families: Vec<SharedString>,
+    /// Ordered code font candidates. The first currently available family wins;
+    /// if none are visible to GPUI, the final candidate is used as the declared
+    /// fallback. Empty lists resolve to GPUI's generic `Monospace`.
+    pub code_families: Vec<SharedString>,
 }
 
 impl FontConfig {
@@ -44,16 +47,32 @@ impl FontConfig {
         Self::default()
     }
 
-    /// Returns a config that uses `family` for normal UI text.
-    pub fn with_ui_family(mut self, family: impl Into<SharedString>) -> Self {
-        self.ui_family = Some(family.into());
+    /// Returns a config that uses `families` as the ordered UI fallback list.
+    pub fn with_ui_families(
+        mut self,
+        families: impl IntoIterator<Item = impl Into<SharedString>>,
+    ) -> Self {
+        self.ui_families = families.into_iter().map(Into::into).collect();
         self
     }
 
-    /// Returns a config that uses `family` for code-oriented text.
-    pub fn with_code_family(mut self, family: impl Into<SharedString>) -> Self {
-        self.code_family = Some(family.into());
+    /// Returns a config that uses `families` as the ordered code fallback list.
+    pub fn with_code_families(
+        mut self,
+        families: impl IntoIterator<Item = impl Into<SharedString>>,
+    ) -> Self {
+        self.code_families = families.into_iter().map(Into::into).collect();
         self
+    }
+
+    /// Returns the ordered UI fallback list.
+    pub fn ui_families(&self) -> &[SharedString] {
+        &self.ui_families
+    }
+
+    /// Returns the ordered code fallback list.
+    pub fn code_families(&self) -> &[SharedString] {
+        &self.code_families
     }
 }
 
@@ -629,18 +648,45 @@ pub fn set_font_config(cx: &mut App, fonts: FontConfig) {
     cx.global_mut::<Config>().set_font_config(fonts);
 }
 
-/// Returns the configured UI font family, if the app overrides the system default.
-pub fn ui_font_family(cx: &App) -> Option<SharedString> {
-    cx.global::<Config>().fonts.ui_family.clone()
+/// Resolves an ordered fallback list against families currently visible to GPUI.
+///
+/// GPUI's public text style currently accepts one `font_family` value, so Liora
+/// performs the ordered fallback selection before assigning that field. If no
+/// candidate is reported as available, Liora returns the last configured
+/// candidate because callers normally put the broadest platform fallback there.
+pub fn resolve_font_family_from_available(
+    candidates: &[SharedString],
+    available: &[String],
+    default: Option<SharedString>,
+) -> Option<SharedString> {
+    if candidates.is_empty() {
+        return default;
+    }
+
+    candidates
+        .iter()
+        .find(|candidate| available.iter().any(|family| family == candidate.as_ref()))
+        .cloned()
+        .or_else(|| candidates.last().cloned())
 }
 
-/// Returns the configured code font family or GPUI's generic monospace family.
+/// Returns the resolved UI font family, if the app overrides the system default.
+pub fn ui_font_family(cx: &App) -> Option<SharedString> {
+    let config = cx.global::<Config>();
+    let available = cx.text_system().all_font_names();
+    resolve_font_family_from_available(&config.fonts.ui_families, &available, None)
+}
+
+/// Returns the resolved code font family or GPUI's generic monospace family.
 pub fn code_font_family(cx: &App) -> SharedString {
-    cx.global::<Config>()
-        .fonts
-        .code_family
-        .clone()
-        .unwrap_or_else(|| "Monospace".into())
+    let config = cx.global::<Config>();
+    let available = cx.text_system().all_font_names();
+    resolve_font_family_from_available(
+        &config.fonts.code_families,
+        &available,
+        Some("Monospace".into()),
+    )
+    .unwrap_or_else(|| "Monospace".into())
 }
 
 /// Applies a new theme mode and refreshes the active GPUI window.
@@ -855,20 +901,77 @@ mod theme_mode_tests {
     #[test]
     fn font_config_defaults_to_system_fonts_and_keeps_custom_families_explicit() {
         let default = FontConfig::default();
-        assert!(default.ui_family.is_none());
-        assert!(default.code_family.is_none());
+        assert!(default.ui_families.is_empty());
+        assert!(default.code_families.is_empty());
 
         let custom = FontConfig::system()
-            .with_ui_family("Inter")
-            .with_code_family("JetBrains Mono");
-        assert_eq!(custom.ui_family.as_deref(), Some("Inter"));
-        assert_eq!(custom.code_family.as_deref(), Some("JetBrains Mono"));
+            .with_ui_families(["Inter", "Segoe UI"])
+            .with_code_families(["JetBrains Mono", "Monospace"]);
+        assert_eq!(
+            custom.ui_families(),
+            &[SharedString::from("Inter"), SharedString::from("Segoe UI")]
+        );
+        assert_eq!(
+            custom.code_families(),
+            &[
+                SharedString::from("JetBrains Mono"),
+                SharedString::from("Monospace")
+            ]
+        );
 
         let options = LioraOptions::system()
             .with_theme_mode(ThemeMode::Dark)
             .with_fonts(custom.clone());
         assert_eq!(options.theme_mode, ThemeMode::Dark);
         assert_eq!(options.fonts, custom);
+    }
+
+    #[test]
+    fn font_config_accepts_ordered_fallback_family_lists() {
+        let custom = FontConfig::system()
+            .with_ui_families(["PingFang SC", "Segoe UI", "Arial"])
+            .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"]);
+
+        assert_eq!(
+            custom.ui_families(),
+            &[
+                SharedString::from("PingFang SC"),
+                SharedString::from("Segoe UI"),
+                SharedString::from("Arial")
+            ]
+        );
+        assert_eq!(
+            custom.code_families(),
+            &[
+                SharedString::from("JetBrains Mono"),
+                SharedString::from("SF Mono"),
+                SharedString::from("Monospace")
+            ]
+        );
+    }
+
+    #[test]
+    fn font_family_resolution_uses_first_available_then_final_fallback() {
+        let candidates = [
+            SharedString::from("PingFang SC"),
+            SharedString::from("Segoe UI"),
+            SharedString::from("Arial"),
+        ];
+        let available = [String::from("Segoe UI")];
+
+        assert_eq!(
+            resolve_font_family_from_available(&candidates, &available, None).as_deref(),
+            Some("Segoe UI")
+        );
+        assert_eq!(
+            resolve_font_family_from_available(&candidates, &[], None).as_deref(),
+            Some("Arial")
+        );
+        assert_eq!(
+            resolve_font_family_from_available(&[], &available, Some("Monospace".into()))
+                .as_deref(),
+            Some("Monospace")
+        );
     }
 
     #[test]

@@ -335,8 +335,8 @@ fn init_dark(cx: &mut App) {
 fn init_with_system_font_names(cx: &mut App) {
     // No font files are loaded here. GPUI resolves these names from the OS.
     let fonts = FontConfig::system()
-        .with_ui_family("Segoe UI")
-        .with_code_family("JetBrains Mono");
+        .with_ui_families(["Segoe UI", "PingFang SC", "Arial"])
+        .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"]);
 
     init_liora_with_options(cx, LioraOptions::system().with_fonts(fonts));
 }
@@ -994,9 +994,9 @@ fn theme_switcher(current: ThemeMode) -> Segmented {
 
 Liora separates **font resource loading** from **font family selection**:
 
-1. If the family is already installed on the user's system, do not load any file. Set the family name with `FontConfig`.
+1. If the family is already installed on the user's system, do not load any file. Set the ordered fallback family list with `FontConfig`.
 2. If the app ships private fonts, register bytes first with `load_app_fonts`, `load_fonts_from_dir`, `load_font_assets`, `load_embedded_fonts`, or the low-level `load_custom_fonts` compatibility helper.
-3. Then choose the UI and code family names with `LioraOptions::with_fonts(...)` at startup or `set_font_config(...)` at runtime.
+3. Then choose the ordered UI and code fallback lists with `LioraOptions::with_fonts(...)` at startup or `set_font_config(...)` at runtime.
 
 Supported file extensions are `ttf`, `otf`, `ttc`, `otc`, `woff`, and `woff2`, but actual parsing is delegated to the official GPUI backend for each platform. Prefer `ttf`/`otf`/`ttc`/`otc` for native desktop apps. On Linux/WGPU, the current GPUI `fontdb` path can ignore WOFF/WOFF2 bytes without returning an error, so use `FontLoadOptions::require_family(...)` and check `FontLoadReport::missing_required_families` whenever a specific family must be active.
 
@@ -1010,8 +1010,8 @@ fn init_with_system_fonts(cx: &mut gpui::App) {
         cx,
         LioraOptions::system().with_fonts(
             FontConfig::system()
-                .with_ui_family("Segoe UI")       // Windows example; use any installed family.
-                .with_code_family("JetBrains Mono"), // Can also be an installed system font.
+                .with_ui_families(["Segoe UI", "PingFang SC", "Arial"]) // Ordered fallback list.
+                .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"]),
         ),
     );
 }
@@ -1020,8 +1020,8 @@ fn switch_to_system_ui_and_monospace_code(cx: &mut gpui::App) {
     set_font_config(
         cx,
         FontConfig::system()
-            .with_ui_family("PingFang SC")
-            .with_code_family("Monospace"),
+            .with_ui_families(["PingFang SC", "Segoe UI", "Arial"])
+            .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"]),
     );
 }
 ```
@@ -1049,7 +1049,9 @@ fn init_with_embedded_font(cx: &mut gpui::App) {
 
     init_liora_with_options(
         cx,
-        LioraOptions::system().with_fonts(FontConfig::system().with_ui_family("Inter")),
+        LioraOptions::system().with_fonts(
+            FontConfig::system().with_ui_families(["Inter", "Segoe UI", "Arial"]),
+        ),
     );
 }
 ```
@@ -1102,8 +1104,8 @@ fn init_with_external_then_embedded(cx: &mut gpui::App) {
         cx,
         LioraOptions::system().with_fonts(
             FontConfig::system()
-                .with_ui_family("PingFang SC")
-                .with_code_family("Monospace"),
+                .with_ui_families(["PingFang SC", "Segoe UI", "Arial"])
+                .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"]),
         ),
     );
 }
@@ -1337,7 +1339,7 @@ cargo run --release -p xtask -- package release-readiness
 
 Use `liora::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)` when the product needs to choose an explicit startup theme mode. Runtime theme switches use `apply_theme_mode(window, cx, mode)` from `liora_core` or the facade's `core` module.
 
-Typography defaults are system-native: Liora does not load branded fonts by default and does not map the whole UI to Zed-specific font aliases. Custom fonts are opt-in via `FontConfig`, `LioraOptions`, `load_app_fonts`, `load_fonts_from_dir`, `load_font_assets`, `load_embedded_fonts`, the low-level `load_custom_fonts`, and `set_font_config`.
+Typography defaults are system-native: Liora does not load branded fonts by default and does not map the whole UI to Zed-specific font aliases. Custom fonts are opt-in via ordered `FontConfig` fallback lists, `LioraOptions`, `load_app_fonts`, `load_fonts_from_dir`, `load_font_assets`, `load_embedded_fonts`, the low-level `load_custom_fonts`, and `set_font_config`.
 
 Stateful controls such as `Input`, `Switch`, `Select`, `TreeSelect`, `CodeEditor`, and virtualized views should live in `gpui::Entity<T>` fields so focus, open state, selections, scroll state, and text values survive re-rendering.
 

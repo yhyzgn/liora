@@ -99,7 +99,7 @@ GPUI 的推荐写法是：状态放在 View 字段里，渲染时把这些字段
 - 事件回调用 `cx.listener(...)` 或组件自己的 `on_click` / `on_change` API。
 - 修改 View 自身状态后调用 `cx.notify()`，让 GPUI 安排下一帧重绘。
 - 需要弹层或全局提示的应用，要在根布局末尾渲染对应 Portal / Message 层。
-- 字体默认走系统：系统已安装字体只需通过 `FontConfig::system().with_ui_family(...).with_code_family(...)` 指定 family 名称；私有字体先用 `liora::load_app_fonts` / `load_fonts_from_dir` / `load_font_assets` / `load_embedded_fonts` 注册，再用 `LioraOptions::system().with_fonts(...)` 初始化，或运行时调用 `liora::set_font_config(cx, ...)`。原生桌面发布优先使用 TTF/OTF/TTC/OTC；如果必须确认某个 family 已被 GPUI 后端识别，给 `FontLoadOptions` 加 `.require_family("...")` 并检查 `FontLoadReport::missing_required_families`。
+- 字体默认走系统：系统已安装字体只需通过 `FontConfig::system().with_ui_families([...]).with_code_families([...])` 指定有序 family 兜底列表；私有字体先用 `liora::load_app_fonts` / `load_fonts_from_dir` / `load_font_assets` / `load_embedded_fonts` 注册，再用 `LioraOptions::system().with_fonts(...)` 初始化，或运行时调用 `liora::set_font_config(cx, ...)`。原生桌面发布优先使用 TTF/OTF/TTC/OTC；如果必须确认某个 family 已被 GPUI 后端识别，给 `FontLoadOptions` 加 `.require_family("...")` 并检查 `FontLoadReport::missing_required_families`。
 
 ## 7. 运行和验证
 
