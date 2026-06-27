@@ -763,7 +763,7 @@ impl Render for Gallery {
         self.selected = selected;
 
         let nav_menu = AnyView::from(self.gallery_nav_menu(selected, cx))
-            .cached(gpui::StyleRefinement::default());
+            .cached(gpui::StyleRefinement::default().flex().flex_col().flex_1());
 
         let selected_entry = self.entries.get(selected).copied();
         let selected_demo = self.selected_demo(selected, cx);
@@ -1622,7 +1622,10 @@ mod shell_regression_tests {
 
         assert!(source.contains("let nav_menu = AnyView::from"));
         assert!(source.contains("self.gallery_nav_menu(selected, cx)"));
-        assert!(source.contains(".cached(gpui::StyleRefinement::default())"));
+        assert!(source.contains(".cached("));
+        assert!(source.contains("gpui::StyleRefinement::default()"));
+        assert!(source.contains(".flex_col()"));
+        assert!(source.contains(".flex_1()"));
     }
 
     #[test]
