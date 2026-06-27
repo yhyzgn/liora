@@ -150,6 +150,7 @@ impl Render for PopoverView {
                         div()
                             .id(element_id(format!("{}-content", id)))
                             .flex_none()
+                            .self_start()
                             .cursor_default()
                             .occlude()
                             .max_w(max_w)
@@ -494,6 +495,7 @@ mod tests {
             .unwrap();
 
         assert!(source.contains(".flex_none()"));
+        assert!(source.contains(".self_start()"));
         assert!(source.contains(".bg(theme.neutral.popover)"));
         assert!(source.contains(".text_color(theme.neutral.text_1)"));
         assert!(!source.contains(".bg(theme.neutral.card)"));
