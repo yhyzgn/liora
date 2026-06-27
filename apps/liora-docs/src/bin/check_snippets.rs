@@ -633,6 +633,10 @@ mod titlebar_borderless;
 mod titlebar_command_center;
 #[path = "../../content/snippets/titlebar/window_controls.rs"]
 mod titlebar_window_controls;
+#[path = "../../content/snippets/titlebar/window_controls_left.rs"]
+mod titlebar_window_controls_left;
+#[path = "../../content/snippets/titlebar/window_controls_right.rs"]
+mod titlebar_window_controls_right;
 #[path = "../../content/snippets/tooltip/basic.rs"]
 mod tooltip_basic;
 #[path = "../../content/snippets/tooltip/more.rs"]

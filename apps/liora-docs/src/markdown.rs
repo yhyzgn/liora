@@ -1486,6 +1486,12 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "titlebar/window_controls.rs" => Some(include_str!(
             "../content/snippets/titlebar/window_controls.rs"
         )),
+        "titlebar/window_controls_right.rs" => Some(include_str!(
+            "../content/snippets/titlebar/window_controls_right.rs"
+        )),
+        "titlebar/window_controls_left.rs" => Some(include_str!(
+            "../content/snippets/titlebar/window_controls_left.rs"
+        )),
         "titlebar/command_center.rs" => Some(include_str!(
             "../content/snippets/titlebar/command_center.rs"
         )),
@@ -4938,7 +4944,10 @@ impl Render for LiveDemoContent {
                 .cloned()
                 .map(|accordion| Card::new(accordion).no_shadow().into_any_element())
                 .unwrap_or_else(|| Paragraph::with_text("Missing Accordion demo").into_any_element()),
-            "TitleBarBasic" | "TitleBarControls" => docs_titlebar_controls_demo(&_cx.global::<Config>().theme),
+            "TitleBarBasic" | "TitleBarControls" | "TitleBarControlsRight" => {
+                docs_titlebar_controls_right_demo(&_cx.global::<Config>().theme)
+            }
+            "TitleBarControlsLeft" => docs_titlebar_controls_left_demo(&_cx.global::<Config>().theme),
             "TitleBarCommandCenter" => docs_titlebar_command_demo(&_cx.global::<Config>().theme),
             "TitleBarBorderless" => docs_titlebar_borderless_demo(&_cx.global::<Config>().theme),
             "SplitterBasic" => liora_components::Splitter::new()
@@ -6718,63 +6727,51 @@ fn docs_titlebar_surface(theme: &Theme, titlebar: TitleBar) -> impl IntoElement 
         .child(titlebar)
 }
 
-fn docs_titlebar_controls_demo(theme: &Theme) -> AnyElement {
-    Card::new(
-        Space::new()
-            .vertical()
-            .gap_md()
-            .child(
-                Text::new("Right controls / brand shell")
-                    .xs()
-                    .bold()
-                    .text_color(theme.neutral.text_2),
-            )
-            .child(docs_titlebar_surface(
-                theme,
-                TitleBar::new()
-                    .id("docs-titlebar-controls-right-live")
-                    .title("Liora Studio")
-                    .subtitle("Theme-aware native chrome")
-                    .icon(Icon::new(IconName::Sparkles).size_units(16.0))
-                    .height_units(62.0)
-                    .padding_x_units(20.0)
-                    .gap_units(12.0)
-                    .actions_gap_units(8.0)
-                    .background(theme.neutral.card)
-                    .border_color(theme.neutral.border)
-                    .title_color(theme.neutral.text_1)
-                    .subtitle_color(theme.neutral.text_3)
-                    .content_align(TitleBarContentAlign::Start)
-                    .window_controls_position(WindowControlsPosition::Right)
-                    .window_controls(true)
-                    .action(Button::new("Share").small())
-                    .action(Button::new("Deploy").small().primary()),
-            ))
-            .child(
-                Text::new("Left controls / utility titlebar")
-                    .xs()
-                    .bold()
-                    .text_color(theme.neutral.text_2),
-            )
-            .child(docs_titlebar_surface(
-                theme,
-                TitleBar::new()
-                    .id("docs-titlebar-controls-left-live")
-                    .title("Inspector")
-                    .subtitle("Left controls + manual drag policy")
-                    .icon(Icon::new(IconName::SlidersHorizontal).size_units(16.0))
-                    .compact()
-                    .draggable(false)
-                    .background(theme.neutral.popover)
-                    .border_color(theme.neutral.border)
-                    .title_color(theme.neutral.text_1)
-                    .subtitle_color(theme.neutral.text_3)
-                    .content_align(TitleBarContentAlign::End)
-                    .window_controls_position(WindowControlsPosition::Left)
-                    .window_controls(true)
-                    .action(Button::new("Reset").small()),
-            )),
-    )
+fn docs_titlebar_controls_right_demo(theme: &Theme) -> AnyElement {
+    Card::new(docs_titlebar_surface(
+        theme,
+        TitleBar::new()
+            .id("docs-titlebar-controls-right-live")
+            .title("Liora Studio")
+            .subtitle("Theme-aware native chrome")
+            .icon(Icon::new(IconName::Sparkles).size_units(16.0))
+            .height_units(62.0)
+            .padding_x_units(20.0)
+            .gap_units(12.0)
+            .actions_gap_units(8.0)
+            .background(theme.neutral.card)
+            .border_color(theme.neutral.border)
+            .title_color(theme.neutral.text_1)
+            .subtitle_color(theme.neutral.text_3)
+            .content_align(TitleBarContentAlign::Start)
+            .window_controls_position(WindowControlsPosition::Right)
+            .window_controls(true)
+            .action(Button::new("Share").small())
+            .action(Button::new("Deploy").small().primary()),
+    ))
+    .no_shadow()
+    .into_any_element()
+}
+
+fn docs_titlebar_controls_left_demo(theme: &Theme) -> AnyElement {
+    Card::new(docs_titlebar_surface(
+        theme,
+        TitleBar::new()
+            .id("docs-titlebar-controls-left-live")
+            .title("Inspector")
+            .subtitle("Left controls + manual drag policy")
+            .icon(Icon::new(IconName::SlidersHorizontal).size_units(16.0))
+            .compact()
+            .draggable(false)
+            .background(theme.neutral.popover)
+            .border_color(theme.neutral.border)
+            .title_color(theme.neutral.text_1)
+            .subtitle_color(theme.neutral.text_3)
+            .content_align(TitleBarContentAlign::End)
+            .window_controls_position(WindowControlsPosition::Left)
+            .window_controls(true)
+            .action(Button::new("Reset").small()),
+    ))
     .no_shadow()
     .into_any_element()
 }
@@ -9790,11 +9787,13 @@ mod tests {
             assert!(load_code_snippet(snippet).is_some());
         }
 
-        assert!(TITLEBAR_DOC.contains("TitleBarControls"));
+        assert!(TITLEBAR_DOC.contains("TitleBarControlsRight"));
+        assert!(TITLEBAR_DOC.contains("TitleBarControlsLeft"));
         assert!(TITLEBAR_DOC.contains("TitleBarCommandCenter"));
         assert!(TITLEBAR_DOC.contains("TitleBarBorderless"));
         for snippet in [
-            "titlebar/window_controls.rs",
+            "titlebar/window_controls_right.rs",
+            "titlebar/window_controls_left.rs",
             "titlebar/command_center.rs",
             "titlebar/borderless.rs",
         ] {
@@ -10374,6 +10373,24 @@ mod tests {
             assert!(source.contains(&format!("src=\"{snippet}\"")));
             assert!(load_code_snippet(snippet).is_some());
         }
+    }
+
+    #[test]
+    fn titlebar_docs_split_window_control_variants_into_separate_examples() {
+        assert!(TITLEBAR_DOC.contains("TitleBarControlsRight"));
+        assert!(TITLEBAR_DOC.contains("TitleBarControlsLeft"));
+        assert!(TITLEBAR_DOC.contains("titlebar/window_controls_right.rs"));
+        assert!(TITLEBAR_DOC.contains("titlebar/window_controls_left.rs"));
+        assert!(load_code_snippet("titlebar/window_controls_right.rs").is_some());
+        assert!(load_code_snippet("titlebar/window_controls_left.rs").is_some());
+
+        let source = include_str!("markdown.rs")
+            .split("mod tests")
+            .next()
+            .unwrap();
+        assert!(source.contains("docs_titlebar_controls_right_demo"));
+        assert!(source.contains("docs_titlebar_controls_left_demo"));
+        assert!(!source.contains("fn docs_titlebar_controls_demo"));
     }
 
     #[test]

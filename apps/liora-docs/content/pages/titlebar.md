@@ -2,17 +2,28 @@
 
 `TitleBar` 是 Liora 的原生自定义标题栏组件。它负责标题、副标题、左侧/中间/右侧插槽、拖动区域、双击标题栏行为和窗口控制按钮。真实应用通常把它交给 `AppWindowFrame::titlebar(...)` 使用；嵌入文档或组件卡片时可以关闭 `window_controls(false)`。
 
-本页同步 Gallery 当前的 TitleBar 用例，重点展示真实窗口控制按钮、居中命令区和无边框嵌入式工具条。
+本页同步 Gallery 当前的 TitleBar 用例，重点展示右侧窗口控制按钮、左侧窗口控制按钮、居中命令区和无边框嵌入式工具条。
 
-## 真实窗口控制按钮
+## 右侧窗口控制按钮
 
 ### 效果
 
-::LioraDemo{component="TitleBarControls"}::
+::LioraDemo{component="TitleBarControlsRight"}::
 
 ### 代码
 
-```rust src="titlebar/window_controls.rs"
+```rust src="titlebar/window_controls_right.rs"
+```
+
+## 左侧窗口控制按钮
+
+### 效果
+
+::LioraDemo{component="TitleBarControlsLeft"}::
+
+### 代码
+
+```rust src="titlebar/window_controls_left.rs"
 ```
 
 ## 居中命令区
