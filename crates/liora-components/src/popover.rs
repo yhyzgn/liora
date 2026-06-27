@@ -149,6 +149,8 @@ impl Render for PopoverView {
                         element_id(format!("{}-motion", id)),
                         div()
                             .id(element_id(format!("{}-content", id)))
+                            .flex()
+                            .flex_col()
                             .flex_none()
                             .self_start()
                             .cursor_default()
@@ -495,6 +497,8 @@ mod tests {
             .unwrap();
 
         assert!(source.contains(".flex_none()"));
+        assert!(source.contains(".flex()"));
+        assert!(source.contains(".flex_col()"));
         assert!(source.contains(".self_start()"));
         assert!(source.contains(".bg(theme.neutral.popover)"));
         assert!(source.contains(".text_color(theme.neutral.text_1)"));
