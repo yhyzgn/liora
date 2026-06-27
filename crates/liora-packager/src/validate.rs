@@ -156,20 +156,20 @@ pub fn validate_packaging_layout(root: impl Into<PathBuf>) -> ValidationReport {
                 b"\x89PNG\r\n\x1a\n",
             );
         }
-        validate_windows_manifest_and_build_script(&mut report, &root, &metadata);
+        validate_windows_resources(&mut report, &root, &metadata);
     }
 
     report
 }
 
-fn validate_windows_manifest_and_build_script(
+fn validate_windows_resources(
     report: &mut ValidationReport,
     root: &Path,
     metadata: &crate::AppMetadata,
 ) {
     let manifest_path = metadata.windows_common_controls_manifest_path(root);
     report.require_text_contains(
-        "Windows Common Controls v6 manifest",
+        "Windows Common Controls v6 manifest reference",
         manifest_path,
         &[
             "Microsoft.Windows.Common-Controls",
@@ -183,11 +183,7 @@ fn validate_windows_manifest_and_build_script(
     report.require_text_contains(
         format!("{} Windows resource build script", metadata.name),
         metadata.windows_resource_build_script_path(root),
-        &[
-            metadata.windows_common_controls_manifest_include_path(),
-            ".set_manifest(WINDOWS_APP_MANIFEST)",
-            "cargo:rerun-if-changed=../../packaging/windows/common-controls-v6.manifest",
-        ],
+        &[".set_icon", "ProductName", "FileDescription", "CompanyName"],
     );
 }
 
@@ -233,7 +229,7 @@ mod tests {
     }
 
     #[test]
-    fn current_layout_embeds_windows_common_controls_manifest() {
+    fn current_layout_keeps_windows_resources_without_duplicate_manifest() {
         let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
         let report = validate_packaging_layout(root);
 

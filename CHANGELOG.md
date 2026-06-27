@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.10 - 2026-06-27
+
+- Fix Windows release packaging by avoiding duplicate MANIFEST resources when GPUI already provides the Windows application manifest.
+- Keep Windows app resource scripts focused on icons and file metadata.
+
 ## 0.1.9 - 2026-06-27
 
 - Publish all Liora SDK crates to crates.io with Cargo gpui registry fallback and downstream official Zed GPUI patch guidance.

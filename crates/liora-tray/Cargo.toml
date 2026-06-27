@@ -1,6 +1,6 @@
 [package]
 name = "liora-tray"
-version = "0.1.9"
+version = "0.1.10"
 edition = "2024"
 description = "Cross-platform system tray facade for Liora native GPUI applications."
 license-file = "../../LICENSE.md"
