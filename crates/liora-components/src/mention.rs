@@ -25,9 +25,10 @@ use gpui::{
     App, Context, Entity, KeyBinding, MouseButton, Render, SharedString, Window, actions, div,
     prelude::*, px,
 };
-use liora_core::Config;
+use liora_core::{Config, stable_unique_id};
 use liora_icons::Icon;
-use liora_icons_lucide::IconName;
+
+const MENTION_TRIGGER_ICON_SVG: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/></svg>"#;
 
 actions!(
     mention,
@@ -216,14 +217,21 @@ impl Mention {
 }
 
 impl Render for Mention {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
         let input = self.input.clone();
         let placeholder = self.placeholder.clone();
         let disabled = self.disabled;
+        let view = cx.entity().clone();
         cx.update_entity(&input, |input, cx| {
             input.set_placeholder(placeholder, cx);
             input.set_disabled(disabled, cx);
+            input.set_on_change(move |_, cx| {
+                view.update(cx, |mention: &mut Mention, cx| {
+                    mention.selected_index = 0;
+                    cx.notify();
+                });
+            });
         });
         let text = input.read(cx).value().to_string();
         let query = mention_query(&text, self.trigger).unwrap_or("");
@@ -236,9 +244,20 @@ impl Render for Mention {
             Vec::new()
         };
         let entity = cx.entity().clone();
+        let root_id = stable_unique_id(
+            format!(
+                "liora-mention:{}:{}:{}",
+                self.trigger,
+                self.placeholder,
+                self.suggestions.len()
+            ),
+            "mention",
+            window,
+            cx,
+        );
 
         div()
-            .id(liora_core::unique_id("mention"))
+            .id(root_id.clone())
             .relative()
             .flex()
             .flex_col()
@@ -259,8 +278,9 @@ impl Render for Mention {
                                     .selected_index
                                     .min(self.max_suggestions.saturating_sub(1));
                             let selected_item = item.clone();
+                            let option_id = element_id(format!("{root_id}-option-{idx}"));
                             let mut row = div()
-                                .id(element_id(format!("mention-option-{}", idx)))
+                                .id(option_id)
                                 .flex()
                                 .items_center()
                                 .gap_2()
@@ -280,9 +300,14 @@ impl Render for Mention {
                                     }
                                 })
                                 .child(
-                                    Icon::new(IconName::AtSign)
-                                        .size(px(15.0))
-                                        .color(theme.primary.base),
+                                    Icon::new(
+                                        liora_icons::inline_svg_asset_path(
+                                            MENTION_TRIGGER_ICON_SVG,
+                                        )
+                                        .into_owned(),
+                                    )
+                                    .size(px(15.0))
+                                    .color(theme.primary.base),
                                 )
                                 .child(
                                     div()
@@ -433,5 +458,63 @@ mod tests {
         assert!(source.contains(".on_action(cx.listener(Self::move_up_action))"));
         assert!(source.contains(".on_action(cx.listener(Self::move_down_action))"));
         assert!(source.contains(".on_action(cx.listener(Self::enter_action))"));
+    }
+
+    #[test]
+    fn mention_input_change_notifies_owner_and_popup_ids_are_instance_scoped() {
+        let source = include_str!("mention.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap_or_default();
+
+        assert!(
+            source.contains("input.set_on_change"),
+            "Mention must observe its inner Input so typing the trigger re-renders the popup"
+        );
+        assert!(
+            source.contains("view.update(cx, |mention"),
+            "Mention input changes should notify the owning Mention entity"
+        );
+        assert!(
+            source.contains("stable_unique_id"),
+            "Mention popup ids should be stable and scoped per component instance"
+        );
+        assert!(
+            source.contains("format!(\"{root_id}-option-{idx}\")"),
+            "Mention option ids should include the component root id"
+        );
+        assert!(
+            !source.contains("format!(\"mention-option-{}\", idx)"),
+            "Global mention-option-N ids collide when several Mention popups render"
+        );
+    }
+
+    #[test]
+    fn mention_popup_uses_liora_icons_without_direct_lucide_coupling() {
+        let source = include_str!("mention.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap_or_default();
+        let render_body = source
+            .split("impl Render for Mention")
+            .nth(1)
+            .expect("Mention render impl should exist");
+
+        assert!(
+            render_body.contains("Icon::new("),
+            "Mention popup rows should keep an icon affordance"
+        );
+        assert!(
+            source.contains("liora_icons::inline_svg_asset_path"),
+            "Mention should use liora-icons inline SVG paths for its built-in trigger icon"
+        );
+        assert!(
+            !render_body.contains("IconName::"),
+            "Mention popup rows should not directly couple to liora-icons-lucide IconName"
+        );
+        assert!(
+            !source.contains("liora_icons_lucide"),
+            "Mention should depend on liora-icons only, not directly on the Lucide icon crate"
+        );
     }
 }
