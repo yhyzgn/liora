@@ -6,7 +6,7 @@
 
 ### 效果
 
-:::LioraDemo{component="CodeEditorBasic"}::
+::LioraDemo{component="CodeEditorBasic"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-:::LioraDemo{component="CodeEditorDiagnostics"}::
+::LioraDemo{component="CodeEditorDiagnostics"}::
 
 ### 代码
 

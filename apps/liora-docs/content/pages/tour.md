@@ -17,6 +17,10 @@
 
 `active_index` 设置初始步骤，后续前进/后退由 Tour 浮层自身推进，同时触发 `on_change`。
 
+### 效果
+
+::LioraDemo{component="TourMiddle"}::
+
 ### 代码
 
 ```rust src="tour/middle.rs"
@@ -26,6 +30,10 @@
 
 `show_mask(false)` 不显示半透明遮罩，但仍是窗口顶层浮层；`close_on_click_outside(true)` 可允许点击浮层外部关闭。
 
+### 效果
+
+::LioraDemo{component="TourNoMask"}::
+
 ### 代码
 
 ```rust src="tour/no_mask.rs"
@@ -34,6 +42,10 @@
 ## 受控关闭策略
 
 默认 Tour 支持 ESC 关闭，外部点击关闭默认关闭以避免误触中断引导。需要强制用户点击关闭或完成按钮时，可同时设置 `close_on_escape(false)` 与 `close_on_click_outside(false)`。
+
+### 效果
+
+::LioraDemo{component="TourClosePolicy"}::
 
 ### 代码
 

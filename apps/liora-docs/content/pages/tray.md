@@ -23,6 +23,10 @@
 
 应用可以在页面/设置中暴露「是否开启状态栏驻留」，不要只藏在托盘菜单里。开启时保留 `LioraTray` 并在关闭窗口时隐藏到托盘；关闭时隐藏托盘并在用户选择退出时调用 `cx.quit()`，避免留下不可见进程。
 
+### 效果
+
+::LioraDemo{component="TrayResidency"}::
+
 ### 代码
 
 ```rust src="tray/residency.rs"
@@ -31,6 +35,10 @@
 ## 基础安装
 
 最小配置包含托盘 id、tooltip、图标和菜单。`LioraTray` 需要被保存到应用状态中，确保生命周期覆盖整个进程。
+
+### 效果
+
+::LioraDemo{component="TrayInstall"}::
 
 ### 代码
 
@@ -41,6 +49,10 @@
 
 托盘图标可在运行时切换，适合同步中、异常、离线、未读消息等状态。菜单项可以映射为 `TrayCommand::SetIcon(name)`，主程序收到命令后调用 `set_icon` 或 `set_icon_from_path`。
 
+### 效果
+
+::LioraDemo{component="TrayDynamicIcon"}::
+
 ### 代码
 
 ```rust src="tray/dynamic_icon.rs"
@@ -49,6 +61,10 @@
 ## CheckBox 菜单
 
 `CheckMenuItem` 用于表达开关型设置，例如「开机启动」「启动时自动显示」「静音通知」。配置中保留稳定 command id 后，可用 `set_check_state` 与 `is_checked` 同步状态。
+
+### 效果
+
+::LioraDemo{component="TrayCheckbox"}::
 
 ### 代码
 
@@ -63,6 +79,10 @@
 - **隐藏到托盘**：关闭主窗口，进程继续驻留在 tray；之后可从托盘菜单或主窗口控制入口重新创建并显示窗口。
 - **记住本次选择**：保存为 `TrayCloseAction`，下次关闭窗口时直接执行该策略；也可以在主窗口页面恢复为「每次询问」。
 
+### 效果
+
+::LioraDemo{component="TrayCloseConfirm"}::
+
 ### 代码
 
 ```rust src="tray/close_confirm.rs"
@@ -71,6 +91,10 @@
 ## 二级 / 三级 / N 级菜单
 
 `TrayMenuItemSpec::submenu` 是递归结构，可以描述二级、三级甚至更深的原生菜单。建议业务命令仍保持扁平化，使用稳定 command id 做事件路由。
+
+### 效果
+
+::LioraDemo{component="TrayNestedMenu"}::
 
 ### 代码
 

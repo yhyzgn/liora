@@ -17,20 +17,44 @@
 
 ## 基础用法
 
+### 效果
+
+::LioraDemo{component="CodeBlockBasic"}::
+
+### 代码
+
 ```rust src="code_block/basic.rs"
 ```
 
 ## 指定语言
+
+### 效果
+
+::LioraDemo{component="CodeBlockLanguage"}::
+
+### 代码
 
 ```rust src="code_block/language.rs"
 ```
 
 ## 主题切换
 
+### 效果
+
+::LioraDemo{component="CodeBlockTheme"}::
+
+### 代码
+
 ```rust src="code_block/theme.rs"
 ```
 
 ## 行内格式
+
+### 效果
+
+::LioraDemo{component="CodeBlockInline"}::
+
+### 代码
 
 ```rust src="code_block/inline.rs"
 ```

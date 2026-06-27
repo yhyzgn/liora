@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="TreeSelect"}::
+::LioraDemo{component="TreeSelectSingle"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="TreeSelect"}::
+::LioraDemo{component="TreeSelectMultiple"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="TreeSelect"}::
+::LioraDemo{component="TreeSelectFilterable"}::
 
 ### 代码
 

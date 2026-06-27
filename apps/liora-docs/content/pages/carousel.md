@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="Carousel"}::
+::LioraDemo{component="CarouselBasic"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="Carousel"}::
+::LioraDemo{component="CarouselAutoplay"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="Carousel"}::
+::LioraDemo{component="CarouselCustom"}::
 
 ### 代码
 

@@ -37,6 +37,10 @@
 
 ## 读取计时结果
 
+### 效果
+
+::LioraDemo{component="TimerResult"}::
+
 ### 代码
 
 ```rust src="timer/result.rs"

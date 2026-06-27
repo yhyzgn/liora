@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="Watermark"}::
+::LioraDemo{component="WatermarkCover"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="Watermark"}::
+::LioraDemo{component="WatermarkHeader"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="Watermark"}::
+::LioraDemo{component="WatermarkCustom"}::
 
 ### 代码
 

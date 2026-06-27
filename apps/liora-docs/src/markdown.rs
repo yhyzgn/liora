@@ -5,19 +5,21 @@ use gpui::{
 };
 use liora_components::{
     Affix, AffixPosition, Alert, AlertType, Anchor, AnchorLink, AnchorTarget, AppWindowFrame,
-    Autocomplete, AutocompleteItem, Avatar, Backtop, Badge, BadgeType, Button, ButtonColors, Card,
+    Autocomplete, AutocompleteItem, Avatar, Backtop, Badge, BadgeType, Button, ButtonColors,
+    Calendar, CalendarDate, CalendarEvent, Card, Carousel, CarouselIndicatorPosition, CarouselItem,
     Checkbox, CheckboxGroup, CheckboxOptionStyle, CodeBlock as LioraCodeBlock, CodeDiagnostic,
-    CodeEditor, CodeLanguage, CodeTheme, Container, Dropdown, DropdownButton, DropdownButtonItem,
-    Flex, Form, FormItem, HorizontalList, Image, Input, InputNumber, InputNumberControlsPosition,
-    Link, Loading, Menu, MenuMode, NotificationType, Paragraph, Popconfirm, Popover, Preview,
-    Progress, ProgressStatus, QrCode, QrEcLevel, QrFinderStyle, QrGradientDirection, QrModuleStyle,
-    Radio, RadioGroup, RadioOptionStyle, Rate, Result as LioraResult, ResultStatus, Segmented,
-    SegmentedOption, Select, Shell, Sidebar, Skeleton, SkeletonItem, SkeletonVariant, Slider,
-    Space, Statistic, Switch, Tag as LioraTag, Text, Textarea, Timer, TimerFormat, TimerUnit,
-    Title, TitleBar, TitleBarContentAlign, Transfer, TransferItem, Tree, TreeNode, Upload,
-    UploadFile, UploadStatus, VirtualizedList, VirtualizedTable, VirtualizedTree,
-    WindowControlsPosition, WindowFrameMode, frame_mode_switch_row, show_notification, toast_error,
-    toast_info, toast_success, toast_warning,
+    CodeEditor, CodeHighlighter, CodeLanguage, CodeTheme, Container, Dropdown, DropdownButton,
+    DropdownButtonItem, Flex, Form, FormItem, HorizontalList, Image, Input, InputNumber,
+    InputNumberControlsPosition, Link, Loading, Menu, MenuMode, NotificationType, Paragraph,
+    Popconfirm, Popover, Preview, Progress, ProgressStatus, QrCode, QrEcLevel, QrFinderStyle,
+    QrGradientDirection, QrModuleStyle, Radio, RadioGroup, RadioOptionStyle, Rate,
+    Result as LioraResult, ResultStatus, Segmented, SegmentedOption, Select, Shell, Sidebar,
+    Skeleton, SkeletonItem, SkeletonVariant, Slider, Space, Statistic, Switch, Tag as LioraTag,
+    Text, Textarea, Timer, TimerFormat, TimerUnit, Title, TitleBar, TitleBarContentAlign, Tour,
+    TourPlacement, TourStep, Transfer, TransferItem, Tree, TreeNode, TreeSelect, TreeSelectNode,
+    Upload, UploadFile, UploadStatus, VirtualizedList, VirtualizedTable, VirtualizedTree,
+    Watermark, WindowControlsPosition, WindowFrameMode, frame_mode_switch_row, show_notification,
+    toast_error, toast_info, toast_success, toast_warning,
 };
 use liora_core::{
     Config, PassivePortal, Placement, Portal, ThemeMode, apply_theme_mode, clear_popover,
@@ -26,6 +28,7 @@ use liora_gallery::category;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 use liora_theme::Theme;
+use liora_tray::{TrayCloseAction, TrayCommand, TrayMenuItemSpec, default_liora_tray_menu};
 use liora_updater::{
     AssetKind, InstallAction, InstallPlan, LioraApp, Platform, UpdateRequest, Updater,
     liora_asset_selector,
@@ -1893,6 +1896,9 @@ struct LiveDemoContent {
     virtualized_lists: Vec<Entity<VirtualizedList>>,
     virtualized_trees: Vec<Entity<VirtualizedTree>>,
     inputs: Vec<Entity<Input>>,
+    input_tags: Vec<Entity<liora_components::InputTag>>,
+    mentions: Vec<Entity<liora_components::Mention>>,
+    tree_selects: Vec<Entity<TreeSelect>>,
     radios: Vec<Entity<Radio>>,
     radio_groups: Vec<Entity<RadioGroup>>,
     rates: Vec<Entity<Rate>>,
@@ -1940,6 +1946,9 @@ impl LiveDemoContent {
         let mut virtualized_lists = Vec::new();
         let mut virtualized_trees = Vec::new();
         let mut inputs = Vec::new();
+        let mut input_tags = Vec::new();
+        let mut mentions = Vec::new();
+        let mut tree_selects = Vec::new();
         let mut radios = Vec::new();
         let mut radio_groups = Vec::new();
         let mut rates = Vec::new();
@@ -1999,6 +2008,36 @@ impl LiveDemoContent {
             }
             "AccordionStates" => {
                 accordions.push(cx.new(|_| docs_accordion_states_demo()));
+            }
+            "QrCodeDecode" => {
+                uploads.push(cx.new(|_| docs_qr_code_decode_upload()));
+            }
+            "InputTagBasic" => {
+                input_tags.push(cx.new(|cx| docs_input_tag_basic(cx)));
+            }
+            "InputTagLimited" => {
+                input_tags.push(cx.new(|cx| docs_input_tag_limited(cx)));
+            }
+            "InputTagDuplicates" => {
+                input_tags.push(cx.new(|cx| docs_input_tag_duplicates(cx)));
+            }
+            "MentionPeople" => {
+                mentions.push(cx.new(|cx| docs_mention_people(cx)));
+            }
+            "MentionIssues" => {
+                mentions.push(cx.new(|cx| docs_mention_issues(cx)));
+            }
+            "MentionDisabled" => {
+                mentions.push(cx.new(|cx| docs_mention_disabled(cx)));
+            }
+            "TreeSelectSingle" => {
+                tree_selects.push(cx.new(|cx| docs_tree_select_single(cx)));
+            }
+            "TreeSelectMultiple" => {
+                tree_selects.push(cx.new(|cx| docs_tree_select_multiple(cx)));
+            }
+            "TreeSelectFilterable" => {
+                tree_selects.push(cx.new(|cx| docs_tree_select_filterable(cx)));
             }
             "AutocompleteBasic" => {
                 let suggestions = basic_autocomplete_items();
@@ -2728,6 +2767,9 @@ impl LiveDemoContent {
             virtualized_lists,
             virtualized_trees,
             inputs,
+            input_tags,
+            mentions,
+            tree_selects,
             radios,
             radio_groups,
             rates,
@@ -3010,6 +3052,71 @@ impl Render for LiveDemoContent {
                     .round(true)
                     .into_any_element(),
             ]),
+            "CalendarEvents" => Card::new(docs_calendar_events()).no_shadow().into_any_element(),
+            "CalendarRange" => Card::new(docs_calendar_range()).no_shadow().into_any_element(),
+            "CarouselBasic" => Card::new(docs_carousel_basic()).no_shadow().into_any_element(),
+            "CarouselAutoplay" => Card::new(docs_carousel_autoplay()).no_shadow().into_any_element(),
+            "CarouselCustom" => Card::new(docs_carousel_custom()).no_shadow().into_any_element(),
+            "CodeBlockBasic" => Card::new(docs_code_block_basic()).no_shadow().into_any_element(),
+            "CodeBlockLanguage" => Card::new(docs_code_block_language()).no_shadow().into_any_element(),
+            "CodeBlockTheme" => Card::new(docs_code_block_theme()).no_shadow().into_any_element(),
+            "CodeBlockInline" => Card::new(docs_code_block_inline()).no_shadow().into_any_element(),
+            "QrCodeDecode" => self
+                .uploads
+                .first()
+                .cloned()
+                .map(|upload| Card::new(docs_qr_code_decode_demo(upload)).no_shadow().into_any_element())
+                .unwrap_or_else(|| Paragraph::with_text("QrCode decode demo is not initialized.").into_any_element()),
+            "InputTagBasic" | "InputTagLimited" | "InputTagDuplicates" => self
+                .input_tags
+                .first()
+                .cloned()
+                .map(|input_tag| Card::new(input_tag).no_shadow().into_any_element())
+                .unwrap_or_else(|| Paragraph::with_text("InputTag demo is not initialized.").into_any_element()),
+            "MentionPeople" | "MentionIssues" | "MentionDisabled" => self
+                .mentions
+                .first()
+                .cloned()
+                .map(|mention| Card::new(mention).no_shadow().into_any_element())
+                .unwrap_or_else(|| Paragraph::with_text("Mention demo is not initialized.").into_any_element()),
+            "TreeSelectSingle" | "TreeSelectMultiple" | "TreeSelectFilterable" => self
+                .tree_selects
+                .first()
+                .cloned()
+                .map(|tree_select| Card::new(tree_select).no_shadow().into_any_element())
+                .unwrap_or_else(|| Paragraph::with_text("TreeSelect demo is not initialized.").into_any_element()),
+            "WatermarkCover" => Card::new(docs_watermark_cover()).no_shadow().into_any_element(),
+            "WatermarkHeader" => Card::new(docs_watermark_header()).no_shadow().into_any_element(),
+            "WatermarkCustom" => Card::new(docs_watermark_custom()).no_shadow().into_any_element(),
+            "TimerResult" => Card::new(docs_timer_result()).no_shadow().into_any_element(),
+            "TourMiddle" => Card::new(docs_tour_launcher(
+                "从第二步启动",
+                "打开一个 active_index(1) 的 Tour。",
+                docs_middle_tour,
+            ))
+            .no_shadow()
+            .into_any_element(),
+            "TourNoMask" => Card::new(docs_tour_launcher(
+                "启动无遮罩 Tour",
+                "show_mask(false) 后页面仍保持可见。",
+                docs_no_mask_tour,
+            ))
+            .no_shadow()
+            .into_any_element(),
+            "TourClosePolicy" => Card::new(docs_tour_launcher(
+                "启动受控 Tour",
+                "ESC 和外部点击不会关闭此引导。",
+                docs_close_policy_tour,
+            ))
+            .no_shadow()
+            .into_any_element(),
+            "TrayResidency" => Card::new(docs_tray_residency()).no_shadow().into_any_element(),
+            "TrayInstall" => Card::new(docs_tray_install()).no_shadow().into_any_element(),
+            "TrayDynamicIcon" => Card::new(docs_tray_dynamic_icon()).no_shadow().into_any_element(),
+            "TrayCheckbox" => Card::new(docs_tray_checkbox()).no_shadow().into_any_element(),
+            "TrayCloseConfirm" => Card::new(docs_tray_close_confirm()).no_shadow().into_any_element(),
+            "TrayNestedMenu" => Card::new(docs_tray_nested_menu()).no_shadow().into_any_element(),
+            "TypographyParagraph" => Card::new(docs_typography_paragraph(_cx)).no_shadow().into_any_element(),
             "AutocompleteBasic"
             | "AutocompleteCustom"
             | "AutocompleteNoSuffix"
@@ -6517,6 +6624,601 @@ fn docs_virtualized_tree(cx: &mut Context<VirtualizedTree>, checkable: bool) -> 
     }
 
     tree
+}
+
+fn docs_date(day: u32) -> CalendarDate {
+    CalendarDate::new(2026, 6, day).expect("docs demo date should be valid")
+}
+
+fn docs_calendar_events() -> impl IntoElement {
+    Calendar::new(2026, 6).selected(docs_date(16)).events([
+        CalendarEvent::new(docs_date(3), "Design review").color(rgb(0x2563eb).into()),
+        CalendarEvent::new(docs_date(18), "Docs polish").color(rgb(0xf97316).into()),
+    ])
+}
+
+fn docs_calendar_range() -> impl IntoElement {
+    Calendar::new(2026, 6)
+        .range(docs_date(10), docs_date(18))
+        .disabled_dates([docs_date(6), docs_date(7), docs_date(21)])
+}
+
+fn docs_carousel_basic() -> impl IntoElement {
+    Carousel::new(vec![
+        CarouselItem::new("Native Rust UI")
+            .description("Pure GPUI rendering with Liora components.")
+            .accent(rgb(0x2563eb).into()),
+        CarouselItem::new("Charts & Dashboards")
+            .description("Native chart primitives for desktop apps.")
+            .accent(rgb(0x16a34a).into()),
+    ])
+    .height(px(240.0))
+}
+
+fn docs_carousel_autoplay() -> impl IntoElement {
+    Carousel::new(vec![
+        CarouselItem::new("Preview").accent(rgb(0x2563eb).into()),
+        CarouselItem::new("Release").accent(rgb(0x9333ea).into()),
+    ])
+    .autoplay(true)
+    .interval_ms(1800)
+    .pause_on_hover(true)
+    .indicator_position(CarouselIndicatorPosition::Outside)
+    .height(px(220.0))
+}
+
+fn docs_carousel_custom() -> impl IntoElement {
+    Carousel::new(vec![
+        CarouselItem::new("Custom content")
+            .description("The slot below is another Liora element.")
+            .accent(rgb(0xf97316).into())
+            .content(
+                Flex::new()
+                    .row()
+                    .center()
+                    .rounded_pill()
+                    .bg(rgb(0xfff7ed).into())
+                    .padding_x_units(12.0)
+                    .padding_y_px(4.0)
+                    .text_sm()
+                    .text_color(rgb(0x9a3412).into())
+                    .child("Composable slot"),
+            ),
+    ])
+    .show_arrows(false)
+    .hide_indicators()
+}
+
+fn docs_code_block_basic() -> impl IntoElement {
+    LioraCodeBlock::new("cargo run -p liora-docs")
+        .shell()
+        .copyable(true)
+        .selectable(true)
+}
+
+fn docs_code_block_language() -> impl IntoElement {
+    LioraCodeBlock::new(r#"fn main() { println!("Liora"); }"#)
+        .language("rust")
+        .copyable(true)
+}
+
+fn docs_code_block_theme() -> impl IntoElement {
+    Space::new()
+        .vertical()
+        .gap_md()
+        .child(
+            LioraCodeBlock::new("cargo run -p liora-docs")
+                .shell()
+                .auto_theme(),
+        )
+        .child(
+            LioraCodeBlock::new(r#"fn main() { println!("Liora"); }"#)
+                .rust()
+                .github_dark_theme(),
+        )
+        .child(
+            LioraCodeBlock::new("[package]\nname = \"liora\"")
+                .toml()
+                .highlighter(CodeHighlighter::Syntect)
+                .theme(CodeTheme::Nord)
+                .selectable(true),
+        )
+}
+
+fn docs_code_block_inline() -> impl IntoElement {
+    Flex::new()
+        .row()
+        .wrap()
+        .align_center()
+        .gap_sm()
+        .child(Text::new("Run").sm())
+        .child(LioraCodeBlock::new("cargo check").shell().inline())
+        .child(Text::new("before publishing docs snippets.").sm())
+}
+
+fn docs_qr_code_decode_upload() -> Upload {
+    Upload::new()
+        .accept(".png,.jpg,.jpeg,.gif,.bmp,.webp,image/*")
+        .limit(1)
+        .button_text("选择二维码图片")
+        .tip("选择本地图片后自动调用 QrCode::decode_file")
+        .width_lg()
+        .files([UploadFile::new("qr-sample", "release-qr.png")
+            .status(UploadStatus::Ready)
+            .description("等待选择本地二维码图片")])
+}
+
+fn docs_qr_code_decode_demo(upload: Entity<Upload>) -> impl IntoElement {
+    Space::new().vertical().gap_md().child(upload).child(
+        Flex::new()
+            .column()
+            .gap_px(4.0)
+            .padding_md()
+            .rounded_units(12.0)
+            .border()
+            .child(Text::new("识别结果").sm().bold())
+            .child(Text::new("选择图片后会显示二维码内容、纠错等级和版本。").sm()),
+    )
+}
+
+fn docs_input_tag_basic(
+    cx: &mut Context<liora_components::InputTag>,
+) -> liora_components::InputTag {
+    liora_components::InputTag::new(vec!["Rust", "GPUI", "Liora"], cx).placeholder("Add skill")
+}
+
+fn docs_input_tag_limited(
+    cx: &mut Context<liora_components::InputTag>,
+) -> liora_components::InputTag {
+    liora_components::InputTag::new(vec!["Design", "Docs"], cx)
+        .placeholder("Max 4")
+        .max_tags(4)
+}
+
+fn docs_input_tag_duplicates(
+    cx: &mut Context<liora_components::InputTag>,
+) -> liora_components::InputTag {
+    liora_components::InputTag::new(vec!["blue", "blue"], cx)
+        .allow_duplicates(true)
+        .placeholder("Duplicates allowed")
+}
+
+fn docs_mention_people(cx: &mut Context<liora_components::Mention>) -> liora_components::Mention {
+    liora_components::Mention::new(
+        vec![
+            liora_components::MentionItem::new("alice", "Alice Chen").description("Design systems"),
+            liora_components::MentionItem::new("bob", "Bob Smith")
+                .description("Release engineering"),
+            liora_components::MentionItem::new("carol", "Carol Li")
+                .description("Docs and examples"),
+            liora_components::MentionItem::new("dora", "Dora Wang")
+                .description("Quality assurance"),
+        ],
+        cx,
+    )
+    .placeholder("Type @ to mention a teammate")
+    .on_select(|item, _, _| toast_info!("Mention {}", item.label))
+}
+
+fn docs_mention_issues(cx: &mut Context<liora_components::Mention>) -> liora_components::Mention {
+    liora_components::Mention::new(
+        vec![
+            liora_components::MentionItem::new("128", "#128 Improve chart hover"),
+            liora_components::MentionItem::new("142", "#142 Package smoke scripts"),
+            liora_components::MentionItem::new("176", "#176 Add TreeSelect"),
+            liora_components::MentionItem::new("201", "#201 Polish docs navigation"),
+        ],
+        cx,
+    )
+    .trigger('#')
+    .placeholder("Type # to reference an issue")
+    .max_suggestions(4)
+}
+
+fn docs_mention_disabled(cx: &mut Context<liora_components::Mention>) -> liora_components::Mention {
+    liora_components::Mention::new(
+        vec![liora_components::MentionItem::new("alice", "Alice Chen")],
+        cx,
+    )
+    .placeholder("Disabled mention")
+    .disabled(true)
+}
+
+fn docs_tree_select_nodes() -> Vec<TreeSelectNode> {
+    vec![
+        TreeSelectNode::new("guide", "Guide")
+            .child(TreeSelectNode::new("overview", "Overview"))
+            .child(TreeSelectNode::new("quick_start", "Quick Start")),
+        TreeSelectNode::new("components", "Components")
+            .child(TreeSelectNode::new("button", "Button"))
+            .child(TreeSelectNode::new("internal", "Internal Draft")),
+        TreeSelectNode::new("charts", "Charts")
+            .child(TreeSelectNode::new("line_chart", "LineChart"))
+            .child(TreeSelectNode::new("ring_chart", "RingChart")),
+    ]
+}
+
+fn docs_tree_select_single(cx: &mut Context<TreeSelect>) -> TreeSelect {
+    TreeSelect::new(docs_tree_select_nodes(), cx)
+        .placeholder("Choose documentation page")
+        .selected(["quick_start"])
+}
+
+fn docs_tree_select_multiple(cx: &mut Context<TreeSelect>) -> TreeSelect {
+    TreeSelect::new(docs_tree_select_nodes(), cx)
+        .multiple(true)
+        .selected(["button", "line_chart"])
+        .disabled_keys(["internal"])
+}
+
+fn docs_tree_select_filterable(cx: &mut Context<TreeSelect>) -> TreeSelect {
+    TreeSelect::new(docs_tree_select_nodes(), cx)
+        .filterable(true)
+        .placeholder("Search docs tree")
+}
+
+fn docs_watermark_surface(text: &'static str) -> impl IntoElement {
+    Flex::new()
+        .height_units(160.0)
+        .padding_md()
+        .rounded_units(12.0)
+        .border()
+        .child(Text::new(text))
+}
+
+fn docs_watermark_cover() -> impl IntoElement {
+    Watermark::new(
+        docs_watermark_surface("Internal report"),
+        "LIORA CONFIDENTIAL",
+    )
+    .density(3, 4)
+    .opacity(0.18)
+}
+
+fn docs_watermark_header() -> impl IntoElement {
+    Watermark::new(docs_watermark_surface("Preview asset"), "PREVIEW")
+        .header()
+        .density(1, 3)
+        .color(rgb(0x2563eb).into())
+        .opacity(0.24)
+}
+
+fn docs_watermark_custom() -> impl IntoElement {
+    Watermark::new(docs_watermark_surface("Design draft"), "DRAFT")
+        .density(4, 5)
+        .gap(px(72.0), px(48.0))
+        .color(rgb(0xf97316).into())
+        .opacity(0.22)
+        .rotate(-32.0)
+}
+
+fn docs_timer_result() -> impl IntoElement {
+    let timer = Timer::count_down(
+        std::time::Duration::from_secs(300),
+        std::time::Duration::from_secs(84),
+    );
+    let snapshot = timer.snapshot();
+
+    Flex::new()
+        .column()
+        .gap_md()
+        .child(
+            timer
+                .title("Deploy window")
+                .display_unit(TimerUnit::Minutes),
+        )
+        .child(
+            Flex::new()
+                .row()
+                .wrap()
+                .gap_sm()
+                .child(LioraTag::new(format!(
+                    "elapsed: {:.0}s",
+                    snapshot.elapsed_as(TimerUnit::Seconds)
+                )))
+                .child(LioraTag::new(format!(
+                    "remaining: {:.1}m",
+                    snapshot
+                        .remaining_as(TimerUnit::Minutes)
+                        .unwrap_or_default()
+                )))
+                .child(LioraTag::new(format!("finished: {}", snapshot.finished))),
+        )
+}
+
+fn docs_tour_launcher(
+    label: &'static str,
+    description: &'static str,
+    starter: fn(&mut App),
+) -> impl IntoElement {
+    Space::new()
+        .vertical()
+        .gap_md()
+        .child(Text::new(description).sm())
+        .child(Button::new(label).primary().on_click(move |_, _, cx| {
+            starter(cx);
+        }))
+}
+
+fn docs_middle_tour(cx: &mut App) {
+    Tour::new(vec![
+        TourStep::new("第一步", "介绍入口。"),
+        TourStep::new("第二步", "当前步骤前后按钮都可用。"),
+        TourStep::new("第三步", "结束引导。"),
+    ])
+    .active_index(1)
+    .previous_text("上一步")
+    .next_text("下一步")
+    .finish_text("完成")
+    .show(cx);
+}
+
+fn docs_no_mask_tour(cx: &mut App) {
+    Tour::new(vec![
+        TourStep::new("透明遮罩", "Tour 仍然在顶层浮动，但不显示半透明遮罩。")
+            .placement(TourPlacement::Center),
+    ])
+    .show_mask(false)
+    .close_on_click_outside(true)
+    .finish_text("完成")
+    .show(cx);
+}
+
+fn docs_close_policy_tour(cx: &mut App) {
+    Tour::new(vec![
+        TourStep::new("确认引导", "ESC 和外部点击都不会关闭。"),
+        TourStep::new("显式完成", "用户需要点击关闭图标或完成按钮。"),
+    ])
+    .close_on_escape(false)
+    .close_on_click_outside(false)
+    .finish_text("我已了解")
+    .show(cx);
+}
+
+fn docs_tray_residency() -> impl IntoElement {
+    Flex::new()
+        .column()
+        .gap_md()
+        .child(docs_status_row("驻留模式", "enabled", rgb(0x16a34a).into()))
+        .child(docs_status_row("托盘可见", "true", rgb(0x2563eb).into()))
+        .child(docs_status_row(
+            "关闭窗口",
+            "hide-to-tray",
+            rgb(0xf97316).into(),
+        ))
+}
+
+fn docs_tray_install() -> impl IntoElement {
+    Space::new()
+        .vertical()
+        .gap_md()
+        .child(Text::new("TrayConfig::new(\"liora-gallery\")").sm().bold())
+        .child(Text::new("tooltip + app-owned icon + default_liora_tray_menu()").sm())
+        .child(docs_tray_menu_preview(default_liora_tray_menu()))
+}
+
+fn docs_tray_dynamic_icon() -> impl IntoElement {
+    Flex::new()
+        .row()
+        .wrap()
+        .gap_sm()
+        .child(docs_icon_chip("default", rgb(0x2563eb).into()))
+        .child(docs_icon_chip("syncing", rgb(0xf97316).into()))
+        .child(docs_icon_chip("error", rgb(0xdc2626).into()))
+        .child(LioraTag::new(TrayCommand::SetIcon("syncing".into()).id()).round(true))
+}
+
+fn docs_tray_checkbox() -> impl IntoElement {
+    let items = vec![
+        TrayMenuItemSpec::check(
+            "启动时自动显示主窗口",
+            TrayCommand::Custom("auto-show-window".into()),
+            true,
+        ),
+        TrayMenuItemSpec::check(
+            "静音通知",
+            TrayCommand::Custom("mute-notifications".into()),
+            false,
+        ),
+    ];
+    docs_tray_menu_preview(items)
+}
+
+fn docs_tray_close_confirm() -> impl IntoElement {
+    Flex::new()
+        .column()
+        .gap_md()
+        .child(docs_close_action(TrayCloseAction::ExitProcess))
+        .child(docs_close_action(TrayCloseAction::HideToTray))
+        .child(docs_close_action(TrayCloseAction::Ask))
+}
+
+fn docs_tray_nested_menu() -> impl IntoElement {
+    let items = vec![TrayMenuItemSpec::submenu(
+        "项目",
+        vec![
+            TrayMenuItemSpec::action("打开最近项目", TrayCommand::Custom("open-recent".into())),
+            TrayMenuItemSpec::submenu(
+                "工作区",
+                vec![TrayMenuItemSpec::submenu(
+                    "生产环境",
+                    vec![
+                        TrayMenuItemSpec::action(
+                            "打开仪表盘",
+                            TrayCommand::Custom("workspace-prod-dashboard".into()),
+                        ),
+                        TrayMenuItemSpec::action(
+                            "打开日志",
+                            TrayCommand::Custom("workspace-prod-logs".into()),
+                        ),
+                    ],
+                )],
+            ),
+        ],
+    )];
+    docs_tray_menu_preview(items)
+}
+
+fn docs_status_row(label: &'static str, value: &'static str, color: Hsla) -> impl IntoElement {
+    Flex::new()
+        .row()
+        .align_center()
+        .justify_between()
+        .gap_md()
+        .padding_md()
+        .rounded_units(12.0)
+        .border()
+        .child(Text::new(label).sm())
+        .child(
+            Flex::new()
+                .padding_x_px(10.0)
+                .padding_y_px(3.0)
+                .rounded_pill()
+                .bg(color)
+                .text_color(gpui::white())
+                .text_xs()
+                .child(value),
+        )
+}
+
+fn docs_icon_chip(label: &'static str, color: Hsla) -> impl IntoElement {
+    Flex::new()
+        .row()
+        .align_center()
+        .gap_sm()
+        .padding_md()
+        .rounded_pill()
+        .border()
+        .child(Icon::new(IconName::Circle).size_units(14.0).color(color))
+        .child(Text::new(label).sm())
+}
+
+fn docs_close_action(action: TrayCloseAction) -> impl IntoElement {
+    let (label, value, color) = match action {
+        TrayCloseAction::Ask => ("询问用户", "Ask", rgb(0x64748b).into()),
+        TrayCloseAction::ExitProcess => ("关闭进程", "ExitProcess", rgb(0xdc2626).into()),
+        TrayCloseAction::HideToTray => ("隐藏到托盘", "HideToTray", rgb(0x16a34a).into()),
+    };
+    docs_status_row(label, value, color)
+}
+
+fn docs_tray_menu_preview(items: Vec<TrayMenuItemSpec>) -> impl IntoElement {
+    Flex::new()
+        .column()
+        .gap_sm()
+        .padding_md()
+        .rounded_units(14.0)
+        .border()
+        .children(
+            items
+                .iter()
+                .flat_map(|item| docs_tray_menu_rows(item, 0))
+                .collect::<Vec<_>>(),
+        )
+}
+
+fn docs_tray_menu_rows(item: &TrayMenuItemSpec, depth: usize) -> Vec<AnyElement> {
+    match item {
+        TrayMenuItemSpec::Action {
+            label,
+            command,
+            enabled,
+        } => vec![docs_tray_menu_row(
+            depth,
+            label,
+            command.id(),
+            *enabled,
+            IconName::MousePointerClick,
+        )],
+        TrayMenuItemSpec::Check {
+            label,
+            command,
+            checked,
+            enabled,
+        } => vec![docs_tray_menu_row(
+            depth,
+            label,
+            format!("{} · checked={checked}", command.id()),
+            *enabled,
+            IconName::Check,
+        )],
+        TrayMenuItemSpec::Submenu {
+            label,
+            enabled,
+            children,
+        } => {
+            let mut rows = vec![docs_tray_menu_row(
+                depth,
+                label,
+                "submenu".to_string(),
+                *enabled,
+                IconName::ChevronRight,
+            )];
+            rows.extend(
+                children
+                    .iter()
+                    .flat_map(|child| docs_tray_menu_rows(child, depth + 1)),
+            );
+            rows
+        }
+        TrayMenuItemSpec::Separator => vec![
+            Flex::new()
+                .height_units(1.0)
+                .bg(rgb(0xe2e8f0).into())
+                .into_any_element(),
+        ],
+    }
+}
+
+fn docs_tray_menu_row(
+    depth: usize,
+    label: &str,
+    command: String,
+    enabled: bool,
+    icon: IconName,
+) -> AnyElement {
+    Flex::new()
+        .row()
+        .align_center()
+        .justify_between()
+        .gap_md()
+        .padding_x_px(12.0 + depth as f32 * 18.0)
+        .padding_y_px(7.0)
+        .rounded_units(10.0)
+        .child(
+            Flex::new()
+                .row()
+                .align_center()
+                .gap_sm()
+                .child(Icon::new(icon).size_units(14.0))
+                .child(Text::new(label.to_string()).sm()),
+        )
+        .child(
+            Text::new(if enabled {
+                command
+            } else {
+                "disabled".to_string()
+            })
+            .sm()
+            .text_color(rgb(0x64748b).into()),
+        )
+        .into_any_element()
+}
+
+fn docs_typography_paragraph(cx: &mut Context<LiveDemoContent>) -> impl IntoElement {
+    let theme = cx.global::<Config>().theme.clone();
+    Paragraph::new()
+        .child(Text::new("Liora UI is a professional "))
+        .child(
+            Text::new("desktop UI library")
+                .bold()
+                .text_color(theme.primary.base),
+        )
+        .child(Text::new(" for Rust, built on top of ").text_color(theme.info.base))
+        .child(Text::new("GPUI").italic().bg(theme.neutral.hover))
+        .child(Text::new(". Inline "))
+        .child(Text::new("code").code_style(&theme))
+        .child(Text::new(" stays in the same wrapped paragraph."))
 }
 
 fn docs_product_menu(id: &'static str) -> Menu {
@@ -10459,6 +11161,139 @@ mod tests {
                 !source.contains(stale_index),
                 "split sidebar demos must not use stale whole-page menu index {stale_index}"
             );
+        }
+    }
+
+    #[test]
+    fn component_pages_do_not_repeat_same_live_demo_key_for_distinct_examples() {
+        let pages = [
+            ("calendar", CALENDAR_DOC),
+            ("carousel", CAROUSEL_DOC),
+            ("input_tag", INPUT_TAG_DOC),
+            ("mention", MENTION_DOC),
+            ("tree_select", TREE_SELECT_DOC),
+            ("watermark", WATERMARK_DOC),
+        ];
+
+        for (name, doc) in pages {
+            let mut seen = std::collections::HashSet::new();
+            let mut remaining = doc;
+            while let Some(index) = remaining.find("::LioraDemo{component=\"") {
+                let after = &remaining[index + "::LioraDemo{component=\"".len()..];
+                let end = after
+                    .find('\"')
+                    .expect("live demo marker should close component");
+                let key = &after[..end];
+                assert!(seen.insert(key), "{name}.md repeats live demo key {key}");
+                remaining = &after[end + 1..];
+            }
+        }
+    }
+
+    #[test]
+    fn split_component_pages_have_precise_live_demo_renderers() {
+        let source = include_str!("markdown.rs")
+            .split("mod tests")
+            .next()
+            .unwrap();
+        for key in [
+            "CalendarEvents",
+            "CalendarRange",
+            "CarouselBasic",
+            "CarouselAutoplay",
+            "CarouselCustom",
+            "CodeBlockBasic",
+            "CodeBlockLanguage",
+            "CodeBlockTheme",
+            "CodeBlockInline",
+            "QrCodeDecode",
+            "InputTagBasic",
+            "InputTagLimited",
+            "InputTagDuplicates",
+            "MentionPeople",
+            "MentionIssues",
+            "MentionDisabled",
+            "TreeSelectSingle",
+            "TreeSelectMultiple",
+            "TreeSelectFilterable",
+            "WatermarkCover",
+            "WatermarkHeader",
+            "WatermarkCustom",
+            "TimerResult",
+            "TourMiddle",
+            "TourNoMask",
+            "TourClosePolicy",
+            "TrayResidency",
+            "TrayInstall",
+            "TrayDynamicIcon",
+            "TrayCheckbox",
+            "TrayCloseConfirm",
+            "TrayNestedMenu",
+            "TypographyParagraph",
+        ] {
+            assert!(source.contains(key), "missing precise renderer for {key}");
+        }
+    }
+
+    #[test]
+    fn component_doc_examples_are_strict_effect_code_pairs_per_section() {
+        let gallery_keys = liora_gallery::demos::registry()
+            .into_iter()
+            .map(|entry| entry.name.split_whitespace().next().unwrap())
+            .collect::<Vec<_>>();
+
+        for page in DOC_PAGES {
+            if !gallery_keys.contains(&page.title)
+                || (!page.markdown.contains("::LioraDemo")
+                    && !page.markdown.contains("```rust src="))
+            {
+                continue;
+            }
+
+            assert!(
+                !page.markdown.contains(":::LioraDemo"),
+                "{} must use the exact ::LioraDemo marker, not a malformed fenced marker",
+                page.title
+            );
+
+            let mut sections = page.markdown.split("\n## ");
+            sections.next();
+            for section in sections {
+                let section_title = section.lines().next().unwrap_or(page.title);
+                let live_count = section.matches("\n::LioraDemo{component=\"").count()
+                    + usize::from(section.starts_with("::LioraDemo{component=\""));
+                let code_count = section.matches("```rust src=\"").count();
+
+                if live_count == 0 && code_count == 0 {
+                    continue;
+                }
+
+                assert_eq!(
+                    live_count, 1,
+                    "{} / {section_title} must contain exactly one effect demo",
+                    page.title
+                );
+                assert_eq!(
+                    code_count, 1,
+                    "{} / {section_title} must contain exactly one code block",
+                    page.title
+                );
+
+                let live_index = section
+                    .find("::LioraDemo{component=\"")
+                    .expect("checked live_count");
+                let code_index = section.find("```rust src=\"").expect("checked code_count");
+                assert!(
+                    live_index < code_index,
+                    "{} / {section_title} must render effect first, then its exact code",
+                    page.title
+                );
+                assert!(
+                    section[live_index..code_index].contains("\n### 代码\n"),
+                    "{} / {section_title} must put the code heading immediately after the effect block",
+                    page.title
+                );
+            }
         }
     }
 

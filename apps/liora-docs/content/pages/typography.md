@@ -12,6 +12,12 @@ Liora Typography 可以把多个不同样式的文本片段合成为同一个 `S
 
 `Paragraph` 接收一个或多个 `Text` 片段，并把它们拼接为单个 GPUI `StyledText`。
 
+### 效果
+
+::LioraDemo{component="TypographyParagraph"}::
+
+### 代码
+
 ```rust src="typography/paragraph.rs"
 ```
 

@@ -28,9 +28,11 @@
 
 ## 识别二维码
 
-### 说明
-
 上方交互示例使用 `Upload` 打开本地图片文件；选择后自动调用 `QrCode::decode_file`。业务层也可以直接用 `decode_bytes` / `decode_file` / `decode_image`，返回内容、纠错等级和版本。
+
+### 效果
+
+::LioraDemo{component="QrCodeDecode"}::
 
 ### 代码
 
