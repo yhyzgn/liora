@@ -198,9 +198,12 @@ pub use label::*;
 pub use line_chart::*;
 pub use link::*;
 pub use liora_core::{
-    FontConfig, LinuxDesktopIdentity, LinuxDesktopPngIcon, LioraOptions, ThemeMode,
-    apply_theme_mode, attach_system_theme_observer, ensure_linux_desktop_identity,
-    linux_desktop_entry, linux_desktop_png_icon_path, load_custom_fonts, set_font_config,
+    EmbeddedFont, FontConfig, FontDiscoveryReport, FontLoadFailure, FontLoadMode, FontLoadOptions,
+    FontLoadReport, LinuxDesktopIdentity, LinuxDesktopPngIcon, LioraOptions, ThemeMode,
+    apply_theme_mode, attach_system_theme_observer, discover_font_files,
+    ensure_linux_desktop_identity, is_font_family_available, is_supported_font_path,
+    linux_desktop_entry, linux_desktop_png_icon_path, load_app_fonts, load_custom_fonts,
+    load_embedded_fonts, load_font_assets, load_font_files, load_fonts_from_dir, set_font_config,
     startup_maximized_window_bounds, sync_system_theme,
 };
 pub use liora_theme::{ButtonSize, ButtonVariant};

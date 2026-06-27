@@ -26,7 +26,7 @@ use gpui::{
     ShapedLine, SharedString, Style, TextRun, UTF16Selection, Window, actions, fill, point,
     prelude::*, px, size,
 };
-use liora_core::Config;
+use liora_core::{Config, ui_font_family};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 use std::ops::{Add, Range};
@@ -1254,7 +1254,10 @@ impl Element for InputElement {
         cx: &mut App,
     ) -> InputPrepaint {
         let input = self.input.read(cx);
-        let style = window.text_style();
+        let mut style = window.text_style();
+        if let Some(family) = ui_font_family(cx) {
+            style.font_family = family;
+        }
         let theme = &cx.global::<Config>().theme;
         let text_c = if self.disabled {
             theme.neutral.text_disabled

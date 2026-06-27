@@ -15,6 +15,10 @@ use std::borrow::Cow;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
+pub mod fonts;
+
+pub use fonts::*;
+
 static NEXT_UNIQUE_ID: AtomicU64 = AtomicU64::new(1);
 
 /// Font families used by Liora-rendered UI and code surfaces.

@@ -83,6 +83,8 @@ pub struct SelectableTextOptions {
     pub key_context: &'static str,
     /// Whether text should occupy the full available width.
     pub fill_width: bool,
+    /// Optional font family override inherited from Liora app typography.
+    pub font_family: Option<SharedString>,
 }
 
 impl SelectableTextOptions {
@@ -98,6 +100,7 @@ impl SelectableTextOptions {
             wrap: SelectableTextWrap::Normal,
             key_context: "SelectableText",
             fill_width: true,
+            font_family: None,
         }
     }
 }
@@ -225,6 +228,7 @@ struct SelectableTextState {
     wrap: SelectableTextWrap,
     key_context: &'static str,
     fill_width: bool,
+    font_family: Option<SharedString>,
     focus_handle: FocusHandle,
 }
 
@@ -240,6 +244,7 @@ impl SelectableTextState {
             wrap: options.wrap,
             key_context: options.key_context,
             fill_width: options.fill_width,
+            font_family: options.font_family,
             focus_handle: cx.focus_handle(),
         }
     }
@@ -254,7 +259,8 @@ impl SelectableTextState {
             || self.text_color != options.text_color
             || self.wrap != options.wrap
             || self.key_context != options.key_context
-            || self.fill_width != options.fill_width;
+            || self.fill_width != options.fill_width
+            || self.font_family != options.font_family;
         if !changed {
             return;
         }
@@ -269,6 +275,7 @@ impl SelectableTextState {
         self.wrap = options.wrap;
         self.key_context = options.key_context;
         self.fill_width = options.fill_width;
+        self.font_family = options.font_family;
 
         if old_id != self.id {
             let old_range = selected_range_snapshot(&old_id);
@@ -287,6 +294,9 @@ impl SelectableTextState {
 
     fn text_style(&self, window: &Window) -> TextStyle {
         let mut style = window.text_style();
+        if let Some(family) = self.font_family.clone() {
+            style.font_family = family;
+        }
         style.color = self.text_color;
         style.font_size = self.font_size.into();
         style.line_height = self.line_height.into();

@@ -319,7 +319,7 @@ cargo run -p liora-docs
 ```rust
 use gpui::App;
 use liora::{ThemeMode, init_liora, init_liora_with_mode, init_liora_with_options};
-use liora::{FontConfig, LioraOptions, load_custom_fonts};
+use liora::{FontConfig, LioraOptions};
 
 fn init_default(cx: &mut App) {
     // 推荐默认：跟随系统主题。
@@ -331,16 +331,13 @@ fn init_dark(cx: &mut App) {
     init_liora_with_mode(cx, ThemeMode::Dark);
 }
 
-fn init_with_fonts(cx: &mut App) -> gpui::Result<()> {
-    // 先注册应用自己的字体字节。这里的路径请替换成你的资产路径。
-    load_custom_fonts(cx, [std::borrow::Cow::Borrowed(include_bytes!("../assets/Inter-Regular.ttf"))])?;
-
+fn init_with_system_font_names(cx: &mut App) {
+    // 这里不加载任何字体文件，GPUI 会从操作系统字体中解析这些 family 名称。
     let fonts = FontConfig::system()
-        .with_ui_family("Inter")
+        .with_ui_family("Segoe UI")
         .with_code_family("JetBrains Mono");
 
     init_liora_with_options(cx, LioraOptions::system().with_fonts(fonts));
-    Ok(())
 }
 ```
 
@@ -900,31 +897,142 @@ fn theme_switcher(current: ThemeMode) -> Segmented {
 
 ### 自定义字体且保留系统默认策略
 
+Liora 把 **字体资源加载** 和 **字体族选择** 拆成两步：
+
+1. 如果字体已经安装在用户系统里，不需要加载文件，直接用 `FontConfig` 指定 family 名称。
+2. 如果应用自带私有字体，先用 `load_app_fonts`、`load_fonts_from_dir`、`load_font_assets`、`load_embedded_fonts`，或底层兼容函数 `load_custom_fonts` 注册字体字节。
+3. 然后在启动时通过 `LioraOptions::with_fonts(...)`，或运行时通过 `set_font_config(...)` 选择 UI/code 字体族。
+
+支持的文件扩展名包括 `ttf`、`otf`、`ttc`、`otc`、`woff`、`woff2`，但真正解析能力由各平台官方 GPUI 后端决定。原生桌面应用优先使用 `ttf` / `otf` / `ttc` / `otc`。在 Linux/WGPU 上，当前 GPUI 的 `fontdb` 路径可能会忽略 WOFF/WOFF2 字节且不返回错误，所以只要某个 family 必须生效，就应该使用 `FontLoadOptions::require_family(...)` 并检查 `FontLoadReport::missing_required_families`。
+
+#### 只使用系统已安装字体
+
 ```rust
-use std::borrow::Cow;
-use liora::{FontConfig, LioraOptions, init_liora_with_options, load_custom_fonts, set_font_config};
+use liora::{FontConfig, LioraOptions, init_liora_with_options, set_font_config};
 
-fn init_with_brand_fonts(cx: &mut gpui::App) -> gpui::Result<()> {
-    load_custom_fonts(cx, [
-        Cow::Borrowed(include_bytes!("../assets/Inter-Regular.ttf")),
-        Cow::Borrowed(include_bytes!("../assets/JetBrainsMono-Regular.ttf")),
-    ])?;
-
+fn init_with_system_fonts(cx: &mut gpui::App) {
     init_liora_with_options(
         cx,
         LioraOptions::system().with_fonts(
             FontConfig::system()
-                .with_ui_family("Inter")
-                .with_code_family("JetBrains Mono"),
+                .with_ui_family("Segoe UI")       // Windows 示例；也可以换成任意已安装字体。
+                .with_code_family("JetBrains Mono"), // 代码字体也可以来自系统字体。
         ),
     );
-    Ok(())
 }
 
-fn reset_to_system_fonts(cx: &mut gpui::App) {
-    set_font_config(cx, FontConfig::system());
+fn switch_to_system_ui_and_monospace_code(cx: &mut gpui::App) {
+    set_font_config(
+        cx,
+        FontConfig::system()
+            .with_ui_family("PingFang SC")
+            .with_code_family("Monospace"),
+    );
 }
 ```
+
+#### 为裸可执行程序内嵌一个小 fallback 字体
+
+```rust
+use std::borrow::Cow;
+use liora::{
+    FontConfig, FontLoadMode, FontLoadOptions, LioraOptions,
+    init_liora_with_options, load_app_fonts,
+};
+
+fn init_with_embedded_font(cx: &mut gpui::App) {
+    let report = load_app_fonts(
+        cx,
+        FontLoadOptions::new(FontLoadMode::Embedded).embedded(
+            "Inter-Regular.ttf",
+            Cow::Borrowed(include_bytes!("../assets/fonts/Inter-Regular.ttf").as_slice()),
+        ),
+    );
+    if !report.failures.is_empty() || !report.required_families_available() {
+        eprintln!("font load failures: {report:?}");
+    }
+
+    init_liora_with_options(
+        cx,
+        LioraOptions::system().with_fonts(FontConfig::system().with_ui_family("Inter")),
+    );
+}
+```
+
+#### 安装包优先外部挂载，裸可执行回退内嵌字体
+
+完整字体族通常很大。推荐把一个 Regular 字重内嵌进裸可执行程序，把完整字体族放到安装包或 portable archive 的 `assets/fonts` 目录中。
+
+```rust
+use std::{borrow::Cow, path::PathBuf};
+use liora::{
+    FontConfig, FontLoadMode, FontLoadOptions, LioraOptions,
+    init_liora_with_options, load_app_fonts,
+};
+
+fn font_dirs(app_binary: &str) -> Vec<PathBuf> {
+    let mut dirs = vec![PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/fonts")];
+
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(exe_dir) = exe.parent() {
+            dirs.push(exe_dir.join("assets/fonts"));                       // Windows 安装根目录或 portable 根目录。
+            dirs.push(exe_dir.join("..").join("Resources").join("assets/fonts")); // macOS .app。
+        }
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "freebsd"))]
+    dirs.push(PathBuf::from("/usr/lib").join(app_binary).join("assets/fonts"));
+
+    dirs
+}
+
+fn init_with_external_then_embedded(cx: &mut gpui::App) {
+    let mut options = FontLoadOptions::new(FontLoadMode::ExternalThenEmbedded).embedded(
+        "PingFangSC-Regular.ttf",
+        Cow::Borrowed(include_bytes!("../assets/fonts/PingFangSC-Regular.ttf").as_slice()),
+    )
+    .require_family("PingFang SC");
+
+    for dir in font_dirs("my-gpui-app") {
+        options = options.external_dir(dir);
+    }
+
+    let report = load_app_fonts(cx, options);
+    if !report.failures.is_empty() || !report.required_families_available() {
+        eprintln!("font load failures: {report:?}");
+    }
+
+    // 混合来源示例：UI 使用随应用分发的 PingFang，代码字体使用系统族名。
+    init_liora_with_options(
+        cx,
+        LioraOptions::system().with_fonts(
+            FontConfig::system()
+                .with_ui_family("PingFang SC")
+                .with_code_family("Monospace"),
+        ),
+    );
+}
+```
+
+#### 从 GPUI assets 或显式文件加载
+
+```rust
+use liora::{load_font_assets, load_font_files, load_fonts_from_dir};
+
+fn register_more_fonts(cx: &mut gpui::App) {
+    let asset_report = load_font_assets(cx, ["fonts/Brand-Regular.otf".into()]);
+    let dir_report = load_fonts_from_dir(cx, "assets/fonts");
+    let file_report = load_font_files(cx, [std::path::PathBuf::from("/opt/my-app/fonts/BrandCode.ttf")]);
+
+    for report in [asset_report, dir_report, file_report] {
+        if !report.failures.is_empty() {
+            eprintln!("font load failures: {report:?}");
+        }
+    }
+}
+```
+
+Liora 自带的 Gallery 和 Docs 把完整 PingFangSC TTF 字体族分别放在各自应用的 `assets/fonts/PingFangSC/` 下。应用二进制只内嵌 `PingFangSC-Regular.ttf` 作为裸可执行 fallback；打包流水线会把完整 `assets/fonts` 目录作为外部资源挂载到安装包和 portable archive 中。
 
 ### 浮层与 portal 渲染
 
@@ -1134,7 +1242,7 @@ cargo run --release -p xtask -- package release-readiness
 
 当产品需要显式选择启动主题时，使用 `liora::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)`。运行时主题切换使用 `liora_core` 或 facade `core` 模块中的 `apply_theme_mode(window, cx, mode)`。
 
-字体默认保持系统原生：Liora 不默认加载品牌字体，也不会把整个 UI 映射到 Zed 专用字体别名。自定义字体通过 `FontConfig`、`LioraOptions`、`load_custom_fonts` 和 `set_font_config` 显式启用。
+字体默认保持系统原生：Liora 不默认加载品牌字体，也不会把整个 UI 映射到 Zed 专用字体别名。自定义字体通过 `FontConfig`、`LioraOptions`、`load_app_fonts`、`load_fonts_from_dir`、`load_font_assets`、`load_embedded_fonts`、底层 `load_custom_fonts` 和 `set_font_config` 显式启用。
 
 `Input`、`Switch`、`Select`、`TreeSelect`、`CodeEditor` 和虚拟化视图等有状态控件应放在 `gpui::Entity<T>` 字段中，以便焦点、展开状态、选区、滚动状态和文本值在重渲染后保持稳定。
 

@@ -23,7 +23,10 @@
 
 pub use liora_components::{init_liora, init_liora_with_mode, init_liora_with_options};
 pub use liora_core::{
-    FontConfig, LioraOptions, ThemeMode, load_custom_fonts, set_font_config,
+    EmbeddedFont, FontConfig, FontDiscoveryReport, FontLoadFailure, FontLoadMode, FontLoadOptions,
+    FontLoadReport, LioraOptions, ThemeMode, discover_font_files, is_font_family_available,
+    is_supported_font_path, load_app_fonts, load_custom_fonts, load_embedded_fonts,
+    load_font_assets, load_font_files, load_fonts_from_dir, set_font_config,
     startup_maximized_window_bounds,
 };
 

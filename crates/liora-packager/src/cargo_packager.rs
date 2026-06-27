@@ -180,6 +180,7 @@ pub fn render_generate_rpm_config(root: &Path, app: &AppMetadata) -> String {
         &format!("/usr/share/icons/hicolor/scalable/apps/{}.svg", app.binary),
         "644",
     );
+    append_rpm_font_assets(&mut out, root, app);
     line(&mut out, "]");
 
     line(&mut out, "");
@@ -241,6 +242,10 @@ pub fn render_cargo_packager_config(
     icon_paths.push(abs(app.icon_ico_path(root)));
     let icon_refs = icon_paths.iter().map(String::as_str).collect::<Vec<_>>();
     arr(&mut out, "icons", &icon_refs);
+    let font_assets_dir = app.app_assets_fonts_path(root);
+    if font_assets_dir.is_dir() {
+        resources(&mut out, &[(&font_assets_dir, Path::new("assets/fonts"))]);
+    }
 
     line(&mut out, "");
     line(&mut out, "[[binaries]]");
@@ -279,6 +284,48 @@ pub fn render_cargo_packager_config(
     line(&mut out, "installMode = \"currentUser\"");
 
     out
+}
+
+fn append_rpm_font_assets(out: &mut String, root: &Path, app: &AppMetadata) {
+    let fonts_dir = app.app_assets_fonts_path(root);
+    if !fonts_dir.is_dir() {
+        return;
+    }
+
+    let Ok(mut files) = collect_regular_files(&fonts_dir) else {
+        return;
+    };
+    files.sort();
+
+    for file in files {
+        if let Ok(relative) = file.strip_prefix(&fonts_dir) {
+            rpm_asset(
+                out,
+                &file,
+                &format!(
+                    "/usr/lib/{}/assets/fonts/{}",
+                    app.binary,
+                    relative.display()
+                ),
+                "644",
+            );
+        }
+    }
+}
+
+fn collect_regular_files(dir: &Path) -> std::io::Result<Vec<PathBuf>> {
+    let mut files = Vec::new();
+    for entry in std::fs::read_dir(dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        let file_type = entry.file_type()?;
+        if file_type.is_dir() {
+            files.extend(collect_regular_files(&path)?);
+        } else if file_type.is_file() {
+            files.push(path);
+        }
+    }
+    Ok(files)
 }
 
 fn package_version() -> String {
@@ -324,6 +371,21 @@ fn arr(out: &mut String, key: &str, values: &[&str]) {
     out.push_str("]\n");
 }
 
+fn resources(out: &mut String, values: &[(&Path, &Path)]) {
+    out.push_str("resources = [");
+    for (idx, (src, target)) in values.iter().enumerate() {
+        if idx > 0 {
+            out.push_str(", ");
+        }
+        out.push_str("{ src = \"");
+        out.push_str(&escape(&src.display().to_string()));
+        out.push_str("\", target = \"");
+        out.push_str(&escape(&target.display().to_string()));
+        out.push_str("\" }");
+    }
+    out.push_str("]\n");
+}
+
 fn escape(value: &str) -> String {
     value.replace('\\', "\\\\").replace('"', "\\\"")
 }
@@ -362,6 +424,7 @@ mod tests {
         let normalized_text = normalized_test_paths(&text);
         assert!(normalized_text.contains("hicolor/16x16/apps/liora-gallery.png"));
         assert!(normalized_text.contains("hicolor/512x512/apps/liora-gallery.png"));
+        assert!(text.contains("assets/fonts") || !app.app_assets_fonts_path(root).is_dir());
     }
 
     fn normalized_test_paths(text: &str) -> String {
@@ -370,6 +433,24 @@ mod tests {
             normalized = normalized.replace("//", "/");
         }
         normalized
+    }
+
+    #[test]
+    fn renders_cargo_packager_config_with_font_resources_when_assets_exist() {
+        let root = std::fs::canonicalize(Path::new(env!("CARGO_MANIFEST_DIR")).join("../.."))
+            .expect("workspace root should resolve");
+        let app = KnownApp::Gallery.metadata();
+        let text = render_cargo_packager_config(
+            &root,
+            &app,
+            &[PackageFormat::Deb],
+            Path::new("target/packages/test"),
+            Path::new("target/release"),
+        );
+
+        assert!(text.contains("resources = [{ src ="));
+        assert!(text.contains("assets/fonts"));
+        assert!(!text.contains(r#"resources = ["{"#));
     }
 
     #[test]

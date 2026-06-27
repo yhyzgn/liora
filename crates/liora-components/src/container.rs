@@ -144,7 +144,9 @@ impl RenderOnce for Container {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let aside_id = stable_unique_id("container-aside-scroll", "aside", window, cx);
         let main_id = stable_unique_id("container-main-scroll", "main", window, cx);
-        let theme = cx.global::<liora_core::Config>().theme.clone();
+        let config = cx.global::<liora_core::Config>();
+        let theme = config.theme.clone();
+        let ui_family = config.fonts.ui_family.clone();
         let aside_right = self.aside_right;
         let main_children = self.main;
         let overlays = self.overlays;
@@ -159,6 +161,10 @@ impl RenderOnce for Container {
             .size_full()
             .relative()
             .bg(theme.neutral.body);
+
+        if let Some(family) = ui_family {
+            page = page.font_family(family);
+        }
 
         // Header
         if let Some(h) = self.header {

@@ -320,7 +320,7 @@ Use the facade entry points for normal app binaries:
 ```rust
 use gpui::App;
 use liora::{ThemeMode, init_liora, init_liora_with_mode, init_liora_with_options};
-use liora::{FontConfig, LioraOptions, load_custom_fonts};
+use liora::{FontConfig, LioraOptions};
 
 fn init_default(cx: &mut App) {
     // Recommended default: follow the operating system theme.
@@ -332,16 +332,13 @@ fn init_dark(cx: &mut App) {
     init_liora_with_mode(cx, ThemeMode::Dark);
 }
 
-fn init_with_fonts(cx: &mut App) -> gpui::Result<()> {
-    // Register app-provided font bytes first. Use your own asset path here.
-    load_custom_fonts(cx, [std::borrow::Cow::Borrowed(include_bytes!("../assets/Inter-Regular.ttf"))])?;
-
+fn init_with_system_font_names(cx: &mut App) {
+    // No font files are loaded here. GPUI resolves these names from the OS.
     let fonts = FontConfig::system()
-        .with_ui_family("Inter")
+        .with_ui_family("Segoe UI")
         .with_code_family("JetBrains Mono");
 
     init_liora_with_options(cx, LioraOptions::system().with_fonts(fonts));
-    Ok(())
 }
 ```
 
@@ -901,31 +898,142 @@ fn theme_switcher(current: ThemeMode) -> Segmented {
 
 ### Custom fonts without losing system defaults
 
+Liora separates **font resource loading** from **font family selection**:
+
+1. If the family is already installed on the user's system, do not load any file. Set the family name with `FontConfig`.
+2. If the app ships private fonts, register bytes first with `load_app_fonts`, `load_fonts_from_dir`, `load_font_assets`, `load_embedded_fonts`, or the low-level `load_custom_fonts` compatibility helper.
+3. Then choose the UI and code family names with `LioraOptions::with_fonts(...)` at startup or `set_font_config(...)` at runtime.
+
+Supported file extensions are `ttf`, `otf`, `ttc`, `otc`, `woff`, and `woff2`, but actual parsing is delegated to the official GPUI backend for each platform. Prefer `ttf`/`otf`/`ttc`/`otc` for native desktop apps. On Linux/WGPU, the current GPUI `fontdb` path can ignore WOFF/WOFF2 bytes without returning an error, so use `FontLoadOptions::require_family(...)` and check `FontLoadReport::missing_required_families` whenever a specific family must be active.
+
+#### Use only system-installed fonts
+
 ```rust
-use std::borrow::Cow;
-use liora::{FontConfig, LioraOptions, init_liora_with_options, load_custom_fonts, set_font_config};
+use liora::{FontConfig, LioraOptions, init_liora_with_options, set_font_config};
 
-fn init_with_brand_fonts(cx: &mut gpui::App) -> gpui::Result<()> {
-    load_custom_fonts(cx, [
-        Cow::Borrowed(include_bytes!("../assets/Inter-Regular.ttf")),
-        Cow::Borrowed(include_bytes!("../assets/JetBrainsMono-Regular.ttf")),
-    ])?;
-
+fn init_with_system_fonts(cx: &mut gpui::App) {
     init_liora_with_options(
         cx,
         LioraOptions::system().with_fonts(
             FontConfig::system()
-                .with_ui_family("Inter")
-                .with_code_family("JetBrains Mono"),
+                .with_ui_family("Segoe UI")       // Windows example; use any installed family.
+                .with_code_family("JetBrains Mono"), // Can also be an installed system font.
         ),
     );
-    Ok(())
 }
 
-fn reset_to_system_fonts(cx: &mut gpui::App) {
-    set_font_config(cx, FontConfig::system());
+fn switch_to_system_ui_and_monospace_code(cx: &mut gpui::App) {
+    set_font_config(
+        cx,
+        FontConfig::system()
+            .with_ui_family("PingFang SC")
+            .with_code_family("Monospace"),
+    );
 }
 ```
+
+#### Embed a small fallback font into a bare executable
+
+```rust
+use std::borrow::Cow;
+use liora::{
+    FontConfig, FontLoadMode, FontLoadOptions, LioraOptions,
+    init_liora_with_options, load_app_fonts,
+};
+
+fn init_with_embedded_font(cx: &mut gpui::App) {
+    let report = load_app_fonts(
+        cx,
+        FontLoadOptions::new(FontLoadMode::Embedded).embedded(
+            "Inter-Regular.ttf",
+            Cow::Borrowed(include_bytes!("../assets/fonts/Inter-Regular.ttf").as_slice()),
+        ),
+    );
+    if !report.failures.is_empty() || !report.required_families_available() {
+        eprintln!("font load failures: {report:?}");
+    }
+
+    init_liora_with_options(
+        cx,
+        LioraOptions::system().with_fonts(FontConfig::system().with_ui_family("Inter")),
+    );
+}
+```
+
+#### Prefer packaged external fonts, fall back to embedded bytes
+
+This is the recommended pattern when full font families are large. Keep a small regular face embedded for raw executables, and ship the complete family under `assets/fonts` in installers or portable archives.
+
+```rust
+use std::{borrow::Cow, path::PathBuf};
+use liora::{
+    FontConfig, FontLoadMode, FontLoadOptions, LioraOptions,
+    init_liora_with_options, load_app_fonts,
+};
+
+fn font_dirs(app_binary: &str) -> Vec<PathBuf> {
+    let mut dirs = vec![PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/fonts")];
+
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(exe_dir) = exe.parent() {
+            dirs.push(exe_dir.join("assets/fonts"));                       // Windows/install root or portable root.
+            dirs.push(exe_dir.join("..").join("Resources").join("assets/fonts")); // macOS .app.
+        }
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "freebsd"))]
+    dirs.push(PathBuf::from("/usr/lib").join(app_binary).join("assets/fonts"));
+
+    dirs
+}
+
+fn init_with_external_then_embedded(cx: &mut gpui::App) {
+    let mut options = FontLoadOptions::new(FontLoadMode::ExternalThenEmbedded).embedded(
+        "PingFangSC-Regular.ttf",
+        Cow::Borrowed(include_bytes!("../assets/fonts/PingFangSC-Regular.ttf").as_slice()),
+    )
+    .require_family("PingFang SC");
+
+    for dir in font_dirs("my-gpui-app") {
+        options = options.external_dir(dir);
+    }
+
+    let report = load_app_fonts(cx, options);
+    if !report.failures.is_empty() || !report.required_families_available() {
+        eprintln!("font load failures: {report:?}");
+    }
+
+    // Mixed source example: UI uses the shipped PingFang family, code uses a system family.
+    init_liora_with_options(
+        cx,
+        LioraOptions::system().with_fonts(
+            FontConfig::system()
+                .with_ui_family("PingFang SC")
+                .with_code_family("Monospace"),
+        ),
+    );
+}
+```
+
+#### Load from GPUI assets or explicit files
+
+```rust
+use liora::{load_font_assets, load_font_files, load_fonts_from_dir};
+
+fn register_more_fonts(cx: &mut gpui::App) {
+    let asset_report = load_font_assets(cx, ["fonts/Brand-Regular.otf".into()]);
+    let dir_report = load_fonts_from_dir(cx, "assets/fonts");
+    let file_report = load_font_files(cx, [std::path::PathBuf::from("/opt/my-app/fonts/BrandCode.ttf")]);
+
+    for report in [asset_report, dir_report, file_report] {
+        if !report.failures.is_empty() {
+            eprintln!("font load failures: {report:?}");
+        }
+    }
+}
+```
+
+For Liora's own apps, Gallery and Docs keep the full PingFangSC TTF family under each app's `assets/fonts/PingFangSC/`. The app binaries embed only `PingFangSC-Regular.ttf` as a raw-executable fallback; the packaging pipeline mounts the full `assets/fonts` directory externally for installers and portable archives.
 
 ### Overlay and portal rendering
 
@@ -1135,7 +1243,7 @@ cargo run --release -p xtask -- package release-readiness
 
 Use `liora::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)` when the product needs to choose an explicit startup theme mode. Runtime theme switches use `apply_theme_mode(window, cx, mode)` from `liora_core` or the facade's `core` module.
 
-Typography defaults are system-native: Liora does not load branded fonts by default and does not map the whole UI to Zed-specific font aliases. Custom fonts are opt-in via `FontConfig`, `LioraOptions`, `load_custom_fonts`, and `set_font_config`.
+Typography defaults are system-native: Liora does not load branded fonts by default and does not map the whole UI to Zed-specific font aliases. Custom fonts are opt-in via `FontConfig`, `LioraOptions`, `load_app_fonts`, `load_fonts_from_dir`, `load_font_assets`, `load_embedded_fonts`, the low-level `load_custom_fonts`, and `set_font_config`.
 
 Stateful controls such as `Input`, `Switch`, `Select`, `TreeSelect`, `CodeEditor`, and virtualized views should live in `gpui::Entity<T>` fields so focus, open state, selections, scroll state, and text values survive re-rendering.
 

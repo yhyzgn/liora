@@ -3,12 +3,12 @@ mod markdown;
 use gpui::{App, AppContext, Global, Window, WindowOptions, px, size};
 use liora_components::{
     Button, Checkbox, Dialog, Paragraph, Space, WindowFrameMode, apply_window_frame_mode,
-    init_liora,
+    init_liora_with_options,
 };
 use liora_core::{
-    LinuxDesktopIdentity, LinuxDesktopPngIcon, attach_system_theme_observer,
-    ensure_linux_desktop_identity, linux_desktop_entry, linux_desktop_png_icon_path,
-    startup_maximized_window_bounds,
+    FontConfig, FontLoadMode, FontLoadOptions, LinuxDesktopIdentity, LinuxDesktopPngIcon,
+    LioraOptions, attach_system_theme_observer, ensure_linux_desktop_identity, linux_desktop_entry,
+    linux_desktop_png_icon_path, load_app_fonts, startup_maximized_window_bounds,
 };
 use liora_tray::{
     LioraTray, MouseButton, MouseButtonState, TrayCloseAction, TrayCommand, TrayConfig,
@@ -40,7 +40,8 @@ fn run_docs() {
     gpui_platform::application()
         .with_assets(liora_icons::IconAssetSource)
         .run(|cx: &mut App| {
-            init_liora(cx);
+            install_docs_fonts(cx);
+            init_liora_with_options(cx, docs_liora_options());
             register_docs_desktop_identity();
 
             install_docs_tray(cx);
@@ -50,6 +51,57 @@ fn run_docs() {
                 }
             }
         });
+}
+
+// This app uses init_liora_with_options instead of init_liora(cx) because it sets app fonts.
+fn docs_liora_options() -> LioraOptions {
+    LioraOptions::system().with_fonts(
+        FontConfig::system()
+            .with_ui_family("PingFang SC")
+            .with_code_family("Monospace"),
+    )
+}
+
+fn install_docs_fonts(cx: &mut App) {
+    let mut options = FontLoadOptions::new(FontLoadMode::ExternalThenEmbedded)
+        .embedded(
+            "PingFangSC-Regular.ttf",
+            std::borrow::Cow::Borrowed(
+                include_bytes!("../assets/fonts/PingFangSC/PingFangSC-Regular.ttf").as_slice(),
+            ),
+        )
+        .require_family("PingFang SC");
+
+    for dir in app_font_dirs("liora-docs") {
+        options = options.external_dir(dir);
+    }
+
+    let report = load_app_fonts(cx, options);
+    if !report.failures.is_empty() || !report.required_families_available() {
+        eprintln!("Liora Docs font loading report: {report:?}");
+    }
+}
+
+fn app_font_dirs(binary: &str) -> Vec<std::path::PathBuf> {
+    let mut dirs = Vec::new();
+    dirs.push(std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/fonts"));
+
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(exe_dir) = exe.parent() {
+            dirs.push(exe_dir.join("assets/fonts"));
+            dirs.push(exe_dir.join("..").join("assets/fonts"));
+            dirs.push(exe_dir.join("..").join("Resources").join("assets/fonts"));
+        }
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "freebsd"))]
+    dirs.push(
+        std::path::PathBuf::from("/usr/lib")
+            .join(binary)
+            .join("assets/fonts"),
+    );
+
+    dirs
 }
 
 fn open_docs_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
@@ -595,5 +647,20 @@ mod shell_tests {
         assert!(confirm.contains(".on_close(|_, cx| reset_docs_close_confirm(cx))"));
         assert_eq!(confirm.matches("reset_docs_close_confirm(cx);").count(), 2);
         assert!(source.contains("fn reset_docs_close_confirm(cx: &mut App)"));
+    }
+}
+
+#[cfg(test)]
+mod font_loading_tests {
+    #[test]
+    fn docs_font_loading_requires_pingfang_family() {
+        let source = include_str!("main.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .expect("docs app should have production source before tests");
+
+        assert!(source.contains("PingFangSC-Regular.ttf"));
+        assert!(source.contains("require_family(\"PingFang SC\")"));
+        assert!(!source.contains("PingFangSC-Regular.woff2"));
     }
 }

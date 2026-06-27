@@ -24,7 +24,7 @@ use gpui::{
     App, Component, ElementId, IntoElement, RenderOnce, SharedString, TextStyle, Window,
     prelude::*, px,
 };
-use liora_core::Config;
+use liora_core::{Config, ui_font_family};
 
 /// Fluent native GPUI component for rendering Liora title.
 pub struct Title {
@@ -112,6 +112,8 @@ impl Title {
         let line_height = font_size * 1.35;
         let text_color = theme.neutral.text_1;
 
+        let ui_family = ui_font_family(cx);
+
         if self.selectable {
             let mut style = TextStyle::default();
             style.color = text_color;
@@ -119,6 +121,9 @@ impl Title {
             style.line_height = line_height.into();
             style.font_weight = weight;
             style.white_space = gpui::WhiteSpace::Normal;
+            if let Some(family) = ui_family.clone() {
+                style.font_family = family;
+            }
             return SelectableText::view(
                 SelectableTextOptions {
                     id: ElementId::from(self.id.clone()),
@@ -130,19 +135,25 @@ impl Title {
                     wrap: SelectableTextWrap::Normal,
                     key_context: "SelectableText",
                     fill_width: true,
+                    font_family: ui_family.clone(),
                 },
                 window,
                 cx,
             );
         }
 
-        gpui::div()
+        let mut title = gpui::div()
             .text_size(font_size)
             .line_height(line_height)
             .font_weight(weight)
             .text_color(text_color)
-            .child(self.content.clone())
-            .into_any_element()
+            .child(self.content.clone());
+
+        if let Some(family) = ui_family {
+            title = title.font_family(family);
+        }
+
+        title.into_any_element()
     }
 }
 

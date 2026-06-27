@@ -6,7 +6,7 @@ Liora Typography 可以把多个不同样式的文本片段合成为同一个 `S
 
 ## Text
 
-`Text` 用于描述一段文字及其样式：颜色、背景、字号、字重、斜体、下划线、删除线和等宽字体。默认情况下，普通文本使用 GPUI 的系统 UI 字体；`code_style` 只表达 inline code 语义，不会强制品牌字体。应用如需固定字体，应通过 `FontConfig` 和 `load_custom_fonts` 显式配置。
+`Text` 用于描述一段文字及其样式：颜色、背景、字号、字重、斜体、下划线、删除线和等宽字体。默认情况下，普通文本使用 GPUI 的系统 UI 字体；`code_style` 只表达 inline code 语义，不会强制品牌字体。应用如需固定字体，应通过 `FontConfig` 指定系统 family 名称，或先用 `load_app_fonts` / `load_fonts_from_dir` / `load_font_assets` / `load_embedded_fonts` 注册私有字体资源后再配置 family。建议原生应用优先发布 TTF/OTF/TTC/OTC，并通过 `FontLoadOptions::require_family` 验证目标 family 确实被当前 GPUI 后端识别。
 
 ## Paragraph
 

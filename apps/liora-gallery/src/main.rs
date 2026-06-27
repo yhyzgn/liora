@@ -5,13 +5,14 @@ use gpui::{
 use liora_components::{
     AppWindowFrame, Button, Card, Checkbox, Container, Dialog, Input, Menu, MenuMode, MenuNode,
     Paragraph, Segmented, SegmentedOption, Space, Spinner, Switch, Tag, Text, Title,
-    WindowFrameMode, apply_window_frame_mode, frame_mode_switch_row, init_liora, toast_info,
-    toast_success,
+    WindowFrameMode, apply_window_frame_mode, frame_mode_switch_row, init_liora_with_options,
+    toast_info, toast_success,
 };
 use liora_core::{
-    Config, LinuxDesktopIdentity, LinuxDesktopPngIcon, PassivePortal, Portal, ThemeMode,
-    apply_theme_mode, attach_system_theme_observer, ensure_linux_desktop_identity,
-    linux_desktop_entry, linux_desktop_png_icon_path, startup_maximized_window_bounds,
+    Config, FontConfig, FontLoadMode, FontLoadOptions, LinuxDesktopIdentity, LinuxDesktopPngIcon,
+    LioraOptions, PassivePortal, Portal, ThemeMode, apply_theme_mode, attach_system_theme_observer,
+    ensure_linux_desktop_identity, linux_desktop_entry, linux_desktop_png_icon_path,
+    load_app_fonts, startup_maximized_window_bounds,
 };
 use liora_gallery::demos;
 use liora_tray::{
@@ -110,7 +111,8 @@ fn run_gallery() {
     gpui_platform::application()
         .with_assets(liora_icons::IconAssetSource)
         .run(|cx: &mut App| {
-            init_liora(cx);
+            install_gallery_fonts(cx);
+            init_liora_with_options(cx, gallery_liora_options());
             register_gallery_desktop_identity();
 
             install_gallery_tray(cx);
@@ -120,6 +122,57 @@ fn run_gallery() {
                 }
             }
         });
+}
+
+// This app uses init_liora_with_options instead of init_liora(cx) because it sets app fonts.
+fn gallery_liora_options() -> LioraOptions {
+    LioraOptions::system().with_fonts(
+        FontConfig::system()
+            .with_ui_family("PingFang SC")
+            .with_code_family("Monospace"),
+    )
+}
+
+fn install_gallery_fonts(cx: &mut App) {
+    let mut options = FontLoadOptions::new(FontLoadMode::ExternalThenEmbedded)
+        .embedded(
+            "PingFangSC-Regular.ttf",
+            std::borrow::Cow::Borrowed(
+                include_bytes!("../assets/fonts/PingFangSC/PingFangSC-Regular.ttf").as_slice(),
+            ),
+        )
+        .require_family("PingFang SC");
+
+    for dir in app_font_dirs("liora-gallery") {
+        options = options.external_dir(dir);
+    }
+
+    let report = load_app_fonts(cx, options);
+    if !report.failures.is_empty() || !report.required_families_available() {
+        eprintln!("Liora Gallery font loading report: {report:?}");
+    }
+}
+
+fn app_font_dirs(binary: &str) -> Vec<std::path::PathBuf> {
+    let mut dirs = Vec::new();
+    dirs.push(std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/fonts"));
+
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(exe_dir) = exe.parent() {
+            dirs.push(exe_dir.join("assets/fonts"));
+            dirs.push(exe_dir.join("..").join("assets/fonts"));
+            dirs.push(exe_dir.join("..").join("Resources").join("assets/fonts"));
+        }
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "freebsd"))]
+    dirs.push(
+        std::path::PathBuf::from("/usr/lib")
+            .join(binary)
+            .join("assets/fonts"),
+    );
+
+    dirs
 }
 
 fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
@@ -705,6 +758,8 @@ mod shell_tests {
         assert!(source.contains("Gallery theme switched"));
         assert!(source.contains("About / 关于"));
         assert!(source.contains("check_gallery_update"));
+        assert!(source.contains("PingFangSC-Regular.ttf"));
+        assert!(source.contains("require_family(\"PingFang SC\")"));
     }
 }
 

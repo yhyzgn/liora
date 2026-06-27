@@ -769,6 +769,7 @@ fn smoke_portable_tar_gz(
         format!("{top}/icons/{}.svg", app.icon_stem),
         format!("{top}/{}", app.binary),
         format!("{top}/README.md"),
+        format!("{top}/assets/fonts"),
     ];
     for required_entry in required {
         if !tar_listing_contains(&entries, &required_entry) {
@@ -1085,6 +1086,11 @@ fn build_portable_tar_gz(
         )?;
     }
 
+    copy_dir_if_exists(
+        &app.app_assets_fonts_path(root),
+        &stage_root.join("assets/fonts"),
+    )?;
+
     if platform == Platform::Linux {
         copy_file(
             &app.linux_desktop_path(root),
@@ -1129,6 +1135,34 @@ fn build_portable_tar_gz(
         return Err("portable tar.gz backend failed; ensure system `tar` is available".into());
     }
     println!("portable tar.gz written: {}", archive_path.display());
+    Ok(())
+}
+
+fn copy_dir_if_exists(source: &Path, dest: &Path) -> Result<(), String> {
+    if !source.exists() {
+        return Ok(());
+    }
+
+    for entry in fs::read_dir(source)
+        .map_err(|error| format!("failed to read {}: {error}", source.display()))?
+    {
+        let entry = entry.map_err(|error| {
+            format!(
+                "failed to read directory entry in {}: {error}",
+                source.display()
+            )
+        })?;
+        let source_path = entry.path();
+        let dest_path = dest.join(entry.file_name());
+        let file_type = entry
+            .file_type()
+            .map_err(|error| format!("failed to inspect {}: {error}", source_path.display()))?;
+        if file_type.is_dir() {
+            copy_dir_if_exists(&source_path, &dest_path)?;
+        } else if file_type.is_file() {
+            copy_file(&source_path, &dest_path)?;
+        }
+    }
     Ok(())
 }
 
@@ -1521,7 +1555,7 @@ mod tests {
 
     #[test]
     fn portable_tar_listing_checks_required_entries() {
-        let entries = "liora-gallery/\nliora-gallery/bin/liora-gallery\nliora-gallery/README.md\n";
+        let entries = "liora-gallery/\nliora-gallery/bin/liora-gallery\nliora-gallery/assets/fonts/\nliora-gallery/README.md\n";
         assert!(tar_listing_contains(
             entries,
             "liora-gallery/bin/liora-gallery"

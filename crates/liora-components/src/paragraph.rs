@@ -24,7 +24,7 @@ use gpui::{
     App, Component, ElementId, IntoElement, RenderOnce, SharedString, StyledText, TextRun,
     TextStyle, WhiteSpace, Window, div, prelude::*, px,
 };
-use liora_core::{Config, code_font_family};
+use liora_core::{Config, code_font_family, ui_font_family};
 
 /// Fluent native GPUI component for rendering Liora paragraph.
 pub struct Paragraph {
@@ -81,7 +81,10 @@ impl Paragraph {
         SelectableText::register_key_bindings(cx);
     }
 
-    fn default_text_style(theme: &liora_theme::Theme) -> TextStyle {
+    fn default_text_style(
+        theme: &liora_theme::Theme,
+        ui_family: Option<SharedString>,
+    ) -> TextStyle {
         let font_size = px(theme.font_size.md);
         let mut style = TextStyle::default();
         style.color = theme.neutral.text_2;
@@ -90,6 +93,9 @@ impl Paragraph {
         style.white_space = WhiteSpace::Normal;
         style.text_overflow = None;
         style.line_clamp = None;
+        if let Some(family) = ui_family {
+            style.font_family = family;
+        }
         style
     }
 
@@ -97,8 +103,9 @@ impl Paragraph {
         &self,
         theme: &liora_theme::Theme,
         code_family: Option<SharedString>,
+        ui_family: Option<SharedString>,
     ) -> (SharedString, Vec<TextRun>) {
-        let default_style = Self::default_text_style(theme);
+        let default_style = Self::default_text_style(theme, ui_family);
         let mut full_text = String::new();
         let mut runs: Vec<TextRun> = Vec::new();
 
@@ -202,7 +209,8 @@ impl RenderOnce for Paragraph {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = &cx.global::<Config>().theme;
         let code_family = code_font_family(cx);
-        let (full_text, runs) = self.styled_text_parts(theme, Some(code_family));
+        let ui_family = ui_font_family(cx);
+        let (full_text, runs) = self.styled_text_parts(theme, Some(code_family), ui_family.clone());
         let font_size = px(theme.font_size.md);
 
         if self.selectable {
@@ -217,20 +225,26 @@ impl RenderOnce for Paragraph {
                     wrap: SelectableTextWrap::Normal,
                     key_context: "SelectableText",
                     fill_width: true,
+                    font_family: ui_family,
                 },
                 _window,
                 cx,
             );
         }
 
-        div()
+        let mut paragraph = div()
             .w_full()
             .text_size(font_size)
             .line_height(font_size * 1.6)
             .text_color(theme.neutral.text_2)
             .whitespace_normal()
-            .child(StyledText::new(full_text).with_runs(runs))
-            .into_any_element()
+            .child(StyledText::new(full_text).with_runs(runs));
+
+        if let Some(family) = ui_family {
+            paragraph = paragraph.font_family(family);
+        }
+
+        paragraph.into_any_element()
     }
 }
 
@@ -270,7 +284,7 @@ mod tests {
         let (text, runs) = Paragraph::new()
             .child(Text::new("Hello ").bold())
             .child(Text::new("世界").italic())
-            .styled_text_parts(&theme, Some("Monospace".into()));
+            .styled_text_parts(&theme, Some("Monospace".into()), None);
 
         assert_eq!(text.as_ref(), "Hello 世界");
         assert_eq!(runs.len(), 2);
@@ -290,7 +304,7 @@ mod tests {
             .child(Text::new("、"))
             .child(Text::new("Input").code_style(&theme))
             .child(Text::new("。"))
-            .styled_text_parts(&theme, Some("Monospace".into()));
+            .styled_text_parts(&theme, Some("Monospace".into()), None);
 
         assert_eq!(
             text.as_ref(),
@@ -304,7 +318,7 @@ mod tests {
     #[test]
     fn text_segments_map_inline_code_style_to_text_runs_without_forcing_app_font() {
         let theme = liora_theme::Theme::light();
-        let default_style = Paragraph::default_text_style(&theme);
+        let default_style = Paragraph::default_text_style(&theme, None);
         let run = Text::new("code")
             .code_style(&theme)
             .bold()
@@ -320,9 +334,17 @@ mod tests {
     }
 
     #[test]
+    fn paragraph_default_style_accepts_app_ui_font_family() {
+        let theme = liora_theme::Theme::light();
+        let style = Paragraph::default_text_style(&theme, Some("PingFang SC".into()));
+
+        assert_eq!(style.font_family.as_ref(), "PingFang SC");
+    }
+
+    #[test]
     fn paragraph_default_style_keeps_native_wrapping_without_truncation() {
         let theme = liora_theme::Theme::light();
-        let style = Paragraph::default_text_style(&theme);
+        let style = Paragraph::default_text_style(&theme, None);
 
         assert_eq!(style.white_space, WhiteSpace::Normal);
         assert!(style.text_overflow.is_none());

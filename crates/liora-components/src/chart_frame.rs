@@ -24,6 +24,7 @@ use crate::chart_scale::{ScaleLinear, ScalePoint};
 use gpui::{
     App, Background, Hsla, Pixels, SharedString, TextAlign, TextRun, Window, fill, point, px, size,
 };
+use liora_core::ui_font_family;
 
 #[allow(clippy::too_many_arguments)]
 pub fn paint_chart_frame(
@@ -102,9 +103,13 @@ pub fn paint_chart_label_aligned(
     window: &mut Window,
     cx: &mut App,
 ) {
+    let mut style = window.text_style();
+    if let Some(family) = ui_font_family(cx) {
+        style.font_family = family;
+    }
     let run = TextRun {
         len: text.len(),
-        font: window.text_style().font(),
+        font: style.font(),
         color,
         background_color: None,
         underline: None,

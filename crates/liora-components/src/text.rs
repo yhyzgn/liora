@@ -25,7 +25,7 @@ use gpui::{
     SharedString, StrikethroughStyle, TextRun, TextStyle, UnderlineStyle, Window, div, prelude::*,
     px,
 };
-use liora_core::{Config, code_font_family};
+use liora_core::{Config, code_font_family, ui_font_family};
 
 #[derive(Clone)]
 /// Fluent native GPUI component for rendering Liora text.
@@ -240,6 +240,8 @@ impl RenderOnce for Text {
         let mut text = self;
         if text.is_code_style && text.font_family.is_none() {
             text.font_family = Some(code_font_family(cx));
+        } else if text.font_family.is_none() {
+            text.font_family = ui_font_family(cx);
         }
 
         if text.selectable {
@@ -268,6 +270,7 @@ impl RenderOnce for Text {
                     },
                     key_context: "SelectableText",
                     fill_width: text.fill_width_on_wrap,
+                    font_family: text.font_family.clone(),
                 },
                 _window,
                 cx,

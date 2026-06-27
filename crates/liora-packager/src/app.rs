@@ -134,6 +134,14 @@ impl AppMetadata {
             .collect()
     }
 
+    /// Returns the filesystem path for the app-owned font assets directory.
+    pub fn app_assets_fonts_path(&self, root: &Path) -> PathBuf {
+        root.join("apps")
+            .join(&self.binary)
+            .join("assets")
+            .join("fonts")
+    }
+
     /// Returns the filesystem path for the Windows resource build script.
     pub fn windows_resource_build_script_path(&self, root: &Path) -> PathBuf {
         root.join("apps").join(&self.binary).join("build.rs")
