@@ -24,7 +24,7 @@ use gpui::{
     App, Component, ElementId, IntoElement, RenderOnce, SharedString, StyledText, TextRun,
     TextStyle, WhiteSpace, Window, div, prelude::*, px,
 };
-use liora_core::Config;
+use liora_core::{Config, code_font_family};
 
 /// Fluent native GPUI component for rendering Liora paragraph.
 pub struct Paragraph {
@@ -93,7 +93,11 @@ impl Paragraph {
         style
     }
 
-    fn styled_text_parts(&self, theme: &liora_theme::Theme) -> (SharedString, Vec<TextRun>) {
+    fn styled_text_parts(
+        &self,
+        theme: &liora_theme::Theme,
+        code_family: Option<SharedString>,
+    ) -> (SharedString, Vec<TextRun>) {
         let default_style = Self::default_text_style(theme);
         let mut full_text = String::new();
         let mut runs: Vec<TextRun> = Vec::new();
@@ -121,6 +125,12 @@ impl Paragraph {
             let remaining = &text[leading_glue_len..];
             if !remaining.is_empty() {
                 full_text.push_str(remaining);
+                let mut segment = segment.clone();
+                if segment.is_code_style && segment.font_family.is_none() {
+                    if let Some(code_family) = code_family.clone() {
+                        segment.font_family = Some(code_family);
+                    }
+                }
                 let mut run = segment.to_text_run(&default_style);
                 run.len = remaining.len();
                 runs.push(run);
@@ -191,7 +201,8 @@ fn is_no_line_start_punctuation(ch: char) -> bool {
 impl RenderOnce for Paragraph {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = &cx.global::<Config>().theme;
-        let (full_text, runs) = self.styled_text_parts(theme);
+        let code_family = code_font_family(cx);
+        let (full_text, runs) = self.styled_text_parts(theme, Some(code_family));
         let font_size = px(theme.font_size.md);
 
         if self.selectable {
@@ -259,7 +270,7 @@ mod tests {
         let (text, runs) = Paragraph::new()
             .child(Text::new("Hello ").bold())
             .child(Text::new("世界").italic())
-            .styled_text_parts(&theme);
+            .styled_text_parts(&theme, Some("Monospace".into()));
 
         assert_eq!(text.as_ref(), "Hello 世界");
         assert_eq!(runs.len(), 2);
@@ -279,7 +290,7 @@ mod tests {
             .child(Text::new("、"))
             .child(Text::new("Input").code_style(&theme))
             .child(Text::new("。"))
-            .styled_text_parts(&theme);
+            .styled_text_parts(&theme, Some("Monospace".into()));
 
         assert_eq!(
             text.as_ref(),
@@ -291,7 +302,7 @@ mod tests {
     }
 
     #[test]
-    fn text_segments_map_inline_code_style_to_text_runs() {
+    fn text_segments_map_inline_code_style_to_text_runs_without_forcing_app_font() {
         let theme = liora_theme::Theme::light();
         let default_style = Paragraph::default_text_style(&theme);
         let run = Text::new("code")
@@ -301,7 +312,7 @@ mod tests {
             .to_text_run(&default_style);
 
         assert_eq!(run.len, "code".len());
-        assert_eq!(run.font.family.as_ref(), "Monospace");
+        assert_eq!(run.font.family.as_ref(), ".SystemUIFont");
         assert_eq!(run.font.weight, FontWeight::BOLD);
         assert_eq!(run.color, theme.danger.base);
         assert_eq!(run.background_color, Some(theme.neutral.hover));

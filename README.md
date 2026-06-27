@@ -205,6 +205,8 @@ fn main() {
 
 `liora::init_liora(cx)` follows the operating system by default and also initializes component services plus key bindings. Use `liora::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)` when a product wants to choose the startup mode explicitly. The lower-level `liora_components::init_liora(...)` entry point remains available for users who depend on individual crates instead of the facade. Use `Entity<T>` for stateful controls such as `Input`, `Switch`, `Select`, and `CodeEditor` so focus and internal state survive re-rendering. Gallery and Docs are compile-checked references for app shell setup, key binding registration, theme switching, tray behavior, toasts, and composition patterns.
 
+Liora does not bundle or force a default UI font. Normal text uses GPUI's platform/system UI font, and code-oriented surfaces use GPUI's generic monospace family unless an application opts into custom typography. To use a bundled or user-selected font, first register the font bytes with `liora::load_custom_fonts(cx, ...)`, then pass family names through `liora::init_liora_with_options(cx, LioraOptions::system().with_fonts(...))` or update them later with `liora::set_font_config(cx, ...)`.
+
 ## Component API example
 
 Liora components follow a builder style and render through GPUI-native elements:
@@ -308,6 +310,8 @@ Liora is designed around a few product-facing rules:
 `liora::init_liora(cx)` is the recommended application entry point when using the facade crate. `liora_components::init_liora(cx)` provides the same setup for users of the focused components crate. It initializes Liora core/theme state, global component services, and key bindings for interactive controls.
 
 Use `liora::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)` when the product needs to choose an explicit startup theme mode. Runtime theme switches still use `apply_theme_mode(window, cx, mode)` from `liora_core`.
+
+Typography defaults are intentionally system-native: Liora does not load branded fonts by default and does not map the whole UI to Zed-specific font aliases. Custom fonts are opt-in via `FontConfig`, `LioraOptions`, `load_custom_fonts`, and `set_font_config`.
 
 Stateful controls such as `Input`, `Switch`, `Select`, and `CodeEditor` should live in `gpui::Entity<T>` fields so focus, open state, selections, and text values survive re-rendering.
 

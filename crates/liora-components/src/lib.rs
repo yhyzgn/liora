@@ -197,7 +197,12 @@ pub use kbd::*;
 pub use label::*;
 pub use line_chart::*;
 pub use link::*;
-pub use liora_core::ThemeMode;
+pub use liora_core::{
+    FontConfig, LinuxDesktopIdentity, LinuxDesktopPngIcon, LioraOptions, ThemeMode,
+    apply_theme_mode, attach_system_theme_observer, ensure_linux_desktop_identity,
+    linux_desktop_entry, linux_desktop_png_icon_path, load_custom_fonts, set_font_config,
+    startup_maximized_window_bounds, sync_system_theme,
+};
 pub use liora_theme::{ButtonSize, ButtonVariant};
 pub use loading::*;
 pub use mention::*;
@@ -266,7 +271,9 @@ pub use window_frame::*;
 /// [`MessageManager`], and registers key bindings for interactive components.
 ///
 /// Use [`init_liora_with_mode`] when a product needs an explicit Light or Dark
-/// startup mode. The lower-level `liora_core::init_liora(...)` functions remain
+/// startup mode, or [`init_liora_with_options`] when it needs custom font
+/// families after registering app-provided font bytes. The lower-level
+/// `liora_core::init_liora(...)` functions remain
 /// available for advanced crate-local setup, but they intentionally initialize
 /// only core/theme state and not component services.
 pub fn init_liora(cx: &mut gpui::App) {
@@ -275,7 +282,12 @@ pub fn init_liora(cx: &mut gpui::App) {
 
 /// Initialize Liora's recommended application runtime with an explicit theme mode.
 pub fn init_liora_with_mode(cx: &mut gpui::App, mode: ThemeMode) {
-    liora_core::init_liora_with_mode(cx, mode);
+    init_liora_with_options(cx, LioraOptions::default().with_theme_mode(mode));
+}
+
+/// Initialize Liora's recommended application runtime with full startup options.
+pub fn init_liora_with_options(cx: &mut gpui::App, options: LioraOptions) {
+    liora_core::init_liora_with_options(cx, options);
     MessageManager::init(cx);
     register_liora_key_bindings(cx);
 }

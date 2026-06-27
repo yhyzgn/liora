@@ -15,8 +15,11 @@
 //! The facade keeps each domain available under a stable module name while also
 //! re-exporting the most common application setup entry points.
 
-pub use liora_components::{init_liora, init_liora_with_mode};
-pub use liora_core::{ThemeMode, startup_maximized_window_bounds};
+pub use liora_components::{init_liora, init_liora_with_mode, init_liora_with_options};
+pub use liora_core::{
+    FontConfig, LioraOptions, ThemeMode, load_custom_fonts, set_font_config,
+    startup_maximized_window_bounds,
+};
 
 pub use liora_components as components;
 pub use liora_core as core;
@@ -33,8 +36,11 @@ pub use liora_updater as updater;
 
 /// Prelude for applications that prefer a compact import surface.
 pub mod prelude {
-    pub use liora_components::{init_liora, init_liora_with_mode};
-    pub use liora_core::{ThemeMode, startup_maximized_window_bounds};
+    pub use liora_components::{init_liora, init_liora_with_mode, init_liora_with_options};
+    pub use liora_core::{
+        FontConfig, LioraOptions, ThemeMode, load_custom_fonts, set_font_config,
+        startup_maximized_window_bounds,
+    };
 
     pub use crate::{components, core, icons, icons_lucide, theme, tray};
 

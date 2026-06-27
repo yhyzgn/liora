@@ -25,7 +25,7 @@ use gpui::{
     SharedString, StrikethroughStyle, TextRun, TextStyle, UnderlineStyle, Window, div, prelude::*,
     px,
 };
-use liora_core::Config;
+use liora_core::{Config, code_font_family};
 
 #[derive(Clone)]
 /// Fluent native GPUI component for rendering Liora text.
@@ -39,6 +39,7 @@ pub struct Text {
     pub(crate) underline: bool,
     pub(crate) strikethrough: bool,
     pub(crate) font_family: Option<SharedString>,
+    pub(crate) is_code_style: bool,
     pub(crate) wrap: bool,
     pub(crate) fill_width_on_wrap: bool,
     pub(crate) selectable: bool,
@@ -58,6 +59,7 @@ impl Text {
             underline: false,
             strikethrough: false,
             font_family: None,
+            is_code_style: false,
             wrap: true,
             fill_width_on_wrap: false,
             selectable: true,
@@ -166,10 +168,14 @@ impl Text {
         self
     }
 
-    /// Convenience for "code" style
+    /// Convenience for inline code styling.
+    ///
+    /// The font family is resolved during render so the default remains GPUI's
+    /// platform monospace family unless the application configured a custom
+    /// Liora code font.
     pub fn code_style(mut self, theme: &liora_theme::Theme) -> Self {
-        self.font_family = Some("Monospace".into());
         self.bg = Some(theme.neutral.hover);
+        self.is_code_style = true;
         self.text_color(theme.danger.base)
     }
 
@@ -231,32 +237,37 @@ impl RenderOnce for Text {
         let line_height = font_size * 1.6;
         let text_color = self.color.unwrap_or(theme.neutral.text_2);
 
-        if self.selectable {
+        let mut text = self;
+        if text.is_code_style && text.font_family.is_none() {
+            text.font_family = Some(code_font_family(cx));
+        }
+
+        if text.selectable {
             let mut base_style = TextStyle::default();
             base_style.color = text_color;
             base_style.font_size = font_size.into();
             base_style.line_height = line_height.into();
-            base_style.white_space = if self.wrap {
+            base_style.white_space = if text.wrap {
                 gpui::WhiteSpace::Normal
             } else {
                 gpui::WhiteSpace::Nowrap
             };
-            let run = self.to_text_run(&base_style);
+            let run = text.to_text_run(&base_style);
             return SelectableText::view(
                 SelectableTextOptions {
-                    id: ElementId::from(self.id.clone()),
-                    text: self.content.clone(),
+                    id: ElementId::from(text.id.clone()),
+                    text: text.content.clone(),
                     runs: vec![run],
                     font_size,
                     line_height,
                     text_color,
-                    wrap: if self.wrap {
+                    wrap: if text.wrap {
                         SelectableTextWrap::Normal
                     } else {
                         SelectableTextWrap::NoWrap
                     },
                     key_context: "SelectableText",
-                    fill_width: self.fill_width_on_wrap,
+                    fill_width: text.fill_width_on_wrap,
                 },
                 _window,
                 cx,
@@ -264,29 +275,29 @@ impl RenderOnce for Text {
         }
 
         let mut el = div()
-            .child(self.content.clone())
+            .child(text.content.clone())
             .text_size(font_size)
             .line_height(line_height)
             .text_color(text_color);
 
-        if self.wrap {
+        if text.wrap {
             el = el.whitespace_normal();
-            if self.fill_width_on_wrap {
+            if text.fill_width_on_wrap {
                 el = el.w_full().flex_shrink(1.0);
             }
         } else {
             el = el.whitespace_nowrap();
         }
 
-        if let Some(bg) = self.bg {
+        if let Some(bg) = text.bg {
             el = el.bg(bg).px_1().rounded(px(2.0));
         }
 
-        if let Some(weight) = self.weight {
+        if let Some(weight) = text.weight {
             el = el.font_weight(weight);
         }
 
-        if let Some(style) = self.style {
+        if let Some(style) = text.style {
             // In some GPUI versions, it's .italic(), in others it's .font_style(style)
             // If .font_style failed, let's try matching on style
             if style == FontStyle::Italic {
@@ -294,15 +305,15 @@ impl RenderOnce for Text {
             }
         }
 
-        if self.underline {
+        if text.underline {
             el = el.underline();
         }
 
-        if self.strikethrough {
+        if text.strikethrough {
             el = el.line_through();
         }
 
-        if let Some(family) = self.font_family {
+        if let Some(family) = text.font_family {
             el = el.font_family(family);
         }
 

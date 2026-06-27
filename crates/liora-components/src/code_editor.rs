@@ -24,7 +24,7 @@ use gpui::{
     App, Context, Entity, FocusHandle, Focusable, Hsla, IntoElement, KeyBinding, Pixels, Render,
     SharedString, Window, actions, div, prelude::*, px,
 };
-use liora_core::Config;
+use liora_core::{Config, code_font_family};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 use std::sync::Arc;
@@ -363,6 +363,7 @@ impl Focusable for CodeEditor {
 impl Render for CodeEditor {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
+        let code_family = code_font_family(cx);
         let value = self.value(cx);
         let line_count = line_count(value.as_ref());
         let rows = self.rows.max(line_count).max(1);
@@ -435,7 +436,8 @@ impl Render for CodeEditor {
                     .min_h(px(220.0))
                     .bg(theme.neutral.hover.opacity(0.24))
                     .child(if self.line_numbers {
-                        line_number_gutter(line_count, &theme).into_any_element()
+                        line_number_gutter(line_count, &theme, code_family.clone())
+                            .into_any_element()
                     } else {
                         div().into_any_element()
                     })
@@ -443,7 +445,7 @@ impl Render for CodeEditor {
                         div()
                             .flex_1()
                             .p_3()
-                            .font_family(".ZedMono")
+                            .font_family(code_family.clone())
                             .text_sm()
                             .child(self.input.clone()),
                     ),
@@ -481,7 +483,11 @@ fn line_count(value: &str) -> usize {
     value.lines().count().max(1)
 }
 
-fn line_number_gutter(line_count: usize, theme: &liora_theme::Theme) -> gpui::Div {
+fn line_number_gutter(
+    line_count: usize,
+    theme: &liora_theme::Theme,
+    code_family: SharedString,
+) -> gpui::Div {
     let mut gutter = div()
         .flex_none()
         .w(px(52.0))
@@ -489,7 +495,7 @@ fn line_number_gutter(line_count: usize, theme: &liora_theme::Theme) -> gpui::Di
         .py_4()
         .border_r_1()
         .border_color(theme.neutral.border)
-        .font_family(".ZedMono")
+        .font_family(code_family)
         .text_xs()
         .text_color(theme.neutral.text_3)
         .flex()

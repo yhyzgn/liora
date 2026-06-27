@@ -205,6 +205,8 @@ fn main() {
 
 `liora::init_liora(cx)` 默认跟随系统主题，并统一初始化组件服务与 key bindings。当产品需要显式选择启动主题时，使用 `liora::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)`。如果只依赖底层 components crate，仍可使用 `liora_components::init_liora(...)`。对于 `Input`、`Switch`、`Select`、`CodeEditor` 等有内部状态的控件，使用 `Entity<T>` 以保证 focus 和内部状态在重渲染后仍然稳定。Gallery 和 Docs 是应用壳初始化、key binding 注册、主题切换、托盘、toast 与组合模式的编译检查参考。
 
+Liora 默认不会内置或强制使用某个 UI 字体。普通文本走 GPUI 的平台/系统 UI 字体，代码类区域走 GPUI 的通用 monospace 字体；只有应用显式配置时才会使用自定义字体。需要使用内置或用户选择的字体时，先调用 `liora::load_custom_fonts(cx, ...)` 注册字体字节，再通过 `liora::init_liora_with_options(cx, LioraOptions::system().with_fonts(...))` 传入 family 名称，或运行时用 `liora::set_font_config(cx, ...)` 更新。
+
 ## 组件 API 示例
 
 Liora 组件采用 builder 风格，并通过 GPUI 原生元素渲染：
@@ -308,6 +310,8 @@ Liora 围绕几个面向产品的原则设计：
 `liora::init_liora(cx)` 是使用 facade crate 时推荐的应用入口。只依赖 focused components crate 时，可使用同等能力的 `liora_components::init_liora(cx)`。它会初始化 Liora core/theme 状态、组件全局服务，以及交互控件所需的 key bindings。
 
 当产品需要显式选择启动主题时，使用 `liora::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)`。运行时主题切换仍使用 `liora_core::apply_theme_mode(window, cx, mode)`。
+
+字体默认保持系统原生：Liora 不默认加载品牌字体，也不会把整个 UI 映射到 Zed 专用字体别名。自定义字体通过 `FontConfig`、`LioraOptions`、`load_custom_fonts` 和 `set_font_config` 显式启用。
 
 `Input`、`Switch`、`Select`、`CodeEditor` 等有状态控件应存放在 `gpui::Entity<T>` 字段中，以便焦点、展开状态、选区和文本值在重渲染后保持稳定。
 

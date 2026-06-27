@@ -7,8 +7,8 @@
 //! directly when building lower-level integrations or custom component crates.
 
 use gpui::{
-    Animation, AnimationExt, App, Bounds, Context, Global, Hsla, Pixels, TextRun, Window,
-    WindowAppearance, WindowBounds, prelude::*, px,
+    Animation, AnimationExt, App, Bounds, Context, Global, Hsla, Pixels, SharedString, TextRun,
+    Window, WindowAppearance, WindowBounds, prelude::*, px,
 };
 
 use std::borrow::Cow;
@@ -16,6 +16,84 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
 static NEXT_UNIQUE_ID: AtomicU64 = AtomicU64::new(1);
+
+/// Font families used by Liora-rendered UI and code surfaces.
+///
+/// The default value intentionally leaves both families unset, so GPUI keeps
+/// using its platform/system defaults (`.SystemUIFont` for normal text and the
+/// platform monospace fallback for code-oriented surfaces). Applications that
+/// want branded typography can load font bytes with [`load_custom_fonts`] and
+/// then set one or both family names through [`FontConfig`].
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct FontConfig {
+    /// Optional family inherited by normal Liora UI text.
+    pub ui_family: Option<SharedString>,
+    /// Optional family used by code blocks, editors, keyboard badges, and
+    /// inline code. When unset, Liora asks GPUI for the platform monospace
+    /// family instead of a bundled or Zed-specific font.
+    pub code_family: Option<SharedString>,
+}
+
+impl FontConfig {
+    /// Returns the system-default typography policy.
+    pub fn system() -> Self {
+        Self::default()
+    }
+
+    /// Returns a config that uses `family` for normal UI text.
+    pub fn with_ui_family(mut self, family: impl Into<SharedString>) -> Self {
+        self.ui_family = Some(family.into());
+        self
+    }
+
+    /// Returns a config that uses `family` for code-oriented text.
+    pub fn with_code_family(mut self, family: impl Into<SharedString>) -> Self {
+        self.code_family = Some(family.into());
+        self
+    }
+}
+
+/// Complete options for initializing Liora core state.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct LioraOptions {
+    /// Startup theme mode. Defaults to following the operating system.
+    pub theme_mode: ThemeMode,
+    /// Optional app typography overrides. Defaults to system fonts.
+    pub fonts: FontConfig,
+}
+
+impl LioraOptions {
+    /// Creates options that follow the operating-system theme and font choices.
+    pub fn system() -> Self {
+        Self::default()
+    }
+
+    /// Returns options with an explicit theme mode.
+    pub fn with_theme_mode(mut self, mode: ThemeMode) -> Self {
+        self.theme_mode = mode;
+        self
+    }
+
+    /// Returns options with custom Liora font families.
+    pub fn with_fonts(mut self, fonts: FontConfig) -> Self {
+        self.fonts = fonts;
+        self
+    }
+}
+
+/// Registers application-provided font files with GPUI's text system.
+///
+/// This function only makes font faces available for later resolution; it does
+/// not change Liora's default typography. To actually use a family, pass a
+/// matching [`FontConfig`] through [`init_liora_with_options`] or update the
+/// running config with [`set_font_config`]. Font bytes normally come from
+/// `include_bytes!`, an asset source, or an application settings directory.
+pub fn load_custom_fonts(
+    cx: &mut App,
+    fonts: impl IntoIterator<Item = Cow<'static, [u8]>>,
+) -> gpui::Result<()> {
+    cx.text_system().add_fonts(fonts.into_iter().collect())
+}
 
 /// Generate a process-wide unique, monotonically increasing numeric id.
 pub fn next_unique_id() -> u64 {
@@ -468,6 +546,8 @@ pub struct Config {
     pub theme: Theme,
     /// Configured theme mode used to resolve light or dark tokens.
     pub theme_mode: ThemeMode,
+    /// Optional UI/code font family overrides.
+    pub fonts: FontConfig,
     /// Base z-index offset for overlay layering.
     pub z_index_base: u32,
 }
@@ -479,6 +559,11 @@ impl Config {
     pub fn set_theme_mode(&mut self, mode: ThemeMode, appearance: WindowAppearance) {
         self.theme_mode = mode;
         self.theme = mode.resolve(appearance);
+    }
+
+    /// Replaces the app typography policy while preserving the active theme.
+    pub fn set_font_config(&mut self, fonts: FontConfig) {
+        self.fonts = fonts;
     }
 
     /// Synchronizes the active theme from the current system/window appearance.
@@ -496,11 +581,19 @@ impl Config {
 /// Initializes Liora core state with an explicit concrete theme.
 pub fn init_liora(cx: &mut App, theme: Theme) {
     let theme_mode = ThemeMode::from_theme(&theme);
-    cx.set_global(Config {
-        theme,
-        theme_mode,
-        z_index_base: 1000,
-    });
+    set_core_config(
+        cx,
+        Config {
+            theme,
+            theme_mode,
+            fonts: FontConfig::default(),
+            z_index_base: 1000,
+        },
+    );
+}
+
+fn set_core_config(cx: &mut App, config: Config) {
+    cx.set_global(config);
     cx.set_global(crate::popper::ZIndexStack::default());
     cx.set_global(crate::popper::ActiveTooltip(Vec::new()));
     cx.set_global(crate::popper::ActivePopover(Vec::new()));
@@ -510,17 +603,40 @@ pub fn init_liora(cx: &mut App, theme: Theme) {
 
 /// Initializes Liora core state from a theme mode, including system mode resolution.
 pub fn init_liora_with_mode(cx: &mut App, mode: ThemeMode) {
+    init_liora_with_options(cx, LioraOptions::default().with_theme_mode(mode));
+}
+
+/// Initializes Liora core state from full startup options.
+pub fn init_liora_with_options(cx: &mut App, options: LioraOptions) {
     let appearance = startup_system_appearance(cx);
-    cx.set_global(Config {
-        theme: mode.resolve(appearance),
-        theme_mode: mode,
-        z_index_base: 1000,
-    });
-    cx.set_global(crate::popper::ZIndexStack::default());
-    cx.set_global(crate::popper::ActiveTooltip(Vec::new()));
-    cx.set_global(crate::popper::ActivePopover(Vec::new()));
-    cx.set_global(crate::popper::ActiveModal(Vec::new()));
-    cx.set_global(crate::popper::ActiveDrawer(Vec::new()));
+    set_core_config(
+        cx,
+        Config {
+            theme: options.theme_mode.resolve(appearance),
+            theme_mode: options.theme_mode,
+            fonts: options.fonts,
+            z_index_base: 1000,
+        },
+    );
+}
+
+/// Replaces Liora font-family overrides for subsequent renders.
+pub fn set_font_config(cx: &mut App, fonts: FontConfig) {
+    cx.global_mut::<Config>().set_font_config(fonts);
+}
+
+/// Returns the configured UI font family, if the app overrides the system default.
+pub fn ui_font_family(cx: &App) -> Option<SharedString> {
+    cx.global::<Config>().fonts.ui_family.clone()
+}
+
+/// Returns the configured code font family or GPUI's generic monospace family.
+pub fn code_font_family(cx: &App) -> SharedString {
+    cx.global::<Config>()
+        .fonts
+        .code_family
+        .clone()
+        .unwrap_or_else(|| "Monospace".into())
 }
 
 /// Applies a new theme mode and refreshes the active GPUI window.
@@ -719,6 +835,7 @@ mod theme_mode_tests {
         let mut config = Config {
             theme: Theme::light(),
             theme_mode: ThemeMode::Light,
+            fonts: FontConfig::default(),
             z_index_base: 1000,
         };
         assert!(!config.sync_system_theme(WindowAppearance::Dark));
@@ -729,6 +846,25 @@ mod theme_mode_tests {
         assert!(!config.sync_system_theme(WindowAppearance::VibrantDark));
         assert!(config.sync_system_theme(WindowAppearance::Light));
         assert_eq!(config.theme.name, "light");
+    }
+
+    #[test]
+    fn font_config_defaults_to_system_fonts_and_keeps_custom_families_explicit() {
+        let default = FontConfig::default();
+        assert!(default.ui_family.is_none());
+        assert!(default.code_family.is_none());
+
+        let custom = FontConfig::system()
+            .with_ui_family("Inter")
+            .with_code_family("JetBrains Mono");
+        assert_eq!(custom.ui_family.as_deref(), Some("Inter"));
+        assert_eq!(custom.code_family.as_deref(), Some("JetBrains Mono"));
+
+        let options = LioraOptions::system()
+            .with_theme_mode(ThemeMode::Dark)
+            .with_fonts(custom.clone());
+        assert_eq!(options.theme_mode, ThemeMode::Dark);
+        assert_eq!(options.fonts, custom);
     }
 
     #[test]
