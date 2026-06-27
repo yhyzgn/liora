@@ -1,7 +1,8 @@
 use gpui::{AnyView, App, Context, Entity, IntoElement, Render, Window, prelude::*};
 use liora_components::layout_helpers::{page, section};
 use liora_components::{
-    CodeDiagnostic, CodeEditor, CodeLanguage, CodeTheme, Divider, Space, Text, toast_info,
+    CodeCompletionItem, CodeDiagnostic, CodeEditor, CodeHover, CodeLanguage, CodeTheme, Divider,
+    Space, Text, toast_info,
 };
 
 pub fn render(cx: &mut App) -> AnyView {
@@ -11,6 +12,7 @@ pub fn render(cx: &mut App) -> AnyView {
 struct CodeEditorDemo {
     basic: Entity<CodeEditor>,
     diagnostics: Entity<CodeEditor>,
+    advanced: Entity<CodeEditor>,
 }
 
 impl CodeEditorDemo {
@@ -44,7 +46,33 @@ impl CodeEditorDemo {
                 ])
         });
 
-        Self { basic, diagnostics }
+        let advanced = cx.new(|cx| {
+            CodeEditor::new(RUST_SAMPLE, cx)
+                .language(CodeLanguage::Rust)
+                .theme(CodeTheme::OneDark)
+                .search_query("Space")
+                .completions([
+                    CodeCompletionItem::new("Space::new")
+                        .kind("struct")
+                        .detail("layout container"),
+                    CodeCompletionItem::new("Button::new")
+                        .kind("function")
+                        .detail("action control"),
+                    CodeCompletionItem::new("toast_info!")
+                        .kind("macro")
+                        .detail("show message"),
+                ])
+                .hover(CodeHover::new(
+                    "Space::new",
+                    "Creates a flexible native layout container.",
+                ))
+        });
+
+        Self {
+            basic,
+            diagnostics,
+            advanced,
+        }
     }
 }
 
@@ -70,6 +98,12 @@ impl Render for CodeEditorDemo {
                         .gap_md()
                         .child(self.diagnostics.clone())
                         .child(Text::new("MVP 阶段先完成编辑、行号、缩进元数据和诊断渲染；Tab/Shift+Tab 多行缩进和 provider trait 后续继续增强。")),
+                ))
+                .child(Divider::new())
+                .child(section(
+                    "高级扩展点：搜索、补全和 hover",
+                    "CodeEditor 暴露 provider-ready 的搜索、补全候选和 hover/help 数据模型，外部应用可以接入自己的语言服务。",
+                    self.advanced.clone(),
                 )),
         )
     }
@@ -101,5 +135,8 @@ mod tests {
         assert!(source.contains("line_numbers"));
         assert!(source.contains("tab_size"));
         assert!(source.contains("on_change"));
+        assert!(source.contains("CodeCompletionItem"));
+        assert!(source.contains("CodeHover"));
+        assert!(source.contains("search_query"));
     }
 }

@@ -33,6 +33,10 @@ use std::sync::Arc;
 pub type CodeEditorChangeCallback = dyn Fn(&str, &mut Context<CodeEditor>) + 'static;
 /// Type alias for code diagnostics provider values used by the code editor API.
 pub type CodeDiagnosticsProvider = dyn Fn(&str) -> Vec<CodeDiagnostic> + 'static;
+/// Type alias for code completion provider values used by the code editor API.
+pub type CodeCompletionProvider = dyn Fn(&str) -> Vec<CodeCompletionItem> + 'static;
+/// Type alias for hover/help provider values used by the code editor API.
+pub type CodeHoverProvider = dyn Fn(&str) -> Option<CodeHover> + 'static;
 
 actions!(
     code_editor,
@@ -118,6 +122,59 @@ impl CodeDiagnostic {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+/// Completion candidate rendered by CodeEditor suggestion panels.
+pub struct CodeCompletionItem {
+    /// Text inserted or referenced by the host application.
+    pub label: SharedString,
+    /// Optional category such as keyword, function, snippet, or variable.
+    pub kind: Option<SharedString>,
+    /// Optional explanatory detail shown after the label.
+    pub detail: Option<SharedString>,
+}
+
+impl CodeCompletionItem {
+    /// Creates a completion candidate with a required label.
+    pub fn new(label: impl Into<SharedString>) -> Self {
+        Self {
+            label: label.into(),
+            kind: None,
+            detail: None,
+        }
+    }
+
+    /// Adds a short kind label used for grouping or visual explanation.
+    pub fn kind(mut self, kind: impl Into<SharedString>) -> Self {
+        self.kind = Some(kind.into());
+        self
+    }
+
+    /// Adds human-readable detail text.
+    pub fn detail(mut self, detail: impl Into<SharedString>) -> Self {
+        self.detail = Some(detail.into());
+        self
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+/// Hover/help content rendered below the editor without binding to a concrete LSP backend.
+pub struct CodeHover {
+    /// Title for the hover/help panel.
+    pub title: SharedString,
+    /// Body text shown under the title.
+    pub description: SharedString,
+}
+
+impl CodeHover {
+    /// Creates hover/help content from title and description text.
+    pub fn new(title: impl Into<SharedString>, description: impl Into<SharedString>) -> Self {
+        Self {
+            title: title.into(),
+            description: description.into(),
+        }
+    }
+}
+
 /// Native code editing surface with line numbers, indentation metadata,
 /// syntax-highlight preview and pluggable diagnostics.
 ///
@@ -137,6 +194,11 @@ pub struct CodeEditor {
     preview: bool,
     diagnostics: Vec<CodeDiagnostic>,
     diagnostics_provider: Option<Arc<CodeDiagnosticsProvider>>,
+    completion_items: Vec<CodeCompletionItem>,
+    completion_provider: Option<Arc<CodeCompletionProvider>>,
+    hover: Option<CodeHover>,
+    hover_provider: Option<Arc<CodeHoverProvider>>,
+    search_query: Option<SharedString>,
     on_change: Option<Arc<CodeEditorChangeCallback>>,
 }
 
@@ -167,6 +229,11 @@ impl CodeEditor {
             preview: true,
             diagnostics: Vec::new(),
             diagnostics_provider: None,
+            completion_items: Vec::new(),
+            completion_provider: None,
+            hover: None,
+            hover_provider: None,
+            search_query: None,
             on_change: None,
         }
     }
@@ -288,6 +355,43 @@ impl CodeEditor {
         cx.notify();
     }
 
+    /// Sets static completion candidates rendered by the editor.
+    pub fn completions(mut self, items: impl IntoIterator<Item = CodeCompletionItem>) -> Self {
+        self.completion_items = items.into_iter().collect();
+        self
+    }
+
+    /// Installs a provider that derives completion candidates from the current source.
+    pub fn completion_provider(
+        mut self,
+        provider: impl Fn(&str) -> Vec<CodeCompletionItem> + 'static,
+    ) -> Self {
+        self.completion_provider = Some(Arc::new(provider));
+        self
+    }
+
+    /// Sets static hover/help content rendered by the editor.
+    pub fn hover(mut self, hover: CodeHover) -> Self {
+        self.hover = Some(hover);
+        self
+    }
+
+    /// Installs a provider that derives hover/help content from the current source.
+    pub fn hover_provider(
+        mut self,
+        provider: impl Fn(&str) -> Option<CodeHover> + 'static,
+    ) -> Self {
+        self.hover_provider = Some(Arc::new(provider));
+        self
+    }
+
+    /// Sets a plain-text search query and renders match count metadata.
+    pub fn search_query(mut self, query: impl Into<SharedString>) -> Self {
+        let query = query.into();
+        self.search_query = (!query.is_empty()).then_some(query);
+        self
+    }
+
     /// Registers a callback that runs when change occurs.
     pub fn on_change(
         mut self,
@@ -337,15 +441,27 @@ impl CodeEditor {
     }
 
     fn refresh_diagnostics(&mut self, cx: &mut Context<Self>) {
+        let value = self.value(cx);
         if let Some(provider) = self.diagnostics_provider.clone() {
-            let value = self.value(cx);
             self.diagnostics = provider(value.as_ref());
+        }
+        if let Some(provider) = self.completion_provider.clone() {
+            self.completion_items = provider(value.as_ref());
+        }
+        if let Some(provider) = self.hover_provider.clone() {
+            self.hover = provider(value.as_ref());
         }
     }
 
     fn handle_input_change(&mut self, value: &str, cx: &mut Context<Self>) {
         if let Some(provider) = self.diagnostics_provider.clone() {
             self.diagnostics = provider(value);
+        }
+        if let Some(provider) = self.completion_provider.clone() {
+            self.completion_items = provider(value);
+        }
+        if let Some(provider) = self.hover_provider.clone() {
+            self.hover = provider(value);
         }
         if let Some(callback) = self.on_change.clone() {
             callback(value, cx);
@@ -372,6 +488,8 @@ impl Render for CodeEditor {
                 input.set_min_rows(rows, cx);
             }
         });
+
+        self.refresh_diagnostics(cx);
 
         let indent_label = if self.soft_tabs {
             format!("spaces:{}", self.tab_size)
@@ -426,7 +544,13 @@ impl Render for CodeEditor {
                             .text_color(theme.neutral.text_3)
                             .child(self.language.label())
                             .child(indent_label)
-                            .child(format!("{} lines", line_count)),
+                            .child(format!("{} lines", line_count))
+                            .when_some(self.search_query.clone(), |s, query| {
+                                s.child(format!(
+                                    "matches:{}",
+                                    search_match_count(value.as_ref(), query.as_ref())
+                                ))
+                            }),
                     ),
             )
             .child(
@@ -453,6 +577,12 @@ impl Render for CodeEditor {
             .when(!self.diagnostics.is_empty(), |s| {
                 s.child(render_diagnostics(&self.diagnostics, &theme))
             })
+            .when(!self.completion_items.is_empty(), |s| {
+                s.child(render_completions(&self.completion_items, &theme))
+            })
+            .when_some(self.hover.clone(), |s, hover| {
+                s.child(render_hover(hover, &theme))
+            })
             .when(self.preview, |s| {
                 s.child(
                     div()
@@ -477,6 +607,13 @@ impl Render for CodeEditor {
                 )
             })
     }
+}
+
+fn search_match_count(value: &str, query: &str) -> usize {
+    if query.is_empty() {
+        return 0;
+    }
+    value.matches(query).count()
 }
 
 fn line_count(value: &str) -> usize {
@@ -557,6 +694,68 @@ fn render_diagnostics(diagnostics: &[CodeDiagnostic], theme: &liora_theme::Theme
     panel
 }
 
+fn render_completions(items: &[CodeCompletionItem], theme: &liora_theme::Theme) -> gpui::Div {
+    let mut panel = div()
+        .flex()
+        .flex_col()
+        .gap_1()
+        .border_t_1()
+        .border_color(theme.neutral.border)
+        .bg(theme.neutral.card)
+        .px_4()
+        .py_3()
+        .child(
+            div()
+                .text_xs()
+                .font_weight(gpui::FontWeight::BOLD)
+                .text_color(theme.neutral.text_3)
+                .child("Completions"),
+        );
+    for item in items.iter().take(6) {
+        panel = panel.child(
+            div()
+                .flex()
+                .items_center()
+                .gap_2()
+                .text_sm()
+                .child(
+                    div()
+                        .text_color(theme.primary.base)
+                        .child(item.label.clone()),
+                )
+                .when_some(item.kind.clone(), |s, kind| {
+                    s.child(div().text_xs().text_color(theme.neutral.text_3).child(kind))
+                })
+                .when_some(item.detail.clone(), |s, detail| {
+                    s.child(div().text_color(theme.neutral.text_2).child(detail))
+                }),
+        );
+    }
+    panel
+}
+
+fn render_hover(hover: CodeHover, theme: &liora_theme::Theme) -> gpui::Div {
+    div()
+        .border_t_1()
+        .border_color(theme.neutral.border)
+        .bg(theme.info.light_9)
+        .px_4()
+        .py_3()
+        .child(
+            div()
+                .text_sm()
+                .font_weight(gpui::FontWeight::BOLD)
+                .text_color(theme.info.base)
+                .child(hover.title),
+        )
+        .child(
+            div()
+                .text_sm()
+                .text_color(theme.neutral.text_2)
+                .child(hover.description),
+        )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -582,5 +781,21 @@ mod tests {
         assert!(source.contains("CodeOutdent"));
         assert!(source.contains("CodeBlock::new"));
         assert!(source.contains("on_change"));
+        assert!(source.contains("CodeCompletionItem"));
+        assert!(source.contains("CodeHover"));
+        assert!(source.contains("search_match_count"));
+    }
+
+    #[test]
+    fn code_editor_advanced_models_track_content() {
+        let item = CodeCompletionItem::new("println!")
+            .kind("macro")
+            .detail("debug output");
+        assert_eq!(item.label, SharedString::from("println!"));
+        assert_eq!(search_match_count("let value = value + 1", "value"), 2);
+        assert_eq!(
+            CodeHover::new("fn main", "entry point").title,
+            SharedString::from("fn main")
+        );
     }
 }

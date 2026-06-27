@@ -159,6 +159,8 @@ mod code_block_inline;
 mod code_block_language;
 #[path = "../../content/snippets/code_block/theme.rs"]
 mod code_block_theme;
+#[path = "../../content/snippets/code_editor/advanced.rs"]
+mod code_editor_advanced;
 #[path = "../../content/snippets/code_editor/basic.rs"]
 mod code_editor_basic;
 #[path = "../../content/snippets/code_editor/diagnostics.rs"]

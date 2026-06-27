@@ -1363,6 +1363,9 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "code_block/theme.rs" => Some(include_str!("../content/snippets/code_block/theme.rs")),
         "code_block/inline.rs" => Some(include_str!("../content/snippets/code_block/inline.rs")),
         "code_editor/basic.rs" => Some(include_str!("../content/snippets/code_editor/basic.rs")),
+        "code_editor/advanced.rs" => {
+            Some(include_str!("../content/snippets/code_editor/advanced.rs"))
+        }
         "code_editor/diagnostics.rs" => Some(include_str!(
             "../content/snippets/code_editor/diagnostics.rs"
         )),
@@ -2214,6 +2217,29 @@ impl LiveDemoContent {
                         .line_numbers(true)
                         .tab_size(4)
                         .soft_tabs(true)
+                }));
+            }
+            "CodeEditorAdvanced" => {
+                code_editors.push(cx.new(|cx| {
+                    CodeEditor::new(DOCS_CODE_EDITOR_RUST_SAMPLE, cx)
+                        .language(CodeLanguage::Rust)
+                        .theme(CodeTheme::OneDark)
+                        .search_query("Space")
+                        .completions([
+                            liora_components::CodeCompletionItem::new("Space::new")
+                                .kind("struct")
+                                .detail("layout container"),
+                            liora_components::CodeCompletionItem::new("Button::new")
+                                .kind("function")
+                                .detail("action control"),
+                            liora_components::CodeCompletionItem::new("toast_info!")
+                                .kind("macro")
+                                .detail("show message"),
+                        ])
+                        .hover(liora_components::CodeHover::new(
+                            "Space::new",
+                            "Creates a flexible native layout container.",
+                        ))
                 }));
             }
             "CodeEditorDiagnostics" => {
@@ -3367,7 +3393,7 @@ impl Render for LiveDemoContent {
                     .map(Entity::into_any_element)
                     .collect(),
             ),
-            "CodeEditorBasic" | "CodeEditorDiagnostics" => demo_stack(
+            "CodeEditorBasic" | "CodeEditorDiagnostics" | "CodeEditorAdvanced" => demo_stack(
                 self.code_editors
                     .iter()
                     .cloned()
