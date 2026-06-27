@@ -1871,9 +1871,10 @@ impl Render for LiveDemoHost {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
 
-        Space::new()
-            .vertical()
-            .gap_sm()
+        Flex::new()
+            .column()
+            .w_full()
+            .gap_md()
             .child(Text::new(self.component.clone()).size(px(theme.font_size.sm)))
             .child(self.demo.clone())
     }
@@ -8543,13 +8544,14 @@ impl DocsPageView {
                         return div().into_any_element();
                     };
                     let mut demo_index = live_demo_index_before(&virtual_blocks, index);
-                    render_persistent_block(
+                    let rendered_block = render_persistent_block(
                         block,
                         &theme,
                         &virtual_live_demos,
                         &mut demo_index,
                         &format!("block-{index}"),
-                    )
+                    );
+                    div().w_full().child(rendered_block).into_any_element()
                 });
             list.set_item_spacing(px(20.0));
             list.measure_all_items_for_scrollbar();
@@ -10157,6 +10159,35 @@ mod tests {
         assert!(render_code_block.contains("LioraCodeBlock::new(rendered_code)"));
         assert!(!render_code_block.contains("reference_annotated_code"));
         assert!(!render_code_block.contains("explain_reference_statement"));
+    }
+
+    #[test]
+    fn docs_virtualized_markdown_rows_provide_full_available_width() {
+        let source = include_str!("markdown.rs");
+        let docs_page_view = &source[source
+            .find("struct DocsPageView")
+            .expect("DocsPageView should exist")
+            ..source
+                .find("impl Render for DocsPageView")
+                .expect("DocsPageView render impl should follow")];
+
+        assert!(docs_page_view.contains("let rendered_block = render_persistent_block("));
+        assert!(docs_page_view.contains("div().w_full().child(rendered_block).into_any_element()"));
+    }
+
+    #[test]
+    fn docs_live_demo_hosts_expand_to_available_content_width() {
+        let source = include_str!("markdown.rs");
+        let live_demo_host_render = &source[source
+            .find("impl Render for LiveDemoHost")
+            .expect("LiveDemoHost render impl should exist")
+            ..source
+                .find("struct LiveDemoContent")
+                .expect("LiveDemoContent should follow")];
+
+        assert!(live_demo_host_render.contains("Flex::new()"));
+        assert!(live_demo_host_render.contains(".w_full()"));
+        assert!(live_demo_host_render.contains(".child(self.demo.clone())"));
     }
 
     #[test]
