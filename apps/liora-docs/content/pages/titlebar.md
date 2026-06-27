@@ -16,5 +16,7 @@
 ## 使用建议
 
 - 真实窗口中搭配 `AppWindowFrame::new(...).mode(WindowFrameMode::Custom).titlebar(...)`。
+- 常用样式可通过 `.height(...)`、`.padding_x(...)`、`.gap(...)`、`.actions_gap(...)`、`.background(...)`、`.border_color(...)`、`.border(...)`、`.title_color(...)`、`.subtitle_color(...)`、`.content_align(...)` 调整。
+- 窗口控制位置可通过 `.window_controls_position(WindowControlsPosition::Left | Right)` 控制。
 - 嵌入 demo、设置面板或普通卡片时使用 `.window_controls(false)`，避免误操作宿主窗口。
 - 按钮等可点击控件应放在 `action(...)` 或 `actions(...)` 中，不要放进拖动区域。

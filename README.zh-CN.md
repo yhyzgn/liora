@@ -746,13 +746,13 @@ let menu = Menu::new()
 
 ### TitleBar 和 Sidebar 应用框架
 
-`TitleBar` 负责原生自定义标题栏、拖动区域和窗口控制按钮；`Sidebar` 负责侧栏宽度、固定 header/footer 和滚动内容区。`Menu`、`Input` 等有状态组件仍应保存在父 View 的 `Entity<T>` 字段中。当 `Sidebar` 放入 `Container::aside(...)` 时，需要加 `.aside_passthrough()`，让 `Sidebar` 自己管理宽度，避免 `Container` 再包一层默认侧栏导致布局错乱。
+`TitleBar` 负责原生自定义标题栏、拖动区域和窗口控制按钮；`Sidebar` 负责侧栏宽度、固定 header/footer、滚动内容区，以及可选的 brand/logo 顶部区域。`Menu`、`Input` 等有状态组件仍应保存在父 View 的 `Entity<T>` 字段中。当 `Sidebar` 放入 `Container::aside(...)` 时，需要加 `.aside_passthrough()`，让 `Sidebar` 自己管理宽度，避免 `Container` 再包一层默认侧栏导致布局错乱。两个组件都支持高度自定义：常见尺寸、颜色、间距用 fluent builder；复杂结构则用 `leading`、`center`、`action`、`header`、`child`、`footer` 等插槽完全接管。
 
 ```rust
 use gpui::{Context, Entity, Render, Window};
 use liora::components::{
     AppWindowFrame, Button, Card, Container, Flex, Menu, MenuMode, Sidebar, Space, Text, Title,
-    TitleBar, WindowFrameMode,
+    TitleBar, TitleBarContentAlign, WindowControlsPosition, WindowFrameMode,
 };
 use liora::icons_lucide::IconName;
 
@@ -783,7 +783,19 @@ impl Render for AppShell {
                 .aside(
                     Sidebar::new()
                         .id("app-sidebar")
-                        .header(Flex::new().padding_md().child(Text::new("Workspace")))
+                        .brand("Acme Workspace")
+                        .brand_subtitle("Native GPUI")
+                        .logo(
+                            gpui::div()
+                                .size(gpui::px(32.0))
+                                .rounded(gpui::px(10.0))
+                                .bg(gpui::transparent_black()),
+                        )
+                        .header_padding(gpui::px(14.0))
+                        .content_padding(gpui::px(8.0))
+                        .footer_padding(gpui::px(12.0))
+                        .gap(gpui::px(8.0))
+                        .rounded(gpui::px(16.0))
                         .child(self.menu.clone())
                         .footer(Flex::new().padding_md().child(Text::new("v1.0"))),
                 )
@@ -806,6 +818,12 @@ impl Render for AppShell {
             TitleBar::new()
                 .title("Acme Notes")
                 .subtitle("Native GPUI app")
+                .height(gpui::px(52.0))
+                .padding_x(gpui::px(18.0))
+                .gap(gpui::px(10.0))
+                .actions_gap(gpui::px(6.0))
+                .content_align(TitleBarContentAlign::Start)
+                .window_controls_position(WindowControlsPosition::Right)
                 .action(Button::new("New").small()),
         )
     }

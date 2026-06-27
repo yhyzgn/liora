@@ -1,6 +1,6 @@
 use gpui::{App, Entity, IntoElement, Render, Window, div, prelude::*, px};
 use liora_components::layout_helpers::{page, section};
-use liora_components::{Button, Card, Menu, MenuMode, Sidebar, Space, Text};
+use liora_components::{Button, Card, Menu, MenuMode, Sidebar, Space};
 use liora_icons_lucide::IconName;
 
 pub fn render(cx: &mut App) -> Entity<SidebarDemo> {
@@ -26,24 +26,27 @@ impl Render for SidebarDemo {
                         Sidebar::new()
                             .id("sidebar-demo")
                             .expanded_width(px(280.0))
-                            .scrollable()
-                            .header(
-                                div().p(px(12.0)).child(
-                                    Space::new()
-                                        .vertical()
-                                        .gap_xs()
-                                        .child(Text::new("Workspace").bold())
-                                        .child(Text::new("Navigation shell").sm()),
-                                ),
+                            .header_padding(px(14.0))
+                            .content_padding(px(8.0))
+                            .footer_padding(px(12.0))
+                            .gap(px(8.0))
+                            .rounded(px(16.0))
+                            .brand("Liora Workspace")
+                            .brand_subtitle("Native GPUI shell")
+                            .logo(
+                                div()
+                                    .size(px(34.0))
+                                    .rounded(px(10.0))
+                                    .bg(gpui::transparent_black()),
                             )
+                            .brand_action(Button::new("+").small())
+                            .scrollable()
                             .child(self.menu.clone())
                             .footer(
-                                div().p(px(12.0)).child(
-                                    Space::new()
-                                        .gap_sm()
-                                        .child(Button::new("New").small())
-                                        .child(Button::new("Settings").small()),
-                                ),
+                                Space::new()
+                                    .gap_sm()
+                                    .child(Button::new("New").small())
+                                    .child(Button::new("Settings").small()),
                             ),
                     ),
                 )
@@ -72,6 +75,9 @@ mod tests {
         assert!(source.contains("Sidebar::new()"));
         assert!(source.contains("menu: Entity<Menu>"));
         assert!(source.contains(".scrollable()"));
+        assert!(source.contains(r#".brand("Liora Workspace")"#));
+        assert!(source.contains(".logo("));
+        assert!(source.contains(".header_padding(px(14.0))"));
         assert!(!source.contains(concat!("TitleBa", "r::new()")));
         assert!(!source.contains(concat!("AppWindow", "Frame::new")));
     }

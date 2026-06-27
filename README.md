@@ -747,13 +747,13 @@ let menu = Menu::new()
 
 ### App shell with TitleBar and Sidebar
 
-`TitleBar` owns native custom titlebar chrome and window-control areas. `Sidebar` owns app navigation panel layout, width, fixed header/footer slots, and scrolling. Keep stateful controls such as `Menu` in the parent view as `Entity<T>` fields. When `Sidebar` is placed in `Container::aside(...)`, add `.aside_passthrough()` so the sidebar owns its own width instead of being wrapped by the container's default aside panel.
+`TitleBar` owns native custom titlebar chrome and window-control areas. `Sidebar` owns app navigation panel layout, width, fixed header/footer slots, scrolling, and an optional brand/logo header. Keep stateful controls such as `Menu` in the parent view as `Entity<T>` fields. When `Sidebar` is placed in `Container::aside(...)`, add `.aside_passthrough()` so the sidebar owns its own width instead of being wrapped by the container's default aside panel. Both components are intentionally highly customizable: use their fluent style builders for common dimensions/colors/spacing, and fall back to `leading`, `center`, `action`, `header`, `child`, and `footer` slots for fully custom layouts.
 
 ```rust
 use gpui::{Context, Entity, Render, Window};
 use liora::components::{
     AppWindowFrame, Button, Card, Container, Flex, Menu, MenuMode, Sidebar, Space, Text, Title,
-    TitleBar, WindowFrameMode,
+    TitleBar, TitleBarContentAlign, WindowControlsPosition, WindowFrameMode,
 };
 use liora::icons_lucide::IconName;
 
@@ -784,7 +784,19 @@ impl Render for AppShell {
                 .aside(
                     Sidebar::new()
                         .id("app-sidebar")
-                        .header(Flex::new().padding_md().child(Text::new("Workspace")))
+                        .brand("Acme Workspace")
+                        .brand_subtitle("Native GPUI")
+                        .logo(
+                            gpui::div()
+                                .size(gpui::px(32.0))
+                                .rounded(gpui::px(10.0))
+                                .bg(gpui::transparent_black()),
+                        )
+                        .header_padding(gpui::px(14.0))
+                        .content_padding(gpui::px(8.0))
+                        .footer_padding(gpui::px(12.0))
+                        .gap(gpui::px(8.0))
+                        .rounded(gpui::px(16.0))
                         .child(self.menu.clone())
                         .footer(Flex::new().padding_md().child(Text::new("v1.0"))),
                 )
@@ -807,6 +819,12 @@ impl Render for AppShell {
             TitleBar::new()
                 .title("Acme Notes")
                 .subtitle("Native GPUI app")
+                .height(gpui::px(52.0))
+                .padding_x(gpui::px(18.0))
+                .gap(gpui::px(10.0))
+                .actions_gap(gpui::px(6.0))
+                .content_align(TitleBarContentAlign::Start)
+                .window_controls_position(WindowControlsPosition::Right)
                 .action(Button::new("New").small()),
         )
     }

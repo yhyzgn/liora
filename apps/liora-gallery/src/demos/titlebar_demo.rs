@@ -24,6 +24,14 @@ impl Render for TitleBarDemo {
                             TitleBar::new()
                                 .title("Project Atlas")
                                 .subtitle("Custom native chrome")
+                                .height(px(58.0))
+                                .padding_x(px(20.0))
+                                .gap(px(12.0))
+                                .actions_gap(px(6.0))
+                                .background(gpui::transparent_black())
+                                .border(false)
+                                .content_align(liora_components::TitleBarContentAlign::Start)
+                                .window_controls_position(liora_components::WindowControlsPosition::Right)
                                 .window_controls(false)
                                 .action(Button::new("Share").small())
                                 .action(Button::new("Deploy").small().primary()),
@@ -62,6 +70,9 @@ mod tests {
 
         assert!(source.contains("TitleBar::new()"));
         assert!(source.contains(".window_controls(false)"));
+        assert!(source.contains(".padding_x(px(20.0))"));
+        assert!(source.contains(".actions_gap(px(6.0))"));
+        assert!(source.contains(".background(gpui::transparent_black())"));
         assert!(!source.contains(concat!("Sidebar", "::new()")));
         assert!(!source.contains(concat!("AppWindow", "Frame::new")));
     }

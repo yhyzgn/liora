@@ -7,9 +7,9 @@
 
 use crate::{Button, Space, Text};
 use gpui::{
-    AnyElement, App, Component, InteractiveElement, IntoElement, MouseButton, ParentElement,
-    RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window, WindowControlArea, div,
-    prelude::*, px,
+    AnyElement, App, Component, Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement,
+    Pixels, RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window,
+    WindowControlArea, div, prelude::*, px,
 };
 use liora_core::Config;
 use liora_icons_lucide::IconName;
@@ -26,6 +26,28 @@ pub enum TitleBarVariant {
     Borderless,
 }
 
+/// Horizontal alignment for the titlebar's main content region.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum TitleBarContentAlign {
+    /// Aligns leading/title/center content at the start of the drag region.
+    #[default]
+    Start,
+    /// Centers leading/title/center content inside the drag region.
+    Center,
+    /// Aligns leading/title/center content at the end of the drag region.
+    End,
+}
+
+/// Side where native window controls are rendered.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum WindowControlsPosition {
+    /// Render window controls after actions on the right side.
+    #[default]
+    Right,
+    /// Render window controls before content on the left side.
+    Left,
+}
+
 /// Fluent native GPUI component for rendering reusable app titlebars.
 pub struct TitleBar {
     id: SharedString,
@@ -37,7 +59,19 @@ pub struct TitleBar {
     actions: Vec<AnyElement>,
     show_window_controls: bool,
     draggable: bool,
-    height: gpui::Pixels,
+    height: Pixels,
+    padding_x: Pixels,
+    gap: Pixels,
+    actions_gap: Pixels,
+    background: Option<Hsla>,
+    border_color: Option<Hsla>,
+    show_border: bool,
+    title_color: Option<Hsla>,
+    subtitle_color: Option<Hsla>,
+    title_size: Pixels,
+    subtitle_size: Pixels,
+    content_align: TitleBarContentAlign,
+    window_controls_position: WindowControlsPosition,
     variant: TitleBarVariant,
     on_close: Option<Box<dyn Fn(&mut Window, &mut App) + 'static>>,
 }
@@ -56,6 +90,18 @@ impl TitleBar {
             show_window_controls: true,
             draggable: true,
             height: px(46.0),
+            padding_x: px(16.0),
+            gap: px(8.0),
+            actions_gap: px(8.0),
+            background: None,
+            border_color: None,
+            show_border: true,
+            title_color: None,
+            subtitle_color: None,
+            title_size: px(13.0),
+            subtitle_size: px(11.0),
+            content_align: TitleBarContentAlign::Start,
+            window_controls_position: WindowControlsPosition::Right,
             variant: TitleBarVariant::Custom,
             on_close: None,
         }
@@ -123,8 +169,80 @@ impl TitleBar {
     }
 
     /// Sets the titlebar height.
-    pub fn height(mut self, height: impl Into<gpui::Pixels>) -> Self {
+    pub fn height(mut self, height: impl Into<Pixels>) -> Self {
         self.height = height.into();
+        self
+    }
+
+    /// Sets horizontal padding for the draggable content region.
+    pub fn padding_x(mut self, padding: impl Into<Pixels>) -> Self {
+        self.padding_x = padding.into();
+        self
+    }
+
+    /// Sets spacing between leading elements and title/center content.
+    pub fn gap(mut self, gap: impl Into<Pixels>) -> Self {
+        self.gap = gap.into();
+        self
+    }
+
+    /// Sets spacing between right-side actions and window controls.
+    pub fn actions_gap(mut self, gap: impl Into<Pixels>) -> Self {
+        self.actions_gap = gap.into();
+        self
+    }
+
+    /// Overrides the titlebar background color.
+    pub fn background(mut self, color: Hsla) -> Self {
+        self.background = Some(color);
+        self
+    }
+
+    /// Overrides the titlebar bottom-border color.
+    pub fn border_color(mut self, color: Hsla) -> Self {
+        self.border_color = Some(color);
+        self
+    }
+
+    /// Toggles the titlebar bottom border.
+    pub fn border(mut self, show: bool) -> Self {
+        self.show_border = show;
+        self
+    }
+
+    /// Overrides the primary title text color.
+    pub fn title_color(mut self, color: Hsla) -> Self {
+        self.title_color = Some(color);
+        self
+    }
+
+    /// Overrides the secondary title text color.
+    pub fn subtitle_color(mut self, color: Hsla) -> Self {
+        self.subtitle_color = Some(color);
+        self
+    }
+
+    /// Sets the primary title font size.
+    pub fn title_size(mut self, size: impl Into<Pixels>) -> Self {
+        self.title_size = size.into();
+        self
+    }
+
+    /// Sets the secondary title font size.
+    pub fn subtitle_size(mut self, size: impl Into<Pixels>) -> Self {
+        self.subtitle_size = size.into();
+        self
+    }
+
+    /// Aligns the titlebar's main draggable content region.
+    pub fn content_align(mut self, align: TitleBarContentAlign) -> Self {
+        self.content_align = align;
+        self
+    }
+
+    /// Places native window controls on the left or right side.
+    pub fn window_controls_position(mut self, position: WindowControlsPosition) -> Self {
+        self.window_controls_position = position;
         self
     }
 
@@ -150,61 +268,90 @@ impl TitleBar {
     /// Renders the titlebar as a native GPUI element tree.
     pub fn render(self, window: &mut Window, cx: &mut App) -> AnyElement {
         let theme = cx.global::<Config>().theme.clone();
-        let title_group = title_group(self.icon, self.title, self.subtitle);
+        let title_group = title_group(
+            self.icon,
+            self.title,
+            self.subtitle,
+            self.title_color.unwrap_or(theme.neutral.text_1),
+            self.subtitle_color.unwrap_or(theme.neutral.text_3),
+            self.title_size,
+            self.subtitle_size,
+        );
         let center = self.center;
         let actions = self.actions;
-        let on_close = self.on_close;
+        let mut on_close = self.on_close;
         let draggable = self.draggable;
         let compact = matches!(self.variant, TitleBarVariant::Compact);
         let borderless = matches!(self.variant, TitleBarVariant::Borderless);
+        let background = self.background.unwrap_or(theme.neutral.card.opacity(0.96));
+        let border_color = self.border_color.unwrap_or(theme.neutral.border);
+        let content_align = self.content_align;
+        let controls_on_left = self.show_window_controls
+            && matches!(self.window_controls_position, WindowControlsPosition::Left);
+        let controls_on_right = self.show_window_controls
+            && matches!(self.window_controls_position, WindowControlsPosition::Right);
 
-        div()
+        let mut root = div()
             .id(self.id)
             .h(self.height)
             .w_full()
             .flex()
             .items_center()
             .justify_between()
-            .when(!borderless, |s| {
-                s.border_b_1().border_color(theme.neutral.border)
+            .when(self.show_border && !borderless, |s| {
+                s.border_b_1().border_color(border_color)
             })
-            .bg(theme.neutral.card.opacity(0.96))
-            .child(
-                div()
-                    .id("liora-titlebar-drag-region")
-                    .when(draggable, |s| {
-                        s.window_control_area(WindowControlArea::Drag)
-                            .cursor_default()
-                            .on_mouse_down(MouseButton::Left, |_, window, cx| {
-                                window.start_window_move();
-                                cx.stop_propagation();
-                            })
-                            .on_click(|event, window, _| {
-                                if event.click_count() == 2 {
-                                    window.titlebar_double_click();
-                                }
-                            })
-                    })
-                    .h_full()
-                    .flex_1()
-                    .min_w_0()
-                    .flex()
-                    .items_center()
-                    .gap_2()
-                    .when(compact, |s| s.px_3())
-                    .when(!compact, |s| s.px_4())
-                    .children(self.leading)
-                    .child(center.unwrap_or(title_group)),
-            )
-            .child(
-                Space::new()
-                    .gap_sm()
-                    .children(actions)
-                    .when(self.show_window_controls, |s| {
-                        s.child(window_controls(on_close, window, theme.clone()))
-                    }),
-            )
-            .into_any_element()
+            .bg(background);
+
+        if controls_on_left {
+            root = root.child(window_controls(on_close.take(), window, theme.clone()));
+        }
+
+        root.child(
+            div()
+                .id("liora-titlebar-drag-region")
+                .when(draggable, |s| {
+                    s.window_control_area(WindowControlArea::Drag)
+                        .cursor_default()
+                        .on_mouse_down(MouseButton::Left, |_, window, cx| {
+                            window.start_window_move();
+                            cx.stop_propagation();
+                        })
+                        .on_click(|event, window, _| {
+                            if event.click_count() == 2 {
+                                window.titlebar_double_click();
+                            }
+                        })
+                })
+                .h_full()
+                .flex_1()
+                .min_w_0()
+                .flex()
+                .items_center()
+                .gap(self.gap)
+                .when(matches!(content_align, TitleBarContentAlign::Start), |s| {
+                    s.justify_start()
+                })
+                .when(matches!(content_align, TitleBarContentAlign::Center), |s| {
+                    s.justify_center()
+                })
+                .when(matches!(content_align, TitleBarContentAlign::End), |s| {
+                    s.justify_end()
+                })
+                .when(compact, |s| s.px_3())
+                .when(!compact, |s| s.px(self.padding_x))
+                .children(self.leading)
+                .child(center.unwrap_or(title_group)),
+        )
+        .child(
+            Space::new()
+                .gap(self.actions_gap)
+                .children(actions)
+                .when(controls_on_right, |s| {
+                    s.child(window_controls(on_close.take(), window, theme.clone()))
+                }),
+        )
+        .into_any_element()
     }
 }
 
@@ -232,6 +379,10 @@ fn title_group(
     icon: Option<AnyElement>,
     title: Option<SharedString>,
     subtitle: Option<SharedString>,
+    title_color: Hsla,
+    subtitle_color: Hsla,
+    title_size: Pixels,
+    subtitle_size: Pixels,
 ) -> AnyElement {
     Space::new()
         .gap_sm()
@@ -241,10 +392,19 @@ fn title_group(
                 .vertical()
                 .gap_xs()
                 .when_some(title, |s, title| {
-                    s.child(Text::new(title).bold().size(px(13.0)))
+                    s.child(
+                        Text::new(title)
+                            .bold()
+                            .size(title_size)
+                            .text_color(title_color),
+                    )
                 })
                 .when_some(subtitle, |s, subtitle| {
-                    s.child(Text::new(subtitle).size(px(11.0)))
+                    s.child(
+                        Text::new(subtitle)
+                            .size(subtitle_size)
+                            .text_color(subtitle_color),
+                    )
                 }),
         )
         .into_any_element()
@@ -341,6 +501,45 @@ mod tests {
         assert!(!titlebar.draggable);
         assert_eq!(titlebar.height, px(38.0));
         assert_eq!(titlebar.variant, TitleBarVariant::Compact);
+    }
+
+    #[test]
+    fn titlebar_builder_tracks_high_customization_options() {
+        let titlebar = TitleBar::new()
+            .padding_x(px(20.0))
+            .gap(px(10.0))
+            .actions_gap(px(6.0))
+            .background(gpui::transparent_black())
+            .border_color(gpui::transparent_black())
+            .border(false)
+            .title_color(gpui::transparent_black())
+            .subtitle_color(gpui::transparent_black())
+            .title_size(px(15.0))
+            .subtitle_size(px(12.0))
+            .content_align(TitleBarContentAlign::Center)
+            .window_controls_position(WindowControlsPosition::Left)
+            .leading("leading")
+            .center("center")
+            .action("action");
+
+        assert_eq!(titlebar.padding_x, px(20.0));
+        assert_eq!(titlebar.gap, px(10.0));
+        assert_eq!(titlebar.actions_gap, px(6.0));
+        assert!(titlebar.background.is_some());
+        assert!(titlebar.border_color.is_some());
+        assert!(!titlebar.show_border);
+        assert!(titlebar.title_color.is_some());
+        assert!(titlebar.subtitle_color.is_some());
+        assert_eq!(titlebar.title_size, px(15.0));
+        assert_eq!(titlebar.subtitle_size, px(12.0));
+        assert_eq!(titlebar.content_align, TitleBarContentAlign::Center);
+        assert_eq!(
+            titlebar.window_controls_position,
+            WindowControlsPosition::Left
+        );
+        assert_eq!(titlebar.leading.len(), 1);
+        assert!(titlebar.center.is_some());
+        assert_eq!(titlebar.actions.len(), 1);
     }
 
     #[test]
