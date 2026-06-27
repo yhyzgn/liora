@@ -208,7 +208,7 @@ pub fn drag_handle(color: Hsla, active: bool, width: Pixels) -> Div {
         .cursor_pointer()
         .rounded_md()
         .when(!active, |s| {
-            s.hover(|s| s.cursor_pointer().bg(gpui::black().opacity(0.018)))
+            s.hover(move |s| s.cursor_pointer().bg(color.opacity(0.10)))
         })
         .when(active, |s| s.cursor_pointer())
         .child(

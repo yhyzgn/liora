@@ -24,6 +24,7 @@ use gpui::{
     AnyElement, App, Bounds, Context, Entity, IntoElement, ListAlignment, ListState, MouseButton,
     MouseMoveEvent, Pixels, Point, Render, Size, Window, deferred, div, list, prelude::*, px,
 };
+use liora_core::Config;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -323,6 +324,7 @@ impl Render for VirtualizedList {
             .map(|bounds| bounds.size);
         let item_bounds_store = self.item_bounds.clone();
         let entity = cx.entity().clone();
+        let theme = cx.global::<Config>().theme.clone();
 
         div()
             .relative()
@@ -359,9 +361,9 @@ impl Render for VirtualizedList {
                         .rounded_md()
                         .border_1()
                         .border_color(if is_dragging {
-                            gpui::rgb(0xcbd5e1).into()
+                            theme.neutral.border
                         } else if is_over {
-                            gpui::blue()
+                            theme.primary.base
                         } else {
                             gpui::transparent_black()
                         })
@@ -370,34 +372,35 @@ impl Render for VirtualizedList {
                     if draggable && !is_dragging {
                         let up_entity = up_entity.clone();
                         let out_entity = out_entity.clone();
-                        shell = shell
-                            .on_mouse_move(move |event, window, cx| {
-                                move_entity.update(cx, |list, cx| {
-                                    list.hover_drag(index, event, window, cx)
-                                });
-                            })
-                            .on_mouse_up(MouseButton::Left, move |_, window, cx| {
-                                up_entity
-                                    .update(cx, |list, cx| list.finish_drag(index, window, cx));
-                                cx.stop_propagation();
-                            })
-                            .on_mouse_up_out(MouseButton::Left, move |_, window, cx| {
-                                out_entity
-                                    .update(cx, |list, cx| list.finish_drag(index, window, cx));
-                            })
-                            .child(
-                                drag_handle(gpui::rgb(0x94a3b8).into(), false, px(32.0))
-                                    .on_mouse_down(MouseButton::Left, move |event, _, cx| {
-                                        item_entity.update(cx, |list, cx| {
-                                            list.start_drag(index, event.position, cx)
-                                        });
-                                        cx.stop_propagation();
-                                    }),
-                            )
-                            .child(item);
+                        shell =
+                            shell
+                                .on_mouse_move(move |event, window, cx| {
+                                    move_entity.update(cx, |list, cx| {
+                                        list.hover_drag(index, event, window, cx)
+                                    });
+                                })
+                                .on_mouse_up(MouseButton::Left, move |_, window, cx| {
+                                    up_entity
+                                        .update(cx, |list, cx| list.finish_drag(index, window, cx));
+                                    cx.stop_propagation();
+                                })
+                                .on_mouse_up_out(MouseButton::Left, move |_, window, cx| {
+                                    out_entity
+                                        .update(cx, |list, cx| list.finish_drag(index, window, cx));
+                                })
+                                .child(
+                                    drag_handle(theme.neutral.text_3, false, px(32.0))
+                                        .on_mouse_down(MouseButton::Left, move |event, _, cx| {
+                                            item_entity.update(cx, |list, cx| {
+                                                list.start_drag(index, event.position, cx)
+                                            });
+                                            cx.stop_propagation();
+                                        }),
+                                )
+                                .child(item);
                     } else if draggable {
                         shell = shell
-                            .child(drag_handle(gpui::rgb(0x94a3b8).into(), true, px(32.0)))
+                            .child(drag_handle(theme.neutral.text_3, true, px(32.0)))
                             .child(item);
                     } else {
                         shell = shell.child(item);
@@ -410,7 +413,7 @@ impl Render for VirtualizedList {
                             DragAxis::Vertical,
                             drag_reference_bounds.get(index).copied().flatten(),
                         );
-                        drag_placeholder(active_size)
+                        drag_placeholder(active_size, theme.neutral.hover)
                             .child(
                                 deferred(
                                     shell
@@ -469,15 +472,15 @@ impl Render for VirtualizedList {
     }
 }
 
-fn drag_placeholder(size: Option<Size<Pixels>>) -> gpui::Div {
+fn drag_placeholder(size: Option<Size<Pixels>>, background: gpui::Hsla) -> gpui::Div {
     div()
         .relative()
         .flex_none()
         .when_some(size, |s, size| s.w(size.width).h(size.height))
         .rounded_md()
         .border_1()
-        .border_color(gpui::rgb(0xcbd5e1))
-        .bg(gpui::transparent_black())
+        .border_color(background)
+        .bg(background)
 }
 
 #[cfg(test)]

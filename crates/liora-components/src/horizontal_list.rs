@@ -394,7 +394,7 @@ impl Render for HorizontalList {
                     DragAxis::Horizontal,
                     drag_reference_bounds.get(position).copied().flatten(),
                 );
-                let placeholder = drag_placeholder(active_size)
+                let placeholder = drag_placeholder(active_size, theme.neutral.hover)
                     .border_color(theme.primary.base)
                     .child(
                         deferred(
@@ -486,14 +486,14 @@ fn default_divider(color: gpui::Hsla) -> AnyElement {
         .into_any_element()
 }
 
-fn drag_placeholder(size: Option<Size<Pixels>>) -> gpui::Div {
+fn drag_placeholder(size: Option<Size<Pixels>>, background: gpui::Hsla) -> gpui::Div {
     div()
         .relative()
         .flex_none()
         .when_some(size, |s, size| s.w(size.width).h(size.height))
         .rounded_md()
         .border_1()
-        .bg(gpui::black().opacity(0.018))
+        .bg(background)
 }
 
 #[cfg(test)]

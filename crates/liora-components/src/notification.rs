@@ -158,18 +158,29 @@ impl Render for NotificationManager {
                         .border_color(theme.neutral.border)
                         .p_4()
                         .rounded(px(theme.radius.md))
+                        .text_color(theme.neutral.text_2)
                         .shadow_lg()
                         .flex()
                         .flex_row()
                         .gap_3()
-                        .child(Icon::new(icon).size(px(24.0)).color(color))
+                        .child(
+                            div()
+                                .flex_none()
+                                .child(Icon::new(icon).size(px(24.0)).color(color)),
+                        )
                         .child(
                             div()
                                 .flex_1()
+                                .min_w(px(0.0))
                                 .flex()
                                 .flex_col()
                                 .gap_1()
-                                .child(div().font_weight(gpui::FontWeight::BOLD).child(item.title))
+                                .child(
+                                    div()
+                                        .font_weight(gpui::FontWeight::BOLD)
+                                        .text_color(theme.neutral.text_1)
+                                        .child(item.title),
+                                )
                                 .when_some(item.description, |s, d| {
                                     s.child(
                                         div().text_sm().text_color(theme.neutral.text_3).child(d),
@@ -192,6 +203,34 @@ mod tests {
 
         assert!(source.contains("pop_in("));
         assert!(source.contains("liora-notification"));
+    }
+
+    #[test]
+    fn notification_surfaces_text_and_layout_use_theme_tokens() {
+        let production = include_str!("notification.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap_or_default();
+
+        assert!(production.contains(".bg(theme.neutral.card)"));
+        assert!(production.contains(".border_color(theme.neutral.border)"));
+        assert!(
+            production.contains(".text_color(theme.neutral.text_2)"),
+            "notification root text should inherit a theme-aware body color"
+        );
+        assert!(
+            production.contains(".text_color(theme.neutral.text_1)"),
+            "notification title should use the primary theme-aware text color"
+        );
+        assert!(production.contains(".text_color(theme.neutral.text_3)"));
+        assert!(
+            production.contains(".flex_none()"),
+            "notification icon should not shrink into the text column"
+        );
+        assert!(
+            production.contains(".min_w(px(0.0))"),
+            "notification text column should be allowed to wrap inside fixed-width toasts"
+        );
     }
 }
 

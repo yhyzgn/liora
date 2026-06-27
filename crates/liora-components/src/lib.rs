@@ -917,6 +917,10 @@ mod visual_theme_consistency_tests {
             ("pagination", include_str!("pagination.rs")),
             ("bar_chart", include_str!("bar_chart.rs")),
             ("pie_chart", include_str!("pie_chart.rs")),
+            ("checkbox", include_str!("checkbox.rs")),
+            ("checkbox_group", include_str!("checkbox_group.rs")),
+            ("radio_group", include_str!("radio_group.rs")),
+            ("switch", include_str!("switch.rs")),
         ] {
             let production = source.split("#[cfg(test)]").next().unwrap_or(source);
             assert!(
@@ -924,7 +928,8 @@ mod visual_theme_consistency_tests {
                 "{name} should use theme.neutral.inverted for text on colored/dark surfaces"
             );
             assert!(
-                !production.contains("gpui::white()"),
+                !production.contains("gpui::white()")
+                    && !production.contains("rgba(255, 255, 255, 1.0)"),
                 "{name} production rendering should not hard-code white text"
             );
         }
@@ -1005,6 +1010,55 @@ mod visual_theme_consistency_tests {
         assert!(!window_frame.contains("gpui::white()"));
         assert!(!titlebar.contains("gpui::red()"));
         assert!(!titlebar.contains("gpui::white()"));
+    }
+
+    #[test]
+    fn common_floating_surfaces_set_theme_text_tokens() {
+        for (name, source) in [
+            ("card", include_str!("card.rs")),
+            ("notification", include_str!("notification.rs")),
+        ] {
+            let production = source.split("#[cfg(test)]").next().unwrap_or_default();
+            assert!(
+                production.contains(".bg(theme.neutral.card)"),
+                "{name} should render on the themed card surface"
+            );
+            assert!(
+                production.contains(".border_color(theme.neutral.border)"),
+                "{name} should use themed borders"
+            );
+            assert!(
+                production.contains(".text_color(theme.neutral.text_1)"),
+                "{name} should set primary text with theme tokens"
+            );
+            assert!(
+                production.contains(".text_color(theme.neutral.text_2)"),
+                "{name} should set body/default text with theme tokens"
+            );
+        }
+    }
+
+    #[test]
+    fn picker_and_drag_interactions_use_theme_tokens() {
+        for (name, source) in [
+            ("date_picker", include_str!("date_picker.rs")),
+            ("date_time_picker", include_str!("date_time_picker.rs")),
+            ("horizontal_list", include_str!("horizontal_list.rs")),
+            ("virtualized_list", include_str!("virtualized_list.rs")),
+        ] {
+            let production = source.split("#[cfg(test)]").next().unwrap_or_default();
+            assert!(
+                !production.contains("gpui::black().opacity(0.04)")
+                    && !production.contains("gpui::black().opacity(0.018)"),
+                "{name} should use theme interaction tokens instead of hard-coded black hover overlays"
+            );
+            assert!(
+                !production.contains("gpui::rgb(0xcbd5e1)")
+                    && !production.contains("gpui::rgb(0x94a3b8)")
+                    && !production.contains("gpui::blue()"),
+                "{name} should use theme or semantic tokens instead of hard-coded drag colors"
+            );
+        }
     }
 }
 

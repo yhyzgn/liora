@@ -133,7 +133,7 @@ impl Render for Switch {
         let thumb_color = if self.disabled {
             theme.neutral.text_disabled
         } else {
-            rgba(255, 255, 255, 1.0)
+            theme.neutral.inverted
         };
         let track_color = if self.disabled {
             theme.neutral.hover

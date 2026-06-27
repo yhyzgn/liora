@@ -753,6 +753,7 @@ fn render_date_panel(
                             format!("{}-prev-year", id),
                             IconName::ChevronsLeft,
                             theme.neutral.icon,
+                            theme.neutral.hover,
                             picker_prev_year,
                             |picker, cx| picker.shift_year(-1, cx),
                         ))
@@ -760,6 +761,7 @@ fn render_date_panel(
                             format!("{}-prev-month", id),
                             IconName::ChevronLeft,
                             theme.neutral.icon,
+                            theme.neutral.hover,
                             picker_prev_month,
                             |picker, cx| picker.shift_month(-1, cx),
                         )),
@@ -780,6 +782,7 @@ fn render_date_panel(
                             format!("{}-next-month", id),
                             IconName::ChevronRight,
                             theme.neutral.icon,
+                            theme.neutral.hover,
                             picker_next_month,
                             |picker, cx| picker.shift_month(1, cx),
                         ))
@@ -787,6 +790,7 @@ fn render_date_panel(
                             format!("{}-next-year", id),
                             IconName::ChevronsRight,
                             theme.neutral.icon,
+                            theme.neutral.hover,
                             picker_next_year,
                             |picker, cx| picker.shift_year(1, cx),
                         )),
@@ -884,6 +888,7 @@ fn render_month_panel(
                     format!("{}-prev-year", id),
                     IconName::ChevronsLeft,
                     theme.neutral.icon,
+                    theme.neutral.hover,
                     picker_prev_year,
                     |picker, cx| picker.shift_year(-1, cx),
                 ))
@@ -898,6 +903,7 @@ fn render_month_panel(
                     format!("{}-next-year", id),
                     IconName::ChevronsRight,
                     theme.neutral.icon,
+                    theme.neutral.hover,
                     picker_next_year,
                     |picker, cx| picker.shift_year(1, cx),
                 )),
@@ -972,6 +978,7 @@ fn render_year_panel(
                     format!("{}-prev-years", id),
                     IconName::ChevronsLeft,
                     theme.neutral.icon,
+                    theme.neutral.hover,
                     picker_prev,
                     |picker, cx| picker.shift_year(-12, cx),
                 ))
@@ -986,6 +993,7 @@ fn render_year_panel(
                     format!("{}-next-years", id),
                     IconName::ChevronsRight,
                     theme.neutral.icon,
+                    theme.neutral.hover,
                     picker_next,
                     |picker, cx| picker.shift_year(12, cx),
                 )),
@@ -1080,6 +1088,7 @@ fn nav_button(
     id: impl Into<SharedString>,
     icon: IconName,
     icon_color: Hsla,
+    hover_bg: Hsla,
     picker: Entity<DatePicker>,
     action: impl Fn(&mut DatePicker, &mut Context<DatePicker>) + 'static,
 ) -> impl IntoElement {
@@ -1088,7 +1097,7 @@ fn nav_button(
         .cursor_pointer()
         .p_1()
         .rounded(px(4.0))
-        .hover(|s| s.cursor_pointer().bg(gpui::black().opacity(0.04)))
+        .hover(move |s| s.cursor_pointer().bg(hover_bg))
         .on_mouse_down(MouseButton::Left, move |_, _, cx| {
             picker.update(cx, |picker, cx| action(picker, cx));
         })

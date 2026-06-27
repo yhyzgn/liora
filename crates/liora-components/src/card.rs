@@ -113,6 +113,7 @@ impl RenderOnce for Card {
         let mut el = div()
             .id(id)
             .bg(theme.neutral.card)
+            .text_color(theme.neutral.text_2)
             .border_1()
             .border_color(theme.neutral.border)
             .rounded(px(theme.radius.md))
@@ -138,7 +139,12 @@ impl RenderOnce for Card {
                     .p_4()
                     .border_b_1()
                     .border_color(theme.neutral.border)
-                    .child(div().font_weight(gpui::FontWeight::BOLD).child(title)),
+                    .child(
+                        div()
+                            .font_weight(gpui::FontWeight::BOLD)
+                            .text_color(theme.neutral.text_1)
+                            .child(title),
+                    ),
             );
         } else if let Some(header) = self.header {
             el = el.child(
@@ -151,7 +157,12 @@ impl RenderOnce for Card {
         }
 
         // Body
-        el = el.child(div().p_4().child(self.body));
+        el = el.child(
+            div()
+                .p_4()
+                .text_color(theme.neutral.text_2)
+                .child(self.body),
+        );
 
         // Footer
         if let Some(footer) = self.footer {
@@ -161,6 +172,7 @@ impl RenderOnce for Card {
                     .border_t_1()
                     .border_color(theme.neutral.border)
                     .bg(theme.neutral.hover)
+                    .text_color(theme.neutral.text_2)
                     .child(footer),
             );
         }
@@ -189,5 +201,24 @@ mod tests {
     #[test]
     fn card_no_shrink_tracks_scroll_container_usage() {
         assert!(!Card::new("body").no_shrink().shrink);
+    }
+
+    #[test]
+    fn card_surfaces_and_text_use_theme_tokens() {
+        let production = include_str!("card.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap_or_default();
+
+        assert!(production.contains(".bg(theme.neutral.card)"));
+        assert!(production.contains(".border_color(theme.neutral.border)"));
+        assert!(
+            production.contains(".text_color(theme.neutral.text_2)"),
+            "card root/body/footer text should inherit a theme-aware body color"
+        );
+        assert!(
+            production.contains(".text_color(theme.neutral.text_1)"),
+            "card title text should use the primary theme-aware text color"
+        );
     }
 }

@@ -137,7 +137,7 @@ impl Render for Checkbox {
             (
                 theme.primary.base,
                 theme.primary.base,
-                rgba(255, 255, 255, 1.0),
+                theme.neutral.inverted,
             )
         } else {
             (

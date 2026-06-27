@@ -596,7 +596,7 @@ impl RadioGroup {
             } else if checked {
                 style
                     .selected_text_color
-                    .unwrap_or_else(|| rgba(255, 255, 255, 1.0))
+                    .unwrap_or_else(|| theme.neutral.inverted)
             } else {
                 style.text_color.unwrap_or(theme.neutral.text_1)
             };
