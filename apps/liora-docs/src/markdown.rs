@@ -82,6 +82,13 @@ const DESCRIPTIONS_DOC: &str = include_str!("../content/pages/descriptions.md");
 const DIALOG_DOC: &str = include_str!("../content/pages/dialog.md");
 const DRAWER_DOC: &str = include_str!("../content/pages/drawer.md");
 const DOCK_LAYOUT_DOC: &str = include_str!("../content/pages/dock_layout.md");
+const TOGGLE_DOC: &str = include_str!("../content/pages/toggle.md");
+const GROUP_BOX_DOC: &str = include_str!("../content/pages/group_box.md");
+const HOVER_CARD_DOC: &str = include_str!("../content/pages/hover_card.md");
+const SCROLLABLE_MASK_DOC: &str = include_str!("../content/pages/scrollable_mask.md");
+const CLIPBOARD_DOC: &str = include_str!("../content/pages/clipboard.md");
+const FOCUS_TRAP_DOC: &str = include_str!("../content/pages/focus_trap.md");
+const NATIVE_MENU_DOC: &str = include_str!("../content/pages/native_menu.md");
 const DROPDOWN_DOC: &str = include_str!("../content/pages/dropdown.md");
 const DROPDOWN_BUTTON_DOC: &str = include_str!("../content/pages/dropdown_button.md");
 const EMPTY_DOC: &str = include_str!("../content/pages/empty.md");
@@ -302,6 +309,34 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Dialog",
         markdown: DIALOG_DOC,
+    },
+    DocPage {
+        title: "Toggle",
+        markdown: TOGGLE_DOC,
+    },
+    DocPage {
+        title: "GroupBox",
+        markdown: GROUP_BOX_DOC,
+    },
+    DocPage {
+        title: "HoverCard",
+        markdown: HOVER_CARD_DOC,
+    },
+    DocPage {
+        title: "ScrollableMask",
+        markdown: SCROLLABLE_MASK_DOC,
+    },
+    DocPage {
+        title: "Clipboard",
+        markdown: CLIPBOARD_DOC,
+    },
+    DocPage {
+        title: "FocusTrap",
+        markdown: FOCUS_TRAP_DOC,
+    },
+    DocPage {
+        title: "NativeMenu",
+        markdown: NATIVE_MENU_DOC,
     },
     DocPage {
         title: "DockLayout",
@@ -1680,6 +1715,17 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "dialog/custom_content.rs" => {
             Some(include_str!("../content/snippets/dialog/custom_content.rs"))
         }
+        "toggle/basic.rs" => Some(include_str!("../content/snippets/toggle/basic.rs")),
+        "group_box/basic.rs" => Some(include_str!("../content/snippets/group_box/basic.rs")),
+        "hover_card/basic.rs" => Some(include_str!("../content/snippets/hover_card/basic.rs")),
+        "scrollable_mask/basic.rs" => {
+            Some(include_str!("../content/snippets/scrollable_mask/basic.rs"))
+        }
+        "clipboard/helper.rs" => Some(include_str!("../content/snippets/clipboard/helper.rs")),
+        "focus_trap/policy.rs" => Some(include_str!("../content/snippets/focus_trap/policy.rs")),
+        "native_menu/descriptor.rs" => Some(include_str!(
+            "../content/snippets/native_menu/descriptor.rs"
+        )),
         "drawer/placements.rs" => Some(include_str!("../content/snippets/drawer/placements.rs")),
         "drawer/sizes.rs" => Some(include_str!("../content/snippets/drawer/sizes.rs")),
         "dock_layout/workbench.rs" => {
@@ -3284,6 +3330,20 @@ impl Render for LiveDemoContent {
             "TypographyParagraph" => Card::new(docs_typography_paragraph(_cx)).no_shadow().into_any_element(),
 
 
+            "ToggleBasic" => demo_stack(vec![
+                liora_components::Toggle::new("Bold", true).into_any_element(),
+                liora_components::ToggleGroup::new([
+                    liora_components::ToggleOption::new("preview", "Preview"),
+                    liora_components::ToggleOption::new("code", "Code"),
+                    liora_components::ToggleOption::new("split", "Split"),
+                ]).selected("preview").into_any_element(),
+            ]),
+            "GroupBoxBasic" => liora_components::GroupBox::new("Editor", demo_stack(vec![Text::new("Tab size: 4").into_any_element(), Text::new("Soft tabs enabled").into_any_element()])).description("Project-level editor preferences.").into_any_element(),
+            "HoverCardBasic" => liora_components::HoverCard::new(Text::new("Hover target").underline()).content(|_, _| demo_stack(vec![Text::new("Preview card").bold().into_any_element(), Text::new("Use this for profile or link previews.").into_any_element()])).into_any_element(),
+            "ScrollableMaskBasic" => liora_components::ScrollableMask::new(demo_stack((1..=16).map(|i| Text::new(format!("Scrollable row {i}")).into_any_element()).collect())).height(gpui::px(160.0)).into_any_element(),
+            "ClipboardHelper" => Text::new("Use write_text_to_clipboard(cx, text) inside event handlers.").into_any_element(),
+            "FocusTrapPolicy" => { let policy = liora_components::FocusTrap::new().restore_focus(true).close_on_escape(false); Text::new(format!("trap={}, restore={}, esc={}", policy.enabled, policy.restore_focus, policy.close_on_escape)).into_any_element() },
+            "NativeMenuDescriptor" => { let menu = liora_components::NativeMenu::new("File").item(liora_components::NativeMenuItem::new("open", "Open").shortcut("Ctrl+O")); Text::new(format!("{} menu items", menu.items.len())).into_any_element() },
             "DockLayoutWorkbench" => demo_row(vec![
                 liora_components::DockLayout::new()
                     .height_lg()

@@ -59,6 +59,7 @@ pub mod chart_scale;
 pub mod chart_shape;
 pub mod checkbox;
 pub mod checkbox_group;
+pub mod clipboard;
 pub mod code_block;
 pub mod code_editor;
 pub mod col;
@@ -78,10 +79,13 @@ pub mod dropdown;
 pub mod dropdown_button;
 pub mod empty;
 pub mod flex;
+pub mod focus_trap;
 pub mod form;
 pub(crate) mod gpui_compat;
+pub mod group_box;
 pub mod heat_bar;
 pub mod horizontal_list;
+pub mod hover_card;
 pub mod image;
 pub mod input;
 pub mod input_number;
@@ -97,6 +101,7 @@ pub mod menu;
 pub mod message;
 pub mod message_box;
 pub mod motion;
+pub mod native_menu;
 pub mod notification;
 pub mod operation;
 pub mod otp_input;
@@ -114,6 +119,7 @@ pub mod radio_group;
 pub mod rate;
 pub mod result;
 pub mod row;
+pub mod scrollable_mask;
 pub mod scrollbar;
 pub mod searchable_list;
 pub mod segment_ratio_bar;
@@ -146,6 +152,7 @@ pub mod timeline;
 pub mod timer;
 pub mod title;
 pub mod titlebar;
+pub mod toggle;
 pub mod tooltip;
 pub mod tour;
 pub mod transfer;
@@ -181,6 +188,7 @@ pub use chart_scale::*;
 pub use chart_shape::*;
 pub use checkbox::*;
 pub use checkbox_group::*;
+pub use clipboard::*;
 pub use code_block::*;
 pub use code_editor::*;
 pub use col::*;
@@ -200,9 +208,12 @@ pub use dropdown::*;
 pub use dropdown_button::*;
 pub use empty::*;
 pub use flex::*;
+pub use focus_trap::*;
 pub use form::*;
+pub use group_box::*;
 pub use heat_bar::*;
 pub use horizontal_list::*;
+pub use hover_card::*;
 pub use image::*;
 pub use input::*;
 pub use input_number::*;
@@ -227,6 +238,7 @@ pub use menu::*;
 pub use message::*;
 pub use message_box::*;
 pub use motion::*;
+pub use native_menu::*;
 pub use notification::*;
 pub use operation::*;
 pub use otp_input::*;
@@ -244,6 +256,7 @@ pub use radio_group::*;
 pub use rate::*;
 pub use result::*;
 pub use row::*;
+pub use scrollable_mask::*;
 pub use scrollbar::*;
 pub use searchable_list::*;
 pub use segment_ratio_bar::*;
@@ -276,6 +289,7 @@ pub use timeline::*;
 pub use timer::*;
 pub use title::*;
 pub use titlebar::*;
+pub use toggle::*;
 pub use tooltip::*;
 pub use tour::*;
 pub use transfer::*;
@@ -373,6 +387,7 @@ mod application_init_api_tests {
             ("chart_shape.rs", include_str!("chart_shape.rs")),
             ("checkbox.rs", include_str!("checkbox.rs")),
             ("checkbox_group.rs", include_str!("checkbox_group.rs")),
+            ("clipboard.rs", include_str!("clipboard.rs")),
             ("code_block.rs", include_str!("code_block.rs")),
             ("code_editor.rs", include_str!("code_editor.rs")),
             ("col.rs", include_str!("col.rs")),
@@ -390,9 +405,12 @@ mod application_init_api_tests {
             ("dropdown.rs", include_str!("dropdown.rs")),
             ("empty.rs", include_str!("empty.rs")),
             ("flex.rs", include_str!("flex.rs")),
+            ("focus_trap.rs", include_str!("focus_trap.rs")),
             ("form.rs", include_str!("form.rs")),
             ("gpui_compat.rs", include_str!("gpui_compat.rs")),
+            ("group_box.rs", include_str!("group_box.rs")),
             ("heat_bar.rs", include_str!("heat_bar.rs")),
+            ("hover_card.rs", include_str!("hover_card.rs")),
             ("horizontal_list.rs", include_str!("horizontal_list.rs")),
             ("image.rs", include_str!("image.rs")),
             ("input.rs", include_str!("input.rs")),
@@ -409,6 +427,7 @@ mod application_init_api_tests {
             ("message.rs", include_str!("message.rs")),
             ("message_box.rs", include_str!("message_box.rs")),
             ("motion.rs", include_str!("motion.rs")),
+            ("native_menu.rs", include_str!("native_menu.rs")),
             ("notification.rs", include_str!("notification.rs")),
             ("operation.rs", include_str!("operation.rs")),
             ("otp_input.rs", include_str!("otp_input.rs")),
@@ -426,6 +445,7 @@ mod application_init_api_tests {
             ("rate.rs", include_str!("rate.rs")),
             ("result.rs", include_str!("result.rs")),
             ("row.rs", include_str!("row.rs")),
+            ("scrollable_mask.rs", include_str!("scrollable_mask.rs")),
             ("scrollbar.rs", include_str!("scrollbar.rs")),
             ("segment_ratio_bar.rs", include_str!("segment_ratio_bar.rs")),
             ("segmented.rs", include_str!("segmented.rs")),
@@ -451,6 +471,7 @@ mod application_init_api_tests {
             ("timeline.rs", include_str!("timeline.rs")),
             ("timer.rs", include_str!("timer.rs")),
             ("title.rs", include_str!("title.rs")),
+            ("toggle.rs", include_str!("toggle.rs")),
             ("tooltip.rs", include_str!("tooltip.rs")),
             ("tour.rs", include_str!("tour.rs")),
             ("transfer.rs", include_str!("transfer.rs")),
@@ -1156,6 +1177,13 @@ mod component_backlog_export_tests {
         assert!(source.contains("pub mod candlestick_chart;"));
         assert!(source.contains("pub mod text_view;"));
         assert!(source.contains("pub mod dock_layout;"));
+        assert!(source.contains("pub mod native_menu;"));
+        assert!(source.contains("pub mod focus_trap;"));
+        assert!(source.contains("pub mod clipboard;"));
+        assert!(source.contains("pub mod scrollable_mask;"));
+        assert!(source.contains("pub mod hover_card;"));
+        assert!(source.contains("pub mod group_box;"));
+        assert!(source.contains("pub mod toggle;"));
         assert!(source.contains("pub use searchable_list::*;"));
         assert!(source.contains("pub use combobox::*;"));
         assert!(source.contains("pub use status_bar::*;"));
@@ -1164,5 +1192,12 @@ mod component_backlog_export_tests {
         assert!(source.contains("pub use candlestick_chart::*;"));
         assert!(source.contains("pub use text_view::*;"));
         assert!(source.contains("pub use dock_layout::*;"));
+        assert!(source.contains("pub use native_menu::*;"));
+        assert!(source.contains("pub use focus_trap::*;"));
+        assert!(source.contains("pub use clipboard::*;"));
+        assert!(source.contains("pub use scrollable_mask::*;"));
+        assert!(source.contains("pub use hover_card::*;"));
+        assert!(source.contains("pub use group_box::*;"));
+        assert!(source.contains("pub use toggle::*;"));
     }
 }

@@ -151,6 +151,8 @@ mod checkbox_buttons;
 mod checkbox_custom;
 #[path = "../../content/snippets/checkbox/group.rs"]
 mod checkbox_group;
+#[path = "../../content/snippets/clipboard/helper.rs"]
+mod clipboard_helper;
 #[path = "../../content/snippets/code_block/basic.rs"]
 mod code_block_basic;
 #[path = "../../content/snippets/code_block/inline.rs"]
@@ -259,12 +261,16 @@ mod empty_description;
 mod empty_extra;
 #[path = "../../content/snippets/empty/image.rs"]
 mod empty_image;
+#[path = "../../content/snippets/focus_trap/policy.rs"]
+mod focus_trap_policy;
 #[path = "../../content/snippets/form/basic.rs"]
 mod form_basic;
 #[path = "../../content/snippets/form/inline.rs"]
 mod form_inline;
 #[path = "../../content/snippets/form/validation.rs"]
 mod form_validation;
+#[path = "../../content/snippets/group_box/basic.rs"]
+mod group_box_basic;
 #[path = "../../content/snippets/heat_bar/events.rs"]
 mod heat_bar_events;
 #[path = "../../content/snippets/horizontal_list/basic.rs"]
@@ -273,6 +279,8 @@ mod horizontal_list_basic;
 mod horizontal_list_divider;
 #[path = "../../content/snippets/horizontal_list/draggable.rs"]
 mod horizontal_list_draggable;
+#[path = "../../content/snippets/hover_card/basic.rs"]
+mod hover_card_basic;
 #[path = "../../content/snippets/icon/colors.rs"]
 mod icon_colors;
 #[path = "../../content/snippets/icon/lucide.rs"]
@@ -369,6 +377,8 @@ mod message_box_manual_close;
 mod message_formatting;
 #[path = "../../content/snippets/message/types.rs"]
 mod message_types;
+#[path = "../../content/snippets/native_menu/descriptor.rs"]
+mod native_menu_descriptor;
 #[path = "../../content/snippets/notification/types.rs"]
 mod notification_types;
 #[path = "../../content/snippets/operation/basic.rs"]
@@ -469,6 +479,8 @@ mod ring_chart_basic;
 mod ring_chart_custom;
 #[path = "../../content/snippets/ring_chart/external.rs"]
 mod ring_chart_external;
+#[path = "../../content/snippets/scrollable_mask/basic.rs"]
+mod scrollable_mask_basic;
 #[path = "../../content/snippets/scrollbar/basic.rs"]
 mod scrollbar_basic;
 #[path = "../../content/snippets/searchable_list/basic.rs"]
@@ -679,6 +691,8 @@ mod titlebar_window_controls;
 mod titlebar_window_controls_left;
 #[path = "../../content/snippets/titlebar/window_controls_right.rs"]
 mod titlebar_window_controls_right;
+#[path = "../../content/snippets/toggle/basic.rs"]
+mod toggle_basic;
 #[path = "../../content/snippets/tooltip/basic.rs"]
 mod tooltip_basic;
 #[path = "../../content/snippets/tooltip/more.rs"]

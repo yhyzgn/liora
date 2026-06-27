@@ -93,6 +93,7 @@ pub mod tree_demo;
 pub mod tree_select_demo;
 pub mod typography_demo;
 pub mod upload_demo;
+pub mod utility_components_demo;
 pub mod virtualized_list_demo;
 pub mod virtualized_table_demo;
 pub mod virtualized_tree_demo;
@@ -238,6 +239,11 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "TextView 文档视图",
             description: "轻量文档块和 Markdown 子集渲染",
             render: |cx| text_view_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "Toggle 工具控件",
+            description: "Toggle、GroupBox、HoverCard 等轻量控件和 facade",
+            render: |cx| utility_components_demo::render(cx).into(),
         },
         DemoEntry {
             name: "DockLayout 停靠布局",
@@ -736,6 +742,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Switch" => Some(form_controls_demo::render_switch(cx)),
         "Table" => Some(table_demo::render(cx).into()),
         "TextView" => Some(text_view_demo::render(cx).into()),
+        "Toggle" => Some(utility_components_demo::render(cx).into()),
         "Theme" => Some(theme_demo::render(cx).into()),
         "Tabs" => Some(tabs_demo::render(cx).into()),
         "Tag" => Some(tag_demo::render(cx).into()),
@@ -748,6 +755,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Tray" => Some(tray_demo::render(cx).into()),
         "Transfer" => Some(transfer_demo::render(cx).into()),
         "TreeSelect" => Some(tree_select_demo::render(cx).into()),
+        "UtilityComponents" => Some(utility_components_demo::render(cx).into()),
         "Tree" => Some(tree_demo::render(cx).into()),
         "Typography" => Some(typography_demo::render(cx).into()),
         "Upload" => Some(upload_demo::render(cx).into()),
