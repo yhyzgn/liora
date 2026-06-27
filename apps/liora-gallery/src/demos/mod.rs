@@ -62,6 +62,7 @@ pub mod scrollbar_demo;
 pub mod searchable_list_demo;
 pub mod segment_ratio_bar_demo;
 pub mod segmented_demo;
+pub mod settings_demo;
 pub mod sheet_demo;
 pub mod shell_demo;
 pub mod sidebar_demo;
@@ -224,6 +225,11 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "Rate 评分",
             description: "独立评分用法",
             render: |cx| form_controls_demo::render_rate(cx),
+        },
+        DemoEntry {
+            name: "Settings UI 设置页",
+            description: "设置页、设置分组和设置项布局模式",
+            render: |cx| settings_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Form 表单",
@@ -699,6 +705,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Sheet" => Some(sheet_demo::render(cx).into()),
         "TitleBar" => Some(titlebar_demo::render(cx).into()),
         "Segmented" => Some(segmented_demo::render(cx).into()),
+        "Settings" => Some(settings_demo::render(cx).into()),
         "Select" => Some(form_controls_demo::render_select(cx)),
         "Skeleton" => Some(skeleton_demo::render(cx).into()),
         "Sparkline" => Some(sparkline_demo::render(cx).into()),

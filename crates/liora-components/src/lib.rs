@@ -118,6 +118,7 @@ pub mod segment_ratio_bar;
 pub mod segmented;
 pub mod select;
 pub mod selectable_text;
+pub mod settings;
 pub mod sheet;
 pub mod shell;
 pub mod sidebar;
@@ -244,6 +245,7 @@ pub use segment_ratio_bar::*;
 pub use segmented::*;
 pub use select::*;
 pub use selectable_text::*;
+pub use settings::*;
 pub use sheet::*;
 pub use shell::*;
 pub use sidebar::*;
@@ -1141,9 +1143,11 @@ mod component_backlog_export_tests {
         assert!(source.contains("pub mod combobox;"));
         assert!(source.contains("pub mod status_bar;"));
         assert!(source.contains("pub mod sheet;"));
+        assert!(source.contains("pub mod settings;"));
         assert!(source.contains("pub use searchable_list::*;"));
         assert!(source.contains("pub use combobox::*;"));
         assert!(source.contains("pub use status_bar::*;"));
         assert!(source.contains("pub use sheet::*;"));
+        assert!(source.contains("pub use settings::*;"));
     }
 }

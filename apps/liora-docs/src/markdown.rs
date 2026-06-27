@@ -125,6 +125,7 @@ const SEARCHABLE_LIST_DOC: &str = include_str!("../content/pages/searchable_list
 const SIDEBAR_DOC: &str = include_str!("../content/pages/sidebar.md");
 const SHELL_DOC: &str = include_str!("../content/pages/shell.md");
 const SHEET_DOC: &str = include_str!("../content/pages/sheet.md");
+const SETTINGS_DOC: &str = include_str!("../content/pages/settings.md");
 const SEGMENTED_DOC: &str = include_str!("../content/pages/segmented.md");
 const SELECT_DOC: &str = include_str!("../content/pages/select.md");
 const SKELETON_DOC: &str = include_str!("../content/pages/skeleton.md");
@@ -450,6 +451,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Segmented",
         markdown: SEGMENTED_DOC,
+    },
+    DocPage {
+        title: "Settings",
+        markdown: SETTINGS_DOC,
     },
     DocPage {
         title: "Select",
@@ -1430,6 +1435,8 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "page_header/extra.rs" => Some(include_str!("../content/snippets/page_header/extra.rs")),
         "page_header/full.rs" => Some(include_str!("../content/snippets/page_header/full.rs")),
         "segmented/basic.rs" => Some(include_str!("../content/snippets/segmented/basic.rs")),
+        "settings/page.rs" => Some(include_str!("../content/snippets/settings/page.rs")),
+        "settings/sensitive.rs" => Some(include_str!("../content/snippets/settings/sensitive.rs")),
         "segmented/disabled.rs" => Some(include_str!("../content/snippets/segmented/disabled.rs")),
         "segmented/block.rs" => Some(include_str!("../content/snippets/segmented/block.rs")),
         "tooltip/basic.rs" => Some(include_str!("../content/snippets/tooltip/basic.rs")),
@@ -1944,6 +1951,10 @@ struct LiveDemoContent {
     selects: Vec<Entity<Select>>,
     sliders: Vec<Entity<Slider>>,
     switches: Vec<Entity<Switch>>,
+    settings_auto_save: Option<Entity<Switch>>,
+    settings_telemetry: Option<Entity<Switch>>,
+    settings_theme: Option<Entity<Select>>,
+    settings_font_size: Option<Entity<Input>>,
     segmenteds: Vec<Entity<liora_components::Segmented>>,
     paginations: Vec<Entity<liora_components::Pagination>>,
     tabs: Vec<Entity<liora_components::Tabs>>,
@@ -1995,6 +2006,10 @@ impl LiveDemoContent {
         let mut selects = Vec::new();
         let mut sliders = Vec::new();
         let mut switches = Vec::new();
+        let mut settings_auto_save = None;
+        let mut settings_telemetry = None;
+        let mut settings_theme = None;
+        let mut settings_font_size = None;
         let mut segmenteds = Vec::new();
         let mut paginations = Vec::new();
         let mut tabs = Vec::new();
@@ -2151,6 +2166,15 @@ impl LiveDemoContent {
                                 .into_any_element()
                         })
                 }));
+            }
+            "SettingsPageBasic" => {
+                settings_auto_save = Some(cx.new(|cx| Switch::new(true, cx)));
+                settings_theme =
+                    Some(cx.new(|cx| Select::new(vec!["System", "Light", "Dark"], Some(0), cx)));
+                settings_font_size = Some(cx.new(|cx| Input::new("14", cx).width(px(88.0))));
+            }
+            "SettingsSensitive" => {
+                settings_telemetry = Some(cx.new(|cx| Switch::new(false, cx)));
             }
             "InputBasic" => {
                 inputs.push(cx.new(|cx| Input::new("", cx)));
@@ -2851,6 +2875,10 @@ impl LiveDemoContent {
             selects,
             sliders,
             switches,
+            settings_auto_save,
+            settings_telemetry,
+            settings_theme,
+            settings_font_size,
             segmenteds,
             paginations,
             tabs,
@@ -3194,6 +3222,8 @@ impl Render for LiveDemoContent {
             "TypographyParagraph" => Card::new(docs_typography_paragraph(_cx)).no_shadow().into_any_element(),
 
 
+            "SettingsPageBasic" => docs_settings_page_basic(self),
+            "SettingsSensitive" => docs_settings_sensitive(self),
             "SheetPlacements" => demo_row(vec![
                 Button::new("Right").icon_start(IconName::PanelRightOpen).on_click(|_, _, cx| {
                     liora_components::Sheet::new().title("Inspector").right().content(|_| docs_sheet_body("Right inspector")).show(cx);
@@ -5513,6 +5543,83 @@ impl Render for LiveDemoContent {
             ),
         }
     }
+}
+
+fn docs_settings_page_basic(content: &LiveDemoContent) -> AnyElement {
+    let Some(auto_save) = content.settings_auto_save.clone() else {
+        return Text::new("Settings demo unavailable").into_any_element();
+    };
+    let Some(theme_select) = content.settings_theme.clone() else {
+        return Text::new("Settings demo unavailable").into_any_element();
+    };
+    let Some(font_size) = content.settings_font_size.clone() else {
+        return Text::new("Settings demo unavailable").into_any_element();
+    };
+    liora_components::SettingsPage::new("Application Settings")
+        .description("Settings rows can host Switch, Select, Input, Button, or custom content.")
+        .group(
+            liora_components::SettingsGroup::new("Editor")
+                .description("Editing and save behavior")
+                .item(
+                    liora_components::SettingsItem::new("Auto save")
+                        .description("Save files when focus leaves the editor.")
+                        .icon(IconName::Save)
+                        .control(auto_save)
+                        .primary(),
+                )
+                .item(
+                    liora_components::SettingsItem::new("Font size")
+                        .description("Controls editor UI font size.")
+                        .icon(IconName::CaseSensitive)
+                        .control(font_size),
+                ),
+        )
+        .group(
+            liora_components::SettingsGroup::new("Appearance")
+                .item(
+                    liora_components::SettingsItem::new("Theme mode")
+                        .description("Follow system or force a light/dark theme.")
+                        .icon(IconName::Palette)
+                        .control(theme_select),
+                )
+                .item(
+                    liora_components::SettingsItem::new("Preview")
+                        .description("Open a small preview action.")
+                        .control(Button::new("Preview").small()),
+                ),
+        )
+        .into_any_element()
+}
+
+fn docs_settings_sensitive(content: &LiveDemoContent) -> AnyElement {
+    let Some(telemetry) = content.settings_telemetry.clone() else {
+        return Text::new("Settings demo unavailable").into_any_element();
+    };
+    liora_components::SettingsPage::new("Sensitive settings")
+        .group(
+            liora_components::SettingsGroup::new("Privacy")
+                .item(
+                    liora_components::SettingsItem::new("Telemetry")
+                        .description("Share anonymous product diagnostics.")
+                        .icon(IconName::Activity)
+                        .control(telemetry),
+                )
+                .item(
+                    liora_components::SettingsItem::new("Delete local cache")
+                        .description("Remove generated indexes and temporary package files.")
+                        .icon(IconName::Trash2)
+                        .danger()
+                        .control(Button::new("Delete").danger().small()),
+                )
+                .item(
+                    liora_components::SettingsItem::new("Enterprise policy")
+                        .description("Managed by organization policy.")
+                        .icon(IconName::Lock)
+                        .disabled(true)
+                        .control(Button::new("Locked").small().disabled(true)),
+                ),
+        )
+        .into_any_element()
 }
 
 fn docs_sheet_body(title: &'static str) -> impl IntoElement {

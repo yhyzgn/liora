@@ -489,6 +489,10 @@ mod segmented_block;
 mod segmented_disabled;
 #[path = "../../content/snippets/select/basic.rs"]
 mod select_basic;
+#[path = "../../content/snippets/settings/page.rs"]
+mod settings_page;
+#[path = "../../content/snippets/settings/sensitive.rs"]
+mod settings_sensitive;
 #[path = "../../content/snippets/sheet/controlled.rs"]
 mod sheet_controlled;
 #[path = "../../content/snippets/sheet/placements.rs"]
