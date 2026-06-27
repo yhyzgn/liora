@@ -505,7 +505,7 @@ let header = Space::new()
 Stateful controls should live in `gpui::Entity<T>` fields so focus, selection, popup state, and text values survive renders:
 
 ```rust
-use gpui::{Context, Entity, Render, Window};
+use gpui::{AppContext, Context, Entity, Render, Window};
 use liora::components::{Input, Switch};
 
 struct SettingsView {
@@ -536,6 +536,7 @@ impl Render for SettingsView {
 Icon primitives plus bundled Lucide icon names:
 
 ```rust
+use liora::core::Config;
 use liora::icons::Icon;
 use liora::icons_lucide::IconName;
 use liora::components::Button;
@@ -700,7 +701,7 @@ let actions = Space::new()
 ### Forms and stateful controls
 
 ```rust
-use gpui::{Context, Entity, Render, Window};
+use gpui::{AppContext, Context, Entity, Render, Window};
 use liora::components::{Button, Checkbox, Form, FormItem, Input, Space};
 
 struct LoginForm {
@@ -745,16 +746,19 @@ let menu = Menu::new()
     });
 ```
 
-### App shell with TitleBar and Sidebar
+### App shell with `Shell`, `TitleBar`, and `Sidebar`
 
-`TitleBar` owns native custom titlebar chrome and window-control areas. `Sidebar` owns app navigation panel layout, width, fixed header/footer slots, scrolling, and an optional brand/logo header. Keep stateful controls such as `Menu` in the parent view as `Entity<T>` fields. When `Sidebar` is placed in `Container::aside(...)`, add `.aside_passthrough()` so the sidebar owns its own width instead of being wrapped by the container's default aside panel. Both components are intentionally highly customizable: use their fluent style builders for common dimensions/colors/spacing, and fall back to `leading`, `center`, `action`, `header`, `child`, and `footer` slots for fully custom layouts.
+Use `Shell` for most application windows. It is the high-level Liora app-frame component that owns the common regions: optional custom `TitleBar`, header, left sidebar, right sidebar / inspector, scrollable main content, footer, and overlays. Use `TitleBar` and `Sidebar` directly when you are building a lower-level composition, but prefer `Shell` when you want a single fluent entry point for highly customizable app layout.
+
+Stateful controls such as `Menu` still belong in the parent view as `Entity<T>` fields. The example below uses only Liora SDK components for layout; application entrypoints may still use GPUI runtime types such as `Context`, `Entity`, `Render`, and `Window`.
 
 ```rust
-use gpui::{Context, Entity, Render, Window};
+use gpui::{AppContext, Context, Entity, Render, Window};
 use liora::components::{
-    AppWindowFrame, Button, Card, Container, Flex, Menu, MenuMode, Sidebar, Space, Text, Title,
-    TitleBar, TitleBarContentAlign, WindowControlsPosition, WindowFrameMode,
+    Button, Card, Menu, MenuMode, Shell, ShellOverlayPosition, Sidebar, Space, Text, Title, TitleBar, WindowFrameMode,
 };
+use liora::core::Config;
+use liora::icons::Icon;
 use liora::icons_lucide::IconName;
 
 struct AppShell {
@@ -777,56 +781,60 @@ impl AppShell {
 }
 
 impl Render for AppShell {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
-        AppWindowFrame::new(
-            "Acme Notes",
-            Container::new()
-                .aside(
-                    Sidebar::new()
-                        .id("app-sidebar")
-                        .brand("Acme Workspace")
-                        .brand_subtitle("Native GPUI")
-                        .logo(
-                            gpui::div()
-                                .size(gpui::px(32.0))
-                                .rounded(gpui::px(10.0))
-                                .bg(gpui::transparent_black()),
-                        )
-                        .header_padding(gpui::px(14.0))
-                        .content_padding(gpui::px(8.0))
-                        .footer_padding(gpui::px(12.0))
-                        .gap(gpui::px(8.0))
-                        .rounded(gpui::px(16.0))
-                        .child(self.menu.clone())
-                        .footer(Flex::new().padding_md().child(Text::new("v1.0"))),
-                )
-                .aside_passthrough()
-                .child(
-                    Flex::new().padding_lg().child(
-                        Card::new(
-                            Space::new()
-                                .vertical()
-                                .gap_sm()
-                                .child(Title::new("Dashboard").h3())
-                                .child(Text::new("Main content goes here.")),
-                        )
-                        .no_shadow(),
-                    ),
-                ),
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        let theme = cx.global::<Config>().theme.clone();
+
+        Shell::new(
+            Card::new(
+                Space::new()
+                    .vertical()
+                    .gap_sm()
+                    .child(Title::new("Dashboard").h3())
+                    .child(Text::new("Main content goes here.")),
+            )
+            .no_shadow(),
         )
+        .id("acme-shell")
         .mode(WindowFrameMode::Custom)
         .titlebar(
             TitleBar::new()
                 .title("Acme Notes")
                 .subtitle("Native GPUI app")
-                .height(gpui::px(52.0))
-                .padding_x(gpui::px(18.0))
-                .gap(gpui::px(10.0))
-                .actions_gap(gpui::px(6.0))
-                .content_align(TitleBarContentAlign::Start)
-                .window_controls_position(WindowControlsPosition::Right)
+                .height_units(52.0)
+                .padding_x_units(18.0)
+                .gap_units(10.0)
+                .actions_gap_units(6.0)
+                .window_controls(true)
                 .action(Button::new("New").small()),
         )
+        .sidebar(
+            Sidebar::new()
+                .id("app-sidebar")
+                .brand("Acme Workspace")
+                .brand_subtitle("Native GPUI")
+                .logo(Icon::new(IconName::Sparkles).size_units(20.0))
+                .expanded_width_units(280.0)
+                .header_padding_units(14.0)
+                .content_padding_units(8.0)
+                .footer_padding_units(12.0)
+                .gap_units(8.0)
+                .rounded_units(16.0)
+                .scrollable()
+                .child(self.menu.clone())
+                .footer(Text::new("v1.0").sm()),
+        )
+        .footer(Text::new("Ready").xs())
+        .footer_height_units(40.0)
+        .header_background(theme.neutral.card)
+        .footer_background(theme.neutral.card)
+        .body_background(theme.neutral.body)
+        .main_background(theme.neutral.card)
+        .main_rounded_units(18.0)
+        .overlay(Text::new("Saved").xs())
+        .overlay_position(ShellOverlayPosition::TopRight)
+        .overlay_inset_units(16.0)
+        .main_scroll()
+        .main_padding_units(24.0)
     }
 }
 ```
@@ -875,7 +883,7 @@ let heat = HeatBar::new([
 ### Code display and editor
 
 ```rust
-use gpui::{Context, Entity, Render, Window};
+use gpui::{AppContext, Context, Entity, Render, Window};
 use liora::components::{CodeBlock, CodeDiagnostic, CodeEditor};
 
 let snippet = CodeBlock::new("cargo run -p liora-gallery")
@@ -1172,14 +1180,14 @@ impl Render for OrdersView {
 
 | Category | Components |
 |---|---|
-| Basic and layout | `Button`, `ButtonGroup`, `Icon`, `Link`, `Text`, `Title`, `Paragraph`, `Space`, `Divider`, `Row`, `Col`, `Container`, `Sidebar`, `TitleBar`, `Flex`, `Scrollbar`, `Splitter`, `Affix`, `Backtop` |
+| Basic and layout | `Button`, `ButtonGroup`, `Icon`, `Link`, `Text`, `Title`, `Paragraph`, `Space`, `Divider`, `Row`, `Col`, `Container`, `Shell`, `Sidebar`, `TitleBar`, `Flex`, `Scrollbar`, `Splitter`, `Affix`, `Backtop` |
 | Form controls | `Input`, `InputNumber`, `Textarea`, `Checkbox`, `CheckboxGroup`, `Radio`, `RadioGroup`, `Switch`, `Select`, `Slider`, `Form`, `FormItem`, `Rate`, `DatePicker`, `TimePicker`, `DateTimePicker`, `Upload`, `Cascader`, `Transfer`, `ColorPicker`, `Autocomplete`, `InputTag`, `Mention`, `TreeSelect`, `OtpInput` |
 | Feedback and overlays | `Alert`, `Tooltip`, `Popover`, `Popconfirm`, `Dialog`, `Drawer`, `Message`, `Notification`, `MessageBox`, `Loading`, `Dropdown`, `DropdownButton`, `Preview`, `Tour` |
 | Navigation | `Menu`, `Tabs`, `Breadcrumb`, `Steps`, `PageHeader`, `Anchor`, `Accordion` |
 | Data display | `Table`, `VirtualizedTable`, `VirtualizedTree`, `VirtualizedList`, `Progress`, `Skeleton`, `Empty`, `Result`, `Descriptions`, `Timeline`, `Tree`, `Pagination`, `Statistic`, `Segmented`, `Tag`, `Avatar`, `Badge`, `Calendar`, `Carousel`, `Image`, `Watermark`, `Kbd` |
 | Charts and metrics | `LineChart`, `AreaChart`, `BarChart`, `PieChart`, `RingChart`, `Sparkline`, `SignalMeter`, `HeatBar`, `SegmentRatioBar` |
 | Editing and utility | `CodeBlock`, `CodeEditor`, `QrCode`, `Timer`, `Label`, `Operation`, draggable list helpers |
-| App shell and platform | `AppWindowFrame`, `TitleBar`, `Sidebar`, `WindowFrameMode`, `liora-tray`, Linux desktop identity helpers, package metadata helpers, updater helpers |
+| App shell and platform | `Shell`, `AppWindowFrame`, `TitleBar`, `Sidebar`, `WindowFrameMode`, `liora-tray`, Linux desktop identity helpers, package metadata helpers, updater helpers |
 
 ## Native packaging
 

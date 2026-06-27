@@ -116,6 +116,7 @@ pub mod segment_ratio_bar;
 pub mod segmented;
 pub mod select;
 pub mod selectable_text;
+pub mod shell;
 pub mod sidebar;
 pub mod signal_meter;
 pub mod skeleton;
@@ -237,6 +238,7 @@ pub use segment_ratio_bar::*;
 pub use segmented::*;
 pub use select::*;
 pub use selectable_text::*;
+pub use shell::*;
 pub use sidebar::*;
 pub use signal_meter::*;
 pub use skeleton::*;
@@ -1046,5 +1048,19 @@ mod shell_component_api_tests {
             .rounded(gpui::px(12.0))
             .scrollable()
             .collapse_mode(SidebarCollapseMode::Full);
+
+        let _shell = Shell::new("body")
+            .id("app-shell")
+            .mode(WindowFrameMode::Custom)
+            .titlebar(TitleBar::new().title("Liora"))
+            .header("header")
+            .sidebar(Sidebar::new())
+            .right_sidebar(Sidebar::new().right())
+            .main("main")
+            .footer("footer")
+            .overlay("overlay")
+            .main_scroll()
+            .main_padding_units(24.0)
+            .background(gpui::transparent_black());
     }
 }

@@ -504,7 +504,7 @@ let header = Space::new()
 有内部状态的控件应放在 `gpui::Entity<T>` 字段里，这样焦点、选区、弹窗状态、文本值才能跨 render 保持稳定：
 
 ```rust
-use gpui::{Context, Entity, Render, Window};
+use gpui::{AppContext, Context, Entity, Render, Window};
 use liora::components::{Input, Switch};
 
 struct SettingsView {
@@ -535,6 +535,7 @@ impl Render for SettingsView {
 图标 primitive 与内置 Lucide icon 名称：
 
 ```rust
+use liora::core::Config;
 use liora::icons::Icon;
 use liora::icons_lucide::IconName;
 use liora::components::Button;
@@ -699,7 +700,7 @@ let actions = Space::new()
 ### 表单与状态控件
 
 ```rust
-use gpui::{Context, Entity, Render, Window};
+use gpui::{AppContext, Context, Entity, Render, Window};
 use liora::components::{Button, Checkbox, Form, FormItem, Input, Space};
 
 struct LoginForm {
@@ -744,16 +745,19 @@ let menu = Menu::new()
     });
 ```
 
-### TitleBar 和 Sidebar 应用框架
+### `Shell`、`TitleBar` 和 `Sidebar` 应用框架
 
-`TitleBar` 负责原生自定义标题栏、拖动区域和窗口控制按钮；`Sidebar` 负责侧栏宽度、固定 header/footer、滚动内容区，以及可选的 brand/logo 顶部区域。`Menu`、`Input` 等有状态组件仍应保存在父 View 的 `Entity<T>` 字段中。当 `Sidebar` 放入 `Container::aside(...)` 时，需要加 `.aside_passthrough()`，让 `Sidebar` 自己管理宽度，避免 `Container` 再包一层默认侧栏导致布局错乱。两个组件都支持高度自定义：常见尺寸、颜色、间距用 fluent builder；复杂结构则用 `leading`、`center`、`action`、`header`、`child`、`footer` 等插槽完全接管。
+大多数应用窗口优先使用 `Shell`。它是 Liora 高层应用框架控件，统一管理可选自定义 `TitleBar`、header、左侧 sidebar、右侧 sidebar / inspector、可滚动 main、footer 和 overlay 等区域。只有在需要更底层组合时，才直接使用 `TitleBar`、`Sidebar`、`Container` 和 `AppWindowFrame`。
+
+`Menu`、`Input` 等有状态组件仍应保存在父 View 的 `Entity<T>` 字段中。下面示例的布局全部由 Liora SDK 组件完成；应用入口仍可以使用 `Context`、`Entity`、`Render`、`Window` 等 GPUI 运行时类型。
 
 ```rust
-use gpui::{Context, Entity, Render, Window};
+use gpui::{AppContext, Context, Entity, Render, Window};
 use liora::components::{
-    AppWindowFrame, Button, Card, Container, Flex, Menu, MenuMode, Sidebar, Space, Text, Title,
-    TitleBar, TitleBarContentAlign, WindowControlsPosition, WindowFrameMode,
+    Button, Card, Menu, MenuMode, Shell, ShellOverlayPosition, Sidebar, Space, Text, Title, TitleBar, WindowFrameMode,
 };
+use liora::core::Config;
+use liora::icons::Icon;
 use liora::icons_lucide::IconName;
 
 struct AppShell {
@@ -776,56 +780,60 @@ impl AppShell {
 }
 
 impl Render for AppShell {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
-        AppWindowFrame::new(
-            "Acme Notes",
-            Container::new()
-                .aside(
-                    Sidebar::new()
-                        .id("app-sidebar")
-                        .brand("Acme Workspace")
-                        .brand_subtitle("Native GPUI")
-                        .logo(
-                            gpui::div()
-                                .size(gpui::px(32.0))
-                                .rounded(gpui::px(10.0))
-                                .bg(gpui::transparent_black()),
-                        )
-                        .header_padding(gpui::px(14.0))
-                        .content_padding(gpui::px(8.0))
-                        .footer_padding(gpui::px(12.0))
-                        .gap(gpui::px(8.0))
-                        .rounded(gpui::px(16.0))
-                        .child(self.menu.clone())
-                        .footer(Flex::new().padding_md().child(Text::new("v1.0"))),
-                )
-                .aside_passthrough()
-                .child(
-                    Flex::new().padding_lg().child(
-                        Card::new(
-                            Space::new()
-                                .vertical()
-                                .gap_sm()
-                                .child(Title::new("Dashboard").h3())
-                                .child(Text::new("Main content goes here.")),
-                        )
-                        .no_shadow(),
-                    ),
-                ),
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        let theme = cx.global::<Config>().theme.clone();
+
+        Shell::new(
+            Card::new(
+                Space::new()
+                    .vertical()
+                    .gap_sm()
+                    .child(Title::new("Dashboard").h3())
+                    .child(Text::new("Main content goes here.")),
+            )
+            .no_shadow(),
         )
+        .id("acme-shell")
         .mode(WindowFrameMode::Custom)
         .titlebar(
             TitleBar::new()
                 .title("Acme Notes")
                 .subtitle("Native GPUI app")
-                .height(gpui::px(52.0))
-                .padding_x(gpui::px(18.0))
-                .gap(gpui::px(10.0))
-                .actions_gap(gpui::px(6.0))
-                .content_align(TitleBarContentAlign::Start)
-                .window_controls_position(WindowControlsPosition::Right)
+                .height_units(52.0)
+                .padding_x_units(18.0)
+                .gap_units(10.0)
+                .actions_gap_units(6.0)
+                .window_controls(true)
                 .action(Button::new("New").small()),
         )
+        .sidebar(
+            Sidebar::new()
+                .id("app-sidebar")
+                .brand("Acme Workspace")
+                .brand_subtitle("Native GPUI")
+                .logo(Icon::new(IconName::Sparkles).size_units(20.0))
+                .expanded_width_units(280.0)
+                .header_padding_units(14.0)
+                .content_padding_units(8.0)
+                .footer_padding_units(12.0)
+                .gap_units(8.0)
+                .rounded_units(16.0)
+                .scrollable()
+                .child(self.menu.clone())
+                .footer(Text::new("v1.0").sm()),
+        )
+        .footer(Text::new("Ready").xs())
+        .footer_height_units(40.0)
+        .header_background(theme.neutral.card)
+        .footer_background(theme.neutral.card)
+        .body_background(theme.neutral.body)
+        .main_background(theme.neutral.card)
+        .main_rounded_units(18.0)
+        .overlay(Text::new("Saved").xs())
+        .overlay_position(ShellOverlayPosition::TopRight)
+        .overlay_inset_units(16.0)
+        .main_scroll()
+        .main_padding_units(24.0)
     }
 }
 ```
@@ -874,7 +882,7 @@ let heat = HeatBar::new([
 ### 代码展示与编辑器
 
 ```rust
-use gpui::{Context, Entity, Render, Window};
+use gpui::{AppContext, Context, Entity, Render, Window};
 use liora::components::{CodeBlock, CodeDiagnostic, CodeEditor};
 
 let snippet = CodeBlock::new("cargo run -p liora-gallery")
@@ -1171,14 +1179,14 @@ impl Render for OrdersView {
 
 | 分类 | 组件 |
 |---|---|
-| Basic / Layout 基础布局 | `Button`, `ButtonGroup`, `Icon`, `Link`, `Text`, `Title`, `Paragraph`, `Space`, `Divider`, `Row`, `Col`, `Container`, `Sidebar`, `TitleBar`, `Flex`, `Scrollbar`, `Splitter`, `Affix`, `Backtop` |
+| Basic / Layout 基础布局 | `Button`, `ButtonGroup`, `Icon`, `Link`, `Text`, `Title`, `Paragraph`, `Space`, `Divider`, `Row`, `Col`, `Container`, `Shell`, `Sidebar`, `TitleBar`, `Flex`, `Scrollbar`, `Splitter`, `Affix`, `Backtop` |
 | Form 表单 | `Input`, `InputNumber`, `Textarea`, `Checkbox`, `CheckboxGroup`, `Radio`, `RadioGroup`, `Switch`, `Select`, `Slider`, `Form`, `FormItem`, `Rate`, `DatePicker`, `TimePicker`, `DateTimePicker`, `Upload`, `Cascader`, `Transfer`, `ColorPicker`, `Autocomplete`, `InputTag`, `Mention`, `TreeSelect`, `OtpInput` |
 | Feedback / Overlay 反馈浮层 | `Alert`, `Tooltip`, `Popover`, `Popconfirm`, `Dialog`, `Drawer`, `Message`, `Notification`, `MessageBox`, `Loading`, `Dropdown`, `DropdownButton`, `Preview`, `Tour` |
 | Navigation 导航 | `Menu`, `Tabs`, `Breadcrumb`, `Steps`, `PageHeader`, `Anchor`, `Accordion` |
 | Data 数据展示 | `Table`, `VirtualizedTable`, `VirtualizedTree`, `VirtualizedList`, `Progress`, `Skeleton`, `Empty`, `Result`, `Descriptions`, `Timeline`, `Tree`, `Pagination`, `Statistic`, `Segmented`, `Tag`, `Avatar`, `Badge`, `Calendar`, `Carousel`, `Image`, `Watermark`, `Kbd` |
 | Charts / Metrics 图表指标 | `LineChart`, `AreaChart`, `BarChart`, `PieChart`, `RingChart`, `Sparkline`, `SignalMeter`, `HeatBar`, `SegmentRatioBar` |
 | Editing / Utility 编辑工具 | `CodeBlock`, `CodeEditor`, `QrCode`, `Timer`, `Label`, `Operation`, draggable list helpers |
-| App shell / Platform 平台 | `AppWindowFrame`, `TitleBar`, `Sidebar`, `WindowFrameMode`, `liora-tray`, Linux desktop identity helpers, package metadata helpers, updater helpers |
+| App shell / Platform 平台 | `Shell`, `AppWindowFrame`, `TitleBar`, `Sidebar`, `WindowFrameMode`, `liora-tray`, Linux desktop identity helpers, package metadata helpers, updater helpers |
 
 ## 原生打包
 
