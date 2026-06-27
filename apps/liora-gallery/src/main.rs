@@ -869,6 +869,7 @@ impl Render for Gallery {
                     .flex()
                     .flex_col()
                     .h_full()
+                    .min_h_0()
                     .gap_2()
                     .p_2()
                     .child(div().flex_none().child(self.nav_filter.clone()))
@@ -877,6 +878,7 @@ impl Render for Gallery {
                             .id("gallery-nav-scroll")
                             .flex_1()
                             .min_h_0()
+                            .h_full()
                             .w_full()
                             .overflow_y_scroll()
                             .track_scroll(&self.nav_scroll)
@@ -1602,6 +1604,8 @@ mod shell_regression_tests {
             .next()
             .expect("shell should end before app frame");
         assert!(shell.contains(r#".id("gallery-nav-scroll")"#));
+        assert!(shell.contains(".h_full()"));
+        assert!(shell.contains(".min_h_0()"));
         assert!(shell.contains(".overflow_y_scroll()"));
         assert!(shell.contains(".track_scroll(&self.nav_scroll)"));
         assert!(!source.contains("gallery.refresh_nav_menu_for_query(query, cx);"));

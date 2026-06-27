@@ -194,6 +194,7 @@ impl RenderOnce for Container {
                 .flex_none()
                 .w(aside_width)
                 .h_full()
+                .min_h_0()
                 .border_r_1()
                 .border_color(theme.neutral.border)
                 .id(aside_id)
@@ -282,15 +283,34 @@ mod tests {
     }
 
     #[test]
-    fn container_main_scroll_region_is_height_constrained() {
+    fn container_scroll_regions_are_height_constrained() {
         let production = include_str!("container.rs")
             .split("#[cfg(test)]")
             .next()
             .unwrap();
+        let main_region = production
+            .split("let main = gpui::div()")
+            .nth(1)
+            .and_then(|part| part.split("let mut body = gpui::div()").next())
+            .expect("Container main region should exist");
+        let aside_region = production
+            .split("let aside_el = gpui::div()")
+            .nth(1)
+            .and_then(|part| part.split("if aside_right").next())
+            .expect("Container aside region should exist");
 
         assert!(
-            production.contains(".h_full()\n            .id(main_id)"),
+            main_region.contains(".flex_1()")
+                && main_region.contains(".min_h_0()")
+                && main_region.contains(".h_full()")
+                && main_region.contains(".when(main_scroll, |s| s.overflow_y_scroll())"),
             "main scroll region needs h_full before overflow_y_scroll so it forms a bounded viewport"
+        );
+        assert!(
+            aside_region.contains(".h_full()")
+                && aside_region.contains(".min_h_0()")
+                && aside_region.contains(".when(aside_scroll, |s| s.overflow_y_scroll())"),
+            "aside scroll region needs min_h_0 with h_full so child scroll views stay bounded"
         );
     }
 }
