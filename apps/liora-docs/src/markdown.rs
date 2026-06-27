@@ -8119,7 +8119,9 @@ fn render_code_block(
         code
     };
     let mut code_block = LioraCodeBlock::new(rendered_code);
-    code_block = code_block.selectable(true);
+    code_block = code_block.selectable(true).on_copy(|_, _, _| {
+        toast_success!("Code copied");
+    });
     if let Some(language) = language {
         code_block = code_block.language(language.as_ref());
     }
@@ -10155,6 +10157,21 @@ mod tests {
         assert!(render_code_block.contains("LioraCodeBlock::new(rendered_code)"));
         assert!(!render_code_block.contains("reference_annotated_code"));
         assert!(!render_code_block.contains("explain_reference_statement"));
+    }
+
+    #[test]
+    fn docs_markdown_code_block_copy_shows_success_toast() {
+        let source = include_str!("markdown.rs");
+        let render_code_block = &source[source
+            .find("fn render_code_block(")
+            .expect("render_code_block should exist")
+            ..source
+                .find("fn collect_live_demo_components(")
+                .expect("collect_live_demo_components should follow")];
+
+        assert!(render_code_block.contains(".on_copy("));
+        assert!(render_code_block.contains("toast_success!"));
+        assert!(render_code_block.contains("Code copied"));
     }
 
     #[test]
