@@ -1147,6 +1147,28 @@ fn render_overlays(window: &mut gpui::Window, cx: &mut gpui::App) {
 }
 ```
 
+Plain `Popover` content gets default 16 px padding so simple text/card bubbles are not cramped. If your popup body is already a complete surface (for example a menu, command palette, or custom confirmation panel), remove the shared padding and let that body own its spacing:
+
+```rust
+use liora::components::{Button, Popover};
+
+let popup = Popover::new(Button::new("Actions"))
+    .flush_content()
+    .content(|_window, _cx| {
+        // Your menu/panel root controls min width, padding, scrolling, and item spacing.
+        liora::components::Space::new()
+            .padding_md()
+            .child(Button::new("Archive"))
+            .child(Button::new("Delete").danger())
+    });
+
+let roomy_popup = Popover::new(Button::new("Details"))
+    .content_padding(gpui::px(20.0))
+    .content(|_window, _cx| "Padded plain content");
+```
+
+`Dropdown`, `DropdownButton`, `Menu` submenus, and `Popconfirm` already use this flush mode internally, so their menus and confirmation panels keep consistent dimensions across placements.
+
 ### Keep app state in app views
 
 Do not put product data models in `liora-components`. Store app state in your GPUI view/entity and pass only display values/callbacks to components:

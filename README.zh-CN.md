@@ -1146,6 +1146,28 @@ fn render_overlays(window: &mut gpui::Window, cx: &mut gpui::App) {
 }
 ```
 
+普通 `Popover` 内容默认带 16 px 内边距，适合简单文本或卡片气泡，避免内容贴边。如果你的弹层主体本身已经是完整 surface（例如菜单、命令面板、自定义确认框），应移除共享 padding，让主体自己控制宽度、留白、滚动和条目间距：
+
+```rust
+use liora::components::{Button, Popover};
+
+let popup = Popover::new(Button::new("Actions"))
+    .flush_content()
+    .content(|_window, _cx| {
+        // 菜单/面板根节点自己控制 min width、padding、scrolling 和 item spacing。
+        liora::components::Space::new()
+            .padding_md()
+            .child(Button::new("Archive"))
+            .child(Button::new("Delete").danger())
+    });
+
+let roomy_popup = Popover::new(Button::new("Details"))
+    .content_padding(gpui::px(20.0))
+    .content(|_window, _cx| "Padded plain content");
+```
+
+`Dropdown`、`DropdownButton`、`Menu` 子菜单和 `Popconfirm` 已经在内部使用 flush 模式，因此菜单和确认面板在不同 placement 下会保持一致的尺寸和布局节奏。
+
 ### 应用状态留在应用层
 
 不要把产品数据模型放进 `liora-components`。应用状态应存在自己的 GPUI view/entity 中，只把展示值和回调传给组件：

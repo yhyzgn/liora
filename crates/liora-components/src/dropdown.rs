@@ -110,6 +110,7 @@ impl RenderOnce for Dropdown {
             .id(dropdown_id.clone())
             .placement(self.placement)
             .offset(px(4.0))
+            .flush_content()
             .close_on_click_outside(close_on_click_outside)
             .close_on_escape(close_on_escape)
             .content(move |_window, _cx| {
@@ -163,6 +164,16 @@ impl IntoElement for Dropdown {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn dropdown_flushes_shared_popover_padding_for_menu_layout() {
+        let source = include_str!("dropdown.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(source.contains(".flush_content()"));
+    }
+
     #[test]
     fn dropdown_inherits_popover_motion_shell() {
         let source = include_str!("dropdown.rs")

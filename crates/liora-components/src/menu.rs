@@ -384,6 +384,7 @@ impl Menu {
             .id(format!("{}-collapsed-popover-{}", self.id, id))
             .close_on_escape(self.close_on_escape)
             .placement(Placement::RightStart)
+            .flush_content()
             .content({
                 let popover_id: SharedString =
                     format!("{}-collapsed-popover-{}", self.id, id).into();
@@ -668,6 +669,7 @@ impl Menu {
         .id(format!("{}-horizontal-popover-{}", self.id, id))
         .close_on_escape(self.close_on_escape)
         .placement(Placement::BottomStart)
+        .flush_content()
         .content({
             let popover_id: SharedString = format!("{}-horizontal-popover-{}", self.id, id).into();
             let children: Vec<MenuItem> = submenu
@@ -938,6 +940,16 @@ impl Render for Menu {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn menu_popovers_flush_shared_padding_for_menu_layout() {
+        let source = include_str!("menu.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(source.contains(".flush_content()"));
+    }
+
     use super::*;
 
     #[test]

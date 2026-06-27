@@ -131,6 +131,7 @@ impl RenderOnce for Popconfirm {
         Popover::new(self.trigger)
             .id(trigger_id)
             .placement(self.placement)
+            .flush_content()
             .close_on_click_outside(close_on_click_outside)
             .close_on_escape(close_on_escape)
             .content(move |_window, _cx| {
@@ -193,5 +194,18 @@ impl IntoElement for Popconfirm {
     type Element = Component<Self>;
     fn into_element(self) -> Self::Element {
         Component::new(self)
+    }
+}
+
+#[cfg(test)]
+mod padding_regression_tests {
+    #[test]
+    fn popconfirm_flushes_shared_popover_padding_for_confirm_panel() {
+        let source = include_str!("popconfirm.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(source.contains(".flush_content()"));
     }
 }

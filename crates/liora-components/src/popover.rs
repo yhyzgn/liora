@@ -49,6 +49,7 @@ pub struct Popover {
     close_on_click_outside: bool,
     close_on_escape: bool,
     trigger_id: Option<ElementId>,
+    content_padding: Option<Pixels>,
 }
 
 /// Fluent native GPUI component for rendering Liora popover view.
@@ -60,6 +61,7 @@ pub struct PopoverView {
     close_on_click_outside: bool,
     close_on_escape: bool,
     id: SharedString,
+    content_padding: Option<Pixels>,
     on_close: Arc<dyn Fn(&mut Window, &mut App) + 'static>,
 }
 
@@ -73,6 +75,7 @@ impl PopoverView {
         close_on_click_outside: bool,
         close_on_escape: bool,
         id: SharedString,
+        content_padding: Option<Pixels>,
         on_close: impl Fn(&mut Window, &mut App) + 'static,
     ) -> Self {
         Self {
@@ -83,6 +86,7 @@ impl PopoverView {
             close_on_click_outside,
             close_on_escape,
             id,
+            content_padding,
             on_close: Arc::new(on_close),
         }
     }
@@ -98,6 +102,7 @@ impl Render for PopoverView {
         let close_on_click_outside = self.close_on_click_outside;
         let close_on_escape = self.close_on_escape;
         let id = self.id.clone();
+        let content_padding = self.content_padding;
 
         let content = (self.content)(_window, cx);
         let viewport_size = _window.viewport_size();
@@ -162,7 +167,7 @@ impl Render for PopoverView {
                             .border_color(theme.neutral.border)
                             .rounded(px(theme.radius.md))
                             .shadow_lg()
-                            .p_4()
+                            .when_some(content_padding, |s, padding| s.p(padding))
                             .child(content),
                     )),
             )
@@ -204,16 +209,16 @@ fn popover_anchor_point(
 
 fn popover_anchor_corner(placement: Placement) -> gpui::Anchor {
     match placement {
-        Placement::Top => gpui::Anchor::BottomLeft,
+        Placement::Top => gpui::Anchor::BottomCenter,
         Placement::TopStart => gpui::Anchor::BottomLeft,
         Placement::TopEnd => gpui::Anchor::BottomRight,
-        Placement::Bottom => gpui::Anchor::TopLeft,
+        Placement::Bottom => gpui::Anchor::TopCenter,
         Placement::BottomStart => gpui::Anchor::TopLeft,
         Placement::BottomEnd => gpui::Anchor::TopRight,
-        Placement::Left => gpui::Anchor::TopRight,
+        Placement::Left => gpui::Anchor::RightCenter,
         Placement::LeftStart => gpui::Anchor::TopRight,
         Placement::LeftEnd => gpui::Anchor::BottomRight,
-        Placement::Right => gpui::Anchor::TopLeft,
+        Placement::Right => gpui::Anchor::LeftCenter,
         Placement::RightStart => gpui::Anchor::TopLeft,
         Placement::RightEnd => gpui::Anchor::BottomLeft,
     }
@@ -230,6 +235,7 @@ impl Popover {
             close_on_click_outside: true,
             close_on_escape: true,
             trigger_id: None,
+            content_padding: Some(px(16.0)),
         }
     }
 
@@ -272,6 +278,18 @@ impl Popover {
         self
     }
 
+    /// Removes the shared content padding so composite popup bodies can own their spacing.
+    pub fn flush_content(mut self) -> Self {
+        self.content_padding = None;
+        self
+    }
+
+    /// Overrides the shared content padding applied around plain popover bodies.
+    pub fn content_padding(mut self, padding: impl Into<Pixels>) -> Self {
+        self.content_padding = Some(padding.into());
+        self
+    }
+
     /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([KeyBinding::new("escape", PopoverClose, None)]);
@@ -290,6 +308,7 @@ impl RenderOnce for Popover {
         let offset = self.offset;
         let close_on_click_outside = self.close_on_click_outside;
         let close_on_escape = self.close_on_escape;
+        let content_padding = self.content_padding;
         let content = self.content.clone();
         let trigger_id = self.trigger_id.unwrap_or_else(|| {
             stable_unique_id("popover-trigger", "popover-trigger", _window, _cx).into()
@@ -327,6 +346,7 @@ impl RenderOnce for Popover {
                             close_on_click_outside,
                             close_on_escape,
                             popover_id_for_view,
+                            content_padding,
                             move |_window, _cx| {
                                 clear_popover(&popover_id_for_close, _cx);
                             },
@@ -415,6 +435,57 @@ mod tests {
     }
 
     #[test]
+    fn popover_padding_builders_track_plain_and_composite_modes() {
+        assert_eq!(Popover::new("trigger").content_padding, Some(px(16.0)));
+        assert_eq!(
+            Popover::new("trigger").flush_content().content_padding,
+            None
+        );
+        assert_eq!(
+            Popover::new("trigger")
+                .content_padding(px(8.0))
+                .content_padding,
+            Some(px(8.0))
+        );
+    }
+
+    #[test]
+    fn centered_placements_anchor_content_by_center_edges() {
+        assert_eq!(
+            popover_anchor_corner(Placement::Top),
+            gpui::Anchor::BottomCenter
+        );
+        assert_eq!(
+            popover_anchor_corner(Placement::Bottom),
+            gpui::Anchor::TopCenter
+        );
+        assert_eq!(
+            popover_anchor_corner(Placement::Left),
+            gpui::Anchor::RightCenter
+        );
+        assert_eq!(
+            popover_anchor_corner(Placement::Right),
+            gpui::Anchor::LeftCenter
+        );
+    }
+
+    #[test]
+    fn popover_supports_flush_content_for_composite_bubbles() {
+        let source = include_str!("popover.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(source.contains("content_padding: Option<Pixels>"));
+        assert!(source.contains("pub fn flush_content"));
+        assert!(source.contains(".when_some(content_padding"));
+        assert!(!source.contains(
+            ".p_4()
+                            .child(content)"
+        ));
+    }
+
+    #[test]
     fn popover_content_uses_liora_motion() {
         let source = include_str!("popover.rs")
             .split("#[cfg(test)]")
@@ -436,8 +507,12 @@ mod spacing_regression_tests {
             .unwrap();
 
         assert!(
-            source.contains(".p_4()"),
-            "popover content wrapper should provide default padding so bubble content is not cramped"
+            source.contains("content_padding: Some(px(16.0))"),
+            "plain popover content should keep default spacing so bubble content is not cramped"
+        );
+        assert!(
+            source.contains(".when_some(content_padding, |s, padding| s.p(padding))"),
+            "shared popover padding should be optional for composite popup layouts"
         );
     }
 }

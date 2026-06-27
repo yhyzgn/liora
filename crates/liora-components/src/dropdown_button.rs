@@ -307,6 +307,7 @@ impl RenderOnce for DropdownButton {
             .id(dropdown_id.clone())
             .placement(self.placement)
             .offset(px(4.0))
+            .flush_content()
             .close_on_click_outside(self.close_on_click_outside)
             .close_on_escape(self.close_on_escape)
             .content(move |_window, _cx| {
@@ -437,6 +438,16 @@ fn item_text_color(theme: &liora_theme::Theme, disabled: bool, danger: bool) -> 
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn dropdown_button_flushes_shared_popover_padding_for_menu_layout() {
+        let source = include_str!("dropdown_button.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(source.contains(".flush_content()"));
+    }
+
     use super::*;
 
     #[test]
