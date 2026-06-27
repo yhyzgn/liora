@@ -124,6 +124,7 @@ const SCROLLBAR_DOC: &str = include_str!("../content/pages/scrollbar.md");
 const SEARCHABLE_LIST_DOC: &str = include_str!("../content/pages/searchable_list.md");
 const SIDEBAR_DOC: &str = include_str!("../content/pages/sidebar.md");
 const SHELL_DOC: &str = include_str!("../content/pages/shell.md");
+const SHEET_DOC: &str = include_str!("../content/pages/sheet.md");
 const SEGMENTED_DOC: &str = include_str!("../content/pages/segmented.md");
 const SELECT_DOC: &str = include_str!("../content/pages/select.md");
 const SKELETON_DOC: &str = include_str!("../content/pages/skeleton.md");
@@ -457,6 +458,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Shell",
         markdown: SHELL_DOC,
+    },
+    DocPage {
+        title: "Sheet",
+        markdown: SHEET_DOC,
     },
     DocPage {
         title: "Sidebar",
@@ -1503,6 +1508,8 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "splitter/basic.rs" => Some(include_str!("../content/snippets/splitter/basic.rs")),
         "scrollbar/basic.rs" => Some(include_str!("../content/snippets/scrollbar/basic.rs")),
         "shell/basic.rs" => Some(include_str!("../content/snippets/shell/basic.rs")),
+        "sheet/placements.rs" => Some(include_str!("../content/snippets/sheet/placements.rs")),
+        "sheet/controlled.rs" => Some(include_str!("../content/snippets/sheet/controlled.rs")),
         "shell/full_product.rs" => Some(include_str!("../content/snippets/shell/full_product.rs")),
         "shell/content_first.rs" => {
             Some(include_str!("../content/snippets/shell/content_first.rs"))
@@ -3187,6 +3194,34 @@ impl Render for LiveDemoContent {
             "TypographyParagraph" => Card::new(docs_typography_paragraph(_cx)).no_shadow().into_any_element(),
 
 
+            "SheetPlacements" => demo_row(vec![
+                Button::new("Right").icon_start(IconName::PanelRightOpen).on_click(|_, _, cx| {
+                    liora_components::Sheet::new().title("Inspector").right().content(|_| docs_sheet_body("Right inspector")).show(cx);
+                }).into_any_element(),
+                Button::new("Left").icon_start(IconName::PanelLeftOpen).on_click(|_, _, cx| {
+                    liora_components::Sheet::new().title("Navigator").left().content(|_| docs_sheet_body("Left navigator")).show(cx);
+                }).into_any_element(),
+                Button::new("Top").icon_start(IconName::PanelTopOpen).on_click(|_, _, cx| {
+                    liora_components::Sheet::new().title("Command").top().height_sm().content(|_| docs_sheet_body("Top command")).show(cx);
+                }).into_any_element(),
+                Button::new("Bottom").icon_start(IconName::PanelBottomOpen).on_click(|_, _, cx| {
+                    liora_components::Sheet::new().title("Actions").bottom().height_sm().content(|_| docs_sheet_body("Bottom actions")).show(cx);
+                }).into_any_element(),
+            ]),
+            "SheetControlled" => Button::new("Open blocking review")
+                .primary()
+                .icon_start(IconName::ShieldCheck)
+                .on_click(|_, _, cx| {
+                    liora_components::Sheet::new()
+                        .id("docs-blocking-review")
+                        .title("Blocking review")
+                        .width_lg()
+                        .close_on_click_outside(false)
+                        .close_on_escape(false)
+                        .content(|_| docs_sheet_body("Explicit close only"))
+                        .show(cx);
+                })
+                .into_any_element(),
             "StatusBarShell" => docs_status_bar_shell(),
             "StatusBarTones" => docs_status_bar_tones(),
             "StatusBarCustom" => docs_status_bar_custom(),
@@ -5478,6 +5513,20 @@ impl Render for LiveDemoContent {
             ),
         }
     }
+}
+
+fn docs_sheet_body(title: &'static str) -> impl IntoElement {
+    Space::new()
+        .vertical()
+        .gap_md()
+        .child(Text::new(title).bold())
+        .child(Text::new("Use Sheet for a short contextual flow."))
+        .child(
+            Space::new()
+                .gap_sm()
+                .child(Button::new("Cancel"))
+                .child(Button::new("Apply").primary()),
+        )
 }
 
 fn docs_status_bar_shell() -> AnyElement {

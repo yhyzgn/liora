@@ -62,6 +62,7 @@ pub mod scrollbar_demo;
 pub mod searchable_list_demo;
 pub mod segment_ratio_bar_demo;
 pub mod segmented_demo;
+pub mod sheet_demo;
 pub mod shell_demo;
 pub mod sidebar_demo;
 pub mod signal_meter_demo;
@@ -258,6 +259,11 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "Dialog 对话框",
             description: "模态对话框",
             render: |cx| dialog_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "Sheet 轻量面板",
+            description: "边缘滑入的轻量流程面板",
+            render: |cx| sheet_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Drawer 抽屉",
@@ -690,6 +696,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "SearchableList" => Some(searchable_list_demo::render(cx).into()),
         "Sidebar" => Some(sidebar_demo::render(cx).into()),
         "Shell" => Some(shell_demo::render(cx).into()),
+        "Sheet" => Some(sheet_demo::render(cx).into()),
         "TitleBar" => Some(titlebar_demo::render(cx).into()),
         "Segmented" => Some(segmented_demo::render(cx).into()),
         "Select" => Some(form_controls_demo::render_select(cx)),
