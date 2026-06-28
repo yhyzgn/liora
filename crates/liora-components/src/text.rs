@@ -504,6 +504,7 @@ impl RenderOnce for Text {
         }
 
         let mut el = div()
+            .id(ElementId::from(text.id.clone()))
             .child(text.inline_content())
             .text_size(font_size)
             .line_height(line_height)
@@ -913,6 +914,7 @@ mod group_hover_tests {
         let source = include_str!("text.rs");
 
         assert!(source.contains("pub fn group_hover_primary"));
+        assert!(source.contains(".id(ElementId::from(text.id.clone()))"));
         assert!(source.contains("group_hover(group"));
         assert!(source.contains("theme.primary.base"));
     }
