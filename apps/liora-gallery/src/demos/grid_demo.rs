@@ -30,7 +30,7 @@ impl Render for GridDemo {
                         .into_any_element(),
                         showcase_card_wide(
                             "固定列数，item 随宽度缩放",
-                            "fit_columns(4) 适合仪表盘、固定信息密度和响应式摘要区域。",
+                            "fit_columns(4) 固定横向列数；这里使用矩形指标卡避免正方形高度随列宽一起放大。",
                             Grid::new().fit_columns(4).gap_md().children(metric_items()),
                         )
                         .into_any_element(),
@@ -128,15 +128,17 @@ fn metric_items() -> Vec<impl IntoElement> {
         GridItem::new(
             Space::new()
                 .vertical()
-                .align_center()
+                .align_start()
                 .gap_sm()
-                .child(Text::new(value).bold())
                 .child(match tone {
                     "success" => Tag::new(label).success().plain(),
                     "warning" => Tag::new(label).warning().plain(),
                     _ => Tag::new(label).info().plain(),
-                }),
+                })
+                .child(Text::new(value).bold().selectable(false)),
         )
+        .rectangular()
+        .align_start()
     })
     .collect()
 }
