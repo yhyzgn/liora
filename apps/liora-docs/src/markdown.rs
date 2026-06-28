@@ -3377,6 +3377,11 @@ impl Render for LiveDemoContent {
             "ScrollableMaskBasic" => liora_components::ScrollableMask::new(demo_stack((1..=16).map(|i| Text::new(format!("Scrollable row {i}")).into_any_element()).collect())).height(gpui::px(160.0)).into_any_element(),
             "ClipboardHelper" => Text::new("Use write_text_to_clipboard(cx, text) inside event handlers.").into_any_element(),
             "FocusTrapPolicy" => { let policy = liora_components::FocusTrap::new().restore_focus(true).close_on_escape(false); Text::new(format!("trap={}, restore={}, esc={}", policy.enabled, policy.restore_focus, policy.close_on_escape)).into_any_element() },
+            "MenuPlatformRegistration" => demo_stack(vec![
+                Text::new("GPUI platform menu registration").bold().into_any_element(),
+                Text::new("Menu::register(cx, menus) delegates to GPUI App::set_menus. The OS/platform decides where the real menu appears; this Docs content area intentionally does not render the platform menu as an in-window MenuBar.").wrap().into_any_element(),
+                liora_components::Tag::new("system-level").info().round(true).into_any_element(),
+            ]).into_any_element(),
             "MenuDescriptor" => liora_components::Menu::new("File")
                 .perform_builtin_actions(false)
                 .item(liora_components::MenuItem::new_window())
@@ -11269,9 +11274,12 @@ mod tests {
         assert!(MENU_DOC.contains("GPUI 官方 `Menu` / `MenuItem` / `App::set_menus`"));
         assert!(MENU_DOC.contains("分隔线"));
         assert!(MENU_DOC.contains("嵌套 submenu"));
-        assert!(MENU_DOC.contains("Horizontal Menu Bar"));
+        assert!(MENU_DOC.contains("GPUI 平台菜单注册"));
+        assert!(MENU_DOC.contains("Window Fallback MenuBar"));
         assert!(MENU_DOC.contains("MenuBar"));
         assert!(MENU_DOC.contains("Action Catalog"));
+        assert!(MENU_DOC.contains("平台菜单不属于 Docs 内容区的 GPUI 元素树"));
+        assert!(MENU_DOC.contains("MenuPlatformRegistration"));
         assert!(MENU_DOC.contains("perform_builtin_actions(false)"));
         assert!(MENU_DOC.contains("OpenFile"));
         assert!(MENU_DOC.contains("OpenFolder"));

@@ -57,7 +57,22 @@ fn visible_fallback_menu_bar() -> MenuBar {
 }
 ```
 
-## Descriptor + Preview
+## GPUI 平台菜单注册
+
+这一节是系统级 / 平台级菜单的正确集成方式。它调用 `Menu::register(cx, menus)`，实际委托给 GPUI 官方 `App::set_menus`。平台菜单不属于 Docs 内容区的 GPUI 元素树；运行 Gallery/Docs 应用时，菜单会按操作系统和窗口 frame 策略显示在平台菜单位置。
+
+### 效果
+
+::LioraDemo{component="MenuPlatformRegistration"}::
+
+### 代码
+
+```rust src="menu/gpui_register.rs"
+```
+
+## Descriptor Preview
+
+`Menu` descriptor 可以独立预览，用于文档、设置页、命令结构说明或调试。这不是系统级菜单栏，只是把同一份菜单数据渲染成窗口内说明面板。
 
 ### 效果
 
@@ -68,10 +83,9 @@ fn visible_fallback_menu_bar() -> MenuBar {
 ```rust src="menu/descriptor.rs"
 ```
 
+## Window Fallback MenuBar
 
-## Horizontal Menu Bar
-
-横向多菜单组适合自定义 `TitleBar`、顶部应用菜单栏或设置页中的菜单预览。每个菜单组仍然是独立的 `Menu` descriptor，可以单独复用到平台菜单、命令面板或快捷键说明中。
+`MenuBar` 是窗口内 fallback / preview：适合自定义 `TitleBar`、`Shell` 顶部区域、Linux/Windows 下需要稳定可见的应用菜单入口，或设置页中的菜单预览。它不是 GPUI 平台菜单本体；真正的系统级平台菜单仍然应通过上面的 `Menu::register(cx, menus)` 注册。
 
 ### 效果
 
