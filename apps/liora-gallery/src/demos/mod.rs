@@ -46,7 +46,7 @@ pub mod mention_demo;
 pub mod menu_demo;
 pub mod message_box_demo;
 pub mod message_demo;
-pub mod native_menu_demo;
+pub mod navigation_menu_demo;
 pub mod notification_demo;
 pub mod operation_demo;
 pub mod otp_input_demo;
@@ -459,7 +459,7 @@ pub fn registry() -> Vec<DemoEntry> {
         DemoEntry {
             name: "NavigationMenu 导航菜单",
             description: "为网站提供导航轮廓",
-            render: |cx| menu_demo::render(cx).into(),
+            render: |cx| navigation_menu_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Tabs 标签页",
@@ -594,7 +594,7 @@ pub fn registry() -> Vec<DemoEntry> {
         DemoEntry {
             name: "Menu 原生菜单",
             description: "平台中立菜单描述和预览",
-            render: |cx| native_menu_demo::render(cx).into(),
+            render: |cx| menu_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Icon 图标",
@@ -711,12 +711,12 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Link" => Some(link_demo::render(cx).into()),
         "LineChart" => Some(line_chart_demo::render(cx).into()),
         "Loading" => Some(loading_demo::render(cx).into()),
-        "NavigationMenu" => Some(menu_demo::render(cx).into()),
+        "NavigationMenu" => Some(navigation_menu_demo::render(cx).into()),
         "Mention" => Some(mention_demo::render(cx).into()),
         "Watermark" => Some(watermark_demo::render(cx).into()),
         "Message" => Some(message_demo::render(cx).into()),
         "MessageBox" => Some(message_box_demo::render(cx).into()),
-        "Menu" => Some(native_menu_demo::render(cx).into()),
+        "Menu" => Some(menu_demo::render(cx).into()),
         "Notification" => Some(notification_demo::render(cx).into()),
         "PageHeader" => Some(page_header_demo::render(cx).into()),
         "Paragraph" => Some(paragraph_demo::render(cx).into()),
@@ -890,7 +890,10 @@ mod tests {
             ("breadcrumb_demo.rs", include_str!("breadcrumb_demo.rs")),
             ("accordion_demo.rs", include_str!("accordion_demo.rs")),
             ("collapse_demo.rs", include_str!("collapse_demo.rs")),
-            ("menu_demo.rs", include_str!("menu_demo.rs")),
+            (
+                "navigation_menu_demo.rs",
+                include_str!("navigation_menu_demo.rs"),
+            ),
             ("steps_demo.rs", include_str!("steps_demo.rs")),
         ] {
             assert_demo_uses_liora_layout_primitives(file_name, source);
@@ -899,7 +902,7 @@ mod tests {
 
     #[test]
     fn menu_demo_keeps_vertical_menu_compact() {
-        let source = include_str!("menu_demo.rs");
+        let source = include_str!("navigation_menu_demo.rs");
 
         assert!(
             source.contains(

@@ -359,12 +359,12 @@ mod mention_disabled;
 mod mention_issues;
 #[path = "../../content/snippets/mention/people.rs"]
 mod mention_people;
-#[path = "../../content/snippets/menu/collapsed.rs"]
-mod menu_collapsed;
-#[path = "../../content/snippets/menu/horizontal.rs"]
-mod menu_horizontal;
-#[path = "../../content/snippets/menu/vertical.rs"]
-mod menu_vertical;
+#[path = "../../content/snippets/menu/bar.rs"]
+mod menu_bar;
+#[path = "../../content/snippets/menu/descriptor.rs"]
+mod menu_descriptor;
+#[path = "../../content/snippets/menu/gpui_register.rs"]
+mod menu_gpui_register;
 #[path = "../../content/snippets/message_box/basic.rs"]
 mod message_box_basic;
 #[path = "../../content/snippets/message_box/manual_close.rs"]
@@ -373,12 +373,12 @@ mod message_box_manual_close;
 mod message_formatting;
 #[path = "../../content/snippets/message/types.rs"]
 mod message_types;
-#[path = "../../content/snippets/native_menu/bar.rs"]
-mod native_menu_bar;
-#[path = "../../content/snippets/native_menu/descriptor.rs"]
-mod native_menu_descriptor;
-#[path = "../../content/snippets/native_menu/gpui_register.rs"]
-mod native_menu_gpui_register;
+#[path = "../../content/snippets/navigation_menu/collapsed.rs"]
+mod navigation_menu_collapsed;
+#[path = "../../content/snippets/navigation_menu/horizontal.rs"]
+mod navigation_menu_horizontal;
+#[path = "../../content/snippets/navigation_menu/vertical.rs"]
+mod navigation_menu_vertical;
 #[path = "../../content/snippets/notification/types.rs"]
 mod notification_types;
 #[path = "../../content/snippets/operation/basic.rs"]

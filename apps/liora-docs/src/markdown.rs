@@ -88,7 +88,7 @@ const HOVER_CARD_DOC: &str = include_str!("../content/pages/hover_card.md");
 const SCROLLABLE_MASK_DOC: &str = include_str!("../content/pages/scrollable_mask.md");
 const CLIPBOARD_DOC: &str = include_str!("../content/pages/clipboard.md");
 const FOCUS_TRAP_DOC: &str = include_str!("../content/pages/focus_trap.md");
-const NATIVE_MENU_DOC: &str = include_str!("../content/pages/native_menu.md");
+const NAVIGATION_MENU_DOC: &str = include_str!("../content/pages/navigation_menu.md");
 const DROPDOWN_DOC: &str = include_str!("../content/pages/dropdown.md");
 const DROPDOWN_BUTTON_DOC: &str = include_str!("../content/pages/dropdown_button.md");
 const EMPTY_DOC: &str = include_str!("../content/pages/empty.md");
@@ -332,7 +332,7 @@ const DOC_PAGES: &[DocPage] = &[
     },
     DocPage {
         title: "Menu",
-        markdown: NATIVE_MENU_DOC,
+        markdown: MENU_DOC,
     },
     DocPage {
         title: "DockLayout",
@@ -412,7 +412,7 @@ const DOC_PAGES: &[DocPage] = &[
     },
     DocPage {
         title: "NavigationMenu",
-        markdown: MENU_DOC,
+        markdown: NAVIGATION_MENU_DOC,
     },
     DocPage {
         title: "Message",
@@ -1567,9 +1567,15 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "transfer/disabled.rs" => Some(include_str!("../content/snippets/transfer/disabled.rs")),
         "tree/basic.rs" => Some(include_str!("../content/snippets/tree/basic.rs")),
         "tree/checkable.rs" => Some(include_str!("../content/snippets/tree/checkable.rs")),
-        "menu/horizontal.rs" => Some(include_str!("../content/snippets/menu/horizontal.rs")),
-        "menu/vertical.rs" => Some(include_str!("../content/snippets/menu/vertical.rs")),
-        "menu/collapsed.rs" => Some(include_str!("../content/snippets/menu/collapsed.rs")),
+        "navigation_menu/horizontal.rs" => Some(include_str!(
+            "../content/snippets/navigation_menu/horizontal.rs"
+        )),
+        "navigation_menu/vertical.rs" => Some(include_str!(
+            "../content/snippets/navigation_menu/vertical.rs"
+        )),
+        "navigation_menu/collapsed.rs" => Some(include_str!(
+            "../content/snippets/navigation_menu/collapsed.rs"
+        )),
         "pagination/basic.rs" => Some(include_str!("../content/snippets/pagination/basic.rs")),
         "pagination/background.rs" => {
             Some(include_str!("../content/snippets/pagination/background.rs"))
@@ -1730,16 +1736,10 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         }
         "clipboard/helper.rs" => Some(include_str!("../content/snippets/clipboard/helper.rs")),
         "focus_trap/policy.rs" => Some(include_str!("../content/snippets/focus_trap/policy.rs")),
-        "native_menu/descriptor.rs" => Some(include_str!(
-            "../content/snippets/native_menu/descriptor.rs"
-        )),
-        "native_menu/bar.rs" => Some(include_str!("../content/snippets/native_menu/bar.rs")),
-        "native_menu/gpui_register.rs" => Some(include_str!(
-            "../content/snippets/native_menu/gpui_register.rs"
-        )),
-        "native_menu/actions.rs" => {
-            Some(include_str!("../content/snippets/native_menu/actions.rs"))
-        }
+        "menu/descriptor.rs" => Some(include_str!("../content/snippets/menu/descriptor.rs")),
+        "menu/bar.rs" => Some(include_str!("../content/snippets/menu/bar.rs")),
+        "menu/gpui_register.rs" => Some(include_str!("../content/snippets/menu/gpui_register.rs")),
+        "menu/actions.rs" => Some(include_str!("../content/snippets/menu/actions.rs")),
         "drawer/placements.rs" => Some(include_str!("../content/snippets/drawer/placements.rs")),
         "drawer/sizes.rs" => Some(include_str!("../content/snippets/drawer/sizes.rs")),
         "drawer/sheet_placements.rs" => Some(include_str!(
@@ -2945,9 +2945,9 @@ impl LiveDemoContent {
             "TransferDisabled" => transfers.push(cx.new(|_| docs_transfer_disabled())),
             "TreeBasic" => trees.push(cx.new(|_| docs_tree_basic())),
             "TreeCheckable" => trees.push(cx.new(|_| docs_tree_checkable())),
-            "MenuHorizontal" => menus.push(cx.new(|_| docs_menu_horizontal())),
-            "MenuVertical" => menus.push(cx.new(|_| docs_menu_vertical())),
-            "MenuCollapsed" => menus.push(cx.new(|_| docs_menu_collapsed())),
+            "NavigationMenuHorizontal" => menus.push(cx.new(|_| docs_menu_horizontal())),
+            "NavigationMenuVertical" => menus.push(cx.new(|_| docs_menu_vertical())),
+            "NavigationMenuCollapsed" => menus.push(cx.new(|_| docs_menu_collapsed())),
             "AffixTop" => affixes.push(cx.new(|_| docs_affix_top())),
             "AffixBottom" => affixes.push(cx.new(|_| docs_affix_bottom())),
             "AffixContainer" => affixes.push(cx.new(|_| docs_affix_top())),
@@ -3400,8 +3400,8 @@ impl Render for LiveDemoContent {
                     toast_info!("{} paths: {:?}", action.info().name, paths);
                 })
                 .into_any_element(),
-            "MenuBar" => native_menu_bar_demo().into_any_element(),
-            "MenuActions" => native_menu_action_catalog().into_any_element(),
+            "MenuBar" => menu_bar_demo().into_any_element(),
+            "MenuActions" => menu_action_catalog().into_any_element(),
             "DockLayoutWorkbench" => demo_row(vec![
                 liora_components::DockLayout::new()
                     .height_lg()
@@ -5734,7 +5734,7 @@ impl Render for LiveDemoContent {
                 .cloned()
                 .map(Entity::into_any_element)
                 .unwrap_or_else(|| Paragraph::with_text("Tree demo is not initialized.").into_any_element()),
-            "MenuHorizontal" | "MenuVertical" | "MenuCollapsed" => self
+            "NavigationMenuHorizontal" | "NavigationMenuVertical" | "NavigationMenuCollapsed" => self
                 .menus
                 .first()
                 .cloned()
@@ -5915,7 +5915,7 @@ fn docs_settings_sensitive(content: &LiveDemoContent) -> AnyElement {
         .into_any_element()
 }
 
-fn native_menu_bar_demo() -> impl IntoElement {
+fn menu_bar_demo() -> impl IntoElement {
     Space::new()
         .gap_md()
         .wrap()
@@ -5969,7 +5969,7 @@ fn native_menu_bar_demo() -> impl IntoElement {
         )
 }
 
-fn native_menu_action_catalog() -> impl IntoElement {
+fn menu_action_catalog() -> impl IntoElement {
     Space::new().vertical().gap_md().children(
         liora_components::MenuAction::catalog()
             .into_iter()
@@ -11265,23 +11265,23 @@ mod tests {
     }
 
     #[test]
-    fn native_menu_docs_cover_preview_and_descriptor_features() {
-        assert!(NATIVE_MENU_DOC.contains("GPUI 官方 `Menu` / `MenuItem` / `App::set_menus`"));
-        assert!(NATIVE_MENU_DOC.contains("分隔线"));
-        assert!(NATIVE_MENU_DOC.contains("嵌套 submenu"));
-        assert!(NATIVE_MENU_DOC.contains("Horizontal Menu Bar"));
-        assert!(NATIVE_MENU_DOC.contains("MenuBar"));
-        assert!(NATIVE_MENU_DOC.contains("Action Catalog"));
-        assert!(NATIVE_MENU_DOC.contains("perform_builtin_actions(false)"));
-        assert!(NATIVE_MENU_DOC.contains("OpenFile"));
-        assert!(NATIVE_MENU_DOC.contains("OpenFolder"));
-        assert!(NATIVE_MENU_DOC.contains("prompt_for_paths"));
-        assert!(NATIVE_MENU_DOC.contains("prompt_for_new_path"));
-        assert!(NATIVE_MENU_DOC.contains("on_paths_selected"));
-        assert!(load_code_snippet("native_menu/descriptor.rs").is_some());
-        assert!(load_code_snippet("native_menu/bar.rs").is_some());
-        assert!(load_code_snippet("native_menu/gpui_register.rs").is_some());
-        assert!(load_code_snippet("native_menu/actions.rs").is_some());
+    fn menu_docs_cover_preview_and_descriptor_features() {
+        assert!(MENU_DOC.contains("GPUI 官方 `Menu` / `MenuItem` / `App::set_menus`"));
+        assert!(MENU_DOC.contains("分隔线"));
+        assert!(MENU_DOC.contains("嵌套 submenu"));
+        assert!(MENU_DOC.contains("Horizontal Menu Bar"));
+        assert!(MENU_DOC.contains("MenuBar"));
+        assert!(MENU_DOC.contains("Action Catalog"));
+        assert!(MENU_DOC.contains("perform_builtin_actions(false)"));
+        assert!(MENU_DOC.contains("OpenFile"));
+        assert!(MENU_DOC.contains("OpenFolder"));
+        assert!(MENU_DOC.contains("prompt_for_paths"));
+        assert!(MENU_DOC.contains("prompt_for_new_path"));
+        assert!(MENU_DOC.contains("on_paths_selected"));
+        assert!(load_code_snippet("menu/descriptor.rs").is_some());
+        assert!(load_code_snippet("menu/bar.rs").is_some());
+        assert!(load_code_snippet("menu/gpui_register.rs").is_some());
+        assert!(load_code_snippet("menu/actions.rs").is_some());
     }
 
     #[test]
@@ -12687,12 +12687,12 @@ mod tests {
                 &["tree/basic.rs", "tree/checkable.rs"][..],
             ),
             (
-                include_str!("../content/pages/menu.md"),
-                "MenuHorizontal",
+                include_str!("../content/pages/navigation_menu.md"),
+                "NavigationMenuHorizontal",
                 &[
-                    "menu/horizontal.rs",
-                    "menu/vertical.rs",
-                    "menu/collapsed.rs",
+                    "navigation_menu/horizontal.rs",
+                    "navigation_menu/vertical.rs",
+                    "navigation_menu/collapsed.rs",
                 ][..],
             ),
         ] {

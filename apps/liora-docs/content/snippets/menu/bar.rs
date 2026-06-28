@@ -3,7 +3,7 @@
 use gpui::IntoElement;
 use liora_components::{Menu, MenuAction, MenuBar, MenuItem};
 
-pub fn native_menu_bar() -> impl IntoElement {
+pub fn menu_bar() -> impl IntoElement {
     MenuBar::new([
         file_menu().preview_width(gpui::px(240.0)),
         edit_menu().preview_width(gpui::px(220.0)),

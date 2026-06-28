@@ -2,7 +2,7 @@
 
 use liora_components::{Menu, MenuAction, MenuItem};
 
-pub fn native_menu_descriptor() -> Menu {
+pub fn menu_descriptor() -> Menu {
     Menu::new("File")
         .item(MenuItem::new_window())
         .item(MenuItem::open())

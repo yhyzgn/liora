@@ -1065,7 +1065,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn native_menu_tracks_items_and_submenus() {
+    fn menu_tracks_items_and_submenus() {
         let menu = Menu::new("File")
             .item(MenuItem::open())
             .item(MenuItem::separator())
@@ -1099,8 +1099,8 @@ mod tests {
     }
 
     #[test]
-    fn native_menu_renders_preview_component() {
-        let source = include_str!("native_menu.rs");
+    fn menu_renders_preview_component() {
+        let source = include_str!("menu.rs");
         assert!(source.contains("impl RenderOnce for Menu"));
         assert!(source.contains("pub struct MenuBar"));
         assert!(source.contains("impl RenderOnce for MenuBar"));

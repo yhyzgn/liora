@@ -3,7 +3,7 @@
 use liora_components::{MenuAction, Tag, Text, Space};
 use gpui::IntoElement;
 
-pub fn native_menu_actions() -> impl IntoElement {
+pub fn menu_actions() -> impl IntoElement {
     Space::new()
         .vertical()
         .gap_md()

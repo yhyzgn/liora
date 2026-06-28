@@ -96,10 +96,10 @@ pub mod line_chart;
 pub mod link;
 pub mod loading;
 pub mod mention;
+pub mod menu;
 pub mod message;
 pub mod message_box;
 pub mod motion;
-pub mod native_menu;
 pub mod navigation_menu;
 pub mod notification;
 pub mod operation;
@@ -231,10 +231,10 @@ pub use liora_core::{
 pub use liora_theme::{ButtonSize, ButtonVariant};
 pub use loading::*;
 pub use mention::*;
+pub use menu::*;
 pub use message::*;
 pub use message_box::*;
 pub use motion::*;
-pub use native_menu::*;
 pub use navigation_menu::*;
 pub use notification::*;
 pub use operation::*;
@@ -423,7 +423,7 @@ mod application_init_api_tests {
             ("message.rs", include_str!("message.rs")),
             ("message_box.rs", include_str!("message_box.rs")),
             ("motion.rs", include_str!("motion.rs")),
-            ("native_menu.rs", include_str!("native_menu.rs")),
+            ("menu.rs", include_str!("menu.rs")),
             ("notification.rs", include_str!("notification.rs")),
             ("operation.rs", include_str!("operation.rs")),
             ("otp_input.rs", include_str!("otp_input.rs")),
@@ -1169,7 +1169,7 @@ mod component_backlog_export_tests {
         assert!(source.contains("pub mod settings;"));
         assert!(source.contains("pub mod candlestick_chart;"));
         assert!(source.contains("pub mod dock_layout;"));
-        assert!(source.contains("pub mod native_menu;"));
+        assert!(source.contains("pub mod menu;"));
         assert!(source.contains("pub mod focus_trap;"));
         assert!(source.contains("pub mod clipboard;"));
         assert!(source.contains("pub mod scrollable_mask;"));
@@ -1181,7 +1181,7 @@ mod component_backlog_export_tests {
         assert!(source.contains("pub use settings::*;"));
         assert!(source.contains("pub use candlestick_chart::*;"));
         assert!(source.contains("pub use dock_layout::*;"));
-        assert!(source.contains("pub use native_menu::*;"));
+        assert!(source.contains("pub use menu::*;"));
         assert!(source.contains("pub use focus_trap::*;"));
         assert!(source.contains("pub use clipboard::*;"));
         assert!(source.contains("pub use scrollable_mask::*;"));

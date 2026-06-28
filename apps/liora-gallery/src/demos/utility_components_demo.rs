@@ -32,11 +32,7 @@ impl Render for UtilityComponentsDemo {
                 .child(section(
                     "Infrastructure facades",
                     "Clipboard、FocusTrap、Menu 不是视觉重控件，Gallery 用摘要卡片展示集成方式。",
-                    showcase_grid(vec![
-                        clipboard_card(),
-                        focus_trap_card(),
-                        native_menu_card(),
-                    ]),
+                    showcase_grid(vec![clipboard_card(), focus_trap_card(), menu_card()]),
                 )),
         )
     }
@@ -146,7 +142,7 @@ fn focus_trap_card() -> AnyElement {
     .into_any_element()
 }
 
-fn native_menu_card() -> AnyElement {
+fn menu_card() -> AnyElement {
     let menu = Menu::new("File")
         .item(MenuItem::new("open", "Open").shortcut("Ctrl+O"))
         .item(MenuItem::new("save", "Save").shortcut("Ctrl+S"));
