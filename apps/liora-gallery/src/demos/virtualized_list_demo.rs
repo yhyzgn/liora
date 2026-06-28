@@ -1,6 +1,8 @@
 use gpui::{App, Context, Entity, IntoElement, Render, Window, prelude::*};
 use liora_components::layout_helpers::{page, section};
-use liora_components::{Flex, Space, Tag, Text, VirtualizedList, toast_success};
+use liora_components::{
+    Divider, Flex, Space, Statistic, Tag, Text, VirtualizedList, toast_success,
+};
 
 pub fn render(cx: &mut App) -> Entity<VirtualizedListDemo> {
     cx.new(|cx| VirtualizedListDemo {
@@ -40,6 +42,7 @@ impl Render for VirtualizedListDemo {
             Space::new()
                 .vertical()
                 .gap_lg()
+                .child(virtualized_list_metrics())
                 .child(section(
                     "千行列表",
                     "滚动时只布局可见行，并通过 Liora 自举滚动条显示当前位置。",
@@ -52,6 +55,23 @@ impl Render for VirtualizedListDemo {
                 )),
         )
     }
+}
+
+fn virtualized_list_metrics() -> impl IntoElement {
+    Space::new()
+        .vertical()
+        .gap_md()
+        .child(Text::new("虚拟化性能表现").bold())
+        .child(
+            Space::new()
+                .gap_lg()
+                .wrap()
+                .child(Statistic::new("Total rows", "1,000").icon(liora_icons_lucide::IconName::List))
+                .child(Statistic::new("Typical visible", "8-12").icon(liora_icons_lucide::IconName::Eye))
+                .child(Statistic::new("Rendered ratio", "~1%").icon(liora_icons_lucide::IconName::Gauge)),
+        )
+        .child(Text::new("VirtualizedList 只在视口和 overdraw 范围内创建行元素；拖动排序示例也不会一次性实例化所有行。").wrap())
+        .child(Divider::new())
 }
 
 fn virtualized_row(index: usize) -> gpui::AnyElement {
@@ -89,5 +109,7 @@ mod tests {
         assert!(source.contains("1_000"));
         assert!(source.contains("set_draggable(true)"));
         assert!(source.contains("set_on_reorder"));
+        assert!(source.contains("virtualized_list_metrics"));
+        assert!(source.contains("Rendered ratio"));
     }
 }

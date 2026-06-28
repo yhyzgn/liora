@@ -1,14 +1,15 @@
 use gpui::{AnyView, App, Context, IntoElement, Render, SharedString, Window, prelude::*};
 use liora_components::layout_helpers::{page, section, showcase_card_wide, showcase_stack};
 use liora_components::{
-    Button, Space, TableAlign, TableColumn, TableSortOrder, TableSortState, Tag, Text,
-    VirtualizedTable,
+    Button, Divider, Space, Statistic, TableAlign, TableColumn, TableSortOrder, TableSortState,
+    Tag, Text, VirtualizedTable,
 };
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|_| VirtualizedTableDemo {
         sort_key: None,
         sort_order: None,
+        loaded_rows: 500,
     })
     .into()
 }
@@ -16,6 +17,7 @@ pub fn render(cx: &mut App) -> AnyView {
 struct VirtualizedTableDemo {
     sort_key: Option<SharedString>,
     sort_order: Option<TableSortOrder>,
+    loaded_rows: usize,
 }
 
 impl Render for VirtualizedTableDemo {
@@ -23,6 +25,8 @@ impl Render for VirtualizedTableDemo {
         let view = cx.entity().clone();
         let sort_key = self.sort_key.clone();
         let sort_order = self.sort_order;
+        let loaded_rows = self.loaded_rows;
+        let load_view = cx.entity().clone();
 
         let mut sorted = VirtualizedTable::new(columns(true), 1_000, move |row, key, _, _| {
             virtual_cell(row, key, sort_key.as_ref(), sort_order)
@@ -47,13 +51,17 @@ impl Render for VirtualizedTableDemo {
         page(
             "VirtualizedTable 虚拟表格",
             "固定表头 + 可见区行渲染的大数据表格，适合万级结构化数据和高成本单元格。",
-            Space::new().vertical().gap_xl().child(section(
+            Space::new()
+                .vertical()
+                .gap_xl()
+                .child(virtual_performance_metrics(10_000, 9, "< 0.1%"))
+                .child(section(
                 "Table showcase",
                 "虚拟表格统一使用宽卡片承载，避免长表格直接打散 Gallery 页面。",
                 showcase_stack(vec![
                     showcase_card_wide(
                         "万行固定表头",
-                        "行内容由 row index + column key 即时生成，滚动时只布局可见行。",
+                        "10,000 行数据只渲染视口附近行；拖动滚动条时应保持流畅，滚动位置不会因重新渲染丢失。",
                         VirtualizedTable::new(columns(false), 1_000, move |row, key, _, _| {
                             virtual_cell(row, key, None, None)
                         })
@@ -72,8 +80,8 @@ impl Render for VirtualizedTableDemo {
                     .into_any_element(),
                     showcase_card_wide(
                         "DataTable 增强：选择、固定列和 load more",
-                        "不新增重复 DataTable 控件，而是在 VirtualizedTable 中增强企业数据表常用能力。",
-                        VirtualizedTable::new(columns(false), 500, move |row, key, _, _| {
+                        "点击加载更多会增量追加行数并保留 ListState；不是重新创建整张表。",
+                        VirtualizedTable::new(columns(false), loaded_rows, move |row, key, _, _| {
                             virtual_cell(row, key, None, None)
                         })
                         .height(300.0)
@@ -83,13 +91,39 @@ impl Render for VirtualizedTableDemo {
                         .border(true)
                         .selected_rows([1, 3, 5])
                         .active_row(Some(8))
-                        .load_more("加载更多数据", |_, _| {}),
+                        .load_more(format!("加载更多数据（当前 {loaded_rows} 行）"), move |_, cx| {
+                            load_view.update(cx, |this, cx| {
+                                this.loaded_rows = (this.loaded_rows + 500).min(10_000);
+                                cx.notify();
+                            });
+                        }),
                     )
                     .into_any_element(),
                 ]),
             )),
         )
     }
+}
+
+fn virtual_performance_metrics(
+    total_rows: usize,
+    visible_rows: usize,
+    ratio: &'static str,
+) -> impl IntoElement {
+    Space::new()
+        .vertical()
+        .gap_md()
+        .child(Text::new("虚拟化性能表现").bold())
+        .child(
+            Space::new()
+                .gap_lg()
+                .wrap()
+                .child(Statistic::new("Total rows", total_rows.to_string()).icon(liora_icons_lucide::IconName::Database))
+                .child(Statistic::new("Visible rows", visible_rows.to_string()).icon(liora_icons_lucide::IconName::Eye))
+                .child(Statistic::new("Rendered ratio", ratio).icon(liora_icons_lucide::IconName::Gauge)),
+        )
+        .child(Text::new("表格数据按 row index 按需生成，滚动时只请求视口附近的 cell；加载更多只 splice 追加行数并保留滚动状态。").wrap())
+        .child(Divider::new())
 }
 
 fn columns(sortable: bool) -> Vec<TableColumn> {
@@ -200,5 +234,8 @@ mod tests {
         assert!(source.contains("on_sort_change"));
         assert!(source.contains("selected_rows"));
         assert!(source.contains("load_more"));
+        assert!(source.contains("loaded_rows"));
+        assert!(source.contains("virtual_performance_metrics"));
+        assert!(source.contains("Rendered ratio"));
     }
 }

@@ -2,6 +2,10 @@
 
 `VirtualizedTree` 是大型层级数据的原生虚拟树控件。它把当前展开状态下的节点 flatten 成轻量 `VirtualTreeItem`，再交给 GPUI `ListState` 只渲染可见行。
 
+## 虚拟化性能表现
+
+`VirtualizedTree` 先按展开状态 flatten 当前可见节点，再交给 `ListState` 虚拟渲染。未展开分支不会生成行元素；大组织树、文件树、权限树可以保持低布局压力。
+
 ## 能力
 
 - 大树可见区渲染：展开/折叠时只维护可见节点元数据，不缓存跨帧 GPUI 元素。

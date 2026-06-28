@@ -2,6 +2,10 @@
 
 `VirtualizedTable` 是面向大数据行的原生虚拟表格：表头固定在容器顶部，表体由 GPUI `ListState` 只渲染可见行，并通过 Liora `VirtualScrollbar` 显示滚动位置。
 
+## 虚拟化性能表现
+
+`VirtualizedTable` 的性能收益来自 **持久 `ListState` + 可见区 cell 生成**：10,000 行数据不会一次性构建 10,000 个行元素，滚动时只请求视口附近的 row/cell。行数变化时通过 `splice` 增量同步，避免加载更多时重建滚动状态。
+
 ## 能力
 
 - 固定表头：列定义沿用 `TableColumn`，支持宽度、对齐、sortable。

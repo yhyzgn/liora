@@ -23,8 +23,8 @@ use crate::VirtualScrollbar;
 use crate::gpui_compat::element_id;
 use crate::table::{TableAlign, TableColumn, TableColumnFixed, TableSortOrder, TableSortState};
 use gpui::{
-    AnyElement, App, Component, IntoElement, ListAlignment, ListState, Pixels, RenderOnce,
-    SharedString, Window, div, list, prelude::*, px,
+    AnyElement, App, Component, ElementId, IntoElement, ListAlignment, ListState, Pixels,
+    RenderOnce, SharedString, Window, div, list, prelude::*, px,
 };
 use liora_core::Config;
 use liora_icons::Icon;
@@ -233,6 +233,44 @@ impl VirtualizedTable {
     }
 }
 
+struct VirtualizedTableState {
+    list_state: ListState,
+    row_count: usize,
+    overdraw: Pixels,
+    row_height: Pixels,
+}
+
+impl VirtualizedTableState {
+    fn new(row_count: usize, overdraw: Pixels, row_height: Pixels) -> Self {
+        Self {
+            list_state: ListState::new(row_count, ListAlignment::Top, overdraw),
+            row_count,
+            overdraw,
+            row_height,
+        }
+    }
+
+    fn sync(&mut self, row_count: usize, overdraw: Pixels, row_height: Pixels) {
+        if self.overdraw != overdraw {
+            *self = Self::new(row_count, overdraw, row_height);
+            return;
+        }
+        if self.row_count != row_count {
+            if row_count > self.row_count {
+                self.list_state
+                    .splice(self.row_count..self.row_count, row_count - self.row_count);
+            } else {
+                self.list_state.splice(row_count..self.row_count, 0);
+            }
+            self.row_count = row_count;
+        }
+        if self.row_height != row_height {
+            self.row_height = row_height;
+            self.list_state.remeasure();
+        }
+    }
+}
+
 impl RenderOnce for VirtualizedTable {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
@@ -241,7 +279,15 @@ impl RenderOnce for VirtualizedTable {
         let stripe = self.stripe;
         let row_height = self.row_height;
         let render_cell = self.render_cell.clone();
-        let list_state = self.list_state.clone();
+        let state = _window.use_keyed_state(
+            ElementId::from(format!("{}-state", self.id)),
+            cx,
+            move |_, _| VirtualizedTableState::new(self.row_count, self.overdraw, self.row_height),
+        );
+        state.update(cx, |state, _| {
+            state.sync(self.row_count, self.overdraw, self.row_height);
+        });
+        let list_state = state.read(cx).list_state.clone();
         let has_rows = self.row_count > 0;
         let sort_key = self.sort_key;
         let sort_order = self.sort_order;
@@ -534,7 +580,9 @@ mod tests {
         let source = include_str!("virtualized_table.rs");
 
         assert!(source.contains("pub struct VirtualizedTable"));
-        assert!(source.contains("ListState::new(row_count"));
+        assert!(source.contains("use_keyed_state"));
+        assert!(source.contains("VirtualizedTableState"));
+        assert!(source.contains("state.sync"));
         assert!(source.contains("list(list_state.clone()"));
         assert!(source.contains("VirtualScrollbar::new"));
         assert!(source.contains("render_cell"));
@@ -582,5 +630,21 @@ mod tests {
         assert!(source.contains("active_row"));
         assert!(source.contains("on_row_select"));
         assert!(source.contains("load_more"));
+    }
+
+    #[test]
+    fn virtualized_table_state_splices_row_count_without_resetting_scroll() {
+        let mut state = VirtualizedTableState::new(100, px(80.0), px(44.0));
+        state.sync(140, px(80.0), px(44.0));
+        assert_eq!(state.row_count, 140);
+        assert_eq!(state.list_state.item_count(), 140);
+
+        state.sync(90, px(80.0), px(44.0));
+        assert_eq!(state.row_count, 90);
+        assert_eq!(state.list_state.item_count(), 90);
+
+        let source = include_str!("virtualized_table.rs");
+        assert!(source.contains(".splice(self.row_count..self.row_count"));
+        assert!(source.contains(".splice(row_count..self.row_count, 0)"));
     }
 }

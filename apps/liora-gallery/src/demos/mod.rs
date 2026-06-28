@@ -46,6 +46,7 @@ pub mod mention_demo;
 pub mod menu_demo;
 pub mod message_box_demo;
 pub mod message_demo;
+pub mod native_menu_demo;
 pub mod notification_demo;
 pub mod operation_demo;
 pub mod otp_input_demo;
@@ -561,6 +562,11 @@ pub fn registry() -> Vec<DemoEntry> {
             render: |cx| titlebar_demo::render(cx).into(),
         },
         DemoEntry {
+            name: "StatusBar 状态栏",
+            description: "桌面应用底部状态条",
+            render: |cx| status_bar_demo::render(cx).into(),
+        },
+        DemoEntry {
             name: "VirtualizedList 虚拟列表",
             description: "可见区渲染长列表",
             render: |cx| virtualized_list_demo::render(cx).into(),
@@ -584,6 +590,11 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "Splitter 分隔面板",
             description: "左右面板分割",
             render: |cx| splitter_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "NativeMenu 原生菜单",
+            description: "平台中立菜单描述和预览",
+            render: |cx| native_menu_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Icon 图标",
@@ -705,6 +716,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Watermark" => Some(watermark_demo::render(cx).into()),
         "Message" => Some(message_demo::render(cx).into()),
         "MessageBox" => Some(message_box_demo::render(cx).into()),
+        "NativeMenu" => Some(native_menu_demo::render(cx).into()),
         "Notification" => Some(notification_demo::render(cx).into()),
         "PageHeader" => Some(page_header_demo::render(cx).into()),
         "Paragraph" => Some(paragraph_demo::render(cx).into()),
@@ -772,6 +784,8 @@ mod tests {
         assert_eq!(names.first(), Some(&"Button 按钮"));
         assert!(names.contains(&"AreaChart 面积图"));
         assert!(names.contains(&"RingChart 圆环图"));
+        assert!(names.contains(&"StatusBar 状态栏"));
+        assert!(names.contains(&"NativeMenu 原生菜单"));
     }
 
     #[test]

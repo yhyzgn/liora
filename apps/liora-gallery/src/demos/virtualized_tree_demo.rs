@@ -1,6 +1,6 @@
 use gpui::{AnyView, App, Context, Entity, IntoElement, Render, Window, prelude::*, px};
 use liora_components::layout_helpers::{page, section};
-use liora_components::{Space, Text, TreeNode, VirtualizedTree, toast_success};
+use liora_components::{Divider, Space, Statistic, Text, TreeNode, VirtualizedTree, toast_success};
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|cx| VirtualizedTreeDemo {
@@ -39,6 +39,7 @@ impl Render for VirtualizedTreeDemo {
             Space::new()
                 .vertical()
                 .gap_xl()
+                .child(virtualized_tree_metrics())
                 .child(section(
                     "大型组织树",
                     "展开/折叠时重新 flatten 当前可见节点，ListState 只布局可见行。",
@@ -52,6 +53,23 @@ impl Render for VirtualizedTreeDemo {
                 .child(Text::new("示例数据包含 40 个部门、每部门 12 个团队、每团队 18 位成员，全部节点不会一次性渲染成元素。")),
         )
     }
+}
+
+fn virtualized_tree_metrics() -> impl IntoElement {
+    Space::new()
+        .vertical()
+        .gap_md()
+        .child(Text::new("虚拟化性能表现").bold())
+        .child(
+            Space::new()
+                .gap_lg()
+                .wrap()
+                .child(Statistic::new("Total nodes", "9,160").icon(liora_icons_lucide::IconName::Network))
+                .child(Statistic::new("Initial visible", "~52").icon(liora_icons_lucide::IconName::Eye))
+                .child(Statistic::new("Rendered ratio", "< 1%").icon(liora_icons_lucide::IconName::Gauge)),
+        )
+        .child(Text::new("VirtualizedTree 只 flatten 当前展开分支，并把可见节点交给 ListState；未展开分支不会生成行元素。").wrap())
+        .child(Divider::new())
 }
 
 fn large_tree() -> Vec<TreeNode> {
@@ -89,5 +107,7 @@ mod tests {
         assert!(source.contains("default_expanded_keys"));
         assert!(source.contains("show_checkbox(true)"));
         assert!(source.contains("multiple(true)"));
+        assert!(source.contains("virtualized_tree_metrics"));
+        assert!(source.contains("Rendered ratio"));
     }
 }

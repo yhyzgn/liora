@@ -3367,7 +3367,18 @@ impl Render for LiveDemoContent {
             "ScrollableMaskBasic" => liora_components::ScrollableMask::new(demo_stack((1..=16).map(|i| Text::new(format!("Scrollable row {i}")).into_any_element()).collect())).height(gpui::px(160.0)).into_any_element(),
             "ClipboardHelper" => Text::new("Use write_text_to_clipboard(cx, text) inside event handlers.").into_any_element(),
             "FocusTrapPolicy" => { let policy = liora_components::FocusTrap::new().restore_focus(true).close_on_escape(false); Text::new(format!("trap={}, restore={}, esc={}", policy.enabled, policy.restore_focus, policy.close_on_escape)).into_any_element() },
-            "NativeMenuDescriptor" => { let menu = liora_components::NativeMenu::new("File").item(liora_components::NativeMenuItem::new("open", "Open").shortcut("Ctrl+O")); Text::new(format!("{} menu items", menu.items.len())).into_any_element() },
+            "NativeMenuDescriptor" => liora_components::NativeMenu::new("File")
+                .item(liora_components::NativeMenuItem::new("new-window", "New Window").shortcut("Ctrl+Shift+N"))
+                .item(liora_components::NativeMenuItem::new("open", "Open...").shortcut("Ctrl+O"))
+                .item(
+                    liora_components::NativeMenuItem::new("recent", "Open Recent")
+                        .child(liora_components::NativeMenuItem::new("recent-gallery", "liora-gallery"))
+                        .child(liora_components::NativeMenuItem::new("recent-docs", "liora-docs")),
+                )
+                .item(liora_components::NativeMenuItem::separator())
+                .item(liora_components::NativeMenuItem::new("save", "Save").shortcut("Ctrl+S"))
+                .item(liora_components::NativeMenuItem::new("publish", "Publish Release").disabled(true))
+                .into_any_element(),
             "DockLayoutWorkbench" => demo_row(vec![
                 liora_components::DockLayout::new()
                     .height_lg()
@@ -11104,6 +11115,23 @@ mod tests {
             include_str!("../../../packaging/linux/liora-docs.metainfo.xml")
                 .contains("<project_license>LicenseRef-Liora</project_license>")
         );
+    }
+
+    #[test]
+    fn virtualized_docs_explain_performance_and_state_model() {
+        assert!(VIRTUALIZED_TABLE_DOC.contains("虚拟化性能表现"));
+        assert!(VIRTUALIZED_TABLE_DOC.contains("持久 `ListState`"));
+        assert!(VIRTUALIZED_TABLE_DOC.contains("splice"));
+        assert!(VIRTUALIZED_LIST_DOC.contains("渲染比例约 1%"));
+        assert!(VIRTUALIZED_TREE_DOC.contains("未展开分支不会生成行元素"));
+    }
+
+    #[test]
+    fn native_menu_docs_cover_preview_and_descriptor_features() {
+        assert!(NATIVE_MENU_DOC.contains("原生 GPUI 预览组件"));
+        assert!(NATIVE_MENU_DOC.contains("分隔线"));
+        assert!(NATIVE_MENU_DOC.contains("嵌套 submenu"));
+        assert!(load_code_snippet("native_menu/descriptor.rs").is_some());
     }
 
     #[test]
