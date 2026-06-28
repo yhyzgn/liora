@@ -40,3 +40,30 @@
 
 ```rust src="drawer/manual_close.rs"
 ```
+
+
+## 轻量面板模式
+
+`Drawer::sheet()` 覆盖原先 Sheet 的语义：它仍然是 Drawer overlay runtime，只是默认尺寸更轻，适合筛选、检查器、快速创建和局部设置等短流程。
+
+### 效果
+
+::LioraDemo{component="DrawerSheetPlacements"}::
+
+### 代码
+
+```rust src="drawer/sheet_placements.rs"
+```
+
+## 受控轻量面板
+
+关闭遮罩点击和 ESC 关闭，改由内容区按钮显式关闭。
+
+### 效果
+
+::LioraDemo{component="DrawerSheetControlled"}::
+
+### 代码
+
+```rust src="drawer/sheet_controlled.rs"
+```

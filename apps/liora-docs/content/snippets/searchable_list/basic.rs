@@ -11,10 +11,10 @@ pub fn searchable_list_basic() -> impl IntoElement {
         SearchableListItem::labeled("input", "Input")
             .description("Text entry")
             .group("Basic"),
-        SearchableListItem::labeled("combobox", "Combobox")
+        SearchableListItem::labeled("select-search", "Select::searchable")
             .description("Searchable select")
             .group("Input"),
     ])
-    .selected("combobox")
+    .selected("select-search")
     .width(px(340.0))
 }

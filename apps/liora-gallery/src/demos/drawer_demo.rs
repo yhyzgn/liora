@@ -1,5 +1,6 @@
 use gpui::{AnyView, App, Context, Render, Window, prelude::*};
 use liora_components::{Button, Drawer, DrawerPlacement, Space, Text};
+use liora_icons_lucide::IconName;
 
 use liora_components::layout_helpers::{page, section};
 
@@ -58,6 +59,77 @@ impl Render for DrawerDemo {
                         })),
                 ))
                 .child(section(
+                    "Sheet-style 轻量面板",
+                    "短流程不需要单独 Sheet 控件；使用 Drawer::sheet() 获得更轻的默认尺寸。",
+                    Space::new()
+                        .gap_lg()
+                        .wrap()
+                        .child(
+                            Button::new("Right inspector")
+                                .icon_start(IconName::PanelRightOpen)
+                                .on_click(|_, _, cx| {
+                                    Drawer::sheet()
+                                        .title("Inspector")
+                                        .right()
+                                        .content_view(|_| {
+                                            sheet_body(
+                                                "Inspector",
+                                                "Review properties before applying changes.",
+                                            )
+                                        })
+                                        .show(cx);
+                                }),
+                        )
+                        .child(
+                            Button::new("Left navigator")
+                                .icon_start(IconName::PanelLeftOpen)
+                                .on_click(|_, _, cx| {
+                                    Drawer::sheet()
+                                        .title("Navigator")
+                                        .left()
+                                        .content_view(|_| {
+                                            sheet_body(
+                                                "Navigator",
+                                                "Jump across workspaces without leaving context.",
+                                            )
+                                        })
+                                        .show(cx);
+                                }),
+                        )
+                        .child(
+                            Button::new("Top command")
+                                .icon_start(IconName::PanelTopOpen)
+                                .on_click(|_, _, cx| {
+                                    Drawer::sheet()
+                                        .title("Command")
+                                        .top()
+                                        .height_sm()
+                                        .content_view(|_| {
+                                            sheet_body("Command", "Run a temporary command flow.")
+                                        })
+                                        .show(cx);
+                                }),
+                        )
+                        .child(
+                            Button::new("Blocking review")
+                                .icon_start(IconName::ShieldCheck)
+                                .on_click(|_, _, cx| {
+                                    Drawer::sheet()
+                                        .title("Blocking review")
+                                        .width_lg()
+                                        .close_on_click_outside(false)
+                                        .close_on_escape(false)
+                                        .content_view(|_| {
+                                            sheet_body(
+                                                "Explicit close only",
+                                                "This panel stays open until an action closes it.",
+                                            )
+                                        })
+                                        .show(cx);
+                                }),
+                        ),
+                ))
+                .child(section(
                     "Close strategy 关闭策略",
                     "可禁用遮罩和 ESC 关闭，改由业务按钮手动关闭。",
                     Space::new().gap_lg().wrap().child(
@@ -102,4 +174,18 @@ fn drawer(title: &'static str, placement: DrawerPlacement) -> Drawer {
                         .on_click(|_, _, cx| Drawer::close(cx)),
                 )
         })
+}
+
+fn sheet_body(title: &'static str, detail: &'static str) -> impl IntoElement {
+    Space::new()
+        .vertical()
+        .gap_lg()
+        .child(Text::new(title).bold())
+        .child(Text::new(detail).wrap())
+        .child(
+            Space::new()
+                .gap_sm()
+                .child(Button::new("Cancel"))
+                .child(Button::new("Apply").primary()),
+        )
 }

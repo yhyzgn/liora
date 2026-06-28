@@ -7,7 +7,7 @@ pub fn searchable_list_empty() -> impl IntoElement {
     SearchableList::new(vec![
         SearchableListItem::labeled("button", "Button"),
         SearchableListItem::labeled("input", "Input"),
-        SearchableListItem::labeled("combobox", "Combobox"),
+        SearchableListItem::labeled("select-search", "Select::searchable"),
     ])
     .query("not-found")
     .max_items(2)

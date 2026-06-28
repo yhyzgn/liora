@@ -65,7 +65,6 @@ pub mod code_editor;
 pub mod col;
 pub mod collapse;
 pub mod color_picker;
-pub mod combobox;
 pub mod container;
 pub mod date_picker;
 pub mod date_time_picker;
@@ -127,7 +126,6 @@ pub mod segmented;
 pub mod select;
 pub mod selectable_text;
 pub mod settings;
-pub mod sheet;
 pub mod shell;
 pub mod sidebar;
 pub mod signal_meter;
@@ -145,7 +143,6 @@ pub mod table;
 pub mod tabs;
 pub mod tag;
 pub mod text;
-pub mod text_view;
 pub mod textarea;
 pub mod time_picker;
 pub mod timeline;
@@ -194,7 +191,6 @@ pub use code_editor::*;
 pub use col::*;
 pub use collapse::*;
 pub use color_picker::*;
-pub use combobox::*;
 pub use container::*;
 pub use date_picker::*;
 pub use date_time_picker::*;
@@ -264,7 +260,6 @@ pub use segmented::*;
 pub use select::*;
 pub use selectable_text::*;
 pub use settings::*;
-pub use sheet::*;
 pub use shell::*;
 pub use sidebar::*;
 pub use signal_meter::*;
@@ -282,7 +277,6 @@ pub use table::*;
 pub use tabs::*;
 pub use tag::*;
 pub use text::*;
-pub use text_view::*;
 pub use textarea::*;
 pub use time_picker::*;
 pub use timeline::*;
@@ -465,7 +459,6 @@ mod application_init_api_tests {
             ("tabs.rs", include_str!("tabs.rs")),
             ("tag.rs", include_str!("tag.rs")),
             ("text.rs", include_str!("text.rs")),
-            ("text_view.rs", include_str!("text_view.rs")),
             ("textarea.rs", include_str!("textarea.rs")),
             ("time_picker.rs", include_str!("time_picker.rs")),
             ("timeline.rs", include_str!("timeline.rs")),
@@ -1164,18 +1157,15 @@ mod shell_component_api_tests {
 #[cfg(test)]
 mod component_backlog_export_tests {
     #[test]
-    fn search_and_combobox_modules_are_exported() {
+    fn backlog_modules_are_exported() {
         let source = include_str!("lib.rs")
             .split("#[cfg(test)]")
             .next()
             .expect("production exports should precede tests");
         assert!(source.contains("pub mod searchable_list;"));
-        assert!(source.contains("pub mod combobox;"));
         assert!(source.contains("pub mod status_bar;"));
-        assert!(source.contains("pub mod sheet;"));
         assert!(source.contains("pub mod settings;"));
         assert!(source.contains("pub mod candlestick_chart;"));
-        assert!(source.contains("pub mod text_view;"));
         assert!(source.contains("pub mod dock_layout;"));
         assert!(source.contains("pub mod native_menu;"));
         assert!(source.contains("pub mod focus_trap;"));
@@ -1185,12 +1175,9 @@ mod component_backlog_export_tests {
         assert!(source.contains("pub mod group_box;"));
         assert!(source.contains("pub mod toggle;"));
         assert!(source.contains("pub use searchable_list::*;"));
-        assert!(source.contains("pub use combobox::*;"));
         assert!(source.contains("pub use status_bar::*;"));
-        assert!(source.contains("pub use sheet::*;"));
         assert!(source.contains("pub use settings::*;"));
         assert!(source.contains("pub use candlestick_chart::*;"));
-        assert!(source.contains("pub use text_view::*;"));
         assert!(source.contains("pub use dock_layout::*;"));
         assert!(source.contains("pub use native_menu::*;"));
         assert!(source.contains("pub use focus_trap::*;"));

@@ -74,7 +74,6 @@ const CODE_BLOCK_DOC: &str = include_str!("../content/pages/code_block.md");
 const CODE_EDITOR_DOC: &str = include_str!("../content/pages/code_editor.md");
 const COLLAPSE_DOC: &str = include_str!("../content/pages/collapse.md");
 const COLOR_PICKER_DOC: &str = include_str!("../content/pages/color_picker.md");
-const COMBOBOX_DOC: &str = include_str!("../content/pages/combobox.md");
 const CONTAINER_DOC: &str = include_str!("../content/pages/container.md");
 const DATE_PICKER_DOC: &str = include_str!("../content/pages/date_picker.md");
 const DATE_TIME_PICKER_DOC: &str = include_str!("../content/pages/date_time_picker.md");
@@ -133,7 +132,6 @@ const SCROLLBAR_DOC: &str = include_str!("../content/pages/scrollbar.md");
 const SEARCHABLE_LIST_DOC: &str = include_str!("../content/pages/searchable_list.md");
 const SIDEBAR_DOC: &str = include_str!("../content/pages/sidebar.md");
 const SHELL_DOC: &str = include_str!("../content/pages/shell.md");
-const SHEET_DOC: &str = include_str!("../content/pages/sheet.md");
 const SETTINGS_DOC: &str = include_str!("../content/pages/settings.md");
 const SEGMENTED_DOC: &str = include_str!("../content/pages/segmented.md");
 const SELECT_DOC: &str = include_str!("../content/pages/select.md");
@@ -147,7 +145,6 @@ const SWITCH_DOC: &str = include_str!("../content/pages/switch.md");
 const TABLE_DOC: &str = include_str!("../content/pages/table.md");
 const TABS_DOC: &str = include_str!("../content/pages/tabs.md");
 const TAG_DOC: &str = include_str!("../content/pages/tag.md");
-const TEXT_VIEW_DOC: &str = include_str!("../content/pages/text_view.md");
 const TEXTAREA_DOC: &str = include_str!("../content/pages/textarea.md");
 const TIME_PICKER_DOC: &str = include_str!("../content/pages/time_picker.md");
 const TIMER_DOC: &str = include_str!("../content/pages/timer.md");
@@ -285,10 +282,6 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "ColorPicker",
         markdown: COLOR_PICKER_DOC,
-    },
-    DocPage {
-        title: "Combobox",
-        markdown: COMBOBOX_DOC,
     },
     DocPage {
         title: "Container",
@@ -507,10 +500,6 @@ const DOC_PAGES: &[DocPage] = &[
         markdown: SHELL_DOC,
     },
     DocPage {
-        title: "Sheet",
-        markdown: SHEET_DOC,
-    },
-    DocPage {
         title: "Sidebar",
         markdown: SIDEBAR_DOC,
     },
@@ -565,10 +554,6 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Tag",
         markdown: TAG_DOC,
-    },
-    DocPage {
-        title: "TextView",
-        markdown: TEXT_VIEW_DOC,
     },
     DocPage {
         title: "Textarea",
@@ -1165,6 +1150,15 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "typography/paragraph.rs" => {
             Some(include_str!("../content/snippets/typography/paragraph.rs"))
         }
+        "typography/document_blocks.rs" => Some(include_str!(
+            "../content/snippets/typography/document_blocks.rs"
+        )),
+        "typography/markdown.rs" => {
+            Some(include_str!("../content/snippets/typography/markdown.rs"))
+        }
+        "typography/document_inline.rs" => Some(include_str!(
+            "../content/snippets/typography/document_inline.rs"
+        )),
         "virtualized_list/basic.rs" => Some(include_str!(
             "../content/snippets/virtualized_list/basic.rs"
         )),
@@ -1262,10 +1256,6 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "tag/themes.rs" => Some(include_str!("../content/snippets/tag/themes.rs")),
         "tag/sizes.rs" => Some(include_str!("../content/snippets/tag/sizes.rs")),
         "tag/round.rs" => Some(include_str!("../content/snippets/tag/round.rs")),
-        "combobox/basic.rs" => Some(include_str!("../content/snippets/combobox/basic.rs")),
-        "combobox/grouped.rs" => Some(include_str!("../content/snippets/combobox/grouped.rs")),
-        "combobox/multiple.rs" => Some(include_str!("../content/snippets/combobox/multiple.rs")),
-        "combobox/footer.rs" => Some(include_str!("../content/snippets/combobox/footer.rs")),
         "searchable_list/basic.rs" => {
             Some(include_str!("../content/snippets/searchable_list/basic.rs"))
         }
@@ -1378,9 +1368,6 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "input_number/precision.rs" => Some(include_str!(
             "../content/snippets/input_number/precision.rs"
         )),
-        "text_view/blocks.rs" => Some(include_str!("../content/snippets/text_view/blocks.rs")),
-        "text_view/markdown.rs" => Some(include_str!("../content/snippets/text_view/markdown.rs")),
-        "text_view/inline.rs" => Some(include_str!("../content/snippets/text_view/inline.rs")),
         "textarea/basic.rs" => Some(include_str!("../content/snippets/textarea/basic.rs")),
         "textarea/limit.rs" => Some(include_str!("../content/snippets/textarea/limit.rs")),
         "checkbox/basic.rs" => Some(include_str!("../content/snippets/checkbox/basic.rs")),
@@ -1392,6 +1379,10 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "radio/buttons.rs" => Some(include_str!("../content/snippets/radio/buttons.rs")),
         "radio/custom.rs" => Some(include_str!("../content/snippets/radio/custom.rs")),
         "select/basic.rs" => Some(include_str!("../content/snippets/select/basic.rs")),
+        "select/searchable.rs" => Some(include_str!("../content/snippets/select/searchable.rs")),
+        "select/grouped.rs" => Some(include_str!("../content/snippets/select/grouped.rs")),
+        "select/multiple.rs" => Some(include_str!("../content/snippets/select/multiple.rs")),
+        "select/footer.rs" => Some(include_str!("../content/snippets/select/footer.rs")),
         "slider/basic.rs" => Some(include_str!("../content/snippets/slider/basic.rs")),
         "slider/step.rs" => Some(include_str!("../content/snippets/slider/step.rs")),
         "rate/basic.rs" => Some(include_str!("../content/snippets/rate/basic.rs")),
@@ -1583,8 +1574,6 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "splitter/basic.rs" => Some(include_str!("../content/snippets/splitter/basic.rs")),
         "scrollbar/basic.rs" => Some(include_str!("../content/snippets/scrollbar/basic.rs")),
         "shell/basic.rs" => Some(include_str!("../content/snippets/shell/basic.rs")),
-        "sheet/placements.rs" => Some(include_str!("../content/snippets/sheet/placements.rs")),
-        "sheet/controlled.rs" => Some(include_str!("../content/snippets/sheet/controlled.rs")),
         "shell/full_product.rs" => Some(include_str!("../content/snippets/shell/full_product.rs")),
         "shell/content_first.rs" => {
             Some(include_str!("../content/snippets/shell/content_first.rs"))
@@ -1728,6 +1717,12 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         )),
         "drawer/placements.rs" => Some(include_str!("../content/snippets/drawer/placements.rs")),
         "drawer/sizes.rs" => Some(include_str!("../content/snippets/drawer/sizes.rs")),
+        "drawer/sheet_placements.rs" => Some(include_str!(
+            "../content/snippets/drawer/sheet_placements.rs"
+        )),
+        "drawer/sheet_controlled.rs" => Some(include_str!(
+            "../content/snippets/drawer/sheet_controlled.rs"
+        )),
         "dock_layout/workbench.rs" => {
             Some(include_str!("../content/snippets/dock_layout/workbench.rs"))
         }
@@ -2017,7 +2012,7 @@ struct LiveDemoContent {
     component: SharedString,
     gallery_demo: Option<AnyView>,
     autocompletes: Vec<Entity<Autocomplete>>,
-    comboboxes: Vec<Entity<liora_components::Combobox>>,
+    select_advanceds: Vec<Entity<Select>>,
     input_numbers: Vec<Entity<InputNumber>>,
     textareas: Vec<Entity<Textarea>>,
     checkboxes: Vec<Entity<Checkbox>>,
@@ -2072,7 +2067,7 @@ impl LiveDemoContent {
     fn new(component: SharedString, cx: &mut Context<Self>) -> Self {
         let gallery_demo = liora_gallery::demos::render_doc_demo(component.as_ref(), cx);
         let mut autocompletes = Vec::new();
-        let mut comboboxes = Vec::new();
+        let mut select_advanceds = Vec::new();
         let mut input_numbers = Vec::new();
         let mut textareas = Vec::new();
         let mut checkboxes = Vec::new();
@@ -2219,35 +2214,37 @@ impl LiveDemoContent {
                 }));
             }
 
-            "ComboboxBasic" => {
-                comboboxes.push(cx.new(|cx| {
-                    liora_components::Combobox::new(docs_combobox_framework_items(), cx)
+            "SelectSearchable" => {
+                select_advanceds.push(cx.new(|cx| {
+                    Select::searchable(docs_combobox_framework_items(), cx)
                         .placeholder("Choose framework")
                 }));
             }
-            "ComboboxGrouped" => {
-                comboboxes.push(cx.new(|cx| {
-                    liora_components::Combobox::new(docs_combobox_component_items(), cx)
+            "SelectGrouped" => {
+                select_advanceds.push(cx.new(|cx| {
+                    Select::searchable(docs_combobox_component_items(), cx)
                         .placeholder("Search components")
                         .width(px(340.0))
                 }));
             }
-            "ComboboxMultiple" => {
-                comboboxes.push(cx.new(|cx| {
-                    liora_components::Combobox::new(docs_combobox_component_items(), cx)
+            "SelectMultiple" => {
+                select_advanceds.push(cx.new(|cx| {
+                    Select::searchable(docs_combobox_component_items(), cx)
                         .multiple()
-                        .selected_values(vec!["button", "combobox"])
+                        .selected_values(vec!["button", "select-search"])
                         .placeholder("Pick multiple components")
                         .width(px(340.0))
                 }));
             }
-            "ComboboxFooter" => {
-                comboboxes.push(cx.new(|cx| {
-                    liora_components::Combobox::new(docs_combobox_component_items(), cx)
+            "SelectFooter" => {
+                select_advanceds.push(cx.new(|cx| {
+                    Select::searchable(docs_combobox_component_items(), cx)
                         .placeholder("Create or select")
                         .width(px(340.0))
                         .footer(|_, _| {
-                            liora_components::combobox_create_footer("Create component")
+                            Button::new("Create component")
+                                .small()
+                                .icon_start(IconName::Plus)
                                 .into_any_element()
                         })
                 }));
@@ -2964,7 +2961,7 @@ impl LiveDemoContent {
             component,
             gallery_demo,
             autocompletes,
-            comboboxes,
+            select_advanceds,
             input_numbers,
             textareas,
             checkboxes,
@@ -3364,36 +3361,36 @@ impl Render for LiveDemoContent {
                     .tab(liora_components::DockTab::new("preview", "Preview", demo_stack(vec![liora_components::Tag::new("Live").success().into_any_element(), Text::new("Center content remains flexible.").into_any_element()])))
                     .into_any_element(),
             ]),
-            "TextViewBlocks" => demo_row(vec![
-                liora_components::TextView::new([
-                    liora_components::TextViewBlock::heading(2, "Application bootstrap"),
-                    liora_components::TextViewBlock::paragraph("Initialize Liora once, then compose native GPUI windows with reusable components."),
-                    liora_components::TextViewBlock::quote("TextView is lightweight; use Docs for full documentation chrome."),
-                    liora_components::TextViewBlock::unordered([
+            "TextDocumentBlocks" => demo_row(vec![
+                liora_components::Text::document([
+                    liora_components::TextBlock::heading(2, "Application bootstrap"),
+                    liora_components::TextBlock::paragraph("Initialize Liora once, then compose native GPUI windows with reusable components."),
+                    liora_components::TextBlock::quote("Text document mode is lightweight; use Docs for full documentation chrome."),
+                    liora_components::TextBlock::unordered([
                         "Native selectable text",
                         "Theme-aware quote and code surfaces",
                         "Copyable code blocks",
                     ]),
-                    liora_components::TextViewBlock::code("liora_components::init_liora(cx);", "rust"),
+                    liora_components::TextBlock::code("liora_components::init_liora(cx);", "rust"),
                 ])
                 .framed(true)
                 .max_width(gpui::px(760.0))
                 .into_any_element(),
             ]),
-            "TextViewMarkdown" => demo_row(vec![
-                liora_components::TextView::from_plain_markdown(
-                    "# Release notes\n\nLiora renders app documents as native GPUI elements.\n\n> Keep SDK docs close to product behavior.\n\n1. Parse a small Markdown subset\n2. Render reusable component blocks\n\n```rust\nTextView::from_plain_markdown(markdown)\n```",
+            "TextMarkdown" => demo_row(vec![
+                liora_components::Text::markdown(
+                    "# Release notes\n\nLiora renders app documents as native GPUI elements.\n\n> Keep SDK docs close to product behavior.\n\n1. Parse a small Markdown subset\n2. Render reusable component blocks\n\n```rust\nText::markdown(markdown)\n```",
                 )
                 .framed(true)
                 .max_width(gpui::px(760.0))
                 .into_any_element(),
             ]),
-            "TextViewInline" => demo_row(vec![
-                liora_components::TextView::new([
-                    liora_components::TextViewBlock::heading(3, "Inline help"),
-                    liora_components::TextViewBlock::paragraph("Use max_width for readable line length and selectable(false) for decorative guidance."),
-                    liora_components::TextViewBlock::Divider,
-                    liora_components::TextViewBlock::ordered([
+            "TextDocumentInline" => demo_row(vec![
+                liora_components::Text::document([
+                    liora_components::TextBlock::heading(3, "Inline help"),
+                    liora_components::TextBlock::paragraph("Use max_width for readable line length and selectable(false) for decorative guidance."),
+                    liora_components::TextBlock::Divider,
+                    liora_components::TextBlock::ordered([
                         "Keep content concise",
                         "Use real components",
                         "Avoid browser runtime",
@@ -3405,31 +3402,31 @@ impl Render for LiveDemoContent {
             ]),
             "SettingsPageBasic" => docs_settings_page_basic(self),
             "SettingsSensitive" => docs_settings_sensitive(self),
-            "SheetPlacements" => demo_row(vec![
+            "DrawerSheetPlacements" => demo_row(vec![
                 Button::new("Right").icon_start(IconName::PanelRightOpen).on_click(|_, _, cx| {
-                    liora_components::Sheet::new().title("Inspector").right().content(|_| docs_sheet_body("Right inspector")).show(cx);
+                    liora_components::Drawer::sheet().title("Inspector").right().content_view(|_| docs_sheet_body("Right inspector")).show(cx);
                 }).into_any_element(),
                 Button::new("Left").icon_start(IconName::PanelLeftOpen).on_click(|_, _, cx| {
-                    liora_components::Sheet::new().title("Navigator").left().content(|_| docs_sheet_body("Left navigator")).show(cx);
+                    liora_components::Drawer::sheet().title("Navigator").left().content_view(|_| docs_sheet_body("Left navigator")).show(cx);
                 }).into_any_element(),
                 Button::new("Top").icon_start(IconName::PanelTopOpen).on_click(|_, _, cx| {
-                    liora_components::Sheet::new().title("Command").top().height_sm().content(|_| docs_sheet_body("Top command")).show(cx);
+                    liora_components::Drawer::sheet().title("Command").top().height_sm().content_view(|_| docs_sheet_body("Top command")).show(cx);
                 }).into_any_element(),
                 Button::new("Bottom").icon_start(IconName::PanelBottomOpen).on_click(|_, _, cx| {
-                    liora_components::Sheet::new().title("Actions").bottom().height_sm().content(|_| docs_sheet_body("Bottom actions")).show(cx);
+                    liora_components::Drawer::sheet().title("Actions").bottom().height_sm().content_view(|_| docs_sheet_body("Bottom actions")).show(cx);
                 }).into_any_element(),
             ]),
-            "SheetControlled" => Button::new("Open blocking review")
+            "DrawerSheetControlled" => Button::new("Open blocking review")
                 .primary()
                 .icon_start(IconName::ShieldCheck)
                 .on_click(|_, _, cx| {
-                    liora_components::Sheet::new()
+                    liora_components::Drawer::sheet()
                         .id("docs-blocking-review")
                         .title("Blocking review")
                         .width_lg()
                         .close_on_click_outside(false)
                         .close_on_escape(false)
-                        .content(|_| docs_sheet_body("Explicit close only"))
+                        .content_view(|_| docs_sheet_body("Explicit close only"))
                         .show(cx);
                 })
                 .into_any_element(),
@@ -3439,8 +3436,8 @@ impl Render for LiveDemoContent {
             "SearchableListBasic" => docs_searchable_list_basic(),
             "SearchableListFiltered" => docs_searchable_list_filtered(),
             "SearchableListEmpty" => docs_searchable_list_empty(),
-            "ComboboxBasic" | "ComboboxGrouped" | "ComboboxMultiple" | "ComboboxFooter" => demo_stack(
-                self.comboboxes
+            "SelectSearchable" | "SelectGrouped" | "SelectMultiple" | "SelectFooter" => demo_stack(
+                self.select_advanceds
                     .iter()
                     .cloned()
                     .map(Entity::into_any_element)
@@ -5861,7 +5858,7 @@ fn docs_sheet_body(title: &'static str) -> impl IntoElement {
         .vertical()
         .gap_md()
         .child(Text::new(title).bold())
-        .child(Text::new("Use Sheet for a short contextual flow."))
+        .child(Text::new("Use Drawer::sheet for a short contextual flow."))
         .child(
             Space::new()
                 .gap_sm()
@@ -5984,7 +5981,8 @@ fn docs_combobox_component_items() -> Vec<liora_components::SearchableListItem> 
     vec![
         liora_components::SearchableListItem::labeled("button", "Button").group("Basic"),
         liora_components::SearchableListItem::labeled("input", "Input").group("Basic"),
-        liora_components::SearchableListItem::labeled("combobox", "Combobox").group("Input"),
+        liora_components::SearchableListItem::labeled("select-search", "Searchable Select")
+            .group("Input"),
         liora_components::SearchableListItem::labeled("sidebar", "Sidebar").group("Shell"),
         liora_components::SearchableListItem::labeled("status-bar", "StatusBar").group("Shell"),
         liora_components::SearchableListItem::labeled("dock-layout", "DockLayout")
@@ -5995,7 +5993,7 @@ fn docs_combobox_component_items() -> Vec<liora_components::SearchableListItem> 
 
 fn docs_searchable_list_basic() -> AnyElement {
     liora_components::SearchableList::new(docs_combobox_component_items())
-        .selected("combobox")
+        .selected("select-search")
         .width(px(340.0))
         .into_any_element()
 }
@@ -12030,7 +12028,13 @@ mod tests {
             (
                 include_str!("../content/pages/select.md"),
                 "SelectBasic",
-                &["select/basic.rs"][..],
+                &[
+                    "select/basic.rs",
+                    "select/searchable.rs",
+                    "select/grouped.rs",
+                    "select/multiple.rs",
+                    "select/footer.rs",
+                ][..],
             ),
             (
                 include_str!("../content/pages/slider.md"),
@@ -12345,6 +12349,8 @@ mod tests {
                     "drawer/placements.rs",
                     "drawer/sizes.rs",
                     "drawer/manual_close.rs",
+                    "drawer/sheet_placements.rs",
+                    "drawer/sheet_controlled.rs",
                 ][..],
             ),
             (

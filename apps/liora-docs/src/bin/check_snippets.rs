@@ -179,14 +179,6 @@ mod color_picker_compact;
 mod color_picker_disabled;
 #[path = "../../content/snippets/color_picker/presets.rs"]
 mod color_picker_presets;
-#[path = "../../content/snippets/combobox/basic.rs"]
-mod combobox_basic;
-#[path = "../../content/snippets/combobox/footer.rs"]
-mod combobox_footer;
-#[path = "../../content/snippets/combobox/grouped.rs"]
-mod combobox_grouped;
-#[path = "../../content/snippets/combobox/multiple.rs"]
-mod combobox_multiple;
 #[path = "../../content/snippets/container/divider.rs"]
 mod container_divider;
 #[path = "../../content/snippets/container/layout.rs"]
@@ -237,6 +229,10 @@ mod dialog_manual_close;
 mod drawer_manual_close;
 #[path = "../../content/snippets/drawer/placements.rs"]
 mod drawer_placements;
+#[path = "../../content/snippets/drawer/sheet_controlled.rs"]
+mod drawer_sheet_controlled;
+#[path = "../../content/snippets/drawer/sheet_placements.rs"]
+mod drawer_sheet_placements;
 #[path = "../../content/snippets/drawer/sizes.rs"]
 mod drawer_sizes;
 #[path = "../../content/snippets/dropdown/basic.rs"]
@@ -509,14 +505,18 @@ mod segmented_block;
 mod segmented_disabled;
 #[path = "../../content/snippets/select/basic.rs"]
 mod select_basic;
+#[path = "../../content/snippets/select/footer.rs"]
+mod select_footer;
+#[path = "../../content/snippets/select/grouped.rs"]
+mod select_grouped;
+#[path = "../../content/snippets/select/multiple.rs"]
+mod select_multiple;
+#[path = "../../content/snippets/select/searchable.rs"]
+mod select_searchable;
 #[path = "../../content/snippets/settings/page.rs"]
 mod settings_page;
 #[path = "../../content/snippets/settings/sensitive.rs"]
 mod settings_sensitive;
-#[path = "../../content/snippets/sheet/controlled.rs"]
-mod sheet_controlled;
-#[path = "../../content/snippets/sheet/placements.rs"]
-mod sheet_placements;
 #[path = "../../content/snippets/shell/basic.rs"]
 mod shell_basic;
 #[path = "../../content/snippets/shell/content_first.rs"]
@@ -639,12 +639,6 @@ mod tag_sizes;
 mod tag_themes;
 #[path = "../../content/snippets/tag/types.rs"]
 mod tag_types;
-#[path = "../../content/snippets/text_view/blocks.rs"]
-mod text_view_blocks;
-#[path = "../../content/snippets/text_view/inline.rs"]
-mod text_view_inline;
-#[path = "../../content/snippets/text_view/markdown.rs"]
-mod text_view_markdown;
 #[path = "../../content/snippets/textarea/basic.rs"]
 mod textarea_basic;
 #[path = "../../content/snippets/textarea/limit.rs"]
@@ -733,6 +727,12 @@ mod tree_select_filterable;
 mod tree_select_multiple;
 #[path = "../../content/snippets/tree_select/single.rs"]
 mod tree_select_single;
+#[path = "../../content/snippets/typography/document_blocks.rs"]
+mod typography_document_blocks;
+#[path = "../../content/snippets/typography/document_inline.rs"]
+mod typography_document_inline;
+#[path = "../../content/snippets/typography/markdown.rs"]
+mod typography_markdown;
 #[path = "../../content/snippets/typography/paragraph.rs"]
 mod typography_paragraph;
 #[path = "../../content/snippets/upload/basic.rs"]

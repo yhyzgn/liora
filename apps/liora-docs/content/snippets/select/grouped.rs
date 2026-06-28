@@ -1,14 +1,14 @@
-//! Grouped Combobox example.
+//! Grouped searchable Select example.
 
-use gpui::{Context, px};
-use liora_components::{Combobox, SearchableListItem};
+use gpui::Context;
+use liora_components::{SearchableListItem, Select};
 
-pub fn combobox_grouped(cx: &mut Context<Combobox>) -> Combobox {
-    Combobox::new(
+pub fn grouped_select(cx: &mut Context<Select>) -> Select {
+    Select::searchable(
         vec![
             SearchableListItem::labeled("button", "Button").group("Basic"),
             SearchableListItem::labeled("input", "Input").group("Basic"),
-            SearchableListItem::labeled("combobox", "Combobox").group("Input"),
+            SearchableListItem::labeled("select", "Select").group("Input"),
             SearchableListItem::labeled("sidebar", "Sidebar").group("Shell"),
             SearchableListItem::labeled("dock-layout", "DockLayout")
                 .group("Shell")
@@ -17,5 +17,7 @@ pub fn combobox_grouped(cx: &mut Context<Combobox>) -> Combobox {
         cx,
     )
     .placeholder("Search components")
-    .width(px(340.0))
+    .width(gpui::px(340.0))
 }
+
+fn main() {}

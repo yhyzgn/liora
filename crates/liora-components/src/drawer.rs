@@ -243,6 +243,57 @@ impl Drawer {
         }
     }
 
+    /// Creates a lightweight sheet-style drawer for short contextual flows.
+    ///
+    /// This replaces the previous separate `Sheet` component: a sheet is just a
+    /// Drawer with lighter default dimensions and the same overlay lifecycle.
+    pub fn sheet() -> Self {
+        Self::new()
+            .id(liora_core::unique_id("drawer-sheet"))
+            .width(px(360.0))
+            .height(px(260.0))
+    }
+
+    /// Places the drawer on the left edge.
+    pub fn left(self) -> Self {
+        self.placement(DrawerPlacement::Left)
+    }
+
+    /// Places the drawer on the right edge.
+    pub fn right(self) -> Self {
+        self.placement(DrawerPlacement::Right)
+    }
+
+    /// Places the drawer on the top edge.
+    pub fn top(self) -> Self {
+        self.placement(DrawerPlacement::Top)
+    }
+
+    /// Places the drawer on the bottom edge.
+    pub fn bottom(self) -> Self {
+        self.placement(DrawerPlacement::Bottom)
+    }
+
+    /// Applies the former sheet wide-inspector preset.
+    pub fn sheet_width_lg(self) -> Self {
+        self.width(px(440.0))
+    }
+
+    /// Applies the former compact bottom-sheet height preset.
+    pub fn sheet_height_sm(self) -> Self {
+        self.height(px(220.0))
+    }
+
+    /// Sets content that only needs the current window, matching lightweight sheet use cases.
+    pub fn content_view<F, E>(mut self, f: F) -> Self
+    where
+        F: Fn(&mut Window) -> E + 'static,
+        E: IntoElement,
+    {
+        self.content = Arc::new(move |window, _cx| f(window).into_any_element());
+        self
+    }
+
     /// Assigns a stable element id used by GPUI state, hit testing, and automated interaction tests.
     pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         self.id = id.into();
@@ -362,6 +413,14 @@ mod tests {
         assert_eq!(Drawer::new().width_lg().width, px(480.0));
         assert_eq!(Drawer::new().height_sm().height, px(200.0));
         assert_eq!(Drawer::new().height_lg().height, px(360.0));
+    }
+
+    #[test]
+    fn drawer_includes_lightweight_sheet_presets() {
+        let sheet = Drawer::sheet().left().sheet_width_lg().sheet_height_sm();
+        assert_eq!(sheet.placement, DrawerPlacement::Left);
+        assert_eq!(sheet.width, px(440.0));
+        assert_eq!(sheet.height, px(220.0));
     }
 
     #[test]

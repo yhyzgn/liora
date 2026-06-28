@@ -21,13 +21,16 @@
 
 use crate::gpui_compat::element_id;
 use crate::motion::pop_in;
+use crate::{Input, SearchableList, SearchableListItem};
 use gpui::{
-    App, Bounds, Context, ElementId, Entity, FocusHandle, Focusable, Hsla, MouseButton, Pixels,
-    Render, SharedString, Window, actions, prelude::*,
+    AnyElement, App, Bounds, Context, ElementId, Entity, FocusHandle, Focusable, GlobalElementId,
+    Hsla, InspectorElementId, IntoElement, LayoutId, MouseButton, Pixels, Render, SharedString,
+    Style, Window, actions, div, prelude::*, px, relative,
 };
 use liora_core::{Config, push_portal};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
+use std::sync::Arc;
 
 actions!(
     select,
@@ -37,14 +40,36 @@ actions!(
     ]
 );
 
+/// Selection/search policy for [`Select`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum SelectMode {
+    /// Classic fixed-option select with no text filtering.
+    #[default]
+    Plain,
+    /// Searchable single-select popup.
+    Searchable,
+    /// Searchable multi-select popup.
+    Multiple,
+}
+
 /// Fluent native GPUI component for rendering Liora select.
 pub struct Select {
     options: Vec<SharedString>,
+    items: Vec<SearchableListItem>,
     selected_idx: Option<usize>,
+    selected_values: Vec<SharedString>,
+    mode: SelectMode,
+    input: Option<Entity<Input>>,
     is_open: bool,
     focus_handle: FocusHandle,
     last_bounds: Option<Bounds<Pixels>>,
     on_change: Option<Box<dyn Fn(usize, &mut Window, &mut App) + 'static>>,
+    on_values_change: Option<Arc<dyn Fn(Vec<SharedString>, &mut Window, &mut App) + 'static>>,
+    footer: Option<Arc<dyn Fn(&mut Window, &mut App) -> AnyElement + 'static>>,
+    placeholder: SharedString,
+    empty_text: SharedString,
+    max_items: usize,
+    disabled: bool,
     border_none: bool,
     radius_none: bool,
     radius_left_none: bool,
@@ -66,11 +91,21 @@ impl Select {
     ) -> Self {
         Self {
             options: options.into_iter().map(|o| o.into()).collect(),
+            items: Vec::new(),
             selected_idx,
+            selected_values: Vec::new(),
+            mode: SelectMode::Plain,
+            input: None,
             is_open: false,
             focus_handle: cx.focus_handle(),
             last_bounds: None,
             on_change: None,
+            on_values_change: None,
+            footer: None,
+            placeholder: "Search or select".into(),
+            empty_text: "No matching options".into(),
+            max_items: 8,
+            disabled: false,
             border_none: false,
             radius_none: false,
             radius_left_none: false,
@@ -82,6 +117,108 @@ impl Select {
             close_on_click_outside: true,
             close_on_escape: true,
         }
+    }
+
+    /// Creates a searchable select from reusable list items.
+    pub fn searchable(items: Vec<SearchableListItem>, cx: &mut Context<Self>) -> Self {
+        let mut this = Self::new(Vec::<SharedString>::new(), None, cx);
+        this.items = items;
+        this.mode = SelectMode::Searchable;
+        this.width = Some(px(300.0));
+        this.input = Some(cx.new(|cx| {
+            Input::new("", cx)
+                .clearable(true)
+                .icon_suffix(IconName::ChevronDown)
+        }));
+        this
+    }
+
+    /// Creates a searchable select from plain values.
+    pub fn searchable_values(values: Vec<impl Into<SharedString>>, cx: &mut Context<Self>) -> Self {
+        Self::searchable(
+            values.into_iter().map(SearchableListItem::new).collect(),
+            cx,
+        )
+    }
+
+    /// Switches a searchable select into multiple-selection mode.
+    pub fn multiple(mut self) -> Self {
+        self.mode = SelectMode::Multiple;
+        self
+    }
+
+    /// Sets the select mode explicitly.
+    pub fn mode(mut self, mode: SelectMode) -> Self {
+        self.mode = mode;
+        self
+    }
+
+    /// Sets the selected value for searchable single-select mode.
+    pub fn selected(mut self, value: impl Into<SharedString>) -> Self {
+        self.selected_values = vec![value.into()];
+        self
+    }
+
+    /// Sets selected values for searchable multi-select mode.
+    pub fn selected_values(mut self, values: Vec<impl Into<SharedString>>) -> Self {
+        self.selected_values = values.into_iter().map(Into::into).collect();
+        self
+    }
+
+    /// Uses the supplied placeholder text when no search is active.
+    pub fn placeholder(mut self, placeholder: impl Into<SharedString>) -> Self {
+        self.placeholder = placeholder.into();
+        self
+    }
+
+    /// Replaces the empty-state text rendered when filtering yields no rows.
+    pub fn empty_text(mut self, text: impl Into<SharedString>) -> Self {
+        self.empty_text = text.into();
+        self
+    }
+
+    /// Toggles disabled state and suppresses interaction when enabled.
+    pub fn disabled(mut self, disabled: bool) -> Self {
+        self.disabled = disabled;
+        self
+    }
+
+    /// Limits how many matching rows are displayed in the searchable popup.
+    pub fn max_items(mut self, max: usize) -> Self {
+        self.max_items = max.max(1);
+        self
+    }
+
+    /// Adds a footer element rendered below searchable options.
+    pub fn footer(
+        mut self,
+        footer: impl Fn(&mut Window, &mut App) -> AnyElement + 'static,
+    ) -> Self {
+        self.footer = Some(Arc::new(footer));
+        self
+    }
+
+    /// Registers a callback for searchable single/multiple selected values.
+    pub fn on_values_change(
+        mut self,
+        callback: impl Fn(Vec<SharedString>, &mut Window, &mut App) + 'static,
+    ) -> Self {
+        self.on_values_change = Some(Arc::new(callback));
+        self
+    }
+
+    /// Returns selected values in their persisted order.
+    pub fn selected_values_ref(&self) -> &[SharedString] {
+        &self.selected_values
+    }
+
+    /// Returns matching items for a query using the shared searchable-list logic.
+    pub fn matching_items_for(
+        items: &[SearchableListItem],
+        query: &str,
+        max: usize,
+    ) -> Vec<SearchableListItem> {
+        SearchableList::filtered_items_for(items, query, max)
     }
 
     /// Removes the visible border treatment.
@@ -295,6 +432,81 @@ impl Select {
         }
         cx.notify();
     }
+
+    fn query(&self, cx: &App) -> SharedString {
+        self.input
+            .as_ref()
+            .map(|input| input.read(cx).value())
+            .unwrap_or_default()
+    }
+
+    fn display_value_for(&self, value: &SharedString) -> SharedString {
+        self.items
+            .iter()
+            .find(|item| &item.value == value)
+            .map(|item| item.label.clone())
+            .unwrap_or_else(|| value.clone())
+    }
+
+    fn summary(&self) -> SharedString {
+        match self.selected_values.as_slice() {
+            [] => SharedString::default(),
+            [value] => self.display_value_for(value),
+            values => format!("{} selected", values.len()).into(),
+        }
+    }
+
+    fn select_item(
+        &mut self,
+        item: SearchableListItem,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if item.disabled {
+            return;
+        }
+
+        match self.mode {
+            SelectMode::Plain => {}
+            SelectMode::Searchable => {
+                self.selected_values = vec![item.value.clone()];
+                self.is_open = false;
+                if let Some(input) = &self.input {
+                    let label = item.label.clone();
+                    input.update(cx, |input, cx| input.set_value(label, cx));
+                }
+            }
+            SelectMode::Multiple => {
+                if let Some(index) = self
+                    .selected_values
+                    .iter()
+                    .position(|value| value == &item.value)
+                {
+                    self.selected_values.remove(index);
+                } else {
+                    self.selected_values.push(item.value.clone());
+                }
+                let summary = self.summary();
+                if let Some(input) = &self.input {
+                    input.update(cx, |input, cx| input.set_value(summary, cx));
+                }
+            }
+        }
+
+        if let Some(callback) = &self.on_values_change {
+            callback(self.selected_values.clone(), window, cx);
+        }
+        cx.notify();
+    }
+
+    fn open(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.disabled {
+            return;
+        }
+        self.is_open = true;
+        window.focus(&self.focus_handle, cx);
+        cx.notify();
+    }
 }
 
 impl Focusable for Select {
@@ -327,21 +539,21 @@ impl Element for BoundsCapturer {
 
     fn request_layout(
         &mut self,
-        _: Option<&gpui::GlobalElementId>,
-        _: Option<&gpui::InspectorElementId>,
+        _: Option<&GlobalElementId>,
+        _: Option<&InspectorElementId>,
         window: &mut Window,
         cx: &mut App,
-    ) -> (gpui::LayoutId, ()) {
-        let mut style = gpui::Style::default();
-        style.size.width = gpui::relative(1.0).into();
-        style.size.height = gpui::relative(1.0).into();
+    ) -> (LayoutId, ()) {
+        let mut style = Style::default();
+        style.size.width = relative(1.0).into();
+        style.size.height = relative(1.0).into();
         (window.request_layout(style, [], cx), ())
     }
 
     fn prepaint(
         &mut self,
-        _: Option<&gpui::GlobalElementId>,
-        _: Option<&gpui::InspectorElementId>,
+        _: Option<&GlobalElementId>,
+        _: Option<&InspectorElementId>,
         bounds: Bounds<Pixels>,
         _: &mut (),
         _window: &mut Window,
@@ -354,8 +566,8 @@ impl Element for BoundsCapturer {
 
     fn paint(
         &mut self,
-        _: Option<&gpui::GlobalElementId>,
-        _: Option<&gpui::InspectorElementId>,
+        _: Option<&GlobalElementId>,
+        _: Option<&InspectorElementId>,
         _: Bounds<Pixels>,
         _: &mut (),
         _: &mut (),
@@ -365,15 +577,148 @@ impl Element for BoundsCapturer {
     }
 }
 
+impl Select {
+    fn render_searchable(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> AnyElement {
+        let theme = cx.global::<Config>().theme.clone();
+        let entity = cx.entity().clone();
+        let disabled = self.disabled;
+        let placeholder = if self.selected_values.is_empty() {
+            self.placeholder.clone()
+        } else {
+            self.summary()
+        };
+        let suffix_icon = if self.is_open {
+            IconName::ChevronUp
+        } else {
+            IconName::ChevronDown
+        };
+
+        if let Some(input) = &self.input {
+            input.update(cx, |input, cx| {
+                input.set_placeholder(placeholder, cx);
+                input.set_disabled(disabled, cx);
+                input.set_clearable(!disabled, cx);
+                input.set_icon_suffix(Some(suffix_icon), cx);
+                input.set_on_change({
+                    let entity = entity.clone();
+                    move |_, cx| {
+                        entity.update(cx, |this, cx| {
+                            this.is_open = true;
+                            cx.notify();
+                        });
+                    }
+                });
+            });
+        }
+
+        if self.is_open && !self.disabled {
+            let bounds = self.last_bounds;
+            let query = self.query(cx);
+            let items = self.items.clone();
+            let selected_values = self.selected_values.clone();
+            let max_items = self.max_items;
+            let empty_text = self.empty_text.clone();
+            let footer = self.footer.clone();
+            let close_on_click_outside = self.close_on_click_outside;
+            let entity = entity.clone();
+            let theme_portal = theme.clone();
+
+            push_portal(
+                move |_window, _cx| {
+                    let (top, left, width) = bounds
+                        .map(|b| (b.bottom() + px(4.0), b.left(), b.size.width))
+                        .unwrap_or((px(120.0), px(120.0), px(300.0)));
+                    let entity_for_list = entity.clone();
+                    let mut panel = div()
+                        .absolute()
+                        .top(top)
+                        .left(left)
+                        .w(width)
+                        .rounded(px(theme_portal.radius.md))
+                        .bg(theme_portal.neutral.card)
+                        .border_1()
+                        .border_color(theme_portal.neutral.border)
+                        .shadow_lg()
+                        .occlude();
+
+                    panel = panel.when(close_on_click_outside, |panel| {
+                        panel.on_mouse_down_out({
+                            let entity = entity.clone();
+                            move |_, _, cx| {
+                                entity.update(cx, |this, cx| {
+                                    this.is_open = false;
+                                    cx.notify();
+                                });
+                            }
+                        })
+                    });
+
+                    let list = SearchableList::new(items.clone())
+                        .id("liora-select-searchable-options")
+                        .query(query.clone())
+                        .selected_values(selected_values.clone())
+                        .empty_text(empty_text.clone())
+                        .max_items(max_items)
+                        .width(width)
+                        .on_select(move |item, window, cx| {
+                            entity_for_list
+                                .update(cx, |this, cx| this.select_item(item, window, cx));
+                        });
+
+                    panel = panel.child(list);
+                    if let Some(footer) = footer.clone() {
+                        panel = panel.child(
+                            div()
+                                .border_t_1()
+                                .border_color(theme_portal.neutral.border)
+                                .p_2()
+                                .child(footer(_window, _cx)),
+                        );
+                    }
+
+                    pop_in(element_id("liora-select-searchable-panel"), panel).into_any_element()
+                },
+                cx,
+            );
+        }
+
+        div()
+            .relative()
+            .when_some(self.width, |s, width| s.w(width))
+            .when(self.width.is_none(), |s| s.w_full())
+            .child(
+                div()
+                    .absolute()
+                    .top_0()
+                    .left_0()
+                    .size_full()
+                    .child(BoundsCapturer {
+                        select: cx.entity().clone(),
+                    }),
+            )
+            .children(self.input.iter().cloned())
+            .on_mouse_down(
+                MouseButton::Left,
+                cx.listener(|this, _, window, cx| this.open(window, cx)),
+            )
+            .on_action(cx.listener(Self::close_on_escape_action))
+            .into_any_element()
+    }
+}
+
 impl Render for Select {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let config = cx.global::<Config>();
         let theme = config.theme.clone();
         let focused = self.focus_handle.is_focused(_window);
 
+        if self.mode != SelectMode::Plain {
+            return self.render_searchable(_window, cx).into_any_element();
+        }
+
         let display_text = self
             .selected_idx
-            .map(|i| self.options[i].clone())
+            .and_then(|i| self.options.get(i).cloned())
             .unwrap_or_else(|| "Select...".into());
 
         let border_color = if focused || self.is_open {
@@ -548,5 +893,36 @@ impl Render for Select {
                 }))
             })
             .on_action(cx.listener(Self::close_on_escape_action))
+            .into_any_element()
+    }
+}
+
+#[cfg(test)]
+mod searchable_select_tests {
+    use super::*;
+
+    fn items() -> Vec<SearchableListItem> {
+        vec![
+            SearchableListItem::labeled("rust", "Rust").group("Language"),
+            SearchableListItem::labeled("gpui", "GPUI")
+                .description("Native UI")
+                .group("Framework"),
+        ]
+    }
+
+    #[test]
+    fn select_reuses_searchable_list_matching_for_combobox_capabilities() {
+        let matches = Select::matching_items_for(&items(), "native", 8);
+        assert_eq!(matches.len(), 1);
+        assert_eq!(matches[0].value, "gpui");
+    }
+
+    #[test]
+    fn select_exposes_searchable_and_multiple_modes() {
+        let source = include_str!("select.rs");
+        assert!(source.contains("pub enum SelectMode"));
+        assert!(source.contains("pub fn searchable"));
+        assert!(source.contains("pub fn multiple"));
+        assert!(source.contains("SearchableList::new(items.clone())"));
     }
 }

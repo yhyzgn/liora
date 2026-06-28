@@ -24,3 +24,43 @@ Liora Typography 可以把多个不同样式的文本片段合成为同一个 `S
 ## 自举意义
 
 文档渲染不实现独立排版引擎，而是依赖 Liora 自己的 Typography 组件。这样文档能力和组件库能力会同步成长。
+
+
+## Text 结构化文档块
+
+`Text::document(...)` 覆盖原先 TextView 的结构化文档能力，用同一个 Text 入口渲染 About、Help、Release notes、设置说明等轻量原生文档。它复用 Liora 的 `Title`、`Paragraph`、`CodeBlock`、`Card`、`Divider`，不引入 WebView/HTML/DOM runtime。
+
+### 效果
+
+::LioraDemo{component="TextDocumentBlocks"}::
+
+### 代码
+
+```rust src="typography/document_blocks.rs"
+```
+
+## Text Markdown 子集
+
+`Text::markdown(...)` 适合应用内 help/about，不支持完整 CommonMark，但能覆盖标题、段落、引用、列表、分隔线和 fenced code。
+
+### 效果
+
+::LioraDemo{component="TextMarkdown"}::
+
+### 代码
+
+```rust src="typography/markdown.rs"
+```
+
+## Text 无边框嵌入
+
+需要把说明嵌入设置页、侧栏详情或空状态时，可以关闭外框并控制 selectable。
+
+### 效果
+
+::LioraDemo{component="TextDocumentInline"}::
+
+### 代码
+
+```rust src="typography/document_inline.rs"
+```

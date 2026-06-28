@@ -17,7 +17,7 @@ fn component_items() -> Vec<SearchableListItem> {
         SearchableListItem::labeled("input", "Input")
             .description("Text entry with prefix/suffix slots")
             .group("Basic"),
-        SearchableListItem::labeled("combobox", "Combobox")
+        SearchableListItem::labeled("select-search", "Select::searchable")
             .description("Searchable select with grouped options")
             .group("Input"),
         SearchableListItem::labeled("status-bar", "StatusBar")
@@ -39,7 +39,7 @@ impl Render for SearchableListDemo {
         let theme = cx.global::<Config>().theme.clone();
         page(
             "SearchableList 可搜索列表",
-            "通用过滤列表底座，统一 value/label/description/group/disabled/selected 等选项能力，供 Combobox、命令面板和设置页复用。",
+            "通用过滤列表底座，统一 value/label/description/group/disabled/selected 等选项能力，供 Select::searchable、命令面板和设置页复用。",
             Space::new().vertical().gap_xl().child(section(
                 "SearchableList showcase",
                 "过滤、分组、限制和空态统一使用卡片网格展示。",
@@ -48,7 +48,7 @@ impl Render for SearchableListDemo {
                         "All components",
                         "空查询展示全部分组和禁用项。",
                         SearchableList::new(component_items())
-                            .selected("combobox")
+                            .selected("select-search")
                             .width(px(328.0))
                             .into_any_element(),
                     ),

@@ -1,7 +1,7 @@
 use gpui::{App, Context, Entity, IntoElement, Render, Window, prelude::*};
-use liora_components::{Divider, Link, Paragraph, Space, Text, Title};
+use liora_components::{Divider, Link, Paragraph, Space, Text, TextBlock, Title};
 
-use liora_components::layout_helpers::{page, row, section};
+use liora_components::layout_helpers::{page, row, section, showcase_card_wide, showcase_stack};
 
 pub fn render(cx: &mut App) -> Entity<TypographyDemo> {
     cx.new(|_| TypographyDemo)
@@ -52,6 +52,38 @@ impl Render for TypographyDemo {
                         Text::new("Auto wrap: this is a deliberately long Text component sample. It should wrap automatically within the available container instead of overflowing horizontally.")
                             .wrap()
                             .into_any_element(),
+                    ]),
+                ))
+
+                .child(Divider::new())
+                .child(section(
+                    "Text 文档模式",
+                    "About、Help、Release notes 等轻量文档也统一由 Text 承载，不再使用单独 TextView 控件。",
+                    showcase_stack(vec![
+                        showcase_card_wide(
+                            "结构化文档块",
+                            "直接用 block model 组合标题、段落、引用、列表和代码块。",
+                            Text::document([
+                                TextBlock::heading(2, "Application bootstrap"),
+                                TextBlock::paragraph("Initialize Liora once, then compose native GPUI windows with reusable Liora components."),
+                                TextBlock::quote("Text document mode is lightweight; use Docs for full documentation chrome."),
+                                TextBlock::unordered([
+                                    "Native selectable text",
+                                    "Theme-aware quote and code surfaces",
+                                    "Copyable code blocks",
+                                ]),
+                                TextBlock::code("liora_components::init_liora(cx);", "rust"),
+                            ])
+                            .framed(true)
+                        )
+                        .into_any_element(),
+                        showcase_card_wide(
+                            "快速 Markdown 子集",
+                            "适合应用内 help/about，不支持完整 CommonMark，也不会引入 WebView。",
+                            Text::markdown("# Release notes\n\nLiora renders documents as native GPUI elements.\n\n> Keep SDK docs close to product behavior.\n\n1. Parse a small Markdown subset\n2. Render reusable component blocks\n\n```rust\nText::markdown(markdown)\n```")
+                                .framed(true)
+                        )
+                        .into_any_element(),
                     ]),
                 ))
                 .child(Divider::new())

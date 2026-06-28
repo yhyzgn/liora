@@ -1,7 +1,7 @@
 //! Searchable list module.
 //!
 //! `SearchableList` is the shared filtering and option-list primitive used by
-//! higher-level controls such as [`crate::Combobox`]. It intentionally keeps
+//! higher-level controls such as [`crate::Select::searchable`]. It intentionally keeps
 //! query matching, grouping, disabled rows, empty states, and selection visuals
 //! in one SDK component so application controls do not duplicate list logic.
 
@@ -15,7 +15,7 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 use std::sync::Arc;
 
-/// Data model rendered by [`SearchableList`] and reused by [`crate::Combobox`].
+/// Data model rendered by [`SearchableList`] and reused by [`crate::Select::searchable`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SearchableListItem {
     /// Stable machine value used by callbacks, forms, and persistence.
@@ -365,7 +365,7 @@ mod tests {
     fn sample_items() -> Vec<SearchableListItem> {
         vec![
             SearchableListItem::labeled("button", "Button").group("Basic"),
-            SearchableListItem::labeled("combobox", "Combobox")
+            SearchableListItem::labeled("select-search", "Select::searchable")
                 .description("Searchable select")
                 .group("Input"),
             SearchableListItem::labeled("status-bar", "StatusBar").group("Shell"),
@@ -376,7 +376,7 @@ mod tests {
     fn filters_by_value_label_description_and_group() {
         let items = sample_items();
         assert_eq!(
-            SearchableList::filtered_items_for(&items, "combo", 8).len(),
+            SearchableList::filtered_items_for(&items, "searchable", 8).len(),
             1
         );
         assert_eq!(
@@ -403,9 +403,10 @@ mod tests {
 
     #[test]
     fn selected_values_support_single_and_multiple_modes() {
-        let list = SearchableList::new(sample_items()).selected_values(vec!["button", "combobox"]);
+        let list =
+            SearchableList::new(sample_items()).selected_values(vec!["button", "select-search"]);
         assert!(list.is_value_selected("button"));
-        assert!(list.is_value_selected("combobox"));
+        assert!(list.is_value_selected("select-search"));
         assert!(!list.is_value_selected("status-bar"));
     }
 }

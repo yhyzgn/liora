@@ -19,7 +19,6 @@ pub mod code_block_demo;
 pub mod code_editor_demo;
 pub mod collapse_demo;
 pub mod color_picker_demo;
-pub mod combobox_demo;
 pub mod container_demo;
 pub mod date_picker_demo;
 pub mod date_time_picker_demo;
@@ -64,8 +63,8 @@ pub mod scrollbar_demo;
 pub mod searchable_list_demo;
 pub mod segment_ratio_bar_demo;
 pub mod segmented_demo;
+pub mod select_advanced_demo;
 pub mod settings_demo;
-pub mod sheet_demo;
 pub mod shell_demo;
 pub mod sidebar_demo;
 pub mod signal_meter_demo;
@@ -79,7 +78,6 @@ pub mod steps_demo;
 pub mod table_demo;
 pub mod tabs_demo;
 pub mod tag_demo;
-pub mod text_view_demo;
 pub mod theme_demo;
 pub mod time_picker_demo;
 pub mod timeline_demo;
@@ -161,11 +159,6 @@ pub fn registry() -> Vec<DemoEntry> {
             render: |cx| tag_demo::render(cx).into(),
         },
         DemoEntry {
-            name: "Combobox 组合选择器",
-            description: "可搜索单选/多选下拉，支持分组和 footer",
-            render: |cx| combobox_demo::render(cx).into(),
-        },
-        DemoEntry {
             name: "Autocomplete 自动补全",
             description: "输入建议与快捷选择",
             render: |cx| autocomplete_demo::render(cx).into(),
@@ -222,8 +215,8 @@ pub fn registry() -> Vec<DemoEntry> {
         },
         DemoEntry {
             name: "Select 选择器",
-            description: "独立下拉选择用法",
-            render: |cx| form_controls_demo::render_select(cx),
+            description: "固定选项、搜索、分组、多选和 footer 扩展",
+            render: |cx| select_advanced_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Slider 滑块",
@@ -234,11 +227,6 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "Rate 评分",
             description: "独立评分用法",
             render: |cx| form_controls_demo::render_rate(cx),
-        },
-        DemoEntry {
-            name: "TextView 文档视图",
-            description: "轻量文档块和 Markdown 子集渲染",
-            render: |cx| text_view_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Toggle 工具控件",
@@ -289,11 +277,6 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "Dialog 对话框",
             description: "模态对话框",
             render: |cx| dialog_demo::render(cx).into(),
-        },
-        DemoEntry {
-            name: "Sheet 轻量面板",
-            description: "边缘滑入的轻量流程面板",
-            render: |cx| sheet_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Drawer 抽屉",
@@ -676,7 +659,6 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "CodeEditor" => Some(code_editor_demo::render(cx).into()),
         "Collapse" => Some(collapse_demo::render(cx).into()),
         "ColorPicker" => Some(color_picker_demo::render(cx).into()),
-        "Combobox" => Some(combobox_demo::render(cx).into()),
         "Container" => Some(container_demo::render(cx).into()),
         "DatePicker" => Some(date_picker_demo::render(cx).into()),
         "DateTimePicker" => Some(date_time_picker_demo::render(cx).into()),
@@ -728,7 +710,6 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "SearchableList" => Some(searchable_list_demo::render(cx).into()),
         "Sidebar" => Some(sidebar_demo::render(cx).into()),
         "Shell" => Some(shell_demo::render(cx).into()),
-        "Sheet" => Some(sheet_demo::render(cx).into()),
         "TitleBar" => Some(titlebar_demo::render(cx).into()),
         "Segmented" => Some(segmented_demo::render(cx).into()),
         "Settings" => Some(settings_demo::render(cx).into()),
@@ -741,7 +722,6 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Steps" => Some(steps_demo::render(cx).into()),
         "Switch" => Some(form_controls_demo::render_switch(cx)),
         "Table" => Some(table_demo::render(cx).into()),
-        "TextView" => Some(text_view_demo::render(cx).into()),
         "Toggle" => Some(utility_components_demo::render(cx).into()),
         "Theme" => Some(theme_demo::render(cx).into()),
         "Tabs" => Some(tabs_demo::render(cx).into()),
