@@ -729,6 +729,7 @@ fn render_menu_item(
         .flex_col()
         .child(
             div()
+                .w_full()
                 .min_h(px(32.0))
                 .px_3()
                 .pl(px(12.0 + depth as f32 * 16.0))
@@ -742,7 +743,7 @@ fn render_menu_item(
                 })
                 .when(!disabled, |s| {
                     s.cursor_pointer()
-                        .hover(|s| s.bg(theme.neutral.hover))
+                        .hover(|s| s.cursor_pointer().bg(theme.neutral.hover))
                         .on_mouse_up(MouseButton::Left, move |_, window, cx| {
                             let selected_action = action
                                 .clone()
@@ -831,7 +832,8 @@ mod tests {
         assert!(source.contains("render_menu_item"));
         assert!(source.contains("NativeMenuItem::separator"));
         assert!(source.contains("command_count"));
-        assert!(source.contains("cursor_pointer"));
+        assert!(source.contains(".w_full()"));
+        assert!(source.contains("hover(|s| s.cursor_pointer().bg(theme.neutral.hover))"));
         assert!(source.contains("on_mouse_up(MouseButton::Left"));
         assert!(source.contains("pub enum NativeMenuAction"));
         assert!(source.contains("pub fn open_url"));
