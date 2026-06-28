@@ -127,7 +127,7 @@ fn library_card(
             .vertical()
             .gap_md()
             .child(Tag::new(module).info().plain())
-            .child(Grid::new().fit_item_sm().gap_md().children(icons)),
+            .child(Grid::new().fit_item_lg().gap_md().children(icons)),
     )
 }
 
@@ -137,8 +137,8 @@ fn icon_sample(icon: Icon, label: &'static str) -> impl IntoElement {
             .vertical()
             .align_center()
             .gap_xs()
-            .child(icon)
-            .child(Text::new(label).nowrap()),
+            .child(icon.size_xl())
+            .child(Text::new(label).xs().nowrap()),
     )
 }
 

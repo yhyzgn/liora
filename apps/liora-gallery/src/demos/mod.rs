@@ -270,6 +270,11 @@ pub fn registry() -> Vec<DemoEntry> {
             render: |cx| form_demo::render(cx).into(),
         },
         DemoEntry {
+            name: "Grid 栅格墙",
+            description: "固定列数或固定 item 尺寸的二维自适应布局",
+            render: |cx| grid_demo::render(cx).into(),
+        },
+        DemoEntry {
             name: "Tour 漫游引导",
             description: "步骤式界面引导",
             render: |cx| tour_demo::render(cx).into(),

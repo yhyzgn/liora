@@ -7120,10 +7120,8 @@ fn local_demo_image() -> String {
 
 #[derive(Clone)]
 struct IconCatalogEntry {
-    library: &'static str,
     module_path: &'static str,
     name: String,
-    file: &'static str,
     svg_source: &'static str,
 }
 
@@ -7165,10 +7163,9 @@ fn icon_catalog_grid(entries: &[IconCatalogEntry]) -> impl IntoElement {
 fn icon_catalog_item(entry: &IconCatalogEntry) -> impl IntoElement {
     let icon =
         liora_icons::Icon::new(liora_icons::inline_svg_asset_path(entry.svg_source).into_owned())
-            .size_lg();
+            .size_xl();
     let copy_text = format!("{}::{}", entry.module_path, entry.name);
-    let display_name = format!("IconName::{}", entry.name);
-    let file = entry.file;
+    let display_name = entry.name.clone();
 
     GridItem::new(
         Space::new()
@@ -7176,19 +7173,7 @@ fn icon_catalog_item(entry: &IconCatalogEntry) -> impl IntoElement {
             .align_center()
             .gap_sm()
             .child(icon)
-            .child(Text::new(display_name).bold().nowrap())
-            .child(
-                liora_components::Tag::new(entry.library)
-                    .info()
-                    .plain()
-                    .small(),
-            )
-            .child(
-                Text::new(file.to_string())
-                    .size(px(11.0))
-                    .text_color(rgb(0x64748b).into())
-                    .nowrap(),
-            ),
+            .child(Text::new(display_name).bold().size(px(11.0)).nowrap()),
     )
     .on_click(move |_, cx| {
         cx.write_to_clipboard(gpui::ClipboardItem::new_string(copy_text.clone()));
@@ -7238,17 +7223,13 @@ fn material_icon_catalog_entries_cached() -> &'static [IconCatalogEntry] {
 }
 
 fn icon_catalog_entry(
-    library: &'static str,
     module_path: &'static str,
     name: String,
-    file: &'static str,
     svg_source: &'static str,
 ) -> IconCatalogEntry {
     IconCatalogEntry {
-        library,
         module_path,
         name,
-        file,
         svg_source,
     }
 }
@@ -7258,10 +7239,8 @@ fn lucide_icon_catalog_entries() -> Vec<IconCatalogEntry> {
         .iter()
         .map(|icon| {
             icon_catalog_entry(
-                "Lucide",
                 "liora::icons_lucide::IconName",
                 format!("{icon:?}"),
-                icon.file(),
                 icon.svg_source(),
             )
         })
@@ -7273,10 +7252,8 @@ fn antd_icon_catalog_entries() -> Vec<IconCatalogEntry> {
         .iter()
         .map(|icon| {
             icon_catalog_entry(
-                "AntD",
                 "liora::icons_antd::IconName",
                 format!("{icon:?}"),
-                icon.file(),
                 icon.svg_source(),
             )
         })
@@ -7288,10 +7265,8 @@ fn ionic_icon_catalog_entries() -> Vec<IconCatalogEntry> {
         .iter()
         .map(|icon| {
             icon_catalog_entry(
-                "Ionic",
                 "liora::icons_ionic::IconName",
                 format!("{icon:?}"),
-                icon.file(),
                 icon.svg_source(),
             )
         })
@@ -7303,10 +7278,8 @@ fn tabler_icon_catalog_entries() -> Vec<IconCatalogEntry> {
         .iter()
         .map(|icon| {
             icon_catalog_entry(
-                "Tabler",
                 "liora::icons_tabler::IconName",
                 format!("{icon:?}"),
-                icon.file(),
                 icon.svg_source(),
             )
         })
@@ -7318,10 +7291,8 @@ fn carbon_icon_catalog_entries() -> Vec<IconCatalogEntry> {
         .iter()
         .map(|icon| {
             icon_catalog_entry(
-                "Carbon",
                 "liora::icons_carbon::IconName",
                 format!("{icon:?}"),
-                icon.file(),
                 icon.svg_source(),
             )
         })
@@ -7333,10 +7304,8 @@ fn material_icon_catalog_entries() -> Vec<IconCatalogEntry> {
         .iter()
         .map(|icon| {
             icon_catalog_entry(
-                "Material",
                 "liora::icons_material::IconName",
                 format!("{icon:?}"),
-                icon.file(),
                 icon.svg_source(),
             )
         })
@@ -11433,6 +11402,9 @@ mod tests {
         assert!(titles.contains(&"About"));
         assert!(titles.contains(&"Button"));
         assert!(titles.contains(&"Grid"));
+        assert!(GRID_DOC.contains("# Grid"));
+        assert!(GRID_DOC.contains(r#"::LioraDemo{component="Grid"}::"#));
+        assert!(GRID_DOC.contains(r#"src="gallery/grid_demo.rs""#));
         assert!(titles.contains(&"CodeBlock"));
         assert!(titles.contains(&"Input"));
         assert!(titles.contains(&"Switch"));
@@ -11616,6 +11588,8 @@ mod tests {
         assert!(ICON_MATERIAL_DOC.contains("IconCatalogMaterial"));
 
         let source = include_str!("markdown.rs");
+        let icon_item_source = &source[source.find("fn icon_catalog_item").unwrap()
+            ..source.find("fn icon_catalog_entries").unwrap()];
         assert!(source.contains("docs_icon_library_catalog"));
         assert!(source.contains("enum IconCatalogLibrary"));
         assert!(source.contains("icon_catalog_entries(library: IconCatalogLibrary)"));
@@ -11623,6 +11597,9 @@ mod tests {
         assert!(source.contains("Grid::new()"));
         assert!(source.contains(".fit_item_lg()"));
         assert!(source.contains("GridItem::new"));
+        assert!(icon_item_source.contains("let display_name = entry.name.clone();"));
+        assert!(icon_item_source.contains(".size_xl()"));
+        assert!(!icon_item_source.contains(r#"format!("IconName::{}", entry.name)"#));
         assert!(source.contains("liora::icons_lucide::IconName"));
         assert!(source.contains("liora::icons_antd::IconName"));
         assert!(source.contains("liora::icons_ionic::IconName"));
