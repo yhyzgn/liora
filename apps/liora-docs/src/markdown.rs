@@ -117,6 +117,7 @@ const MESSAGE_DOC: &str = include_str!("../content/pages/message.md");
 const MESSAGE_BOX_DOC: &str = include_str!("../content/pages/message_box.md");
 const NOTIFICATION_DOC: &str = include_str!("../content/pages/notification.md");
 const PAGE_HEADER_DOC: &str = include_str!("../content/pages/page_header.md");
+const PARAGRAPH_DOC: &str = include_str!("../content/pages/paragraph.md");
 const PAGINATION_DOC: &str = include_str!("../content/pages/pagination.md");
 const POPCONFIRM_DOC: &str = include_str!("../content/pages/popconfirm.md");
 const POPOVER_DOC: &str = include_str!("../content/pages/popover.md");
@@ -435,6 +436,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "PageHeader",
         markdown: PAGE_HEADER_DOC,
+    },
+    DocPage {
+        title: "Paragraph",
+        markdown: PARAGRAPH_DOC,
     },
     DocPage {
         title: "Pagination",
@@ -1855,6 +1860,9 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         )),
         "gallery/page_header_demo.rs" => Some(include_str!(
             "../../liora-gallery/src/demos/page_header_demo.rs"
+        )),
+        "gallery/paragraph_demo.rs" => Some(include_str!(
+            "../../liora-gallery/src/demos/paragraph_demo.rs"
         )),
         "gallery/pagination_demo.rs" => Some(include_str!(
             "../../liora-gallery/src/demos/pagination_demo.rs"
@@ -3337,6 +3345,7 @@ impl Render for LiveDemoContent {
                 Text::new("Inline code").code_style(&_cx.global::<Config>().theme).into_any_element(),
                 Text::new("Decorative label").selectable(false).into_any_element(),
             ])).no_shadow().into_any_element(),
+            "ParagraphWrapped" => Card::new(docs_paragraph_wrapped()).no_shadow().into_any_element(),
             "TypographyParagraph" => Card::new(docs_typography_paragraph(_cx)).no_shadow().into_any_element(),
 
 
@@ -7834,6 +7843,12 @@ fn docs_tray_menu_row(
             .text_color(rgb(0x64748b).into()),
         )
         .into_any_element()
+}
+
+fn docs_paragraph_wrapped() -> impl IntoElement {
+    Paragraph::with_text(
+        "Liora Paragraph renders prose as one selectable native text flow. This long paragraph intentionally wraps across multiple visual lines, so dragging from the first visual line into later visual lines should keep one continuous highlighted selection range.",
+    )
 }
 
 fn docs_typography_paragraph(cx: &mut Context<LiveDemoContent>) -> impl IntoElement {

@@ -51,6 +51,7 @@ pub mod operation_demo;
 pub mod otp_input_demo;
 pub mod page_header_demo;
 pub mod pagination_demo;
+pub mod paragraph_demo;
 pub mod pie_chart_demo;
 pub mod popconfirm_demo;
 pub mod popover_demo;
@@ -163,6 +164,11 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "Text 文本",
             description: "基础文本、可选择文字和轻量文档入口",
             render: |cx| text_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "Paragraph 段落",
+            description: "连续可选择段落、自动换行和混合样式文本流",
+            render: |cx| paragraph_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Autocomplete 自动补全",
@@ -701,6 +707,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "MessageBox" => Some(message_box_demo::render(cx).into()),
         "Notification" => Some(notification_demo::render(cx).into()),
         "PageHeader" => Some(page_header_demo::render(cx).into()),
+        "Paragraph" => Some(paragraph_demo::render(cx).into()),
         "Pagination" => Some(pagination_demo::render(cx).into()),
         "Popconfirm" => Some(popconfirm_demo::render(cx).into()),
         "Popover" => Some(popover_demo::render(cx).into()),
