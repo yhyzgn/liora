@@ -3,9 +3,9 @@ use gpui::{
     WindowOptions, div, img, prelude::*, px, size,
 };
 use liora_components::{
-    AppWindowFrame, Button, Card, Checkbox, Container, Dialog, Input, NavigationMenu,
-    NavigationMenuMode, NavigationMenuNode, Paragraph, Segmented, SegmentedOption, Sidebar, Space,
-    Spinner, Switch, Tag, Text, Title, WindowFrameMode, apply_window_frame_mode,
+    AppWindowFrame, Button, Card, Checkbox, Container, Dialog, Input, Menu, MenuItem,
+    NavigationMenu, NavigationMenuMode, NavigationMenuNode, Paragraph, Segmented, SegmentedOption,
+    Sidebar, Space, Spinner, Switch, Tag, Text, Title, WindowFrameMode, apply_window_frame_mode,
     frame_mode_switch_row, init_liora_with_options, request_window_frame_mode, toast_info,
     toast_success,
 };
@@ -115,6 +115,7 @@ fn run_gallery() {
             install_gallery_fonts(cx);
             init_liora_with_options(cx, gallery_liora_options());
             register_gallery_desktop_identity();
+            register_gallery_system_menus(cx);
 
             install_gallery_tray(cx);
             if let Some(handle) = open_gallery_window(cx) {
@@ -123,6 +124,54 @@ fn run_gallery() {
                 }
             }
         });
+}
+
+/// Registers the gallery example menu through GPUI's official application menu API.
+fn register_gallery_system_menus(cx: &mut App) {
+    Menu::register_gpui_menus(
+        cx,
+        [
+            Menu::new("File")
+                .item(MenuItem::new_window())
+                .item(MenuItem::open_file())
+                .item(MenuItem::open_folder())
+                .item(MenuItem::separator())
+                .item(MenuItem::save())
+                .item(MenuItem::quit()),
+            Menu::new("Edit")
+                .item(MenuItem::undo())
+                .item(MenuItem::redo())
+                .item(MenuItem::separator())
+                .item(MenuItem::cut())
+                .item(MenuItem::copy())
+                .item(MenuItem::paste())
+                .item(MenuItem::separator())
+                .item(MenuItem::select_all()),
+            Menu::new("View")
+                .item(MenuItem::command_palette())
+                .item(MenuItem::toggle_sidebar())
+                .item(MenuItem::toggle_statusbar())
+                .item(MenuItem::separator())
+                .item(MenuItem::action(
+                    liora_components::MenuAction::ZoomIn,
+                    "Zoom In",
+                ))
+                .item(MenuItem::action(
+                    liora_components::MenuAction::ZoomOut,
+                    "Zoom Out",
+                ))
+                .item(MenuItem::action(
+                    liora_components::MenuAction::ZoomReset,
+                    "Reset Zoom",
+                )),
+            Menu::new("Help")
+                .item(MenuItem::open_url(
+                    "Liora on GitHub",
+                    "https://github.com/yhyzgn/liora",
+                ))
+                .item(MenuItem::new("about-gallery", "About Liora Gallery")),
+        ],
+    );
 }
 
 // This app uses init_liora_with_options instead of init_liora(cx) because it sets app fonts.
@@ -1909,6 +1958,21 @@ mod shell_regression_tests {
         assert!(!source.contains("self.demos.get(selected)"));
         assert!(!render.contains("self.active_demo = Some((entry.render)(cx));"));
         assert!(!render.contains("self.wire_shell_controls(cx);"));
+    }
+
+    #[test]
+    fn gallery_registers_gpui_system_menus_on_startup() {
+        let source = include_str!("main.rs")
+            .split("mod shell_regression_tests")
+            .next()
+            .unwrap();
+
+        assert!(source.contains("register_gallery_system_menus(cx);"));
+        assert!(source.contains("fn register_gallery_system_menus(cx: &mut App)"));
+        assert!(source.contains("Menu::register_gpui_menus("));
+        assert!(source.contains("MenuItem::open_file()"));
+        assert!(source.contains("MenuItem::open_folder()"));
+        assert!(source.contains("MenuItem::select_all()"));
     }
 
     #[test]

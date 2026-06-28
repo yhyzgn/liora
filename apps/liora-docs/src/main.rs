@@ -2,8 +2,8 @@ mod markdown;
 
 use gpui::{App, AppContext, Global, Window, WindowOptions, px, size};
 use liora_components::{
-    Button, Checkbox, Dialog, Paragraph, Space, WindowFrameMode, apply_window_frame_mode,
-    init_liora_with_options, request_window_frame_mode,
+    Button, Checkbox, Dialog, Menu, MenuItem, Paragraph, Space, WindowFrameMode,
+    apply_window_frame_mode, init_liora_with_options, request_window_frame_mode,
 };
 use liora_core::{
     FontConfig, FontLoadMode, FontLoadOptions, LinuxDesktopIdentity, LinuxDesktopPngIcon,
@@ -43,6 +43,7 @@ fn run_docs() {
             install_docs_fonts(cx);
             init_liora_with_options(cx, docs_liora_options());
             register_docs_desktop_identity();
+            register_docs_system_menus(cx);
 
             install_docs_tray(cx);
             if let Some(handle) = open_docs_window(cx) {
@@ -51,6 +52,53 @@ fn run_docs() {
                 }
             }
         });
+}
+
+/// Registers the docs example menu through GPUI's official application menu API.
+fn register_docs_system_menus(cx: &mut App) {
+    Menu::register_gpui_menus(
+        cx,
+        [
+            Menu::new("File")
+                .item(MenuItem::open_file())
+                .item(MenuItem::open_folder())
+                .item(MenuItem::separator())
+                .item(MenuItem::save())
+                .item(MenuItem::quit()),
+            Menu::new("Edit")
+                .item(MenuItem::undo())
+                .item(MenuItem::redo())
+                .item(MenuItem::separator())
+                .item(MenuItem::cut())
+                .item(MenuItem::copy())
+                .item(MenuItem::paste())
+                .item(MenuItem::separator())
+                .item(MenuItem::select_all()),
+            Menu::new("View")
+                .item(MenuItem::command_palette())
+                .item(MenuItem::toggle_sidebar())
+                .item(MenuItem::toggle_statusbar())
+                .item(MenuItem::separator())
+                .item(MenuItem::action(
+                    liora_components::MenuAction::ZoomIn,
+                    "Zoom In",
+                ))
+                .item(MenuItem::action(
+                    liora_components::MenuAction::ZoomOut,
+                    "Zoom Out",
+                ))
+                .item(MenuItem::action(
+                    liora_components::MenuAction::ZoomReset,
+                    "Reset Zoom",
+                )),
+            Menu::new("Help")
+                .item(MenuItem::open_url(
+                    "Liora on GitHub",
+                    "https://github.com/yhyzgn/liora",
+                ))
+                .item(MenuItem::new("about-docs", "About Liora Docs")),
+        ],
+    );
 }
 
 // This app uses init_liora_with_options instead of init_liora(cx) because it sets app fonts.
@@ -616,6 +664,21 @@ mod shell_tests {
         assert!(source.contains("../assets/app-icons/liora-docs-128.png"));
         assert!(source.contains("../assets/app-icons/liora-docs.png"));
         assert!(source.contains("../assets/app-icons/liora-docs.svg"));
+    }
+
+    #[test]
+    fn docs_registers_gpui_system_menus_on_startup() {
+        let source = include_str!("main.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .expect("docs app should have production source before tests");
+
+        assert!(source.contains("register_docs_system_menus(cx);"));
+        assert!(source.contains("fn register_docs_system_menus(cx: &mut App)"));
+        assert!(source.contains("Menu::register_gpui_menus("));
+        assert!(source.contains("MenuItem::open_file()"));
+        assert!(source.contains("MenuItem::open_folder()"));
+        assert!(source.contains("MenuItem::select_all()"));
     }
 
     #[test]
