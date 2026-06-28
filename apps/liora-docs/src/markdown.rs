@@ -9,18 +9,18 @@ use liora_components::{
     Calendar, CalendarDate, CalendarEvent, Card, Carousel, CarouselIndicatorPosition, CarouselItem,
     Checkbox, CheckboxGroup, CheckboxOptionStyle, CodeBlock as LioraCodeBlock, CodeDiagnostic,
     CodeEditor, CodeHighlighter, CodeLanguage, CodeTheme, Container, Dropdown, DropdownButton,
-    DropdownButtonItem, Flex, Form, FormItem, GRID_ITEM_HOVER_GROUP, Grid, GridItem,
-    HorizontalList, Image, Input, InputNumber, InputNumberControlsPosition, Link, Loading,
-    NavigationMenu, NavigationMenuMode, NotificationType, Paragraph, Popconfirm, Popover, Preview,
-    Progress, ProgressStatus, QrCode, QrEcLevel, QrFinderStyle, QrGradientDirection, QrModuleStyle,
-    Radio, RadioGroup, RadioOptionStyle, Rate, Result as LioraResult, ResultStatus, Segmented,
-    SegmentedOption, Select, SelectableTextGroup, Shell, Sidebar, Skeleton, SkeletonItem,
-    SkeletonVariant, Slider, Space, Statistic, Switch, Tag as LioraTag, Text, Textarea, Timer,
-    TimerFormat, TimerUnit, Title, TitleBar, TitleBarContentAlign, Tour, TourPlacement, TourStep,
-    Transfer, TransferItem, Tree, TreeNode, TreeSelect, TreeSelectNode, Upload, UploadFile,
-    UploadStatus, VirtualizedList, VirtualizedTable, VirtualizedTree, Watermark,
-    WindowControlsPosition, WindowFrameMode, frame_mode_switch_row, show_notification, toast_error,
-    toast_info, toast_success, toast_warning,
+    DropdownButtonItem, Flex, Form, FormItem, Grid, GridItem, HorizontalList, Image, Input,
+    InputNumber, InputNumberControlsPosition, Link, Loading, NavigationMenu, NavigationMenuMode,
+    NotificationType, Paragraph, Popconfirm, Popover, Preview, Progress, ProgressStatus, QrCode,
+    QrEcLevel, QrFinderStyle, QrGradientDirection, QrModuleStyle, Radio, RadioGroup,
+    RadioOptionStyle, Rate, Result as LioraResult, ResultStatus, Segmented, SegmentedOption,
+    Select, SelectableTextGroup, Shell, Sidebar, Skeleton, SkeletonItem, SkeletonVariant, Slider,
+    Space, Statistic, Switch, Tag as LioraTag, Text, Textarea, Timer, TimerFormat, TimerUnit,
+    Title, TitleBar, TitleBarContentAlign, Tour, TourPlacement, TourStep, Transfer, TransferItem,
+    Tree, TreeNode, TreeSelect, TreeSelectNode, Upload, UploadFile, UploadStatus, VirtualizedList,
+    VirtualizedTable, VirtualizedTree, Watermark, WindowControlsPosition, WindowFrameMode,
+    frame_mode_switch_row, show_notification, toast_error, toast_info, toast_success,
+    toast_warning,
 };
 use liora_core::{
     Config, PassivePortal, Placement, Portal, ThemeMode, apply_theme_mode, clear_popover,
@@ -7135,17 +7135,17 @@ enum IconCatalogLibrary {
     Material,
 }
 
-const ICON_CATALOG_GRID_CHUNK: usize = 6;
+const ICON_CATALOG_GRID_PAGE_SIZE: usize = 48;
 
 fn docs_icon_library_catalog(
     cx: &mut Context<VirtualizedList>,
     library: IconCatalogLibrary,
 ) -> VirtualizedList {
     let entries = icon_catalog_entries(library);
-    let count = entries.len().div_ceil(ICON_CATALOG_GRID_CHUNK);
+    let count = entries.len().div_ceil(ICON_CATALOG_GRID_PAGE_SIZE);
     let mut list = VirtualizedList::new(count, cx, move |index, _window, _cx| {
-        let start = index * ICON_CATALOG_GRID_CHUNK;
-        let end = (start + ICON_CATALOG_GRID_CHUNK).min(entries.len());
+        let start = index * ICON_CATALOG_GRID_PAGE_SIZE;
+        let end = (start + ICON_CATALOG_GRID_PAGE_SIZE).min(entries.len());
         icon_catalog_grid(&entries[start..end]).into_any_element()
     });
     list.set_height(Some(px(620.0)));
@@ -7156,7 +7156,7 @@ fn docs_icon_library_catalog(
 
 fn icon_catalog_grid(entries: &[IconCatalogEntry]) -> impl IntoElement {
     Grid::new()
-        .fit_item_lg()
+        .fit_item(px(152.0))
         .gap_md()
         .children(entries.iter().map(icon_catalog_item))
 }
@@ -7164,25 +7164,28 @@ fn icon_catalog_grid(entries: &[IconCatalogEntry]) -> impl IntoElement {
 fn icon_catalog_item(entry: &IconCatalogEntry) -> impl IntoElement {
     let icon =
         liora_icons::Icon::new(liora_icons::inline_svg_asset_path(entry.svg_source).into_owned())
-            .size_xl()
-            .group_hover_primary(GRID_ITEM_HOVER_GROUP);
+            .size_xl();
     let copy_text = format!("{}::{}", entry.module_path, entry.name);
     let display_name = entry.name.clone();
+    let hover_group = SharedString::from(format!("icon-catalog-item-{copy_text}"));
+    let icon_hover_group = hover_group.clone();
+    let text_hover_group = hover_group.clone();
 
     GridItem::new(
         Space::new()
             .vertical()
             .align_center()
-            .gap_sm()
-            .child(icon)
+            .gap_md()
+            .child(icon.group_hover_primary(icon_hover_group))
             .child(
                 Text::new(display_name)
                     .bold()
-                    .size(px(11.0))
+                    .size(px(10.0))
                     .nowrap()
-                    .group_hover_primary(GRID_ITEM_HOVER_GROUP),
+                    .group_hover_primary(text_hover_group),
             ),
     )
+    .hover_group(hover_group)
     .on_click(move |_, cx| {
         cx.write_to_clipboard(gpui::ClipboardItem::new_string(copy_text.clone()));
         toast_success!("Copied {}", copy_text);
@@ -11601,14 +11604,16 @@ mod tests {
         assert!(source.contains("docs_icon_library_catalog"));
         assert!(source.contains("enum IconCatalogLibrary"));
         assert!(source.contains("icon_catalog_entries(library: IconCatalogLibrary)"));
-        assert!(source.contains("const ICON_CATALOG_GRID_CHUNK: usize = 6;"));
+        assert!(source.contains("const ICON_CATALOG_GRID_PAGE_SIZE: usize = 48;"));
         assert!(source.contains("Grid::new()"));
-        assert!(source.contains(".fit_item_lg()"));
+        assert!(source.contains(".fit_item(px(152.0))"));
         assert!(source.contains("GridItem::new"));
         assert!(source.contains("list.set_overdraw(px(160.0));"));
+        assert!(source.contains("ICON_CATALOG_GRID_PAGE_SIZE"));
         assert!(icon_item_source.contains("let display_name = entry.name.clone();"));
+        assert!(icon_item_source.contains("hover_group(hover_group)"));
         assert!(icon_item_source.contains(".size_xl()"));
-        assert!(icon_item_source.contains(".group_hover_primary(GRID_ITEM_HOVER_GROUP)"));
+        assert!(icon_item_source.contains(".group_hover_primary(text_hover_group)"));
         assert!(!icon_item_source.contains(r#"format!("IconName::{}", entry.name)"#));
         assert!(source.contains("liora::icons_lucide::IconName"));
         assert!(source.contains("liora::icons_antd::IconName"));

@@ -1,4 +1,4 @@
-use gpui::{AnyView, App, Context, IntoElement, Render, Window, prelude::*};
+use gpui::{AnyView, App, Context, IntoElement, Render, Window, prelude::*, px};
 use liora_components::layout_helpers::{page, section, showcase_card, showcase_grid};
 use liora_components::{Button, Grid, GridItem, Space, Tag, Text, toast_success};
 use liora_core::Config;
@@ -127,19 +127,29 @@ fn library_card(
             .vertical()
             .gap_md()
             .child(Tag::new(module).info().plain())
-            .child(Grid::new().fit_item_lg().gap_md().children(icons)),
+            .child(Grid::new().fit_item(px(148.0)).gap_md().children(icons)),
     )
 }
 
 fn icon_sample(icon: Icon, label: &'static str) -> impl IntoElement {
+    let group = format!("icon-library-sample-{label}");
+    let icon_group = group.clone();
+    let text_group = group.clone();
+
     GridItem::new(
         Space::new()
             .vertical()
             .align_center()
-            .gap_xs()
-            .child(icon.size_xl())
-            .child(Text::new(label).xs().nowrap()),
+            .gap_md()
+            .child(icon.size_xl().group_hover_primary(icon_group))
+            .child(
+                Text::new(label)
+                    .xs()
+                    .nowrap()
+                    .group_hover_primary(text_group),
+            ),
     )
+    .hover_group(group)
 }
 
 fn copy_button(path: &'static str) -> Button {

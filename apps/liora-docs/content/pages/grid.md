@@ -19,3 +19,4 @@
 - `Grid::fit_columns(n)`：列数固定，item 随容器宽度缩放。
 - `GridItem` 默认正方形并居中内容，适合图标墙；调用 `rectangular()` 可变成内容高度自适应卡片。
 - `GridItem::on_click(...)` 会自动启用 pointer + hover 反馈，适合“点击复制 IconName”这类网格交互。
+- `GridItem::hover_group(group)` 可把卡片 hover 状态同步给内部 `Icon::group_hover_primary(group)` / `Text::group_hover_primary(group)`，适合图标墙 hover 时图标与名称一起变成主题 primary 色。

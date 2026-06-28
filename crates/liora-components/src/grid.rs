@@ -5,8 +5,8 @@
 //! collections. Use `Table` or `VirtualizedTable` for tabular data.
 
 use gpui::{
-    AnyElement, App, Component, IntoElement, MouseButton, Pixels, RenderOnce, Window, div,
-    prelude::*, px,
+    AnyElement, App, Component, IntoElement, MouseButton, Pixels, RenderOnce, SharedString, Window,
+    div, prelude::*, px,
 };
 use liora_core::{Config, stable_unique_id};
 use std::sync::Arc;
@@ -230,9 +230,6 @@ impl IntoElement for Grid {
     }
 }
 
-/// GPUI group name used by clickable [`GridItem`] tiles for coordinated hover styling.
-pub const GRID_ITEM_HOVER_GROUP: &str = "liora-grid-item-hover";
-
 type GridItemClick = dyn Fn(&mut Window, &mut App) + 'static;
 
 /// Themed clickable/non-clickable tile intended for use inside [`Grid`].
@@ -240,6 +237,7 @@ pub struct GridItem {
     id: Option<String>,
     body: AnyElement,
     on_click: Option<Arc<GridItemClick>>,
+    hover_group: Option<SharedString>,
     square: bool,
     centered: bool,
 }
@@ -251,6 +249,7 @@ impl GridItem {
             id: None,
             body: body.into_any_element(),
             on_click: None,
+            hover_group: None,
             square: true,
             centered: true,
         }
@@ -291,6 +290,12 @@ impl GridItem {
         self.on_click = Some(Arc::new(callback));
         self
     }
+
+    /// Sets a stable GPUI hover group for child elements that should react to this tile hover.
+    pub fn hover_group(mut self, group: impl Into<SharedString>) -> Self {
+        self.hover_group = Some(group.into());
+        self
+    }
 }
 
 impl RenderOnce for GridItem {
@@ -300,6 +305,10 @@ impl RenderOnce for GridItem {
             .id
             .unwrap_or_else(|| stable_unique_id("grid-item", "grid-item", window, cx).to_string());
         let click = self.on_click.clone();
+        let has_hover_group = self.hover_group.is_some();
+        let hover_group = self
+            .hover_group
+            .unwrap_or_else(|| SharedString::from(format!("liora-grid-item-hover-{id}")));
 
         div()
             .id(id)
@@ -312,15 +321,15 @@ impl RenderOnce for GridItem {
             .bg(theme.neutral.card)
             .p_3()
             .text_color(theme.neutral.text_2)
+            .when(click.is_some() || has_hover_group, |s| {
+                s.group(hover_group).hover(|s| {
+                    s.bg(theme.neutral.hover)
+                        .border_color(theme.primary.base)
+                        .text_color(theme.primary.base)
+                })
+            })
             .when(click.is_some(), |s| {
-                s.group(GRID_ITEM_HOVER_GROUP)
-                    .cursor_pointer()
-                    .hover(|s| {
-                        s.cursor_pointer()
-                            .bg(theme.neutral.hover)
-                            .border_color(theme.primary.base)
-                            .text_color(theme.primary.base)
-                    })
+                s.cursor_pointer()
                     .on_mouse_up(MouseButton::Left, move |_, window, cx| {
                         if let Some(click) = &click {
                             click(window, cx);
@@ -360,8 +369,10 @@ mod tests {
 
         assert!(source.contains("pub struct GridItem"));
         assert!(source.contains("pub fn on_click"));
-        assert!(source.contains("GRID_ITEM_HOVER_GROUP"));
+        assert!(source.contains("pub fn hover_group"));
+        assert!(source.contains("liora-grid-item-hover-{id}"));
         assert!(source.contains(".cursor_pointer()"));
+        assert!(source.contains("click.is_some() || has_hover_group"));
         assert!(source.contains(".aspect_square()"));
         assert!(source.contains("pub fn rectangular"));
         assert!(source.contains(".text_color(theme.primary.base)"));
