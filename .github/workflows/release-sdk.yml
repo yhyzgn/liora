@@ -97,7 +97,7 @@ jobs:
           # Crates that depend on unpublished sibling versions are validated by
           # the patched consumer smoke test below and published sequentially in
           # the publish job after each dependency appears in the registry index.
-          for crate in liora-theme liora-tray liora-packager liora-updater liora-icons-antd liora-icons-ionic liora-icons-tabler liora-icons-carbon liora-icons-material; do
+          for crate in liora-theme liora-tray liora-packager liora-updater; do
             cargo package -p "$crate" --no-verify
           done
 

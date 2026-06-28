@@ -1,6 +1,6 @@
 [package]
 name = "liora-theme"
-version = "0.1.18"
+version = "0.1.19"
 edition = "2024"
 description = "Liora design tokens and theme data for native GPUI components."
 license-file = "../../LICENSE.md"

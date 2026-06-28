@@ -1,6 +1,6 @@
 [package]
 name = "liora-icons-carbon"
-version = "0.1.18"
+version = "0.1.19"
 edition = "2024"
 description = "Bundled Carbon icon paths rendered through Liora native GPUI icon primitives."
 license-file = "../../LICENSE.md"
@@ -9,4 +9,4 @@ publish = true
 
 [dependencies]
 gpui = { workspace = true }
-liora-icons = { version = "0.1.18", path = "../liora-icons" }
+liora-icons = { version = "0.1.19", path = "../liora-icons" }
