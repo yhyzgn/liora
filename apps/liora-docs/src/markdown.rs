@@ -5921,57 +5921,55 @@ fn docs_settings_sensitive(content: &LiveDemoContent) -> AnyElement {
 }
 
 fn menu_bar_demo() -> impl IntoElement {
-    Space::new()
-        .gap_md()
-        .wrap()
-        .align_start()
-        .child(
-            liora_components::Menu::new("File")
-                .perform_builtin_actions(false)
-                .preview_width(gpui::px(220.0))
-                .item(liora_components::MenuItem::new_window())
-                .item(liora_components::MenuItem::open_file())
-                .item(liora_components::MenuItem::open_folder())
-                .item(liora_components::MenuItem::separator())
-                .item(liora_components::MenuItem::save())
-                .item(liora_components::MenuItem::quit()),
-        )
-        .child(
-            liora_components::Menu::new("Edit")
-                .perform_builtin_actions(false)
-                .preview_width(gpui::px(220.0))
-                .item(liora_components::MenuItem::copy_text("Copy", "Liora Menu"))
-                .item(liora_components::MenuItem::new("paste", "Paste").disabled(true))
-                .item(liora_components::MenuItem::separator())
-                .item(liora_components::MenuItem::new("find", "Find").shortcut("Ctrl+F")),
-        )
-        .child(
-            liora_components::Menu::new("View")
-                .perform_builtin_actions(false)
-                .preview_width(gpui::px(240.0))
-                .item(liora_components::MenuItem::command_palette())
-                .item(liora_components::MenuItem::toggle_sidebar())
-                .item(liora_components::MenuItem::toggle_statusbar())
-                .item(liora_components::MenuItem::separator())
-                .item(liora_components::MenuItem::action(
-                    liora_components::MenuAction::ZoomIn,
-                    "Zoom In",
-                ))
-                .item(liora_components::MenuItem::action(
-                    liora_components::MenuAction::ZoomOut,
-                    "Zoom Out",
-                )),
-        )
-        .child(
-            liora_components::Menu::new("Help")
-                .perform_builtin_actions(false)
-                .preview_width(gpui::px(260.0))
-                .item(liora_components::MenuItem::open_url(
-                    "Open GitHub Repository",
-                    "https://github.com/yhyzgn/liora",
-                ))
-                .item(liora_components::MenuItem::new("about", "About Liora")),
-        )
+    liora_components::MenuBar::new([
+        liora_components::Menu::new("File")
+            .perform_builtin_actions(false)
+            .preview_width(gpui::px(240.0))
+            .item(liora_components::MenuItem::new_window())
+            .item(liora_components::MenuItem::open_file())
+            .item(liora_components::MenuItem::open_folder())
+            .item(liora_components::MenuItem::separator())
+            .item(liora_components::MenuItem::save())
+            .item(liora_components::MenuItem::quit()),
+        liora_components::Menu::new("Edit")
+            .perform_builtin_actions(false)
+            .preview_width(gpui::px(220.0))
+            .item(liora_components::MenuItem::undo())
+            .item(liora_components::MenuItem::redo())
+            .item(liora_components::MenuItem::separator())
+            .item(liora_components::MenuItem::cut())
+            .item(liora_components::MenuItem::copy())
+            .item(liora_components::MenuItem::paste().disabled(true))
+            .item(liora_components::MenuItem::separator())
+            .item(liora_components::MenuItem::new("find", "Find").shortcut("Ctrl+F")),
+        liora_components::Menu::new("View")
+            .perform_builtin_actions(false)
+            .preview_width(gpui::px(240.0))
+            .item(liora_components::MenuItem::command_palette())
+            .item(liora_components::MenuItem::toggle_sidebar())
+            .item(liora_components::MenuItem::toggle_statusbar())
+            .item(liora_components::MenuItem::separator())
+            .item(liora_components::MenuItem::action(
+                liora_components::MenuAction::ZoomIn,
+                "Zoom In",
+            ))
+            .item(liora_components::MenuItem::action(
+                liora_components::MenuAction::ZoomOut,
+                "Zoom Out",
+            )),
+        liora_components::Menu::new("Help")
+            .perform_builtin_actions(false)
+            .preview_width(gpui::px(260.0))
+            .item(liora_components::MenuItem::open_url(
+                "Open GitHub Repository",
+                "https://github.com/yhyzgn/liora",
+            ))
+            .item(liora_components::MenuItem::copy_text(
+                "Copy Project Name",
+                "Liora",
+            ))
+            .item(liora_components::MenuItem::new("about", "About Liora")),
+    ])
 }
 
 fn menu_action_catalog() -> impl IntoElement {
@@ -11289,6 +11287,18 @@ mod tests {
         assert!(!MENU_DOC.contains("| 需求 / 环境 |"));
         assert!(MENU_DOC.contains("**需要接入操作系统菜单语义**"));
         assert!(MENU_DOC.contains("**Custom frame / client-side decorations**"));
+        let source = include_str!("markdown.rs");
+        let menu_bar_demo_source = source
+            .split("fn menu_bar_demo")
+            .nth(1)
+            .and_then(|part| part.split("fn menu_action_catalog").next())
+            .unwrap_or_default();
+        assert!(menu_bar_demo_source.contains("MenuBar::new(["));
+        assert!(!menu_bar_demo_source.contains("Space::new()"));
+        assert!(!menu_bar_demo_source.contains(
+            ".child(
+            liora_components::Menu::new"
+        ));
         assert!(load_code_snippet("menu/descriptor.rs").is_some());
         assert!(load_code_snippet("menu/bar.rs").is_some());
         assert!(load_code_snippet("menu/gpui_register.rs").is_some());
