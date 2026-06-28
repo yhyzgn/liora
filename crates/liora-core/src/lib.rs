@@ -748,6 +748,26 @@ pub fn render_active_drawer_in_window(_window: &mut gpui::Window, cx: &mut App) 
     }
 }
 
+/// Splits tooltip content into GPUI-safe display lines.
+///
+/// GPUI's low-level text shaper accepts a single line only and intentionally
+/// panics when a string contains newlines. Chart tooltips and downstream apps
+/// may provide multiline help text, so overlay rendering normalizes content at
+/// the Liora boundary before measuring each line independently.
+pub fn tooltip_content_lines(content: &SharedString) -> Vec<SharedString> {
+    let lines: Vec<SharedString> = content
+        .split('\n')
+        .map(|line| line.trim_end_matches('\r'))
+        .map(SharedString::from)
+        .collect();
+
+    if lines.is_empty() {
+        vec![SharedString::default()]
+    } else {
+        lines
+    }
+}
+
 /// Renders the render active tooltip in window layer into native GPUI elements.
 pub fn render_active_tooltip_in_window(window: &mut gpui::Window, cx: &mut App) {
     let mouse_pos = window.mouse_position();
@@ -759,28 +779,35 @@ pub fn render_active_tooltip_in_window(window: &mut gpui::Window, cx: &mut App) 
     for (tooltip_index, data) in active.into_iter().enumerate() {
         let theme = cx.global::<Config>().theme.clone();
 
-        // Measure text accurately
+        // Measure each visual line independently. GPUI shape_line is
+        // intentionally single-line only and will panic on newline input.
         let font_size = px(theme.font_size.sm);
         let text_style = window.text_style();
-        let run = TextRun {
-            len: data.content.len(),
-            font: text_style.font(),
-            color: theme.neutral.card,
-            background_color: None,
-            underline: None,
-            strikethrough: None,
-        };
-        let shaped_line =
-            window
-                .text_system()
-                .shape_line(data.content.clone(), font_size, &[run], None);
+        let lines = tooltip_content_lines(&data.content);
+        let max_line_width = lines
+            .iter()
+            .map(|line| {
+                let run = TextRun {
+                    len: line.len(),
+                    font: text_style.font(),
+                    color: theme.neutral.card,
+                    background_color: None,
+                    underline: None,
+                    strikethrough: None,
+                };
+                window
+                    .text_system()
+                    .shape_line(line.clone(), font_size, &[run], None)
+                    .width
+            })
+            .fold(px(0.0), |max_width, width| max_width.max(width));
 
         let padding_h = px(12.0);
-        let padding_v = px(4.0);
+        let padding_v = px(6.0);
         let line_height = window.line_height();
         let content_size = gpui::Size {
-            width: shaped_line.width + padding_h * 2.0,
-            height: line_height + padding_v * 2.0,
+            width: max_line_width + padding_h * 2.0,
+            height: line_height * lines.len() + padding_v * 2.0,
         };
 
         push_passive_portal(
@@ -809,13 +836,16 @@ pub fn render_active_tooltip_in_window(window: &mut gpui::Window, cx: &mut App) 
                     .bg(theme.neutral.text_1)
                     .text_color(theme.neutral.card)
                     .px(padding_h)
+                    .py(padding_v)
                     .flex()
-                    .items_center()
+                    .flex_col()
+                    .items_start()
                     .justify_center()
+                    .gap(px(2.0))
                     .rounded(px(theme.radius.sm))
                     .shadow_lg()
                     .text_size(font_size)
-                    .child(data.content.clone())
+                    .children(lines.iter().cloned())
                     .with_animation(
                         ("liora-tooltip-motion", tooltip_index),
                         Animation::new(Duration::from_millis(220))
@@ -826,6 +856,34 @@ pub fn render_active_tooltip_in_window(window: &mut gpui::Window, cx: &mut App) 
             },
             cx,
         );
+    }
+}
+
+#[cfg(test)]
+mod tooltip_text_tests {
+    use super::*;
+
+    #[test]
+    fn tooltip_renderer_never_shapes_multiline_content_as_one_line() {
+        let source = include_str!("lib.rs").split("#[cfg(test)]").next().unwrap();
+
+        assert!(
+            !source.contains(".shape_line(data.content.clone()"),
+            "GPUI shape_line panics when the text argument contains newlines"
+        );
+        assert!(
+            source.contains("tooltip_content_lines(&data.content)")
+                || source.contains("tooltip_content_lines("),
+            "tooltip rendering should split multiline content before measuring and rendering"
+        );
+    }
+
+    #[test]
+    fn tooltip_content_lines_preserves_multiline_tooltips_without_newline_lines() {
+        let lines = tooltip_content_lines(&SharedString::from("Mon\nO 100  H 110\nL 96  C 108"));
+
+        assert_eq!(lines, vec!["Mon", "O 100  H 110", "L 96  C 108"]);
+        assert!(lines.iter().all(|line| !line.contains('\n')));
     }
 }
 
