@@ -1,3 +1,5 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 use gpui::{
     AnyView, App, Component, Context, Global, Render, RenderImage, SharedString, Window,
     WindowOptions, div, img, prelude::*, px, size,
@@ -184,14 +186,9 @@ fn gallery_liora_options() -> LioraOptions {
 }
 
 fn install_gallery_fonts(cx: &mut App) {
-    let mut options = FontLoadOptions::new(FontLoadMode::ExternalThenEmbedded)
-        .embedded(
-            "PingFangSC-Regular.ttf",
-            std::borrow::Cow::Borrowed(
-                include_bytes!("../assets/fonts/PingFangSC/PingFangSC-Regular.ttf").as_slice(),
-            ),
-        )
-        .require_family("PingFang SC");
+    let options = FontLoadOptions::new(app_font_load_mode()).require_family("PingFang SC");
+
+    let mut options = add_embedded_app_fonts(options);
 
     for dir in app_font_dirs("liora-gallery") {
         options = options.external_dir(dir);
@@ -201,6 +198,29 @@ fn install_gallery_fonts(cx: &mut App) {
     if !report.failures.is_empty() || !report.required_families_available() {
         eprintln!("Liora Gallery font loading report: {report:?}");
     }
+}
+
+fn app_font_load_mode() -> FontLoadMode {
+    if cfg!(feature = "embedded-fonts") {
+        FontLoadMode::ExternalThenEmbedded
+    } else {
+        FontLoadMode::External
+    }
+}
+
+#[cfg(feature = "embedded-fonts")]
+fn add_embedded_app_fonts(options: FontLoadOptions) -> FontLoadOptions {
+    options.embedded(
+        "PingFangSC-Regular.ttf",
+        std::borrow::Cow::Borrowed(
+            include_bytes!("../assets/fonts/PingFangSC/PingFangSC-Regular.ttf").as_slice(),
+        ),
+    )
+}
+
+#[cfg(not(feature = "embedded-fonts"))]
+fn add_embedded_app_fonts(options: FontLoadOptions) -> FontLoadOptions {
+    options
 }
 
 fn app_font_dirs(binary: &str) -> Vec<std::path::PathBuf> {
@@ -443,11 +463,32 @@ fn set_gallery_frame_mode(mode: WindowFrameMode, window: &mut Window, cx: &mut A
         state.window_visible = true;
     }
 
-    request_window_frame_mode(window, mode);
-    toast_info!(
-        "Gallery window frame switched to {}",
-        if mode.is_custom() { "custom" } else { "system" }
-    );
+    match request_window_frame_mode(window, mode) {
+        liora_components::WindowFrameChange::AppliedLive => {
+            toast_info!(
+                "Gallery window frame switched to {}",
+                if mode.is_custom() { "custom" } else { "system" }
+            );
+        }
+        liora_components::WindowFrameChange::RequiresWindowReopen => {
+            toast_info!(
+                "Gallery window frame will reopen to apply {}",
+                if mode.is_custom() {
+                    "custom frame"
+                } else {
+                    "system frame"
+                }
+            );
+            window.defer(cx, |window, cx| {
+                window.remove_window();
+                if let Some(handle) = open_gallery_window(cx)
+                    && cx.has_global::<GalleryTrayState>()
+                {
+                    cx.global_mut::<GalleryTrayState>().window = Some(handle);
+                }
+            });
+        }
+    }
 }
 
 fn request_gallery_window_close(window: &mut Window, cx: &mut App) {
@@ -1920,7 +1961,7 @@ mod shell_regression_tests {
     }
 
     #[test]
-    fn gallery_frame_mode_switch_updates_current_window_without_reopening() {
+    fn gallery_frame_mode_switch_reopens_when_gpui_requires_creation_time_titlebar_options() {
         let source = include_str!("main.rs")
             .split("mod shell_regression_tests")
             .next()
@@ -1934,8 +1975,10 @@ mod shell_regression_tests {
             .expect("Gallery frame mode handler should end before close handler");
 
         assert!(handler.contains("request_window_frame_mode"));
-        assert!(!handler.contains("window.remove_window()"));
-        assert!(!handler.contains("open_gallery_window"));
+        assert!(handler.contains("WindowFrameChange::RequiresWindowReopen"));
+        assert!(handler.contains("window.defer(cx"));
+        assert!(handler.contains("window.remove_window()"));
+        assert!(handler.contains("open_gallery_window(cx)"));
     }
 
     #[test]

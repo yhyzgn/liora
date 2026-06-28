@@ -369,6 +369,14 @@ liora_core::init_liora_with_mode(cx, liora_core::ThemeMode::System);
 
 A production app should create the window hidden, attach system theme tracking before creating the root view, then activate the window after `open_window` returns. This avoids first-frame theme flicker and mirrors the pattern used by the native Gallery and Docs apps.
 
+On Windows release builds, use the same subsystem setting as Zed so launching the GUI `.exe` does not create a blank console window:
+
+```rust
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+```
+
+`WindowFrameMode::Custom` follows Zed's GPUI compatibility model: Windows/macOS hide the native titlebar through `TitlebarOptions::appears_transparent` when the window is created; Linux/FreeBSD use `WindowDecorations::Client`. That means Windows/macOS frame-mode changes need a window reopen, while Linux can request decorations live through `request_window_frame_mode`.
+
 ```rust
 use gpui::{App, AppContext, Context, Render, Window, WindowOptions, px, size};
 use liora::components::{Title, apply_window_frame_mode, WindowFrameMode};

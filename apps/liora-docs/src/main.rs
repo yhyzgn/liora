@@ -1,3 +1,5 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 mod markdown;
 
 use gpui::{App, AppContext, Global, Window, WindowOptions, px, size};
@@ -111,14 +113,9 @@ fn docs_liora_options() -> LioraOptions {
 }
 
 fn install_docs_fonts(cx: &mut App) {
-    let mut options = FontLoadOptions::new(FontLoadMode::ExternalThenEmbedded)
-        .embedded(
-            "PingFangSC-Regular.ttf",
-            std::borrow::Cow::Borrowed(
-                include_bytes!("../assets/fonts/PingFangSC/PingFangSC-Regular.ttf").as_slice(),
-            ),
-        )
-        .require_family("PingFang SC");
+    let options = FontLoadOptions::new(app_font_load_mode()).require_family("PingFang SC");
+
+    let mut options = add_embedded_app_fonts(options);
 
     for dir in app_font_dirs("liora-docs") {
         options = options.external_dir(dir);
@@ -128,6 +125,29 @@ fn install_docs_fonts(cx: &mut App) {
     if !report.failures.is_empty() || !report.required_families_available() {
         eprintln!("Liora Docs font loading report: {report:?}");
     }
+}
+
+fn app_font_load_mode() -> FontLoadMode {
+    if cfg!(feature = "embedded-fonts") {
+        FontLoadMode::ExternalThenEmbedded
+    } else {
+        FontLoadMode::External
+    }
+}
+
+#[cfg(feature = "embedded-fonts")]
+fn add_embedded_app_fonts(options: FontLoadOptions) -> FontLoadOptions {
+    options.embedded(
+        "PingFangSC-Regular.ttf",
+        std::borrow::Cow::Borrowed(
+            include_bytes!("../assets/fonts/PingFangSC/PingFangSC-Regular.ttf").as_slice(),
+        ),
+    )
+}
+
+#[cfg(not(feature = "embedded-fonts"))]
+fn add_embedded_app_fonts(options: FontLoadOptions) -> FontLoadOptions {
+    options
 }
 
 fn app_font_dirs(binary: &str) -> Vec<std::path::PathBuf> {
@@ -345,11 +365,32 @@ fn set_docs_frame_mode(mode: WindowFrameMode, window: &mut Window, cx: &mut App)
         state.window_visible = true;
     }
 
-    request_window_frame_mode(window, mode);
-    liora_components::toast_info!(
-        "Docs window frame switched to {}",
-        if mode.is_custom() { "custom" } else { "system" }
-    );
+    match request_window_frame_mode(window, mode) {
+        liora_components::WindowFrameChange::AppliedLive => {
+            liora_components::toast_info!(
+                "Docs window frame switched to {}",
+                if mode.is_custom() { "custom" } else { "system" }
+            );
+        }
+        liora_components::WindowFrameChange::RequiresWindowReopen => {
+            liora_components::toast_info!(
+                "Docs window frame will reopen to apply {}",
+                if mode.is_custom() {
+                    "custom frame"
+                } else {
+                    "system frame"
+                }
+            );
+            window.defer(cx, |window, cx| {
+                window.remove_window();
+                if let Some(handle) = open_docs_window(cx)
+                    && cx.has_global::<DocsTrayState>()
+                {
+                    cx.global_mut::<DocsTrayState>().window = Some(handle);
+                }
+            });
+        }
+    }
 }
 
 fn request_docs_window_close(window: &mut Window, cx: &mut App) {
@@ -682,7 +723,7 @@ mod shell_tests {
     }
 
     #[test]
-    fn docs_frame_mode_switch_updates_current_window_without_reopening() {
+    fn docs_frame_mode_switch_reopens_when_gpui_requires_creation_time_titlebar_options() {
         let source = include_str!("main.rs");
         let handler = source
             .split("fn set_docs_frame_mode")
@@ -693,8 +734,10 @@ mod shell_tests {
             .expect("Docs frame mode handler should end before close handler");
 
         assert!(handler.contains("request_window_frame_mode"));
-        assert!(!handler.contains("window.remove_window()"));
-        assert!(!handler.contains("open_docs_window"));
+        assert!(handler.contains("WindowFrameChange::RequiresWindowReopen"));
+        assert!(handler.contains("window.defer(cx"));
+        assert!(handler.contains("window.remove_window()"));
+        assert!(handler.contains("open_docs_window(cx)"));
     }
 
     #[test]

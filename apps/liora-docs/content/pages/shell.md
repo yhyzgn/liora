@@ -42,4 +42,5 @@
 - `Menu`、`Input` 等有状态组件应保存在父 View 的 `Entity<T>` 字段中，不要在每次 `render` 临时创建。
 - `Shell` 负责区域结构；业务路由、搜索过滤、菜单 active 状态仍放在应用层。
 - `titlebar(...)` 只在 custom frame 场景渲染；应用首次打开窗口时仍应通过 `apply_window_frame_mode(..., WindowFrameMode::Custom)` 同步 GPUI decoration 行为。
+- 运行时切换 frame mode 时要遵循 Zed/GPUI 的平台边界：Linux/FreeBSD 可以 live request decorations；Windows/macOS 的 `appears_transparent` 是窗口创建参数，需要重开窗口后生效。
 - Gallery / Docs 示例不要直接使用 GPUI 原生元素布局来绕过 SDK；如果缺少布局能力，应补充 Liora 组件封装。

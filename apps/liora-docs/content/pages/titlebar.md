@@ -4,6 +4,30 @@
 
 本页同步 Gallery 当前的 TitleBar 用例，重点展示右侧窗口控制按钮、左侧窗口控制按钮、居中命令区和无边框嵌入式工具条。
 
+## 平台兼容边界
+
+Liora 的自定义标题栏对齐 Zed 官方 GPUI 用法：
+
+- Windows release `.exe` 应添加 `#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]`，避免 GUI 程序启动时额外出现空白控制台窗口。
+- Windows/macOS 的系统标题栏隐藏由 `TitlebarOptions::appears_transparent` 在窗口创建时决定；运行中的窗口不能只靠 `request_decorations` 切掉系统 frame。
+- Linux/FreeBSD 的 client/server decorations 可以通过 GPUI `WindowDecorations` 请求切换。
+- 因此如果运行时切换 system/custom frame，Windows/macOS 应重开窗口并重新传入 `apply_window_frame_mode(...)` 后的 `WindowOptions`；Linux 可以 live switch。
+
+```rust
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
+let options = apply_window_frame_mode(
+    gpui::WindowOptions {
+        titlebar: Some(gpui::TitlebarOptions {
+            title: Some("My App".into()),
+            ..Default::default()
+        }),
+        ..Default::default()
+    },
+    WindowFrameMode::Custom,
+);
+```
+
 ## 右侧窗口控制按钮
 
 ### 效果

@@ -18,6 +18,10 @@ path = "src/bin/check_snippets.rs"
 
 [package.metadata.generate-rpm]
 
+[features]
+default = []
+embedded-fonts = []
+
 [dependencies]
 gpui.workspace = true
 gpui_platform.workspace = true

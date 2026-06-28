@@ -368,6 +368,14 @@ liora_core::init_liora_with_mode(cx, liora_core::ThemeMode::System);
 
 正式应用建议先用隐藏窗口创建，创建 root view 前附加系统主题观察器，`open_window` 返回后再激活窗口。这个模式可以避免首帧主题闪烁，也与 Gallery/Docs 的原生应用写法一致。
 
+Windows release 构建建议使用与 Zed 相同的 subsystem 设置，这样双击 GUI `.exe` 时不会额外弹出空白命令行窗口：
+
+```rust
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+```
+
+`WindowFrameMode::Custom` 遵循 Zed 的 GPUI 兼容模型：Windows/macOS 在创建窗口时通过 `TitlebarOptions::appears_transparent` 隐藏系统标题栏；Linux/FreeBSD 通过 `WindowDecorations::Client` 使用客户端装饰。因此 Windows/macOS 的 frame mode 变更需要重开窗口生效，而 Linux 可以通过 `request_window_frame_mode` 实时请求 decorations 切换。
+
 ```rust
 use gpui::{App, AppContext, Context, Render, Window, WindowOptions, px, size};
 use liora::components::{Title, apply_window_frame_mode, WindowFrameMode};

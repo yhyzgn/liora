@@ -58,8 +58,9 @@ impl WindowFrameMode {
 
 /// Applies the GPUI window options required by the selected frame mode.
 ///
-/// `System` keeps platform/server decorations. `Custom` requests a transparent
-/// titlebar on macOS/Windows and client-side decorations on Linux/Wayland.
+/// `System` keeps platform/server decorations. `Custom` follows Zed's official
+/// GPUI pattern: create the window with a transparent titlebar on macOS/Windows,
+/// let the app handle dragging, and request client-side decorations on Linux.
 pub fn apply_window_frame_mode(mut options: WindowOptions, mode: WindowFrameMode) -> WindowOptions {
     match mode {
         WindowFrameMode::System => {
@@ -67,6 +68,7 @@ pub fn apply_window_frame_mode(mut options: WindowOptions, mode: WindowFrameMode
                 titlebar.appears_transparent = false;
                 titlebar.traffic_light_position = None;
             }
+            options.is_movable = true;
             options.window_decorations = Some(WindowDecorations::Server);
         }
         WindowFrameMode::Custom => {
@@ -74,26 +76,51 @@ pub fn apply_window_frame_mode(mut options: WindowOptions, mode: WindowFrameMode
                 titlebar.appears_transparent = true;
                 titlebar.traffic_light_position = Some(point(px(12.0), px(12.0)));
             }
+            // Zed disables platform titlebar dragging when custom chrome owns
+            // WindowControlArea::Drag and calls Window::start_window_move().
+            options.is_movable = false;
             options.window_decorations = Some(WindowDecorations::Client);
         }
     }
     options
 }
 
+/// Result returned by [`request_window_frame_mode`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WindowFrameChange {
+    /// The current platform accepted a live decoration request.
+    AppliedLive,
+    /// The current platform only reads titlebar/frame options while creating a window.
+    RequiresWindowReopen,
+}
+
+/// Returns whether GPUI can switch the native frame mode on an open window.
+///
+/// GPUI exposes live decoration requests for Linux client/server decorations.
+/// This matches Zed's own compatibility boundary: Windows/macOS titlebar
+/// visibility comes from `TitlebarOptions::appears_transparent` at window
+/// creation time, while Linux/FreeBSD can request client/server decorations.
+pub fn window_frame_mode_can_switch_live() -> bool {
+    cfg!(any(target_os = "linux", target_os = "freebsd"))
+}
+
 /// Requests the runtime GPUI decoration mode for an already-open window.
 ///
-/// This avoids destroying and recreating the current window from inside a UI
-/// control event handler. Reopening during the same event dispatch can leave
-/// GPUI with a removed window while the original event/render chain is still
-/// unwinding. Apps should still call [`apply_window_frame_mode`] when opening
-/// the first window so the initial platform window is created with matching
-/// decorations.
-pub fn request_window_frame_mode(window: &mut Window, mode: WindowFrameMode) {
+/// Apps should always call [`apply_window_frame_mode`] when opening a window so
+/// the initial platform window is created with matching frame options. The
+/// return value tells callers whether a live switch happened or whether they
+/// need to close/reopen the window with new `WindowOptions`.
+pub fn request_window_frame_mode(window: &mut Window, mode: WindowFrameMode) -> WindowFrameChange {
+    if !window_frame_mode_can_switch_live() {
+        return WindowFrameChange::RequiresWindowReopen;
+    }
+
     let decorations = match mode {
         WindowFrameMode::System => WindowDecorations::Server,
         WindowFrameMode::Custom => WindowDecorations::Client,
     };
     window.request_decorations(decorations);
+    WindowFrameChange::AppliedLive
 }
 
 /// Convenience control for switching between system and custom frames.
@@ -209,6 +236,7 @@ mod tests {
                 .as_ref()
                 .is_some_and(|titlebar| titlebar.appears_transparent)
         );
+        assert!(!custom.is_movable);
         assert_eq!(custom.window_decorations, Some(WindowDecorations::Client));
 
         let system = apply_window_frame_mode(custom, WindowFrameMode::System);
@@ -218,12 +246,14 @@ mod tests {
                 .as_ref()
                 .is_some_and(|titlebar| !titlebar.appears_transparent)
         );
+        assert!(system.is_movable);
         assert_eq!(system.window_decorations, Some(WindowDecorations::Server));
         let production = include_str!("window_frame.rs")
             .split("#[cfg(test)]")
             .next()
             .unwrap();
         assert!(production.contains("pub fn request_window_frame_mode"));
+        assert!(production.contains("WindowFrameChange::RequiresWindowReopen"));
         assert!(production.contains("window.request_decorations(decorations)"));
     }
 
