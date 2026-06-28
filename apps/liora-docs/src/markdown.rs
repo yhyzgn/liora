@@ -11278,6 +11278,9 @@ mod tests {
         assert!(MENU_DOC.contains("prompt_for_paths"));
         assert!(MENU_DOC.contains("prompt_for_new_path"));
         assert!(MENU_DOC.contains("on_paths_selected"));
+        assert!(!MENU_DOC.contains("| 需求 / 环境 |"));
+        assert!(MENU_DOC.contains("**需要接入操作系统菜单语义**"));
+        assert!(MENU_DOC.contains("**Custom frame / client-side decorations**"));
         assert!(load_code_snippet("menu/descriptor.rs").is_some());
         assert!(load_code_snippet("menu/bar.rs").is_some());
         assert!(load_code_snippet("menu/gpui_register.rs").is_some());

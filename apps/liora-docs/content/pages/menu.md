@@ -17,14 +17,12 @@
 
 ## 平台菜单与窗口内 MenuBar 的区别
 
-| 需求 / 环境 | 推荐实现 | 说明 |
-|---|---|---|
-| 需要接入操作系统菜单语义 | `Menu::register(cx, menus)` | 直接委托 GPUI 官方 `App::set_menus`。macOS 通常显示在屏幕顶部全局菜单栏；Linux/Windows 是否显示由 GPUI 平台后端和桌面环境决定。 |
-| 需要每个平台、每种 frame 下都在窗口内可见 | `MenuBar::new(menus)` | `MenuBar` 是 Liora 的普通窗口内组件，可放在 `Container` header、`Shell` top slot 或自定义 `TitleBar`。 |
-| System frame 且接受平台决定菜单位置 | 只调用 `Menu::register(...)` | 适合 macOS 原生体验；在某些 Linux/Wayland/KDE/GNOME/Windows 环境下窗口内可能看不到菜单。 |
-| System frame 但必须在窗口里看到菜单 | `Menu::register(...)` + header 中放 `MenuBar` | Gallery 采用这个模式：平台菜单保持注册，同时窗口 header 提供可见 fallback。 |
-| Custom frame / client-side decorations | `Menu::register(...)` + 自定义 chrome/header 中放 `MenuBar` | 自定义标题栏替换系统 chrome 后，平台不会自动把菜单插入你的 GPUI 元素树。 |
-| 只做文档、设置页、命令结构预览 | 只渲染 `MenuBar` 或单个 `Menu` | 关闭 `.perform_builtin_actions(false)`，避免示例点击触发退出、打开浏览器等真实副作用。 |
+- **需要接入操作系统菜单语义**：使用 `Menu::register(cx, menus)`。它会直接委托 GPUI 官方 `App::set_menus`；macOS 通常显示在屏幕顶部全局菜单栏，Linux/Windows 是否显示由 GPUI 平台后端和桌面环境决定。
+- **需要每个平台、每种 frame 下都在窗口内可见**：使用 `MenuBar::new(menus)`。`MenuBar` 是 Liora 的普通窗口内组件，可放在 `Container` header、`Shell` top slot 或自定义 `TitleBar`。
+- **System frame 且接受平台决定菜单位置**：只调用 `Menu::register(...)`。这适合 macOS 原生体验；在某些 Linux/Wayland/KDE/GNOME/Windows 环境下窗口内可能看不到菜单。
+- **System frame 但必须在窗口里看到菜单**：同时调用 `Menu::register(...)`，并在 header 中放 `MenuBar`。Gallery 采用这个模式：平台菜单保持注册，同时窗口 header 提供可见 fallback。
+- **Custom frame / client-side decorations**：调用 `Menu::register(...)`，并在自定义 chrome/header 中放 `MenuBar`。自定义标题栏替换系统 chrome 后，平台不会自动把菜单插入你的 GPUI 元素树。
+- **只做文档、设置页、命令结构预览**：只渲染 `MenuBar` 或单个 `Menu`，并关闭 `.perform_builtin_actions(false)`，避免示例点击触发退出、打开浏览器等真实副作用。
 
 因此，`Menu::register(...)` 和 `MenuBar` 不是重复功能：前者交给平台，后者保证应用 UI 内稳定可见。真实应用通常维护同一份 `Menu` descriptor，然后分别用于平台注册、窗口内 fallback、命令面板和快捷键说明。
 
