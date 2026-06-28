@@ -732,6 +732,8 @@ fn render_menu_item(
                 .w_full()
                 .min_h(px(32.0))
                 .px_3()
+                .rounded(px(theme.radius.sm))
+                .bg(gpui::transparent_black())
                 .pl(px(12.0 + depth as f32 * 16.0))
                 .flex()
                 .items_center()
@@ -743,6 +745,7 @@ fn render_menu_item(
                 })
                 .when(!disabled, |s| {
                     s.cursor_pointer()
+                        .block_mouse_except_scroll()
                         .hover(|s| s.cursor_pointer().bg(theme.neutral.hover))
                         .on_mouse_up(MouseButton::Left, move |_, window, cx| {
                             let selected_action = action
@@ -844,6 +847,8 @@ mod tests {
         assert!(source.contains("command_count"));
         assert!(source.contains(".w_full()"));
         assert!(source.contains(".selectable(false)"));
+        assert!(source.contains(".block_mouse_except_scroll()"));
+        assert!(source.contains(".bg(gpui::transparent_black())"));
         assert!(source.contains("hover(|s| s.cursor_pointer().bg(theme.neutral.hover))"));
         assert!(source.contains("on_mouse_up(MouseButton::Left"));
         assert!(source.contains("pub enum NativeMenuAction"));

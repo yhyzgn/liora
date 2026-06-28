@@ -20,6 +20,12 @@ impl Render for NativeMenuDemo {
                 "同一份 descriptor 可以交给平台适配层，也可以直接用 Liora 原生预览渲染；内置常用 action，普通 item 悬停显示小手并可回调分发。",
                 showcase_stack(vec![
                     showcase_card_wide(
+                        "Horizontal menu bar",
+                        "横向展示 File / Edit / View / Help 多个菜单项组，模拟真实桌面应用菜单栏或自定义 TitleBar 菜单区域。",
+                        horizontal_menu_bar(),
+                    )
+                    .into_any_element(),
+                    showcase_card_wide(
                         "File menu",
                         "使用内置 New/Open/Save/Quit action，包含快捷键、分隔线、禁用项和最近文件子菜单。",
                         file_menu(),
@@ -53,6 +59,30 @@ impl Render for NativeMenuDemo {
             )),
         )
     }
+}
+
+fn horizontal_menu_bar() -> impl IntoElement {
+    Space::new()
+        .gap_md()
+        .wrap()
+        .align_start()
+        .child(file_menu().preview_width(gpui::px(220.0)))
+        .child(edit_menu().preview_width(gpui::px(220.0)))
+        .child(view_menu().preview_width(gpui::px(240.0)))
+        .child(help_menu().preview_width(gpui::px(260.0)))
+}
+
+fn edit_menu() -> NativeMenu {
+    NativeMenu::new("Edit")
+        .perform_builtin_actions(false)
+        .item(NativeMenuItem::copy_text("Copy", "Liora NativeMenu"))
+        .item(NativeMenuItem::new("paste", "Paste").disabled(true))
+        .item(NativeMenuItem::separator())
+        .item(NativeMenuItem::new("find", "Find").shortcut("Ctrl+F"))
+        .item(NativeMenuItem::new("replace", "Replace").shortcut("Ctrl+H"))
+        .on_select(|action, item, _, _| {
+            toast_info!("Edit menu: {} ({})", action.info().name, item.id);
+        })
 }
 
 fn file_menu() -> NativeMenu {
@@ -183,6 +213,9 @@ mod tests {
         let source = include_str!("native_menu_demo.rs");
 
         assert!(source.contains("NativeMenu 原生菜单"));
+        assert!(source.contains("Horizontal menu bar"));
+        assert!(source.contains("horizontal_menu_bar"));
+        assert!(source.contains("fn edit_menu"));
         assert!(source.contains("NativeMenu::new"));
         assert!(source.contains("NativeMenuItem::separator"));
         assert!(source.contains(".child(NativeMenuItem"));

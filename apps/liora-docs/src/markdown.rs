@@ -1733,6 +1733,7 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "native_menu/descriptor.rs" => Some(include_str!(
             "../content/snippets/native_menu/descriptor.rs"
         )),
+        "native_menu/bar.rs" => Some(include_str!("../content/snippets/native_menu/bar.rs")),
         "native_menu/actions.rs" => {
             Some(include_str!("../content/snippets/native_menu/actions.rs"))
         }
@@ -3396,6 +3397,7 @@ impl Render for LiveDemoContent {
                     toast_info!("{} paths: {:?}", action.info().name, paths);
                 })
                 .into_any_element(),
+            "NativeMenuBar" => native_menu_bar_demo().into_any_element(),
             "NativeMenuActions" => native_menu_action_catalog().into_any_element(),
             "DockLayoutWorkbench" => demo_row(vec![
                 liora_components::DockLayout::new()
@@ -5908,6 +5910,66 @@ fn docs_settings_sensitive(content: &LiveDemoContent) -> AnyElement {
                 ),
         )
         .into_any_element()
+}
+
+fn native_menu_bar_demo() -> impl IntoElement {
+    Space::new()
+        .gap_md()
+        .wrap()
+        .align_start()
+        .child(
+            liora_components::NativeMenu::new("File")
+                .perform_builtin_actions(false)
+                .preview_width(gpui::px(220.0))
+                .item(liora_components::NativeMenuItem::new_window())
+                .item(liora_components::NativeMenuItem::open_file())
+                .item(liora_components::NativeMenuItem::open_folder())
+                .item(liora_components::NativeMenuItem::separator())
+                .item(liora_components::NativeMenuItem::save())
+                .item(liora_components::NativeMenuItem::quit()),
+        )
+        .child(
+            liora_components::NativeMenu::new("Edit")
+                .perform_builtin_actions(false)
+                .preview_width(gpui::px(220.0))
+                .item(liora_components::NativeMenuItem::copy_text(
+                    "Copy",
+                    "Liora NativeMenu",
+                ))
+                .item(liora_components::NativeMenuItem::new("paste", "Paste").disabled(true))
+                .item(liora_components::NativeMenuItem::separator())
+                .item(liora_components::NativeMenuItem::new("find", "Find").shortcut("Ctrl+F")),
+        )
+        .child(
+            liora_components::NativeMenu::new("View")
+                .perform_builtin_actions(false)
+                .preview_width(gpui::px(240.0))
+                .item(liora_components::NativeMenuItem::command_palette())
+                .item(liora_components::NativeMenuItem::toggle_sidebar())
+                .item(liora_components::NativeMenuItem::toggle_statusbar())
+                .item(liora_components::NativeMenuItem::separator())
+                .item(liora_components::NativeMenuItem::action(
+                    liora_components::NativeMenuAction::ZoomIn,
+                    "Zoom In",
+                ))
+                .item(liora_components::NativeMenuItem::action(
+                    liora_components::NativeMenuAction::ZoomOut,
+                    "Zoom Out",
+                )),
+        )
+        .child(
+            liora_components::NativeMenu::new("Help")
+                .perform_builtin_actions(false)
+                .preview_width(gpui::px(260.0))
+                .item(liora_components::NativeMenuItem::open_url(
+                    "Open GitHub Repository",
+                    "https://github.com/yhyzgn/liora",
+                ))
+                .item(liora_components::NativeMenuItem::new(
+                    "about",
+                    "About Liora",
+                )),
+        )
 }
 
 fn native_menu_action_catalog() -> impl IntoElement {
@@ -11206,6 +11268,8 @@ mod tests {
         assert!(NATIVE_MENU_DOC.contains("原生 GPUI 预览组件"));
         assert!(NATIVE_MENU_DOC.contains("分隔线"));
         assert!(NATIVE_MENU_DOC.contains("嵌套 submenu"));
+        assert!(NATIVE_MENU_DOC.contains("Horizontal Menu Bar"));
+        assert!(NATIVE_MENU_DOC.contains("NativeMenuBar"));
         assert!(NATIVE_MENU_DOC.contains("Action Catalog"));
         assert!(NATIVE_MENU_DOC.contains("perform_builtin_actions(false)"));
         assert!(NATIVE_MENU_DOC.contains("OpenFile"));
@@ -11214,6 +11278,7 @@ mod tests {
         assert!(NATIVE_MENU_DOC.contains("prompt_for_new_path"));
         assert!(NATIVE_MENU_DOC.contains("on_paths_selected"));
         assert!(load_code_snippet("native_menu/descriptor.rs").is_some());
+        assert!(load_code_snippet("native_menu/bar.rs").is_some());
         assert!(load_code_snippet("native_menu/actions.rs").is_some());
     }
 

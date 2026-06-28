@@ -25,6 +25,19 @@
 ```
 
 
+## Horizontal Menu Bar
+
+横向多菜单组适合自定义 `TitleBar`、顶部应用菜单栏或设置页中的菜单预览。每个菜单组仍然是独立的 `NativeMenu` descriptor，可以单独复用到平台菜单、命令面板或快捷键说明中。
+
+### 效果
+
+::LioraDemo{component="NativeMenuBar"}::
+
+### 代码
+
+```rust src="native_menu/bar.rs"
+```
+
 ## Action Catalog
 
 `NativeMenuAction::catalog()` 可用于在帮助页、设置页或文档中展示全部内置 action。

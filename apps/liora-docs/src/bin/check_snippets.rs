@@ -373,6 +373,8 @@ mod message_box_manual_close;
 mod message_formatting;
 #[path = "../../content/snippets/message/types.rs"]
 mod message_types;
+#[path = "../../content/snippets/native_menu/bar.rs"]
+mod native_menu_bar;
 #[path = "../../content/snippets/native_menu/descriptor.rs"]
 mod native_menu_descriptor;
 #[path = "../../content/snippets/notification/types.rs"]
