@@ -1,4 +1,4 @@
-use gpui::{AnyView, App, Context, IntoElement, Render, Window, prelude::*, px};
+use gpui::{AnyView, App, Context, IntoElement, Render, Window, prelude::*};
 use liora_components::layout_helpers::{page, section, showcase_card, showcase_grid};
 use liora_components::{Button, Grid, GridItem, Space, Tag, Text, toast_success};
 use liora_core::Config;
@@ -34,9 +34,9 @@ impl Render for IconLibrariesDemo {
                             "liora::icons_lucide::IconName",
                             "线性、简洁，适合作为默认应用图标集。",
                             vec![
-                                icon_sample(Icon::new(IconName::Settings).size_lg().color(theme.primary.base), "Settings"),
-                                icon_sample(Icon::new(IconName::Search).size_lg().color(theme.info.base), "Search"),
-                                icon_sample(Icon::new(IconName::CircleCheck).size_lg().color(theme.success.base), "CircleCheck"),
+                                icon_sample("lucide", Icon::new(IconName::Settings).size_lg().color(theme.primary.base), "Settings"),
+                                icon_sample("lucide", Icon::new(IconName::Search).size_lg().color(theme.info.base), "Search"),
+                                icon_sample("lucide", Icon::new(IconName::CircleCheck).size_lg().color(theme.success.base), "CircleCheck"),
                             ],
                         )
                         .into_any_element(),
@@ -45,9 +45,9 @@ impl Render for IconLibrariesDemo {
                             "liora::icons_antd::IconName",
                             "Filled / Outlined / Twotone 风格保留在类型名中。",
                             vec![
-                                icon_sample(Icon::new(AntdIconName::SaveOutlined).size_lg().color(theme.primary.base), "SaveOutlined"),
-                                icon_sample(Icon::new(AntdIconName::SettingOutlined).size_lg().color(theme.info.base), "SettingOutlined"),
-                                icon_sample(Icon::new(AntdIconName::CheckCircleOutlined).size_lg().color(theme.success.base), "CheckCircleOutlined"),
+                                icon_sample("antd", Icon::new(AntdIconName::SaveOutlined).size_lg().color(theme.primary.base), "SaveOutlined"),
+                                icon_sample("antd", Icon::new(AntdIconName::SettingOutlined).size_lg().color(theme.info.base), "SettingOutlined"),
+                                icon_sample("antd", Icon::new(AntdIconName::CheckCircleOutlined).size_lg().color(theme.success.base), "CheckCircleOutlined"),
                             ],
                         )
                         .into_any_element(),
@@ -56,9 +56,9 @@ impl Render for IconLibrariesDemo {
                             "liora::icons_ionic::IconName",
                             "Outline / Sharp 等平台风格后缀可直接选择。",
                             vec![
-                                icon_sample(Icon::new(IonicIconName::AddCircleOutline).size_lg().color(theme.primary.base), "AddCircleOutline"),
-                                icon_sample(Icon::new(IonicIconName::SearchOutline).size_lg().color(theme.info.base), "SearchOutline"),
-                                icon_sample(Icon::new(IonicIconName::CheckmarkCircleOutline).size_lg().color(theme.success.base), "CheckmarkCircleOutline"),
+                                icon_sample("ionic", Icon::new(IonicIconName::AddCircleOutline).size_lg().color(theme.primary.base), "AddCircleOutline"),
+                                icon_sample("ionic", Icon::new(IonicIconName::SearchOutline).size_lg().color(theme.info.base), "SearchOutline"),
+                                icon_sample("ionic", Icon::new(IonicIconName::CheckmarkCircleOutline).size_lg().color(theme.success.base), "CheckmarkCircleOutline"),
                             ],
                         )
                         .into_any_element(),
@@ -67,9 +67,9 @@ impl Render for IconLibrariesDemo {
                             "liora::icons_tabler::IconName",
                             "覆盖大量产品、数据和编辑场景，filled 图标追加 Filled。",
                             vec![
-                                icon_sample(Icon::new(TablerIconName::HomeFilled).size_lg().color(theme.primary.base), "HomeFilled"),
-                                icon_sample(Icon::new(TablerIconName::Search).size_lg().color(theme.info.base), "Search"),
-                                icon_sample(Icon::new(TablerIconName::CircleCheck).size_lg().color(theme.success.base), "CircleCheck"),
+                                icon_sample("tabler", Icon::new(TablerIconName::HomeFilled).size_lg().color(theme.primary.base), "HomeFilled"),
+                                icon_sample("tabler", Icon::new(TablerIconName::Search).size_lg().color(theme.info.base), "Search"),
+                                icon_sample("tabler", Icon::new(TablerIconName::CircleCheck).size_lg().color(theme.success.base), "CircleCheck"),
                             ],
                         )
                         .into_any_element(),
@@ -78,9 +78,9 @@ impl Render for IconLibrariesDemo {
                             "liora::icons_carbon::IconName",
                             "IBM Carbon 图标适合企业产品、数据平台和工具应用。",
                             vec![
-                                icon_sample(Icon::new(CarbonIconName::CheckmarkFilled).size_lg().color(theme.success.base), "CheckmarkFilled"),
-                                icon_sample(Icon::new(CarbonIconName::Search).size_lg().color(theme.info.base), "Search"),
-                                icon_sample(Icon::new(CarbonIconName::Settings).size_lg().color(theme.primary.base), "Settings"),
+                                icon_sample("carbon", Icon::new(CarbonIconName::CheckmarkFilled).size_lg().color(theme.success.base), "CheckmarkFilled"),
+                                icon_sample("carbon", Icon::new(CarbonIconName::Search).size_lg().color(theme.info.base), "Search"),
+                                icon_sample("carbon", Icon::new(CarbonIconName::Settings).size_lg().color(theme.primary.base), "Settings"),
                             ],
                         )
                         .into_any_element(),
@@ -89,9 +89,9 @@ impl Render for IconLibrariesDemo {
                             "liora::icons_material::IconName",
                             "Material Symbols 支持 Outlined / Round / Sharp / Twotone 等命名后缀。",
                             vec![
-                                icon_sample(Icon::new(MaterialIconName::SearchOutlined).size_lg().color(theme.info.base), "SearchOutlined"),
-                                icon_sample(Icon::new(MaterialIconName::SettingsOutlined).size_lg().color(theme.primary.base), "SettingsOutlined"),
-                                icon_sample(Icon::new(MaterialIconName::CheckCircleOutlined).size_lg().color(theme.success.base), "CheckCircleOutlined"),
+                                icon_sample("material", Icon::new(MaterialIconName::SearchOutlined).size_lg().color(theme.info.base), "SearchOutlined"),
+                                icon_sample("material", Icon::new(MaterialIconName::SettingsOutlined).size_lg().color(theme.primary.base), "SettingsOutlined"),
+                                icon_sample("material", Icon::new(MaterialIconName::CheckCircleOutlined).size_lg().color(theme.success.base), "CheckCircleOutlined"),
                             ],
                         )
                         .into_any_element(),
@@ -127,12 +127,12 @@ fn library_card(
             .vertical()
             .gap_md()
             .child(Tag::new(module).info().plain())
-            .child(Grid::new().fit_item(px(148.0)).gap_md().children(icons)),
+            .child(Grid::new().fit_item_lg().gap_md().children(icons)),
     )
 }
 
-fn icon_sample(icon: Icon, label: &'static str) -> impl IntoElement {
-    let group = format!("icon-library-sample-{label}");
+fn icon_sample(library: &'static str, icon: Icon, label: &'static str) -> impl IntoElement {
+    let group = format!("icon-library-sample-{library}-{label}");
     let icon_group = group.clone();
     let text_group = group.clone();
 

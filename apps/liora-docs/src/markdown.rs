@@ -7180,7 +7180,7 @@ fn icon_catalog_item(entry: &IconCatalogEntry) -> impl IntoElement {
             .child(
                 Text::new(display_name)
                     .bold()
-                    .size(px(10.0))
+                    .size(px(12.0))
                     .nowrap()
                     .selectable(false)
                     .group_hover_primary(text_hover_group),
