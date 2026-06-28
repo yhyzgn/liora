@@ -345,6 +345,14 @@ mod link_states;
 mod link_underline;
 #[path = "../../content/snippets/link/variants.rs"]
 mod link_variants;
+#[path = "../../content/snippets/list/custom_ordered.rs"]
+mod list_custom_ordered;
+#[path = "../../content/snippets/list/custom_unordered.rs"]
+mod list_custom_unordered;
+#[path = "../../content/snippets/list/ordered.rs"]
+mod list_ordered;
+#[path = "../../content/snippets/list/unordered.rs"]
+mod list_unordered;
 #[path = "../../content/snippets/live_demo/button.rs"]
 mod live_demo_button;
 #[path = "../../content/snippets/loading/basic.rs"]
@@ -365,6 +373,8 @@ mod menu_bar;
 mod menu_descriptor;
 #[path = "../../content/snippets/menu/gpui_register.rs"]
 mod menu_gpui_register;
+#[path = "../../content/snippets/menu/window_usage.rs"]
+mod menu_window_usage;
 #[path = "../../content/snippets/message_box/basic.rs"]
 mod message_box_basic;
 #[path = "../../content/snippets/message_box/manual_close.rs"]
@@ -457,6 +467,8 @@ mod quick_start_fonts;
 mod quick_start_init;
 #[path = "../../content/snippets/quick_start/main_window.rs"]
 mod quick_start_main_window;
+#[path = "../../content/snippets/quick_start/platform_menu.rs"]
+mod quick_start_platform_menu;
 #[path = "../../content/snippets/radio/basic.rs"]
 mod radio_basic;
 #[path = "../../content/snippets/radio/buttons.rs"]

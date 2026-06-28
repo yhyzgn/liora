@@ -41,6 +41,7 @@ pub mod label_demo;
 pub mod layout_demo;
 pub mod line_chart_demo;
 pub mod link_demo;
+pub mod list_demo;
 pub mod loading_demo;
 pub mod mention_demo;
 pub mod menu_demo;
@@ -165,6 +166,11 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "Text 文本",
             description: "基础文本、可选择文字和轻量文档入口",
             render: |cx| text_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "List 列表",
+            description: "有序 / 无序内容列表、嵌套层级和自定义 marker",
+            render: |cx| list_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Paragraph 段落",

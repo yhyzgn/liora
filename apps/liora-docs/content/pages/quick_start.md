@@ -86,7 +86,14 @@ Liora SDK 从 crates.io 安装；GPUI 通过 Cargo `[patch.crates-io]` 解析到
 ```rust src="quick_start/main_window.rs"
 ```
 
-## 6. 在 View 中组合 Liora 组件
+## 6. 注册系统平台菜单
+
+平台菜单和窗口内菜单栏是两个层级：`Menu::register(cx, menus)` 注册 GPUI 官方平台菜单；如果你还希望在窗口内容里稳定显示 `File / Edit` 这一行，就把同一份 descriptor 渲染成 `MenuBar` 放进 header / Shell / TitleBar。
+
+```rust src="quick_start/platform_menu.rs"
+```
+
+## 7. 在 View 中组合 Liora 组件
 
 GPUI 的推荐写法是：状态放在 View 字段里，渲染时把这些字段转换为元素。下面示例演示了按钮、标题、文本、输入框和开关：
 
@@ -101,7 +108,7 @@ GPUI 的推荐写法是：状态放在 View 字段里，渲染时把这些字段
 - 需要弹层或全局提示的应用，要在根布局末尾渲染对应 Portal / Message 层。
 - 字体默认走系统；如果要像 Gallery/Docs 一样指定应用级字体，请先注册字体资源，再在 `LioraOptions::system().with_fonts(...)` 中指定有序 fallback family。详见下一节“应用级字体自定义”。
 
-## 7. 应用级字体自定义
+## 8. 应用级字体自定义
 
 Liora 把字体分成两个步骤：**加载资源** 和 **选择 family**。系统已安装字体不需要加载文件，直接用 `FontConfig::system().with_ui_families([...]).with_code_families([...])` 指定有序兜底列表即可；随应用分发的私有字体要先通过 `load_app_fonts` / `load_fonts_from_dir` / `load_font_assets` / `load_embedded_fonts` 注册，再用 `init_liora_with_options(...)` 或运行时 `set_font_config(...)` 生效。
 
@@ -117,7 +124,7 @@ Gallery 和 Docs 当前采用同一策略：源码运行时扫描 `apps/<app>/as
 - `with_ui_families([...])` 和 `with_code_families([...])` 都是有序 fallback 列表，不是单个 family。建议把品牌字体放前面，把跨平台系统字体放后面。
 - 字体资源属于应用级资产。SDK 只提供加载和配置 API，不会强制把某套字体耦合进所有下游应用。
 
-## 8. 运行和验证
+## 9. 运行和验证
 
 ```shell src="quick_start/verify.sh"
 ```

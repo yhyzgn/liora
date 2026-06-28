@@ -1221,6 +1221,30 @@ fn in_window_menu_bar() -> MenuBar {
 }
 ```
 
+窗口内菜单栏直接用代码放进根布局，并渲染它的下拉气泡所需的 popover portal：
+
+```rust
+use gpui::{App, IntoElement, ParentElement, Styled, Window, div, px};
+use liora::components::{AppWindowFrame, Container, MenuBar};
+
+fn render_root(window: &mut Window, cx: &mut App) -> impl IntoElement {
+    let menu_bar: MenuBar = in_window_menu_bar();
+
+    // MenuBar 下拉气泡，以及所有基于 popover 的 Liora 组件都需要这一层。
+    liora::core::render_active_popover_in_window(window, cx);
+
+    AppWindowFrame::new(
+        "My App",
+        Container::new()
+            .header(div().w_full().child(menu_bar))
+            .header_height(px(40.0))
+            .child("Window body"),
+    )
+}
+```
+
+`Menu::register(...)` 只调用 GPUI 官方 `App::set_menus`；窗口里可见的菜单行来自 `MenuBar::new(...)`。
+
 ### 浮层与 portal 渲染
 
 大多数应用只需要 `liora::init_liora(cx)`。如果你自己实现根 shell 并手动管理 overlay layer，应在窗口根部渲染 portal：
@@ -1298,7 +1322,7 @@ impl Render for OrdersView {
 | Form 表单 | `Input`, `InputNumber`, `Textarea`, `Checkbox`, `CheckboxGroup`, `Radio`, `RadioGroup`, `Switch`, `Select`, `Slider`, `Form`, `FormItem`, `Rate`, `DatePicker`, `TimePicker`, `DateTimePicker`, `Upload`, `Cascader`, `Transfer`, `ColorPicker`, `Autocomplete`, `InputTag`, `Mention`, `TreeSelect`, `SearchableList`, `OtpInput`, `Toggle`, `ToggleGroup` |
 | Feedback / Overlay 反馈浮层 | `Alert`, `Tooltip`, `Popover`, `Popconfirm`, `Dialog`, `Drawer`, `Message`, `Notification`, `MessageBox`, `Loading`, `Dropdown`, `DropdownButton`, `Preview`, `Tour`, `HoverCard`, `FocusTrap` |
 | Navigation 导航 | `NavigationMenu`, `Tabs`, `Breadcrumb`, `Steps`, `PageHeader`, `Anchor`, `Accordion` |
-| Data 数据展示 | `Table`, `VirtualizedTable`, `VirtualizedTree`, `VirtualizedList`, `Progress`, `Skeleton`, `Empty`, `Result`, `Descriptions`, `Timeline`, `Tree`, `Pagination`, `Statistic`, `Segmented`, `Tag`, `Avatar`, `Badge`, `Calendar`, `Carousel`, `Image`, `Watermark`, `Kbd`, `GroupBox`, `StatusBar`, `SettingsPage`, `SettingsGroup`, `SettingsItem` |
+| Data 数据展示 | `Table`, `List`, `VirtualizedTable`, `VirtualizedTree`, `VirtualizedList`, `Progress`, `Skeleton`, `Empty`, `Result`, `Descriptions`, `Timeline`, `Tree`, `Pagination`, `Statistic`, `Segmented`, `Tag`, `Avatar`, `Badge`, `Calendar`, `Carousel`, `Image`, `Watermark`, `Kbd`, `GroupBox`, `StatusBar`, `SettingsPage`, `SettingsGroup`, `SettingsItem` |
 | Charts / Metrics 图表指标 | `LineChart`, `AreaChart`, `BarChart`, `PieChart`, `RingChart`, `Sparkline`, `SignalMeter`, `HeatBar`, `SegmentRatioBar`, `CandlestickChart` |
 | Editing / Utility 编辑工具 | `CodeBlock`, `CodeEditor`, `QrCode`, `Timer`, `Label`, `Operation`, `Clipboard`, draggable list helpers |
 | App shell / Platform 平台 | `Shell`, `AppWindowFrame`, `TitleBar`, `Sidebar`, `WindowFrameMode`, `StatusBar`, `DockLayout`, `Menu` / `MenuBar`, `liora-tray`, Linux desktop identity helpers, package metadata helpers, updater helpers |

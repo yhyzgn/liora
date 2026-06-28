@@ -5,10 +5,10 @@
 //! query matching, grouping, disabled rows, empty states, and selection visuals
 //! in one SDK component so application controls do not duplicate list logic.
 
-use crate::gpui_compat::element_id;
+use crate::{Input, gpui_compat::element_id};
 use gpui::{
-    App, Component, Hsla, IntoElement, MouseButton, Pixels, RenderOnce, SharedString, Window, div,
-    prelude::*, px,
+    App, Component, Context, Entity, Hsla, IntoElement, MouseButton, Pixels, Render, RenderOnce,
+    SharedString, Window, div, prelude::*, px,
 };
 use liora_core::Config;
 use liora_icons::Icon;
@@ -87,6 +87,164 @@ impl SearchableListItem {
                 .group
                 .as_ref()
                 .is_some_and(|group| group.to_string().to_lowercase().contains(&query))
+    }
+}
+
+/// Stateful search panel that renders an input above [`SearchableList`].
+///
+/// Use [`SearchableList`] directly when a parent control already owns the query
+/// (for example `Select::searchable`). Use `SearchableListPanel` when the list
+/// itself should expose a visible search box and own the query state.
+pub struct SearchableListPanel {
+    id: SharedString,
+    items: Vec<SearchableListItem>,
+    query_input: Entity<Input>,
+    selected_values: Vec<SharedString>,
+    empty_text: SharedString,
+    max_items: usize,
+    width: Option<Pixels>,
+    max_height: Pixels,
+    item_height: Pixels,
+    placeholder: SharedString,
+    background: Option<Hsla>,
+    on_select: Option<Arc<dyn Fn(SearchableListItem, &mut Window, &mut App) + 'static>>,
+}
+
+impl SearchableListPanel {
+    /// Creates a searchable panel with a visible input and a filtered list.
+    pub fn new(items: Vec<SearchableListItem>, cx: &mut Context<Self>) -> Self {
+        Self {
+            id: "liora-searchable-list-panel".into(),
+            items,
+            query_input: cx.new(|cx| Input::new("", cx).placeholder("Search...").clearable(true)),
+            selected_values: Vec::new(),
+            empty_text: "No matching results".into(),
+            max_items: usize::MAX,
+            width: None,
+            max_height: px(260.0),
+            item_height: px(44.0),
+            placeholder: "Search...".into(),
+            background: None,
+            on_select: None,
+        }
+    }
+
+    /// Creates a GPUI entity that preserves the input query across renders.
+    pub fn entity(items: Vec<SearchableListItem>, cx: &mut App) -> Entity<Self> {
+        cx.new(|cx| Self::new(items, cx))
+    }
+
+    /// Assigns a stable id prefix for the input and list elements.
+    pub fn id(mut self, id: impl Into<SharedString>) -> Self {
+        self.id = id.into();
+        self
+    }
+
+    /// Sets the input placeholder.
+    pub fn placeholder(mut self, placeholder: impl Into<SharedString>) -> Self {
+        self.placeholder = placeholder.into();
+        self
+    }
+
+    /// Marks a single value as selected.
+    pub fn selected(mut self, value: impl Into<SharedString>) -> Self {
+        self.selected_values = vec![value.into()];
+        self
+    }
+
+    /// Marks multiple values as selected.
+    pub fn selected_values(mut self, values: Vec<impl Into<SharedString>>) -> Self {
+        self.selected_values = values.into_iter().map(Into::into).collect();
+        self
+    }
+
+    /// Replaces the empty-state text.
+    pub fn empty_text(mut self, text: impl Into<SharedString>) -> Self {
+        self.empty_text = text.into();
+        self
+    }
+
+    /// Limits the number of visible matching rows.
+    pub fn max_items(mut self, max: usize) -> Self {
+        self.max_items = max.max(1);
+        self
+    }
+
+    /// Sets a fixed panel width.
+    pub fn width(mut self, width: impl Into<Pixels>) -> Self {
+        self.width = Some(width.into());
+        self
+    }
+
+    /// Sets the maximum list height below the search input.
+    pub fn max_height(mut self, height: impl Into<Pixels>) -> Self {
+        self.max_height = height.into().max(px(80.0));
+        self
+    }
+
+    /// Sets row height for dense or relaxed lists.
+    pub fn item_height(mut self, height: impl Into<Pixels>) -> Self {
+        self.item_height = height.into().max(px(28.0));
+        self
+    }
+
+    /// Overrides the list panel background.
+    pub fn background(mut self, background: Hsla) -> Self {
+        self.background = Some(background);
+        self
+    }
+
+    /// Registers a callback invoked for enabled row selection.
+    pub fn on_select(
+        mut self,
+        callback: impl Fn(SearchableListItem, &mut Window, &mut App) + 'static,
+    ) -> Self {
+        self.on_select = Some(Arc::new(callback));
+        self
+    }
+}
+
+impl Render for SearchableListPanel {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let theme = cx.global::<Config>().theme.clone();
+        let input = self.query_input.clone();
+        let panel = cx.entity().clone();
+        let placeholder = self.placeholder.clone();
+        cx.update_entity(&input, |input, cx| {
+            input.set_placeholder(placeholder, cx);
+            input.set_width(self.width.unwrap_or(px(340.0)), cx);
+            input.set_on_change(move |_, cx| {
+                let _ = panel.update(cx, |_, cx| cx.notify());
+            });
+        });
+
+        let query = input.read(cx).value();
+        div()
+            .id(element_id(self.id.clone()))
+            .flex()
+            .flex_col()
+            .gap_2()
+            .when_some(self.width, |s, width| s.w(width))
+            .child(input)
+            .child(
+                SearchableList::new(self.items.clone())
+                    .id(format!("{}-list", self.id))
+                    .query(query)
+                    .selected_values(self.selected_values.clone())
+                    .empty_text(self.empty_text.clone())
+                    .max_items(self.max_items)
+                    .max_height(self.max_height)
+                    .item_height(self.item_height)
+                    .background(self.background.unwrap_or(theme.neutral.card))
+                    .on_select({
+                        let callback = self.on_select.clone();
+                        move |item, window, cx| {
+                            if let Some(callback) = &callback {
+                                callback(item, window, cx);
+                            }
+                        }
+                    }),
+            )
     }
 }
 
@@ -439,5 +597,18 @@ mod tests {
         assert!(source.contains(".w(px(18.0))"));
         assert!(source.contains("let description_text = if disabled"));
         assert!(source.contains("let hover_bg = if selected"));
+    }
+
+    #[test]
+    fn searchable_list_panel_owns_visible_input_and_reuses_list_filtering() {
+        let source = include_str!("searchable_list.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap_or_default();
+
+        assert!(source.contains("pub struct SearchableListPanel"));
+        assert!(source.contains("query_input: Entity<Input>"));
+        assert!(source.contains(".child(input)"));
+        assert!(source.contains("SearchableList::new(self.items.clone())"));
     }
 }

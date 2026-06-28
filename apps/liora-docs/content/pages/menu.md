@@ -96,6 +96,13 @@ fn visible_fallback_menu_bar() -> MenuBar {
 ```rust src="menu/bar.rs"
 ```
 
+### 放进窗口布局
+
+```rust src="menu/window_usage.rs"
+```
+
+`Menu::register(cx, menus)` 只注册 GPUI 官方平台菜单；窗口内容里的 `File / Edit / View / Help` 这一行来自上面代码中的 `MenuBar::new(...)`。
+
 ## Action Catalog
 
 `MenuAction::catalog()` 可用于在帮助页、设置页或文档中展示全部内置 action。

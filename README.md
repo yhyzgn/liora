@@ -1222,6 +1222,30 @@ fn in_window_menu_bar() -> MenuBar {
 }
 ```
 
+Render the in-window menu bar by placing `MenuBar` in your root layout and rendering the popover portal used by its dropdowns:
+
+```rust
+use gpui::{App, IntoElement, ParentElement, Styled, Window, div, px};
+use liora::components::{AppWindowFrame, Container, MenuBar};
+
+fn render_root(window: &mut Window, cx: &mut App) -> impl IntoElement {
+    let menu_bar: MenuBar = in_window_menu_bar();
+
+    // Required for MenuBar dropdowns and every Liora popover-based component.
+    liora::core::render_active_popover_in_window(window, cx);
+
+    AppWindowFrame::new(
+        "My App",
+        Container::new()
+            .header(div().w_full().child(menu_bar))
+            .header_height(px(40.0))
+            .child("Window body"),
+    )
+}
+```
+
+`Menu::register(...)` only calls GPUI's official `App::set_menus`; the visible in-window row comes from `MenuBar::new(...)`.
+
 ### Overlay and portal rendering
 
 Most apps only need `liora::init_liora(cx)`. If you build a custom root shell that manually manages overlay layers, keep portal rendering near the window root:
@@ -1299,7 +1323,7 @@ impl Render for OrdersView {
 | Form controls | `Input`, `InputNumber`, `Textarea`, `Checkbox`, `CheckboxGroup`, `Radio`, `RadioGroup`, `Switch`, `Select`, `Slider`, `Form`, `FormItem`, `Rate`, `DatePicker`, `TimePicker`, `DateTimePicker`, `Upload`, `Cascader`, `Transfer`, `ColorPicker`, `Autocomplete`, `InputTag`, `Mention`, `TreeSelect`, `SearchableList`, `OtpInput`, `Toggle`, `ToggleGroup` |
 | Feedback and overlays | `Alert`, `Tooltip`, `Popover`, `Popconfirm`, `Dialog`, `Drawer`, `Message`, `Notification`, `MessageBox`, `Loading`, `Dropdown`, `DropdownButton`, `Preview`, `Tour`, `HoverCard`, `FocusTrap` |
 | Navigation | `NavigationMenu`, `Tabs`, `Breadcrumb`, `Steps`, `PageHeader`, `Anchor`, `Accordion` |
-| Data display | `Table`, `VirtualizedTable`, `VirtualizedTree`, `VirtualizedList`, `Progress`, `Skeleton`, `Empty`, `Result`, `Descriptions`, `Timeline`, `Tree`, `Pagination`, `Statistic`, `Segmented`, `Tag`, `Avatar`, `Badge`, `Calendar`, `Carousel`, `Image`, `Watermark`, `Kbd`, `GroupBox`, `StatusBar`, `SettingsPage`, `SettingsGroup`, `SettingsItem` |
+| Data display | `Table`, `List`, `VirtualizedTable`, `VirtualizedTree`, `VirtualizedList`, `Progress`, `Skeleton`, `Empty`, `Result`, `Descriptions`, `Timeline`, `Tree`, `Pagination`, `Statistic`, `Segmented`, `Tag`, `Avatar`, `Badge`, `Calendar`, `Carousel`, `Image`, `Watermark`, `Kbd`, `GroupBox`, `StatusBar`, `SettingsPage`, `SettingsGroup`, `SettingsItem` |
 | Charts and metrics | `LineChart`, `AreaChart`, `BarChart`, `PieChart`, `RingChart`, `Sparkline`, `SignalMeter`, `HeatBar`, `SegmentRatioBar`, `CandlestickChart` |
 | Editing and utility | `CodeBlock`, `CodeEditor`, `QrCode`, `Timer`, `Label`, `Operation`, `Clipboard`, draggable list helpers |
 | App shell and platform | `Shell`, `AppWindowFrame`, `TitleBar`, `Sidebar`, `WindowFrameMode`, `StatusBar`, `DockLayout`, `Menu` / `MenuBar`, `liora-tray`, Linux desktop identity helpers, package metadata helpers, updater helpers |

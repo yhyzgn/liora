@@ -94,6 +94,7 @@ pub mod label;
 pub mod layout_helpers;
 pub mod line_chart;
 pub mod link;
+pub mod list;
 pub mod loading;
 pub mod mention;
 pub mod menu;
@@ -229,6 +230,7 @@ pub use liora_core::{
     startup_maximized_window_bounds, sync_system_theme,
 };
 pub use liora_theme::{ButtonSize, ButtonVariant};
+pub use list::*;
 pub use loading::*;
 pub use mention::*;
 pub use menu::*;
@@ -1177,6 +1179,7 @@ mod component_backlog_export_tests {
         assert!(source.contains("pub mod group_box;"));
         assert!(source.contains("pub mod toggle;"));
         assert!(source.contains("pub use searchable_list::*;"));
+        assert!(source.contains("pub use list::*;"));
         assert!(source.contains("pub use status_bar::*;"));
         assert!(source.contains("pub use settings::*;"));
         assert!(source.contains("pub use candlestick_chart::*;"));

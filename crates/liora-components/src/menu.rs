@@ -805,7 +805,7 @@ impl MenuBar {
 }
 
 impl RenderOnce for MenuBar {
-    fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
         let on_select = self.on_select.clone();
         let on_paths_selected = self.on_paths_selected.clone();
@@ -821,46 +821,52 @@ impl RenderOnce for MenuBar {
             .border_1()
             .border_color(theme.neutral.border)
             .bg(theme.neutral.card)
-            .children(self.menus.into_iter().map(move |menu| {
-                let title = menu.title.clone();
-                let items = menu.items.clone();
-                let trigger = div()
-                    .px_3()
-                    .py_1()
-                    .rounded(px(theme.radius.sm))
-                    .cursor_pointer()
-                    .bg(gpui::transparent_black())
-                    .hover(|s| s.cursor_pointer().bg(theme.neutral.hover))
-                    .child(
-                        Text::new(title)
-                            .sm()
-                            .selectable(false)
-                            .text_color(theme.neutral.text_1),
-                    );
-                let theme = theme.clone();
-                let on_select = on_select.clone();
-                let on_paths_selected = on_paths_selected.clone();
-                Popover::new(trigger)
-                    .placement(liora_core::Placement::BottomStart)
-                    .offset(px(4.0))
-                    .flush_content()
-                    .content(move |_, _| {
-                        div()
-                            .w(menu.preview_width)
+            .children(
+                self.menus
+                    .into_iter()
+                    .enumerate()
+                    .map(move |(index, menu)| {
+                        let title = menu.title.clone();
+                        let items = menu.items.clone();
+                        let trigger_id = menu_bar_trigger_id(index, &title, window, cx);
+                        let trigger = div()
+                            .px_3()
                             .py_1()
-                            .children(items.clone().into_iter().map(|item| {
-                                render_menu_item(
-                                    item,
-                                    0,
-                                    &theme,
-                                    on_select.clone(),
-                                    on_paths_selected.clone(),
-                                    perform_builtin_actions,
+                            .rounded(px(theme.radius.sm))
+                            .cursor_pointer()
+                            .bg(gpui::transparent_black())
+                            .hover(|s| s.cursor_pointer().bg(theme.neutral.hover))
+                            .child(
+                                Text::new(title)
+                                    .sm()
+                                    .selectable(false)
+                                    .text_color(theme.neutral.text_1),
+                            );
+                        let theme = theme.clone();
+                        let on_select = on_select.clone();
+                        let on_paths_selected = on_paths_selected.clone();
+                        Popover::new(trigger)
+                            .id(trigger_id)
+                            .placement(liora_core::Placement::BottomStart)
+                            .offset(px(4.0))
+                            .flush_content()
+                            .content(move |_, _| {
+                                div().w(menu.preview_width).py_1().children(
+                                    items.clone().into_iter().map(|item| {
+                                        render_menu_item(
+                                            item,
+                                            0,
+                                            &theme,
+                                            on_select.clone(),
+                                            on_paths_selected.clone(),
+                                            perform_builtin_actions,
+                                        )
+                                    }),
                                 )
-                            }))
-                    })
-                    .into_any_element()
-            }))
+                            })
+                            .into_any_element()
+                    }),
+            )
     }
 }
 
@@ -870,6 +876,36 @@ impl IntoElement for MenuBar {
     fn into_element(self) -> Self::Element {
         Component::new(self)
     }
+}
+
+fn menu_bar_trigger_id(
+    index: usize,
+    title: &SharedString,
+    window: &mut Window,
+    cx: &mut App,
+) -> SharedString {
+    let mut slug = title
+        .chars()
+        .map(|ch| {
+            if ch.is_ascii_alphanumeric() {
+                ch.to_ascii_lowercase()
+            } else {
+                '-'
+            }
+        })
+        .collect::<String>();
+    while slug.contains("--") {
+        slug = slug.replace("--", "-");
+    }
+    let slug = slug.trim_matches('-');
+    let slug = if slug.is_empty() { "menu" } else { slug };
+
+    liora_core::stable_unique_id(
+        format!("menu-bar-trigger:{index}:{slug}"),
+        "menu-bar-trigger",
+        window,
+        cx,
+    )
 }
 
 impl RenderOnce for Menu {
@@ -1104,6 +1140,8 @@ mod tests {
         assert!(source.contains("pub struct MenuBar"));
         assert!(source.contains("impl RenderOnce for MenuBar"));
         assert!(source.contains("Popover::new(trigger)"));
+        assert!(source.contains(".id(trigger_id)"));
+        assert!(source.contains("fn menu_bar_trigger_id"));
         assert!(source.contains("GpuiPlatformMenu::new"));
         assert!(source.contains("GpuiPlatformMenuItem::submenu"));
         assert!(source.contains("GpuiPlatformMenuItem::Action"));
@@ -1115,7 +1153,6 @@ mod tests {
         assert!(source.contains("command_count"));
         assert!(source.contains(".w_full()"));
         assert!(source.contains(".selectable(false)"));
-        assert!(source.contains(".block_mouse_except_scroll()"));
         assert!(source.contains(".bg(gpui::transparent_black())"));
         assert!(source.contains("hover(|s| s.cursor_pointer().bg(theme.neutral.hover))"));
         assert!(source.contains("on_mouse_up(MouseButton::Left"));
@@ -1130,6 +1167,23 @@ mod tests {
         assert!(source.contains("window.remove_window()"));
         assert!(source.contains("window.set_rem_size"));
     }
+    #[test]
+    fn menu_bar_assigns_stable_trigger_ids_to_each_top_level_menu() {
+        let source = include_str!("menu.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+        let menu_bar_source = source
+            .split("impl RenderOnce for MenuBar")
+            .nth(1)
+            .unwrap_or_default();
+
+        assert!(menu_bar_source.contains(".enumerate()"));
+        assert!(menu_bar_source.contains(".map(move |(index, menu)|"));
+        assert!(menu_bar_source.contains("menu_bar_trigger_id(index, &title, window, cx)"));
+        assert!(menu_bar_source.contains(".id(trigger_id)"));
+    }
+
     #[test]
     fn menu_preview_items_do_not_block_hover_or_pointer_tracking() {
         let source = include_str!("menu.rs")

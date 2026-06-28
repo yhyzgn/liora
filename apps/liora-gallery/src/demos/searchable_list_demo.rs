@@ -1,13 +1,49 @@
 use gpui::{AnyElement, AnyView, App, Context, Render, Window, prelude::*, px};
 use liora_components::layout_helpers::{page, section, showcase_card_wide, showcase_stack};
-use liora_components::{SearchableList, SearchableListItem, Space};
+use liora_components::{SearchableListItem, SearchableListPanel, Space};
 use liora_core::Config;
 
 pub fn render(cx: &mut App) -> AnyView {
-    cx.new(|_| SearchableListDemo).into()
+    cx.new(|cx| SearchableListDemo {
+        basic: cx.new(|cx| {
+            SearchableListPanel::new(component_items(), cx)
+                .selected("select-search")
+                .item_height(px(48.0))
+                .width(px(520.0))
+                .placeholder("Search components...")
+        }),
+        filtered: cx.new(|cx| {
+            SearchableListPanel::new(component_items(), cx)
+                .selected_values(vec!["status-bar", "dock-layout"])
+                .item_height(px(48.0))
+                .width(px(520.0))
+                .placeholder("Type shell, input, button...")
+        }),
+        limited: cx.new(|cx| {
+            SearchableListPanel::new(component_items(), cx)
+                .max_items(2)
+                .item_height(px(48.0))
+                .width(px(520.0))
+                .placeholder("Search limited results...")
+        }),
+        empty: cx.new(|cx| {
+            SearchableListPanel::new(component_items(), cx)
+                .empty_text("No component found")
+                .background(cx.global::<Config>().theme.neutral.hover.opacity(0.5))
+                .item_height(px(48.0))
+                .width(px(520.0))
+                .placeholder("Try a missing keyword...")
+        }),
+    })
+    .into()
 }
 
-struct SearchableListDemo;
+struct SearchableListDemo {
+    basic: gpui::Entity<SearchableListPanel>,
+    filtered: gpui::Entity<SearchableListPanel>,
+    limited: gpui::Entity<SearchableListPanel>,
+    empty: gpui::Entity<SearchableListPanel>,
+}
 
 fn component_items() -> Vec<SearchableListItem> {
     vec![
@@ -35,8 +71,7 @@ fn list_card(title: &'static str, detail: &'static str, body: AnyElement) -> Any
 }
 
 impl Render for SearchableListDemo {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let theme = cx.global::<Config>().theme.clone();
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         page(
             "SearchableList 可搜索列表",
             "通用过滤列表底座，统一 value/label/description/group/disabled/selected 等选项能力，供 Select::searchable、命令面板和设置页复用。",
@@ -47,41 +82,22 @@ impl Render for SearchableListDemo {
                     list_card(
                         "All components",
                         "空查询展示全部分组和禁用项。",
-                        SearchableList::new(component_items())
-                            .selected("select-search")
-                            .item_height(px(48.0))
-                            .width(px(520.0))
-                            .into_any_element(),
+                        self.basic.clone().into_any_element(),
                     ),
                     list_card(
                         "Query: shell",
                         "可命中 value、label、description 或 group。",
-                        SearchableList::new(component_items())
-                            .query("shell")
-                            .selected_values(vec!["status-bar", "dock-layout"])
-                            .item_height(px(48.0))
-                            .width(px(520.0))
-                            .into_any_element(),
+                        self.filtered.clone().into_any_element(),
                     ),
                     list_card(
                         "Limited",
                         "只展示前 2 个匹配项。",
-                        SearchableList::new(component_items())
-                            .max_items(2)
-                            .item_height(px(48.0))
-                            .width(px(520.0))
-                            .into_any_element(),
+                        self.limited.clone().into_any_element(),
                     ),
                     list_card(
                         "Empty",
                         "无匹配项时渲染轻量空态。",
-                        SearchableList::new(component_items())
-                            .query("not-found")
-                            .empty_text("No component found")
-                            .background(theme.neutral.hover.opacity(0.5))
-                            .item_height(px(48.0))
-                            .width(px(520.0))
-                            .into_any_element(),
+                        self.empty.clone().into_any_element(),
                     ),
                 ]),
             )),
@@ -100,6 +116,8 @@ mod tests {
 
         assert!(source.contains("showcase_stack"));
         assert!(source.contains("showcase_card_wide"));
+        assert!(source.contains("SearchableListPanel::new"));
+        assert!(source.contains(r#".placeholder("Search components...")"#));
         assert!(source.contains(".item_height(px(48.0))"));
         assert!(!source.contains("showcase_grid"));
     }
