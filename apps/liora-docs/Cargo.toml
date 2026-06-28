@@ -1,6 +1,6 @@
 [package]
 name = "liora-docs"
-version = "0.1.14"
+version = "0.1.15"
 edition = "2024"
 description = "Native GPUI documentation application for Liora."
 license = "LicenseRef-Liora"

@@ -29,6 +29,7 @@ on:
 permissions:
   contents: read
 
+
 jobs:
   package:
     name: ${{ matrix.os }} native packages
@@ -50,9 +51,6 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
 
       - name: Prefer toolchain cargo shim
         shell: bash
@@ -141,6 +139,7 @@ jobs:
       - name: Check release readiness policy
         env:
           LIORA_REQUIRE_SIGNING: ${{ vars.LIORA_REQUIRE_SIGNING == 'true' && 'true' || 'false' }}
+          LIORA_ALLOW_UNSIGNED_RELEASE: ${{ vars.LIORA_REQUIRE_SIGNING == 'true' && 'false' || 'true' }}
           LIORA_MACOS_CODESIGN_IDENTITY: ${{ secrets.LIORA_MACOS_CODESIGN_IDENTITY }}
           LIORA_MACOS_NOTARY_APPLE_ID: ${{ secrets.LIORA_MACOS_NOTARY_APPLE_ID }}
           LIORA_MACOS_NOTARY_TEAM_ID: ${{ secrets.LIORA_MACOS_NOTARY_TEAM_ID }}
@@ -310,19 +309,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download package artifacts
-        uses: actions/download-artifact@v8
-        with:
-          pattern: liora-release-gallery-packages-*
-          path: dist
-          merge-multiple: false
-
-      - name: Download raw runnable binaries
-        uses: actions/download-artifact@v8
-        with:
-          pattern: liora-release-binaries-*
-          path: dist
-          merge-multiple: false
+      - name: Download release artifacts
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf dist
+          mkdir -p dist
+          gh run download "$GITHUB_RUN_ID" \
+            --pattern 'liora-release-gallery-packages-*' \
+            --dir dist
+          gh run download "$GITHUB_RUN_ID" \
+            --pattern 'liora-release-binaries-*' \
+            --dir dist
 
       - name: Prepare release assets
         shell: bash
@@ -596,7 +596,7 @@ jobs:
             echo "- SDK consumers should pin \`liora\` by git \`rev\` and use the matching official Zed GPUI \`rev\`; \`liora-packager\` and \`liora-updater\` remain available through crates.io for utility-focused integrations."
             echo "- Menu migration: rename old navigation/sidebar usages from \`Menu\`, \`MenuMode\`, \`MenuNode\`, \`SubMenu\`, and \`MenuItemGroup\` to \`NavigationMenu\`, \`NavigationMenuMode\`, \`NavigationMenuNode\`, \`NavigationSubMenu\`, and \`NavigationMenuGroup\`. Use the new \`Menu::register(cx, menus)\` API only for GPUI platform menus, and render \`MenuBar\` when a visible in-window fallback is required."
             echo "- \`liora-docs\` is distributed as a raw executable; \`liora-gallery\` includes both raw executables and installer bundles."
-            echo "- macOS/Windows artifacts are unsigned unless the repository release environment provides signing/notarization secrets and sets \`LIORA_REQUIRE_SIGNING=true\`."
+            echo "- macOS/Windows artifacts are unsigned only because this public release workflow sets \`LIORA_ALLOW_UNSIGNED_RELEASE=true\` when \`LIORA_REQUIRE_SIGNING\` is not enabled; set \`LIORA_REQUIRE_SIGNING=true\` and provide signing/notarization secrets to fail closed for signed releases."
             echo
             echo "## Verification"
             echo

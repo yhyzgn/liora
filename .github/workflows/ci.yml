@@ -10,6 +10,7 @@ on:
 permissions:
   contents: read
 
+
 jobs:
   rust-quality:
     name: fmt, check, test, docs snippets
@@ -21,9 +22,6 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
 
       - name: Prefer toolchain cargo shim
         shell: bash
@@ -93,9 +91,6 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
 
       - name: Prefer toolchain cargo shim
         shell: bash

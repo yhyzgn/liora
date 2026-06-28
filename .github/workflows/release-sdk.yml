@@ -51,9 +51,6 @@ jobs:
             pkg-config \
             vulkan-tools
 
-      - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
-
       - name: Prefer toolchain cargo shim
         shell: bash
         run: echo "$(dirname "$(rustup which cargo)")" >> "$GITHUB_PATH"
@@ -157,9 +154,6 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
 
       - name: Prefer toolchain cargo shim
         shell: bash

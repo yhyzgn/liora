@@ -241,15 +241,18 @@ fn check_release_tag_policy(report: &mut ReleaseReadinessReport) {
             format!("preview package version {version} is allowed outside v* releases"),
         );
     } else {
-        report.warn(
+        report.pass(
             "release tag version",
-            format!("not running under a v* tag; local/package version is {version}"),
+            format!(
+                "local or branch validation is not a v* release tag; package version is {version}"
+            ),
         );
     }
 }
 
 fn check_signing_policy(report: &mut ReleaseReadinessReport) {
     let require_signing = env_truthy("LIORA_REQUIRE_SIGNING");
+    let allow_unsigned_release = env_truthy("LIORA_ALLOW_UNSIGNED_RELEASE");
     let platform = Platform::current();
     let missing = signing_env_missing(platform);
     if missing.is_empty() {
@@ -265,11 +268,19 @@ fn check_signing_policy(report: &mut ReleaseReadinessReport) {
                 missing.join(", ")
             ),
         );
+    } else if allow_unsigned_release {
+        report.pass(
+            "signing/notarization policy",
+            format!(
+                "unsigned build explicitly allowed by LIORA_ALLOW_UNSIGNED_RELEASE=true; provide {} and set LIORA_REQUIRE_SIGNING=true when signed release enforcement is required",
+                missing.join(", ")
+            ),
+        );
     } else {
         report.warn(
             "signing/notarization policy",
             format!(
-                "unsigned build allowed; set LIORA_REQUIRE_SIGNING=true and provide {} for signed release enforcement",
+                "unsigned build allowed only when LIORA_ALLOW_UNSIGNED_RELEASE=true; otherwise provide {} or set LIORA_REQUIRE_SIGNING=true to fail closed",
                 missing.join(", ")
             ),
         );
