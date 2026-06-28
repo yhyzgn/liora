@@ -75,6 +75,7 @@ pub struct Icon {
     size: Option<DefiniteLength>,
     color: Option<Hsla>,
     group_hover_color: Option<(SharedString, Hsla)>,
+    group_hover_primary: Option<SharedString>,
     rotation: Option<Radians>,
     asset_path: String,
 }
@@ -86,6 +87,7 @@ impl Icon {
             size: None,
             color: None,
             group_hover_color: None,
+            group_hover_primary: None,
             rotation: None,
             asset_path: path.icon_path().into_owned(),
         }
@@ -134,6 +136,12 @@ impl Icon {
         self
     }
 
+    /// Change icon color to the active theme primary color when a group member is hovered.
+    pub fn group_hover_primary(mut self, group: impl Into<SharedString>) -> Self {
+        self.group_hover_primary = Some(group.into());
+        self
+    }
+
     /// Rotate the icon around its center while preserving layout and hitbox.
     pub fn rotation(mut self, rotation: Radians) -> Self {
         self.rotation = Some(rotation);
@@ -154,6 +162,10 @@ impl RenderOnce for Icon {
         }
         if let Some((group, color)) = self.group_hover_color {
             el = el.group_hover(group, move |style| style.text_color(color));
+        }
+        if let Some(group) = self.group_hover_primary {
+            let primary = theme.primary.base;
+            el = el.group_hover(group, move |style| style.text_color(primary));
         }
         if let Some(rotation) = self.rotation {
             el = el.with_transformation(Transformation::rotate(rotation));
@@ -183,6 +195,14 @@ mod tests {
         assert_eq!(Icon::new("home").size_md().size, Some(px(18.0).into()));
         assert_eq!(Icon::new("home").size_lg().size, Some(px(24.0).into()));
         assert_eq!(Icon::new("home").size_xl().size, Some(px(32.0).into()));
+    }
+
+    #[test]
+    fn icon_supports_theme_primary_group_hover() {
+        let source = include_str!("lib.rs");
+
+        assert!(source.contains("pub fn group_hover_primary"));
+        assert!(source.contains("theme.primary.base"));
     }
 
     #[test]

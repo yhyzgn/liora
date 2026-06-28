@@ -9,18 +9,18 @@ use liora_components::{
     Calendar, CalendarDate, CalendarEvent, Card, Carousel, CarouselIndicatorPosition, CarouselItem,
     Checkbox, CheckboxGroup, CheckboxOptionStyle, CodeBlock as LioraCodeBlock, CodeDiagnostic,
     CodeEditor, CodeHighlighter, CodeLanguage, CodeTheme, Container, Dropdown, DropdownButton,
-    DropdownButtonItem, Flex, Form, FormItem, Grid, GridItem, HorizontalList, Image, Input,
-    InputNumber, InputNumberControlsPosition, Link, Loading, NavigationMenu, NavigationMenuMode,
-    NotificationType, Paragraph, Popconfirm, Popover, Preview, Progress, ProgressStatus, QrCode,
-    QrEcLevel, QrFinderStyle, QrGradientDirection, QrModuleStyle, Radio, RadioGroup,
-    RadioOptionStyle, Rate, Result as LioraResult, ResultStatus, Segmented, SegmentedOption,
-    Select, SelectableTextGroup, Shell, Sidebar, Skeleton, SkeletonItem, SkeletonVariant, Slider,
-    Space, Statistic, Switch, Tag as LioraTag, Text, Textarea, Timer, TimerFormat, TimerUnit,
-    Title, TitleBar, TitleBarContentAlign, Tour, TourPlacement, TourStep, Transfer, TransferItem,
-    Tree, TreeNode, TreeSelect, TreeSelectNode, Upload, UploadFile, UploadStatus, VirtualizedList,
-    VirtualizedTable, VirtualizedTree, Watermark, WindowControlsPosition, WindowFrameMode,
-    frame_mode_switch_row, show_notification, toast_error, toast_info, toast_success,
-    toast_warning,
+    DropdownButtonItem, Flex, Form, FormItem, GRID_ITEM_HOVER_GROUP, Grid, GridItem,
+    HorizontalList, Image, Input, InputNumber, InputNumberControlsPosition, Link, Loading,
+    NavigationMenu, NavigationMenuMode, NotificationType, Paragraph, Popconfirm, Popover, Preview,
+    Progress, ProgressStatus, QrCode, QrEcLevel, QrFinderStyle, QrGradientDirection, QrModuleStyle,
+    Radio, RadioGroup, RadioOptionStyle, Rate, Result as LioraResult, ResultStatus, Segmented,
+    SegmentedOption, Select, SelectableTextGroup, Shell, Sidebar, Skeleton, SkeletonItem,
+    SkeletonVariant, Slider, Space, Statistic, Switch, Tag as LioraTag, Text, Textarea, Timer,
+    TimerFormat, TimerUnit, Title, TitleBar, TitleBarContentAlign, Tour, TourPlacement, TourStep,
+    Transfer, TransferItem, Tree, TreeNode, TreeSelect, TreeSelectNode, Upload, UploadFile,
+    UploadStatus, VirtualizedList, VirtualizedTable, VirtualizedTree, Watermark,
+    WindowControlsPosition, WindowFrameMode, frame_mode_switch_row, show_notification, toast_error,
+    toast_info, toast_success, toast_warning,
 };
 use liora_core::{
     Config, PassivePortal, Placement, Portal, ThemeMode, apply_theme_mode, clear_popover,
@@ -7135,7 +7135,7 @@ enum IconCatalogLibrary {
     Material,
 }
 
-const ICON_CATALOG_GRID_CHUNK: usize = 96;
+const ICON_CATALOG_GRID_CHUNK: usize = 6;
 
 fn docs_icon_library_catalog(
     cx: &mut Context<VirtualizedList>,
@@ -7150,6 +7150,7 @@ fn docs_icon_library_catalog(
     });
     list.set_height(Some(px(620.0)));
     list.set_item_spacing(px(12.0));
+    list.set_overdraw(px(160.0));
     list
 }
 
@@ -7163,7 +7164,8 @@ fn icon_catalog_grid(entries: &[IconCatalogEntry]) -> impl IntoElement {
 fn icon_catalog_item(entry: &IconCatalogEntry) -> impl IntoElement {
     let icon =
         liora_icons::Icon::new(liora_icons::inline_svg_asset_path(entry.svg_source).into_owned())
-            .size_xl();
+            .size_xl()
+            .group_hover_primary(GRID_ITEM_HOVER_GROUP);
     let copy_text = format!("{}::{}", entry.module_path, entry.name);
     let display_name = entry.name.clone();
 
@@ -7173,7 +7175,13 @@ fn icon_catalog_item(entry: &IconCatalogEntry) -> impl IntoElement {
             .align_center()
             .gap_sm()
             .child(icon)
-            .child(Text::new(display_name).bold().size(px(11.0)).nowrap()),
+            .child(
+                Text::new(display_name)
+                    .bold()
+                    .size(px(11.0))
+                    .nowrap()
+                    .group_hover_primary(GRID_ITEM_HOVER_GROUP),
+            ),
     )
     .on_click(move |_, cx| {
         cx.write_to_clipboard(gpui::ClipboardItem::new_string(copy_text.clone()));
@@ -11593,12 +11601,14 @@ mod tests {
         assert!(source.contains("docs_icon_library_catalog"));
         assert!(source.contains("enum IconCatalogLibrary"));
         assert!(source.contains("icon_catalog_entries(library: IconCatalogLibrary)"));
-        assert!(source.contains("ICON_CATALOG_GRID_CHUNK"));
+        assert!(source.contains("const ICON_CATALOG_GRID_CHUNK: usize = 6;"));
         assert!(source.contains("Grid::new()"));
         assert!(source.contains(".fit_item_lg()"));
         assert!(source.contains("GridItem::new"));
+        assert!(source.contains("list.set_overdraw(px(160.0));"));
         assert!(icon_item_source.contains("let display_name = entry.name.clone();"));
         assert!(icon_item_source.contains(".size_xl()"));
+        assert!(icon_item_source.contains(".group_hover_primary(GRID_ITEM_HOVER_GROUP)"));
         assert!(!icon_item_source.contains(r#"format!("IconName::{}", entry.name)"#));
         assert!(source.contains("liora::icons_lucide::IconName"));
         assert!(source.contains("liora::icons_antd::IconName"));

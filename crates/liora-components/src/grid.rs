@@ -5,7 +5,8 @@
 //! collections. Use `Table` or `VirtualizedTable` for tabular data.
 
 use gpui::{
-    AnyElement, App, Component, IntoElement, Pixels, RenderOnce, Window, div, prelude::*, px,
+    AnyElement, App, Component, IntoElement, MouseButton, Pixels, RenderOnce, Window, div,
+    prelude::*, px,
 };
 use liora_core::{Config, stable_unique_id};
 use std::sync::Arc;
@@ -229,6 +230,9 @@ impl IntoElement for Grid {
     }
 }
 
+/// GPUI group name used by clickable [`GridItem`] tiles for coordinated hover styling.
+pub const GRID_ITEM_HOVER_GROUP: &str = "liora-grid-item-hover";
+
 type GridItemClick = dyn Fn(&mut Window, &mut App) + 'static;
 
 /// Themed clickable/non-clickable tile intended for use inside [`Grid`].
@@ -309,13 +313,15 @@ impl RenderOnce for GridItem {
             .p_3()
             .text_color(theme.neutral.text_2)
             .when(click.is_some(), |s| {
-                s.cursor_pointer()
+                s.group(GRID_ITEM_HOVER_GROUP)
+                    .cursor_pointer()
                     .hover(|s| {
                         s.cursor_pointer()
                             .bg(theme.neutral.hover)
                             .border_color(theme.primary.base)
+                            .text_color(theme.primary.base)
                     })
-                    .on_click(move |_, window, cx| {
+                    .on_mouse_up(MouseButton::Left, move |_, window, cx| {
                         if let Some(click) = &click {
                             click(window, cx);
                         }
@@ -354,9 +360,11 @@ mod tests {
 
         assert!(source.contains("pub struct GridItem"));
         assert!(source.contains("pub fn on_click"));
+        assert!(source.contains("GRID_ITEM_HOVER_GROUP"));
         assert!(source.contains(".cursor_pointer()"));
         assert!(source.contains(".aspect_square()"));
         assert!(source.contains("pub fn rectangular"));
-        assert!(source.contains(".on_click(move |_, window, cx|"));
+        assert!(source.contains(".text_color(theme.primary.base)"));
+        assert!(source.contains(".on_mouse_up(MouseButton::Left"));
     }
 }

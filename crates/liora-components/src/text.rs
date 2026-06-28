@@ -159,6 +159,8 @@ pub(crate) enum TextContent {
 pub struct Text {
     pub(crate) content: TextContent,
     pub(crate) color: Option<Hsla>,
+    pub(crate) group_hover_color: Option<(SharedString, Hsla)>,
+    pub(crate) group_hover_primary: Option<SharedString>,
     pub(crate) bg: Option<Hsla>,
     pub(crate) size: Option<Pixels>,
     pub(crate) weight: Option<FontWeight>,
@@ -187,6 +189,8 @@ impl Text {
         Self {
             content: TextContent::Inline(content),
             color: None,
+            group_hover_color: None,
+            group_hover_primary: None,
             bg: None,
             size: None,
             weight: None,
@@ -229,6 +233,18 @@ impl Text {
     /// Applies the foreground text color.
     pub fn text_color(mut self, color: Hsla) -> Self {
         self.color = Some(color);
+        self
+    }
+
+    /// Applies a foreground color when a parent/group member is hovered.
+    pub fn group_hover_text_color(mut self, group: impl Into<SharedString>, color: Hsla) -> Self {
+        self.group_hover_color = Some((group.into(), color));
+        self
+    }
+
+    /// Applies the active theme primary color when a parent/group member is hovered.
+    pub fn group_hover_primary(mut self, group: impl Into<SharedString>) -> Self {
+        self.group_hover_primary = Some(group.into());
         self
     }
 
@@ -500,6 +516,15 @@ impl RenderOnce for Text {
             }
         } else {
             el = el.whitespace_nowrap();
+        }
+
+        if let Some((group, color)) = text.group_hover_color {
+            el = el.group_hover(group, move |style| style.text_color(color));
+        }
+
+        if let Some(group) = text.group_hover_primary {
+            let primary = theme.primary.base;
+            el = el.group_hover(group, move |style| style.text_color(primary));
         }
 
         if let Some(bg) = text.bg {
@@ -878,5 +903,17 @@ mod document_tests {
             }
         ));
         assert_eq!(blocks[5], TextBlock::Divider);
+    }
+}
+
+#[cfg(test)]
+mod group_hover_tests {
+    #[test]
+    fn text_supports_theme_primary_group_hover() {
+        let source = include_str!("text.rs");
+
+        assert!(source.contains("pub fn group_hover_primary"));
+        assert!(source.contains("group_hover(group"));
+        assert!(source.contains("theme.primary.base"));
     }
 }
