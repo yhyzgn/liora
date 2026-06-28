@@ -6031,7 +6031,7 @@ fn docs_status_bar_shell() -> AnyElement {
             )
             .right_item(liora_components::StatusBarItem::new("UTF-8").compact())
             .right_item(liora_components::StatusBarItem::new("Ln 42, Col 7").compact())
-            .right_item(liora_components::StatusBarItem::new("v0.1.12").pill()),
+            .right_item(liora_components::StatusBarItem::new("v0.1.13").pill()),
     )
 }
 

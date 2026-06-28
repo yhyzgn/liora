@@ -494,7 +494,7 @@ mod tests {
         let bar = StatusBar::new()
             .left_item(StatusBarItem::new("Ready"))
             .center_item(StatusBarItem::new("main.rs"))
-            .right_item(StatusBarItem::new("v0.1.12"))
+            .right_item(StatusBarItem::new("v0.1.13"))
             .right_item(StatusBarItem::new("UTF-8"));
 
         assert_eq!(bar.region_counts(), (1, 1, 2));

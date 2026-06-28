@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.13 - 2026-06-28
+
+- Renamed the old navigation/sidebar `Menu` API to `NavigationMenu`, `NavigationMenuItem`, `NavigationMenuNode`, `NavigationMenuGroup`, `NavigationMenuMode`, and `NavigationSubMenu`. This is the required migration path for apps that used the previous Menu navigation component.
+- Reclaimed `Menu`, `MenuItem`, `MenuAction`, and `MenuBar` for GPUI-aligned platform menu descriptors and in-window fallback menu bars. `Menu::register(cx, menus)` now delegates to GPUI's official `App::set_menus` platform menu API.
+- Added real GPUI platform menu registration to Gallery and Docs while keeping a visible Gallery header fallback menu bar for Linux/Windows/system-frame/custom-frame environments where platform menus are not automatically shown inside the window.
+- Updated README and Docs with a detailed platform-menu versus in-window `MenuBar` behavior matrix and migration guidance.
+
 ## 0.1.12 - 2026-06-28
 
 - Enforced Docs component examples as strict one-effect / one-code pairs for every component use case.
