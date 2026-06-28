@@ -768,18 +768,24 @@ impl Element for SelectableTextElement {
             }
         });
 
-        for selection in prepaint.selection.drain(..) {
-            window.paint_quad(selection);
-        }
-
         let (line_height, text_align) = {
             let input = self.input.read(cx);
             (input.line_height, input.text_style(window).text_align)
         };
+
         let mut origin = bounds.origin;
         for line in &prepaint.layout.lines {
             let _ =
                 line.paint_background(origin, line_height, text_align, Some(bounds), window, cx);
+            origin.y += line.size(line_height).height;
+        }
+
+        for selection in prepaint.selection.drain(..) {
+            window.paint_quad(selection);
+        }
+
+        let mut origin = bounds.origin;
+        for line in &prepaint.layout.lines {
             let _ = line.paint(origin, line_height, text_align, Some(bounds), window, cx);
             origin.y += line.size(line_height).height;
         }
@@ -975,5 +981,42 @@ mod tests {
         assert!(source.contains("event.click_count == 2"));
         assert!(source.contains("window.capture_pointer(hitbox.id)"));
         assert!(source.contains("phase.capture()"));
+    }
+
+    #[test]
+    fn selectable_text_paints_selection_between_run_backgrounds_and_glyphs() {
+        let source = include_str!("selectable_text.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+        let background_ix = source
+            .find(
+                "line.paint_background(origin, line_height, text_align, Some(bounds), window, cx)",
+            )
+            .expect("selectable text should paint TextRun backgrounds");
+        let selection_ix = source
+            .find("for selection in prepaint.selection.drain(..)")
+            .expect("selectable text should paint selection quads");
+        let glyph_ix = source
+            .find("line.paint(origin, line_height, text_align, Some(bounds), window, cx)")
+            .expect("selectable text should paint glyphs");
+
+        assert!(background_ix < selection_ix);
+        assert!(selection_ix < glyph_ix);
+    }
+
+    #[test]
+    fn selectable_text_tracks_visual_line_offsets_for_wrapped_and_newline_text() {
+        let source = include_str!("selectable_text.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(source.contains("line_starts.push((y, line_start))"));
+        assert!(source.contains("line_start += line.len() + 1"));
+        assert!(source.contains(".closest_index_for_position("));
+        assert!(source.contains("position, self.line_height"));
+        assert!(source.contains("start - line_start"));
+        assert!(source.contains("end - line_start"));
     }
 }

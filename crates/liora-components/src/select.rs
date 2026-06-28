@@ -485,6 +485,14 @@ impl Select {
         self.restore_selected_display_value(cx);
     }
 
+    fn clear_selected_values_from_input_clear(&mut self, cx: &mut Context<Self>) {
+        if self.is_open || self.selected_values.is_empty() {
+            return;
+        }
+        self.selected_values.clear();
+        cx.notify();
+    }
+
     fn select_item(
         &mut self,
         item: SearchableListItem,
@@ -511,7 +519,7 @@ impl Select {
                 } else {
                     self.selected_values.push(item.value.clone());
                 }
-                self.restore_selected_display_value(cx);
+                self.clear_search_query(cx);
             }
         }
 
@@ -624,11 +632,15 @@ impl Select {
                 input.set_icon_suffix(Some(suffix_icon), cx);
                 input.set_on_change({
                     let entity = entity.clone();
-                    move |_, cx| {
+                    move |value, cx| {
                         entity.update(cx, |this, cx| {
                             if this.suppress_next_input_change {
                                 this.suppress_next_input_change = false;
                                 cx.notify();
+                                return;
+                            }
+                            if value.is_empty() {
+                                this.clear_selected_values_from_input_clear(cx);
                                 return;
                             }
                             this.is_open = true;
@@ -954,10 +966,15 @@ mod searchable_select_tests {
 
         assert!(source.contains("fn clear_search_query"));
         assert!(source.contains("fn restore_selected_display_value"));
+        assert!(source.contains("fn clear_selected_values_from_input_clear"));
         assert!(source.contains("if input.read(cx).value() == value"));
         assert!(source.contains("self.set_input_value_silently(SharedString::default(), cx)"));
         assert!(source.contains("self.set_input_value_silently(self.summary(), cx)"));
         assert!(source.contains("let placeholder = self.placeholder.clone()"));
+        assert!(source.contains("if value.is_empty()"));
+        assert!(source.contains("this.clear_selected_values_from_input_clear(cx)"));
+        assert!(source.contains("SelectMode::Multiple"));
+        assert!(source.contains("self.clear_search_query(cx)"));
         assert!(!source.contains("input.set_value(label, cx)"));
         assert!(!source.contains("input.set_value(summary, cx)"));
     }
