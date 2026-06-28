@@ -117,7 +117,7 @@ impl SearchableList {
             max_items: usize::MAX,
             width: None,
             max_height: px(260.0),
-            item_height: px(36.0),
+            item_height: px(44.0),
             background: None,
             on_select: None,
         }
@@ -285,12 +285,22 @@ impl RenderOnce for SearchableList {
             } else {
                 theme.neutral.card
             };
+            let hover_bg = if selected {
+                theme.primary.base.opacity(0.14)
+            } else {
+                theme.neutral.hover
+            };
             let row_text = if disabled {
                 theme.neutral.text_disabled
             } else if selected {
                 theme.primary.base
             } else {
                 theme.neutral.text_1
+            };
+            let description_text = if disabled {
+                theme.neutral.text_disabled
+            } else {
+                theme.neutral.text_3
             };
 
             let mut row = div()
@@ -306,7 +316,7 @@ impl RenderOnce for SearchableList {
                 .text_color(row_text)
                 .when(!disabled, |s| {
                     s.cursor_pointer()
-                        .hover(move |s| s.cursor_pointer().bg(theme.neutral.hover))
+                        .hover(move |s| s.cursor_pointer().bg(hover_bg))
                 })
                 .when(disabled, |s| s.cursor_not_allowed())
                 .child(
@@ -321,18 +331,26 @@ impl RenderOnce for SearchableList {
                             s.child(
                                 div()
                                     .text_xs()
-                                    .text_color(theme.neutral.text_3)
+                                    .text_color(description_text)
                                     .child(description),
                             )
                         }),
                 )
-                .when(selected, |s| {
-                    s.child(
-                        Icon::new(IconName::Check)
-                            .size(px(14.0))
-                            .color(theme.primary.base),
-                    )
-                });
+                .child(
+                    div()
+                        .w(px(18.0))
+                        .flex_none()
+                        .flex()
+                        .items_center()
+                        .justify_end()
+                        .when(selected, |s| {
+                            s.child(
+                                Icon::new(IconName::Check)
+                                    .size(px(14.0))
+                                    .color(theme.primary.base),
+                            )
+                        }),
+                );
 
             if !disabled {
                 row = row.on_mouse_down(MouseButton::Left, move |_, window, cx| {
@@ -408,5 +426,18 @@ mod tests {
         assert!(list.is_value_selected("button"));
         assert!(list.is_value_selected("select-search"));
         assert!(!list.is_value_selected("status-bar"));
+    }
+
+    #[test]
+    fn rows_reserve_check_slot_and_keep_disabled_descriptions_muted() {
+        let source = include_str!("searchable_list.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap_or_default();
+
+        assert!(source.contains("item_height: px(44.0)"));
+        assert!(source.contains(".w(px(18.0))"));
+        assert!(source.contains("let description_text = if disabled"));
+        assert!(source.contains("let hover_bg = if selected"));
     }
 }

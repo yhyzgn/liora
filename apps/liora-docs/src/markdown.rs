@@ -7876,6 +7876,7 @@ fn docs_selectable_text_group(cx: &mut Context<LiveDemoContent>) -> impl IntoEle
     let theme = cx.global::<Config>().theme.clone();
     SelectableTextGroup::new()
         .id("docs-selectable-text-group-basic")
+        .separator("\n")
         .text(Text::new("Release notes").bold().text_color(theme.primary.base))
         .paragraph(
             Paragraph::new()
