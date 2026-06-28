@@ -70,6 +70,7 @@ pub struct Select {
     empty_text: SharedString,
     max_items: usize,
     disabled: bool,
+    suppress_next_input_change: bool,
     border_none: bool,
     radius_none: bool,
     radius_left_none: bool,
@@ -106,6 +107,7 @@ impl Select {
             empty_text: "No matching options".into(),
             max_items: 8,
             disabled: false,
+            suppress_next_input_change: false,
             border_none: false,
             radius_none: false,
             radius_left_none: false,
@@ -456,6 +458,13 @@ impl Select {
         }
     }
 
+    fn clear_search_query(&mut self, cx: &mut Context<Self>) {
+        if let Some(input) = &self.input {
+            self.suppress_next_input_change = true;
+            input.update(cx, |input, cx| input.set_value(SharedString::default(), cx));
+        }
+    }
+
     fn select_item(
         &mut self,
         item: SearchableListItem,
@@ -471,10 +480,7 @@ impl Select {
             SelectMode::Searchable => {
                 self.selected_values = vec![item.value.clone()];
                 self.is_open = false;
-                if let Some(input) = &self.input {
-                    let label = item.label.clone();
-                    input.update(cx, |input, cx| input.set_value(label, cx));
-                }
+                self.clear_search_query(cx);
             }
             SelectMode::Multiple => {
                 if let Some(index) = self
@@ -486,10 +492,7 @@ impl Select {
                 } else {
                     self.selected_values.push(item.value.clone());
                 }
-                let summary = self.summary();
-                if let Some(input) = &self.input {
-                    input.update(cx, |input, cx| input.set_value(summary, cx));
-                }
+                self.clear_search_query(cx);
             }
         }
 
@@ -603,6 +606,11 @@ impl Select {
                     let entity = entity.clone();
                     move |_, cx| {
                         entity.update(cx, |this, cx| {
+                            if this.suppress_next_input_change {
+                                this.suppress_next_input_change = false;
+                                cx.notify();
+                                return;
+                            }
                             this.is_open = true;
                             cx.notify();
                         });
@@ -915,6 +923,19 @@ mod searchable_select_tests {
         let matches = Select::matching_items_for(&items(), "native", 8);
         assert_eq!(matches.len(), 1);
         assert_eq!(matches[0].value, "gpui");
+    }
+
+    #[test]
+    fn searchable_select_clears_input_query_after_selection_so_reopen_shows_all_options() {
+        let source = include_str!("select.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(source.contains("fn clear_search_query"));
+        assert!(source.contains("input.set_value(SharedString::default(), cx)"));
+        assert!(!source.contains("input.set_value(label, cx)"));
+        assert!(!source.contains("input.set_value(summary, cx)"));
     }
 
     #[test]
