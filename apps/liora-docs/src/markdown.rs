@@ -111,6 +111,7 @@ const INPUT_NUMBER_DOC: &str = include_str!("../content/pages/input_number.md");
 const LAYOUT_DOC: &str = include_str!("../content/pages/layout.md");
 const LINK_DOC: &str = include_str!("../content/pages/link.md");
 const LINE_CHART_DOC: &str = include_str!("../content/pages/line_chart.md");
+const LIST_DOC: &str = include_str!("../content/pages/list.md");
 const LOADING_DOC: &str = include_str!("../content/pages/loading.md");
 const MENTION_DOC: &str = include_str!("../content/pages/mention.md");
 const MENU_DOC: &str = include_str!("../content/pages/menu.md");
@@ -401,6 +402,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Link",
         markdown: LINK_DOC,
+    },
+    DocPage {
+        title: "List",
+        markdown: LIST_DOC,
     },
     DocPage {
         title: "Loading",
@@ -703,6 +708,10 @@ enum Block {
         start: u64,
         items: Vec<Vec<Block>>,
     },
+    Table {
+        headers: Vec<Vec<InlineSegment>>,
+        rows: Vec<Vec<Vec<InlineSegment>>>,
+    },
     CodeBlock {
         language: Option<SharedString>,
         source: Option<SharedString>,
@@ -729,6 +738,13 @@ enum Frame {
         items: Vec<Vec<Block>>,
     },
     Item(Vec<Block>),
+    Table {
+        headers: Vec<Vec<InlineSegment>>,
+        rows: Vec<Vec<Vec<InlineSegment>>>,
+        in_head: bool,
+    },
+    TableRow(Vec<Vec<InlineSegment>>),
+    TableCell(Vec<InlineSegment>),
     CodeBlock {
         language: Option<SharedString>,
         source: Option<SharedString>,
@@ -755,6 +771,7 @@ impl MarkdownDocument {
         let mut options = Options::empty();
         options.insert(Options::ENABLE_STRIKETHROUGH);
         options.insert(Options::ENABLE_TASKLISTS);
+        options.insert(Options::ENABLE_TABLES);
 
         let parser = Parser::new_ext(md_text, options);
         let mut state = ParserState {
@@ -826,6 +843,18 @@ impl ParserState {
                 content: Vec::new(),
             }),
             Tag::BlockQuote(_) => self.stack.push(Frame::BlockQuote(Vec::new())),
+            Tag::Table(_) => self.stack.push(Frame::Table {
+                headers: Vec::new(),
+                rows: Vec::new(),
+                in_head: false,
+            }),
+            Tag::TableHead => {
+                if let Some(Frame::Table { in_head, .. }) = self.stack.last_mut() {
+                    *in_head = true;
+                }
+            }
+            Tag::TableRow => self.stack.push(Frame::TableRow(Vec::new())),
+            Tag::TableCell => self.stack.push(Frame::TableCell(Vec::new())),
             Tag::List(start) => self.stack.push(Frame::List {
                 ordered: start.is_some(),
                 start: start.unwrap_or(1),
@@ -852,10 +881,6 @@ impl ParserState {
             | Tag::DefinitionList
             | Tag::DefinitionListTitle
             | Tag::DefinitionListDefinition
-            | Tag::Table(_)
-            | Tag::TableHead
-            | Tag::TableRow
-            | Tag::TableCell
             | Tag::Superscript
             | Tag::Subscript
             | Tag::MetadataBlock(_) => {}
@@ -869,8 +894,16 @@ impl ParserState {
             | TagEnd::BlockQuote(_)
             | TagEnd::List(_)
             | TagEnd::Item
-            | TagEnd::CodeBlock => {
+            | TagEnd::CodeBlock
+            | TagEnd::Table
+            | TagEnd::TableRow
+            | TagEnd::TableCell => {
                 self.close_top_frame();
+            }
+            TagEnd::TableHead => {
+                if let Some(Frame::Table { in_head, .. }) = self.stack.last_mut() {
+                    *in_head = false;
+                }
             }
             TagEnd::Emphasis => self.inline_style.emphasis = false,
             TagEnd::Strong => self.inline_style.strong = false,
@@ -881,10 +914,6 @@ impl ParserState {
             | TagEnd::DefinitionList
             | TagEnd::DefinitionListTitle
             | TagEnd::DefinitionListDefinition
-            | TagEnd::Table
-            | TagEnd::TableHead
-            | TagEnd::TableRow
-            | TagEnd::TableCell
             | TagEnd::Superscript
             | TagEnd::Subscript
             | TagEnd::MetadataBlock(_) => {}
@@ -926,6 +955,41 @@ impl ParserState {
                     });
                 }
             }
+            Frame::Table { headers, rows, .. } => {
+                if !headers.is_empty() || !rows.is_empty() {
+                    self.push_block(Block::Table { headers, rows });
+                }
+            }
+            Frame::TableRow(cells) => {
+                if let Some(Frame::Table {
+                    headers,
+                    rows,
+                    in_head,
+                }) = self.stack.last_mut()
+                {
+                    if *in_head {
+                        *headers = cells;
+                    } else {
+                        rows.push(cells);
+                    }
+                }
+            }
+            Frame::TableCell(segments) => {
+                if let Some(Frame::TableRow(cells)) = self.stack.last_mut() {
+                    cells.push(segments);
+                } else if let Some(Frame::Table {
+                    headers,
+                    rows,
+                    in_head,
+                }) = self.stack.last_mut()
+                {
+                    if *in_head {
+                        headers.push(segments);
+                    } else {
+                        rows.push(vec![segments]);
+                    }
+                }
+            }
             Frame::Item(blocks) => {
                 if let Some(Frame::List { items, .. }) = self.stack.last_mut() {
                     items.push(blocks);
@@ -964,6 +1028,7 @@ impl ParserState {
         match self.stack.last_mut() {
             Some(Frame::Paragraph(segments)) => segments.push(segment),
             Some(Frame::Heading { content, .. }) => content.push(segment),
+            Some(Frame::TableCell(segments)) => segments.push(segment),
             Some(Frame::CodeBlock { code, .. }) => code.push_str(text),
             Some(Frame::Item(blocks)) => push_inline_segment_into_blocks(blocks, segment),
             _ => self.push_block(Block::Paragraph(vec![segment])),
@@ -1016,7 +1081,12 @@ fn push_block_into_frame(frame: &mut Frame, block: Block) {
             blocks.push(block);
         }
         Frame::List { items, .. } => items.push(vec![block]),
-        Frame::Paragraph(_) | Frame::Heading { .. } | Frame::CodeBlock { .. } => {}
+        Frame::Paragraph(_)
+        | Frame::Heading { .. }
+        | Frame::CodeBlock { .. }
+        | Frame::Table { .. }
+        | Frame::TableRow(_)
+        | Frame::TableCell(_) => {}
     }
 }
 
@@ -1146,6 +1216,9 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "quick_start/main_window.rs" => Some(include_str!(
             "../content/snippets/quick_start/main_window.rs"
         )),
+        "quick_start/platform_menu.rs" => Some(include_str!(
+            "../content/snippets/quick_start/platform_menu.rs"
+        )),
         "quick_start/component_view.rs" => Some(include_str!(
             "../content/snippets/quick_start/component_view.rs"
         )),
@@ -1174,6 +1247,14 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "typography/document_inline.rs" => Some(include_str!(
             "../content/snippets/typography/document_inline.rs"
         )),
+        "list/unordered.rs" => Some(include_str!("../content/snippets/list/unordered.rs")),
+        "list/custom_unordered.rs" => {
+            Some(include_str!("../content/snippets/list/custom_unordered.rs"))
+        }
+        "list/ordered.rs" => Some(include_str!("../content/snippets/list/ordered.rs")),
+        "list/custom_ordered.rs" => {
+            Some(include_str!("../content/snippets/list/custom_ordered.rs"))
+        }
         "virtualized_list/basic.rs" => Some(include_str!(
             "../content/snippets/virtualized_list/basic.rs"
         )),
@@ -1739,6 +1820,7 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "menu/descriptor.rs" => Some(include_str!("../content/snippets/menu/descriptor.rs")),
         "menu/bar.rs" => Some(include_str!("../content/snippets/menu/bar.rs")),
         "menu/gpui_register.rs" => Some(include_str!("../content/snippets/menu/gpui_register.rs")),
+        "menu/window_usage.rs" => Some(include_str!("../content/snippets/menu/window_usage.rs")),
         "menu/actions.rs" => Some(include_str!("../content/snippets/menu/actions.rs")),
         "drawer/placements.rs" => Some(include_str!("../content/snippets/drawer/placements.rs")),
         "drawer/sizes.rs" => Some(include_str!("../content/snippets/drawer/sizes.rs")),
@@ -1992,6 +2074,7 @@ impl Block {
                 start,
                 items,
             } => render_list(ordered, start, items, theme, cx),
+            Self::Table { headers, rows } => render_table(headers, rows, theme),
             Self::CodeBlock {
                 language,
                 source,
@@ -3406,6 +3489,17 @@ impl Render for LiveDemoContent {
                 })
                 .into_any_element(),
             "MenuBar" => menu_bar_demo().into_any_element(),
+            "MenuBarWindowUsage" => Card::new(
+                Space::new()
+                    .vertical()
+                    .gap_sm()
+                    .child(menu_bar_demo())
+                    .child(Text::new(
+                        "Place MenuBar in a custom title bar, shell header, or any in-window fallback area.",
+                    ).sm().wrap()),
+            )
+            .no_shadow()
+            .into_any_element(),
             "MenuActions" => menu_action_catalog().into_any_element(),
             "DockLayoutWorkbench" => demo_row(vec![
                 liora_components::DockLayout::new()
@@ -5223,6 +5317,10 @@ impl Render for LiveDemoContent {
                 .step(liora_components::StepItem::new("步骤 2"))
                 .step(liora_components::StepItem::new("步骤 3"))
                 .into_any_element(),
+            "ListUnordered" => docs_list_unordered().into_any_element(),
+            "ListCustomUnordered" => docs_list_custom_unordered().into_any_element(),
+            "ListOrdered" => docs_list_ordered().into_any_element(),
+            "ListCustomOrdered" => docs_list_custom_ordered().into_any_element(),
             "TimelineBasic" => Card::new(
                 liora_components::Timeline::new()
                     .item(
@@ -6139,6 +6237,116 @@ fn docs_status_bar_preview(status_bar: liora_components::StatusBar) -> AnyElemen
         )
         .child(status_bar)
         .into_any_element()
+}
+
+fn docs_list_unordered() -> Card {
+    Card::new(
+        liora_components::List::unordered()
+            .item(
+                liora_components::ListItem::new("Prepare component API")
+                    .child(liora_components::ListItem::new(
+                        "Define row spacing and marker width",
+                    ))
+                    .child(
+                        liora_components::ListItem::new("Document nested behavior")
+                            .child(liora_components::ListItem::new(
+                                "Explain default level markers",
+                            ))
+                            .child(liora_components::ListItem::new("Show item-level overrides")),
+                    ),
+            )
+            .item(liora_components::ListItem::new("Build Gallery examples"))
+            .item(liora_components::ListItem::new("Sync Docs snippets")),
+    )
+}
+
+fn docs_list_custom_unordered() -> Card {
+    Card::new(
+        liora_components::List::unordered()
+            .unordered_markers([
+                liora_components::ListMarker::Check,
+                liora_components::ListMarker::Star,
+                liora_components::ListMarker::Text("◆".into()),
+            ])
+            .marker_colors([
+                rgb(0x16a34a).into(),
+                rgb(0xf59e0b).into(),
+                rgb(0x7c3aed).into(),
+            ])
+            .item(
+                liora_components::ListItem::new("Design tokens applied")
+                    .marker(liora_components::ListMarker::Check)
+                    .marker_color(rgb(0x2563eb).into()),
+            )
+            .item(liora_components::ListItem::new("Theme-aware marker colors"))
+            .item(
+                liora_components::ListItem::new("Nested custom levels")
+                    .child(liora_components::ListItem::new(
+                        "Stars for highlighted children",
+                    ))
+                    .child(liora_components::ListItem::new(
+                        "Text markers for deep notes",
+                    )),
+            ),
+    )
+}
+
+fn docs_list_ordered() -> Card {
+    Card::new(
+        liora_components::List::ordered()
+            .item(
+                liora_components::ListItem::new("Install Liora")
+                    .child(liora_components::ListItem::new("Add the liora crate"))
+                    .child(liora_components::ListItem::new(
+                        "Pin the matching official GPUI rev",
+                    )),
+            )
+            .item(
+                liora_components::ListItem::new("Initialize the app")
+                    .child(liora_components::ListItem::new("Call init_liora(cx)"))
+                    .child(liora_components::ListItem::new(
+                        "Render portals near the root",
+                    )),
+            )
+            .item(liora_components::ListItem::new("Compose components")),
+    )
+}
+
+fn docs_list_custom_ordered() -> Card {
+    Card::new(
+        liora_components::List::ordered()
+            .start(3)
+            .marker_width(px(72.0))
+            .indent(4)
+            .marker_colors([
+                rgb(0x2563eb).into(),
+                rgb(0x16a34a).into(),
+                rgb(0xf97316).into(),
+            ])
+            .ordered_markers([
+                liora_components::OrderedMarker::new(
+                    liora_components::OrderedCounterStyle::UpperAlpha,
+                    "Phase {n}",
+                ),
+                liora_components::OrderedMarker::new(
+                    liora_components::OrderedCounterStyle::DecimalLeadingZero,
+                    "{n}/",
+                ),
+                liora_components::OrderedMarker::new(
+                    liora_components::OrderedCounterStyle::LowerRoman,
+                    "({n})",
+                ),
+            ])
+            .item(liora_components::ListItem::element(
+                Text::new("Audit current UI").bold(),
+            ))
+            .item(
+                liora_components::ListItem::new("Implement component")
+                    .child(liora_components::ListItem::new("Write SDK API"))
+                    .child(liora_components::ListItem::new("Add Gallery and Docs")),
+            )
+            .item(liora_components::ListItem::new("Verify and publish notes")),
+    )
 }
 
 fn docs_combobox_framework_items() -> Vec<liora_components::SearchableListItem> {
@@ -9658,8 +9866,11 @@ fn collect_live_demo_components(blocks: &[Block], components: &mut Vec<SharedStr
                     collect_live_demo_components(item, components);
                 }
             }
-            Block::Paragraph(_) | Block::Heading { .. } | Block::CodeBlock { .. } | Block::Rule => {
-            }
+            Block::Table { .. }
+            | Block::Paragraph(_)
+            | Block::Heading { .. }
+            | Block::CodeBlock { .. }
+            | Block::Rule => {}
         }
     }
 }
@@ -9726,6 +9937,7 @@ fn render_persistent_block(
             demo_index,
             stable_path,
         ),
+        Block::Table { headers, rows } => render_table(headers.clone(), rows.clone(), theme),
         Block::CodeBlock {
             language,
             source,
@@ -9756,14 +9968,15 @@ fn render_persistent_list(
     demo_index: &mut usize,
     stable_path: &str,
 ) -> AnyElement {
-    let mut rows = Vec::new();
+    let mut list = if ordered {
+        liora_components::List::ordered().start(start as usize)
+    } else {
+        liora_components::List::unordered()
+    }
+    .indent(4)
+    .marker_gap(2);
 
     for (index, item_blocks) in items.iter().enumerate() {
-        let marker = if ordered {
-            format!("{}.", start + index as u64)
-        } else {
-            "•".to_string()
-        };
         let item_children = item_blocks
             .iter()
             .enumerate()
@@ -9778,33 +9991,12 @@ fn render_persistent_list(
             })
             .collect::<Vec<_>>();
 
-        rows.push(
-            div()
-                .relative()
-                .pl_8()
-                .child(
-                    div()
-                        .absolute()
-                        .left_0()
-                        .top_0()
-                        .w(px(24.0))
-                        .text_color(theme.neutral.text_3)
-                        .child(marker),
-                )
-                .child(
-                    div()
-                        .w_full()
-                        .child(Space::new().vertical().gap_sm().children(item_children)),
-                ),
-        );
+        list = list.item(liora_components::ListItem::element(
+            Space::new().vertical().gap_sm().children(item_children),
+        ));
     }
 
-    div()
-        .flex()
-        .flex_col()
-        .gap_2()
-        .children(rows)
-        .into_any_element()
+    list.into_any_element()
 }
 
 fn render_paragraph(segments: Vec<InlineSegment>, theme: &liora_theme::Theme) -> AnyElement {
@@ -10100,7 +10292,11 @@ fn count_live_demos_in_block(block: &Block) -> usize {
             .flat_map(|item| item.iter())
             .map(count_live_demos_in_block)
             .sum(),
-        Block::Paragraph(_) | Block::Heading { .. } | Block::CodeBlock { .. } | Block::Rule => 0,
+        Block::Table { .. }
+        | Block::Paragraph(_)
+        | Block::Heading { .. }
+        | Block::CodeBlock { .. }
+        | Block::Rule => 0,
     }
 }
 
@@ -10620,45 +10816,84 @@ fn render_list(
     theme: &liora_theme::Theme,
     cx: &mut App,
 ) -> AnyElement {
-    let mut rows = Vec::new();
+    let mut list = if ordered {
+        liora_components::List::ordered().start(start as usize)
+    } else {
+        liora_components::List::unordered()
+    }
+    .indent(4)
+    .marker_gap(2);
 
-    for (index, item_blocks) in items.into_iter().enumerate() {
-        let marker = if ordered {
-            format!("{}.", start + index as u64)
-        } else {
-            "•".to_string()
-        };
+    for item_blocks in items {
         let item_children = item_blocks
             .into_iter()
             .map(|block| block.render(theme, cx))
             .collect::<Vec<_>>();
 
-        rows.push(
-            div()
-                .relative()
-                .pl_8()
-                .child(
-                    div()
-                        .absolute()
-                        .left_0()
-                        .top_0()
-                        .w(px(24.0))
-                        .text_color(theme.neutral.text_3)
-                        .child(marker),
-                )
-                .child(
-                    div()
-                        .w_full()
-                        .child(Space::new().vertical().gap_sm().children(item_children)),
-                ),
-        );
+        list = list.item(liora_components::ListItem::element(
+            Space::new().vertical().gap_sm().children(item_children),
+        ));
     }
 
-    div()
-        .flex()
-        .flex_col()
-        .gap_2()
-        .children(rows)
+    list.into_any_element()
+}
+
+fn render_table(
+    headers: Vec<Vec<InlineSegment>>,
+    rows: Vec<Vec<Vec<InlineSegment>>>,
+    theme: &liora_theme::Theme,
+) -> AnyElement {
+    let column_count = headers
+        .len()
+        .max(rows.iter().map(Vec::len).max().unwrap_or_default());
+
+    if column_count == 0 {
+        return div().into_any_element();
+    }
+
+    let columns = (0..column_count)
+        .map(|index| {
+            let label = headers
+                .get(index)
+                .map(|header| inline_plain_text(header))
+                .filter(|label| !label.is_empty())
+                .unwrap_or_else(|| format!("Column {}", index + 1).into());
+            liora_components::TableColumn::new(format!("col-{index}"), label).min_width_lg()
+        })
+        .collect::<Vec<_>>();
+
+    let table_rows = rows
+        .into_iter()
+        .map(|cells| {
+            (0..column_count).fold(liora_components::TableRow::new(), |row, index| {
+                let cell = cells.get(index).cloned().unwrap_or_default();
+                row.cell(
+                    format!("col-{index}"),
+                    render_table_cell(cell, theme, format!("markdown-table-cell-{index}")),
+                )
+            })
+        })
+        .collect::<Vec<_>>();
+
+    liora_components::Table::new(columns)
+        .rows(table_rows)
+        .border(true)
+        .stripe(true)
+        .into_any_element()
+}
+
+fn render_table_cell(
+    segments: Vec<InlineSegment>,
+    theme: &liora_theme::Theme,
+    id_prefix: impl AsRef<str>,
+) -> AnyElement {
+    if segments.is_empty() {
+        return div().into_any_element();
+    }
+
+    Paragraph::new()
+        .id(liora_core::unique_id(id_prefix.as_ref()))
+        .children(segments.into_iter().map(|segment| segment.into_text(theme)))
         .into_any_element()
 }
 
@@ -10728,10 +10963,18 @@ mod tests {
 
     #[test]
     fn quick_start_documents_app_level_font_customization() {
-        assert!(QUICK_START_DOC.contains("## 7. 应用级字体自定义"));
+        assert!(QUICK_START_DOC.contains("## 8. 应用级字体自定义"));
         assert!(QUICK_START_DOC.contains(r#"src="quick_start/fonts.rs""#));
         assert!(QUICK_START_DOC.contains("Gallery 和 Docs 当前采用同一策略"));
         assert!(load_code_snippet("quick_start/fonts.rs").is_some());
+    }
+
+    #[test]
+    fn quick_start_documents_platform_menu_setup() {
+        assert!(QUICK_START_DOC.contains("## 6. 注册系统平台菜单"));
+        assert!(QUICK_START_DOC.contains(r#"src="quick_start/platform_menu.rs""#));
+        assert!(QUICK_START_DOC.contains("Menu::register"));
+        assert!(load_code_snippet("quick_start/platform_menu.rs").is_some());
     }
 
     #[test]
@@ -10842,6 +11085,7 @@ mod tests {
             "quick_start/create_project.sh",
             "quick_start/app_cargo.toml",
             "quick_start/main_window.rs",
+            "quick_start/platform_menu.rs",
             "quick_start/component_view.rs",
             "quick_start/verify.sh",
         ] {
@@ -11517,6 +11761,23 @@ mod tests {
     }
 
     #[test]
+    fn parses_markdown_tables_into_native_table_blocks() {
+        let document = MarkdownDocument::parse("| Name | Role |\n| --- | --- |\n| Liora | SDK |\n");
+        let blocks = document.blocks();
+
+        let [Block::Table { headers, rows }] = blocks else {
+            panic!("expected one table block");
+        };
+
+        assert_eq!(headers.len(), 2);
+        assert_eq!(inline_plain_text(&headers[0]).as_ref(), "Name");
+        assert_eq!(inline_plain_text(&headers[1]).as_ref(), "Role");
+        assert_eq!(rows.len(), 1);
+        assert_eq!(inline_plain_text(&rows[0][0]).as_ref(), "Liora");
+        assert_eq!(inline_plain_text(&rows[0][1]).as_ref(), "SDK");
+    }
+
+    #[test]
     fn parses_blockquote_as_nested_block_stack() {
         let document = MarkdownDocument::parse("> Quote **strong**");
         let [Block::BlockQuote(children)] = document.blocks() else {
@@ -11905,20 +12166,41 @@ mod tests {
     fn markdown_lists_keep_inline_code_paragraphs_on_full_content_width() {
         let source = include_str!("markdown.rs");
         for (start, end) in [
-            ("fn render_persistent_list(", "fn render_list("),
-            ("fn render_list(", "fn inline_plain_text("),
+            ("fn render_persistent_list(", "fn render_paragraph("),
+            ("fn render_list(", "fn render_table("),
         ] {
             let list_renderer = &source[source.find(start).expect("list renderer should exist")
                 ..source.find(end).expect("next function should exist")];
 
-            assert!(list_renderer.contains(".relative()"));
-            assert!(list_renderer.contains(".pl_8()"));
-            assert!(list_renderer.contains(".absolute()"));
+            assert!(list_renderer.contains("liora_components::List::"));
+            assert!(list_renderer.contains("liora_components::ListItem::element"));
+            assert!(list_renderer.contains(".indent(4)"));
+            assert!(list_renderer.contains(".marker_gap(2)"));
+            assert!(!list_renderer.contains(".relative()"));
+            assert!(!list_renderer.contains(".pl_8()"));
+            assert!(!list_renderer.contains(".absolute()"));
             assert!(
                 !list_renderer.contains(".flex_row()"),
-                "list rows should not use flex-row layout because it narrows StyledText measurement and forces inline punctuation onto new lines"
+                "markdown lists should dogfood the Liora List component instead of hand-rolled row layout"
             );
         }
+    }
+
+    #[test]
+    fn markdown_tables_render_through_liora_table_component() {
+        let source = include_str!("markdown.rs");
+        let table_renderer = &source[source
+            .find("fn render_table(")
+            .expect("table renderer should exist")
+            ..source
+                .find("fn inline_plain_text(")
+                .expect("inline helper should follow table renderer")];
+
+        assert!(table_renderer.contains("liora_components::Table::new"));
+        assert!(table_renderer.contains("liora_components::TableColumn::new"));
+        assert!(table_renderer.contains("liora_components::TableRow::new"));
+        assert!(table_renderer.contains(".border(true)"));
+        assert!(table_renderer.contains(".stripe(true)"));
     }
 
     #[test]
@@ -12306,6 +12588,16 @@ mod tests {
                     "progress/color.rs",
                     "progress/circle.rs",
                     "progress/custom.rs",
+                ][..],
+            ),
+            (
+                include_str!("../content/pages/list.md"),
+                "ListUnordered",
+                &[
+                    "list/unordered.rs",
+                    "list/custom_unordered.rs",
+                    "list/ordered.rs",
+                    "list/custom_ordered.rs",
                 ][..],
             ),
             (

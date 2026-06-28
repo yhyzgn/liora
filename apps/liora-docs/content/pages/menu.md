@@ -96,7 +96,15 @@ fn visible_fallback_menu_bar() -> MenuBar {
 ```rust src="menu/bar.rs"
 ```
 
-### 放进窗口布局
+## Window Layout Usage
+
+`MenuBar` 可以作为普通 Liora 控件放进 `TitleBar`、`Shell` 顶部栏或任何窗口内布局中。它只负责窗口内 fallback / preview；系统平台级菜单仍然通过 `Menu::register(cx, menus)` 注册。
+
+### 效果
+
+::LioraDemo{component="MenuBarWindowUsage"}::
+
+### 代码
 
 ```rust src="menu/window_usage.rs"
 ```
