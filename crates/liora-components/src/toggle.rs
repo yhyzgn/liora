@@ -116,8 +116,11 @@ impl RenderOnce for Toggle {
 /// Option model for [`ToggleGroup`].
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ToggleOption {
+    /// Stable option value emitted when the option is selected.
     pub value: SharedString,
+    /// Human-readable option label displayed in the control.
     pub label: SharedString,
+    /// Whether the option is visible but not interactive.
     pub disabled: bool,
 }
 

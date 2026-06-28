@@ -39,7 +39,12 @@ use std::{
 /// Structural document block rendered by [`Text::document`].
 pub enum TextBlock {
     /// Heading text with a clamped level from 1 to 6.
-    Heading { level: u8, text: SharedString },
+    Heading {
+        /// Heading level. Values outside 1..=6 are clamped by the renderer.
+        level: u8,
+        /// Heading text content.
+        text: SharedString,
+    },
     /// Plain paragraph text rendered with selectable wrapping.
     Paragraph(SharedString),
     /// Quote paragraph rendered in a subtle card-like rail.

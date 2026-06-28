@@ -77,7 +77,7 @@ pub struct FontLoadOptions {
     pub mode: FontLoadMode,
     /// External directories scanned recursively for supported font files.
     pub external_dirs: Vec<PathBuf>,
-    /// Font asset paths resolved through the current GPUI [`AssetSource`].
+    /// Font asset paths resolved through the current GPUI [`gpui::AssetSource`].
     pub asset_paths: Vec<SharedString>,
     /// Embedded fallback fonts bundled into the executable.
     pub embedded_fonts: Vec<EmbeddedFont>,

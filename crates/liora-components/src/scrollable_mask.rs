@@ -32,6 +32,7 @@ pub struct ScrollableMask {
     fade: Pixels,
 }
 impl ScrollableMask {
+    /// Wraps a child element in a scroll container with edge fade affordances.
     pub fn new(child: impl IntoElement) -> Self {
         Self {
             child: child.into_any_element(),
@@ -39,10 +40,12 @@ impl ScrollableMask {
             fade: px(18.0),
         }
     }
+    /// Sets a fixed viewport height for the scrollable region.
     pub fn height(mut self, height: impl Into<Pixels>) -> Self {
         self.height = Some(height.into());
         self
     }
+    /// Sets the height of the top and bottom fade masks.
     pub fn fade(mut self, fade: impl Into<Pixels>) -> Self {
         self.fade = fade.into().max(px(0.0));
         self

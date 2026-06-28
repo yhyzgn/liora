@@ -22,8 +22,11 @@
 /// Policy object that overlay components can share when trapping focus.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FocusTrap {
+    /// Whether focus trapping is active for the overlay.
     pub enabled: bool,
+    /// Whether focus should return to the previously focused control when the overlay closes.
     pub restore_focus: bool,
+    /// Whether pressing Escape should request closing the overlay.
     pub close_on_escape: bool,
 }
 impl Default for FocusTrap {
@@ -36,17 +39,21 @@ impl Default for FocusTrap {
     }
 }
 impl FocusTrap {
+    /// Creates the default focus-trap policy for modal overlays.
     pub fn new() -> Self {
         Self::default()
     }
+    /// Disables focus trapping while preserving the other policy flags.
     pub fn disabled(mut self) -> Self {
         self.enabled = false;
         self
     }
+    /// Sets whether focus should be restored after the overlay closes.
     pub fn restore_focus(mut self, restore: bool) -> Self {
         self.restore_focus = restore;
         self
     }
+    /// Sets whether Escape should request closing the overlay.
     pub fn close_on_escape(mut self, close: bool) -> Self {
         self.close_on_escape = close;
         self
