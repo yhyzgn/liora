@@ -7,7 +7,6 @@ fn release_notes(theme: &Theme) -> SelectableTextGroup {
     // SelectableTextGroup renders all children as one selectable native text flow.
     SelectableTextGroup::new()
         .id("release-notes-selection")
-        .separator("\n")
         .text(Text::new("Release notes").bold().text_color(theme.primary.base))
         .paragraph(
             Paragraph::new()

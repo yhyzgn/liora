@@ -1,8 +1,8 @@
 //! Selectable text group module.
 //!
 //! `SelectableTextGroup` composes multiple [`Text`] and [`Paragraph`] values
-//! into one native selectable text flow. Use it for compact document-like surfaces
-//! where users expect drag selection and copy to continue across several text blocks.
+//! into one native selectable text flow. Use it for document-like surfaces where
+//! users expect drag selection and copy to continue across several text blocks.
 
 use crate::{Paragraph, SelectableText, SelectableTextOptions, SelectableTextWrap, Text};
 use gpui::{
@@ -51,7 +51,7 @@ impl SelectableTextGroup {
         Self {
             blocks: Vec::new(),
             id: default_group_id(Location::caller()),
-            separator: "\n".into(),
+            separator: "\n\n".into(),
             selectable: true,
         }
     }
@@ -90,7 +90,7 @@ impl SelectableTextGroup {
         self
     }
 
-    /// Sets the text inserted between adjacent blocks. Defaults to one newline.
+    /// Sets the text inserted between adjacent blocks. Defaults to a blank line.
     pub fn separator(mut self, separator: impl Into<SharedString>) -> Self {
         self.separator = separator.into();
         self
@@ -273,7 +273,7 @@ mod tests {
         assert!(source.contains("SelectableTextGroupBlock::Text"));
         assert!(source.contains("SelectableTextGroupBlock::Paragraph"));
         assert!(source.contains("SelectableText::view"));
-        assert!(source.contains(r#"separator: "\n".into()"#));
+        assert!(source.contains(r#"separator: "\n\n".into()"#));
     }
 
     #[test]

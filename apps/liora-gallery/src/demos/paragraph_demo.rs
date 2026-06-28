@@ -39,7 +39,6 @@ impl Render for ParagraphDemo {
                         "从标题式 Text 开始拖拽到后续 Paragraph，选区应跨越多个块并复制为连续文本。",
                         SelectableTextGroup::new()
                             .id("gallery-paragraph-cross-block-selection")
-                            .separator("\n")
                             .text(Text::new("Release notes").bold().text_color(theme.primary.base))
                             .paragraph(
                                 Paragraph::new()

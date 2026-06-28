@@ -705,8 +705,12 @@ impl Element for SelectableTextElement {
         let mut line_starts = Vec::new();
         let selection_color = cx.global::<Config>().theme.primary.base.opacity(0.28);
 
-        let mut line_start = 0;
-        for line in &layout.lines {
+        let source_text = input.text.clone();
+        let line_offsets = shaped_line_start_offsets(
+            source_text.as_ref(),
+            layout.lines.iter().map(|line| line.text.as_ref()),
+        );
+        for (line, line_start) in layout.lines.iter().zip(line_offsets.into_iter()) {
             if !selected_range.is_empty() {
                 let line_end = line_start + line.len();
                 let start = selected_range.start.max(line_start);
@@ -726,7 +730,6 @@ impl Element for SelectableTextElement {
             }
             line_starts.push((y, line_start));
             y += line.size(input.line_height).height;
-            line_start += line.len() + 1;
         }
 
         let hitbox = window.insert_hitbox(bounds, gpui::HitboxBehavior::Normal);
@@ -805,6 +808,46 @@ impl Element for SelectableTextElement {
             let _ = line.paint(origin, line_height, text_align, Some(bounds), window, cx);
             origin.y += line.size(line_height).height;
         }
+    }
+}
+
+fn shaped_line_start_offsets<'a>(
+    source_text: &str,
+    shaped_lines: impl IntoIterator<Item = &'a str>,
+) -> Vec<usize> {
+    let mut starts = Vec::new();
+    let mut cursor = 0usize;
+
+    for line_text in shaped_lines {
+        let relative_start = if line_text.is_empty() {
+            Some(0)
+        } else {
+            source_text
+                .get(cursor..)
+                .and_then(|remaining| remaining.find(line_text))
+        };
+        let start = relative_start
+            .map(|relative| cursor + relative)
+            .unwrap_or(cursor)
+            .min(source_text.len());
+        starts.push(start);
+        cursor = (start + line_text.len()).min(source_text.len());
+        cursor = consume_line_ending(source_text, cursor);
+    }
+
+    starts
+}
+
+fn consume_line_ending(source_text: &str, cursor: usize) -> usize {
+    let Some(remaining) = source_text.get(cursor..) else {
+        return source_text.len();
+    };
+    if remaining.starts_with("\r\n") {
+        cursor + 2
+    } else if remaining.starts_with('\n') || remaining.starts_with('\r') {
+        cursor + 1
+    } else {
+        cursor
     }
 }
 
@@ -978,6 +1021,7 @@ fn is_word_char(ch: char) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
 
     #[test]
     fn selectable_text_wraps_against_parent_available_width() {
@@ -1047,8 +1091,9 @@ mod tests {
             .next()
             .unwrap();
 
+        assert!(source.contains("shaped_line_start_offsets"));
         assert!(source.contains("line_starts.push((y, line_start))"));
-        assert!(source.contains("line_start += line.len() + 1"));
+        assert!(!source.contains("line_start += line.len() + 1"));
         assert!(source.contains(".closest_index_for_position("));
         assert!(source.contains("position, self.line_height"));
         assert!(source.contains("start - line_start"));
@@ -1056,5 +1101,29 @@ mod tests {
         assert!(source.contains("fn visual_row_ranges"));
         assert!(source.contains("line.wrap_boundaries()"));
         assert!(source.contains("glyph.index"));
+    }
+
+    #[test]
+    fn shaped_line_offsets_scan_original_text_instead_of_guessing_one_newline_byte() {
+        assert_eq!(
+            shaped_line_start_offsets("Title\nBody", ["Title", "Body"]),
+            vec![0, 6]
+        );
+        assert_eq!(
+            shaped_line_start_offsets("Title\r\nBody", ["Title", "Body"]),
+            vec![0, 7]
+        );
+        assert_eq!(
+            shaped_line_start_offsets("Title\n\nBody", ["Title", "Body"]),
+            vec![0, 7]
+        );
+    }
+
+    #[test]
+    fn shaped_line_offsets_preserve_multibyte_boundaries() {
+        assert_eq!(
+            shaped_line_start_offsets("标题\n正文", ["标题", "正文"]),
+            vec![0, "标题\n".len()]
+        );
     }
 }
