@@ -732,14 +732,14 @@ impl Menu {
     /// This is a convenience wrapper over `cx.set_menus([menu.to_gpui_menu()])`.
     /// It intentionally uses `gpui::NoAction` for command rows; applications
     /// that need executable native menu entries should call
-    /// [`Menu::register_gpui_menus_with_action_mapper`] instead.
-    pub fn register_gpui_menus(cx: &mut App, menus: impl IntoIterator<Item = Menu>) {
+    /// [`Menu::register_with_action_mapper`] instead.
+    pub fn register(cx: &mut App, menus: impl IntoIterator<Item = Menu>) {
         cx.set_menus(menus.into_iter().map(|menu| menu.to_gpui_menu()));
     }
 
     /// Registers descriptors as the official GPUI application menu bar while
     /// mapping each command row to an application-owned GPUI action.
-    pub fn register_gpui_menus_with_action_mapper<F>(
+    pub fn register_with_action_mapper<F>(
         cx: &mut App,
         menus: impl IntoIterator<Item = Menu>,
         mut mapper: F,
@@ -757,8 +757,8 @@ impl Menu {
 /// Compact in-window menu bar that renders top-level menu names in one row.
 ///
 /// This is for custom titlebars, Gallery, Docs, and other in-window previews.
-/// For the real OS/application menu bar, use [`Menu::register_gpui_menus`]
-/// or [`Menu::register_gpui_menus_with_action_mapper`], which delegate to
+/// For the real OS/application menu bar, use [`Menu::register`]
+/// or [`Menu::register_with_action_mapper`], which delegate to
 /// GPUI's official `App::set_menus` API.
 #[derive(Clone)]
 pub struct MenuBar {

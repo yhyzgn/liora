@@ -128,7 +128,7 @@ fn run_gallery() {
 
 /// Registers the gallery example menu through GPUI's official application menu API.
 fn register_gallery_system_menus(cx: &mut App) {
-    Menu::register_gpui_menus(
+    Menu::register(
         cx,
         [
             Menu::new("File")
@@ -1969,7 +1969,7 @@ mod shell_regression_tests {
 
         assert!(source.contains("register_gallery_system_menus(cx);"));
         assert!(source.contains("fn register_gallery_system_menus(cx: &mut App)"));
-        assert!(source.contains("Menu::register_gpui_menus("));
+        assert!(source.contains("Menu::register("));
         assert!(source.contains("MenuItem::open_file()"));
         assert!(source.contains("MenuItem::open_folder()"));
         assert!(source.contains("MenuItem::select_all()"));

@@ -53,7 +53,7 @@
 
 ## 集成建议
 
-`Menu` 是 Liora 对 GPUI 官方应用菜单模型的描述层。真实系统菜单栏应通过 `Menu::register_gpui_menus(cx, menus)` 或 `Menu::register_gpui_menus_with_action_mapper(cx, menus, mapper)` 委托给官方 `App::set_menus`；窗口内自定义标题栏预览则使用 `MenuBar`。应用可以把同一份 descriptor：
+`Menu` 是 Liora 对 GPUI 官方应用菜单模型的描述层。真实系统菜单栏应通过 `Menu::register(cx, menus)` 或 `Menu::register_with_action_mapper(cx, menus, mapper)` 委托给官方 `App::set_menus`；窗口内自定义标题栏预览则使用 `MenuBar`。应用可以把同一份 descriptor：
 
 1. 通过 GPUI 官方 `App::set_menus` 注册系统菜单；
 2. 渲染到自定义 `TitleBar` 的菜单入口；
