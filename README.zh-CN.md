@@ -1267,7 +1267,7 @@ Liora 避免为同一类功能提供重复控件：
 
 - `Drawer` 同时覆盖完整抽屉和轻量面板场景。`Drawer::sheet()` 提供轻量默认尺寸，不再单独暴露 Sheet 控件。
 - `Select` 同时覆盖固定选项和可搜索选择。`Select::searchable(...)`、`.multiple()`、分组、禁用项和 footer slot 覆盖原 Combobox 类工作流。
-- `Text` 同时覆盖内联文本和轻量应用文档。`Text::document(...)`、`TextBlock`、`Text::markdown(...)` 覆盖 About/Help/Release notes 等原 TextView 类内容。
+- `Text` 同时覆盖内联文本和轻量应用文档。`Text::document(...)`、`TextBlock`、`Text::markdown(...)` 覆盖 About/Help/Release notes 等原 TextView 类内容。`Text`、`Title`、`Paragraph` 默认可用鼠标自由选中文字；只有装饰性标签或不希望复制的界面文案才调用 `.selectable(false)` 关闭。
 
 ## 原生打包
 

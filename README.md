@@ -1268,7 +1268,7 @@ Liora avoids duplicate controls for the same job:
 
 - Use `Drawer` for both full drawers and lightweight sheet-style panels. `Drawer::sheet()` provides the compact defaults that would otherwise become a separate Sheet control.
 - Use `Select` for fixed options and searchable selection. `Select::searchable(...)`, `.multiple()`, item groups, disabled items, and footer slots cover Combobox-style workflows.
-- Use `Text` for both inline text and lightweight app documents. `Text::document(...)`, `TextBlock`, and `Text::markdown(...)` cover TextView-style About/Help/Release notes content.
+- Use `Text` for both inline text and lightweight app documents. `Text::document(...)`, `TextBlock`, and `Text::markdown(...)` cover TextView-style About/Help/Release notes content. `Text`, `Title`, and `Paragraph` are mouse-selectable by default; call `.selectable(false)` only for decorative labels or non-copyable chrome.
 
 ## Native packaging
 

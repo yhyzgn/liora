@@ -261,6 +261,12 @@ mod tests {
     use gpui::{FontStyle, FontWeight};
 
     #[test]
+    fn paragraph_defaults_to_mouse_selectable() {
+        assert!(Paragraph::new().selectable);
+        assert!(Paragraph::with_text("Selectable paragraph").selectable);
+    }
+
+    #[test]
     fn text_and_paragraph_use_selectable_text_for_native_selection() {
         let text_source = include_str!("text.rs");
         let paragraph_source = include_str!("paragraph.rs");

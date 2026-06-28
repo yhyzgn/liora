@@ -748,6 +748,7 @@ impl Element for SelectableTextElement {
         window.on_mouse_event(move |event: &MouseDownEvent, phase, window, cx| {
             if phase.bubble() && event.button == MouseButton::Left && hitbox.is_hovered(window) {
                 window.focus(&focus_handle_for_down, cx);
+                window.capture_pointer(hitbox.id);
                 input.update(cx, |input, cx| input.on_mouse_down(event, window, cx));
                 cx.stop_propagation();
             }
@@ -956,7 +957,10 @@ mod tests {
 
     #[test]
     fn selectable_text_actions_include_copy_shortcuts() {
-        let source = include_str!("selectable_text.rs");
+        let source = include_str!("selectable_text.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
         assert!(source.contains("SelectableTextSelectAll"));
         assert!(source.contains("SelectableTextCopy"));
         assert!(source.contains("KeyBinding::new(\"ctrl-a\""));
@@ -969,7 +973,7 @@ mod tests {
         assert!(source.contains("event.keystroke.modifiers.control"));
         assert!(source.contains("event.keystroke.modifiers.platform"));
         assert!(source.contains("event.click_count == 2"));
-        assert!(source.contains("window.capture_pointer"));
+        assert!(source.contains("window.capture_pointer(hitbox.id)"));
         assert!(source.contains("phase.capture()"));
     }
 }

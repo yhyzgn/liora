@@ -766,6 +766,33 @@ mod document_tests {
     use super::*;
 
     #[test]
+    fn text_defaults_to_mouse_selectable_for_inline_and_document_content() {
+        let inline = Text::new("Selectable by default");
+        assert!(inline.selectable);
+
+        let document = Text::document([
+            TextBlock::heading(2, "Selectable heading"),
+            TextBlock::paragraph("Selectable paragraph"),
+            TextBlock::quote("Selectable quote"),
+        ]);
+        assert!(document.selectable);
+    }
+
+    #[test]
+    fn text_document_renderer_forwards_default_selection_to_typography_blocks() {
+        let source = include_str!("text.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(source.contains("render_text_block(block, text.selectable, theme)"));
+        assert!(source.contains("title_for_level(text.clone(), *level)"));
+        assert!(source.contains(".selectable(selectable)"));
+        assert!(source.contains("Paragraph::with_text(text.clone())"));
+        assert!(source.contains("Paragraph::with_text(item.clone()).selectable(selectable)"));
+    }
+
+    #[test]
     fn text_document_builder_tracks_document_options() {
         let text = Text::document([
             TextBlock::heading(2, "Guide"),

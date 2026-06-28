@@ -15,13 +15,13 @@ impl Render for TypographyDemo {
 
         page(
             "Typography 排版",
-            "标题、文本、链接和段落组合。",
+            "标题、文本、链接和段落组合。Text、Title、Paragraph 默认支持鼠标拖拽自由选中文字。",
             Space::new()
                 .vertical()
                 .gap_lg()
                 .child(section(
                     "Title 标题",
-                    "内置 h1 到 h6 标题层级。",
+                    "内置 h1 到 h6 标题层级；默认可用鼠标拖拽选择标题文字。",
                     Space::new().vertical().gap_sm().children(vec![
                         Title::new("h1. Liora UI Title").h1().into_any_element(),
                         Title::new("h2. Liora UI Title").h2().into_any_element(),
@@ -34,7 +34,7 @@ impl Render for TypographyDemo {
                 .child(Divider::new())
                 .child(section(
                     "Text 文本",
-                    "展示基础文字颜色和大小。",
+                    "展示基础文字颜色和大小；默认可拖拽选择，装饰性文字可调用 selectable(false) 关闭。",
                     Space::new().vertical().gap_sm().children(vec![
                         Text::new("Default text color and size").into_any_element(),
                         Text::new("Primary color text")
@@ -48,6 +48,13 @@ impl Render for TypographyDemo {
                             .into_any_element(),
                         Text::new("Danger color text")
                             .text_color(theme.danger.base)
+                            .into_any_element(),
+                        Text::new("Drag across this sentence with the mouse: Text is selectable by default and supports normal copy shortcuts.")
+                            .wrap()
+                            .into_any_element(),
+                        Text::new("Decorative label with selection disabled")
+                            .selectable(false)
+                            .text_color(theme.neutral.text_3)
                             .into_any_element(),
                         Text::new("Auto wrap: this is a deliberately long Text component sample. It should wrap automatically within the available container instead of overflowing horizontally.")
                             .wrap()
@@ -103,7 +110,7 @@ impl Render for TypographyDemo {
                 .child(Divider::new())
                 .child(section(
                     "Paragraph 段落",
-                    "支持组合不同 Text 样式。",
+                    "支持组合不同 Text 样式，并把整段作为一个连续可选择的文本流。",
                     Space::new()
                         .vertical()
                         .gap_sm()

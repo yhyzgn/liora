@@ -173,6 +173,13 @@ impl IntoElement for Title {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
+    #[test]
+    fn title_defaults_to_mouse_selectable() {
+        assert!(Title::new("Selectable title").selectable);
+    }
+
     #[test]
     fn title_uses_selectable_text_for_native_selection() {
         let source = include_str!("title.rs");
