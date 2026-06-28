@@ -1,5 +1,5 @@
-use gpui::{AnyView, App, Context, Render, Window, div, prelude::*, px};
-use liora_components::layout_helpers::{page, section};
+use gpui::{AnyElement, AnyView, App, Context, Render, Window, prelude::*, px};
+use liora_components::layout_helpers::{page, section, showcase_card, showcase_grid};
 use liora_components::{Button, Combobox, SearchableListItem, Space, Text, combobox_create_footer};
 use liora_core::Config;
 use liora_icons_lucide::IconName;
@@ -65,28 +65,8 @@ fn component_items() -> Vec<SearchableListItem> {
     ]
 }
 
-fn demo_panel(
-    title: &'static str,
-    detail: &'static str,
-    child: impl IntoElement,
-) -> impl IntoElement {
-    div()
-        .w(px(400.0))
-        .min_h(px(132.0))
-        .flex()
-        .flex_col()
-        .gap_3()
-        .rounded_lg()
-        .border_1()
-        .p_4()
-        .child(
-            Space::new()
-                .vertical()
-                .gap_xs()
-                .child(Text::new(title).bold())
-                .child(Text::new(detail).sm().wrap()),
-        )
-        .child(child)
+fn combo_card(title: &'static str, detail: &'static str, child: impl IntoElement) -> AnyElement {
+    showcase_card(title, detail, child).into_any_element()
 }
 
 impl Render for ComboboxDemo {
@@ -99,38 +79,14 @@ impl Render for ComboboxDemo {
                 .vertical()
                 .gap_xl()
                 .child(section(
-                    "基础与分组",
-                    "基础用法适合短选项，分组用法适合组件、项目、成员等较长列表。",
-                    Space::new()
-                        .wrap()
-                        .gap_lg()
-                        .child(demo_panel(
-                            "Single select",
-                            "点击输入框后搜索并选择一个框架。",
-                            self.basic.clone(),
-                        ))
-                        .child(demo_panel(
-                            "Grouped options",
-                            "按组件类型分组，禁用项保持可见但不可选。",
-                            self.grouped.clone(),
-                        )),
-                ))
-                .child(section(
-                    "多选与 footer",
-                    "多选会保留多个值，footer 可承载创建、管理或高级筛选入口。",
-                    Space::new()
-                        .wrap()
-                        .gap_lg()
-                        .child(demo_panel(
-                            "Multiple",
-                            "再次点击已选项可取消选择。",
-                            self.multiple.clone(),
-                        ))
-                        .child(demo_panel(
-                            "Footer action",
-                            "Footer slot 使用 Liora Button，可放新增操作。",
-                            self.footer.clone(),
-                        )),
+                    "Combobox showcase",
+                    "基础、分组、多选和 footer 扩展示例统一使用卡片网格展示。",
+                    showcase_grid(vec![
+                        combo_card("Single select", "点击输入框后搜索并选择一个框架。", self.basic.clone()),
+                        combo_card("Grouped options", "按组件类型分组，禁用项保持可见但不可选。", self.grouped.clone()),
+                        combo_card("Multiple", "再次点击已选项可取消选择。", self.multiple.clone()),
+                        combo_card("Footer action", "Footer slot 使用 Liora Button，可放新增操作。", self.footer.clone()),
+                    ]),
                 ))
                 .child(section(
                     "组合说明",

@@ -1,6 +1,6 @@
-use gpui::{AnyElement, AnyView, App, Context, Render, Window, div, prelude::*, px};
-use liora_components::layout_helpers::{page, section};
-use liora_components::{SearchableList, SearchableListItem, Space, Text};
+use gpui::{AnyElement, AnyView, App, Context, Render, Window, prelude::*, px};
+use liora_components::layout_helpers::{page, section, showcase_card, showcase_grid};
+use liora_components::{SearchableList, SearchableListItem, Space};
 use liora_core::Config;
 
 pub fn render(cx: &mut App) -> AnyView {
@@ -30,23 +30,8 @@ fn component_items() -> Vec<SearchableListItem> {
     ]
 }
 
-fn demo_card(title: &'static str, detail: &'static str, body: AnyElement) -> impl IntoElement {
-    div()
-        .w(px(360.0))
-        .flex()
-        .flex_col()
-        .gap_3()
-        .rounded_lg()
-        .border_1()
-        .p_4()
-        .child(
-            Space::new()
-                .vertical()
-                .gap_xs()
-                .child(Text::new(title).bold())
-                .child(Text::new(detail).sm().wrap()),
-        )
-        .child(body)
+fn list_card(title: &'static str, detail: &'static str, body: AnyElement) -> AnyElement {
+    showcase_card(title, detail, body).into_any_element()
 }
 
 impl Render for SearchableListDemo {
@@ -55,58 +40,47 @@ impl Render for SearchableListDemo {
         page(
             "SearchableList 可搜索列表",
             "通用过滤列表底座，统一 value/label/description/group/disabled/selected 等选项能力，供 Combobox、命令面板和设置页复用。",
-            Space::new()
-                .vertical()
-                .gap_xl()
-                .child(section(
-                    "过滤与分组",
-                    "同一组数据可以按查询词过滤，并保留分组标题与描述信息。",
-                    Space::new()
-                        .wrap()
-                        .gap_lg()
-                        .child(demo_card(
-                            "All components",
-                            "空查询展示全部分组和禁用项。",
-                            SearchableList::new(component_items())
-                                .selected("combobox")
-                                .width(px(328.0))
-                                .into_any_element(),
-                        ))
-                        .child(demo_card(
-                            "Query: shell",
-                            "可命中 value、label、description 或 group。",
-                            SearchableList::new(component_items())
-                                .query("shell")
-                                .selected_values(vec!["status-bar", "dock-layout"])
-                                .width(px(328.0))
-                                .into_any_element(),
-                        )),
-                ))
-                .child(section(
-                    "空态与限制",
-                    "用 max_items 控制首屏数量，用 empty_text 给业务语境。",
-                    Space::new()
-                        .wrap()
-                        .gap_lg()
-                        .child(demo_card(
-                            "Limited",
-                            "只展示前 2 个匹配项。",
-                            SearchableList::new(component_items())
-                                .max_items(2)
-                                .width(px(328.0))
-                                .into_any_element(),
-                        ))
-                        .child(demo_card(
-                            "Empty",
-                            "无匹配项时渲染轻量空态。",
-                            SearchableList::new(component_items())
-                                .query("not-found")
-                                .empty_text("No component found")
-                                .background(theme.neutral.hover.opacity(0.5))
-                                .width(px(328.0))
-                                .into_any_element(),
-                        )),
-                )),
+            Space::new().vertical().gap_xl().child(section(
+                "SearchableList showcase",
+                "过滤、分组、限制和空态统一使用卡片网格展示。",
+                showcase_grid(vec![
+                    list_card(
+                        "All components",
+                        "空查询展示全部分组和禁用项。",
+                        SearchableList::new(component_items())
+                            .selected("combobox")
+                            .width(px(328.0))
+                            .into_any_element(),
+                    ),
+                    list_card(
+                        "Query: shell",
+                        "可命中 value、label、description 或 group。",
+                        SearchableList::new(component_items())
+                            .query("shell")
+                            .selected_values(vec!["status-bar", "dock-layout"])
+                            .width(px(328.0))
+                            .into_any_element(),
+                    ),
+                    list_card(
+                        "Limited",
+                        "只展示前 2 个匹配项。",
+                        SearchableList::new(component_items())
+                            .max_items(2)
+                            .width(px(328.0))
+                            .into_any_element(),
+                    ),
+                    list_card(
+                        "Empty",
+                        "无匹配项时渲染轻量空态。",
+                        SearchableList::new(component_items())
+                            .query("not-found")
+                            .empty_text("No component found")
+                            .background(theme.neutral.hover.opacity(0.5))
+                            .width(px(328.0))
+                            .into_any_element(),
+                    ),
+                ]),
+            )),
         )
     }
 }

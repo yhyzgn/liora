@@ -1,5 +1,5 @@
 use gpui::{AnyView, App, Context, IntoElement, Render, SharedString, Window, prelude::*};
-use liora_components::layout_helpers::{page, section};
+use liora_components::layout_helpers::{page, section, showcase_card_wide, showcase_grid};
 use liora_components::{
     Button, Space, TableAlign, TableColumn, TableSortOrder, TableSortState, Tag, Text,
     VirtualizedTable,
@@ -46,39 +46,45 @@ impl Render for VirtualizedTableDemo {
         page(
             "VirtualizedTable 虚拟表格",
             "固定表头 + 可见区行渲染的大数据表格，适合万级结构化数据和高成本单元格。",
-            Space::new()
-                .vertical()
-                .gap_xl()
-                .child(section(
-                    "万行固定表头",
-                    "行内容由 row index + column key 即时生成，滚动时只布局可见行。",
-                    VirtualizedTable::new(columns(false), 10_000, move |row, key, _, _| {
-                        virtual_cell(row, key, None, None)
-                    })
-                    .height(420.0)
-                    .row_height(52.0)
-                    .stripe(true)
-                    .border(true),
-                ))
-                .child(section(
-                    "大数据排序状态",
-                    "点击可排序表头会把状态交回业务层；真实项目可据此切换后端查询或本地 index 映射。",
-                    sorted,
-                ))
-                .child(section(
-                    "DataTable 增强：选择、固定列和 load more",
-                    "不新增重复 DataTable 控件，而是在 VirtualizedTable 中增强企业数据表常用能力。",
-                    VirtualizedTable::new(columns(false), 10_000, move |row, key, _, _| {
-                        virtual_cell(row, key, None, None)
-                    })
-                    .height(420.0)
-                    .row_height(52.0)
-                    .stripe(true)
-                    .border(true)
-                    .selected_rows([1, 3, 5])
-                    .active_row(Some(8))
-                    .load_more("加载更多数据", |_, _| {}),
-                )),
+            Space::new().vertical().gap_xl().child(section(
+                "Table showcase",
+                "虚拟表格统一使用宽卡片承载，避免长表格直接打散 Gallery 页面。",
+                showcase_grid(vec![
+                    showcase_card_wide(
+                        "万行固定表头",
+                        "行内容由 row index + column key 即时生成，滚动时只布局可见行。",
+                        VirtualizedTable::new(columns(false), 10_000, move |row, key, _, _| {
+                            virtual_cell(row, key, None, None)
+                        })
+                        .height(420.0)
+                        .row_height(52.0)
+                        .stripe(true)
+                        .border(true),
+                    )
+                    .into_any_element(),
+                    showcase_card_wide(
+                        "大数据排序状态",
+                        "点击可排序表头会把状态交回业务层；真实项目可据此切换后端查询或本地 index 映射。",
+                        sorted,
+                    )
+                    .into_any_element(),
+                    showcase_card_wide(
+                        "DataTable 增强：选择、固定列和 load more",
+                        "不新增重复 DataTable 控件，而是在 VirtualizedTable 中增强企业数据表常用能力。",
+                        VirtualizedTable::new(columns(false), 10_000, move |row, key, _, _| {
+                            virtual_cell(row, key, None, None)
+                        })
+                        .height(420.0)
+                        .row_height(52.0)
+                        .stripe(true)
+                        .border(true)
+                        .selected_rows([1, 3, 5])
+                        .active_row(Some(8))
+                        .load_more("加载更多数据", |_, _| {}),
+                    )
+                    .into_any_element(),
+                ]),
+            )),
         )
     }
 }

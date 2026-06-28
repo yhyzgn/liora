@@ -1,8 +1,8 @@
 use gpui::{AnyView, App, Context, Entity, IntoElement, Render, Window, prelude::*};
-use liora_components::layout_helpers::{page, section};
+use liora_components::layout_helpers::{page, section, showcase_card_wide, showcase_grid};
 use liora_components::{
-    CodeCompletionItem, CodeDiagnostic, CodeEditor, CodeHover, CodeLanguage, CodeTheme, Divider,
-    Space, Text, toast_info,
+    CodeCompletionItem, CodeDiagnostic, CodeEditor, CodeHover, CodeLanguage, CodeTheme, Space,
+    Text, toast_info,
 };
 
 pub fn render(cx: &mut App) -> AnyView {
@@ -81,30 +81,34 @@ impl Render for CodeEditorDemo {
         page(
             "CodeEditor 代码编辑器",
             "原生 GPUI 代码编辑控件基础版，支持行号、缩进配置、语法高亮预览、编辑和 diagnostics 扩展点。",
-            Space::new()
-                .vertical()
-                .gap_xl()
-                .child(section(
-                    "Rust 编辑器",
-                    "使用 Liora Input 作为编辑核心，保留纯 Rust + GPUI 原生渲染；下方语法预览复用 CodeBlock 的 syntect/two-face 高亮。",
-                    self.basic.clone(),
-                ))
-                .child(Divider::new())
-                .child(section(
-                    "Diagnostics 扩展点",
-                    "语法检查不硬绑定 LSP；业务层可以通过 diagnostics(...) 或 set_diagnostics(...) 注入任意诊断结果。",
-                    Space::new()
-                        .vertical()
-                        .gap_md()
-                        .child(self.diagnostics.clone())
-                        .child(Text::new("MVP 阶段先完成编辑、行号、缩进元数据和诊断渲染；Tab/Shift+Tab 多行缩进和 provider trait 后续继续增强。")),
-                ))
-                .child(Divider::new())
-                .child(section(
-                    "高级扩展点：搜索、补全和 hover",
-                    "CodeEditor 暴露 provider-ready 的搜索、补全候选和 hover/help 数据模型，外部应用可以接入自己的语言服务。",
-                    self.advanced.clone(),
-                )),
+            Space::new().vertical().gap_xl().child(section(
+                "Editor showcase",
+                "代码编辑示例统一使用宽卡片展示，避免编辑器高度和说明文本打散页面节奏。",
+                showcase_grid(vec![
+                    showcase_card_wide(
+                        "Rust 编辑器",
+                        "使用 Liora Input 作为编辑核心，保留纯 Rust + GPUI 原生渲染。",
+                        self.basic.clone(),
+                    )
+                    .into_any_element(),
+                    showcase_card_wide(
+                        "Diagnostics 扩展点",
+                        "业务层可以通过 diagnostics(...) 或 set_diagnostics(...) 注入任意诊断结果。",
+                        Space::new()
+                            .vertical()
+                            .gap_md()
+                            .child(self.diagnostics.clone())
+                            .child(Text::new("MVP 阶段先完成编辑、行号、缩进元数据和诊断渲染；Tab/Shift+Tab 多行缩进和 provider trait 后续继续增强。")),
+                    )
+                    .into_any_element(),
+                    showcase_card_wide(
+                        "高级扩展点：搜索、补全和 hover",
+                        "Provider-ready 的搜索、补全候选和 hover/help 数据模型可接入语言服务。",
+                        self.advanced.clone(),
+                    )
+                    .into_any_element(),
+                ]),
+            )),
         )
     }
 }

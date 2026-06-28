@@ -1,5 +1,5 @@
 use gpui::{AnyView, App, Context, Entity, Render, Window, prelude::*};
-use liora_components::layout_helpers::{page, section};
+use liora_components::layout_helpers::{page, section, showcase_card, showcase_grid};
 use liora_components::{Accordion, Space, Text};
 
 pub fn render(cx: &mut App) -> AnyView {
@@ -67,24 +67,30 @@ impl Render for AccordionDemo {
         page(
             "Accordion 手风琴",
             "独立手风琴控件，用于 FAQ、设置分组和文档信息折叠。",
-            Space::new()
-                .vertical()
-                .gap_lg()
-                .child(section(
-                    "基础单开",
-                    "默认只允许一个面板展开，适合主流程信息。",
-                    self.basic.clone(),
-                ))
-                .child(section(
-                    "多开与禁用",
-                    "multiple() 允许多个面板展开，disabled_item() 展示不可操作项。",
-                    self.multiple.clone(),
-                ))
-                .child(section(
-                    "尺寸与边框",
-                    "展示 large() 与 borderless 组合，避免和 Collapse 共用页面。",
-                    self.sizes.clone(),
-                )),
+            Space::new().vertical().gap_xl().child(section(
+                "Accordion showcase",
+                "所有手风琴示例使用同一规格卡片承载，避免折叠面板在页面中参差散落。",
+                showcase_grid(vec![
+                    showcase_card(
+                        "基础单开",
+                        "默认只允许一个面板展开，适合主流程信息。",
+                        self.basic.clone(),
+                    )
+                    .into_any_element(),
+                    showcase_card(
+                        "多开与禁用",
+                        "multiple() 允许多个面板展开，disabled_item() 展示不可操作项。",
+                        self.multiple.clone(),
+                    )
+                    .into_any_element(),
+                    showcase_card(
+                        "尺寸与边框",
+                        "展示 large() 与 borderless 组合，避免和 Collapse 共用页面。",
+                        self.sizes.clone(),
+                    )
+                    .into_any_element(),
+                ]),
+            )),
         )
     }
 }

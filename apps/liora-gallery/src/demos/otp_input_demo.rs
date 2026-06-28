@@ -1,5 +1,5 @@
 use gpui::{AnyView, App, Context, Entity, Render, Window, prelude::*};
-use liora_components::layout_helpers::{page, section};
+use liora_components::layout_helpers::{page, section, showcase_card, showcase_grid};
 use liora_components::{OtpInput, Space, Text};
 
 pub fn render(cx: &mut App) -> AnyView {
@@ -30,42 +30,49 @@ impl Render for OtpInputDemo {
         page(
             "OtpInput 验证码输入",
             "真正可交互的一次性验证码 / PIN 控件：点击格子定位光标，键盘输入、退格和粘贴走 Liora Input 编辑管线。",
-            Space::new()
-                .vertical()
-                .gap_xl()
-                .child(section(
-                    "可输入验证码",
-                    "点击任意格子后输入；支持键盘移动、退格和粘贴，父级可通过 on_change 同步状态。",
-                    Space::new()
-                        .vertical()
-                        .gap_sm()
-                        .child(self.login_code.clone())
-                        .child(
-                            Text::new(
-                                "Try: click a cell, type digits, backspace, or paste a code.",
-                            )
-                            .xs(),
-                        ),
-                ))
-                .child(section(
-                    "PIN / Masked",
-                    "masked(true) 用于 PIN、设备配对码等需要隐藏具体字符的场景。",
-                    self.device_code.clone(),
-                ))
-                .child(section(
-                    "状态",
-                    "success / error / warning 用于校验结果、重试和业务反馈。",
-                    Space::new()
-                        .vertical()
-                        .gap_md()
-                        .child(self.success_code.clone())
-                        .child(self.error_code.clone()),
-                ))
-                .child(section(
-                    "长度和尺寸",
-                    "长度可在 1-12 间配置，cell_size/gap 用于紧凑布局。",
-                    self.compact_code.clone(),
-                )),
+            Space::new().vertical().gap_xl().child(section(
+                "OtpInput showcase",
+                "验证码输入示例统一放入卡片网格，避免不同长度的格子控件散落。",
+                showcase_grid(vec![
+                    showcase_card(
+                        "可输入验证码",
+                        "点击任意格子后输入，支持键盘移动、退格和粘贴。",
+                        Space::new()
+                            .vertical()
+                            .gap_sm()
+                            .child(self.login_code.clone())
+                            .child(
+                                Text::new(
+                                    "Try: click a cell, type digits, backspace, or paste a code.",
+                                )
+                                .xs(),
+                            ),
+                    )
+                    .into_any_element(),
+                    showcase_card(
+                        "PIN / Masked",
+                        "masked(true) 用于 PIN、设备配对码等需要隐藏具体字符的场景。",
+                        self.device_code.clone(),
+                    )
+                    .into_any_element(),
+                    showcase_card(
+                        "状态",
+                        "success / error / warning 用于校验结果、重试和业务反馈。",
+                        Space::new()
+                            .vertical()
+                            .gap_md()
+                            .child(self.success_code.clone())
+                            .child(self.error_code.clone()),
+                    )
+                    .into_any_element(),
+                    showcase_card(
+                        "长度和尺寸",
+                        "长度可在 1-12 间配置，cell_size/gap 用于紧凑布局。",
+                        self.compact_code.clone(),
+                    )
+                    .into_any_element(),
+                ]),
+            )),
         )
     }
 }
@@ -79,6 +86,6 @@ mod tests {
         assert!(source.contains("点击格子定位光标"));
         assert!(source.contains("masked(true)"));
         assert!(source.contains("success_code"));
-        assert!(source.contains("use liora_components::{OtpInput, Space, Text};"));
+        assert!(source.contains("showcase_grid"));
     }
 }
