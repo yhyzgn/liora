@@ -146,6 +146,7 @@ fn icon_sample(icon: Icon, label: &'static str) -> impl IntoElement {
                 Text::new(label)
                     .xs()
                     .nowrap()
+                    .selectable(false)
                     .group_hover_primary(text_group),
             ),
     )

@@ -7182,6 +7182,7 @@ fn icon_catalog_item(entry: &IconCatalogEntry) -> impl IntoElement {
                     .bold()
                     .size(px(10.0))
                     .nowrap()
+                    .selectable(false)
                     .group_hover_primary(text_hover_group),
             ),
     )
@@ -11613,6 +11614,7 @@ mod tests {
         assert!(icon_item_source.contains("let display_name = entry.name.clone();"));
         assert!(icon_item_source.contains("hover_group(hover_group)"));
         assert!(icon_item_source.contains(".size_xl()"));
+        assert!(icon_item_source.contains(".selectable(false)"));
         assert!(icon_item_source.contains(".group_hover_primary(text_hover_group)"));
         assert!(!icon_item_source.contains(r#"format!("IconName::{}", entry.name)"#));
         assert!(source.contains("liora::icons_lucide::IconName"));

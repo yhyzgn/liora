@@ -201,6 +201,7 @@ fn clickable_items() -> Vec<impl IntoElement> {
                     Text::new(label)
                         .bold()
                         .nowrap()
+                        .selectable(false)
                         .group_hover_primary(text_group),
                 ),
         )
@@ -223,7 +224,12 @@ fn icon_tile(icon: IconName, label: &'static str, prefix: &'static str) -> GridI
             .align_center()
             .gap_md()
             .child(Icon::new(icon).size_lg().group_hover_primary(icon_group))
-            .child(Text::new(label).nowrap().group_hover_primary(text_group)),
+            .child(
+                Text::new(label)
+                    .nowrap()
+                    .selectable(false)
+                    .group_hover_primary(text_group),
+            ),
     )
     .hover_group(group)
     .on_click(move |_, _| {})
