@@ -1,6 +1,6 @@
 use gpui::{App, Context, Entity, IntoElement, Render, Window, prelude::*};
 use liora_components::layout_helpers::{page, section, showcase_card_wide, showcase_stack};
-use liora_components::{Divider, Paragraph, Space, Text};
+use liora_components::{Divider, Paragraph, SelectableTextGroup, Space, Text};
 
 pub fn render(cx: &mut App) -> Entity<ParagraphDemo> {
     cx.new(|_| ParagraphDemo)
@@ -27,6 +27,30 @@ impl Render for ParagraphDemo {
                         Paragraph::with_text(
                             "Liora Paragraph is designed for prose. This deliberately long paragraph wraps across multiple visual lines inside the showcase card, so dragging from the first visual line into the second or third visual line should keep one continuous selection range without losing the highlighted region.",
                         ),
+                    ),
+                ))
+
+                .child(Divider::new())
+                .child(section(
+                    "跨块选择",
+                    "当正文由多个 Text 和 Paragraph 组成时，使用 SelectableTextGroup 将它们合成为一个连续可选择文本流。",
+                    showcase_card_wide(
+                        "Text + Paragraph 连续选择",
+                        "从标题式 Text 开始拖拽到后续 Paragraph，选区应跨越多个块并复制为连续文本。",
+                        SelectableTextGroup::new()
+                            .id("gallery-paragraph-cross-block-selection")
+                            .text(Text::new("Release notes").bold().text_color(theme.primary.base))
+                            .paragraph(
+                                Paragraph::new()
+                                    .child(Text::new("SelectableTextGroup keeps several "))
+                                    .child(Text::new("Text").code_style(&theme))
+                                    .child(Text::new(" and "))
+                                    .child(Text::new("Paragraph").code_style(&theme))
+                                    .child(Text::new(" blocks in one native selection surface.")),
+                            )
+                            .paragraph(Paragraph::with_text(
+                                "Use it for documentation, changelogs, release notes, and help pages where users expect drag selection to continue across block boundaries.",
+                            )),
                     ),
                 ))
                 .child(Divider::new())
@@ -71,6 +95,7 @@ mod tests {
         assert!(source.contains("Paragraph::new"));
         assert!(source.contains("automatically") || source.contains("自动换行"));
         assert!(source.contains("selectable(false)"));
+        assert!(source.contains("SelectableTextGroup"));
         assert!(source.contains("code_style"));
     }
 }

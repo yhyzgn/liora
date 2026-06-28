@@ -13,13 +13,14 @@ use liora_components::{
     InputNumberControlsPosition, Link, Loading, Menu, MenuMode, NotificationType, Paragraph,
     Popconfirm, Popover, Preview, Progress, ProgressStatus, QrCode, QrEcLevel, QrFinderStyle,
     QrGradientDirection, QrModuleStyle, Radio, RadioGroup, RadioOptionStyle, Rate,
-    Result as LioraResult, ResultStatus, Segmented, SegmentedOption, Select, Shell, Sidebar,
-    Skeleton, SkeletonItem, SkeletonVariant, Slider, Space, Statistic, Switch, Tag as LioraTag,
-    Text, Textarea, Timer, TimerFormat, TimerUnit, Title, TitleBar, TitleBarContentAlign, Tour,
-    TourPlacement, TourStep, Transfer, TransferItem, Tree, TreeNode, TreeSelect, TreeSelectNode,
-    Upload, UploadFile, UploadStatus, VirtualizedList, VirtualizedTable, VirtualizedTree,
-    Watermark, WindowControlsPosition, WindowFrameMode, frame_mode_switch_row, show_notification,
-    toast_error, toast_info, toast_success, toast_warning,
+    Result as LioraResult, ResultStatus, Segmented, SegmentedOption, Select, SelectableTextGroup,
+    Shell, Sidebar, Skeleton, SkeletonItem, SkeletonVariant, Slider, Space, Statistic, Switch,
+    Tag as LioraTag, Text, Textarea, Timer, TimerFormat, TimerUnit, Title, TitleBar,
+    TitleBarContentAlign, Tour, TourPlacement, TourStep, Transfer, TransferItem, Tree, TreeNode,
+    TreeSelect, TreeSelectNode, Upload, UploadFile, UploadStatus, VirtualizedList,
+    VirtualizedTable, VirtualizedTree, Watermark, WindowControlsPosition, WindowFrameMode,
+    frame_mode_switch_row, show_notification, toast_error, toast_info, toast_success,
+    toast_warning,
 };
 use liora_core::{
     Config, PassivePortal, Placement, Portal, ThemeMode, apply_theme_mode, clear_popover,
@@ -1161,6 +1162,9 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "typography/paragraph.rs" => {
             Some(include_str!("../content/snippets/typography/paragraph.rs"))
         }
+        "typography/selectable_text_group.rs" => Some(include_str!(
+            "../content/snippets/typography/selectable_text_group.rs"
+        )),
         "typography/document_blocks.rs" => Some(include_str!(
             "../content/snippets/typography/document_blocks.rs"
         )),
@@ -3347,6 +3351,7 @@ impl Render for LiveDemoContent {
             ])).no_shadow().into_any_element(),
             "ParagraphWrapped" => Card::new(docs_paragraph_wrapped()).no_shadow().into_any_element(),
             "TypographyParagraph" => Card::new(docs_typography_paragraph(_cx)).no_shadow().into_any_element(),
+            "SelectableTextGroupBasic" => Card::new(docs_selectable_text_group(_cx)).no_shadow().into_any_element(),
 
 
             "ToggleBasic" => demo_stack(vec![
@@ -7865,6 +7870,24 @@ fn docs_typography_paragraph(cx: &mut Context<LiveDemoContent>) -> impl IntoElem
         .child(Text::new(". Inline "))
         .child(Text::new("code").code_style(&theme))
         .child(Text::new(" stays in the same wrapped paragraph."))
+}
+
+fn docs_selectable_text_group(cx: &mut Context<LiveDemoContent>) -> impl IntoElement {
+    let theme = cx.global::<Config>().theme.clone();
+    SelectableTextGroup::new()
+        .id("docs-selectable-text-group-basic")
+        .text(Text::new("Release notes").bold().text_color(theme.primary.base))
+        .paragraph(
+            Paragraph::new()
+                .child(Text::new("Combine "))
+                .child(Text::new("Text").code_style(&theme))
+                .child(Text::new(" and "))
+                .child(Text::new("Paragraph").code_style(&theme))
+                .child(Text::new(" blocks in one native selection surface.")),
+        )
+        .paragraph(Paragraph::with_text(
+            "Drag from the heading into this paragraph; selection and copy should cross block boundaries as one document-like range.",
+        ))
 }
 
 fn docs_product_menu(id: &'static str) -> Menu {

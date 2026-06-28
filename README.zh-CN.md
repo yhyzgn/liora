@@ -1252,7 +1252,7 @@ impl Render for OrdersView {
 
 | 分类 | 组件 |
 |---|---|
-| Basic / Layout 基础布局 | `Button`, `ButtonGroup`, `Icon`, `Link`, `Text`, `Title`, `Paragraph`, `Space`, `Divider`, `Row`, `Col`, `Container`, `Shell`, `Sidebar`, `TitleBar`, `Flex`, `Scrollbar`, `ScrollableMask`, `Splitter`, `DockLayout`, `Affix`, `Backtop` |
+| Basic / Layout 基础布局 | `Button`, `ButtonGroup`, `Icon`, `Link`, `Text`, `Title`, `Paragraph`, `SelectableTextGroup`, `Space`, `Divider`, `Row`, `Col`, `Container`, `Shell`, `Sidebar`, `TitleBar`, `Flex`, `Scrollbar`, `ScrollableMask`, `Splitter`, `DockLayout`, `Affix`, `Backtop` |
 | Form 表单 | `Input`, `InputNumber`, `Textarea`, `Checkbox`, `CheckboxGroup`, `Radio`, `RadioGroup`, `Switch`, `Select`, `Slider`, `Form`, `FormItem`, `Rate`, `DatePicker`, `TimePicker`, `DateTimePicker`, `Upload`, `Cascader`, `Transfer`, `ColorPicker`, `Autocomplete`, `InputTag`, `Mention`, `TreeSelect`, `SearchableList`, `OtpInput`, `Toggle`, `ToggleGroup` |
 | Feedback / Overlay 反馈浮层 | `Alert`, `Tooltip`, `Popover`, `Popconfirm`, `Dialog`, `Drawer`, `Message`, `Notification`, `MessageBox`, `Loading`, `Dropdown`, `DropdownButton`, `Preview`, `Tour`, `HoverCard`, `FocusTrap` |
 | Navigation 导航 | `Menu`, `Tabs`, `Breadcrumb`, `Steps`, `PageHeader`, `Anchor`, `Accordion`, `NativeMenu` |
@@ -1267,7 +1267,7 @@ Liora 避免为同一类功能提供重复控件：
 
 - `Drawer` 同时覆盖完整抽屉和轻量面板场景。`Drawer::sheet()` 提供轻量默认尺寸，不再单独暴露 Sheet 控件。
 - `Select` 同时覆盖固定选项和可搜索选择。`Select::searchable(...)`、`.multiple()`、分组、禁用项和 footer slot 覆盖原 Combobox 类工作流。
-- `Text` 同时覆盖内联文本和轻量应用文档。`Text::document(...)`、`TextBlock`、`Text::markdown(...)` 覆盖 About/Help/Release notes 等原 TextView 类内容。`Text`、`Title`、`Paragraph` 默认可用鼠标自由选中文字；只有装饰性标签或不希望复制的界面文案才调用 `.selectable(false)` 关闭。
+- `Text` 同时覆盖内联文本和轻量应用文档。`Text::document(...)`、`TextBlock`、`Text::markdown(...)` 覆盖 About/Help/Release notes 等原 TextView 类内容。`Text`、`Title`、`Paragraph` 默认可用鼠标自由选中文字；只有装饰性标签或不希望复制的界面文案才调用 `.selectable(false)` 关闭。如果需要跨多个 `Text` 与 `Paragraph` 块连续选择，例如 Release notes、帮助页和文档正文，请使用 `SelectableTextGroup`。
 
 ## 原生打包
 

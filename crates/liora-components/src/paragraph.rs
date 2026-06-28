@@ -108,7 +108,7 @@ impl Paragraph {
         style
     }
 
-    fn styled_text_parts(
+    pub(crate) fn selectable_text_parts(
         &self,
         theme: &liora_theme::Theme,
         code_family: Option<SharedString>,
@@ -232,7 +232,8 @@ impl RenderOnce for Paragraph {
         let theme = &cx.global::<Config>().theme;
         let code_family = code_font_family(cx);
         let ui_family = ui_font_family(cx);
-        let (full_text, runs) = self.styled_text_parts(theme, Some(code_family), ui_family.clone());
+        let (full_text, runs) =
+            self.selectable_text_parts(theme, Some(code_family), ui_family.clone());
         let font_size = px(theme.font_size.md);
 
         if self.selectable {
@@ -324,7 +325,7 @@ mod tests {
         let (text, runs) = Paragraph::new()
             .child(Text::new("Hello ").bold())
             .child(Text::new("世界").italic())
-            .styled_text_parts(&theme, Some("Monospace".into()), None);
+            .selectable_text_parts(&theme, Some("Monospace".into()), None);
 
         assert_eq!(text.as_ref(), "Hello 世界");
         assert_eq!(runs.len(), 2);
@@ -344,7 +345,7 @@ mod tests {
             .child(Text::new("、"))
             .child(Text::new("Input").code_style(&theme))
             .child(Text::new("。"))
-            .styled_text_parts(&theme, Some("Monospace".into()), None);
+            .selectable_text_parts(&theme, Some("Monospace".into()), None);
 
         assert_eq!(
             text.as_ref(),

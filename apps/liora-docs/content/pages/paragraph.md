@@ -15,6 +15,20 @@
 ```rust src="typography/paragraph.rs"
 ```
 
+
+## 跨多个文本块选择
+
+当一段内容需要拆成多个 `Text` 与 `Paragraph` 块，但用户仍然期望像文档一样从标题拖选到正文时，使用 `SelectableTextGroup`。它会把多个块合并到同一个可选择文本流里，并用 `separator` 控制块之间的复制文本分隔符。
+
+### 效果
+
+::LioraDemo{component="SelectableTextGroupBasic"}::
+
+### 代码
+
+```rust src="typography/selectable_text_group.rs"
+```
+
 ## 混合样式片段
 
 多个 `Text` 子片段会被合并成一组 `TextRun`，适合在同一段正文中混排强调、语义色、inline code 和链接式下划线。除非是装饰性文案，否则不建议关闭默认选择能力。
