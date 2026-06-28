@@ -32,6 +32,21 @@ use std::sync::Arc;
 type MenuSelectCallback =
     dyn Fn(NativeMenuAction, &NativeMenuItem, &mut Window, &mut App) + 'static;
 
+/// Static documentation for a built-in native menu action.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct NativeMenuActionInfo {
+    /// Stable action id used by command dispatchers.
+    pub id: &'static str,
+    /// Human-readable action name.
+    pub name: &'static str,
+    /// Short description of what the action represents.
+    pub description: &'static str,
+    /// Built-in effect performed by Liora when automatic effects are enabled.
+    pub effect: &'static str,
+    /// Whether Liora can perform the effect without application-specific state.
+    pub handled_by_liora: bool,
+}
+
 /// Built-in menu actions that cover common desktop application commands.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum NativeMenuAction {
@@ -68,6 +83,138 @@ pub enum NativeMenuAction {
 }
 
 impl NativeMenuAction {
+    /// Returns static metadata describing this action and its default effect.
+    pub fn info(&self) -> NativeMenuActionInfo {
+        match self {
+            Self::NewWindow => NativeMenuActionInfo {
+                id: "new-window",
+                name: "NewWindow",
+                description: "Request a new application window.",
+                effect: "Dispatch only; application opens the window from on_select.",
+                handled_by_liora: false,
+            },
+            Self::Open => NativeMenuActionInfo {
+                id: "open",
+                name: "Open",
+                description: "Request an open-file or open-project flow.",
+                effect: "Dispatch only; application owns file picker and state.",
+                handled_by_liora: false,
+            },
+            Self::Save => NativeMenuActionInfo {
+                id: "save",
+                name: "Save",
+                description: "Request saving the active document.",
+                effect: "Dispatch only; application owns document persistence.",
+                handled_by_liora: false,
+            },
+            Self::SaveAs => NativeMenuActionInfo {
+                id: "save-as",
+                name: "SaveAs",
+                description: "Request saving through a Save As flow.",
+                effect: "Dispatch only; application owns the save dialog and path.",
+                handled_by_liora: false,
+            },
+            Self::Close => NativeMenuActionInfo {
+                id: "close",
+                name: "Close",
+                description: "Request closing the active document or window.",
+                effect: "Dispatch only; application decides close confirmation and target.",
+                handled_by_liora: false,
+            },
+            Self::Quit => NativeMenuActionInfo {
+                id: "quit",
+                name: "Quit",
+                description: "Quit the current GPUI application.",
+                effect: "Calls cx.quit() when automatic effects are enabled.",
+                handled_by_liora: true,
+            },
+            Self::CommandPalette => NativeMenuActionInfo {
+                id: "command-palette",
+                name: "CommandPalette",
+                description: "Request opening the app command palette.",
+                effect: "Dispatch only; application owns palette state.",
+                handled_by_liora: false,
+            },
+            Self::ToggleSidebar => NativeMenuActionInfo {
+                id: "toggle-sidebar",
+                name: "ToggleSidebar",
+                description: "Request showing or hiding the sidebar.",
+                effect: "Dispatch only; application owns shell layout state.",
+                handled_by_liora: false,
+            },
+            Self::ToggleStatusBar => NativeMenuActionInfo {
+                id: "toggle-statusbar",
+                name: "ToggleStatusBar",
+                description: "Request showing or hiding the status bar.",
+                effect: "Dispatch only; application owns shell layout state.",
+                handled_by_liora: false,
+            },
+            Self::ZoomIn => NativeMenuActionInfo {
+                id: "zoom-in",
+                name: "ZoomIn",
+                description: "Request zooming in the active surface.",
+                effect: "Dispatch only; application owns zoom state.",
+                handled_by_liora: false,
+            },
+            Self::ZoomOut => NativeMenuActionInfo {
+                id: "zoom-out",
+                name: "ZoomOut",
+                description: "Request zooming out the active surface.",
+                effect: "Dispatch only; application owns zoom state.",
+                handled_by_liora: false,
+            },
+            Self::ZoomReset => NativeMenuActionInfo {
+                id: "zoom-reset",
+                name: "ZoomReset",
+                description: "Request resetting active-surface zoom.",
+                effect: "Dispatch only; application owns zoom state.",
+                handled_by_liora: false,
+            },
+            Self::OpenUrl(_) => NativeMenuActionInfo {
+                id: "open-url",
+                name: "OpenUrl",
+                description: "Open an external URL through the platform.",
+                effect: "Calls cx.open_url(url) when automatic effects are enabled.",
+                handled_by_liora: true,
+            },
+            Self::CopyText(_) => NativeMenuActionInfo {
+                id: "copy-text",
+                name: "CopyText",
+                description: "Copy text into the native clipboard.",
+                effect: "Calls cx.write_to_clipboard(...) when automatic effects are enabled.",
+                handled_by_liora: true,
+            },
+            Self::Custom(_) => NativeMenuActionInfo {
+                id: "custom",
+                name: "Custom",
+                description: "Application-defined command id.",
+                effect: "Dispatch only; application handles it from on_select.",
+                handled_by_liora: false,
+            },
+        }
+    }
+
+    /// Returns a representative catalog of built-in and custom action variants.
+    pub fn catalog() -> Vec<Self> {
+        vec![
+            Self::NewWindow,
+            Self::Open,
+            Self::Save,
+            Self::SaveAs,
+            Self::Close,
+            Self::Quit,
+            Self::CommandPalette,
+            Self::ToggleSidebar,
+            Self::ToggleStatusBar,
+            Self::ZoomIn,
+            Self::ZoomOut,
+            Self::ZoomReset,
+            Self::OpenUrl("https://github.com/yhyzgn/liora".into()),
+            Self::CopyText("liora".into()),
+            Self::Custom("check-updates".into()),
+        ]
+    }
+
     /// Applies the built-in side effect for actions that can be handled generically.
     pub fn perform(&self, cx: &mut App) {
         match self {
@@ -222,6 +369,7 @@ pub struct NativeMenu {
     pub items: Vec<NativeMenuItem>,
     preview_width: gpui::Pixels,
     on_select: Option<Arc<MenuSelectCallback>>,
+    perform_builtin_actions: bool,
 }
 
 impl NativeMenu {
@@ -232,6 +380,7 @@ impl NativeMenu {
             items: Vec::new(),
             preview_width: px(280.0),
             on_select: None,
+            perform_builtin_actions: true,
         }
     }
 
@@ -250,6 +399,16 @@ impl NativeMenu {
     /// Sets the preview width used by Gallery/Docs/custom titlebar previews.
     pub fn preview_width(mut self, width: impl Into<gpui::Pixels>) -> Self {
         self.preview_width = width.into().max(px(180.0));
+        self
+    }
+
+    /// Configures whether built-in generic effects run before `on_select`.
+    ///
+    /// Keep this enabled for real application menus. Disable it for Gallery,
+    /// Docs, tests, or command preview surfaces where actions such as Quit or
+    /// OpenUrl should be demonstrated without side effects.
+    pub fn perform_builtin_actions(mut self, perform: bool) -> Self {
+        self.perform_builtin_actions = perform;
         self
     }
 
@@ -273,6 +432,7 @@ impl RenderOnce for NativeMenu {
         let theme = cx.global::<Config>().theme.clone();
         let command_count = self.command_count();
         let on_select = self.on_select.clone();
+        let perform_builtin_actions = self.perform_builtin_actions;
         div()
             .w(self.preview_width)
             .rounded(px(theme.radius.md))
@@ -293,11 +453,9 @@ impl RenderOnce for NativeMenu {
                     .child(Text::new(self.title).bold())
                     .child(Text::new(format!("{} commands", command_count)).xs()),
             )
-            .children(
-                self.items
-                    .into_iter()
-                    .map(|item| render_menu_item(item, 0, &theme, on_select.clone())),
-            )
+            .children(self.items.into_iter().map(|item| {
+                render_menu_item(item, 0, &theme, on_select.clone(), perform_builtin_actions)
+            }))
     }
 }
 
@@ -342,6 +500,7 @@ fn render_menu_item(
     depth: usize,
     theme: &liora_theme::Theme,
     on_select: Option<Arc<MenuSelectCallback>>,
+    perform_builtin_actions: bool,
 ) -> AnyElement {
     if item.separator {
         return div()
@@ -381,7 +540,9 @@ fn render_menu_item(
                             let selected_action = action
                                 .clone()
                                 .unwrap_or_else(|| NativeMenuAction::Custom(click_item.id.clone()));
-                            selected_action.perform(cx);
+                            if perform_builtin_actions {
+                                selected_action.perform(cx);
+                            }
                             if let Some(callback) = &click_callback {
                                 callback(selected_action, &click_item, window, cx);
                             }
@@ -409,11 +570,15 @@ fn render_menu_item(
                         }),
                 ),
         )
-        .children(
-            children
-                .into_iter()
-                .map(|child| render_menu_item(child, depth + 1, theme, on_select.clone())),
-        )
+        .children(children.into_iter().map(|child| {
+            render_menu_item(
+                child,
+                depth + 1,
+                theme,
+                on_select.clone(),
+                perform_builtin_actions,
+            )
+        }))
         .into_any_element()
 }
 
@@ -437,6 +602,12 @@ mod tests {
             Some("Ctrl+O")
         );
         assert_eq!(menu.items[0].action, Some(NativeMenuAction::Open));
+        assert!(!NativeMenuAction::Open.info().handled_by_liora);
+        assert!(
+            NativeMenuAction::CopyText("liora".into())
+                .info()
+                .handled_by_liora
+        );
     }
 
     #[test]
@@ -450,5 +621,8 @@ mod tests {
         assert!(source.contains("on_mouse_up(MouseButton::Left"));
         assert!(source.contains("pub enum NativeMenuAction"));
         assert!(source.contains("pub fn open_url"));
+        assert!(source.contains("NativeMenuActionInfo"));
+        assert!(source.contains("pub fn catalog"));
+        assert!(source.contains("perform_builtin_actions"));
     }
 }

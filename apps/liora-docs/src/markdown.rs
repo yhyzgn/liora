@@ -1733,6 +1733,9 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "native_menu/descriptor.rs" => Some(include_str!(
             "../content/snippets/native_menu/descriptor.rs"
         )),
+        "native_menu/actions.rs" => {
+            Some(include_str!("../content/snippets/native_menu/actions.rs"))
+        }
         "drawer/placements.rs" => Some(include_str!("../content/snippets/drawer/placements.rs")),
         "drawer/sizes.rs" => Some(include_str!("../content/snippets/drawer/sizes.rs")),
         "drawer/sheet_placements.rs" => Some(include_str!(
@@ -3371,6 +3374,7 @@ impl Render for LiveDemoContent {
             "ClipboardHelper" => Text::new("Use write_text_to_clipboard(cx, text) inside event handlers.").into_any_element(),
             "FocusTrapPolicy" => { let policy = liora_components::FocusTrap::new().restore_focus(true).close_on_escape(false); Text::new(format!("trap={}, restore={}, esc={}", policy.enabled, policy.restore_focus, policy.close_on_escape)).into_any_element() },
             "NativeMenuDescriptor" => liora_components::NativeMenu::new("File")
+                .perform_builtin_actions(false)
                 .item(liora_components::NativeMenuItem::new_window())
                 .item(liora_components::NativeMenuItem::open())
                 .item(
@@ -3384,6 +3388,7 @@ impl Render for LiveDemoContent {
                 .item(liora_components::NativeMenuItem::new("check-updates", "Check for Updates").with_action(liora_components::NativeMenuAction::Custom("check-updates".into())))
                 .item(liora_components::NativeMenuItem::new("publish", "Publish Release").disabled(true))
                 .into_any_element(),
+            "NativeMenuActions" => native_menu_action_catalog().into_any_element(),
             "DockLayoutWorkbench" => demo_row(vec![
                 liora_components::DockLayout::new()
                     .height_lg()
@@ -5895,6 +5900,33 @@ fn docs_settings_sensitive(content: &LiveDemoContent) -> AnyElement {
                 ),
         )
         .into_any_element()
+}
+
+fn native_menu_action_catalog() -> impl IntoElement {
+    Space::new().vertical().gap_md().children(
+        liora_components::NativeMenuAction::catalog()
+            .into_iter()
+            .map(|action| {
+                let info = action.info();
+                Space::new()
+                    .vertical()
+                    .gap_xs()
+                    .child(
+                        Space::new()
+                            .gap_sm()
+                            .wrap()
+                            .child(Text::new(info.name).bold())
+                            .child(LioraTag::new(info.id).info().round(true))
+                            .child(if info.handled_by_liora {
+                                LioraTag::new("Liora handles").success().round(true)
+                            } else {
+                                LioraTag::new("App dispatch").warning().round(true)
+                            }),
+                    )
+                    .child(Text::new(info.description).sm().wrap())
+                    .child(Text::new(info.effect).xs().wrap())
+            }),
+    )
 }
 
 fn docs_sheet_body(title: &'static str) -> impl IntoElement {
@@ -11166,7 +11198,10 @@ mod tests {
         assert!(NATIVE_MENU_DOC.contains("原生 GPUI 预览组件"));
         assert!(NATIVE_MENU_DOC.contains("分隔线"));
         assert!(NATIVE_MENU_DOC.contains("嵌套 submenu"));
+        assert!(NATIVE_MENU_DOC.contains("Action Catalog"));
+        assert!(NATIVE_MENU_DOC.contains("perform_builtin_actions(false)"));
         assert!(load_code_snippet("native_menu/descriptor.rs").is_some());
+        assert!(load_code_snippet("native_menu/actions.rs").is_some());
     }
 
     #[test]

@@ -1,6 +1,8 @@
 use gpui::{AnyView, App, Context, IntoElement, Render, Window, prelude::*};
 use liora_components::layout_helpers::{page, section, showcase_card_wide, showcase_stack};
-use liora_components::{NativeMenu, NativeMenuAction, NativeMenuItem, Space};
+use liora_components::{
+    NativeMenu, NativeMenuAction, NativeMenuItem, Space, Tag, Text, toast_info,
+};
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|_| NativeMenuDemo).into()
@@ -35,6 +37,12 @@ impl Render for NativeMenuDemo {
                         help_menu(),
                     )
                     .into_any_element(),
+                    showcase_card_wide(
+                        "Action catalog",
+                        "完整列出 NativeMenu 内置 action：哪些会由 Liora 直接执行，哪些只是标准命令语义，需要应用在 on_select 中分发。",
+                        action_catalog(),
+                    )
+                    .into_any_element(),
                 ]),
             )),
         )
@@ -43,6 +51,7 @@ impl Render for NativeMenuDemo {
 
 fn file_menu() -> NativeMenu {
     NativeMenu::new("File")
+        .perform_builtin_actions(false)
         .item(NativeMenuItem::new_window())
         .item(NativeMenuItem::open())
         .item(
@@ -59,6 +68,7 @@ fn file_menu() -> NativeMenu {
 
 fn view_menu() -> NativeMenu {
     NativeMenu::new("View")
+        .perform_builtin_actions(false)
         .preview_width(gpui::px(320.0))
         .item(NativeMenuItem::command_palette())
         .item(NativeMenuItem::toggle_sidebar())
@@ -82,6 +92,7 @@ fn view_menu() -> NativeMenu {
 
 fn help_menu() -> NativeMenu {
     NativeMenu::new("Help")
+        .perform_builtin_actions(false)
         .preview_width(gpui::px(340.0))
         .item(NativeMenuItem::open_url(
             "Open GitHub Repository",
@@ -93,8 +104,36 @@ fn help_menu() -> NativeMenu {
                 .with_action(NativeMenuAction::Custom("check-updates".into())),
         )
         .on_select(|action, item, _, _| {
-            let _ = (action, item.id.clone());
+            toast_info!("NativeMenu action: {} ({})", action.info().name, item.id);
         })
+}
+
+fn action_catalog() -> impl IntoElement {
+    Space::new()
+        .vertical()
+        .gap_md()
+        .children(NativeMenuAction::catalog().into_iter().map(action_row))
+}
+
+fn action_row(action: NativeMenuAction) -> impl IntoElement {
+    let info = action.info();
+    Space::new()
+        .vertical()
+        .gap_xs()
+        .child(
+            Space::new()
+                .gap_sm()
+                .wrap()
+                .child(Text::new(info.name).bold())
+                .child(Tag::new(info.id).info().round(true))
+                .child(if info.handled_by_liora {
+                    Tag::new("Liora handles").success().round(true)
+                } else {
+                    Tag::new("App dispatch").warning().round(true)
+                }),
+        )
+        .child(Text::new(info.description).sm().wrap())
+        .child(Text::new(info.effect).xs().wrap())
 }
 
 #[cfg(test)]
@@ -110,6 +149,9 @@ mod tests {
         assert!(source.contains("NativeMenuItem::open_url"));
         assert!(source.contains("NativeMenuAction::ZoomIn"));
         assert!(source.contains("on_select"));
+        assert!(source.contains("Action catalog"));
+        assert!(source.contains("NativeMenuAction::catalog"));
+        assert!(source.contains("perform_builtin_actions(false)"));
         assert!(source.contains("showcase_stack"));
     }
 }
