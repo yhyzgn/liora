@@ -1,5 +1,5 @@
 use gpui::{AnyView, App, Context, Render, Window, green, prelude::*, px, red, rgb};
-use liora_components::layout_helpers::{page, section, showcase_card_wide, showcase_grid};
+use liora_components::layout_helpers::{page, section, showcase_card_wide};
 use liora_components::{CandlestickChart, CandlestickPoint, ChartValueLabelContent, Space};
 
 pub fn render(cx: &mut App) -> AnyView {
@@ -19,8 +19,10 @@ impl Render for CandlestickChartDemo {
                 .child(section(
                     "Chart showcase",
                     "K 线图示例统一使用宽卡片承载，保持图表尺寸、标题和说明层级一致。",
-                    showcase_grid(vec![
-                        showcase_card_wide(
+                    Space::new()
+                        .vertical()
+                        .gap_lg()
+                        .child(showcase_card_wide(
                             "基础 OHLC + hover tooltip",
                             "每根蜡烛包含 open/high/low/close；鼠标悬停可查看完整数值。",
                             CandlestickChart::new(market_points())
@@ -28,9 +30,8 @@ impl Render for CandlestickChartDemo {
                                 .height(px(380.0))
                                 .show_legend(true)
                                 .tooltip_hit_radius(px(12.0)),
-                        )
-                        .into_any_element(),
-                        showcase_card_wide(
+                        ))
+                        .child(showcase_card_wide(
                             "自定义涨跌色与实体宽度",
                             "可按产品风格调整上涨/下跌颜色、蜡烛实体宽度和 wick 粗细。",
                             CandlestickChart::new(market_points())
@@ -41,9 +42,8 @@ impl Render for CandlestickChartDemo {
                                 .body_width(px(12.0))
                                 .wick_width(px(2.0))
                                 .max_axis_labels(6),
-                        )
-                        .into_any_element(),
-                        showcase_card_wide(
+                        ))
+                        .child(showcase_card_wide(
                             "密集数据降采样 + 收盘价标签",
                             "大量数据会保留首尾与稀疏采样点，避免 K 线挤成一片；必要时可 disable_downsampling。",
                             CandlestickChart::new(dense_points())
@@ -56,9 +56,7 @@ impl Render for CandlestickChartDemo {
                                 .max_value_labels(10)
                                 .show_value_labels(true)
                                 .value_label_content(ChartValueLabelContent::Value),
-                        )
-                        .into_any_element(),
-                    ]),
+                        )),
                 )),
         )
     }

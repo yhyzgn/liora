@@ -21,7 +21,7 @@
 
 use crate::Input;
 use crate::gpui_compat::element_id;
-use gpui::{App, Context, Entity, Render, SharedString, Window, div, prelude::*, px};
+use gpui::{App, Context, Entity, MouseButton, Render, SharedString, Window, div, prelude::*, px};
 use liora_core::Config;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
@@ -283,9 +283,12 @@ impl TreeSelect {
                 )
             })
             .child(div().flex_1().text_sm().child(node.label.clone()))
-            .on_click(cx.listener(move |this, _, window, cx| {
-                this.select_node(id.clone(), window, cx);
-            }))
+            .on_mouse_down(
+                MouseButton::Left,
+                cx.listener(move |this, _, window, cx| {
+                    this.select_node(id.clone(), window, cx);
+                }),
+            )
             .into_any_element()
     }
 }
@@ -348,7 +351,10 @@ impl Render for TreeSelect {
                         .size(px(16.0))
                         .color(theme.neutral.icon),
                     )
-                    .on_click(cx.listener(|this, _, _, cx| this.toggle_open(cx))),
+                    .on_mouse_down(
+                        MouseButton::Left,
+                        cx.listener(|this, _, _, cx| this.toggle_open(cx)),
+                    ),
             )
             .when(self.is_open, |s| {
                 s.child(
@@ -416,6 +422,20 @@ mod tests {
         assert!(node_matches_filter(&nodes()[0], "quick"));
         assert!(!node_matches_filter(&nodes()[1], "quick"));
     }
+    #[test]
+    fn tree_select_uses_mouse_down_for_nested_card_interactions() {
+        let source = include_str!("tree_select.rs");
+        let production = source.split("#[cfg(test)]").next().unwrap_or_default();
+
+        assert!(production.contains("use gpui::{App, Context, Entity, MouseButton"));
+        assert!(production.matches(".on_mouse_down(").count() >= 2);
+        assert!(production.contains("this.toggle_open(cx)"));
+        assert!(production.contains("this.select_node(id.clone(), window, cx)"));
+        assert!(
+            !production.contains(".on_click(cx.listener(|this, _, _, cx| this.toggle_open(cx)))")
+        );
+    }
+
     #[test]
     fn tree_select_label_map_flattens_tree() {
         let labels = node_label_map(&nodes());

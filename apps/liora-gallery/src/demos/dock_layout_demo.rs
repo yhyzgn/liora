@@ -1,5 +1,5 @@
 use gpui::{AnyView, App, Context, Render, Window, prelude::*, px};
-use liora_components::layout_helpers::{page, section, showcase_card_wide, showcase_grid};
+use liora_components::layout_helpers::{page, section, showcase_card_wide};
 use liora_components::{DockEdge, DockLayout, DockPanel, DockTab, Space, Tag, Text};
 
 pub fn render(cx: &mut App) -> AnyView {
@@ -19,20 +19,19 @@ impl Render for DockLayoutDemo {
                 .child(section(
                     "Dock showcase",
                     "工作台示例统一使用宽卡片，保持面板边界、说明和主体宽度稳定。",
-                    showcase_grid(vec![
-                        showcase_card_wide(
+                    Space::new()
+                        .vertical()
+                        .gap_lg()
+                        .child(showcase_card_wide(
                             "Workbench 工作台",
                             "静态 dock 区域适合先搭出稳定信息架构；拖拽重排可后续在此 API 上继续增强。",
                             workbench_layout(),
-                        )
-                        .into_any_element(),
-                        showcase_card_wide(
+                        ))
+                        .child(showcase_card_wide(
                             "左右检查器 + 底部日志",
                             "多个 edge panel 可以组合成常见的 Explorer / Inspector / Terminal 桌面应用结构。",
                             inspector_layout(),
-                        )
-                        .into_any_element(),
-                    ]),
+                        )),
                 )),
         )
     }

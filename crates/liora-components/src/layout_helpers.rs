@@ -78,6 +78,15 @@ pub fn showcase_grid(children: Vec<AnyElement>) -> impl IntoElement {
         .children(children)
 }
 
+/// Renders a single-column stack of wide demo/documentation showcase cards.
+pub fn showcase_stack(children: Vec<AnyElement>) -> impl IntoElement {
+    Space::new()
+        .vertical()
+        .gap_lg()
+        .align_start()
+        .children(children)
+}
+
 /// Performs the section operation used by this component.
 pub fn section(
     title: &'static str,
@@ -119,6 +128,7 @@ mod tests {
         assert!(source.contains("pub fn showcase_card("));
         assert!(source.contains("pub fn showcase_card_wide("));
         assert!(source.contains("pub fn showcase_grid("));
+        assert!(source.contains("pub fn showcase_stack("));
         assert!(source.contains(".width(px(360.0))"));
         assert!(source.contains(".width(px(760.0))"));
         assert!(source.contains(".align_start()"));

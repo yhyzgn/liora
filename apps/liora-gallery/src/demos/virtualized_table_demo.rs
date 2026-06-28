@@ -1,5 +1,5 @@
 use gpui::{AnyView, App, Context, IntoElement, Render, SharedString, Window, prelude::*};
-use liora_components::layout_helpers::{page, section, showcase_card_wide, showcase_grid};
+use liora_components::layout_helpers::{page, section, showcase_card_wide, showcase_stack};
 use liora_components::{
     Button, Space, TableAlign, TableColumn, TableSortOrder, TableSortState, Tag, Text,
     VirtualizedTable,
@@ -24,11 +24,12 @@ impl Render for VirtualizedTableDemo {
         let sort_key = self.sort_key.clone();
         let sort_order = self.sort_order;
 
-        let mut sorted = VirtualizedTable::new(columns(true), 10_000, move |row, key, _, _| {
+        let mut sorted = VirtualizedTable::new(columns(true), 1_000, move |row, key, _, _| {
             virtual_cell(row, key, sort_key.as_ref(), sort_order)
         })
-        .height(420.0)
-        .row_height(52.0)
+        .height(300.0)
+        .row_height(44.0)
+        .overdraw(gpui::px(80.0))
         .stripe(true)
         .border(true)
         .on_sort_change(move |state: TableSortState, _, cx| {
@@ -49,15 +50,16 @@ impl Render for VirtualizedTableDemo {
             Space::new().vertical().gap_xl().child(section(
                 "Table showcase",
                 "虚拟表格统一使用宽卡片承载，避免长表格直接打散 Gallery 页面。",
-                showcase_grid(vec![
+                showcase_stack(vec![
                     showcase_card_wide(
                         "万行固定表头",
                         "行内容由 row index + column key 即时生成，滚动时只布局可见行。",
-                        VirtualizedTable::new(columns(false), 10_000, move |row, key, _, _| {
+                        VirtualizedTable::new(columns(false), 1_000, move |row, key, _, _| {
                             virtual_cell(row, key, None, None)
                         })
-                        .height(420.0)
-                        .row_height(52.0)
+                        .height(300.0)
+                        .row_height(44.0)
+                        .overdraw(gpui::px(80.0))
                         .stripe(true)
                         .border(true),
                     )
@@ -71,11 +73,12 @@ impl Render for VirtualizedTableDemo {
                     showcase_card_wide(
                         "DataTable 增强：选择、固定列和 load more",
                         "不新增重复 DataTable 控件，而是在 VirtualizedTable 中增强企业数据表常用能力。",
-                        VirtualizedTable::new(columns(false), 10_000, move |row, key, _, _| {
+                        VirtualizedTable::new(columns(false), 500, move |row, key, _, _| {
                             virtual_cell(row, key, None, None)
                         })
-                        .height(420.0)
-                        .row_height(52.0)
+                        .height(300.0)
+                        .row_height(44.0)
+                        .overdraw(gpui::px(80.0))
                         .stripe(true)
                         .border(true)
                         .selected_rows([1, 3, 5])

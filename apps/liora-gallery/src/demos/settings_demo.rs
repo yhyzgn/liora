@@ -1,5 +1,5 @@
 use gpui::{AnyView, App, Context, Render, Window, prelude::*, px};
-use liora_components::layout_helpers::{page, section, showcase_card_wide, showcase_grid};
+use liora_components::layout_helpers::{page, section, showcase_card_wide, showcase_stack};
 use liora_components::{
     Button, Input, Select, SettingsGroup, SettingsItem, SettingsPage, Space, Switch, Text,
 };
@@ -33,11 +33,12 @@ impl Render for SettingsDemo {
             Space::new().vertical().gap_xl().child(section(
                 "Settings showcase",
                 "设置页示例统一使用宽卡片展示，保持桌面设置页面的阅读宽度和层级。",
-                showcase_grid(vec![
+                showcase_stack(vec![
                     showcase_card_wide(
                         "完整设置页",
                         "设置页不是新的表单校验系统，而是 app settings 的信息架构和视觉布局。",
                         SettingsPage::new("Application Settings")
+                            .max_width(px(720.0))
                             .description("All rows use Liora theme tokens and can host any component as control or extra content.")
                             .group(SettingsGroup::new("Editor").description("Editing and save behavior")
                                 .item(SettingsItem::new("Auto save").description("Save files when focus leaves the editor.").icon(IconName::Save).control(self.auto_save.clone()).primary())

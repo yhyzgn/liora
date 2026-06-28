@@ -1,5 +1,5 @@
 use gpui::{AnyView, App, Context, Entity, IntoElement, Render, Window, prelude::*};
-use liora_components::layout_helpers::{page, section, showcase_card_wide, showcase_grid};
+use liora_components::layout_helpers::{page, section, showcase_card_wide, showcase_stack};
 use liora_components::{
     CodeCompletionItem, CodeDiagnostic, CodeEditor, CodeHover, CodeLanguage, CodeTheme, Space,
     Text, toast_info,
@@ -84,7 +84,7 @@ impl Render for CodeEditorDemo {
             Space::new().vertical().gap_xl().child(section(
                 "Editor showcase",
                 "代码编辑示例统一使用宽卡片展示，避免编辑器高度和说明文本打散页面节奏。",
-                showcase_grid(vec![
+                showcase_stack(vec![
                     showcase_card_wide(
                         "Rust 编辑器",
                         "使用 Liora Input 作为编辑核心，保留纯 Rust + GPUI 原生渲染。",

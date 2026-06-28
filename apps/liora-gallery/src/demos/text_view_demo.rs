@@ -1,5 +1,5 @@
 use gpui::{AnyView, App, Context, Render, Window, prelude::*, px};
-use liora_components::layout_helpers::{page, section, showcase_card_wide, showcase_grid};
+use liora_components::layout_helpers::{page, section, showcase_card_wide, showcase_stack};
 use liora_components::{Space, TextView, TextViewBlock};
 
 pub fn render(cx: &mut App) -> AnyView {
@@ -16,7 +16,7 @@ impl Render for TextViewDemo {
             Space::new().vertical().gap_xl().child(section(
                 "Document showcase",
                 "文档示例统一放入宽卡片，避免不同 TextView 模式在页面上随机占宽。",
-                showcase_grid(vec![
+                showcase_stack(vec![
                     structured_document_card(),
                     markdown_subset_card(),
                     inline_document_card(),

@@ -1,5 +1,5 @@
 use gpui::{AnyView, App, Context, Render, Window, div, prelude::*, px};
-use liora_components::layout_helpers::{page, section, showcase_card_wide, showcase_grid};
+use liora_components::layout_helpers::{page, section, showcase_card_wide, showcase_stack};
 use liora_components::{Button, Space, StatusBar, StatusBarItem, Text};
 use liora_core::Config;
 use liora_icons_lucide::IconName;
@@ -12,7 +12,7 @@ struct StatusBarDemo;
 
 fn shell_preview(status_bar: StatusBar) -> impl IntoElement {
     div()
-        .w(px(760.0))
+        .w_full()
         .rounded_lg()
         .border_1()
         .overflow_hidden()
@@ -36,7 +36,7 @@ impl Render for StatusBarDemo {
             Space::new().vertical().gap_xl().child(section(
                 "StatusBar showcase",
                 "状态栏示例统一放入工作区预览卡片，避免不同长度状态条在页面中散乱跳动。",
-                showcase_grid(vec![
+                showcase_stack(vec![
                     showcase_card_wide(
                         "应用壳状态",
                         "最常见的 IDE/工具型应用状态条布局。",

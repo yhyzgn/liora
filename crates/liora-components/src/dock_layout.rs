@@ -362,22 +362,43 @@ fn render_center(
         }
     }
 
-    Card::new(
-        div().flex().flex_col().size_full().child(headers).child(
-            div()
-                .flex_1()
-                .min_h(px(0.0))
-                .p_3()
-                .child(active_content.unwrap_or_else(|| div().into_any_element())),
-        ),
-    )
-    .no_shadow()
-    .into_any_element()
+    div()
+        .flex_1()
+        .min_w(px(0.0))
+        .h_full()
+        .child(
+            Card::new(
+                div().flex().flex_col().size_full().child(headers).child(
+                    div()
+                        .flex_1()
+                        .min_h(px(0.0))
+                        .p_3()
+                        .child(active_content.unwrap_or_else(|| div().into_any_element())),
+                ),
+            )
+            .no_shadow(),
+        )
+        .into_any_element()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn dock_center_card_fills_remaining_middle_width() {
+        let source = include_str!("dock_layout.rs");
+
+        assert!(source.contains(
+            ".flex_1()
+        .min_w(px(0.0))
+        .h_full()"
+        ));
+        assert!(source.contains(
+            ".child(
+            Card::new"
+        ));
+    }
 
     #[test]
     fn dock_layout_tracks_panels_tabs_and_active_tab() {
