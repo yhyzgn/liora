@@ -25,6 +25,11 @@ use gpui::{
     prelude::*, px,
 };
 use liora_core::{Config, ui_font_family};
+use std::{
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
+    panic::Location,
+};
 
 /// Fluent native GPUI component for rendering Liora title.
 pub struct Title {
@@ -34,14 +39,30 @@ pub struct Title {
     id: SharedString,
 }
 
+fn default_title_id(seed: &str, location: &Location<'_>) -> SharedString {
+    let mut hasher = DefaultHasher::new();
+    seed.hash(&mut hasher);
+    format!(
+        "title-{}:{}:{}-{:016x}",
+        location.file(),
+        location.line(),
+        location.column(),
+        hasher.finish()
+    )
+    .into()
+}
+
 impl Title {
     /// Creates `Title` initialized from the supplied content.
+    #[track_caller]
     pub fn new(content: impl Into<SharedString>) -> Self {
+        let content = content.into();
+        let id = default_title_id(content.as_ref(), Location::caller());
         Self {
-            content: content.into(),
+            content,
             level: 1,
             selectable: true,
-            id: liora_core::unique_id("title"),
+            id,
         }
     }
 
@@ -174,6 +195,18 @@ impl IntoElement for Title {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn title_default_id_is_stable_across_render_rebuilds() {
+        let source = include_str!("title.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(source.contains("#[track_caller]"));
+        assert!(source.contains("fn default_title_id"));
+        assert!(!source.contains(r#"liora_core::unique_id("title")"#));
+    }
 
     #[test]
     fn title_defaults_to_mouse_selectable() {

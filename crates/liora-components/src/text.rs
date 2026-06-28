@@ -29,6 +29,11 @@ use gpui::{
     UnderlineStyle, Window, div, prelude::*, px,
 };
 use liora_core::{Config, code_font_family, ui_font_family};
+use std::{
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
+    panic::Location,
+};
 
 #[derive(Clone, Debug, PartialEq)]
 /// Structural document block rendered by [`Text::document`].
@@ -170,9 +175,12 @@ pub struct Text {
 
 impl Text {
     /// Creates `Text` initialized from the supplied content.
+    #[track_caller]
     pub fn new(content: impl Into<SharedString>) -> Self {
+        let content = content.into();
+        let id = default_text_id("text", content.as_ref(), Location::caller());
         Self {
-            content: TextContent::Inline(content.into()),
+            content: TextContent::Inline(content),
             color: None,
             bg: None,
             size: None,
@@ -190,15 +198,21 @@ impl Text {
             gap: px(12.0),
             padding: px(16.0),
             document_background: None,
-            id: liora_core::unique_id("text"),
+            id,
         }
     }
 
     /// Creates a lightweight document view from authored structural blocks.
+    #[track_caller]
     pub fn document(blocks: impl IntoIterator<Item = TextBlock>) -> Self {
         let mut this = Self::new(SharedString::default());
-        this.content = TextContent::Document(blocks.into_iter().collect());
-        this.id = liora_core::unique_id("text-document");
+        let blocks = blocks.into_iter().collect::<Vec<_>>();
+        this.id = default_text_id(
+            "text-document",
+            &format!("{:?}", blocks),
+            Location::caller(),
+        );
+        this.content = TextContent::Document(blocks);
         this
     }
 
@@ -515,6 +529,20 @@ impl RenderOnce for Text {
     }
 }
 
+fn default_text_id(prefix: &str, seed: &str, location: &Location<'_>) -> SharedString {
+    let mut hasher = DefaultHasher::new();
+    seed.hash(&mut hasher);
+    format!(
+        "{}-{}:{}:{}-{:016x}",
+        prefix,
+        location.file(),
+        location.line(),
+        location.column(),
+        hasher.finish()
+    )
+    .into()
+}
+
 fn render_text_document(text: Text, theme: &liora_theme::Theme) -> AnyElement {
     let TextContent::Document(blocks) = &text.content else {
         return Text::new(SharedString::default()).into_any_element();
@@ -764,6 +792,19 @@ impl IntoElement for Text {
 #[cfg(test)]
 mod document_tests {
     use super::*;
+
+    #[test]
+    fn text_default_id_is_stable_across_render_rebuilds() {
+        let source = include_str!("text.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(source.contains("#[track_caller]"));
+        assert!(source.contains("fn default_text_id"));
+        assert!(!source.contains(r#"liora_core::unique_id("text")"#));
+        assert!(!source.contains(r#"liora_core::unique_id("text-document")"#));
+    }
 
     #[test]
     fn text_defaults_to_mouse_selectable_for_inline_and_document_content() {

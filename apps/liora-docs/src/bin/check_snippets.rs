@@ -735,6 +735,8 @@ mod typography_document_inline;
 mod typography_markdown;
 #[path = "../../content/snippets/typography/paragraph.rs"]
 mod typography_paragraph;
+#[path = "../../content/snippets/typography/text.rs"]
+mod typography_text;
 #[path = "../../content/snippets/upload/basic.rs"]
 mod upload_basic;
 #[path = "../../content/snippets/upload/drag.rs"]

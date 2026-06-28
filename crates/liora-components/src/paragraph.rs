@@ -25,6 +25,11 @@ use gpui::{
     TextStyle, WhiteSpace, Window, div, prelude::*, px,
 };
 use liora_core::{Config, code_font_family, ui_font_family};
+use std::{
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
+    panic::Location,
+};
 
 /// Fluent native GPUI component for rendering Liora paragraph.
 pub struct Paragraph {
@@ -35,20 +40,24 @@ pub struct Paragraph {
 
 impl Paragraph {
     /// Creates `Paragraph` with default theme-driven styling and no optional callbacks attached.
+    #[track_caller]
     pub fn new() -> Self {
         Self {
             children: Vec::new(),
             selectable: true,
-            id: liora_core::unique_id("paragraph"),
+            id: default_paragraph_id("", Location::caller()),
         }
     }
 
     /// Applies the text preset.
+    #[track_caller]
     pub fn with_text(text: impl Into<SharedString>) -> Self {
+        let text = text.into();
+        let id = default_paragraph_id(text.as_ref(), Location::caller());
         Self {
             children: vec![Text::new(text)],
             selectable: true,
-            id: liora_core::unique_id("paragraph"),
+            id,
         }
     }
 
@@ -146,6 +155,19 @@ impl Paragraph {
 
         (full_text.into(), runs)
     }
+}
+
+fn default_paragraph_id(seed: &str, location: &Location<'_>) -> SharedString {
+    let mut hasher = DefaultHasher::new();
+    seed.hash(&mut hasher);
+    format!(
+        "paragraph-{}:{}:{}-{:016x}",
+        location.file(),
+        location.line(),
+        location.column(),
+        hasher.finish()
+    )
+    .into()
 }
 
 fn leading_no_line_start_len(text: &str) -> usize {
@@ -259,6 +281,18 @@ impl IntoElement for Paragraph {
 mod tests {
     use super::*;
     use gpui::{FontStyle, FontWeight};
+
+    #[test]
+    fn paragraph_default_id_is_stable_across_render_rebuilds() {
+        let source = include_str!("paragraph.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(source.contains("#[track_caller]"));
+        assert!(source.contains("fn default_paragraph_id"));
+        assert!(!source.contains(r#"liora_core::unique_id("paragraph")"#));
+    }
 
     #[test]
     fn paragraph_defaults_to_mouse_selectable() {

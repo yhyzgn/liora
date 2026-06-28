@@ -145,6 +145,7 @@ const SWITCH_DOC: &str = include_str!("../content/pages/switch.md");
 const TABLE_DOC: &str = include_str!("../content/pages/table.md");
 const TABS_DOC: &str = include_str!("../content/pages/tabs.md");
 const TAG_DOC: &str = include_str!("../content/pages/tag.md");
+const TEXT_DOC: &str = include_str!("../content/pages/text.md");
 const TEXTAREA_DOC: &str = include_str!("../content/pages/textarea.md");
 const TIME_PICKER_DOC: &str = include_str!("../content/pages/time_picker.md");
 const TIMER_DOC: &str = include_str!("../content/pages/timer.md");
@@ -554,6 +555,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Tag",
         markdown: TAG_DOC,
+    },
+    DocPage {
+        title: "Text",
+        markdown: TEXT_DOC,
     },
     DocPage {
         title: "Textarea",
@@ -1147,6 +1152,7 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "architecture/render_pipeline.rs" => Some(include_str!(
             "../content/snippets/architecture/render_pipeline.rs"
         )),
+        "typography/text.rs" => Some(include_str!("../content/snippets/typography/text.rs")),
         "typography/paragraph.rs" => {
             Some(include_str!("../content/snippets/typography/paragraph.rs"))
         }
@@ -1891,6 +1897,7 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         }
         "gallery/tabs_demo.rs" => Some(include_str!("../../liora-gallery/src/demos/tabs_demo.rs")),
         "gallery/tag_demo.rs" => Some(include_str!("../../liora-gallery/src/demos/tag_demo.rs")),
+        "gallery/text_demo.rs" => Some(include_str!("../../liora-gallery/src/demos/text_demo.rs")),
         "gallery/time_picker_demo.rs" => Some(include_str!(
             "../../liora-gallery/src/demos/time_picker_demo.rs"
         )),
@@ -3324,6 +3331,12 @@ impl Render for LiveDemoContent {
             "TrayCheckbox" => Card::new(docs_tray_checkbox()).no_shadow().into_any_element(),
             "TrayCloseConfirm" => Card::new(docs_tray_close_confirm()).no_shadow().into_any_element(),
             "TrayNestedMenu" => Card::new(docs_tray_nested_menu()).no_shadow().into_any_element(),
+            "TextBasic" => Card::new(demo_stack(vec![
+                Text::new("Drag to select this default Text value.").into_any_element(),
+                Text::new("Primary bold text").text_color(_cx.global::<Config>().theme.primary.base).bold().into_any_element(),
+                Text::new("Inline code").code_style(&_cx.global::<Config>().theme).into_any_element(),
+                Text::new("Decorative label").selectable(false).into_any_element(),
+            ])).no_shadow().into_any_element(),
             "TypographyParagraph" => Card::new(docs_typography_paragraph(_cx)).no_shadow().into_any_element(),
 
 

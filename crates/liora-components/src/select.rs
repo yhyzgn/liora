@@ -397,7 +397,11 @@ impl Select {
 
     fn close_on_escape_action(&mut self, _: &SelectClose, _: &mut Window, cx: &mut Context<Self>) {
         if self.close_on_escape && self.is_open {
-            self.is_open = false;
+            if self.mode == SelectMode::Plain {
+                self.is_open = false;
+            } else {
+                self.close_searchable(cx);
+            }
             cx.notify();
         }
     }
@@ -458,11 +462,27 @@ impl Select {
         }
     }
 
-    fn clear_search_query(&mut self, cx: &mut Context<Self>) {
+    fn set_input_value_silently(&mut self, value: SharedString, cx: &mut Context<Self>) {
         if let Some(input) = &self.input {
+            if input.read(cx).value() == value {
+                return;
+            }
             self.suppress_next_input_change = true;
-            input.update(cx, |input, cx| input.set_value(SharedString::default(), cx));
+            input.update(cx, |input, cx| input.set_value(value, cx));
         }
+    }
+
+    fn clear_search_query(&mut self, cx: &mut Context<Self>) {
+        self.set_input_value_silently(SharedString::default(), cx);
+    }
+
+    fn restore_selected_display_value(&mut self, cx: &mut Context<Self>) {
+        self.set_input_value_silently(self.summary(), cx);
+    }
+
+    fn close_searchable(&mut self, cx: &mut Context<Self>) {
+        self.is_open = false;
+        self.restore_selected_display_value(cx);
     }
 
     fn select_item(
@@ -479,8 +499,7 @@ impl Select {
             SelectMode::Plain => {}
             SelectMode::Searchable => {
                 self.selected_values = vec![item.value.clone()];
-                self.is_open = false;
-                self.clear_search_query(cx);
+                self.close_searchable(cx);
             }
             SelectMode::Multiple => {
                 if let Some(index) = self
@@ -492,7 +511,7 @@ impl Select {
                 } else {
                     self.selected_values.push(item.value.clone());
                 }
-                self.clear_search_query(cx);
+                self.restore_selected_display_value(cx);
             }
         }
 
@@ -507,6 +526,7 @@ impl Select {
             return;
         }
         self.is_open = true;
+        self.clear_search_query(cx);
         window.focus(&self.focus_handle, cx);
         cx.notify();
     }
@@ -585,16 +605,16 @@ impl Select {
         let theme = cx.global::<Config>().theme.clone();
         let entity = cx.entity().clone();
         let disabled = self.disabled;
-        let placeholder = if self.selected_values.is_empty() {
-            self.placeholder.clone()
-        } else {
-            self.summary()
-        };
+        let placeholder = self.placeholder.clone();
         let suffix_icon = if self.is_open {
             IconName::ChevronUp
         } else {
             IconName::ChevronDown
         };
+
+        if !self.is_open && !self.selected_values.is_empty() {
+            self.restore_selected_display_value(cx);
+        }
 
         if let Some(input) = &self.input {
             input.update(cx, |input, cx| {
@@ -654,7 +674,7 @@ impl Select {
                             let entity = entity.clone();
                             move |_, _, cx| {
                                 entity.update(cx, |this, cx| {
-                                    this.is_open = false;
+                                    this.close_searchable(cx);
                                     cx.notify();
                                 });
                             }
@@ -933,7 +953,11 @@ mod searchable_select_tests {
             .unwrap();
 
         assert!(source.contains("fn clear_search_query"));
-        assert!(source.contains("input.set_value(SharedString::default(), cx)"));
+        assert!(source.contains("fn restore_selected_display_value"));
+        assert!(source.contains("if input.read(cx).value() == value"));
+        assert!(source.contains("self.set_input_value_silently(SharedString::default(), cx)"));
+        assert!(source.contains("self.set_input_value_silently(self.summary(), cx)"));
+        assert!(source.contains("let placeholder = self.placeholder.clone()"));
         assert!(!source.contains("input.set_value(label, cx)"));
         assert!(!source.contains("input.set_value(summary, cx)"));
     }

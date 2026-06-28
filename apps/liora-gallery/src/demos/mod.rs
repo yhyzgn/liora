@@ -78,6 +78,7 @@ pub mod steps_demo;
 pub mod table_demo;
 pub mod tabs_demo;
 pub mod tag_demo;
+pub mod text_demo;
 pub mod theme_demo;
 pub mod time_picker_demo;
 pub mod timeline_demo;
@@ -157,6 +158,11 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "Tag 标签",
             description: "用于标记和选择",
             render: |cx| tag_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "Text 文本",
+            description: "基础文本、可选择文字和轻量文档入口",
+            render: |cx| text_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Autocomplete 自动补全",
@@ -726,6 +732,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Theme" => Some(theme_demo::render(cx).into()),
         "Tabs" => Some(tabs_demo::render(cx).into()),
         "Tag" => Some(tag_demo::render(cx).into()),
+        "Text" => Some(text_demo::render(cx).into()),
         "Textarea" => Some(form_controls_demo::render_textarea(cx)),
         "TimePicker" => Some(time_picker_demo::render(cx).into()),
         "Timer" => Some(timer_demo::render(cx).into()),
