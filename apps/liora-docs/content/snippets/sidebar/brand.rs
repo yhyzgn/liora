@@ -1,13 +1,13 @@
 //! Brand sidebar with logo, brand text, scrollable menu, and footer actions.
 
 use gpui::{AppContext, Context, Entity, IntoElement, Render, Window};
-use liora_components::{Button, Card, Flex, Menu, MenuMode, Sidebar, Space};
+use liora_components::{Button, Card, Flex, NavigationMenu, NavigationMenuMode, Sidebar, Space};
 use liora_core::Config;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
 pub struct BrandSidebarExample {
-    menu: Entity<Menu>,
+    menu: Entity<NavigationMenu>,
 }
 
 impl BrandSidebarExample {
@@ -64,10 +64,10 @@ impl Render for BrandSidebarExample {
     }
 }
 
-fn workspace_menu(id: &'static str) -> Menu {
-    Menu::new()
+fn workspace_menu(id: &'static str) -> NavigationMenu {
+    NavigationMenu::new()
         .id(id)
-        .mode(MenuMode::Vertical)
+        .mode(NavigationMenuMode::Vertical)
         .default_active("dashboard")
         .item("dashboard", "Dashboard", Some(IconName::LayoutDashboard))
         .item("projects", "Projects", Some(IconName::Blocks))

@@ -1,6 +1,6 @@
-# NativeMenu
+# Menu / MenuBar
 
-`NativeMenu` / `NativeMenuItem` 是平台中立的应用菜单描述和原生 GPUI 预览组件。它适合三类场景：未来接入 macOS/Windows/Linux 平台菜单、自定义 `TitleBar` 菜单、以及把应用命令结构桥接到 Command Palette。
+`Menu` / `MenuItem` / `MenuBar` 是基于 GPUI 官方 `Menu` / `MenuItem` / `App::set_menus` 的应用菜单描述、注册桥接和窗口内预览组件。它适合三类场景：未来接入 macOS/Windows/Linux 平台菜单、自定义 `TitleBar` 菜单、以及把应用命令结构桥接到 Command Palette。
 
 ## 能力
 
@@ -27,7 +27,7 @@
 
 ## Horizontal Menu Bar
 
-横向多菜单组适合自定义 `TitleBar`、顶部应用菜单栏或设置页中的菜单预览。每个菜单组仍然是独立的 `NativeMenu` descriptor，可以单独复用到平台菜单、命令面板或快捷键说明中。
+横向多菜单组适合自定义 `TitleBar`、顶部应用菜单栏或设置页中的菜单预览。每个菜单组仍然是独立的 `Menu` descriptor，可以单独复用到平台菜单、命令面板或快捷键说明中。
 
 ### 效果
 
@@ -40,7 +40,7 @@
 
 ## Action Catalog
 
-`NativeMenuAction::catalog()` 可用于在帮助页、设置页或文档中展示全部内置 action。
+`MenuAction::catalog()` 可用于在帮助页、设置页或文档中展示全部内置 action。
 
 ### 效果
 
@@ -53,11 +53,14 @@
 
 ## 集成建议
 
-`NativeMenu` 是描述层，不直接绑定具体平台菜单生命周期。应用可以把同一份 descriptor：
+`Menu` 是 Liora 对 GPUI 官方应用菜单模型的描述层。真实系统菜单栏应通过 `Menu::register_gpui_menus(cx, menus)` 或 `Menu::register_gpui_menus_with_action_mapper(cx, menus, mapper)` 委托给官方 `App::set_menus`；窗口内自定义标题栏预览则使用 `MenuBar`。应用可以把同一份 descriptor：
 
-1. 交给平台适配层注册系统菜单；
+1. 通过 GPUI 官方 `App::set_menus` 注册系统菜单；
 2. 渲染到自定义 `TitleBar` 的菜单入口；
 3. 转换为命令面板数据源；
 4. 在设置页或关于页中展示当前快捷键。
 
 其中 `Open` / `OpenFile` / `OpenFiles` / `OpenFolder` / `OpenFolders` 会通过 GPUI 官方 `prompt_for_paths` 打开系统文件/目录选择窗口，`Save` / `SaveAs` 会通过 `prompt_for_new_path` 打开系统保存路径窗口，并用 `on_paths_selected` 回传 `Option<Vec<PathBuf>>`。`Close`、`Quit`、`OpenUrl`、`CopyText`、`ZoomIn`、`ZoomOut`、`ZoomReset` 也是 Liora 可以直接执行的通用平台效果；NewWindow、CommandPalette、ToggleSidebar、ToggleStatusBar、Custom 只表达标准命令语义，应用应在 `on_select` 中根据自己的窗口、文件、布局、缩放或命令面板状态完成处理。Gallery/Docs 预览面板通常使用 `.perform_builtin_actions(false)`，避免点击示例时真正退出程序、打开浏览器或写入剪贴板；真实应用菜单可保持默认开启。
+
+
+> Compatibility: older `NativeMenu*` names remain as deprecated aliases. New code should use `Menu`, `MenuItem`, `MenuAction`, and `MenuBar`; navigation/sidebar menus use `NavigationMenu`.

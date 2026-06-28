@@ -1,63 +1,62 @@
-//! Horizontal NativeMenu bar example.
+//! Horizontal Menu bar example.
 
 use gpui::IntoElement;
-use liora_components::{NativeMenu, NativeMenuAction, NativeMenuItem, Space};
+use liora_components::{Menu, MenuAction, MenuBar, MenuItem};
 
 pub fn native_menu_bar() -> impl IntoElement {
-    Space::new()
-        .gap_md()
-        .wrap()
-        .align_start()
-        .child(file_menu())
-        .child(edit_menu())
-        .child(view_menu())
-        .child(help_menu())
+    MenuBar::new([
+        file_menu().preview_width(gpui::px(240.0)),
+        edit_menu().preview_width(gpui::px(220.0)),
+        view_menu().preview_width(gpui::px(240.0)),
+        help_menu().preview_width(gpui::px(260.0)),
+    ])
 }
 
-fn file_menu() -> NativeMenu {
-    NativeMenu::new("File")
+fn file_menu() -> Menu {
+    Menu::new("File")
         .perform_builtin_actions(false)
         .preview_width(gpui::px(220.0))
-        .item(NativeMenuItem::new_window())
-        .item(NativeMenuItem::open_file())
-        .item(NativeMenuItem::open_folder())
-        .item(NativeMenuItem::separator())
-        .item(NativeMenuItem::save())
-        .item(NativeMenuItem::quit())
+        .item(MenuItem::new_window())
+        .item(MenuItem::open_file())
+        .item(MenuItem::open_folder())
+        .item(MenuItem::separator())
+        .item(MenuItem::save())
+        .item(MenuItem::quit())
 }
 
-fn edit_menu() -> NativeMenu {
-    NativeMenu::new("Edit")
+fn edit_menu() -> Menu {
+    Menu::new("Edit")
         .perform_builtin_actions(false)
         .preview_width(gpui::px(220.0))
-        .item(NativeMenuItem::copy_text("Copy", "Liora NativeMenu"))
-        .item(NativeMenuItem::new("paste", "Paste").disabled(true))
-        .item(NativeMenuItem::separator())
-        .item(NativeMenuItem::new("find", "Find").shortcut("Ctrl+F"))
+        .item(MenuItem::undo())
+        .item(MenuItem::redo())
+        .item(MenuItem::separator())
+        .item(MenuItem::cut())
+        .item(MenuItem::copy())
+        .item(MenuItem::paste().disabled(true))
+        .item(MenuItem::separator())
+        .item(MenuItem::new("find", "Find").shortcut("Ctrl+F"))
 }
 
-fn view_menu() -> NativeMenu {
-    NativeMenu::new("View")
+fn view_menu() -> Menu {
+    Menu::new("View")
         .perform_builtin_actions(false)
         .preview_width(gpui::px(240.0))
-        .item(NativeMenuItem::command_palette())
-        .item(NativeMenuItem::toggle_sidebar())
-        .item(NativeMenuItem::toggle_statusbar())
-        .item(NativeMenuItem::separator())
-        .item(NativeMenuItem::action(NativeMenuAction::ZoomIn, "Zoom In"))
-        .item(NativeMenuItem::action(
-            NativeMenuAction::ZoomOut,
-            "Zoom Out",
-        ))
+        .item(MenuItem::command_palette())
+        .item(MenuItem::toggle_sidebar())
+        .item(MenuItem::toggle_statusbar())
+        .item(MenuItem::separator())
+        .item(MenuItem::action(MenuAction::ZoomIn, "Zoom In"))
+        .item(MenuItem::action(MenuAction::ZoomOut, "Zoom Out"))
 }
 
-fn help_menu() -> NativeMenu {
-    NativeMenu::new("Help")
+fn help_menu() -> Menu {
+    Menu::new("Help")
         .perform_builtin_actions(false)
         .preview_width(gpui::px(260.0))
-        .item(NativeMenuItem::open_url(
+        .item(MenuItem::open_url(
             "Open GitHub Repository",
             "https://github.com/yhyzgn/liora",
         ))
-        .item(NativeMenuItem::new("about", "About Liora"))
+        .item(MenuItem::new("about", "About Liora"))
 }

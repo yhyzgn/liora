@@ -1,21 +1,21 @@
 //! Standalone self-sizing sidebar example.
 
 use gpui::{AppContext, Context, Entity, IntoElement, Render, Window};
-use liora_components::{Button, Card, Flex, Menu, MenuMode, Sidebar, Space};
+use liora_components::{Button, Card, Flex, NavigationMenu, NavigationMenuMode, Sidebar, Space};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
 pub struct SidebarExample {
-    menu: Entity<Menu>,
+    menu: Entity<NavigationMenu>,
 }
 
 impl SidebarExample {
     pub fn new(cx: &mut Context<Self>) -> Self {
         Self {
             menu: cx.new(|_| {
-                Menu::new()
+                NavigationMenu::new()
                     .id("sidebar-example-menu")
-                    .mode(MenuMode::Vertical)
+                    .mode(NavigationMenuMode::Vertical)
                     .default_active("dashboard")
                     .item("dashboard", "Dashboard", Some(IconName::LayoutDashboard))
                     .item("projects", "Projects", Some(IconName::Blocks))

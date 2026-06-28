@@ -1,8 +1,8 @@
 use gpui::{AnyElement, AnyView, App, Context, Render, Window, prelude::*, px};
 use liora_components::layout_helpers::{page, section, showcase_card, showcase_grid};
 use liora_components::{
-    FocusTrap, GroupBox, HoverCard, NativeMenu, NativeMenuItem, ScrollableMask, Space, Tag, Text,
-    Toggle, ToggleGroup, ToggleOption, clipboard_text,
+    FocusTrap, GroupBox, HoverCard, Menu, MenuItem, ScrollableMask, Space, Tag, Text, Toggle,
+    ToggleGroup, ToggleOption, clipboard_text,
 };
 
 pub fn render(cx: &mut App) -> AnyView {
@@ -31,8 +31,12 @@ impl Render for UtilityComponentsDemo {
                 ))
                 .child(section(
                     "Infrastructure facades",
-                    "Clipboard、FocusTrap、NativeMenu 不是视觉重控件，Gallery 用摘要卡片展示集成方式。",
-                    showcase_grid(vec![clipboard_card(), focus_trap_card(), native_menu_card()]),
+                    "Clipboard、FocusTrap、Menu 不是视觉重控件，Gallery 用摘要卡片展示集成方式。",
+                    showcase_grid(vec![
+                        clipboard_card(),
+                        focus_trap_card(),
+                        native_menu_card(),
+                    ]),
                 )),
         )
     }
@@ -143,12 +147,12 @@ fn focus_trap_card() -> AnyElement {
 }
 
 fn native_menu_card() -> AnyElement {
-    let menu = NativeMenu::new("File")
-        .item(NativeMenuItem::new("open", "Open").shortcut("Ctrl+O"))
-        .item(NativeMenuItem::new("save", "Save").shortcut("Ctrl+S"));
+    let menu = Menu::new("File")
+        .item(MenuItem::new("open", "Open").shortcut("Ctrl+O"))
+        .item(MenuItem::new("save", "Save").shortcut("Ctrl+S"));
 
     showcase_card(
-        "NativeMenu",
+        "Menu",
         "Platform-neutral app menu descriptor for host integration.",
         Space::new()
             .vertical()

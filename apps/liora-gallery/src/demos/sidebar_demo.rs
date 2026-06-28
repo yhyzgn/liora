@@ -1,6 +1,8 @@
 use gpui::{App, AppContext, Entity, IntoElement, Render, Window};
 use liora_components::layout_helpers::{page, section};
-use liora_components::{Button, Card, Flex, Menu, MenuMode, Sidebar, Space, Text};
+use liora_components::{
+    Button, Card, Flex, NavigationMenu, NavigationMenuMode, Sidebar, Space, Text,
+};
 use liora_core::Config;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
@@ -16,10 +18,10 @@ pub fn render(cx: &mut App) -> Entity<SidebarDemo> {
 }
 
 pub struct SidebarDemo {
-    menu: Entity<Menu>,
-    long_menu: Entity<Menu>,
-    inspector_menu: Entity<Menu>,
-    icon_menu: Entity<Menu>,
+    menu: Entity<NavigationMenu>,
+    long_menu: Entity<NavigationMenu>,
+    inspector_menu: Entity<NavigationMenu>,
+    icon_menu: Entity<NavigationMenu>,
 }
 
 impl Render for SidebarDemo {
@@ -200,10 +202,10 @@ impl Render for SidebarDemo {
     }
 }
 
-fn workspace_menu() -> Menu {
-    Menu::new()
+fn workspace_menu() -> NavigationMenu {
+    NavigationMenu::new()
         .id("sidebar-demo-menu")
-        .mode(MenuMode::Vertical)
+        .mode(NavigationMenuMode::Vertical)
         .default_active("dashboard")
         .item("dashboard", "Dashboard", Some(IconName::LayoutDashboard))
         .item("projects", "Projects", Some(IconName::Blocks))
@@ -211,10 +213,10 @@ fn workspace_menu() -> Menu {
         .item("settings", "Settings", Some(IconName::Settings))
 }
 
-fn long_workspace_menu() -> Menu {
-    Menu::new()
+fn long_workspace_menu() -> NavigationMenu {
+    NavigationMenu::new()
         .id("sidebar-long-menu")
-        .mode(MenuMode::Vertical)
+        .mode(NavigationMenuMode::Vertical)
         .default_active("overview")
         .item("overview", "Overview", Some(IconName::LayoutDashboard))
         .item("activity", "Activity", Some(IconName::Activity))
@@ -236,20 +238,20 @@ fn long_workspace_menu() -> Menu {
         .item("changelog", "Changelog", Some(IconName::ScrollText))
 }
 
-fn inspector_menu() -> Menu {
-    Menu::new()
+fn inspector_menu() -> NavigationMenu {
+    NavigationMenu::new()
         .id("sidebar-inspector-menu")
-        .mode(MenuMode::Vertical)
+        .mode(NavigationMenuMode::Vertical)
         .default_active("layout")
         .item("layout", "Layout", Some(IconName::PanelRight))
         .item("tokens", "Tokens", Some(IconName::Palette))
         .item("events", "Events", Some(IconName::Activity))
 }
 
-fn icon_only_menu() -> Menu {
-    Menu::new()
+fn icon_only_menu() -> NavigationMenu {
+    NavigationMenu::new()
         .id("sidebar-icon-only-menu")
-        .mode(MenuMode::Vertical)
+        .mode(NavigationMenuMode::Vertical)
         .default_active("home")
         .collapse(true)
         .item("home", "Home", Some(IconName::House))
@@ -431,7 +433,7 @@ mod tests {
             );
         }
         assert!(source.contains("Sidebar::new()"));
-        assert!(source.contains("menu: Entity<Menu>"));
+        assert!(source.contains("menu: Entity<NavigationMenu>"));
         assert!(!source.contains(concat!("TitleBa", "r::new()")));
         assert!(!source.contains(concat!("AppWindow", "Frame::new")));
     }
@@ -470,7 +472,7 @@ mod tests {
             .next()
             .unwrap();
 
-        assert!(source.contains("long_menu: Entity<Menu>"));
+        assert!(source.contains("long_menu: Entity<NavigationMenu>"));
         assert!(source.contains("long_workspace_menu()"));
         assert!(source.contains("roomy_brand_header("));
         assert!(source.contains("roomy_logo_tile("));

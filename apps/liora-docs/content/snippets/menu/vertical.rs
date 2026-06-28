@@ -1,12 +1,12 @@
 //! Vertical Menu for side navigation.
 
-use liora_components::{Menu, MenuMode, toast_info};
+use liora_components::{NavigationMenu, NavigationMenuMode, toast_info};
 use liora_icons_lucide::IconName;
 
-pub fn vertical_menu() -> Menu {
-    Menu::new()
+pub fn vertical_menu() -> NavigationMenu {
+    NavigationMenu::new()
         .id("docs-menu-vertical")
-        .mode(MenuMode::Vertical)
+        .mode(NavigationMenuMode::Vertical)
         .default_active("1")
         .on_select(|id, _, _| toast_info!("active menu: {}", id))
         .item("1", "导航一", Some(IconName::House))

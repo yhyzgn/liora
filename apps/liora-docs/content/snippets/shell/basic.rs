@@ -2,24 +2,24 @@
 
 use gpui::{App, AppContext, Context, Entity, IntoElement, Render, Window};
 use liora_components::{
-    Button, Card, Menu, MenuMode, Shell, ShellOverlayPosition, Sidebar, Space, Text, Title,
-    TitleBar, WindowFrameMode,
+    Button, Card, NavigationMenu, NavigationMenuMode, Shell, ShellOverlayPosition, Sidebar, Space,
+    Text, Title, TitleBar, WindowFrameMode,
 };
 use liora_core::Config;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
 pub struct ShellExample {
-    menu: Entity<Menu>,
+    menu: Entity<NavigationMenu>,
 }
 
 impl ShellExample {
     pub fn new(cx: &mut Context<Self>) -> Self {
         Self {
             menu: cx.new(|_| {
-                Menu::new()
+                NavigationMenu::new()
                     .id("shell-example-menu")
-                    .mode(MenuMode::Vertical)
+                    .mode(NavigationMenuMode::Vertical)
                     .default_active("dashboard")
                     .item("dashboard", "Dashboard", Some(IconName::LayoutDashboard))
                     .item("components", "Components", Some(IconName::Blocks))

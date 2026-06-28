@@ -2,13 +2,15 @@
 //! inside the content region owned by Sidebar.
 
 use gpui::{AppContext, Context, Entity, IntoElement, Render, Window};
-use liora_components::{Button, Card, Flex, Menu, MenuMode, Sidebar, Space, Text};
+use liora_components::{
+    Button, Card, Flex, NavigationMenu, NavigationMenuMode, Sidebar, Space, Text,
+};
 use liora_core::Config;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
 pub struct ScrollableSidebarExample {
-    menu: Entity<Menu>,
+    menu: Entity<NavigationMenu>,
 }
 
 impl ScrollableSidebarExample {
@@ -64,10 +66,10 @@ impl Render for ScrollableSidebarExample {
     }
 }
 
-fn long_workspace_menu() -> Menu {
-    Menu::new()
+fn long_workspace_menu() -> NavigationMenu {
+    NavigationMenu::new()
         .id("docs-sidebar-long-menu")
-        .mode(MenuMode::Vertical)
+        .mode(NavigationMenuMode::Vertical)
         .default_active("overview")
         .item("overview", "Overview", Some(IconName::LayoutDashboard))
         .item("activity", "Activity", Some(IconName::Activity))

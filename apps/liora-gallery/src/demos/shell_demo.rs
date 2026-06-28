@@ -1,8 +1,8 @@
 use gpui::{App, AppContext, Context, Entity, IntoElement, Render, Window};
 use liora_components::layout_helpers::{page, section};
 use liora_components::{
-    Button, Card, Flex, Menu, MenuMode, Shell, ShellOverlayPosition, Sidebar, Space, Text, Title,
-    TitleBar, WindowFrameMode,
+    Button, Card, Flex, NavigationMenu, NavigationMenuMode, Shell, ShellOverlayPosition, Sidebar,
+    Space, Text, Title, TitleBar, WindowFrameMode,
 };
 use liora_core::Config;
 use liora_icons::Icon;
@@ -18,9 +18,9 @@ pub fn render(cx: &mut App) -> Entity<ShellDemo> {
 }
 
 pub struct ShellDemo {
-    primary_menu: Entity<Menu>,
-    dense_menu: Entity<Menu>,
-    inspector_menu: Entity<Menu>,
+    primary_menu: Entity<NavigationMenu>,
+    dense_menu: Entity<NavigationMenu>,
+    inspector_menu: Entity<NavigationMenu>,
 }
 
 impl Render for ShellDemo {
@@ -52,7 +52,11 @@ impl Render for ShellDemo {
     }
 }
 
-fn full_product_shell(theme: &Theme, menu: Entity<Menu>, inspector: Entity<Menu>) -> Shell {
+fn full_product_shell(
+    theme: &Theme,
+    menu: Entity<NavigationMenu>,
+    inspector: Entity<NavigationMenu>,
+) -> Shell {
     Shell::new(content_panel(
         theme,
         "Dashboard workspace",
@@ -134,7 +138,7 @@ fn full_product_shell(theme: &Theme, menu: Entity<Menu>, inspector: Entity<Menu>
     .background(theme.neutral.body)
 }
 
-fn content_first_shell(theme: &Theme, menu: Entity<Menu>) -> Shell {
+fn content_first_shell(theme: &Theme, menu: Entity<NavigationMenu>) -> Shell {
     Shell::new(content_panel(
         theme,
         "Document canvas",
@@ -334,10 +338,10 @@ fn status_badge(theme: &Theme, label: &'static str) -> Flex {
         .child(Text::new(label).xs().bold().text_color(theme.success.base))
 }
 
-fn shell_primary_menu() -> Menu {
-    Menu::new()
+fn shell_primary_menu() -> NavigationMenu {
+    NavigationMenu::new()
         .id("shell-primary-menu")
-        .mode(MenuMode::Vertical)
+        .mode(NavigationMenuMode::Vertical)
         .default_active("dashboard")
         .item("dashboard", "Dashboard", Some(IconName::LayoutDashboard))
         .item("components", "Components", Some(IconName::Blocks))
@@ -345,10 +349,10 @@ fn shell_primary_menu() -> Menu {
         .item("settings", "Settings", Some(IconName::Settings))
 }
 
-fn shell_dense_menu() -> Menu {
-    Menu::new()
+fn shell_dense_menu() -> NavigationMenu {
+    NavigationMenu::new()
         .id("shell-dense-menu")
-        .mode(MenuMode::Vertical)
+        .mode(NavigationMenuMode::Vertical)
         .default_active("overview")
         .item("overview", "Overview", Some(IconName::BookOpen))
         .item("guides", "Guides", Some(IconName::Map))
@@ -357,10 +361,10 @@ fn shell_dense_menu() -> Menu {
         .item("faq", "FAQ", Some(IconName::Info))
 }
 
-fn shell_inspector_menu() -> Menu {
-    Menu::new()
+fn shell_inspector_menu() -> NavigationMenu {
+    NavigationMenu::new()
         .id("shell-inspector-menu")
-        .mode(MenuMode::Vertical)
+        .mode(NavigationMenuMode::Vertical)
         .default_active("state")
         .item("state", "State", Some(IconName::Activity))
         .item("tokens", "Tokens", Some(IconName::Palette))
@@ -393,9 +397,9 @@ mod tests {
         assert!(source.contains(".main_background("));
         assert!(source.contains(".main_rounded_units("));
         assert!(source.contains(".body_gap_units("));
-        assert!(source.contains("Menu::new()"));
-        assert!(source.contains("primary_menu: Entity<Menu>"));
-        assert!(source.contains("inspector_menu: Entity<Menu>"));
+        assert!(source.contains("NavigationMenu::new()"));
+        assert!(source.contains("primary_menu: Entity<NavigationMenu>"));
+        assert!(source.contains("inspector_menu: Entity<NavigationMenu>"));
     }
 
     #[test]

@@ -96,11 +96,11 @@ pub mod line_chart;
 pub mod link;
 pub mod loading;
 pub mod mention;
-pub mod menu;
 pub mod message;
 pub mod message_box;
 pub mod motion;
 pub mod native_menu;
+pub mod navigation_menu;
 pub mod notification;
 pub mod operation;
 pub mod otp_input;
@@ -231,11 +231,11 @@ pub use liora_core::{
 pub use liora_theme::{ButtonSize, ButtonVariant};
 pub use loading::*;
 pub use mention::*;
-pub use menu::*;
 pub use message::*;
 pub use message_box::*;
 pub use motion::*;
 pub use native_menu::*;
+pub use navigation_menu::*;
 pub use notification::*;
 pub use operation::*;
 pub use otp_input::*;
@@ -419,7 +419,7 @@ mod application_init_api_tests {
             ("link.rs", include_str!("link.rs")),
             ("loading.rs", include_str!("loading.rs")),
             ("mention.rs", include_str!("mention.rs")),
-            ("menu.rs", include_str!("menu.rs")),
+            ("navigation_menu.rs", include_str!("navigation_menu.rs")),
             ("message.rs", include_str!("message.rs")),
             ("message_box.rs", include_str!("message_box.rs")),
             ("motion.rs", include_str!("motion.rs")),
@@ -602,7 +602,7 @@ mod motion_coverage_tests {
             include_str!("radio.rs"),
             include_str!("collapse.rs"),
             include_str!("tree.rs"),
-            include_str!("menu.rs"),
+            include_str!("navigation_menu.rs"),
             include_str!("segmented.rs"),
             include_str!("tabs.rs"),
             include_str!("rate.rs"),
@@ -626,7 +626,7 @@ mod overlay_escape_coverage_tests {
             ("popover", include_str!("popover.rs")),
             ("dropdown", include_str!("dropdown.rs")),
             ("popconfirm", include_str!("popconfirm.rs")),
-            ("menu", include_str!("menu.rs")),
+            ("navigation_menu", include_str!("navigation_menu.rs")),
             ("select", include_str!("select.rs")),
             ("cascader", include_str!("cascader.rs")),
             ("date_picker", include_str!("date_picker.rs")),

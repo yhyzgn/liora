@@ -1,12 +1,12 @@
 //! Collapsed Menu for compact sidebars.
 
-use liora_components::{Menu, MenuMode, toast_info};
+use liora_components::{NavigationMenu, NavigationMenuMode, toast_info};
 use liora_icons_lucide::IconName;
 
-pub fn collapsed_menu() -> Menu {
-    Menu::new()
+pub fn collapsed_menu() -> NavigationMenu {
+    NavigationMenu::new()
         .id("docs-menu-collapsed")
-        .mode(MenuMode::Vertical)
+        .mode(NavigationMenuMode::Vertical)
         .collapse(true)
         .default_active("1")
         .on_select(|id, _, _| toast_info!("active menu: {}", id))

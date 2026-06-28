@@ -1,22 +1,24 @@
 //! Collapsed icon rail for compact navigation.
 
 use gpui::{AppContext, Context, Entity, IntoElement, Render, Window};
-use liora_components::{Card, Flex, Menu, MenuMode, Sidebar, SidebarCollapseMode};
+use liora_components::{
+    Card, Flex, NavigationMenu, NavigationMenuMode, Sidebar, SidebarCollapseMode,
+};
 use liora_core::Config;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
 pub struct IconRailSidebarExample {
-    menu: Entity<Menu>,
+    menu: Entity<NavigationMenu>,
 }
 
 impl IconRailSidebarExample {
     pub fn new(cx: &mut Context<Self>) -> Self {
         Self {
             menu: cx.new(|_| {
-                Menu::new()
+                NavigationMenu::new()
                     .id("docs-sidebar-icon-menu")
-                    .mode(MenuMode::Vertical)
+                    .mode(NavigationMenuMode::Vertical)
                     .default_active("home")
                     .collapse(true)
                     .item("home", "Home", Some(IconName::House))

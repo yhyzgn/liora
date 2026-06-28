@@ -1,13 +1,13 @@
-//! NativeMenu action catalog example.
+//! Menu action catalog example.
 
-use liora_components::{NativeMenuAction, Tag, Text, Space};
+use liora_components::{MenuAction, Tag, Text, Space};
 use gpui::IntoElement;
 
 pub fn native_menu_actions() -> impl IntoElement {
     Space::new()
         .vertical()
         .gap_md()
-        .children(NativeMenuAction::catalog().into_iter().map(|action| {
+        .children(MenuAction::catalog().into_iter().map(|action| {
             let info = action.info();
             Space::new()
                 .vertical()

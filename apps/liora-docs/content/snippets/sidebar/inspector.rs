@@ -1,22 +1,24 @@
 //! Right-side inspector sidebar for properties, previews, or contextual help.
 
 use gpui::{AppContext, Context, Entity, IntoElement, Render, Window};
-use liora_components::{Button, Card, Flex, Menu, MenuMode, Sidebar, Space, Text};
+use liora_components::{
+    Button, Card, Flex, NavigationMenu, NavigationMenuMode, Sidebar, Space, Text,
+};
 use liora_core::Config;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
 pub struct InspectorSidebarExample {
-    menu: Entity<Menu>,
+    menu: Entity<NavigationMenu>,
 }
 
 impl InspectorSidebarExample {
     pub fn new(cx: &mut Context<Self>) -> Self {
         Self {
             menu: cx.new(|_| {
-                Menu::new()
+                NavigationMenu::new()
                     .id("docs-sidebar-inspector-menu")
-                    .mode(MenuMode::Vertical)
+                    .mode(NavigationMenuMode::Vertical)
                     .default_active("layout")
                     .item("layout", "Layout", Some(IconName::PanelRight))
                     .item("tokens", "Tokens", Some(IconName::Palette))

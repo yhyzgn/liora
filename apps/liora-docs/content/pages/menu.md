@@ -1,4 +1,4 @@
-# Menu
+# NavigationMenu
 
 导航菜单用于表达页面结构与当前业务位置。Liora Menu 支持水平、垂直和折叠模式，并可配置 ESC 关闭子菜单浮层。
 

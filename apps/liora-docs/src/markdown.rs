@@ -10,14 +10,14 @@ use liora_components::{
     Checkbox, CheckboxGroup, CheckboxOptionStyle, CodeBlock as LioraCodeBlock, CodeDiagnostic,
     CodeEditor, CodeHighlighter, CodeLanguage, CodeTheme, Container, Dropdown, DropdownButton,
     DropdownButtonItem, Flex, Form, FormItem, HorizontalList, Image, Input, InputNumber,
-    InputNumberControlsPosition, Link, Loading, Menu, MenuMode, NotificationType, Paragraph,
-    Popconfirm, Popover, Preview, Progress, ProgressStatus, QrCode, QrEcLevel, QrFinderStyle,
-    QrGradientDirection, QrModuleStyle, Radio, RadioGroup, RadioOptionStyle, Rate,
-    Result as LioraResult, ResultStatus, Segmented, SegmentedOption, Select, SelectableTextGroup,
-    Shell, Sidebar, Skeleton, SkeletonItem, SkeletonVariant, Slider, Space, Statistic, Switch,
-    Tag as LioraTag, Text, Textarea, Timer, TimerFormat, TimerUnit, Title, TitleBar,
-    TitleBarContentAlign, Tour, TourPlacement, TourStep, Transfer, TransferItem, Tree, TreeNode,
-    TreeSelect, TreeSelectNode, Upload, UploadFile, UploadStatus, VirtualizedList,
+    InputNumberControlsPosition, Link, Loading, NavigationMenu, NavigationMenuMode,
+    NotificationType, Paragraph, Popconfirm, Popover, Preview, Progress, ProgressStatus, QrCode,
+    QrEcLevel, QrFinderStyle, QrGradientDirection, QrModuleStyle, Radio, RadioGroup,
+    RadioOptionStyle, Rate, Result as LioraResult, ResultStatus, Segmented, SegmentedOption,
+    Select, SelectableTextGroup, Shell, Sidebar, Skeleton, SkeletonItem, SkeletonVariant, Slider,
+    Space, Statistic, Switch, Tag as LioraTag, Text, Textarea, Timer, TimerFormat, TimerUnit,
+    Title, TitleBar, TitleBarContentAlign, Tour, TourPlacement, TourStep, Transfer, TransferItem,
+    Tree, TreeNode, TreeSelect, TreeSelectNode, Upload, UploadFile, UploadStatus, VirtualizedList,
     VirtualizedTable, VirtualizedTree, Watermark, WindowControlsPosition, WindowFrameMode,
     frame_mode_switch_row, show_notification, toast_error, toast_info, toast_success,
     toast_warning,
@@ -331,7 +331,7 @@ const DOC_PAGES: &[DocPage] = &[
         markdown: FOCUS_TRAP_DOC,
     },
     DocPage {
-        title: "NativeMenu",
+        title: "Menu",
         markdown: NATIVE_MENU_DOC,
     },
     DocPage {
@@ -411,7 +411,7 @@ const DOC_PAGES: &[DocPage] = &[
         markdown: MENTION_DOC,
     },
     DocPage {
-        title: "Menu",
+        title: "NavigationMenu",
         markdown: MENU_DOC,
     },
     DocPage {
@@ -1734,6 +1734,9 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
             "../content/snippets/native_menu/descriptor.rs"
         )),
         "native_menu/bar.rs" => Some(include_str!("../content/snippets/native_menu/bar.rs")),
+        "native_menu/gpui_register.rs" => Some(include_str!(
+            "../content/snippets/native_menu/gpui_register.rs"
+        )),
         "native_menu/actions.rs" => {
             Some(include_str!("../content/snippets/native_menu/actions.rs"))
         }
@@ -2077,7 +2080,7 @@ struct LiveDemoContent {
     uploads: Vec<Entity<Upload>>,
     transfers: Vec<Entity<Transfer>>,
     trees: Vec<Entity<Tree>>,
-    menus: Vec<Entity<Menu>>,
+    menus: Vec<Entity<NavigationMenu>>,
     affixes: Vec<Entity<Affix>>,
     anchors: Vec<Entity<Anchor>>,
     backtops: Vec<Entity<Backtop>>,
@@ -3374,31 +3377,31 @@ impl Render for LiveDemoContent {
             "ScrollableMaskBasic" => liora_components::ScrollableMask::new(demo_stack((1..=16).map(|i| Text::new(format!("Scrollable row {i}")).into_any_element()).collect())).height(gpui::px(160.0)).into_any_element(),
             "ClipboardHelper" => Text::new("Use write_text_to_clipboard(cx, text) inside event handlers.").into_any_element(),
             "FocusTrapPolicy" => { let policy = liora_components::FocusTrap::new().restore_focus(true).close_on_escape(false); Text::new(format!("trap={}, restore={}, esc={}", policy.enabled, policy.restore_focus, policy.close_on_escape)).into_any_element() },
-            "NativeMenuDescriptor" => liora_components::NativeMenu::new("File")
+            "MenuDescriptor" => liora_components::Menu::new("File")
                 .perform_builtin_actions(false)
-                .item(liora_components::NativeMenuItem::new_window())
-                .item(liora_components::NativeMenuItem::open())
-                .item(liora_components::NativeMenuItem::open_file())
-                .item(liora_components::NativeMenuItem::open_files())
-                .item(liora_components::NativeMenuItem::open_folder())
-                .item(liora_components::NativeMenuItem::open_folders())
+                .item(liora_components::MenuItem::new_window())
+                .item(liora_components::MenuItem::open())
+                .item(liora_components::MenuItem::open_file())
+                .item(liora_components::MenuItem::open_files())
+                .item(liora_components::MenuItem::open_folder())
+                .item(liora_components::MenuItem::open_folders())
                 .item(
-                    liora_components::NativeMenuItem::new("recent", "Open Recent")
-                        .child(liora_components::NativeMenuItem::new("recent-gallery", "liora-gallery"))
-                        .child(liora_components::NativeMenuItem::new("recent-docs", "liora-docs")),
+                    liora_components::MenuItem::new("recent", "Open Recent")
+                        .child(liora_components::MenuItem::new("recent-gallery", "liora-gallery"))
+                        .child(liora_components::MenuItem::new("recent-docs", "liora-docs")),
                 )
-                .item(liora_components::NativeMenuItem::separator())
-                .item(liora_components::NativeMenuItem::save())
-                .item(liora_components::NativeMenuItem::save_as())
-                .item(liora_components::NativeMenuItem::open_url("Open GitHub Repository", "https://github.com/yhyzgn/liora"))
-                .item(liora_components::NativeMenuItem::new("check-updates", "Check for Updates").with_action(liora_components::NativeMenuAction::Custom("check-updates".into())))
-                .item(liora_components::NativeMenuItem::new("publish", "Publish Release").disabled(true))
+                .item(liora_components::MenuItem::separator())
+                .item(liora_components::MenuItem::save())
+                .item(liora_components::MenuItem::save_as())
+                .item(liora_components::MenuItem::open_url("Open GitHub Repository", "https://github.com/yhyzgn/liora"))
+                .item(liora_components::MenuItem::new("check-updates", "Check for Updates").with_action(liora_components::MenuAction::Custom("check-updates".into())))
+                .item(liora_components::MenuItem::new("publish", "Publish Release").disabled(true))
                 .on_paths_selected(|action, paths, _| {
                     toast_info!("{} paths: {:?}", action.info().name, paths);
                 })
                 .into_any_element(),
-            "NativeMenuBar" => native_menu_bar_demo().into_any_element(),
-            "NativeMenuActions" => native_menu_action_catalog().into_any_element(),
+            "MenuBar" => native_menu_bar_demo().into_any_element(),
+            "MenuActions" => native_menu_action_catalog().into_any_element(),
             "DockLayoutWorkbench" => demo_row(vec![
                 liora_components::DockLayout::new()
                     .height_lg()
@@ -5918,63 +5921,57 @@ fn native_menu_bar_demo() -> impl IntoElement {
         .wrap()
         .align_start()
         .child(
-            liora_components::NativeMenu::new("File")
+            liora_components::Menu::new("File")
                 .perform_builtin_actions(false)
                 .preview_width(gpui::px(220.0))
-                .item(liora_components::NativeMenuItem::new_window())
-                .item(liora_components::NativeMenuItem::open_file())
-                .item(liora_components::NativeMenuItem::open_folder())
-                .item(liora_components::NativeMenuItem::separator())
-                .item(liora_components::NativeMenuItem::save())
-                .item(liora_components::NativeMenuItem::quit()),
+                .item(liora_components::MenuItem::new_window())
+                .item(liora_components::MenuItem::open_file())
+                .item(liora_components::MenuItem::open_folder())
+                .item(liora_components::MenuItem::separator())
+                .item(liora_components::MenuItem::save())
+                .item(liora_components::MenuItem::quit()),
         )
         .child(
-            liora_components::NativeMenu::new("Edit")
+            liora_components::Menu::new("Edit")
                 .perform_builtin_actions(false)
                 .preview_width(gpui::px(220.0))
-                .item(liora_components::NativeMenuItem::copy_text(
-                    "Copy",
-                    "Liora NativeMenu",
-                ))
-                .item(liora_components::NativeMenuItem::new("paste", "Paste").disabled(true))
-                .item(liora_components::NativeMenuItem::separator())
-                .item(liora_components::NativeMenuItem::new("find", "Find").shortcut("Ctrl+F")),
+                .item(liora_components::MenuItem::copy_text("Copy", "Liora Menu"))
+                .item(liora_components::MenuItem::new("paste", "Paste").disabled(true))
+                .item(liora_components::MenuItem::separator())
+                .item(liora_components::MenuItem::new("find", "Find").shortcut("Ctrl+F")),
         )
         .child(
-            liora_components::NativeMenu::new("View")
+            liora_components::Menu::new("View")
                 .perform_builtin_actions(false)
                 .preview_width(gpui::px(240.0))
-                .item(liora_components::NativeMenuItem::command_palette())
-                .item(liora_components::NativeMenuItem::toggle_sidebar())
-                .item(liora_components::NativeMenuItem::toggle_statusbar())
-                .item(liora_components::NativeMenuItem::separator())
-                .item(liora_components::NativeMenuItem::action(
-                    liora_components::NativeMenuAction::ZoomIn,
+                .item(liora_components::MenuItem::command_palette())
+                .item(liora_components::MenuItem::toggle_sidebar())
+                .item(liora_components::MenuItem::toggle_statusbar())
+                .item(liora_components::MenuItem::separator())
+                .item(liora_components::MenuItem::action(
+                    liora_components::MenuAction::ZoomIn,
                     "Zoom In",
                 ))
-                .item(liora_components::NativeMenuItem::action(
-                    liora_components::NativeMenuAction::ZoomOut,
+                .item(liora_components::MenuItem::action(
+                    liora_components::MenuAction::ZoomOut,
                     "Zoom Out",
                 )),
         )
         .child(
-            liora_components::NativeMenu::new("Help")
+            liora_components::Menu::new("Help")
                 .perform_builtin_actions(false)
                 .preview_width(gpui::px(260.0))
-                .item(liora_components::NativeMenuItem::open_url(
+                .item(liora_components::MenuItem::open_url(
                     "Open GitHub Repository",
                     "https://github.com/yhyzgn/liora",
                 ))
-                .item(liora_components::NativeMenuItem::new(
-                    "about",
-                    "About Liora",
-                )),
+                .item(liora_components::MenuItem::new("about", "About Liora")),
         )
 }
 
 fn native_menu_action_catalog() -> impl IntoElement {
     Space::new().vertical().gap_md().children(
-        liora_components::NativeMenuAction::catalog()
+        liora_components::MenuAction::catalog()
             .into_iter()
             .map(|action| {
                 let info = action.info();
@@ -8038,10 +8035,10 @@ fn docs_selectable_text_group(cx: &mut Context<LiveDemoContent>) -> impl IntoEle
         ))
 }
 
-fn docs_product_menu(id: &'static str) -> Menu {
-    Menu::new()
+fn docs_product_menu(id: &'static str) -> NavigationMenu {
+    NavigationMenu::new()
         .id(id)
-        .mode(MenuMode::Vertical)
+        .mode(NavigationMenuMode::Vertical)
         .default_active("dashboard")
         .item("dashboard", "Dashboard", Some(IconName::LayoutDashboard))
         .item("components", "Components", Some(IconName::Component))
@@ -8049,30 +8046,30 @@ fn docs_product_menu(id: &'static str) -> Menu {
         .item("settings", "Settings", Some(IconName::Settings))
 }
 
-fn docs_inspector_menu(id: &'static str) -> Menu {
-    Menu::new()
+fn docs_inspector_menu(id: &'static str) -> NavigationMenu {
+    NavigationMenu::new()
         .id(id)
-        .mode(MenuMode::Vertical)
+        .mode(NavigationMenuMode::Vertical)
         .default_active("layout")
         .item("layout", "Layout", Some(IconName::PanelRight))
         .item("tokens", "Tokens", Some(IconName::Palette))
         .item("events", "Events", Some(IconName::Activity))
 }
 
-fn docs_compact_menu(id: &'static str) -> Menu {
-    Menu::new()
+fn docs_compact_menu(id: &'static str) -> NavigationMenu {
+    NavigationMenu::new()
         .id(id)
-        .mode(MenuMode::Vertical)
+        .mode(NavigationMenuMode::Vertical)
         .default_active("overview")
         .item("overview", "Overview", Some(IconName::BookOpen))
         .item("authoring", "Authoring", Some(IconName::PencilLine))
         .item("release", "Release", Some(IconName::Rocket))
 }
 
-fn docs_workspace_menu(id: &'static str) -> Menu {
-    Menu::new()
+fn docs_workspace_menu(id: &'static str) -> NavigationMenu {
+    NavigationMenu::new()
         .id(id)
-        .mode(MenuMode::Vertical)
+        .mode(NavigationMenuMode::Vertical)
         .default_active("dashboard")
         .item("dashboard", "Dashboard", Some(IconName::LayoutDashboard))
         .item("projects", "Projects", Some(IconName::Blocks))
@@ -8080,10 +8077,10 @@ fn docs_workspace_menu(id: &'static str) -> Menu {
         .item("settings", "Settings", Some(IconName::Settings))
 }
 
-fn docs_long_workspace_menu(id: &'static str) -> Menu {
-    Menu::new()
+fn docs_long_workspace_menu(id: &'static str) -> NavigationMenu {
+    NavigationMenu::new()
         .id(id)
-        .mode(MenuMode::Vertical)
+        .mode(NavigationMenuMode::Vertical)
         .default_active("overview")
         .item("overview", "Overview", Some(IconName::LayoutDashboard))
         .item("activity", "Activity", Some(IconName::Activity))
@@ -8103,10 +8100,10 @@ fn docs_long_workspace_menu(id: &'static str) -> Menu {
         .item("settings", "Settings", Some(IconName::Settings))
 }
 
-fn docs_icon_rail_menu(id: &'static str) -> Menu {
-    Menu::new()
+fn docs_icon_rail_menu(id: &'static str) -> NavigationMenu {
+    NavigationMenu::new()
         .id(id)
-        .mode(MenuMode::Vertical)
+        .mode(NavigationMenuMode::Vertical)
         .default_active("home")
         .collapse(true)
         .item("home", "Home", Some(IconName::House))
@@ -9265,10 +9262,10 @@ fn docs_tree_checkable() -> Tree {
     .on_node_click(|id, _, _| toast_info!("selected node: {}", id))
 }
 
-fn docs_menu_horizontal() -> Menu {
-    Menu::new()
+fn docs_menu_horizontal() -> NavigationMenu {
+    NavigationMenu::new()
         .id("docs-menu-horizontal")
-        .mode(MenuMode::Horizontal)
+        .mode(NavigationMenuMode::Horizontal)
         .default_active("1")
         .on_select(|id, _, _| toast_info!("active menu: {}", id))
         .item("1", "处理中心", Some(IconName::List))
@@ -9278,10 +9275,10 @@ fn docs_menu_horizontal() -> Menu {
         .item("3", "消息中心", Some(IconName::Bell))
 }
 
-fn docs_menu_vertical() -> Menu {
-    Menu::new()
+fn docs_menu_vertical() -> NavigationMenu {
+    NavigationMenu::new()
         .id("docs-menu-vertical")
-        .mode(MenuMode::Vertical)
+        .mode(NavigationMenuMode::Vertical)
         .default_active("1")
         .on_select(|id, _, _| toast_info!("active menu: {}", id))
         .item("1", "导航一", Some(IconName::House))
@@ -9295,10 +9292,10 @@ fn docs_menu_vertical() -> Menu {
         .item("3", "导航三", Some(IconName::MessageSquare))
 }
 
-fn docs_menu_collapsed() -> Menu {
-    Menu::new()
+fn docs_menu_collapsed() -> NavigationMenu {
+    NavigationMenu::new()
         .id("docs-menu-collapsed")
-        .mode(MenuMode::Vertical)
+        .mode(NavigationMenuMode::Vertical)
         .collapse(true)
         .default_active("1")
         .on_select(|id, _, _| toast_info!("active menu: {}", id))
@@ -9889,7 +9886,7 @@ impl UpdatePanelStatus {
 
 pub struct DocsShell {
     selected: usize,
-    nav_menu: Option<Entity<Menu>>,
+    nav_menu: Option<Entity<NavigationMenu>>,
     page_views: Vec<Option<Entity<DocsPageView>>>,
     update_status: UpdatePanelStatus,
     install_plan: Option<InstallPlan>,
@@ -10491,7 +10488,7 @@ impl DocsShell {
         page_view
     }
 
-    fn nav_menu(&mut self, selected: usize, cx: &mut Context<Self>) -> Entity<Menu> {
+    fn nav_menu(&mut self, selected: usize, cx: &mut Context<Self>) -> Entity<NavigationMenu> {
         let active_id = selected.to_string();
         if let Some(nav_menu) = &self.nav_menu {
             cx.update_entity(nav_menu, |menu, cx| {
@@ -10507,10 +10504,10 @@ impl DocsShell {
     }
 }
 
-fn build_docs_menu(selected: usize, docs: WeakEntity<DocsShell>) -> Menu {
-    Menu::new()
+fn build_docs_menu(selected: usize, docs: WeakEntity<DocsShell>) -> NavigationMenu {
+    NavigationMenu::new()
         .id("liora-docs-menu")
-        .mode(MenuMode::Vertical)
+        .mode(NavigationMenuMode::Vertical)
         .default_active(selected.to_string())
         .with_items(docs_nav_menu_items())
         .on_select(move |id, _, cx| {
@@ -10526,7 +10523,7 @@ fn build_docs_menu(selected: usize, docs: WeakEntity<DocsShell>) -> Menu {
         })
 }
 
-fn docs_nav_menu_items() -> Vec<liora_components::MenuNode> {
+fn docs_nav_menu_items() -> Vec<liora_components::NavigationMenuNode> {
     let mut indices = (0..DOC_PAGES.len()).collect::<Vec<_>>();
     indices.sort_by(|left, right| {
         let left_page = &DOC_PAGES[*left];
@@ -10553,18 +10550,20 @@ fn docs_nav_menu_items() -> Vec<liora_components::MenuNode> {
             .filter_map(|page_index| {
                 let page = &DOC_PAGES[*page_index];
                 (docs_nav_category_for(page.title) == *group_category).then(|| {
-                    liora_components::MenuNode::Item(liora_components::MenuItem {
-                        id: page_index.to_string().into(),
-                        label: page.title.into(),
-                        icon: None,
-                    })
+                    liora_components::NavigationMenuNode::Item(
+                        liora_components::NavigationMenuItem {
+                            id: page_index.to_string().into(),
+                            label: page.title.into(),
+                            icon: None,
+                        },
+                    )
                 })
             })
             .collect::<Vec<_>>();
 
         if !children.is_empty() {
-            groups.push(liora_components::MenuNode::Group(
-                liora_components::MenuItemGroup {
+            groups.push(liora_components::NavigationMenuNode::Group(
+                liora_components::NavigationMenuGroup {
                     title: group_category.name().into(),
                     children,
                 },
@@ -10697,13 +10696,15 @@ mod tests {
     use super::*;
 
     fn docs_menu_group<'a>(
-        items: &'a [liora_components::MenuNode],
+        items: &'a [liora_components::NavigationMenuNode],
         title: &str,
-    ) -> &'a liora_components::MenuItemGroup {
+    ) -> &'a liora_components::NavigationMenuGroup {
         items
             .iter()
             .find_map(|node| match node {
-                liora_components::MenuNode::Group(group) if group.title.as_ref() == title => {
+                liora_components::NavigationMenuNode::Group(group)
+                    if group.title.as_ref() == title =>
+                {
                     Some(group)
                 }
                 _ => None,
@@ -10711,12 +10712,12 @@ mod tests {
             .unwrap_or_else(|| panic!("missing docs nav group {title}"))
     }
 
-    fn docs_menu_group_labels(group: &liora_components::MenuItemGroup) -> Vec<&str> {
+    fn docs_menu_group_labels(group: &liora_components::NavigationMenuGroup) -> Vec<&str> {
         group
             .children
             .iter()
             .map(|node| match node {
-                liora_components::MenuNode::Item(item) => item.label.as_ref(),
+                liora_components::NavigationMenuNode::Item(item) => item.label.as_ref(),
                 _ => panic!("Docs nav groups should contain leaf items"),
             })
             .collect()
@@ -10762,7 +10763,7 @@ mod tests {
         let items = docs_nav_menu_items();
 
         let first_group_title = match &items[0] {
-            liora_components::MenuNode::Group(group) => group.title.as_ref(),
+            liora_components::NavigationMenuNode::Group(group) => group.title.as_ref(),
             _ => panic!("Docs nav should start with the About group"),
         };
         assert_eq!(first_group_title, "About");
@@ -11265,11 +11266,11 @@ mod tests {
 
     #[test]
     fn native_menu_docs_cover_preview_and_descriptor_features() {
-        assert!(NATIVE_MENU_DOC.contains("原生 GPUI 预览组件"));
+        assert!(NATIVE_MENU_DOC.contains("GPUI 官方 `Menu` / `MenuItem` / `App::set_menus`"));
         assert!(NATIVE_MENU_DOC.contains("分隔线"));
         assert!(NATIVE_MENU_DOC.contains("嵌套 submenu"));
         assert!(NATIVE_MENU_DOC.contains("Horizontal Menu Bar"));
-        assert!(NATIVE_MENU_DOC.contains("NativeMenuBar"));
+        assert!(NATIVE_MENU_DOC.contains("MenuBar"));
         assert!(NATIVE_MENU_DOC.contains("Action Catalog"));
         assert!(NATIVE_MENU_DOC.contains("perform_builtin_actions(false)"));
         assert!(NATIVE_MENU_DOC.contains("OpenFile"));
@@ -11279,6 +11280,7 @@ mod tests {
         assert!(NATIVE_MENU_DOC.contains("on_paths_selected"));
         assert!(load_code_snippet("native_menu/descriptor.rs").is_some());
         assert!(load_code_snippet("native_menu/bar.rs").is_some());
+        assert!(load_code_snippet("native_menu/gpui_register.rs").is_some());
         assert!(load_code_snippet("native_menu/actions.rs").is_some());
     }
 
@@ -11840,8 +11842,8 @@ mod tests {
         assert!(ok_branch.contains("window.activate_window()"));
         assert!(source.contains("frame_mode_switch"));
         assert!(source.contains("Sidebar::new()"));
-        assert!(source.contains("Menu::new()"));
-        assert!(source.contains("nav_menu: Option<Entity<Menu>>"));
+        assert!(source.contains("NavigationMenu::new()"));
+        assert!(source.contains("nav_menu: Option<Entity<NavigationMenu>>"));
         assert!(source.contains("menu.set_active_index(active_id, cx);"));
         assert!(source.contains("if docs.selected != index"));
         assert!(source.contains("shell.wire_shell_controls(cx);"));

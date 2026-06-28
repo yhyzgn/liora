@@ -1,12 +1,12 @@
 //! Horizontal Menu for top navigation.
 
-use liora_components::{Menu, MenuMode, toast_info};
+use liora_components::{NavigationMenu, NavigationMenuMode, toast_info};
 use liora_icons_lucide::IconName;
 
-pub fn horizontal_menu() -> Menu {
-    Menu::new()
+pub fn horizontal_menu() -> NavigationMenu {
+    NavigationMenu::new()
         .id("docs-menu-horizontal")
-        .mode(MenuMode::Horizontal)
+        .mode(NavigationMenuMode::Horizontal)
         .default_active("1")
         .on_select(|id, _, _| toast_info!("active menu: {}", id))
         .item("1", "处理中心", Some(IconName::List))

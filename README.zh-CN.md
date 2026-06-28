@@ -779,10 +779,10 @@ impl Render for AssigneeField {
 ### 导航菜单
 
 ```rust
-use liora::components::Menu;
+use liora::components::NavigationMenu;
 use liora::icons_lucide::IconName;
 
-let menu = Menu::new()
+let menu = NavigationMenu::new()
     .id("main-nav")
     .item("dashboard", "Dashboard", Some(IconName::LayoutDashboard))
     .submenu("settings", "Settings", Some(IconName::Settings), |menu| {
@@ -798,28 +798,28 @@ let menu = Menu::new()
 
 大多数应用窗口优先使用 `Shell`。它是 Liora 高层应用框架控件，统一管理可选自定义 `TitleBar`、header、左侧 sidebar、右侧 sidebar / inspector、可滚动 main、footer 和 overlay 等区域。只有在需要更底层组合时，才直接使用 `TitleBar`、`Sidebar`、`Container` 和 `AppWindowFrame`。
 
-`Menu`、`Input` 等有状态组件仍应保存在父 View 的 `Entity<T>` 字段中。下面示例的布局全部由 Liora SDK 组件完成；应用入口仍可以使用 `Context`、`Entity`、`Render`、`Window` 等 GPUI 运行时类型。
+`NavigationMenu`、`Input` 等有状态组件仍应保存在父 View 的 `Entity<T>` 字段中。下面示例的布局全部由 Liora SDK 组件完成；应用入口仍可以使用 `Context`、`Entity`、`Render`、`Window` 等 GPUI 运行时类型。
 
 ```rust
 use gpui::{AppContext, Context, Entity, Render, Window};
 use liora::components::{
-    Button, Card, Menu, MenuMode, Shell, ShellOverlayPosition, Sidebar, Space, Text, Title, TitleBar, WindowFrameMode,
+    Button, Card, NavigationMenu, NavigationMenuMode, Shell, ShellOverlayPosition, Sidebar, Space, Text, Title, TitleBar, WindowFrameMode,
 };
 use liora::core::Config;
 use liora::icons::Icon;
 use liora::icons_lucide::IconName;
 
 struct AppShell {
-    menu: Entity<Menu>,
+    menu: Entity<NavigationMenu>,
 }
 
 impl AppShell {
     fn new(cx: &mut Context<Self>) -> Self {
         Self {
             menu: cx.new(|_| {
-                Menu::new()
+                NavigationMenu::new()
                     .id("main-nav")
-                    .mode(MenuMode::Vertical)
+                    .mode(NavigationMenuMode::Vertical)
                     .default_active("dashboard")
                     .item("dashboard", "Dashboard", Some(IconName::LayoutDashboard))
                     .item("settings", "Settings", Some(IconName::Settings))
@@ -1255,11 +1255,11 @@ impl Render for OrdersView {
 | Basic / Layout 基础布局 | `Button`, `ButtonGroup`, `Icon`, `Link`, `Text`, `Title`, `Paragraph`, `SelectableTextGroup`, `Space`, `Divider`, `Row`, `Col`, `Container`, `Shell`, `Sidebar`, `TitleBar`, `Flex`, `Scrollbar`, `ScrollableMask`, `Splitter`, `DockLayout`, `Affix`, `Backtop` |
 | Form 表单 | `Input`, `InputNumber`, `Textarea`, `Checkbox`, `CheckboxGroup`, `Radio`, `RadioGroup`, `Switch`, `Select`, `Slider`, `Form`, `FormItem`, `Rate`, `DatePicker`, `TimePicker`, `DateTimePicker`, `Upload`, `Cascader`, `Transfer`, `ColorPicker`, `Autocomplete`, `InputTag`, `Mention`, `TreeSelect`, `SearchableList`, `OtpInput`, `Toggle`, `ToggleGroup` |
 | Feedback / Overlay 反馈浮层 | `Alert`, `Tooltip`, `Popover`, `Popconfirm`, `Dialog`, `Drawer`, `Message`, `Notification`, `MessageBox`, `Loading`, `Dropdown`, `DropdownButton`, `Preview`, `Tour`, `HoverCard`, `FocusTrap` |
-| Navigation 导航 | `Menu`, `Tabs`, `Breadcrumb`, `Steps`, `PageHeader`, `Anchor`, `Accordion`, `NativeMenu` |
+| Navigation 导航 | `NavigationMenu`, `Tabs`, `Breadcrumb`, `Steps`, `PageHeader`, `Anchor`, `Accordion` |
 | Data 数据展示 | `Table`, `VirtualizedTable`, `VirtualizedTree`, `VirtualizedList`, `Progress`, `Skeleton`, `Empty`, `Result`, `Descriptions`, `Timeline`, `Tree`, `Pagination`, `Statistic`, `Segmented`, `Tag`, `Avatar`, `Badge`, `Calendar`, `Carousel`, `Image`, `Watermark`, `Kbd`, `GroupBox`, `StatusBar`, `SettingsPage`, `SettingsGroup`, `SettingsItem` |
 | Charts / Metrics 图表指标 | `LineChart`, `AreaChart`, `BarChart`, `PieChart`, `RingChart`, `Sparkline`, `SignalMeter`, `HeatBar`, `SegmentRatioBar`, `CandlestickChart` |
 | Editing / Utility 编辑工具 | `CodeBlock`, `CodeEditor`, `QrCode`, `Timer`, `Label`, `Operation`, `Clipboard`, draggable list helpers |
-| App shell / Platform 平台 | `Shell`, `AppWindowFrame`, `TitleBar`, `Sidebar`, `WindowFrameMode`, `StatusBar`, `DockLayout`, `NativeMenu`, `liora-tray`, Linux desktop identity helpers, package metadata helpers, updater helpers |
+| App shell / Platform 平台 | `Shell`, `AppWindowFrame`, `TitleBar`, `Sidebar`, `WindowFrameMode`, `StatusBar`, `DockLayout`, `Menu` / `MenuBar`, `liora-tray`, Linux desktop identity helpers, package metadata helpers, updater helpers |
 
 ### 控件收敛说明
 

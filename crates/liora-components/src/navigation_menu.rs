@@ -1,4 +1,4 @@
-//! Menu module.
+//! Navigation NavigationMenu module.
 //!
 //! This public module implements the Liora navigation menu component with items, groups, and submenus. It keeps the reusable
 //! component logic inside `liora-components` rather than Gallery or Docs so
@@ -32,7 +32,7 @@ use std::collections::HashSet;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 /// Options that control menu mode behavior.
-pub enum MenuMode {
+pub enum NavigationMenuMode {
     #[default]
     /// Lays out content in the vertical direction.
     Vertical,
@@ -42,18 +42,18 @@ pub enum MenuMode {
 
 #[derive(Clone, PartialEq, Eq)]
 /// Options that control menu node behavior.
-pub enum MenuNode {
-    /// Uses the `Item` option for `MenuNode`.
-    Item(MenuItem),
-    /// Uses the `SubMenu` option for `MenuNode`.
-    SubMenu(SubMenu),
-    /// Uses the `Group` option for `MenuNode`.
-    Group(MenuItemGroup),
+pub enum NavigationMenuNode {
+    /// Uses the `Item` option for `NavigationMenuNode`.
+    Item(NavigationMenuItem),
+    /// Uses the `NavigationSubMenu` option for `NavigationMenuNode`.
+    NavigationSubMenu(NavigationSubMenu),
+    /// Uses the `Group` option for `NavigationMenuNode`.
+    Group(NavigationMenuGroup),
 }
 
 #[derive(Clone, PartialEq, Eq)]
 /// Data model used by menu item rendering.
-pub struct MenuItem {
+pub struct NavigationMenuItem {
     /// Stable identifier used for GPUI state, callbacks, and automation.
     pub id: SharedString,
     /// User-facing label rendered for this item.
@@ -63,8 +63,8 @@ pub struct MenuItem {
 }
 
 #[derive(Clone, PartialEq, Eq)]
-/// Fluent native GPUI component for rendering Liora sub menu.
-pub struct SubMenu {
+/// Fluent native GPUI component for rendering Liora navigation sub menu.
+pub struct NavigationSubMenu {
     /// Stable identifier used for GPUI state, callbacks, and automation.
     pub id: SharedString,
     /// User-facing label rendered for this item.
@@ -72,36 +72,36 @@ pub struct SubMenu {
     /// Optional icon rendered with the item.
     pub icon: Option<IconName>,
     /// Nested child items rendered beneath this item.
-    pub children: Vec<MenuNode>,
+    pub children: Vec<NavigationMenuNode>,
 }
 
 #[derive(Clone, PartialEq, Eq)]
-/// Fluent native GPUI component for rendering Liora menu item group.
-pub struct MenuItemGroup {
+/// Fluent native GPUI component for rendering Liora navigation menu item group.
+pub struct NavigationMenuGroup {
     /// Primary heading or title text displayed by the component.
     pub title: SharedString,
     /// Nested child items rendered beneath this item.
-    pub children: Vec<MenuNode>,
+    pub children: Vec<NavigationMenuNode>,
 }
 
-/// Fluent native GPUI component for rendering Liora menu.
-pub struct Menu {
+/// Fluent native GPUI component for rendering Liora navigation menu.
+pub struct NavigationMenu {
     id: SharedString,
-    mode: MenuMode,
+    mode: NavigationMenuMode,
     is_collapsed: bool,
     active_index: Option<SharedString>,
     opened_submenus: HashSet<SharedString>,
-    items: Vec<MenuNode>,
+    items: Vec<NavigationMenuNode>,
     on_select: Option<Box<dyn Fn(SharedString, &mut Window, &mut App) + 'static>>,
     close_on_escape: bool,
 }
 
-impl Menu {
-    /// Creates `Menu` with default theme-driven styling and no optional callbacks attached.
+impl NavigationMenu {
+    /// Creates `NavigationMenu` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self {
             id: liora_core::unique_id("menu"),
-            mode: MenuMode::Vertical,
+            mode: NavigationMenuMode::Vertical,
             is_collapsed: false,
             active_index: None,
             opened_submenus: HashSet::new(),
@@ -118,7 +118,7 @@ impl Menu {
     }
 
     /// Selects the rendering mode used by this component.
-    pub fn mode(mut self, mode: MenuMode) -> Self {
+    pub fn mode(mut self, mode: NavigationMenuMode) -> Self {
         self.mode = mode;
         self
     }
@@ -142,7 +142,7 @@ impl Menu {
     }
 
     /// Replaces the rendered menu items while preserving focus, callbacks, and submenu state.
-    pub fn set_items(&mut self, items: Vec<MenuNode>, cx: &mut Context<Self>) {
+    pub fn set_items(&mut self, items: Vec<NavigationMenuNode>, cx: &mut Context<Self>) {
         if self.items == items {
             return;
         }
@@ -167,7 +167,7 @@ impl Menu {
     }
 
     /// Replaces all menu nodes while constructing a menu.
-    pub fn with_items(mut self, items: Vec<MenuNode>) -> Self {
+    pub fn with_items(mut self, items: Vec<NavigationMenuNode>) -> Self {
         self.items = items;
         self
     }
@@ -179,11 +179,12 @@ impl Menu {
         label: impl Into<SharedString>,
         icon: Option<IconName>,
     ) -> Self {
-        self.items.push(MenuNode::Item(MenuItem {
-            id: id.into(),
-            label: label.into(),
-            icon,
-        }));
+        self.items
+            .push(NavigationMenuNode::Item(NavigationMenuItem {
+                id: id.into(),
+                label: label.into(),
+                icon,
+            }));
         self
     }
 
@@ -205,12 +206,13 @@ impl Menu {
             children: vec![],
         };
         let result = f(builder);
-        self.items.push(MenuNode::SubMenu(SubMenu {
-            id: result.id,
-            label: result.label,
-            icon: result.icon,
-            children: result.children,
-        }));
+        self.items
+            .push(NavigationMenuNode::NavigationSubMenu(NavigationSubMenu {
+                id: result.id,
+                label: result.label,
+                icon: result.icon,
+                children: result.children,
+            }));
         self
     }
 
@@ -224,10 +226,11 @@ impl Menu {
             children: vec![],
         };
         let result = f(builder);
-        self.items.push(MenuNode::Group(MenuItemGroup {
-            title: result.title,
-            children: result.children,
-        }));
+        self.items
+            .push(NavigationMenuNode::Group(NavigationMenuGroup {
+                title: result.title,
+                children: result.children,
+            }));
         self
     }
 
@@ -253,30 +256,36 @@ impl Menu {
 
     fn render_node(
         &self,
-        node: &MenuNode,
+        node: &NavigationMenuNode,
         depth: u32,
         theme: &liora_theme::Theme,
         cx: &Context<Self>,
     ) -> AnyElement {
         match self.mode {
-            MenuMode::Vertical => match node {
-                MenuNode::Item(item) => self.render_vertical_item(item, depth, theme, cx),
-                MenuNode::SubMenu(submenu) => {
+            NavigationMenuMode::Vertical => match node {
+                NavigationMenuNode::Item(item) => self.render_vertical_item(item, depth, theme, cx),
+                NavigationMenuNode::NavigationSubMenu(submenu) => {
                     self.render_vertical_submenu(submenu, depth, theme, cx)
                 }
-                MenuNode::Group(group) => self.render_vertical_group(group, depth, theme, cx),
+                NavigationMenuNode::Group(group) => {
+                    self.render_vertical_group(group, depth, theme, cx)
+                }
             },
-            MenuMode::Horizontal => match node {
-                MenuNode::Item(item) => self.render_horizontal_item(item, theme, cx),
-                MenuNode::SubMenu(submenu) => self.render_horizontal_submenu(submenu, theme, cx),
-                MenuNode::Group(group) => self.render_vertical_group(group, depth, theme, cx),
+            NavigationMenuMode::Horizontal => match node {
+                NavigationMenuNode::Item(item) => self.render_horizontal_item(item, theme, cx),
+                NavigationMenuNode::NavigationSubMenu(submenu) => {
+                    self.render_horizontal_submenu(submenu, theme, cx)
+                }
+                NavigationMenuNode::Group(group) => {
+                    self.render_vertical_group(group, depth, theme, cx)
+                }
             },
         }
     }
 
     fn render_vertical_item(
         &self,
-        item: &MenuItem,
+        item: &NavigationMenuItem,
         depth: u32,
         theme: &liora_theme::Theme,
         cx: &Context<Self>,
@@ -334,7 +343,7 @@ impl Menu {
 
     fn render_vertical_submenu(
         &self,
-        submenu: &SubMenu,
+        submenu: &NavigationSubMenu,
         depth: u32,
         theme: &liora_theme::Theme,
         cx: &Context<Self>,
@@ -388,12 +397,12 @@ impl Menu {
             .content({
                 let popover_id: SharedString =
                     format!("{}-collapsed-popover-{}", self.id, id).into();
-                let children: Vec<MenuItem> = submenu
+                let children: Vec<NavigationMenuItem> = submenu
                     .children
                     .iter()
                     .filter_map(|n| {
-                        if let MenuNode::Item(i) = n {
-                            Some(MenuItem {
+                        if let NavigationMenuNode::Item(i) = n {
+                            Some(NavigationMenuItem {
                                 id: i.id.clone(),
                                 label: i.label.clone(),
                                 icon: i.icon,
@@ -542,7 +551,7 @@ impl Menu {
 
     fn render_vertical_group(
         &self,
-        group: &MenuItemGroup,
+        group: &NavigationMenuGroup,
         depth: u32,
         theme: &liora_theme::Theme,
         cx: &Context<Self>,
@@ -581,7 +590,7 @@ impl Menu {
 
     fn render_horizontal_item(
         &self,
-        item: &MenuItem,
+        item: &NavigationMenuItem,
         theme: &liora_theme::Theme,
         cx: &Context<Self>,
     ) -> AnyElement {
@@ -628,7 +637,7 @@ impl Menu {
 
     fn render_horizontal_submenu(
         &self,
-        submenu: &SubMenu,
+        submenu: &NavigationSubMenu,
         theme: &liora_theme::Theme,
         cx: &Context<Self>,
     ) -> AnyElement {
@@ -672,12 +681,12 @@ impl Menu {
         .flush_content()
         .content({
             let popover_id: SharedString = format!("{}-horizontal-popover-{}", self.id, id).into();
-            let children: Vec<MenuItem> = submenu
+            let children: Vec<NavigationMenuItem> = submenu
                 .children
                 .iter()
                 .filter_map(|n| {
-                    if let MenuNode::Item(i) = n {
-                        Some(MenuItem {
+                    if let NavigationMenuNode::Item(i) = n {
+                        Some(NavigationMenuItem {
                             id: i.id.clone(),
                             label: i.label.clone(),
                             icon: i.icon,
@@ -774,12 +783,12 @@ pub struct SubMenuBuilder {
     /// Optional icon rendered with the item.
     pub icon: Option<IconName>,
     /// Nested child items rendered beneath this item.
-    pub children: Vec<MenuNode>,
+    pub children: Vec<NavigationMenuNode>,
 }
 
 impl SubMenuBuilder {
     /// Replaces all child menu nodes while constructing a submenu.
-    pub fn with_items(mut self, items: Vec<MenuNode>) -> Self {
+    pub fn with_items(mut self, items: Vec<NavigationMenuNode>) -> Self {
         self.children = items;
         self
     }
@@ -791,11 +800,12 @@ impl SubMenuBuilder {
         label: impl Into<SharedString>,
         icon: Option<IconName>,
     ) -> Self {
-        self.children.push(MenuNode::Item(MenuItem {
-            id: id.into(),
-            label: label.into(),
-            icon,
-        }));
+        self.children
+            .push(NavigationMenuNode::Item(NavigationMenuItem {
+                id: id.into(),
+                label: label.into(),
+                icon,
+            }));
         self
     }
 
@@ -817,12 +827,13 @@ impl SubMenuBuilder {
             children: vec![],
         };
         let result = f(builder);
-        self.children.push(MenuNode::SubMenu(SubMenu {
-            id: result.id,
-            label: result.label,
-            icon: result.icon,
-            children: result.children,
-        }));
+        self.children
+            .push(NavigationMenuNode::NavigationSubMenu(NavigationSubMenu {
+                id: result.id,
+                label: result.label,
+                icon: result.icon,
+                children: result.children,
+            }));
         self
     }
 
@@ -836,10 +847,11 @@ impl SubMenuBuilder {
             children: vec![],
         };
         let result = f(builder);
-        self.children.push(MenuNode::Group(MenuItemGroup {
-            title: result.title,
-            children: result.children,
-        }));
+        self.children
+            .push(NavigationMenuNode::Group(NavigationMenuGroup {
+                title: result.title,
+                children: result.children,
+            }));
         self
     }
 }
@@ -849,12 +861,12 @@ pub struct MenuGroupBuilder {
     /// Primary heading or title text displayed by the component.
     pub title: SharedString,
     /// Nested child items rendered beneath this item.
-    pub children: Vec<MenuNode>,
+    pub children: Vec<NavigationMenuNode>,
 }
 
 impl MenuGroupBuilder {
     /// Replaces all child menu nodes while constructing a menu group.
-    pub fn with_items(mut self, items: Vec<MenuNode>) -> Self {
+    pub fn with_items(mut self, items: Vec<NavigationMenuNode>) -> Self {
         self.children = items;
         self
     }
@@ -866,11 +878,12 @@ impl MenuGroupBuilder {
         label: impl Into<SharedString>,
         icon: Option<IconName>,
     ) -> Self {
-        self.children.push(MenuNode::Item(MenuItem {
-            id: id.into(),
-            label: label.into(),
-            icon,
-        }));
+        self.children
+            .push(NavigationMenuNode::Item(NavigationMenuItem {
+                id: id.into(),
+                label: label.into(),
+                icon,
+            }));
         self
     }
 
@@ -892,22 +905,23 @@ impl MenuGroupBuilder {
             children: vec![],
         };
         let result = f(builder);
-        self.children.push(MenuNode::SubMenu(SubMenu {
-            id: result.id,
-            label: result.label,
-            icon: result.icon,
-            children: result.children,
-        }));
+        self.children
+            .push(NavigationMenuNode::NavigationSubMenu(NavigationSubMenu {
+                id: result.id,
+                label: result.label,
+                icon: result.icon,
+                children: result.children,
+            }));
         self
     }
 }
 
-impl Render for Menu {
+impl Render for NavigationMenu {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
 
         match self.mode {
-            MenuMode::Vertical => Flex::new()
+            NavigationMenuMode::Vertical => Flex::new()
                 .id(self.id.clone())
                 .column()
                 .w_full()
@@ -921,7 +935,7 @@ impl Render for Menu {
                         .map(|node| self.render_node(node, 0, &theme, cx)),
                 )
                 .into_any_element(),
-            MenuMode::Horizontal => div()
+            NavigationMenuMode::Horizontal => div()
                 .flex()
                 .w_full()
                 .bg(theme.neutral.card)
@@ -942,7 +956,7 @@ impl Render for Menu {
 mod tests {
     #[test]
     fn menu_popovers_flush_shared_padding_for_menu_layout() {
-        let source = include_str!("menu.rs")
+        let source = include_str!("navigation_menu.rs")
             .split("#[cfg(test)]")
             .next()
             .unwrap();
@@ -954,7 +968,7 @@ mod tests {
 
     #[test]
     fn menu_nodes_are_comparable_so_item_refreshes_can_skip_noops() {
-        let items = vec![MenuNode::Item(MenuItem {
+        let items = vec![NavigationMenuNode::Item(NavigationMenuItem {
             id: "one".into(),
             label: "One".into(),
             icon: None,
@@ -965,7 +979,7 @@ mod tests {
 
     #[test]
     fn menu_source_keeps_items_full_width_and_avoids_redundant_select_notify() {
-        let source = include_str!("menu.rs")
+        let source = include_str!("navigation_menu.rs")
             .split("#[cfg(test)]")
             .next()
             .unwrap();
@@ -986,7 +1000,7 @@ mod tests {
         assert!(source.contains(".id(self.id.clone())"));
         assert!(
             source.matches(".flex_none()").count() >= 4,
-            "vertical menu rows must opt out of flex shrinking so fixed-height items create real overflow for Menu-owned scrolling"
+            "vertical menu rows must opt out of flex shrinking so fixed-height items create real overflow for NavigationMenu-owned scrolling"
         );
         assert!(
             !source.contains(
@@ -995,3 +1009,16 @@ mod tests {
         );
     }
 }
+
+/// Deprecated compatibility alias. Use [`NavigationMenuMode`].
+#[deprecated(note = "Use NavigationMenuMode; Menu names are reserved for GPUI native menus.")]
+pub type MenuMode = NavigationMenuMode;
+/// Deprecated compatibility alias. Use [`NavigationMenuNode`].
+#[deprecated(note = "Use NavigationMenuNode; Menu names are reserved for GPUI native menus.")]
+pub type MenuNode = NavigationMenuNode;
+/// Deprecated compatibility alias. Use [`NavigationSubMenu`].
+#[deprecated(note = "Use NavigationSubMenu; Menu names are reserved for GPUI native menus.")]
+pub type SubMenu = NavigationSubMenu;
+/// Deprecated compatibility alias. Use [`NavigationMenuGroup`].
+#[deprecated(note = "Use NavigationMenuGroup; Menu names are reserved for GPUI native menus.")]
+pub type MenuItemGroup = NavigationMenuGroup;

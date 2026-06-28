@@ -780,10 +780,10 @@ For example, typing `hello @al` and selecting the item whose `value` is `alice` 
 ### Navigation menu
 
 ```rust
-use liora::components::Menu;
+use liora::components::NavigationMenu;
 use liora::icons_lucide::IconName;
 
-let menu = Menu::new()
+let menu = NavigationMenu::new()
     .id("main-nav")
     .item("dashboard", "Dashboard", Some(IconName::LayoutDashboard))
     .submenu("settings", "Settings", Some(IconName::Settings), |menu| {
@@ -799,28 +799,28 @@ let menu = Menu::new()
 
 Use `Shell` for most application windows. It is the high-level Liora app-frame component that owns the common regions: optional custom `TitleBar`, header, left sidebar, right sidebar / inspector, scrollable main content, footer, and overlays. Use `TitleBar` and `Sidebar` directly when you are building a lower-level composition, but prefer `Shell` when you want a single fluent entry point for highly customizable app layout.
 
-Stateful controls such as `Menu` still belong in the parent view as `Entity<T>` fields. The example below uses only Liora SDK components for layout; application entrypoints may still use GPUI runtime types such as `Context`, `Entity`, `Render`, and `Window`.
+Stateful controls such as `NavigationMenu` still belong in the parent view as `Entity<T>` fields. The example below uses only Liora SDK components for layout; application entrypoints may still use GPUI runtime types such as `Context`, `Entity`, `Render`, and `Window`.
 
 ```rust
 use gpui::{AppContext, Context, Entity, Render, Window};
 use liora::components::{
-    Button, Card, Menu, MenuMode, Shell, ShellOverlayPosition, Sidebar, Space, Text, Title, TitleBar, WindowFrameMode,
+    Button, Card, NavigationMenu, NavigationMenuMode, Shell, ShellOverlayPosition, Sidebar, Space, Text, Title, TitleBar, WindowFrameMode,
 };
 use liora::core::Config;
 use liora::icons::Icon;
 use liora::icons_lucide::IconName;
 
 struct AppShell {
-    menu: Entity<Menu>,
+    menu: Entity<NavigationMenu>,
 }
 
 impl AppShell {
     fn new(cx: &mut Context<Self>) -> Self {
         Self {
             menu: cx.new(|_| {
-                Menu::new()
+                NavigationMenu::new()
                     .id("main-nav")
-                    .mode(MenuMode::Vertical)
+                    .mode(NavigationMenuMode::Vertical)
                     .default_active("dashboard")
                     .item("dashboard", "Dashboard", Some(IconName::LayoutDashboard))
                     .item("settings", "Settings", Some(IconName::Settings))
@@ -1256,11 +1256,11 @@ impl Render for OrdersView {
 | Basic and layout | `Button`, `ButtonGroup`, `Icon`, `Link`, `Text`, `Title`, `Paragraph`, `SelectableTextGroup`, `Space`, `Divider`, `Row`, `Col`, `Container`, `Shell`, `Sidebar`, `TitleBar`, `Flex`, `Scrollbar`, `ScrollableMask`, `Splitter`, `DockLayout`, `Affix`, `Backtop` |
 | Form controls | `Input`, `InputNumber`, `Textarea`, `Checkbox`, `CheckboxGroup`, `Radio`, `RadioGroup`, `Switch`, `Select`, `Slider`, `Form`, `FormItem`, `Rate`, `DatePicker`, `TimePicker`, `DateTimePicker`, `Upload`, `Cascader`, `Transfer`, `ColorPicker`, `Autocomplete`, `InputTag`, `Mention`, `TreeSelect`, `SearchableList`, `OtpInput`, `Toggle`, `ToggleGroup` |
 | Feedback and overlays | `Alert`, `Tooltip`, `Popover`, `Popconfirm`, `Dialog`, `Drawer`, `Message`, `Notification`, `MessageBox`, `Loading`, `Dropdown`, `DropdownButton`, `Preview`, `Tour`, `HoverCard`, `FocusTrap` |
-| Navigation | `Menu`, `Tabs`, `Breadcrumb`, `Steps`, `PageHeader`, `Anchor`, `Accordion`, `NativeMenu` |
+| Navigation | `NavigationMenu`, `Tabs`, `Breadcrumb`, `Steps`, `PageHeader`, `Anchor`, `Accordion` |
 | Data display | `Table`, `VirtualizedTable`, `VirtualizedTree`, `VirtualizedList`, `Progress`, `Skeleton`, `Empty`, `Result`, `Descriptions`, `Timeline`, `Tree`, `Pagination`, `Statistic`, `Segmented`, `Tag`, `Avatar`, `Badge`, `Calendar`, `Carousel`, `Image`, `Watermark`, `Kbd`, `GroupBox`, `StatusBar`, `SettingsPage`, `SettingsGroup`, `SettingsItem` |
 | Charts and metrics | `LineChart`, `AreaChart`, `BarChart`, `PieChart`, `RingChart`, `Sparkline`, `SignalMeter`, `HeatBar`, `SegmentRatioBar`, `CandlestickChart` |
 | Editing and utility | `CodeBlock`, `CodeEditor`, `QrCode`, `Timer`, `Label`, `Operation`, `Clipboard`, draggable list helpers |
-| App shell and platform | `Shell`, `AppWindowFrame`, `TitleBar`, `Sidebar`, `WindowFrameMode`, `StatusBar`, `DockLayout`, `NativeMenu`, `liora-tray`, Linux desktop identity helpers, package metadata helpers, updater helpers |
+| App shell and platform | `Shell`, `AppWindowFrame`, `TitleBar`, `Sidebar`, `WindowFrameMode`, `StatusBar`, `DockLayout`, `Menu` / `MenuBar`, `liora-tray`, Linux desktop identity helpers, package metadata helpers, updater helpers |
 
 ### Component consolidation notes
 

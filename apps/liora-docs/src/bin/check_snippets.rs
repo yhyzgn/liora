@@ -377,6 +377,8 @@ mod message_types;
 mod native_menu_bar;
 #[path = "../../content/snippets/native_menu/descriptor.rs"]
 mod native_menu_descriptor;
+#[path = "../../content/snippets/native_menu/gpui_register.rs"]
+mod native_menu_gpui_register;
 #[path = "../../content/snippets/notification/types.rs"]
 mod notification_types;
 #[path = "../../content/snippets/operation/basic.rs"]

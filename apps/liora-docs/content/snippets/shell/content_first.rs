@@ -3,23 +3,24 @@
 
 use gpui::{AppContext, Context, Entity, IntoElement, Render, Window};
 use liora_components::{
-    Button, Card, Menu, MenuMode, Shell, Sidebar, Space, Text, Title, WindowFrameMode,
+    Button, Card, NavigationMenu, NavigationMenuMode, Shell, Sidebar, Space, Text, Title,
+    WindowFrameMode,
 };
 use liora_core::Config;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
 pub struct ContentFirstShellExample {
-    menu: Entity<Menu>,
+    menu: Entity<NavigationMenu>,
 }
 
 impl ContentFirstShellExample {
     pub fn new(cx: &mut Context<Self>) -> Self {
         Self {
             menu: cx.new(|_| {
-                Menu::new()
+                NavigationMenu::new()
                     .id("docs-shell-compact-menu")
-                    .mode(MenuMode::Vertical)
+                    .mode(NavigationMenuMode::Vertical)
                     .default_active("overview")
                     .item("overview", "Overview", Some(IconName::BookOpen))
                     .item("authoring", "Authoring", Some(IconName::PencilLine))

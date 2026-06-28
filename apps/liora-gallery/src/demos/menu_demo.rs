@@ -1,5 +1,5 @@
 use gpui::{AnyView, App, Context, Entity, Render, Window, prelude::*};
-use liora_components::{Card, Col, Menu, MenuMode, Row, Space, Text};
+use liora_components::{Card, Col, NavigationMenu, NavigationMenuMode, Row, Space, Text};
 use liora_core::Config;
 use liora_icons_lucide::IconName;
 
@@ -15,9 +15,9 @@ pub fn render(cx: &mut App) -> AnyView {
             horizontal: cx.new({
                 let content = horizontal_content.clone();
                 |_| {
-                    Menu::new()
+                    NavigationMenu::new()
                         .id("menu-demo-horizontal")
-                        .mode(MenuMode::Horizontal)
+                        .mode(NavigationMenuMode::Horizontal)
                         .default_active("1")
                         .on_select(move |id, _, cx| {
                             let _ = content.update(cx, |content, cx| {
@@ -38,9 +38,9 @@ pub fn render(cx: &mut App) -> AnyView {
             vertical: cx.new({
                 let content = vertical_content.clone();
                 |_| {
-                    Menu::new()
+                    NavigationMenu::new()
                         .id("menu-demo-vertical")
-                        .mode(MenuMode::Vertical)
+                        .mode(NavigationMenuMode::Vertical)
                         .default_active("1")
                         .on_select(move |id, _, cx| {
                             let _ = content.update(cx, |content, cx| {
@@ -62,9 +62,9 @@ pub fn render(cx: &mut App) -> AnyView {
             collapsed: cx.new({
                 let content = collapsed_content.clone();
                 |_| {
-                    Menu::new()
+                    NavigationMenu::new()
                         .id("menu-demo-collapsed")
-                        .mode(MenuMode::Vertical)
+                        .mode(NavigationMenuMode::Vertical)
                         .collapse(true)
                         .default_active("1")
                         .on_select(move |id, _, cx| {
@@ -89,9 +89,9 @@ pub fn render(cx: &mut App) -> AnyView {
 }
 
 struct MenuDemo {
-    horizontal: Entity<Menu>,
-    vertical: Entity<Menu>,
-    collapsed: Entity<Menu>,
+    horizontal: Entity<NavigationMenu>,
+    vertical: Entity<NavigationMenu>,
+    collapsed: Entity<NavigationMenu>,
     horizontal_content: Entity<MenuContent>,
     vertical_content: Entity<MenuContent>,
     collapsed_content: Entity<MenuContent>,

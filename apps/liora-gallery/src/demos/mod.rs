@@ -457,7 +457,7 @@ pub fn registry() -> Vec<DemoEntry> {
             render: |cx| steps_demo::render(cx).into(),
         },
         DemoEntry {
-            name: "Menu 导航菜单",
+            name: "NavigationMenu 导航菜单",
             description: "为网站提供导航轮廓",
             render: |cx| menu_demo::render(cx).into(),
         },
@@ -592,7 +592,7 @@ pub fn registry() -> Vec<DemoEntry> {
             render: |cx| splitter_demo::render(cx).into(),
         },
         DemoEntry {
-            name: "NativeMenu 原生菜单",
+            name: "Menu 原生菜单",
             description: "平台中立菜单描述和预览",
             render: |cx| native_menu_demo::render(cx).into(),
         },
@@ -711,12 +711,12 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Link" => Some(link_demo::render(cx).into()),
         "LineChart" => Some(line_chart_demo::render(cx).into()),
         "Loading" => Some(loading_demo::render(cx).into()),
-        "Menu" => Some(menu_demo::render(cx).into()),
+        "NavigationMenu" => Some(menu_demo::render(cx).into()),
         "Mention" => Some(mention_demo::render(cx).into()),
         "Watermark" => Some(watermark_demo::render(cx).into()),
         "Message" => Some(message_demo::render(cx).into()),
         "MessageBox" => Some(message_box_demo::render(cx).into()),
-        "NativeMenu" => Some(native_menu_demo::render(cx).into()),
+        "Menu" => Some(native_menu_demo::render(cx).into()),
         "Notification" => Some(notification_demo::render(cx).into()),
         "PageHeader" => Some(page_header_demo::render(cx).into()),
         "Paragraph" => Some(paragraph_demo::render(cx).into()),
@@ -785,7 +785,7 @@ mod tests {
         assert!(names.contains(&"AreaChart 面积图"));
         assert!(names.contains(&"RingChart 圆环图"));
         assert!(names.contains(&"StatusBar 状态栏"));
-        assert!(names.contains(&"NativeMenu 原生菜单"));
+        assert!(names.contains(&"Menu 原生菜单"));
     }
 
     #[test]

@@ -3,16 +3,16 @@
 
 use gpui::{AppContext, Context, Entity, IntoElement, Render, Window};
 use liora_components::{
-    Button, Card, Menu, MenuMode, Shell, ShellOverlayPosition, Sidebar, Space, Text, Title,
-    TitleBar, WindowFrameMode,
+    Button, Card, NavigationMenu, NavigationMenuMode, Shell, ShellOverlayPosition, Sidebar, Space,
+    Text, Title, TitleBar, WindowFrameMode,
 };
 use liora_core::Config;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
 pub struct FullProductShellExample {
-    menu: Entity<Menu>,
-    inspector: Entity<Menu>,
+    menu: Entity<NavigationMenu>,
+    inspector: Entity<NavigationMenu>,
 }
 
 impl FullProductShellExample {
@@ -117,10 +117,10 @@ impl Render for FullProductShellExample {
     }
 }
 
-fn product_menu(id: &'static str) -> Menu {
-    Menu::new()
+fn product_menu(id: &'static str) -> NavigationMenu {
+    NavigationMenu::new()
         .id(id)
-        .mode(MenuMode::Vertical)
+        .mode(NavigationMenuMode::Vertical)
         .default_active("dashboard")
         .item("dashboard", "Dashboard", Some(IconName::LayoutDashboard))
         .item("components", "Components", Some(IconName::Component))
@@ -128,10 +128,10 @@ fn product_menu(id: &'static str) -> Menu {
         .item("settings", "Settings", Some(IconName::Settings))
 }
 
-fn inspector_menu(id: &'static str) -> Menu {
-    Menu::new()
+fn inspector_menu(id: &'static str) -> NavigationMenu {
+    NavigationMenu::new()
         .id(id)
-        .mode(MenuMode::Vertical)
+        .mode(NavigationMenuMode::Vertical)
         .default_active("layout")
         .item("layout", "Layout", Some(IconName::PanelRight))
         .item("tokens", "Tokens", Some(IconName::Palette))
