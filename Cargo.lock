@@ -1070,7 +1070,7 @@ dependencies = [
 
 [[package]]
 name = "const-random"
-version = "0.1.19"
+version = "0.1.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "87e00182fe74b066627d63b85fd550ac2998d4b0bd86bfed477a0ae4c7c71359"
 dependencies = [
@@ -3369,7 +3369,7 @@ checksum = "32a66949e030da00e8c7d4434b251670a91556f4144941d37452769c25d58a53"
 
 [[package]]
 name = "liora"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "liora-components",
  "liora-core",
@@ -3388,7 +3388,7 @@ dependencies = [
 
 [[package]]
 name = "liora-components"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "gpui",
  "image",
@@ -3406,7 +3406,7 @@ dependencies = [
 
 [[package]]
 name = "liora-core"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "gpui",
  "liora-theme",
@@ -3414,7 +3414,7 @@ dependencies = [
 
 [[package]]
 name = "liora-docs"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "gpui",
  "gpui_platform",
@@ -3438,7 +3438,7 @@ dependencies = [
 
 [[package]]
 name = "liora-gallery"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "gpui",
  "gpui_platform",
@@ -3460,7 +3460,7 @@ dependencies = [
 
 [[package]]
 name = "liora-icons"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "gpui",
  "liora-core",
@@ -3469,7 +3469,7 @@ dependencies = [
 
 [[package]]
 name = "liora-icons-antd"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "gpui",
  "liora-icons",
@@ -3477,7 +3477,7 @@ dependencies = [
 
 [[package]]
 name = "liora-icons-carbon"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "gpui",
  "liora-icons",
@@ -3485,7 +3485,7 @@ dependencies = [
 
 [[package]]
 name = "liora-icons-ionic"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "gpui",
  "liora-icons",
@@ -3493,7 +3493,7 @@ dependencies = [
 
 [[package]]
 name = "liora-icons-lucide"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "gpui",
  "liora-icons",
@@ -3501,7 +3501,7 @@ dependencies = [
 
 [[package]]
 name = "liora-icons-material"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "gpui",
  "liora-icons",
@@ -3509,7 +3509,7 @@ dependencies = [
 
 [[package]]
 name = "liora-icons-tabler"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "gpui",
  "liora-icons",
@@ -3517,21 +3517,21 @@ dependencies = [
 
 [[package]]
 name = "liora-packager"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "thiserror 2.0.18",
 ]
 
 [[package]]
 name = "liora-theme"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "gpui",
 ]
 
 [[package]]
 name = "liora-tray"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "gpui",
  "gtk",
@@ -3542,7 +3542,7 @@ dependencies = [
 
 [[package]]
 name = "liora-updater"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "serde",
  "serde_json",
@@ -7802,7 +7802,7 @@ checksum = "ec7a2a501ed189703dba8b08142f057e887dfc4b2cc4db2d343ac6376ba3e0b9"
 
 [[package]]
 name = "xtask"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "liora-packager",
 ]

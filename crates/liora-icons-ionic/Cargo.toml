@@ -1,6 +1,6 @@
 [package]
 name = "liora-icons-ionic"
-version = "0.1.19"
+version = "0.1.20"
 edition = "2024"
 description = "Bundled Ionicons icon paths rendered through Liora native GPUI icon primitives."
 license-file = "../../LICENSE.md"
@@ -9,4 +9,4 @@ publish = true
 
 [dependencies]
 gpui = { workspace = true }
-liora-icons = { version = "0.1.19", path = "../liora-icons" }
+liora-icons = { version = "0.1.20", path = "../liora-icons" }

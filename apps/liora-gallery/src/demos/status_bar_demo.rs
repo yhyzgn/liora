@@ -56,7 +56,7 @@ impl Render for StatusBarDemo {
                                 )
                                 .right_item(StatusBarItem::new("UTF-8").compact())
                                 .right_item(StatusBarItem::new("Ln 42, Col 7").compact())
-                                .right_item(StatusBarItem::new("v0.1.19").pill()),
+                                .right_item(StatusBarItem::new("v0.1.20").pill()),
                         ),
                     )
                     .into_any_element(),
