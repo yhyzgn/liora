@@ -20,5 +20,5 @@ pub fn status_bar_shell() -> impl IntoElement {
         )
         .right_item(StatusBarItem::new("UTF-8").compact())
         .right_item(StatusBarItem::new("Ln 42, Col 7").compact())
-        .right_item(StatusBarItem::new("v0.1.17").pill())
+        .right_item(StatusBarItem::new("v0.1.18").pill())
 }

@@ -62,6 +62,17 @@ fn try_main() -> io::Result<()> {
     writeln!(f, "impl IconName {{")?;
     writeln!(
         f,
+        "    /// Returns every Lucide icon in generated enum order."
+    )?;
+    writeln!(f, "    pub const fn all() -> &'static [IconName] {{")?;
+    writeln!(f, "        &[")?;
+    for (v, _) in &entries {
+        writeln!(f, "            IconName::{},", v)?;
+    }
+    writeln!(f, "        ]")?;
+    writeln!(f, "    }}")?;
+    writeln!(
+        f,
         "    /// Returns the bundled SVG file name for this Lucide icon."
     )?;
     writeln!(f, "    pub fn file(&self) -> &'static str {{")?;

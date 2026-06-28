@@ -9,6 +9,7 @@
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Category {
     About,
+    IconLibrary,
     WindowLayout,
     Control,
 }
@@ -21,6 +22,7 @@ impl Category {
     pub fn name(self) -> &'static str {
         match self {
             Category::About => "About",
+            Category::IconLibrary => "图标库",
             Category::WindowLayout => "窗体布局",
             Category::Control => "控件",
         }
@@ -31,6 +33,7 @@ impl Category {
     pub fn icon(self) -> &'static str {
         match self {
             Category::About => "ℹ",
+            Category::IconLibrary => "◇",
             Category::WindowLayout => "▣",
             Category::Control => "⊞",
         }
@@ -55,6 +58,7 @@ pub fn component_key(label_or_title: &str) -> &str {
 pub fn category_for(label_or_title: &str) -> Category {
     match component_key(label_or_title) {
         "About" => Category::About,
+        "Icon" | "Icon Libraries" => Category::IconLibrary,
         "Overview" | "Quick" | "Quick Start" | "Architecture" | "Packaging"
         | "Packaging Workflow" | "Release" | "Release Candidate" | "Adoption"
         | "Adoption Guide" | "Gallery" | "Gallery Dogfooding" | "Dashboard"

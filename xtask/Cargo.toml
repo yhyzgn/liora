@@ -1,6 +1,6 @@
 [package]
 name = "xtask"
-version = "0.1.17"
+version = "0.1.18"
 edition = "2024"
 description = "Repository automation commands for Liora development, packaging, and release readiness."
 license = "LicenseRef-Liora"

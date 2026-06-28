@@ -559,6 +559,8 @@ Available bundled libraries:
 | `liora-icons-carbon` | `liora::icons_carbon` | Carbon name flattened to PascalCase; one preferred size per icon | `IconName::Save`, `IconName::CheckmarkFilled` |
 | `liora-icons-material` | `liora::icons_material` | Material 24px style suffixes | `IconName::Search`, `IconName::SearchOutlined`, `IconName::SearchRound` |
 
+The Docs app also has a dedicated **Icon Libraries** page that renders the complete `IconName` catalog for every bundled library from the compiled enum data. Each row previews the SVG, shows its crate/module path and source file, and copies the fully-qualified `IconName` path when clicked.
+
 Icon primitives plus bundled icon names:
 
 ```rust
@@ -567,8 +569,8 @@ use liora::icons::Icon;
 use liora::icons_lucide::IconName;
 use liora::components::Button;
 
-let save = Button::new("Save").primary().icon_prefix(IconName::Save);
-let icon = Icon::new(IconName::Settings).size(18.0);
+let save = Button::new("Save").primary().icon_start(IconName::Save);
+let icon = Icon::new(IconName::Settings).size_units(18.0);
 
 // Other bundled libraries use the same Icon API.
 let antd_save = Icon::new(liora::icons_antd::IconName::SaveOutlined);

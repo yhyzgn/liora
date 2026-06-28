@@ -108,6 +108,7 @@ const OPERATION_DOC: &str = include_str!("../content/pages/operation.md");
 const SEGMENT_RATIO_BAR_DOC: &str = include_str!("../content/pages/segment_ratio_bar.md");
 const SIGNAL_METER_DOC: &str = include_str!("../content/pages/signal_meter.md");
 const ICON_DOC: &str = include_str!("../content/pages/icon.md");
+const ICON_LIBRARIES_DOC: &str = include_str!("../content/pages/icon_libraries.md");
 const IMAGE_DOC: &str = include_str!("../content/pages/image.md");
 const HORIZONTAL_LIST_DOC: &str = include_str!("../content/pages/horizontal_list.md");
 const INPUT_DOC: &str = include_str!("../content/pages/input.md");
@@ -375,6 +376,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Icon",
         markdown: ICON_DOC,
+    },
+    DocPage {
+        title: "Icon Libraries",
+        markdown: ICON_LIBRARIES_DOC,
     },
     DocPage {
         title: "Image",
@@ -2473,6 +2478,9 @@ impl LiveDemoContent {
                             toast_success!("HorizontalList reordered: {} -> {}", from + 1, to + 1);
                         })
                 }));
+            }
+            "IconLibraryCatalog" => {
+                virtualized_lists.push(cx.new(docs_icon_library_catalog));
             }
             "VirtualizedListBasic" => {
                 virtualized_lists.push(cx.new(|cx| docs_virtualized_list(cx, false)));
@@ -5633,6 +5641,22 @@ impl Render for LiveDemoContent {
             "IconLibraries" => icon_libraries_demo(_cx),
             "IconColors" => icon_colors_demo(_cx),
             "IconSizes" => icon_sizes_demo(),
+            "IconLibraryCatalog" => self
+                .virtualized_lists
+                .first()
+                .cloned()
+                .map(|list| {
+                    Card::new(
+                        Space::new()
+                            .vertical()
+                            .gap_md()
+                            .child(Text::new("Click any IconName to copy the fully-qualified Rust path."))
+                            .child(list),
+                    )
+                    .no_shadow()
+                    .into_any_element()
+                })
+                .unwrap_or_else(|| Paragraph::with_text("Missing icon library catalog").into_any_element()),
             "ImageBasic" => image_basic_demo(),
             "ImageFit" => image_fit_demo(),
             "ImageStates" => image_states_demo(),
@@ -6139,7 +6163,7 @@ fn docs_status_bar_shell() -> AnyElement {
             )
             .right_item(liora_components::StatusBarItem::new("UTF-8").compact())
             .right_item(liora_components::StatusBarItem::new("Ln 42, Col 7").compact())
-            .right_item(liora_components::StatusBarItem::new("v0.1.17").pill()),
+            .right_item(liora_components::StatusBarItem::new("v0.1.18").pill()),
     )
 }
 
@@ -7036,6 +7060,188 @@ const REMOTE_DEMO_IMAGE: &str =
 
 fn local_demo_image() -> String {
     format!("file://{}/assets/local.jpeg", env!("CARGO_MANIFEST_DIR"))
+}
+
+#[derive(Clone)]
+struct IconCatalogEntry {
+    library: &'static str,
+    module_path: &'static str,
+    name: String,
+    file: &'static str,
+    svg_source: &'static str,
+}
+
+fn docs_icon_library_catalog(cx: &mut Context<VirtualizedList>) -> VirtualizedList {
+    let entries = icon_catalog_entries();
+    let count = entries.len();
+    let mut list = VirtualizedList::new(count, cx, move |index, _window, _cx| {
+        icon_catalog_row(&entries[index]).into_any_element()
+    });
+    list.set_height(Some(px(560.0)));
+    list.set_item_spacing(px(8.0));
+    list
+}
+
+fn icon_catalog_row(entry: &IconCatalogEntry) -> impl IntoElement {
+    let icon =
+        liora_icons::Icon::new(liora_icons::inline_svg_asset_path(entry.svg_source).into_owned())
+            .size_lg();
+    let copy_text = format!("{}::{}", entry.module_path, entry.name);
+    let display_name = format!("IconName::{}", entry.name);
+    let module_path = entry.module_path;
+    let file = entry.file;
+
+    div()
+        .flex()
+        .items_center()
+        .justify_between()
+        .gap_4()
+        .p_3()
+        .rounded_lg()
+        .border_1()
+        .border_color(rgb(0xe5e7eb))
+        .hover(|s| s.bg(rgb(0xf8fafc)))
+        .child(
+            Space::new().align_center().gap_md().child(icon).child(
+                Space::new()
+                    .vertical()
+                    .gap_xs()
+                    .child(Text::new(display_name).bold().nowrap())
+                    .child(
+                        Text::new(format!("{} · {}", module_path, file))
+                            .size(px(12.0))
+                            .text_color(rgb(0x64748b).into()),
+                    ),
+            ),
+        )
+        .child(
+            Button::new(format!("Copy {}", entry.library))
+                .small()
+                .on_click(move |_, _, cx| {
+                    cx.write_to_clipboard(gpui::ClipboardItem::new_string(copy_text.clone()));
+                    toast_success!("Copied {}", copy_text);
+                }),
+        )
+}
+
+fn icon_catalog_entries() -> &'static [IconCatalogEntry] {
+    static ENTRIES: OnceLock<Vec<IconCatalogEntry>> = OnceLock::new();
+    ENTRIES.get_or_init(|| {
+        let mut entries = Vec::new();
+        entries.extend(lucide_icon_catalog_entries());
+        entries.extend(antd_icon_catalog_entries());
+        entries.extend(ionic_icon_catalog_entries());
+        entries.extend(tabler_icon_catalog_entries());
+        entries.extend(carbon_icon_catalog_entries());
+        entries.extend(material_icon_catalog_entries());
+        entries
+    })
+}
+
+fn icon_catalog_entry(
+    library: &'static str,
+    module_path: &'static str,
+    name: String,
+    file: &'static str,
+    svg_source: &'static str,
+) -> IconCatalogEntry {
+    IconCatalogEntry {
+        library,
+        module_path,
+        name,
+        file,
+        svg_source,
+    }
+}
+
+fn lucide_icon_catalog_entries() -> Vec<IconCatalogEntry> {
+    liora_icons_lucide::IconName::all()
+        .iter()
+        .map(|icon| {
+            icon_catalog_entry(
+                "Lucide",
+                "liora::icons_lucide::IconName",
+                format!("{icon:?}"),
+                icon.file(),
+                icon.svg_source(),
+            )
+        })
+        .collect()
+}
+
+fn antd_icon_catalog_entries() -> Vec<IconCatalogEntry> {
+    liora_icons_antd::IconName::all()
+        .iter()
+        .map(|icon| {
+            icon_catalog_entry(
+                "AntD",
+                "liora::icons_antd::IconName",
+                format!("{icon:?}"),
+                icon.file(),
+                icon.svg_source(),
+            )
+        })
+        .collect()
+}
+
+fn ionic_icon_catalog_entries() -> Vec<IconCatalogEntry> {
+    liora_icons_ionic::IconName::all()
+        .iter()
+        .map(|icon| {
+            icon_catalog_entry(
+                "Ionic",
+                "liora::icons_ionic::IconName",
+                format!("{icon:?}"),
+                icon.file(),
+                icon.svg_source(),
+            )
+        })
+        .collect()
+}
+
+fn tabler_icon_catalog_entries() -> Vec<IconCatalogEntry> {
+    liora_icons_tabler::IconName::all()
+        .iter()
+        .map(|icon| {
+            icon_catalog_entry(
+                "Tabler",
+                "liora::icons_tabler::IconName",
+                format!("{icon:?}"),
+                icon.file(),
+                icon.svg_source(),
+            )
+        })
+        .collect()
+}
+
+fn carbon_icon_catalog_entries() -> Vec<IconCatalogEntry> {
+    liora_icons_carbon::IconName::all()
+        .iter()
+        .map(|icon| {
+            icon_catalog_entry(
+                "Carbon",
+                "liora::icons_carbon::IconName",
+                format!("{icon:?}"),
+                icon.file(),
+                icon.svg_source(),
+            )
+        })
+        .collect()
+}
+
+fn material_icon_catalog_entries() -> Vec<IconCatalogEntry> {
+    liora_icons_material::IconName::all()
+        .iter()
+        .map(|icon| {
+            icon_catalog_entry(
+                "Material",
+                "liora::icons_material::IconName",
+                format!("{icon:?}"),
+                icon.file(),
+                icon.svg_source(),
+            )
+        })
+        .collect()
 }
 
 fn icon_labeled(icon: liora_icons::Icon, label: &'static str) -> impl IntoElement {
@@ -10831,6 +11037,7 @@ fn docs_nav_sort_rank(title: &str) -> usize {
 
 fn docs_nav_category_for(title: &str) -> category::Category {
     match category::component_key(title) {
+        "Icon" | "Icon Libraries" => category::Category::IconLibrary,
         "About" | "Overview" | "Quick" | "Quick Start" | "Architecture" | "Theme" | "Packaging"
         | "Packaging Workflow" | "Release" | "Release Candidate" | "Adoption"
         | "Adoption Guide" | "Gallery" | "Gallery Dogfooding" | "Dashboard"
@@ -11268,6 +11475,24 @@ mod tests {
         assert!(sdk.contains("liora-theme liora-core liora-icons liora-icons-lucide liora-icons-antd liora-icons-ionic liora-icons-tabler liora-icons-carbon liora-icons-material liora-components liora-tray liora-packager liora-updater liora"));
         assert!(sdk.contains("cargo publish -p"));
         assert!(!sdk.contains(concat!("cargo publish -p \"$crate\" ", "--", "token")));
+    }
+
+    #[test]
+    fn icon_libraries_docs_render_complete_click_to_copy_catalog() {
+        assert!(ICON_LIBRARIES_DOC.contains("# Icon Libraries"));
+        assert!(ICON_LIBRARIES_DOC.contains("IconLibraryCatalog"));
+
+        let source = include_str!("markdown.rs");
+        assert!(source.contains("docs_icon_library_catalog"));
+        assert!(source.contains("icon_catalog_entries"));
+        assert!(source.contains("liora::icons_lucide::IconName"));
+        assert!(source.contains("liora::icons_antd::IconName"));
+        assert!(source.contains("liora::icons_ionic::IconName"));
+        assert!(source.contains("liora::icons_tabler::IconName"));
+        assert!(source.contains("liora::icons_carbon::IconName"));
+        assert!(source.contains("liora::icons_material::IconName"));
+        assert!(source.contains("cx.write_to_clipboard"));
+        assert!(source.contains("Category::IconLibrary"));
     }
 
     #[test]

@@ -566,8 +566,8 @@ use liora::icons::Icon;
 use liora::icons_lucide::IconName;
 use liora::components::Button;
 
-let save = Button::new("Save").primary().icon_prefix(IconName::Save);
-let icon = Icon::new(IconName::Settings).size(18.0);
+let save = Button::new("Save").primary().icon_start(IconName::Save);
+let icon = Icon::new(IconName::Settings).size_units(18.0);
 
 // 其他内置图库使用同一套 Icon API。
 let antd_save = Icon::new(liora::icons_antd::IconName::SaveOutlined);
