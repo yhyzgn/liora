@@ -9,8 +9,8 @@ use liora_components::{
     Calendar, CalendarDate, CalendarEvent, Card, Carousel, CarouselIndicatorPosition, CarouselItem,
     Checkbox, CheckboxGroup, CheckboxOptionStyle, CodeBlock as LioraCodeBlock, CodeDiagnostic,
     CodeEditor, CodeHighlighter, CodeLanguage, CodeTheme, Container, Dropdown, DropdownButton,
-    DropdownButtonItem, Flex, Form, FormItem, HorizontalList, Image, Input, InputNumber,
-    InputNumberControlsPosition, Link, Loading, NavigationMenu, NavigationMenuMode,
+    DropdownButtonItem, Flex, Form, FormItem, Grid, GridItem, HorizontalList, Image, Input,
+    InputNumber, InputNumberControlsPosition, Link, Loading, NavigationMenu, NavigationMenuMode,
     NotificationType, Paragraph, Popconfirm, Popover, Preview, Progress, ProgressStatus, QrCode,
     QrEcLevel, QrFinderStyle, QrGradientDirection, QrModuleStyle, Radio, RadioGroup,
     RadioOptionStyle, Rate, Result as LioraResult, ResultStatus, Segmented, SegmentedOption,
@@ -98,6 +98,7 @@ const DROPDOWN_DOC: &str = include_str!("../content/pages/dropdown.md");
 const DROPDOWN_BUTTON_DOC: &str = include_str!("../content/pages/dropdown_button.md");
 const EMPTY_DOC: &str = include_str!("../content/pages/empty.md");
 const FORM_DOC: &str = include_str!("../content/pages/form.md");
+const GRID_DOC: &str = include_str!("../content/pages/grid.md");
 const HEAT_BAR_DOC: &str = include_str!("../content/pages/heat_bar.md");
 const LABEL_DOC: &str = include_str!("../content/pages/label.md");
 const SPINNER_DOC: &str = include_str!("../content/pages/spinner.md");
@@ -108,7 +109,12 @@ const OPERATION_DOC: &str = include_str!("../content/pages/operation.md");
 const SEGMENT_RATIO_BAR_DOC: &str = include_str!("../content/pages/segment_ratio_bar.md");
 const SIGNAL_METER_DOC: &str = include_str!("../content/pages/signal_meter.md");
 const ICON_DOC: &str = include_str!("../content/pages/icon.md");
-const ICON_LIBRARIES_DOC: &str = include_str!("../content/pages/icon_libraries.md");
+const ICON_LUCIDE_DOC: &str = include_str!("../content/pages/icon_lucide.md");
+const ICON_ANTD_DOC: &str = include_str!("../content/pages/icon_antd.md");
+const ICON_IONIC_DOC: &str = include_str!("../content/pages/icon_ionic.md");
+const ICON_TABLER_DOC: &str = include_str!("../content/pages/icon_tabler.md");
+const ICON_CARBON_DOC: &str = include_str!("../content/pages/icon_carbon.md");
+const ICON_MATERIAL_DOC: &str = include_str!("../content/pages/icon_material.md");
 const IMAGE_DOC: &str = include_str!("../content/pages/image.md");
 const HORIZONTAL_LIST_DOC: &str = include_str!("../content/pages/horizontal_list.md");
 const INPUT_DOC: &str = include_str!("../content/pages/input.md");
@@ -366,6 +372,10 @@ const DOC_PAGES: &[DocPage] = &[
         markdown: FORM_DOC,
     },
     DocPage {
+        title: "Grid",
+        markdown: GRID_DOC,
+    },
+    DocPage {
         title: "HeatBar",
         markdown: HEAT_BAR_DOC,
     },
@@ -378,8 +388,28 @@ const DOC_PAGES: &[DocPage] = &[
         markdown: ICON_DOC,
     },
     DocPage {
-        title: "Icon Libraries",
-        markdown: ICON_LIBRARIES_DOC,
+        title: "Lucide Icons",
+        markdown: ICON_LUCIDE_DOC,
+    },
+    DocPage {
+        title: "Ant Design Icons",
+        markdown: ICON_ANTD_DOC,
+    },
+    DocPage {
+        title: "Ionicons",
+        markdown: ICON_IONIC_DOC,
+    },
+    DocPage {
+        title: "Tabler Icons",
+        markdown: ICON_TABLER_DOC,
+    },
+    DocPage {
+        title: "Carbon Icons",
+        markdown: ICON_CARBON_DOC,
+    },
+    DocPage {
+        title: "Material Icons",
+        markdown: ICON_MATERIAL_DOC,
     },
     DocPage {
         title: "Image",
@@ -1935,7 +1965,11 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
             "../../liora-gallery/src/demos/form_controls_demo.rs"
         )),
         "gallery/form_demo.rs" => Some(include_str!("../../liora-gallery/src/demos/form_demo.rs")),
+        "gallery/grid_demo.rs" => Some(include_str!("../../liora-gallery/src/demos/grid_demo.rs")),
         "gallery/icon_demo.rs" => Some(include_str!("../../liora-gallery/src/demos/icon_demo.rs")),
+        "gallery/icon_libraries_demo.rs" => Some(include_str!(
+            "../../liora-gallery/src/demos/icon_libraries_demo.rs"
+        )),
         "gallery/image_demo.rs" => {
             Some(include_str!("../../liora-gallery/src/demos/image_demo.rs"))
         }
@@ -2479,8 +2513,29 @@ impl LiveDemoContent {
                         })
                 }));
             }
-            "IconLibraryCatalog" => {
-                virtualized_lists.push(cx.new(docs_icon_library_catalog));
+            "IconCatalogLucide" => {
+                virtualized_lists
+                    .push(cx.new(|cx| docs_icon_library_catalog(cx, IconCatalogLibrary::Lucide)));
+            }
+            "IconCatalogAntd" => {
+                virtualized_lists
+                    .push(cx.new(|cx| docs_icon_library_catalog(cx, IconCatalogLibrary::Antd)));
+            }
+            "IconCatalogIonic" => {
+                virtualized_lists
+                    .push(cx.new(|cx| docs_icon_library_catalog(cx, IconCatalogLibrary::Ionic)));
+            }
+            "IconCatalogTabler" => {
+                virtualized_lists
+                    .push(cx.new(|cx| docs_icon_library_catalog(cx, IconCatalogLibrary::Tabler)));
+            }
+            "IconCatalogCarbon" => {
+                virtualized_lists
+                    .push(cx.new(|cx| docs_icon_library_catalog(cx, IconCatalogLibrary::Carbon)));
+            }
+            "IconCatalogMaterial" => {
+                virtualized_lists
+                    .push(cx.new(|cx| docs_icon_library_catalog(cx, IconCatalogLibrary::Material)));
             }
             "VirtualizedListBasic" => {
                 virtualized_lists.push(cx.new(|cx| docs_virtualized_list(cx, false)));
@@ -5641,7 +5696,8 @@ impl Render for LiveDemoContent {
             "IconLibraries" => icon_libraries_demo(_cx),
             "IconColors" => icon_colors_demo(_cx),
             "IconSizes" => icon_sizes_demo(),
-            "IconLibraryCatalog" => self
+            "IconCatalogLucide" | "IconCatalogAntd" | "IconCatalogIonic" | "IconCatalogTabler"
+            | "IconCatalogCarbon" | "IconCatalogMaterial" => self
                 .virtualized_lists
                 .first()
                 .cloned()
@@ -5650,7 +5706,7 @@ impl Render for LiveDemoContent {
                         Space::new()
                             .vertical()
                             .gap_md()
-                            .child(Text::new("Click any IconName to copy the fully-qualified Rust path."))
+                            .child(Text::new("Click any square icon item to copy the fully-qualified Rust path."))
                             .child(list),
                     )
                     .no_shadow()
@@ -7071,71 +7127,114 @@ struct IconCatalogEntry {
     svg_source: &'static str,
 }
 
-fn docs_icon_library_catalog(cx: &mut Context<VirtualizedList>) -> VirtualizedList {
-    let entries = icon_catalog_entries();
-    let count = entries.len();
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum IconCatalogLibrary {
+    Lucide,
+    Antd,
+    Ionic,
+    Tabler,
+    Carbon,
+    Material,
+}
+
+const ICON_CATALOG_GRID_CHUNK: usize = 96;
+
+fn docs_icon_library_catalog(
+    cx: &mut Context<VirtualizedList>,
+    library: IconCatalogLibrary,
+) -> VirtualizedList {
+    let entries = icon_catalog_entries(library);
+    let count = entries.len().div_ceil(ICON_CATALOG_GRID_CHUNK);
     let mut list = VirtualizedList::new(count, cx, move |index, _window, _cx| {
-        icon_catalog_row(&entries[index]).into_any_element()
+        let start = index * ICON_CATALOG_GRID_CHUNK;
+        let end = (start + ICON_CATALOG_GRID_CHUNK).min(entries.len());
+        icon_catalog_grid(&entries[start..end]).into_any_element()
     });
-    list.set_height(Some(px(560.0)));
-    list.set_item_spacing(px(8.0));
+    list.set_height(Some(px(620.0)));
+    list.set_item_spacing(px(12.0));
     list
 }
 
-fn icon_catalog_row(entry: &IconCatalogEntry) -> impl IntoElement {
+fn icon_catalog_grid(entries: &[IconCatalogEntry]) -> impl IntoElement {
+    Grid::new()
+        .fit_item_lg()
+        .gap_md()
+        .children(entries.iter().map(icon_catalog_item))
+}
+
+fn icon_catalog_item(entry: &IconCatalogEntry) -> impl IntoElement {
     let icon =
         liora_icons::Icon::new(liora_icons::inline_svg_asset_path(entry.svg_source).into_owned())
             .size_lg();
     let copy_text = format!("{}::{}", entry.module_path, entry.name);
     let display_name = format!("IconName::{}", entry.name);
-    let module_path = entry.module_path;
     let file = entry.file;
 
-    div()
-        .flex()
-        .items_center()
-        .justify_between()
-        .gap_4()
-        .p_3()
-        .rounded_lg()
-        .border_1()
-        .border_color(rgb(0xe5e7eb))
-        .hover(|s| s.bg(rgb(0xf8fafc)))
-        .child(
-            Space::new().align_center().gap_md().child(icon).child(
-                Space::new()
-                    .vertical()
-                    .gap_xs()
-                    .child(Text::new(display_name).bold().nowrap())
-                    .child(
-                        Text::new(format!("{} · {}", module_path, file))
-                            .size(px(12.0))
-                            .text_color(rgb(0x64748b).into()),
-                    ),
+    GridItem::new(
+        Space::new()
+            .vertical()
+            .align_center()
+            .gap_sm()
+            .child(icon)
+            .child(Text::new(display_name).bold().nowrap())
+            .child(
+                liora_components::Tag::new(entry.library)
+                    .info()
+                    .plain()
+                    .small(),
+            )
+            .child(
+                Text::new(file.to_string())
+                    .size(px(11.0))
+                    .text_color(rgb(0x64748b).into())
+                    .nowrap(),
             ),
-        )
-        .child(
-            Button::new(format!("Copy {}", entry.library))
-                .small()
-                .on_click(move |_, _, cx| {
-                    cx.write_to_clipboard(gpui::ClipboardItem::new_string(copy_text.clone()));
-                    toast_success!("Copied {}", copy_text);
-                }),
-        )
+    )
+    .on_click(move |_, cx| {
+        cx.write_to_clipboard(gpui::ClipboardItem::new_string(copy_text.clone()));
+        toast_success!("Copied {}", copy_text);
+    })
 }
 
-fn icon_catalog_entries() -> &'static [IconCatalogEntry] {
+fn icon_catalog_entries(library: IconCatalogLibrary) -> &'static [IconCatalogEntry] {
+    match library {
+        IconCatalogLibrary::Lucide => lucide_icon_catalog_entries_cached(),
+        IconCatalogLibrary::Antd => antd_icon_catalog_entries_cached(),
+        IconCatalogLibrary::Ionic => ionic_icon_catalog_entries_cached(),
+        IconCatalogLibrary::Tabler => tabler_icon_catalog_entries_cached(),
+        IconCatalogLibrary::Carbon => carbon_icon_catalog_entries_cached(),
+        IconCatalogLibrary::Material => material_icon_catalog_entries_cached(),
+    }
+}
+
+fn lucide_icon_catalog_entries_cached() -> &'static [IconCatalogEntry] {
     static ENTRIES: OnceLock<Vec<IconCatalogEntry>> = OnceLock::new();
-    ENTRIES.get_or_init(|| {
-        let mut entries = Vec::new();
-        entries.extend(lucide_icon_catalog_entries());
-        entries.extend(antd_icon_catalog_entries());
-        entries.extend(ionic_icon_catalog_entries());
-        entries.extend(tabler_icon_catalog_entries());
-        entries.extend(carbon_icon_catalog_entries());
-        entries.extend(material_icon_catalog_entries());
-        entries
-    })
+    ENTRIES.get_or_init(lucide_icon_catalog_entries)
+}
+
+fn antd_icon_catalog_entries_cached() -> &'static [IconCatalogEntry] {
+    static ENTRIES: OnceLock<Vec<IconCatalogEntry>> = OnceLock::new();
+    ENTRIES.get_or_init(antd_icon_catalog_entries)
+}
+
+fn ionic_icon_catalog_entries_cached() -> &'static [IconCatalogEntry] {
+    static ENTRIES: OnceLock<Vec<IconCatalogEntry>> = OnceLock::new();
+    ENTRIES.get_or_init(ionic_icon_catalog_entries)
+}
+
+fn tabler_icon_catalog_entries_cached() -> &'static [IconCatalogEntry] {
+    static ENTRIES: OnceLock<Vec<IconCatalogEntry>> = OnceLock::new();
+    ENTRIES.get_or_init(tabler_icon_catalog_entries)
+}
+
+fn carbon_icon_catalog_entries_cached() -> &'static [IconCatalogEntry] {
+    static ENTRIES: OnceLock<Vec<IconCatalogEntry>> = OnceLock::new();
+    ENTRIES.get_or_init(carbon_icon_catalog_entries)
+}
+
+fn material_icon_catalog_entries_cached() -> &'static [IconCatalogEntry] {
+    static ENTRIES: OnceLock<Vec<IconCatalogEntry>> = OnceLock::new();
+    ENTRIES.get_or_init(material_icon_catalog_entries)
 }
 
 fn icon_catalog_entry(
@@ -11031,13 +11130,22 @@ fn docs_nav_sort_rank(title: &str) -> usize {
         "Dashboard State" => 100,
         "Authoring" => 110,
         "Live" | "Live Demo" => 120,
+        "Icon" => 0,
+        "Lucide" | "Lucide Icons" => 10,
+        "Ant" | "Ant Design" | "Ant Design Icons" => 20,
+        "Ionicons" => 30,
+        "Tabler" | "Tabler Icons" => 40,
+        "Carbon" | "Carbon Icons" => 50,
+        "Material" | "Material Icons" => 60,
         _ => 1_000,
     }
 }
 
 fn docs_nav_category_for(title: &str) -> category::Category {
     match category::component_key(title) {
-        "Icon" | "Icon Libraries" => category::Category::IconLibrary,
+        "Icon" | "Lucide" | "Lucide Icons" | "Ant" | "Ant Design" | "Ant Design Icons"
+        | "Ionicons" | "Tabler" | "Tabler Icons" | "Carbon" | "Carbon Icons" | "Material"
+        | "Material Icons" => category::Category::IconLibrary,
         "About" | "Overview" | "Quick" | "Quick Start" | "Architecture" | "Theme" | "Packaging"
         | "Packaging Workflow" | "Release" | "Release Candidate" | "Adoption"
         | "Adoption Guide" | "Gallery" | "Gallery Dogfooding" | "Dashboard"
@@ -11046,7 +11154,7 @@ fn docs_nav_category_for(title: &str) -> category::Category {
         }
         "Shell" | "TitleBar" | "Sidebar" | "Container" | "Dialog" | "Drawer" | "MessageBox"
         | "Popconfirm" | "Popover" | "Tooltip" | "Tour" | "Tray" | "PageHeader" | "Layout"
-        | "Space" | "Affix" | "Anchor" | "Backtop" | "Splitter" | "Scrollbar" => {
+        | "Space" | "Grid" | "Affix" | "Anchor" | "Backtop" | "Splitter" | "Scrollbar" => {
             category::Category::WindowLayout
         }
         _ => category::Category::Control,
@@ -11283,12 +11391,29 @@ mod tests {
         let window_group = docs_menu_group(&items, "窗体布局");
         let window_labels = docs_menu_group_labels(window_group);
         assert!(window_labels.contains(&"Container"));
+        assert!(window_labels.contains(&"Grid"));
         assert!(window_labels.contains(&"Shell"));
         assert!(window_labels.contains(&"Sidebar"));
         assert!(window_labels.contains(&"TitleBar"));
         assert!(!window_labels.contains(&"Architecture"));
         assert!(!window_labels.contains(&"Authoring"));
         assert!(!window_labels.contains(&"Dashboard Patterns"));
+
+        let icon_group = docs_menu_group(&items, "图标库");
+        let icon_labels = docs_menu_group_labels(icon_group);
+        assert_eq!(
+            icon_labels,
+            vec![
+                "Icon",
+                "Lucide Icons",
+                "Ant Design Icons",
+                "Ionicons",
+                "Tabler Icons",
+                "Carbon Icons",
+                "Material Icons",
+            ],
+            "Icon group should expose one overview plus one page per bundled icon pack"
+        );
 
         let control_group = docs_menu_group(&items, "控件");
         let control_labels = docs_menu_group_labels(control_group);
@@ -11307,6 +11432,7 @@ mod tests {
         assert!(titles.contains(&"Architecture"));
         assert!(titles.contains(&"About"));
         assert!(titles.contains(&"Button"));
+        assert!(titles.contains(&"Grid"));
         assert!(titles.contains(&"CodeBlock"));
         assert!(titles.contains(&"Input"));
         assert!(titles.contains(&"Switch"));
@@ -11478,13 +11604,25 @@ mod tests {
     }
 
     #[test]
-    fn icon_libraries_docs_render_complete_click_to_copy_catalog() {
-        assert!(ICON_LIBRARIES_DOC.contains("# Icon Libraries"));
-        assert!(ICON_LIBRARIES_DOC.contains("IconLibraryCatalog"));
+    fn icon_libraries_docs_split_catalogs_by_icon_pack_and_click_to_copy() {
+        let icon_libraries_doc = include_str!("../content/pages/icon_libraries.md");
+        assert!(icon_libraries_doc.contains("# Icon Libraries"));
+        assert!(!icon_libraries_doc.contains("IconLibraryCatalog"));
+        assert!(ICON_LUCIDE_DOC.contains("IconCatalogLucide"));
+        assert!(ICON_ANTD_DOC.contains("IconCatalogAntd"));
+        assert!(ICON_IONIC_DOC.contains("IconCatalogIonic"));
+        assert!(ICON_TABLER_DOC.contains("IconCatalogTabler"));
+        assert!(ICON_CARBON_DOC.contains("IconCatalogCarbon"));
+        assert!(ICON_MATERIAL_DOC.contains("IconCatalogMaterial"));
 
         let source = include_str!("markdown.rs");
         assert!(source.contains("docs_icon_library_catalog"));
-        assert!(source.contains("icon_catalog_entries"));
+        assert!(source.contains("enum IconCatalogLibrary"));
+        assert!(source.contains("icon_catalog_entries(library: IconCatalogLibrary)"));
+        assert!(source.contains("ICON_CATALOG_GRID_CHUNK"));
+        assert!(source.contains("Grid::new()"));
+        assert!(source.contains(".fit_item_lg()"));
+        assert!(source.contains("GridItem::new"));
         assert!(source.contains("liora::icons_lucide::IconName"));
         assert!(source.contains("liora::icons_antd::IconName"));
         assert!(source.contains("liora::icons_ionic::IconName"));
@@ -11492,6 +11630,7 @@ mod tests {
         assert!(source.contains("liora::icons_carbon::IconName"));
         assert!(source.contains("liora::icons_material::IconName"));
         assert!(source.contains("cx.write_to_clipboard"));
+        assert!(source.contains(".on_click(move |_, cx|"));
         assert!(source.contains("Category::IconLibrary"));
     }
 

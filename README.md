@@ -559,7 +559,7 @@ Available bundled libraries:
 | `liora-icons-carbon` | `liora::icons_carbon` | Carbon name flattened to PascalCase; one preferred size per icon | `IconName::Save`, `IconName::CheckmarkFilled` |
 | `liora-icons-material` | `liora::icons_material` | Material 24px style suffixes | `IconName::Search`, `IconName::SearchOutlined`, `IconName::SearchRound` |
 
-The Docs app also has a dedicated **Icon Libraries** page that renders the complete `IconName` catalog for every bundled library from the compiled enum data. Each row previews the SVG, shows its crate/module path and source file, and copies the fully-qualified `IconName` path when clicked.
+The Docs app has a dedicated **Icon Libraries** overview plus an **Icon library** navigation group. Each bundled library has its own page (`Lucide Icons`, `Ant Design Icons`, `Ionicons`, `Tabler Icons`, `Carbon Icons`, `Material Icons`) rendered as a virtualized responsive `Grid`; clicking any square icon item copies the fully-qualified `IconName` path.
 
 Icon primitives plus bundled icon names:
 
@@ -710,6 +710,33 @@ let dashboard = Flex::new()
         .title("Summary")
         .hoverable(),
     );
+```
+
+### Responsive grids
+
+`Grid` is for icon walls, card decks, settings tiles, and other two-dimensional layouts. Use `fit_item(...)` when item size should stay stable and the number of columns should adapt; use `fit_columns(n)` when the column count should stay fixed and items should scale. `GridItem` is square by default.
+
+```rust
+use liora::components::{Grid, GridItem, Space, Text};
+use liora::icons::Icon;
+use liora::icons_lucide::IconName;
+
+let icon_wall = Grid::new()
+    .fit_item_md()
+    .gap_md()
+    .child(GridItem::new(
+        Space::new()
+            .vertical()
+            .align_center()
+            .gap_sm()
+            .child(Icon::new(IconName::Settings).size_lg())
+            .child(Text::new("Settings")),
+    ));
+
+let fixed_columns = Grid::new()
+    .fit_columns(4)
+    .gap_md()
+    .child(GridItem::new(Text::new("Scales with column width")));
 ```
 
 ### Buttons, tags, progress, and feedback
@@ -1351,7 +1378,7 @@ impl Render for OrdersView {
 
 | Category | Components |
 |---|---|
-| Basic and layout | `Button`, `ButtonGroup`, `Icon`, `Link`, `Text`, `Title`, `Paragraph`, `SelectableTextGroup`, `Space`, `Divider`, `Row`, `Col`, `Container`, `Shell`, `Sidebar`, `TitleBar`, `Flex`, `Scrollbar`, `ScrollableMask`, `Splitter`, `DockLayout`, `Affix`, `Backtop` |
+| Basic and layout | `Button`, `ButtonGroup`, `Icon`, `Link`, `Text`, `Title`, `Paragraph`, `SelectableTextGroup`, `Space`, `Grid`, `GridItem`, `Divider`, `Row`, `Col`, `Container`, `Shell`, `Sidebar`, `TitleBar`, `Flex`, `Scrollbar`, `ScrollableMask`, `Splitter`, `DockLayout`, `Affix`, `Backtop` |
 | Form controls | `Input`, `InputNumber`, `Textarea`, `Checkbox`, `CheckboxGroup`, `Radio`, `RadioGroup`, `Switch`, `Select`, `Slider`, `Form`, `FormItem`, `Rate`, `DatePicker`, `TimePicker`, `DateTimePicker`, `Upload`, `Cascader`, `Transfer`, `ColorPicker`, `Autocomplete`, `InputTag`, `Mention`, `TreeSelect`, `SearchableList`, `OtpInput`, `Toggle`, `ToggleGroup` |
 | Feedback and overlays | `Alert`, `Tooltip`, `Popover`, `Popconfirm`, `Dialog`, `Drawer`, `Message`, `Notification`, `MessageBox`, `Loading`, `Dropdown`, `DropdownButton`, `Preview`, `Tour`, `HoverCard`, `FocusTrap` |
 | Navigation | `NavigationMenu`, `Tabs`, `Breadcrumb`, `Steps`, `PageHeader`, `Anchor`, `Accordion` |

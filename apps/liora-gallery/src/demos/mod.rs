@@ -31,9 +31,11 @@ pub mod dropdown_demo;
 pub mod empty_demo;
 pub mod form_controls_demo;
 pub mod form_demo;
+pub mod grid_demo;
 pub mod heat_bar_demo;
 pub mod horizontal_list_demo;
 pub mod icon_demo;
+pub mod icon_libraries_demo;
 pub mod image_demo;
 pub mod input_tag_demo;
 pub mod kbd_demo;
@@ -608,6 +610,11 @@ pub fn registry() -> Vec<DemoEntry> {
             render: |cx| icon_demo::render(cx).into(),
         },
         DemoEntry {
+            name: "Icon Libraries 图标库",
+            description: "Lucide、Ant Design、Ionicons、Tabler、Carbon、Material 全量图标库入口",
+            render: |cx| icon_libraries_demo::render(cx).into(),
+        },
+        DemoEntry {
             name: "HeatBar 热力条",
             description: "高密度时间轴热力分布",
             render: |cx| heat_bar_demo::render(cx).into(),
@@ -699,6 +706,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "DropdownButton" => Some(dropdown_button_demo::render(cx).into()),
         "Empty" => Some(empty_demo::render(cx).into()),
         "Form" => Some(form_demo::render(cx).into()),
+        "Grid" => Some(grid_demo::render(cx).into()),
         "HeatBar" => Some(heat_bar_demo::render(cx).into()),
         "HorizontalList" => Some(horizontal_list_demo::render(cx).into()),
         "Label" => Some(label_demo::render(cx).into()),
@@ -710,6 +718,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "SegmentRatioBar" => Some(segment_ratio_bar_demo::render(cx).into()),
         "SignalMeter" => Some(signal_meter_demo::render(cx).into()),
         "Icon" => Some(icon_demo::render(cx).into()),
+        "IconLibraries" | "Icon Libraries" => Some(icon_libraries_demo::render(cx).into()),
         "Image" => Some(image_demo::render(cx).into()),
         "Input" => Some(form_controls_demo::render_input(cx)),
         "InputNumber" => Some(form_controls_demo::render_input_number(cx)),
@@ -792,7 +801,9 @@ mod tests {
         assert!(names.contains(&"AreaChart 面积图"));
         assert!(names.contains(&"RingChart 圆环图"));
         assert!(names.contains(&"StatusBar 状态栏"));
+        assert!(names.contains(&"Grid 栅格墙"));
         assert!(names.contains(&"Menu 原生菜单"));
+        assert!(names.contains(&"Icon Libraries 图标库"));
     }
 
     #[test]
@@ -966,6 +977,7 @@ mod tests {
         for (file_name, source) in [
             ("card_demo.rs", include_str!("card_demo.rs")),
             ("container_demo.rs", include_str!("container_demo.rs")),
+            ("grid_demo.rs", include_str!("grid_demo.rs")),
             ("layout_demo.rs", include_str!("layout_demo.rs")),
             ("scrollbar_demo.rs", include_str!("scrollbar_demo.rs")),
             ("splitter_demo.rs", include_str!("splitter_demo.rs")),
@@ -1014,6 +1026,19 @@ mod tests {
     #[test]
     fn icon_demo_uses_liora_layout_primitives() {
         assert_demo_uses_liora_layout_primitives("icon_demo.rs", include_str!("icon_demo.rs"));
+    }
+
+    #[test]
+    fn icon_libraries_demo_is_registered_as_a_standalone_page() {
+        let source = include_str!("mod.rs");
+
+        assert!(source.contains("pub mod icon_libraries_demo;"));
+        assert!(source.contains("name: \"Icon Libraries 图标库\""));
+        assert!(source.contains("icon_libraries_demo::render(cx)"));
+        assert_demo_uses_liora_layout_primitives(
+            "icon_libraries_demo.rs",
+            include_str!("icon_libraries_demo.rs"),
+        );
     }
 
     #[test]

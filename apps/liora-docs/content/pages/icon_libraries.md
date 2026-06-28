@@ -20,8 +20,6 @@ Liora ships typed SVG icon packs for Lucide, Ant Design, Ionicons, Tabler, Carbo
 | Carbon | `liora-icons-carbon` | `liora::icons_carbon` | Carbon 名称扁平化为 PascalCase，每个图标保留一个优先尺寸 | `IconName::CheckmarkFilled` |
 | Material | `liora-icons-material` | `liora::icons_material` | 默认名，或追加 `Outlined` / `Round` / `Sharp` / `Twotone` | `IconName::SearchOutlined` |
 
-## 完整 IconName 清单
+## 完整 IconName 清单在哪里？
 
-下面的清单由当前编译进应用的 `IconName::all()` 数据生成，覆盖每个内置图标库中的每个图标。点击任意 `IconName` 即可复制可直接粘贴到代码中的完整路径。
-
-::LioraDemo{component="IconLibraryCatalog"}::
+Docs 左侧 `图标库` 分组下按图标库拆分为 `Lucide Icons`、`Ant Design Icons`、`Ionicons`、`Tabler Icons`、`Carbon Icons`、`Material Icons` 六个页面。每个页面使用虚拟化 + 自适应 `Grid` 渲染该库的完整图标墙，点击任意正方形 item 即可复制完整 Rust 路径。

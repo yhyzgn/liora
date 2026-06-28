@@ -15,8 +15,12 @@ pub enum Category {
 }
 
 impl Category {
-    pub const ALL: &'static [Category] =
-        &[Category::About, Category::WindowLayout, Category::Control];
+    pub const ALL: &'static [Category] = &[
+        Category::About,
+        Category::IconLibrary,
+        Category::WindowLayout,
+        Category::Control,
+    ];
 
     /// Returns the navigation group label shown in Gallery and Docs.
     pub fn name(self) -> &'static str {
@@ -58,14 +62,15 @@ pub fn component_key(label_or_title: &str) -> &str {
 pub fn category_for(label_or_title: &str) -> Category {
     match component_key(label_or_title) {
         "About" => Category::About,
-        "Icon" | "Icon Libraries" => Category::IconLibrary,
+        "Icon" | "IconLibraries" | "Icon Libraries" | "Lucide" | "Ant" | "Ant Design"
+        | "Ionicons" | "Tabler" | "Carbon" | "Material" => Category::IconLibrary,
         "Overview" | "Quick" | "Quick Start" | "Architecture" | "Packaging"
         | "Packaging Workflow" | "Release" | "Release Candidate" | "Adoption"
         | "Adoption Guide" | "Gallery" | "Gallery Dogfooding" | "Dashboard"
         | "Dashboard Patterns" | "Dashboard State" | "Live" | "Live Demo" | "Authoring"
         | "Shell" | "TitleBar" | "Sidebar" | "Container" | "Dialog" | "Drawer" | "MessageBox"
         | "Popconfirm" | "Popover" | "Tooltip" | "Tour" | "Tray" | "PageHeader" | "Layout"
-        | "Space" | "Affix" | "Anchor" | "Backtop" | "Splitter" | "Scrollbar" => {
+        | "Space" | "Grid" | "Affix" | "Anchor" | "Backtop" | "Splitter" | "Scrollbar" => {
             Category::WindowLayout
         }
         _ => Category::Control,

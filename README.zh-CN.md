@@ -558,6 +558,8 @@ impl Render for SettingsView {
 | `liora-icons-carbon` | `liora::icons_carbon` | Carbon 名称扁平化成 PascalCase；每个图标保留一个优先尺寸 | `IconName::Save`, `IconName::CheckmarkFilled` |
 | `liora-icons-material` | `liora::icons_material` | Material 24px 风格后缀 | `IconName::Search`, `IconName::SearchOutlined`, `IconName::SearchRound` |
 
+Docs 应用中有独立的 **Icon Libraries** 说明页和 `图标库` 导航分组。每个内置图库都有单独页面（`Lucide Icons`、`Ant Design Icons`、`Ionicons`、`Tabler Icons`、`Carbon Icons`、`Material Icons`），页面使用虚拟化 + 自适应 `Grid` 渲染完整图标墙；点击任意正方形图标 item 会复制完整 `IconName` 路径。
+
 图标 primitive 与内置 icon 名称：
 
 ```rust
@@ -707,6 +709,33 @@ let dashboard = Flex::new()
         .title("Summary")
         .hoverable(),
     );
+```
+
+### 响应式 Grid
+
+`Grid` 用于图标墙、卡片墙、设置入口等二维布局。`fit_item(...)` 表示 item 尺寸固定、列数随容器宽度自动变化；`fit_columns(n)` 表示列数固定、item 随容器宽度缩放。`GridItem` 默认是正方形。
+
+```rust
+use liora::components::{Grid, GridItem, Space, Text};
+use liora::icons::Icon;
+use liora::icons_lucide::IconName;
+
+let icon_wall = Grid::new()
+    .fit_item_md()
+    .gap_md()
+    .child(GridItem::new(
+        Space::new()
+            .vertical()
+            .align_center()
+            .gap_sm()
+            .child(Icon::new(IconName::Settings).size_lg())
+            .child(Text::new("Settings")),
+    ));
+
+let fixed_columns = Grid::new()
+    .fit_columns(4)
+    .gap_md()
+    .child(GridItem::new(Text::new("Scales with column width")));
 ```
 
 ### Button、Tag、Progress 与 toast
@@ -1348,7 +1377,7 @@ impl Render for OrdersView {
 
 | 分类 | 组件 |
 |---|---|
-| Basic / Layout 基础布局 | `Button`, `ButtonGroup`, `Icon`, `Link`, `Text`, `Title`, `Paragraph`, `SelectableTextGroup`, `Space`, `Divider`, `Row`, `Col`, `Container`, `Shell`, `Sidebar`, `TitleBar`, `Flex`, `Scrollbar`, `ScrollableMask`, `Splitter`, `DockLayout`, `Affix`, `Backtop` |
+| Basic / Layout 基础布局 | `Button`, `ButtonGroup`, `Icon`, `Link`, `Text`, `Title`, `Paragraph`, `SelectableTextGroup`, `Space`, `Grid`, `GridItem`, `Divider`, `Row`, `Col`, `Container`, `Shell`, `Sidebar`, `TitleBar`, `Flex`, `Scrollbar`, `ScrollableMask`, `Splitter`, `DockLayout`, `Affix`, `Backtop` |
 | Form 表单 | `Input`, `InputNumber`, `Textarea`, `Checkbox`, `CheckboxGroup`, `Radio`, `RadioGroup`, `Switch`, `Select`, `Slider`, `Form`, `FormItem`, `Rate`, `DatePicker`, `TimePicker`, `DateTimePicker`, `Upload`, `Cascader`, `Transfer`, `ColorPicker`, `Autocomplete`, `InputTag`, `Mention`, `TreeSelect`, `SearchableList`, `OtpInput`, `Toggle`, `ToggleGroup` |
 | Feedback / Overlay 反馈浮层 | `Alert`, `Tooltip`, `Popover`, `Popconfirm`, `Dialog`, `Drawer`, `Message`, `Notification`, `MessageBox`, `Loading`, `Dropdown`, `DropdownButton`, `Preview`, `Tour`, `HoverCard`, `FocusTrap` |
 | Navigation 导航 | `NavigationMenu`, `Tabs`, `Breadcrumb`, `Steps`, `PageHeader`, `Anchor`, `Accordion` |
