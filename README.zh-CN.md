@@ -1179,6 +1179,48 @@ fn register_more_fonts(cx: &mut gpui::App) {
 
 Liora 自带的 Gallery 和 Docs 把完整 PingFangSC TTF 字体族分别放在各自应用的 `assets/fonts/PingFangSC/` 下。应用二进制只内嵌 `PingFangSC-Regular.ttf` 作为裸可执行 fallback；打包流水线会把完整 `assets/fonts` 目录作为外部资源挂载到安装包和 portable archive 中。
 
+### 平台菜单与窗口内可见菜单栏
+
+`Menu` 是共享的命令 descriptor。它既可以注册到 GPUI 官方平台菜单，也可以渲染成窗口内 fallback 菜单栏，还可以复用到命令面板。两者不是同一层：
+
+| 目标 / 环境 | 使用方式 | 说明 |
+|---|---|---|
+| 接入 OS / 平台菜单语义 | `Menu::register(cx, menus)` | 委托给 GPUI `App::set_menus`。macOS 通常显示在屏幕顶部全局菜单栏；Linux/Wayland/KDE/GNOME 和 Windows 是否可见取决于平台后端/桌面环境，不会自动插入 GPUI 元素树。 |
+| 必须在应用窗口内稳定可见 | `MenuBar::new(menus)` | `MenuBar` 是 Liora 可视组件，可放在 `Container` header、`Shell` 区域或自定义 `TitleBar`。 |
+| System frame 且接受平台原生行为 | 只调用 `Menu::register(...)` | 适合 macOS 原生体验；部分 Linux/Windows 环境可能看不到窗口菜单。 |
+| System frame 但窗口内必须显示菜单 | `Menu::register(...)` + header 中放 `MenuBar` | Gallery 就是这种模式：保留平台菜单注册，同时 header fallback 跨环境稳定可见。 |
+| Custom frame / client-side decorations | `Menu::register(...)` + chrome/header 中放可见 `MenuBar` | 自定义标题栏不会让 GPUI 自动把平台菜单注入元素树。 |
+| 文档、设置页、预览用例 | `MenuBar` 或单个 `Menu`，并设置 `.perform_builtin_actions(false)` | 避免示例点击时真的退出应用、打开 URL 或写剪贴板。 |
+
+```rust
+use gpui::App;
+use liora::components::{Menu, MenuBar, MenuItem};
+
+fn app_menus() -> [Menu; 2] {
+    [
+        Menu::new("File")
+            .item(MenuItem::open_file())
+            .item(MenuItem::open_folder())
+            .item(MenuItem::separator())
+            .item(MenuItem::quit()),
+        Menu::new("Edit")
+            .item(MenuItem::undo())
+            .item(MenuItem::redo())
+            .item(MenuItem::separator())
+            .item(MenuItem::copy())
+            .item(MenuItem::paste()),
+    ]
+}
+
+fn register_platform_menu(cx: &mut App) {
+    Menu::register(cx, app_menus());
+}
+
+fn in_window_menu_bar() -> MenuBar {
+    MenuBar::new(app_menus()).perform_builtin_actions(false)
+}
+```
+
 ### 浮层与 portal 渲染
 
 大多数应用只需要 `liora::init_liora(cx)`。如果你自己实现根 shell 并手动管理 overlay layer，应在窗口根部渲染 portal：

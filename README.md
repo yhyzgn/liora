@@ -1180,6 +1180,48 @@ fn register_more_fonts(cx: &mut gpui::App) {
 
 For Liora's own apps, Gallery and Docs keep the full PingFangSC TTF family under each app's `assets/fonts/PingFangSC/`. The app binaries embed only `PingFangSC-Regular.ttf` as a raw-executable fallback; the packaging pipeline mounts the full `assets/fonts` directory externally for installers and portable archives.
 
+### Platform menus and visible in-window menu bars
+
+`Menu` is the shared command descriptor. It can be registered with GPUI's official platform menu API, rendered as an in-window fallback menu bar, or reused by a command palette. These are intentionally separate layers:
+
+| Goal / environment | Use | Notes |
+|---|---|---|
+| Register OS/platform menu semantics | `Menu::register(cx, menus)` | Delegates to GPUI `App::set_menus`. On macOS the menu usually appears in the global screen menu bar. On Linux/Wayland/KDE/GNOME and Windows, visibility is platform/backend dependent and it is not inserted into your GPUI element tree. |
+| Always show a menu inside the app window | `MenuBar::new(menus)` | `MenuBar` is a Liora visual component. Put it in a `Container` header, `Shell` region, or custom `TitleBar`. |
+| System frame, native platform behavior is enough | `Menu::register(...)` only | Good for macOS-native behavior; some Linux/Windows environments may not show a window menu. |
+| System frame, but the menu must be visible in the window | `Menu::register(...)` plus a header `MenuBar` | This is what Gallery does: platform registration remains active, while the header fallback is stable across environments. |
+| Custom frame / client-side decorations | `Menu::register(...)` plus a visible `MenuBar` in your chrome/header | A custom titlebar does not cause GPUI to inject a menu into your element tree. |
+| Docs/settings/preview only | `MenuBar` or a single `Menu` with `.perform_builtin_actions(false)` | Prevents demos from quitting the app, opening URLs, or writing the clipboard. |
+
+```rust
+use gpui::App;
+use liora::components::{Menu, MenuBar, MenuItem};
+
+fn app_menus() -> [Menu; 2] {
+    [
+        Menu::new("File")
+            .item(MenuItem::open_file())
+            .item(MenuItem::open_folder())
+            .item(MenuItem::separator())
+            .item(MenuItem::quit()),
+        Menu::new("Edit")
+            .item(MenuItem::undo())
+            .item(MenuItem::redo())
+            .item(MenuItem::separator())
+            .item(MenuItem::copy())
+            .item(MenuItem::paste()),
+    ]
+}
+
+fn register_platform_menu(cx: &mut App) {
+    Menu::register(cx, app_menus());
+}
+
+fn in_window_menu_bar() -> MenuBar {
+    MenuBar::new(app_menus()).perform_builtin_actions(false)
+}
+```
+
 ### Overlay and portal rendering
 
 Most apps only need `liora::init_liora(cx)`. If you build a custom root shell that manually manages overlay layers, keep portal rendering near the window root:

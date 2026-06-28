@@ -970,7 +970,7 @@ impl Render for Gallery {
             .flex()
             .flex_col()
             .gap_2()
-            .child(gallery_window_menu_bar())
+            .child(gallery_fallback_menu_bar())
             .child(header_main);
 
         let shell = Container::new()
@@ -1501,8 +1501,13 @@ fn gallery_titlebar() -> TitleBar {
         .subtitle("Native component gallery")
 }
 
-/// Builds the visible menu preview that mirrors the registered GPUI system menu.
-fn gallery_window_menu_bar() -> MenuBar {
+/// Builds the in-window fallback menu bar that mirrors the registered GPUI platform menu.
+///
+/// `Menu::register` delegates to GPUI/OS integration, but that platform menu
+/// is not guaranteed to be visible inside a Linux/Windows application window.
+/// Gallery renders this fallback in the content header so both system-frame and
+/// custom-frame modes demonstrate the same command structure.
+fn gallery_fallback_menu_bar() -> MenuBar {
     MenuBar::new([
         Menu::new("File")
             .perform_builtin_actions(false)
@@ -2025,15 +2030,15 @@ mod shell_regression_tests {
     }
 
     #[test]
-    fn gallery_header_embeds_visible_menu_bar_for_all_frame_modes() {
+    fn gallery_header_embeds_fallback_menu_bar_for_all_frame_modes() {
         let source = include_str!("main.rs")
             .split("mod shell_regression_tests")
             .next()
             .unwrap();
 
         assert!(source.contains(".header(header)"));
-        assert!(source.contains(".child(gallery_window_menu_bar())"));
-        assert!(source.contains("fn gallery_window_menu_bar() -> MenuBar"));
+        assert!(source.contains(".child(gallery_fallback_menu_bar())"));
+        assert!(source.contains("fn gallery_fallback_menu_bar() -> MenuBar"));
         assert!(source.contains("MenuBar::new(["));
         assert!(source.contains(".titlebar(gallery_titlebar())"));
         assert!(!source.contains(".leading(gallery_window_menu_bar())"));
