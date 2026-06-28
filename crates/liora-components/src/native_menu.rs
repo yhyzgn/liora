@@ -21,16 +21,17 @@
 
 use crate::Text;
 use gpui::{
-    AnyElement, App, Component, IntoElement, MouseButton, RenderOnce, SharedString, Window, div,
-    prelude::*, px,
+    AnyElement, App, Component, IntoElement, MouseButton, PathPromptOptions, RenderOnce,
+    SharedString, Window, div, prelude::*, px,
 };
 use liora_core::Config;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 type MenuSelectCallback =
     dyn Fn(NativeMenuAction, &NativeMenuItem, &mut Window, &mut App) + 'static;
+type PathSelectCallback = dyn Fn(NativeMenuAction, Option<Vec<PathBuf>>, &mut App) + 'static;
 
 /// Static documentation for a built-in native menu action.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -52,8 +53,16 @@ pub struct NativeMenuActionInfo {
 pub enum NativeMenuAction {
     /// Opens a new application window. Applications usually map this to their own window factory.
     NewWindow,
-    /// Opens a file picker or project picker.
+    /// Opens a file or folder picker.
     Open,
+    /// Opens a single-file picker.
+    OpenFile,
+    /// Opens a multiple-file picker.
+    OpenFiles,
+    /// Opens a single-folder picker.
+    OpenFolder,
+    /// Opens a multiple-folder picker.
+    OpenFolders,
     /// Saves the active document.
     Save,
     /// Saves the active document through a save-as flow.
@@ -96,30 +105,58 @@ impl NativeMenuAction {
             Self::Open => NativeMenuActionInfo {
                 id: "open",
                 name: "Open",
-                description: "Request an open-file or open-project flow.",
-                effect: "Dispatch only; application owns file picker and state.",
-                handled_by_liora: false,
+                description: "Open a system picker that accepts one file or folder.",
+                effect: "Calls cx.prompt_for_paths(files=true, directories=true, multiple=false).",
+                handled_by_liora: true,
+            },
+            Self::OpenFile => NativeMenuActionInfo {
+                id: "open-file",
+                name: "OpenFile",
+                description: "Open a system picker for one file.",
+                effect: "Calls cx.prompt_for_paths(files=true, directories=false, multiple=false).",
+                handled_by_liora: true,
+            },
+            Self::OpenFiles => NativeMenuActionInfo {
+                id: "open-files",
+                name: "OpenFiles",
+                description: "Open a system picker for multiple files.",
+                effect: "Calls cx.prompt_for_paths(files=true, directories=false, multiple=true).",
+                handled_by_liora: true,
+            },
+            Self::OpenFolder => NativeMenuActionInfo {
+                id: "open-folder",
+                name: "OpenFolder",
+                description: "Open a system picker for one folder.",
+                effect: "Calls cx.prompt_for_paths(files=false, directories=true, multiple=false).",
+                handled_by_liora: true,
+            },
+            Self::OpenFolders => NativeMenuActionInfo {
+                id: "open-folders",
+                name: "OpenFolders",
+                description: "Open a system picker for multiple folders.",
+                effect: "Calls cx.prompt_for_paths(files=false, directories=true, multiple=true).",
+                handled_by_liora: true,
             },
             Self::Save => NativeMenuActionInfo {
                 id: "save",
                 name: "Save",
                 description: "Request saving the active document.",
-                effect: "Dispatch only; application owns document persistence.",
-                handled_by_liora: false,
+                effect: "Opens a Save As path dialog when no app-specific save handler is attached; application still writes content.",
+                handled_by_liora: true,
             },
             Self::SaveAs => NativeMenuActionInfo {
                 id: "save-as",
                 name: "SaveAs",
                 description: "Request saving through a Save As flow.",
-                effect: "Dispatch only; application owns the save dialog and path.",
-                handled_by_liora: false,
+                effect: "Calls cx.prompt_for_new_path(current_dir, suggested_name). Application still writes content.",
+                handled_by_liora: true,
             },
             Self::Close => NativeMenuActionInfo {
                 id: "close",
                 name: "Close",
                 description: "Request closing the active document or window.",
-                effect: "Dispatch only; application decides close confirmation and target.",
-                handled_by_liora: false,
+                effect: "Calls window.remove_window(); apps with close confirmation should disable automatic actions and handle on_select.",
+                handled_by_liora: true,
             },
             Self::Quit => NativeMenuActionInfo {
                 id: "quit",
@@ -153,22 +190,22 @@ impl NativeMenuAction {
                 id: "zoom-in",
                 name: "ZoomIn",
                 description: "Request zooming in the active surface.",
-                effect: "Dispatch only; application owns zoom state.",
-                handled_by_liora: false,
+                effect: "Increases the current window rem size for app-level UI zoom.",
+                handled_by_liora: true,
             },
             Self::ZoomOut => NativeMenuActionInfo {
                 id: "zoom-out",
                 name: "ZoomOut",
                 description: "Request zooming out the active surface.",
-                effect: "Dispatch only; application owns zoom state.",
-                handled_by_liora: false,
+                effect: "Decreases the current window rem size for app-level UI zoom.",
+                handled_by_liora: true,
             },
             Self::ZoomReset => NativeMenuActionInfo {
                 id: "zoom-reset",
                 name: "ZoomReset",
                 description: "Request resetting active-surface zoom.",
-                effect: "Dispatch only; application owns zoom state.",
-                handled_by_liora: false,
+                effect: "Resets the current window rem size to 16px.",
+                handled_by_liora: true,
             },
             Self::OpenUrl(_) => NativeMenuActionInfo {
                 id: "open-url",
@@ -199,6 +236,10 @@ impl NativeMenuAction {
         vec![
             Self::NewWindow,
             Self::Open,
+            Self::OpenFile,
+            Self::OpenFiles,
+            Self::OpenFolder,
+            Self::OpenFolders,
             Self::Save,
             Self::SaveAs,
             Self::Close,
@@ -216,9 +257,62 @@ impl NativeMenuAction {
     }
 
     /// Applies the built-in side effect for actions that can be handled generically.
-    pub fn perform(&self, cx: &mut App) {
+    pub fn perform(&self, window: &mut Window, cx: &mut App) {
+        self.perform_with_path_callback(window, cx, None);
+    }
+
+    fn perform_with_path_callback(
+        &self,
+        window: &mut Window,
+        cx: &mut App,
+        on_paths_selected: Option<Arc<PathSelectCallback>>,
+    ) {
         match self {
+            Self::Open => prompt_for_existing_paths(
+                self.clone(),
+                path_prompt(true, true, false, "Open file or folder"),
+                on_paths_selected,
+                cx,
+            ),
+            Self::OpenFile => prompt_for_existing_paths(
+                self.clone(),
+                path_prompt(true, false, false, "Open file"),
+                on_paths_selected,
+                cx,
+            ),
+            Self::OpenFiles => prompt_for_existing_paths(
+                self.clone(),
+                path_prompt(true, false, true, "Open files"),
+                on_paths_selected,
+                cx,
+            ),
+            Self::OpenFolder => prompt_for_existing_paths(
+                self.clone(),
+                path_prompt(false, true, false, "Open folder"),
+                on_paths_selected,
+                cx,
+            ),
+            Self::OpenFolders => prompt_for_existing_paths(
+                self.clone(),
+                path_prompt(false, true, true, "Open folders"),
+                on_paths_selected,
+                cx,
+            ),
+            Self::Save | Self::SaveAs => {
+                let directory = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+                prompt_for_new_path(
+                    self.clone(),
+                    directory,
+                    Some("Untitled"),
+                    on_paths_selected,
+                    cx,
+                );
+            }
+            Self::Close => window.remove_window(),
             Self::Quit => cx.quit(),
+            Self::ZoomIn => window.set_rem_size(window.rem_size() + px(1.0)),
+            Self::ZoomOut => window.set_rem_size((window.rem_size() - px(1.0)).max(px(8.0))),
+            Self::ZoomReset => window.set_rem_size(px(16.0)),
             Self::OpenUrl(url) => cx.open_url(url),
             Self::CopyText(text) => {
                 cx.write_to_clipboard(gpui::ClipboardItem::new_string(text.to_string()))
@@ -226,6 +320,64 @@ impl NativeMenuAction {
             _ => {}
         }
     }
+}
+
+fn path_prompt(
+    files: bool,
+    directories: bool,
+    multiple: bool,
+    prompt: &'static str,
+) -> PathPromptOptions {
+    PathPromptOptions {
+        files,
+        directories,
+        multiple,
+        prompt: Some(prompt.into()),
+    }
+}
+
+fn prompt_for_existing_paths(
+    action: NativeMenuAction,
+    options: PathPromptOptions,
+    callback: Option<Arc<PathSelectCallback>>,
+    cx: &mut App,
+) {
+    let receiver = cx.prompt_for_paths(options);
+    let Some(callback) = callback else {
+        return;
+    };
+    let app = cx.to_async();
+    cx.foreground_executor()
+        .spawn(async move {
+            let selected = receiver.await.ok().and_then(Result::ok).flatten();
+            let _ = app.update(|cx| callback(action, selected, cx));
+        })
+        .detach();
+}
+
+fn prompt_for_new_path(
+    action: NativeMenuAction,
+    directory: PathBuf,
+    suggested_name: Option<&str>,
+    callback: Option<Arc<PathSelectCallback>>,
+    cx: &mut App,
+) {
+    let receiver = cx.prompt_for_new_path(&directory, suggested_name);
+    let Some(callback) = callback else {
+        return;
+    };
+    let app = cx.to_async();
+    cx.foreground_executor()
+        .spawn(async move {
+            let selected = receiver
+                .await
+                .ok()
+                .and_then(Result::ok)
+                .flatten()
+                .map(|path| vec![path]);
+            let _ = app.update(|cx| callback(action, selected, cx));
+        })
+        .detach();
 }
 
 /// Platform-neutral native menu item description.
@@ -284,14 +436,44 @@ impl NativeMenuItem {
         Self::action(NativeMenuAction::NewWindow, "New Window").shortcut("Ctrl+Shift+N")
     }
 
-    /// Creates a built-in Open item.
+    /// Creates a built-in Open item that accepts one file or folder.
     pub fn open() -> Self {
         Self::action(NativeMenuAction::Open, "Open...").shortcut("Ctrl+O")
+    }
+
+    /// Creates a built-in Open File item.
+    pub fn open_file() -> Self {
+        Self::action(NativeMenuAction::OpenFile, "Open File...").shortcut("Ctrl+O")
+    }
+
+    /// Creates a built-in Open Files item.
+    pub fn open_files() -> Self {
+        Self::action(NativeMenuAction::OpenFiles, "Open Files...").shortcut("Ctrl+Shift+O")
+    }
+
+    /// Creates a built-in Open Folder item.
+    pub fn open_folder() -> Self {
+        Self::action(NativeMenuAction::OpenFolder, "Open Folder...").shortcut("Ctrl+Alt+O")
+    }
+
+    /// Creates a built-in Open Folders item.
+    pub fn open_folders() -> Self {
+        Self::action(NativeMenuAction::OpenFolders, "Open Folders...")
     }
 
     /// Creates a built-in Save item.
     pub fn save() -> Self {
         Self::action(NativeMenuAction::Save, "Save").shortcut("Ctrl+S")
+    }
+
+    /// Creates a built-in Save As item.
+    pub fn save_as() -> Self {
+        Self::action(NativeMenuAction::SaveAs, "Save As...").shortcut("Ctrl+Shift+S")
+    }
+
+    /// Creates a built-in Close item.
+    pub fn close() -> Self {
+        Self::action(NativeMenuAction::Close, "Close").shortcut("Ctrl+W")
     }
 
     /// Creates a built-in Quit item.
@@ -369,6 +551,7 @@ pub struct NativeMenu {
     pub items: Vec<NativeMenuItem>,
     preview_width: gpui::Pixels,
     on_select: Option<Arc<MenuSelectCallback>>,
+    on_paths_selected: Option<Arc<PathSelectCallback>>,
     perform_builtin_actions: bool,
 }
 
@@ -380,6 +563,7 @@ impl NativeMenu {
             items: Vec::new(),
             preview_width: px(280.0),
             on_select: None,
+            on_paths_selected: None,
             perform_builtin_actions: true,
         }
     }
@@ -412,6 +596,15 @@ impl NativeMenu {
         self
     }
 
+    /// Registers a callback for paths selected by Open/OpenFile/OpenFolder/SaveAs dialogs.
+    pub fn on_paths_selected(
+        mut self,
+        callback: impl Fn(NativeMenuAction, Option<Vec<PathBuf>>, &mut App) + 'static,
+    ) -> Self {
+        self.on_paths_selected = Some(Arc::new(callback));
+        self
+    }
+
     /// Registers a callback that receives built-in and custom actions.
     pub fn on_select(
         mut self,
@@ -432,6 +625,7 @@ impl RenderOnce for NativeMenu {
         let theme = cx.global::<Config>().theme.clone();
         let command_count = self.command_count();
         let on_select = self.on_select.clone();
+        let on_paths_selected = self.on_paths_selected.clone();
         let perform_builtin_actions = self.perform_builtin_actions;
         div()
             .w(self.preview_width)
@@ -454,7 +648,14 @@ impl RenderOnce for NativeMenu {
                     .child(Text::new(format!("{} commands", command_count)).xs()),
             )
             .children(self.items.into_iter().map(|item| {
-                render_menu_item(item, 0, &theme, on_select.clone(), perform_builtin_actions)
+                render_menu_item(
+                    item,
+                    0,
+                    &theme,
+                    on_select.clone(),
+                    on_paths_selected.clone(),
+                    perform_builtin_actions,
+                )
             }))
     }
 }
@@ -480,6 +681,10 @@ fn action_id(action: &NativeMenuAction) -> SharedString {
         NativeMenuAction::NewWindow => "new-window".into(),
         NativeMenuAction::Open => "open".into(),
         NativeMenuAction::Save => "save".into(),
+        NativeMenuAction::OpenFile => "open-file".into(),
+        NativeMenuAction::OpenFiles => "open-files".into(),
+        NativeMenuAction::OpenFolder => "open-folder".into(),
+        NativeMenuAction::OpenFolders => "open-folders".into(),
         NativeMenuAction::SaveAs => "save-as".into(),
         NativeMenuAction::Close => "close".into(),
         NativeMenuAction::Quit => "quit".into(),
@@ -500,6 +705,7 @@ fn render_menu_item(
     depth: usize,
     theme: &liora_theme::Theme,
     on_select: Option<Arc<MenuSelectCallback>>,
+    on_paths_selected: Option<Arc<PathSelectCallback>>,
     perform_builtin_actions: bool,
 ) -> AnyElement {
     if item.separator {
@@ -517,6 +723,7 @@ fn render_menu_item(
     let action = item.action.clone();
     let click_item = item.clone();
     let click_callback = on_select.clone();
+    let click_paths_callback = on_paths_selected.clone();
     div()
         .flex()
         .flex_col()
@@ -541,7 +748,11 @@ fn render_menu_item(
                                 .clone()
                                 .unwrap_or_else(|| NativeMenuAction::Custom(click_item.id.clone()));
                             if perform_builtin_actions {
-                                selected_action.perform(cx);
+                                selected_action.perform_with_path_callback(
+                                    window,
+                                    cx,
+                                    click_paths_callback.clone(),
+                                );
                             }
                             if let Some(callback) = &click_callback {
                                 callback(selected_action, &click_item, window, cx);
@@ -576,6 +787,7 @@ fn render_menu_item(
                 depth + 1,
                 theme,
                 on_select.clone(),
+                on_paths_selected.clone(),
                 perform_builtin_actions,
             )
         }))
@@ -602,7 +814,9 @@ mod tests {
             Some("Ctrl+O")
         );
         assert_eq!(menu.items[0].action, Some(NativeMenuAction::Open));
-        assert!(!NativeMenuAction::Open.info().handled_by_liora);
+        assert!(NativeMenuAction::Open.info().handled_by_liora);
+        assert!(NativeMenuAction::OpenFolder.info().handled_by_liora);
+        assert!(NativeMenuAction::SaveAs.info().handled_by_liora);
         assert!(
             NativeMenuAction::CopyText("liora".into())
                 .info()
@@ -624,5 +838,10 @@ mod tests {
         assert!(source.contains("NativeMenuActionInfo"));
         assert!(source.contains("pub fn catalog"));
         assert!(source.contains("perform_builtin_actions"));
+        assert!(source.contains("on_paths_selected"));
+        assert!(source.contains("prompt_for_paths"));
+        assert!(source.contains("prompt_for_new_path"));
+        assert!(source.contains("window.remove_window()"));
+        assert!(source.contains("window.set_rem_size"));
     }
 }

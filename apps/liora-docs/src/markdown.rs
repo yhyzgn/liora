@@ -3377,6 +3377,10 @@ impl Render for LiveDemoContent {
                 .perform_builtin_actions(false)
                 .item(liora_components::NativeMenuItem::new_window())
                 .item(liora_components::NativeMenuItem::open())
+                .item(liora_components::NativeMenuItem::open_file())
+                .item(liora_components::NativeMenuItem::open_files())
+                .item(liora_components::NativeMenuItem::open_folder())
+                .item(liora_components::NativeMenuItem::open_folders())
                 .item(
                     liora_components::NativeMenuItem::new("recent", "Open Recent")
                         .child(liora_components::NativeMenuItem::new("recent-gallery", "liora-gallery"))
@@ -3384,9 +3388,13 @@ impl Render for LiveDemoContent {
                 )
                 .item(liora_components::NativeMenuItem::separator())
                 .item(liora_components::NativeMenuItem::save())
+                .item(liora_components::NativeMenuItem::save_as())
                 .item(liora_components::NativeMenuItem::open_url("Open GitHub Repository", "https://github.com/yhyzgn/liora"))
                 .item(liora_components::NativeMenuItem::new("check-updates", "Check for Updates").with_action(liora_components::NativeMenuAction::Custom("check-updates".into())))
                 .item(liora_components::NativeMenuItem::new("publish", "Publish Release").disabled(true))
+                .on_paths_selected(|action, paths, _| {
+                    toast_info!("{} paths: {:?}", action.info().name, paths);
+                })
                 .into_any_element(),
             "NativeMenuActions" => native_menu_action_catalog().into_any_element(),
             "DockLayoutWorkbench" => demo_row(vec![
@@ -11200,6 +11208,11 @@ mod tests {
         assert!(NATIVE_MENU_DOC.contains("嵌套 submenu"));
         assert!(NATIVE_MENU_DOC.contains("Action Catalog"));
         assert!(NATIVE_MENU_DOC.contains("perform_builtin_actions(false)"));
+        assert!(NATIVE_MENU_DOC.contains("OpenFile"));
+        assert!(NATIVE_MENU_DOC.contains("OpenFolder"));
+        assert!(NATIVE_MENU_DOC.contains("prompt_for_paths"));
+        assert!(NATIVE_MENU_DOC.contains("prompt_for_new_path"));
+        assert!(NATIVE_MENU_DOC.contains("on_paths_selected"));
         assert!(load_code_snippet("native_menu/descriptor.rs").is_some());
         assert!(load_code_snippet("native_menu/actions.rs").is_some());
     }

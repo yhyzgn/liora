@@ -26,6 +26,12 @@ impl Render for NativeMenuDemo {
                     )
                     .into_any_element(),
                     showcase_card_wide(
+                        "System dialogs",
+                        "OpenFile/OpenFiles/OpenFolder/OpenFolders/SaveAs 会调用 GPUI 官方系统路径对话框；选择或取消后通过 on_paths_selected 回传。",
+                        system_dialog_menu(),
+                    )
+                    .into_any_element(),
+                    showcase_card_wide(
                         "View menu",
                         "内置 command palette、sidebar/statusbar toggle、zoom action，便于自定义 TitleBar 复用。",
                         view_menu(),
@@ -54,6 +60,8 @@ fn file_menu() -> NativeMenu {
         .perform_builtin_actions(false)
         .item(NativeMenuItem::new_window())
         .item(NativeMenuItem::open())
+        .item(NativeMenuItem::open_file())
+        .item(NativeMenuItem::open_folder())
         .item(
             NativeMenuItem::new("recent", "Open Recent")
                 .child(NativeMenuItem::new("recent-gallery", "liora-gallery"))
@@ -64,6 +72,38 @@ fn file_menu() -> NativeMenu {
         .item(NativeMenuItem::new("publish", "Publish Release").disabled(true))
         .item(NativeMenuItem::separator())
         .item(NativeMenuItem::quit())
+}
+
+fn system_dialog_menu() -> NativeMenu {
+    NativeMenu::new("Dialogs")
+        .preview_width(gpui::px(360.0))
+        .item(NativeMenuItem::open_file())
+        .item(NativeMenuItem::open_files())
+        .item(NativeMenuItem::open_folder())
+        .item(NativeMenuItem::open_folders())
+        .item(NativeMenuItem::separator())
+        .item(NativeMenuItem::save_as())
+        .on_paths_selected(|action, paths, _| match paths {
+            Some(paths) if !paths.is_empty() => {
+                toast_info!(
+                    "{} selected: {}",
+                    action.info().name,
+                    paths
+                        .iter()
+                        .map(|path| path.display().to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                );
+            }
+            _ => toast_info!("{} cancelled", action.info().name),
+        })
+        .on_select(|action, item, _, _| {
+            toast_info!(
+                "NativeMenu dispatched: {} ({})",
+                action.info().name,
+                item.id
+            );
+        })
 }
 
 fn view_menu() -> NativeMenu {
@@ -147,6 +187,12 @@ mod tests {
         assert!(source.contains("NativeMenuItem::separator"));
         assert!(source.contains(".child(NativeMenuItem"));
         assert!(source.contains("NativeMenuItem::open_url"));
+        assert!(source.contains("NativeMenuItem::open_file"));
+        assert!(source.contains("NativeMenuItem::open_files"));
+        assert!(source.contains("NativeMenuItem::open_folder"));
+        assert!(source.contains("NativeMenuItem::open_folders"));
+        assert!(source.contains("NativeMenuItem::save_as"));
+        assert!(source.contains("on_paths_selected"));
         assert!(source.contains("NativeMenuAction::ZoomIn"));
         assert!(source.contains("on_select"));
         assert!(source.contains("Action catalog"));
