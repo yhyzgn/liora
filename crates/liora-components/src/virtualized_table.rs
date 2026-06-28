@@ -23,8 +23,8 @@ use crate::VirtualScrollbar;
 use crate::gpui_compat::element_id;
 use crate::table::{TableAlign, TableColumn, TableColumnFixed, TableSortOrder, TableSortState};
 use gpui::{
-    AnyElement, App, Component, ElementId, InteractiveElement, IntoElement, ListAlignment,
-    ListState, Pixels, RenderOnce, SharedString, Window, div, list, prelude::*, px,
+    AnyElement, App, Component, ElementId, IntoElement, ListAlignment, ListState, Pixels,
+    RenderOnce, SharedString, Window, div, list, prelude::*, px,
 };
 use liora_core::{Config, stable_unique_id};
 use liora_icons::Icon;
@@ -326,12 +326,14 @@ impl RenderOnce for VirtualizedTable {
             }));
 
         let body = if has_rows {
+            // GPUI List owns wheel scrolling through ListState; do not add an
+            // outer overflow-y scroll container or it will double-scroll the
+            // list paint area and can leave blank space when scrolling back up.
             div()
                 .relative()
                 .w_full()
                 .h(self.height)
                 .id(element_id(format!("{}-body", root_id)))
-                .overflow_y_scroll()
                 .child(
                     list(list_state.clone(), move |row_index, window, cx| {
                         let striped = stripe && row_index % 2 == 1;
@@ -584,17 +586,22 @@ mod tests {
     #[test]
     fn virtualized_table_uses_list_state_without_row_element_cache() {
         let source = include_str!("virtualized_table.rs");
+        let production = source
+            .split("#[cfg(test)]")
+            .next()
+            .expect("production source should precede tests");
 
         assert!(source.contains("pub struct VirtualizedTable"));
         assert!(source.contains("use_keyed_state"));
         assert!(source.contains("stable_unique_id"));
         assert!(source.contains(r#"id: "virtualized-table".into()"#));
-        assert!(source.contains(".overflow_y_scroll()"));
+        assert!(!production.contains(".overflow_y_scroll()"));
         assert!(source.contains("VirtualizedTableState"));
         assert!(source.contains("state.sync"));
         assert!(source.contains("state_id"));
         assert!(source.contains("list(list_state.clone()"));
         assert!(source.contains("VirtualScrollbar::new"));
+        assert!(source.contains("GPUI List owns wheel scrolling"));
         assert!(source.contains("render_cell"));
         assert!(source.contains("row_count: usize,"));
         assert!(source.contains("render_cell: Arc<RenderCell>,"));
