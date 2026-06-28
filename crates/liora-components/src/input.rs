@@ -126,6 +126,7 @@ pub struct Input {
     pub min_rows: usize,
     on_enter: Option<Box<dyn Fn(&mut Self, &str, &mut Window, &mut Context<Self>) + 'static>>,
     on_change: Option<Box<dyn Fn(&str, &mut Context<Self>) + 'static>>,
+    on_clear: Option<Box<dyn Fn(&mut Context<Self>) + 'static>>,
 }
 
 impl Input {
@@ -161,6 +162,7 @@ impl Input {
             text_align: gpui::TextAlign::Left,
             on_enter: None,
             on_change: None,
+            on_clear: None,
         }
     }
     /// Uses the supplied placeholder text when the value is empty.
@@ -292,6 +294,17 @@ impl Input {
         self.on_change = None;
     }
 
+    /// Registers a callback that runs after the clear affordance clears the value.
+    pub fn on_clear(mut self, f: impl Fn(&mut Context<Self>) + 'static) -> Self {
+        self.on_clear = Some(Box::new(f));
+        self
+    }
+
+    /// Updates the stored on clear value and keeps the existing component identity.
+    pub fn set_on_clear(&mut self, f: impl Fn(&mut Context<Self>) + 'static) {
+        self.on_clear = Some(Box::new(f));
+    }
+
     fn emit_change(&mut self, cx: &mut Context<Self>) {
         if let Some(on_change) = self.on_change.take() {
             let value = self.value.to_string();
@@ -411,6 +424,10 @@ impl Input {
         self.value = SharedString::default();
         self.selected_range = 0..0;
         self.emit_change(cx);
+        if let Some(on_clear) = self.on_clear.take() {
+            on_clear(cx);
+            self.on_clear = Some(on_clear);
+        }
         cx.notify();
     }
 

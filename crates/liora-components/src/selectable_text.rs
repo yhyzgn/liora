@@ -378,7 +378,12 @@ impl SelectableTextState {
             .get(chosen)
             .copied()
             .unwrap_or((bounds.top(), 0));
-        let position = point(pt.x - bounds.left(), pt.y - y);
+        let line_size = line.size(self.line_height);
+        let local_x = (pt.x - bounds.left()).max(px(0.0));
+        let local_y = (pt.y - y)
+            .max(px(0.0))
+            .min((line_size.height - px(0.5)).max(px(0.0)));
+        let position = point(local_x, local_y);
         let line_index = line
             .closest_index_for_position(position, self.line_height)
             .unwrap_or_else(|idx| idx);

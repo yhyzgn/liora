@@ -71,6 +71,7 @@ pub struct Select {
     max_items: usize,
     disabled: bool,
     suppress_next_input_change: bool,
+    suppress_next_open: bool,
     border_none: bool,
     radius_none: bool,
     radius_left_none: bool,
@@ -108,6 +109,7 @@ impl Select {
             max_items: 8,
             disabled: false,
             suppress_next_input_change: false,
+            suppress_next_open: false,
             border_none: false,
             radius_none: false,
             radius_left_none: false,
@@ -486,10 +488,11 @@ impl Select {
     }
 
     fn clear_selected_values_from_input_clear(&mut self, cx: &mut Context<Self>) {
-        if self.is_open || self.selected_values.is_empty() {
-            return;
+        self.suppress_next_open = true;
+        self.is_open = false;
+        if !self.selected_values.is_empty() {
+            self.selected_values.clear();
         }
-        self.selected_values.clear();
         cx.notify();
     }
 
@@ -531,6 +534,11 @@ impl Select {
 
     fn open(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if self.disabled {
+            return;
+        }
+        if self.suppress_next_open {
+            self.suppress_next_open = false;
+            cx.notify();
             return;
         }
         self.is_open = true;
@@ -645,6 +653,14 @@ impl Select {
                             }
                             this.is_open = true;
                             cx.notify();
+                        });
+                    }
+                });
+                input.set_on_clear({
+                    let entity = entity.clone();
+                    move |cx| {
+                        entity.update(cx, |this, cx| {
+                            this.clear_selected_values_from_input_clear(cx);
                         });
                     }
                 });
@@ -967,6 +983,8 @@ mod searchable_select_tests {
         assert!(source.contains("fn clear_search_query"));
         assert!(source.contains("fn restore_selected_display_value"));
         assert!(source.contains("fn clear_selected_values_from_input_clear"));
+        assert!(source.contains("suppress_next_open"));
+        assert!(source.contains("input.set_on_clear"));
         assert!(source.contains("if input.read(cx).value() == value"));
         assert!(source.contains("self.set_input_value_silently(SharedString::default(), cx)"));
         assert!(source.contains("self.set_input_value_silently(self.summary(), cx)"));
