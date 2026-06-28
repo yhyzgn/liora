@@ -18,6 +18,50 @@ pub const LINUX_DEB_RUNTIME_DEPENDENCIES: &[&str] = &[
     "xdg-utils",
 ];
 
+/// Controls whether generated packages include application font resources.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum FontVariant {
+    /// Build/package without bundling application font files.
+    WithoutFonts,
+    /// Build/package with application font files included as external resources.
+    WithFonts,
+}
+
+impl FontVariant {
+    /// Returns the stable release-asset suffix for this font variant.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::WithoutFonts => "without-fonts",
+            Self::WithFonts => "with-fonts",
+        }
+    }
+
+    /// Returns whether external font resources should be bundled.
+    pub fn includes_fonts(self) -> bool {
+        matches!(self, Self::WithFonts)
+    }
+}
+
+impl Default for FontVariant {
+    fn default() -> Self {
+        Self::WithoutFonts
+    }
+}
+
+impl std::str::FromStr for FontVariant {
+    type Err = String;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        match value {
+            "without-fonts" | "no-fonts" | "default" => Ok(Self::WithoutFonts),
+            "with-fonts" | "fonts" => Ok(Self::WithFonts),
+            other => Err(format!(
+                "unknown font variant '{other}', expected 'without-fonts' or 'with-fonts'"
+            )),
+        }
+    }
+}
+
 pub const LINUX_RPM_RUNTIME_DEPENDENCIES: &[(&str, &str)] = &[
     ("gtk3", "*"),
     ("libayatana-appindicator-gtk3", "*"),
@@ -100,12 +144,39 @@ pub fn generated_config_path(root: &Path, app: &AppMetadata) -> PathBuf {
         .join(format!("Packager.{}.toml", app.app.key()))
 }
 
+/// Returns the path for the generated cargo-packager configuration file for a font variant.
+pub fn generated_config_path_for(
+    root: &Path,
+    app: &AppMetadata,
+    font_variant: FontVariant,
+) -> PathBuf {
+    root.join("target").join("liora-packager").join(format!(
+        "Packager.{}.{}.toml",
+        app.app.key(),
+        font_variant.as_str()
+    ))
+}
+
 /// Returns the directory where package artifacts for an app and platform are written.
 pub fn package_out_dir(root: &Path, app: &AppMetadata, platform: Platform) -> PathBuf {
     root.join("target")
         .join("packages")
         .join(&app.package)
         .join(platform.as_str())
+}
+
+/// Returns the package output directory for an app, platform, and font variant.
+pub fn package_out_dir_for(
+    root: &Path,
+    app: &AppMetadata,
+    platform: Platform,
+    font_variant: FontVariant,
+) -> PathBuf {
+    root.join("target")
+        .join("packages")
+        .join(&app.package)
+        .join(platform.as_str())
+        .join(font_variant.as_str())
 }
 
 /// Returns the staging directory used for release-mode raw binaries.
@@ -120,12 +191,34 @@ pub fn generated_rpm_config_path(root: &Path, app: &AppMetadata) -> PathBuf {
         .join(format!("GenerateRpm.{}.toml", app.app.key()))
 }
 
+/// Returns the generated RPM metadata path for the selected app and font variant.
+pub fn generated_rpm_config_path_for(
+    root: &Path,
+    app: &AppMetadata,
+    font_variant: FontVariant,
+) -> PathBuf {
+    root.join("target").join("liora-packager").join(format!(
+        "GenerateRpm.{}.{}.toml",
+        app.app.key(),
+        font_variant.as_str()
+    ))
+}
+
 fn hicolor_icon_sizes() -> [u16; 8] {
     [16, 24, 32, 48, 64, 128, 256, 512]
 }
 
 /// Renders the render generate rpm config layer into native GPUI elements.
 pub fn render_generate_rpm_config(root: &Path, app: &AppMetadata) -> String {
+    render_generate_rpm_config_for(root, app, FontVariant::WithoutFonts)
+}
+
+/// Renders generate-rpm config for the selected font variant.
+pub fn render_generate_rpm_config_for(
+    root: &Path,
+    app: &AppMetadata,
+    font_variant: FontVariant,
+) -> String {
     let mut out = String::new();
     line(
         &mut out,
@@ -180,7 +273,9 @@ pub fn render_generate_rpm_config(root: &Path, app: &AppMetadata) -> String {
         &format!("/usr/share/icons/hicolor/scalable/apps/{}.svg", app.binary),
         "644",
     );
-    append_rpm_font_assets(&mut out, root, app);
+    if font_variant.includes_fonts() {
+        append_rpm_font_assets(&mut out, root, app);
+    }
     line(&mut out, "]");
 
     line(&mut out, "");
@@ -208,6 +303,25 @@ pub fn render_cargo_packager_config(
     formats: &[PackageFormat],
     out_dir: &Path,
     binaries_dir: &Path,
+) -> String {
+    render_cargo_packager_config_for(
+        root,
+        app,
+        formats,
+        out_dir,
+        binaries_dir,
+        FontVariant::WithoutFonts,
+    )
+}
+
+/// Renders cargo-packager config for the selected font variant.
+pub fn render_cargo_packager_config_for(
+    root: &Path,
+    app: &AppMetadata,
+    formats: &[PackageFormat],
+    out_dir: &Path,
+    binaries_dir: &Path,
+    font_variant: FontVariant,
 ) -> String {
     let cargo_formats = cargo_packager_formats(formats)
         .into_iter()
@@ -243,7 +357,7 @@ pub fn render_cargo_packager_config(
     let icon_refs = icon_paths.iter().map(String::as_str).collect::<Vec<_>>();
     arr(&mut out, "icons", &icon_refs);
     let font_assets_dir = app.app_assets_fonts_path(root);
-    if font_assets_dir.is_dir() {
+    if font_variant.includes_fonts() && font_assets_dir.is_dir() {
         resources(&mut out, &[(&font_assets_dir, Path::new("assets/fonts"))]);
     }
 
@@ -424,7 +538,7 @@ mod tests {
         let normalized_text = normalized_test_paths(&text);
         assert!(normalized_text.contains("hicolor/16x16/apps/liora-gallery.png"));
         assert!(normalized_text.contains("hicolor/512x512/apps/liora-gallery.png"));
-        assert!(text.contains("assets/fonts") || !app.app_assets_fonts_path(root).is_dir());
+        assert!(!text.contains("assets/fonts"));
     }
 
     fn normalized_test_paths(text: &str) -> String {
@@ -436,16 +550,27 @@ mod tests {
     }
 
     #[test]
-    fn renders_cargo_packager_config_with_font_resources_when_assets_exist() {
+    fn renders_cargo_packager_config_with_font_resources_when_requested() {
         let root = std::fs::canonicalize(Path::new(env!("CARGO_MANIFEST_DIR")).join("../.."))
             .expect("workspace root should resolve");
         let app = KnownApp::Gallery.metadata();
-        let text = render_cargo_packager_config(
+        let without_fonts = render_cargo_packager_config_for(
             &root,
             &app,
             &[PackageFormat::Deb],
             Path::new("target/packages/test"),
             Path::new("target/release"),
+            FontVariant::WithoutFonts,
+        );
+        assert!(!without_fonts.contains("assets/fonts"));
+
+        let text = render_cargo_packager_config_for(
+            &root,
+            &app,
+            &[PackageFormat::Deb],
+            Path::new("target/packages/test"),
+            Path::new("target/release"),
+            FontVariant::WithFonts,
         );
 
         assert!(text.contains("resources = [{ src ="));
@@ -468,6 +593,19 @@ mod tests {
         assert!(text.contains("/usr/share/icons/hicolor/16x16/apps/liora-docs.png"));
         assert!(text.contains("/usr/share/icons/hicolor/512x512/apps/liora-docs.png"));
         assert!(text.contains("/usr/share/icons/hicolor/scalable/apps/liora-docs.svg"));
+        assert!(!text.contains("/usr/lib/liora-docs/assets/fonts"));
+    }
+
+    #[test]
+    fn renders_rpm_font_assets_only_when_requested() {
+        let root = std::fs::canonicalize(Path::new(env!("CARGO_MANIFEST_DIR")).join("../.."))
+            .expect("workspace root should resolve");
+        let app = KnownApp::Gallery.metadata();
+        let without_fonts = render_generate_rpm_config_for(&root, &app, FontVariant::WithoutFonts);
+        let with_fonts = render_generate_rpm_config_for(&root, &app, FontVariant::WithFonts);
+
+        assert!(!without_fonts.contains("/usr/lib/liora-gallery/assets/fonts"));
+        assert!(with_fonts.contains("/usr/lib/liora-gallery/assets/fonts"));
     }
 }
 

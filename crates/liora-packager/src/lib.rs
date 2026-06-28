@@ -18,9 +18,11 @@ mod validate;
 
 pub use app::{AppId, AppMetadata, KnownApp, known_apps};
 pub use cargo_packager::{
-    CargoPackagerPlan, cargo_packager_formats, generated_config_path, generated_rpm_config_path,
-    package_out_dir, release_binaries_dir, render_cargo_packager_config,
-    render_generate_rpm_config, supplemental_formats,
+    CargoPackagerPlan, FontVariant, cargo_packager_formats, generated_config_path,
+    generated_config_path_for, generated_rpm_config_path, generated_rpm_config_path_for,
+    package_out_dir, package_out_dir_for, release_binaries_dir, render_cargo_packager_config,
+    render_cargo_packager_config_for, render_generate_rpm_config, render_generate_rpm_config_for,
+    supplemental_formats,
 };
 pub use checksum::{Checksum, sha256_file};
 pub use format::{PackageFormat, Platform};

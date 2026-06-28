@@ -112,7 +112,7 @@ GPUI 的推荐写法是：状态放在 View 字段里，渲染时把这些字段
 
 Liora 把字体分成两个步骤：**加载资源** 和 **选择 family**。系统已安装字体不需要加载文件，直接用 `FontConfig::system().with_ui_families([...]).with_code_families([...])` 指定有序兜底列表即可；随应用分发的私有字体要先通过 `load_app_fonts` / `load_fonts_from_dir` / `load_font_assets` / `load_embedded_fonts` 注册，再用 `init_liora_with_options(...)` 或运行时 `set_font_config(...)` 生效。
 
-Gallery 和 Docs 当前采用同一策略：源码运行时扫描 `apps/<app>/assets/fonts`；安装包或 portable archive 优先使用可执行程序旁边的外部 `assets/fonts`；裸可执行程序则内嵌一个较小的 `PingFangSC-Regular.ttf` 作为 fallback。这样既能保证 `cargo run -p liora-gallery` / `cargo run -p liora-docs` 可直接看到 PingFang SC，也避免把完整字体族全部塞进二进制。
+Gallery 和 Docs 当前采用同一策略：源码运行时扫描 `apps/<app>/assets/fonts`；发布产物拆成 `without-fonts` 和 `with-fonts` 两种。默认 `without-fonts` 不携带应用字体文件、体积更小；`with-fonts` 安装包 / portable archive 会带上外部 `assets/fonts`，裸可执行程序则通过 `embedded-fonts` feature 内嵌一个较小的 `PingFangSC-Regular.ttf` fallback。这样既能保证源码运行时可直接看到 PingFang SC，也能让正式发布产物在体积和字体一致性之间明确选择。
 
 ```rust src="quick_start/fonts.rs"
 ```

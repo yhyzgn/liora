@@ -5,10 +5,10 @@ use std::{
 };
 
 use liora_packager::{
-    KnownApp, PackageFormat, PackageManifest, Platform, cargo_packager_formats,
-    collect_package_artifacts, generated_config_path, generated_rpm_config_path, package_out_dir,
-    release_binaries_dir, render_cargo_packager_config, render_generate_rpm_config,
-    supplemental_formats, validate_packaging_layout,
+    FontVariant, KnownApp, PackageFormat, PackageManifest, Platform, cargo_packager_formats,
+    collect_package_artifacts, generated_config_path_for, generated_rpm_config_path_for,
+    package_out_dir_for, release_binaries_dir, render_cargo_packager_config_for,
+    render_generate_rpm_config_for, supplemental_formats, validate_packaging_layout,
 };
 
 fn main() {
@@ -35,13 +35,14 @@ fn package(args: Vec<String>) -> Result<(), String> {
     match command.action {
         PackageAction::Validate => validate(),
         PackageAction::ReleaseReadiness => release_readiness(),
-        PackageAction::Build => build(command.apps),
-        PackageAction::Smoke => smoke(command.apps, command.format),
+        PackageAction::Build => build(command.apps, command.font_variant),
+        PackageAction::Smoke => smoke(command.apps, command.format, command.font_variant),
         PackageAction::InstallSmoke => install_smoke(
             command.apps,
             command.format,
             command.dry_run,
             command.execute_install,
+            command.font_variant,
         ),
         PackageAction::Package | PackageAction::Ci => package_formats(command),
     }
@@ -386,7 +387,11 @@ fn escape_markdown_table_cell(value: &str) -> String {
     value.replace('|', "\\|").replace('\n', "<br>")
 }
 
-fn smoke(apps: Vec<KnownApp>, format: PackageFormat) -> Result<(), String> {
+fn smoke(
+    apps: Vec<KnownApp>,
+    format: PackageFormat,
+    font_variant: FontVariant,
+) -> Result<(), String> {
     let root = workspace_root()?;
     let platform = Platform::current();
     let formats: Vec<_> = if format == PackageFormat::PlatformDefaults {
@@ -398,7 +403,7 @@ fn smoke(apps: Vec<KnownApp>, format: PackageFormat) -> Result<(), String> {
     let mut checked = 0usize;
     for app in apps {
         let metadata = app.metadata();
-        let out_dir = package_out_dir(&root, &metadata, platform);
+        let out_dir = package_out_dir_for(&root, &metadata, platform, font_variant);
         let artifacts = collect_package_artifacts(
             &metadata.package,
             &app_version(),
@@ -443,6 +448,7 @@ fn install_smoke(
     format: PackageFormat,
     dry_run: bool,
     execute_install: bool,
+    font_variant: FontVariant,
 ) -> Result<(), String> {
     let root = workspace_root()?;
     let platform = Platform::current();
@@ -456,10 +462,16 @@ fn install_smoke(
     let mut checked = 0usize;
     for app in apps {
         let metadata = app.metadata();
-        let out_dir = package_out_dir(&root, &metadata, platform);
+        let out_dir = package_out_dir_for(&root, &metadata, platform, font_variant);
         if dry_run {
             for format in &formats {
-                let path = expected_artifact_path(&out_dir, &metadata.package, platform, *format);
+                let path = expected_artifact_path(
+                    &out_dir,
+                    &metadata.package,
+                    platform,
+                    *format,
+                    font_variant,
+                );
                 let plan = install_smoke_plan(&metadata, platform, *format, &path);
                 println!("{plan}");
                 plans.push(plan);
@@ -528,11 +540,17 @@ fn expected_artifact_path(
     package: &str,
     platform: Platform,
     format: PackageFormat,
+    font_variant: FontVariant,
 ) -> PathBuf {
     match (platform, format) {
-        (_, PackageFormat::TarGz) => {
-            portable_tar_gz_path(out_dir, package, &app_version(), platform, &target_triple())
-        }
+        (_, PackageFormat::TarGz) => portable_tar_gz_path(
+            out_dir,
+            package,
+            &app_version(),
+            platform,
+            &target_triple(),
+            font_variant,
+        ),
         (Platform::Linux, PackageFormat::Deb) => {
             out_dir.join(format!("{package}_{}_amd64.deb", app_version()))
         }
@@ -778,7 +796,6 @@ fn smoke_portable_tar_gz(
         format!("{top}/icons/{}.svg", app.icon_stem),
         format!("{top}/{}", app.binary),
         format!("{top}/README.md"),
-        format!("{top}/assets/fonts"),
     ];
     for required_entry in required {
         if !tar_listing_contains(&entries, &required_entry) {
@@ -840,10 +857,14 @@ fn require_magic(path: &Path, magic: &[u8], label: &str) -> Result<(), String> {
     }
 }
 
-fn build(apps: Vec<KnownApp>) -> Result<(), String> {
+fn build(apps: Vec<KnownApp>, font_variant: FontVariant) -> Result<(), String> {
     for app in apps {
+        let mut args = vec!["build", "--release", "-p", app.package()];
+        if font_variant == FontVariant::WithFonts {
+            args.extend(["--features", "embedded-fonts"]);
+        }
         let status = Command::new("cargo")
-            .args(["build", "--release", "-p", app.package()])
+            .args(args)
             .status()
             .map_err(|error| format!("failed to spawn cargo build: {error}"))?;
         if !status.success() {
@@ -856,7 +877,7 @@ fn build(apps: Vec<KnownApp>) -> Result<(), String> {
 fn package_formats(command: PackageCommand) -> Result<(), String> {
     validate()?;
     if !command.skip_build {
-        build(command.apps.clone())?;
+        build(command.apps.clone(), command.font_variant)?;
     }
 
     let root = workspace_root()?;
@@ -873,19 +894,20 @@ fn package_formats(command: PackageCommand) -> Result<(), String> {
         let metadata = app.metadata();
         let cargo_formats = cargo_packager_formats(&formats);
         let supplemental = supplemental_formats(&formats);
-        let out_dir = package_out_dir(&root, &metadata, platform);
+        let out_dir = package_out_dir_for(&root, &metadata, platform, command.font_variant);
         let binaries_dir = release_binaries_dir(&root);
         let target_triple = target_triple();
         let git_sha = git_short_sha(&root);
 
         if !cargo_formats.is_empty() {
-            let config_path = generated_config_path(&root, &metadata);
-            let config_text = render_cargo_packager_config(
+            let config_path = generated_config_path_for(&root, &metadata, command.font_variant);
+            let config_text = render_cargo_packager_config_for(
                 &root,
                 &metadata,
                 &cargo_formats,
                 &out_dir,
                 &binaries_dir,
+                command.font_variant,
             );
             if let Some(parent) = config_path.parent() {
                 fs::create_dir_all(parent)
@@ -915,6 +937,7 @@ fn package_formats(command: PackageCommand) -> Result<(), String> {
                     &app_version(),
                     platform,
                     &target_triple,
+                    command.font_variant,
                 );
                 println!(
                     "portable tar.gz package: app={} path={}",
@@ -935,18 +958,22 @@ fn package_formats(command: PackageCommand) -> Result<(), String> {
                         git_sha.as_deref(),
                         &out_dir,
                         &archive_path,
+                        command.font_variant,
                     )?;
                 }
             } else if format == PackageFormat::Rpm && platform == Platform::Linux {
-                let config_path = generated_rpm_config_path(&root, &metadata);
+                let config_path =
+                    generated_rpm_config_path_for(&root, &metadata, command.font_variant);
                 if let Some(parent) = config_path.parent() {
                     fs::create_dir_all(parent).map_err(|error| {
                         format!("failed to create {}: {error}", parent.display())
                     })?;
                 }
-                fs::write(&config_path, render_generate_rpm_config(&root, &metadata)).map_err(
-                    |error| format!("failed to write {}: {error}", config_path.display()),
-                )?;
+                fs::write(
+                    &config_path,
+                    render_generate_rpm_config_for(&root, &metadata, command.font_variant),
+                )
+                .map_err(|error| format!("failed to write {}: {error}", config_path.display()))?;
                 let args = generate_rpm_args(&root, app, &config_path, &out_dir);
                 println!(
                     "generate-rpm config: app={} path={}",
@@ -1016,10 +1043,12 @@ fn portable_tar_gz_path(
     version: &str,
     platform: Platform,
     target_triple: &str,
+    font_variant: FontVariant,
 ) -> PathBuf {
     out_dir.join(format!(
-        "{package}-{version}-{}-{target_triple}.tar.gz",
-        platform.as_str()
+        "{package}-{version}-{}-{target_triple}-{}.tar.gz",
+        platform.as_str(),
+        font_variant.as_str()
     ))
 }
 
@@ -1031,6 +1060,7 @@ fn build_portable_tar_gz(
     git_sha: Option<&str>,
     out_dir: &Path,
     archive_path: &Path,
+    font_variant: FontVariant,
 ) -> Result<(), String> {
     let binary_path = root.join("target/release").join(&app.binary);
     if !binary_path.is_file() {
@@ -1045,10 +1075,11 @@ fn build_portable_tar_gz(
         .map_err(|error| format!("failed to create {}: {error}", out_dir.display()))?;
 
     let stage_name = format!(
-        "{}-{}-{}-{target_triple}",
+        "{}-{}-{}-{target_triple}-{}",
         app.package,
         app_version(),
-        platform.as_str()
+        platform.as_str(),
+        font_variant.as_str()
     );
     let stage_root = out_dir.join("portable-staging").join(&stage_name);
     if stage_root.exists() {
@@ -1095,10 +1126,12 @@ fn build_portable_tar_gz(
         )?;
     }
 
-    copy_dir_if_exists(
-        &app.app_assets_fonts_path(root),
-        &stage_root.join("assets/fonts"),
-    )?;
+    if font_variant.includes_fonts() {
+        copy_dir_if_exists(
+            &app.app_assets_fonts_path(root),
+            &stage_root.join("assets/fonts"),
+        )?;
+    }
 
     if platform == Platform::Linux {
         copy_file(
@@ -1446,6 +1479,7 @@ struct PackageCommand {
     dry_run: bool,
     skip_build: bool,
     execute_install: bool,
+    font_variant: FontVariant,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1468,6 +1502,7 @@ impl PackageCommand {
         let mut dry_run = false;
         let mut skip_build = false;
         let mut execute_install = false;
+        let mut font_variant = FontVariant::WithoutFonts;
         let mut iter = args.into_iter();
 
         while let Some(arg) = iter.next() {
@@ -1490,6 +1525,10 @@ impl PackageCommand {
                     let value = iter.next().ok_or("--format requires a value")?;
                     format = value.parse()?;
                 }
+                "--font-variant" => {
+                    let value = iter.next().ok_or("--font-variant requires a value")?;
+                    font_variant = value.parse()?;
+                }
                 "--help" | "-h" => {
                     print_help();
                     std::process::exit(0);
@@ -1511,6 +1550,7 @@ impl PackageCommand {
             dry_run,
             skip_build,
             execute_install,
+            font_variant,
         })
     }
 }
@@ -1553,11 +1593,12 @@ mod tests {
             "1.2.3-preview.4.abcdef0",
             Platform::Linux,
             "x86_64-unknown-linux-gnu",
+            FontVariant::WithFonts,
         );
         assert_eq!(
             path,
             Path::new("out").join(
-                "liora-gallery-1.2.3-preview.4.abcdef0-linux-x86_64-unknown-linux-gnu.tar.gz"
+                "liora-gallery-1.2.3-preview.4.abcdef0-linux-x86_64-unknown-linux-gnu-with-fonts.tar.gz"
             )
         );
     }
@@ -1657,6 +1698,7 @@ mod tests {
             "liora-gallery",
             Platform::Linux,
             PackageFormat::TarGz,
+            FontVariant::WithoutFonts,
         );
 
         assert!(path.to_string_lossy().contains("liora-gallery-"));

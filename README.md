@@ -1186,7 +1186,7 @@ fn register_more_fonts(cx: &mut gpui::App) {
 }
 ```
 
-For Liora's own apps, Gallery and Docs keep the full PingFangSC TTF family under each app's `assets/fonts/PingFangSC/`. The app binaries embed only `PingFangSC-Regular.ttf` as a raw-executable fallback; the packaging pipeline mounts the full `assets/fonts` directory externally for installers and portable archives.
+For Liora's own apps, Gallery and Docs keep the full PingFangSC TTF family under each app's `assets/fonts/PingFangSC/`. Release packaging is split into two explicit font variants: `without-fonts` is the default smaller asset and does not bundle app font files; `with-fonts` bundles external `assets/fonts` for installers/portable archives and builds raw executables with the app `embedded-fonts` feature for a small fallback face.
 
 ### Platform menus and visible in-window menu bars
 
@@ -1351,11 +1351,23 @@ Repository-owned packaging readiness is implemented through the published `liora
 ```bash
 cargo run -p xtask -- package validate
 cargo run -p xtask -- package release-readiness
-cargo run -p xtask -- package build --all-apps
-cargo run -p xtask -- package ci --app gallery --format platform-defaults --skip-build
-cargo run -p xtask -- package smoke --app gallery --format platform-defaults
-cargo run -p xtask -- package install-smoke --app gallery --format platform-defaults --dry-run
+cargo run -p xtask -- package build --all-apps --font-variant without-fonts
+cargo run -p xtask -- package build --all-apps --font-variant with-fonts
+cargo run -p xtask -- package ci --app gallery --format platform-defaults --skip-build --font-variant without-fonts
+cargo run -p xtask -- package ci --app gallery --format platform-defaults --skip-build --font-variant with-fonts
+cargo run -p xtask -- package smoke --app gallery --format platform-defaults --font-variant without-fonts
+cargo run -p xtask -- package install-smoke --app gallery --format platform-defaults --dry-run --font-variant without-fonts
 ```
+
+
+Font variants:
+
+| Variant | Raw executable | Installers / portable archives | Use when |
+|---|---|---|---|
+| `without-fonts` | Normal release build, no app font bytes embedded | Does not include app `assets/fonts` | Default/smaller download; uses system fonts or user-provided external font paths |
+| `with-fonts` | Builds app with `--features embedded-fonts` | Includes app `assets/fonts` as external resources | You want bundled PingFangSC resources/fallback for Gallery/Docs typography |
+
+`--font-variant` defaults to `without-fonts`. CI publishes both variants and names release assets with `-without-fonts` or `-with-fonts` suffixes.
 
 Supported release artifacts include:
 

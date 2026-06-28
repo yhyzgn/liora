@@ -152,21 +152,7 @@ jobs:
       - name: Test packager domain logic
         run: cargo test -p liora-packager
 
-      - name: Build raw runnable binaries
-        if: github.event.inputs.dry_run != 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          APP_INPUT="${{ github.event.inputs.app || 'all' }}"
-          args=(cargo run --release -p xtask -- package build)
-          if [[ "$APP_INPUT" == "all" ]]; then
-            args+=(--all-apps)
-          else
-            args+=(--app "$APP_INPUT")
-          fi
-          "${args[@]}"
-
-      - name: Stage raw runnable binaries
+      - name: Build and stage raw runnable binaries
         if: github.event.inputs.dry_run != 'true'
         shell: bash
         run: |
@@ -201,19 +187,29 @@ jobs:
             fi
           }
 
-          for app in "${apps[@]}"; do
-            src="target/release/${app}${ext}"
-            if [[ ! -f "$src" ]]; then
-              echo "missing raw runnable binary: $src" >&2
-              exit 1
+          for variant in without-fonts with-fonts; do
+            args=(cargo run --release -p xtask -- package build --font-variant "$variant")
+            if [[ "$APP_INPUT" == "all" ]]; then
+              args+=(--all-apps)
+            else
+              args+=(--app "$APP_INPUT")
             fi
-            dest_dir="$out_root/$app/$platform"
-            mkdir -p "$dest_dir"
-            dest="$dest_dir/${app}${ext}"
-            cp "$src" "$dest"
-            digest="$(sha256 "$dest")"
-            rel="${dest#${out_root}/}"
-            printf '%s  %s\n' "$digest" "$rel" >> "$checksum_file"
+            "${args[@]}"
+
+            for app in "${apps[@]}"; do
+              src="target/release/${app}${ext}"
+              if [[ ! -f "$src" ]]; then
+                echo "missing raw runnable binary: $src" >&2
+                exit 1
+              fi
+              dest_dir="$out_root/$variant/$app/$platform"
+              mkdir -p "$dest_dir"
+              dest="$dest_dir/${app}${ext}"
+              cp "$src" "$dest"
+              digest="$(sha256 "$dest")"
+              rel="${dest#${out_root}/}"
+              printf '%s  %s\n' "$digest" "$rel" >> "$checksum_file"
+            done
           done
 
           cat > "$out_root/README.md" <<EOF
@@ -222,13 +218,17 @@ jobs:
           Version: \`$version\`
           Platform: \`$platform\`
 
+          This artifact contains both font variants:
+
+          - \`without-fonts\`: the default smaller executable, no embedded PingFang fallback.
+          - \`with-fonts\`: built with the app \`embedded-fonts\` feature for a raw-executable font fallback.
+
           These are the original release-mode executables built before installer packaging.
           They are uploaded for Liora's own release verification and smoke-test workflow; downstream Liora component-library users do not need to publish raw binaries unless their product release policy requires it.
           EOF
           sed -i.bak 's/^          //' "$out_root/README.md" && rm "$out_root/README.md.bak"
 
-      - name: Build gallery package command
-        id: package-command
+      - name: Package Gallery installers
         if: github.event.inputs.app != 'docs'
         shell: bash
         run: |
@@ -240,18 +240,22 @@ jobs:
             # building the NSIS package; tagged release builds still use the full Windows default set.
             format="nsis"
           fi
-          args=(cargo run --release -p xtask -- package ci --app gallery --format "$format" --skip-build)
-          if [[ "$DRY_INPUT" == "true" ]]; then
-            args+=(--dry-run)
-          fi
-          printf 'command=' >> "$GITHUB_OUTPUT"
-          printf '%q ' "${args[@]}" >> "$GITHUB_OUTPUT"
-          printf '\n' >> "$GITHUB_OUTPUT"
 
-      - name: Package Gallery installers
-        if: github.event.inputs.app != 'docs'
-        shell: bash
-        run: ${{ steps.package-command.outputs.command }}
+          variants=(without-fonts with-fonts)
+          if [[ "$DRY_INPUT" == "true" ]]; then
+            variants=(without-fonts)
+          fi
+
+          for variant in "${variants[@]}"; do
+            if [[ "$DRY_INPUT" != "true" ]]; then
+              cargo run --release -p xtask -- package build --app gallery --font-variant "$variant"
+            fi
+            args=(cargo run --release -p xtask -- package ci --app gallery --format "$format" --skip-build --font-variant "$variant")
+            if [[ "$DRY_INPUT" == "true" ]]; then
+              args+=(--dry-run)
+            fi
+            "${args[@]}"
+          done
 
       - name: Smoke Gallery package artifacts
         if: github.event.inputs.dry_run != 'true' && github.event.inputs.app != 'docs'
@@ -262,7 +266,9 @@ jobs:
           if [[ "${{ matrix.platform }}" == "windows" && "${{ steps.package-channel.outputs.channel }}" == "preview" ]]; then
             format="nsis"
           fi
-          cargo run --release -p xtask -- package smoke --app gallery --format "$format"
+          for variant in without-fonts with-fonts; do
+            cargo run --release -p xtask -- package smoke --app gallery --format "$format" --font-variant "$variant"
+          done
 
       - name: Plan Gallery install and uninstall smoke
         if: github.event.inputs.dry_run != 'true' && github.event.inputs.app != 'docs'
@@ -273,7 +279,9 @@ jobs:
           if [[ "${{ matrix.platform }}" == "windows" && "${{ steps.package-channel.outputs.channel }}" == "preview" ]]; then
             format="nsis"
           fi
-          cargo run --release -p xtask -- package install-smoke --app gallery --format "$format"
+          for variant in without-fonts with-fonts; do
+            cargo run --release -p xtask -- package install-smoke --app gallery --format "$format" --font-variant "$variant"
+          done
 
       - name: Upload raw runnable binaries
         if: github.event.inputs.dry_run != 'true'
@@ -362,17 +370,35 @@ jobs:
             printf '%s\t%s\t%s\t%s\n' "$kind" "$platform" "$dest" "$notes" >> "$asset_index"
           }
 
-          # Raw runnable executables: Docs and Gallery for every platform.
+          font_note() {
+            case "$1" in
+              without-fonts) echo "Default smaller asset; does not bundle PingFangSC font resources." ;;
+              with-fonts) echo "Includes PingFangSC font resources/fallback for Gallery and Docs typography." ;;
+              *) echo "$1" ;;
+            esac
+          }
+
+          asset_variant_from_path() {
+            case "$1" in
+              */with-fonts/*|*-with-fonts.*) echo "with-fonts" ;;
+              */without-fonts/*|*-without-fonts.*) echo "without-fonts" ;;
+              *) echo "without-fonts" ;;
+            esac
+          }
+
+          # Raw runnable executables: Docs and Gallery for every platform and font variant.
           for platform in linux macos windows; do
             suffix="$(short_platform "$platform")"
             ext=""
             [[ "$platform" == "windows" ]] && ext=".exe"
-            for app in liora-docs liora-gallery; do
-              src="dist/liora-release-binaries-${platform}/${app}/${platform}/${app}${ext}"
-              if [[ -f "$src" ]]; then
-                add_asset "$src" "${app}-${tag}-${suffix}${ext}" \
-                  "Raw executable" "$platform" "Directly runnable ${app} binary."
-              fi
+            for variant in without-fonts with-fonts; do
+              for app in liora-docs liora-gallery; do
+                src="dist/liora-release-binaries-${platform}/${variant}/${app}/${platform}/${app}${ext}"
+                if [[ -f "$src" ]]; then
+                  add_asset "$src" "${app}-${tag}-${suffix}-${variant}${ext}" \
+                    "Raw executable" "$platform" "$(font_note "$variant")"
+                fi
+              done
             done
           done
 
@@ -383,34 +409,36 @@ jobs:
             case "$artifact" in
               */portable-staging/*|*.md|*.toml|*.json|*/checksums.txt) continue ;;
             esac
+            variant="$(asset_variant_from_path "$artifact")"
+            variant_note="$(font_note "$variant")"
             case "$name" in
               *.AppImage)
-                add_asset "$artifact" "liora-gallery-${tag}-linux-x64.AppImage" \
-                  "Gallery installer" "linux" "Portable AppImage for Linux desktops."
+                add_asset "$artifact" "liora-gallery-${tag}-linux-x64-${variant}.AppImage" \
+                  "Gallery installer" "linux" "Portable AppImage for Linux desktops. ${variant_note}"
                 ;;
               *.deb)
-                add_asset "$artifact" "liora-gallery-${tag}-linux-x64.deb" \
-                  "Gallery installer" "linux" "Debian/Ubuntu package."
+                add_asset "$artifact" "liora-gallery-${tag}-linux-x64-${variant}.deb" \
+                  "Gallery installer" "linux" "Debian/Ubuntu package. ${variant_note}"
                 ;;
               *.rpm)
-                add_asset "$artifact" "liora-gallery-${tag}-linux-x64.rpm" \
-                  "Gallery installer" "linux" "RPM package for Fedora/RHEL/openSUSE-family systems."
+                add_asset "$artifact" "liora-gallery-${tag}-linux-x64-${variant}.rpm" \
+                  "Gallery installer" "linux" "RPM package for Fedora/RHEL/openSUSE-family systems. ${variant_note}"
                 ;;
               *.tar.gz)
-                add_asset "$artifact" "liora-gallery-${tag}-linux-x64.tar.gz" \
-                  "Gallery installer" "linux" "Portable unpack-and-run archive with launcher and desktop metadata."
+                add_asset "$artifact" "liora-gallery-${tag}-linux-x64-${variant}.tar.gz" \
+                  "Gallery installer" "linux" "Portable unpack-and-run archive with launcher and desktop metadata. ${variant_note}"
                 ;;
               *.dmg)
-                add_asset "$artifact" "liora-gallery-${tag}-macos-arm64.dmg" \
-                  "Gallery installer" "macos" "macOS Apple Silicon disk image."
+                add_asset "$artifact" "liora-gallery-${tag}-macos-arm64-${variant}.dmg" \
+                  "Gallery installer" "macos" "macOS Apple Silicon disk image. ${variant_note}"
                 ;;
               *setup.exe)
-                add_asset "$artifact" "liora-gallery-${tag}-windows-x64-setup.exe" \
-                  "Gallery installer" "windows" "Windows NSIS setup installer."
+                add_asset "$artifact" "liora-gallery-${tag}-windows-x64-${variant}-setup.exe" \
+                  "Gallery installer" "windows" "Windows NSIS setup installer. ${variant_note}"
                 ;;
               *.msi)
-                add_asset "$artifact" "liora-gallery-${tag}-windows-x64.msi" \
-                  "Gallery installer" "windows" "Windows MSI installer package."
+                add_asset "$artifact" "liora-gallery-${tag}-windows-x64-${variant}.msi" \
+                  "Gallery installer" "windows" "Windows MSI installer package. ${variant_note}"
                 ;;
             esac
           done < <(find dist/liora-release-gallery-packages-* -type f | sort)
@@ -558,17 +586,17 @@ jobs:
             echo
             echo "### Codename: Aurora"
             echo
-            echo "This release ships the git-pinned Liora GPUI SDK facade, crates.io utility crates, cross-platform runnable Docs/Gallery binaries, and Gallery installer packages from the automated release pipeline."
+            echo "This release ships the git-pinned Liora GPUI SDK facade, crates.io utility crates, cross-platform runnable Docs/Gallery binaries, and Gallery installer packages from the automated release pipeline, with separate without-fonts and with-fonts assets."
             echo
             echo "## Highlights"
             echo
             echo "- **SDK and utilities** — \`liora\` is the git-only one-stop GPUI facade pinned to the official Zed GPUI rev; \`liora-packager\` and \`liora-updater\` remain crates.io utility crates."
-            echo "- **Docs app** — Cross-platform raw runnable executables are attached for Linux, macOS, and Windows."
-            echo "- **Gallery app** — Cross-platform raw runnable executables plus native Gallery installer bundles are attached from the packaging workflow."
+            echo "- **Docs app** — Cross-platform raw runnable executables are attached for Linux, macOS, and Windows in both without-fonts and with-fonts variants."
+            echo "- **Gallery app** — Cross-platform raw runnable executables plus native Gallery installer bundles are attached from the packaging workflow in both font variants."
             echo "- **Menu migration** — The old navigation/sidebar \`Menu\` API is now \`NavigationMenu\`; \`Menu\` / \`MenuItem\` / \`MenuBar\` now mean GPUI platform menu descriptors plus optional in-window fallback rendering."
-            echo "- **Release automation** — Assets, checksums, grouped changelog, verification notes, and commit audit are generated by GitHub Actions."
+            echo "- **Release automation** — Assets, checksums, grouped changelog, verification notes, font-variant notes, and commit audit are generated by GitHub Actions."
             echo
-            echo "> Download the matching executable or installer bundle from the assets attached below. Use artifacts from the same tag together."
+            echo "> Download the matching executable or installer bundle from the assets attached below. Prefer \`without-fonts\` for smaller downloads; use \`with-fonts\` when you want bundled PingFangSC typography resources/fallback. Use artifacts from the same tag together."
             echo
             emit_download_table
             echo "## SDK and utility crates"
@@ -582,8 +610,8 @@ jobs:
             echo "## Added"
             echo
             echo "- Git-only \`liora\` GPUI SDK facade pinned to official Zed GPUI, plus crates.io publishing for independent utility crates."
-            echo "- Cross-platform raw executable assets for both Liora Docs and Liora Gallery."
-            echo "- Gallery installer package assets for the platform default installer formats."
+            echo "- Cross-platform raw executable assets for both Liora Docs and Liora Gallery, split into default \`without-fonts\` and bundled \`with-fonts\` variants."
+            echo "- Gallery installer package assets for the platform default installer formats, also split by font variant."
             echo
             emit_grouped_changelog "${changelog_input}"
             echo "## Upgrade notes"
@@ -595,7 +623,7 @@ jobs:
             fi
             echo "- SDK consumers should pin \`liora\` by git \`rev\` and use the matching official Zed GPUI \`rev\`; \`liora-packager\` and \`liora-updater\` remain available through crates.io for utility-focused integrations."
             echo "- Menu migration: rename old navigation/sidebar usages from \`Menu\`, \`MenuMode\`, \`MenuNode\`, \`SubMenu\`, and \`MenuItemGroup\` to \`NavigationMenu\`, \`NavigationMenuMode\`, \`NavigationMenuNode\`, \`NavigationSubMenu\`, and \`NavigationMenuGroup\`. Use the new \`Menu::register(cx, menus)\` API only for GPUI platform menus, and render \`MenuBar\` when a visible in-window fallback is required."
-            echo "- \`liora-docs\` is distributed as a raw executable; \`liora-gallery\` includes both raw executables and installer bundles."
+            echo "- \`liora-docs\` is distributed as raw executables; \`liora-gallery\` includes both raw executables and installer bundles. Release assets ending in \`without-fonts\` are the default smaller builds; \`with-fonts\` bundles PingFangSC font resources or embedded fallback where applicable."
             echo "- macOS/Windows artifacts are unsigned only because this public release workflow sets \`LIORA_ALLOW_UNSIGNED_RELEASE=true\` when \`LIORA_REQUIRE_SIGNING\` is not enabled; set \`LIORA_REQUIRE_SIGNING=true\` and provide signing/notarization secrets to fail closed for signed releases."
             echo
             echo "## Verification"

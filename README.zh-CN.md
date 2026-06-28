@@ -1185,7 +1185,7 @@ fn register_more_fonts(cx: &mut gpui::App) {
 }
 ```
 
-Liora 自带的 Gallery 和 Docs 把完整 PingFangSC TTF 字体族分别放在各自应用的 `assets/fonts/PingFangSC/` 下。应用二进制只内嵌 `PingFangSC-Regular.ttf` 作为裸可执行 fallback；打包流水线会把完整 `assets/fonts` 目录作为外部资源挂载到安装包和 portable archive 中。
+Liora 自带的 Gallery 和 Docs 把完整 PingFangSC TTF 字体族分别放在各自应用的 `assets/fonts/PingFangSC/` 下。发布打包明确拆成两种字体变体：`without-fonts` 是默认更小的产物，不携带应用字体文件；`with-fonts` 会在安装包 / portable archive 中挂载外部 `assets/fonts`，并把裸可执行程序用应用的 `embedded-fonts` feature 构建，以提供一个较小的字体 fallback。
 
 ### 平台菜单与窗口内可见菜单栏
 
@@ -1350,10 +1350,12 @@ Liora 避免为同一类功能提供重复控件：
 ```bash
 cargo run -p xtask -- package validate
 cargo run -p xtask -- package release-readiness
-cargo run -p xtask -- package build --all-apps
-cargo run -p xtask -- package ci --app gallery --format platform-defaults --skip-build
-cargo run -p xtask -- package smoke --app gallery --format platform-defaults
-cargo run -p xtask -- package install-smoke --app gallery --format platform-defaults --dry-run
+cargo run -p xtask -- package build --all-apps --font-variant without-fonts
+cargo run -p xtask -- package build --all-apps --font-variant with-fonts
+cargo run -p xtask -- package ci --app gallery --format platform-defaults --skip-build --font-variant without-fonts
+cargo run -p xtask -- package ci --app gallery --format platform-defaults --skip-build --font-variant with-fonts
+cargo run -p xtask -- package smoke --app gallery --format platform-defaults --font-variant without-fonts
+cargo run -p xtask -- package install-smoke --app gallery --format platform-defaults --dry-run --font-variant without-fonts
 ```
 
 当前发布产物覆盖：
