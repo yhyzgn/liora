@@ -920,22 +920,6 @@ impl IntoElement for Menu {
     }
 }
 
-/// Deprecated compatibility alias. Use [`MenuActionInfo`].
-#[deprecated(note = "Use MenuActionInfo; Liora now aligns native menu naming with GPUI.")]
-pub type NativeMenuActionInfo = MenuActionInfo;
-/// Deprecated compatibility alias. Use [`MenuAction`].
-#[deprecated(note = "Use MenuAction; Liora now aligns native menu naming with GPUI.")]
-pub type NativeMenuAction = MenuAction;
-/// Deprecated compatibility alias. Use [`MenuItem`].
-#[deprecated(note = "Use MenuItem; Liora now aligns native menu naming with GPUI.")]
-pub type NativeMenuItem = MenuItem;
-/// Deprecated compatibility alias. Use [`Menu`].
-#[deprecated(note = "Use Menu; Liora now aligns native menu naming with GPUI.")]
-pub type NativeMenu = Menu;
-/// Deprecated compatibility alias. Use [`MenuBar`].
-#[deprecated(note = "Use MenuBar; Liora now aligns native menu naming with GPUI.")]
-pub type NativeMenuBar = MenuBar;
-
 fn count_commands(item: &MenuItem) -> usize {
     if item.separator {
         0

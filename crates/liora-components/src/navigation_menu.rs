@@ -1009,16 +1009,3 @@ mod tests {
         );
     }
 }
-
-/// Deprecated compatibility alias. Use [`NavigationMenuMode`].
-#[deprecated(note = "Use NavigationMenuMode; Menu names are reserved for GPUI native menus.")]
-pub type MenuMode = NavigationMenuMode;
-/// Deprecated compatibility alias. Use [`NavigationMenuNode`].
-#[deprecated(note = "Use NavigationMenuNode; Menu names are reserved for GPUI native menus.")]
-pub type MenuNode = NavigationMenuNode;
-/// Deprecated compatibility alias. Use [`NavigationSubMenu`].
-#[deprecated(note = "Use NavigationSubMenu; Menu names are reserved for GPUI native menus.")]
-pub type SubMenu = NavigationSubMenu;
-/// Deprecated compatibility alias. Use [`NavigationMenuGroup`].
-#[deprecated(note = "Use NavigationMenuGroup; Menu names are reserved for GPUI native menus.")]
-pub type MenuItemGroup = NavigationMenuGroup;

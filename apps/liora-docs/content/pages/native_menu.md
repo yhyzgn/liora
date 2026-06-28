@@ -61,6 +61,3 @@
 4. 在设置页或关于页中展示当前快捷键。
 
 其中 `Open` / `OpenFile` / `OpenFiles` / `OpenFolder` / `OpenFolders` 会通过 GPUI 官方 `prompt_for_paths` 打开系统文件/目录选择窗口，`Save` / `SaveAs` 会通过 `prompt_for_new_path` 打开系统保存路径窗口，并用 `on_paths_selected` 回传 `Option<Vec<PathBuf>>`。`Close`、`Quit`、`OpenUrl`、`CopyText`、`ZoomIn`、`ZoomOut`、`ZoomReset` 也是 Liora 可以直接执行的通用平台效果；NewWindow、CommandPalette、ToggleSidebar、ToggleStatusBar、Custom 只表达标准命令语义，应用应在 `on_select` 中根据自己的窗口、文件、布局、缩放或命令面板状态完成处理。Gallery/Docs 预览面板通常使用 `.perform_builtin_actions(false)`，避免点击示例时真正退出程序、打开浏览器或写入剪贴板；真实应用菜单可保持默认开启。
-
-
-> Compatibility: older `NativeMenu*` names remain as deprecated aliases. New code should use `Menu`, `MenuItem`, `MenuAction`, and `MenuBar`; navigation/sidebar menus use `NavigationMenu`.
