@@ -12,6 +12,11 @@ liora-core = { version = "0.1.17", path = "../liora-core" }
 liora-theme = { version = "0.1.17", path = "../liora-theme" }
 liora-icons = { version = "0.1.17", path = "../liora-icons" }
 liora-icons-lucide = { version = "0.1.17", path = "../liora-icons-lucide" }
+liora-icons-antd = { version = "0.1.17", path = "../liora-icons-antd" }
+liora-icons-ionic = { version = "0.1.17", path = "../liora-icons-ionic" }
+liora-icons-tabler = { version = "0.1.17", path = "../liora-icons-tabler" }
+liora-icons-carbon = { version = "0.1.17", path = "../liora-icons-carbon" }
+liora-icons-material = { version = "0.1.17", path = "../liora-icons-material" }
 liora-components = { version = "0.1.17", path = "../liora-components" }
 liora-tray = { version = "0.1.17", path = "../liora-tray" }
 liora-packager = { version = "0.1.17", path = "../liora-packager", optional = true }

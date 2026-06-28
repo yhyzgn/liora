@@ -102,6 +102,11 @@ liora-core = "0.1"
 liora-theme = "0.1"
 liora-icons = "0.1"
 liora-icons-lucide = "0.1"
+liora-icons-antd = "0.1"
+liora-icons-ionic = "0.1"
+liora-icons-tabler = "0.1"
+liora-icons-carbon = "0.1"
+liora-icons-material = "0.1"
 liora-tray = "0.1"
 liora-updater = "0.1"
 liora-packager = "0.1"
@@ -110,7 +115,7 @@ liora-packager = "0.1"
 The facade re-exports stable module names:
 
 ```rust
-use liora::{components, core, icons, icons_lucide, theme, tray};
+use liora::{components, core, icons, icons_lucide, icons_antd, icons_tabler, theme, tray};
 use liora::prelude::*;
 
 #[cfg(feature = "updater")]
@@ -461,7 +466,7 @@ The recommended app dependency. It re-exports:
 ```rust
 use liora::{init_liora, init_liora_with_mode, init_liora_with_options};
 use liora::{FontConfig, LioraOptions, ThemeMode};
-use liora::{components, core, icons, icons_lucide, theme, tray};
+use liora::{components, core, icons, icons_lucide, icons_antd, icons_tabler, theme, tray};
 ```
 
 ### `liora-core`
@@ -539,9 +544,22 @@ impl Render for SettingsView {
 }
 ```
 
-### `liora-icons` and `liora-icons-lucide`
+### `liora-icons` and bundled icon libraries
 
-Icon primitives plus bundled Lucide icon names:
+`liora-icons` contains the native GPUI `Icon` primitive and asset loader. Bundled icon-library crates follow the same API shape as `liora-icons-lucide`: each crate exposes an `IconName` enum, `IconName::all()`, `IconName::file()`, `IconName::svg_source()`, and implements `liora_icons::IntoIconPath` plus `gpui::IntoElement`.
+
+Available bundled libraries:
+
+| Crate | Facade module | Naming rule | Example |
+|---|---|---|---|
+| `liora-icons-lucide` | `liora::icons_lucide` | upstream kebab-case to PascalCase | `IconName::Settings` |
+| `liora-icons-antd` | `liora::icons_antd` | name + AntD style suffix | `IconName::SaveOutlined`, `IconName::SaveFilled`, `IconName::SaveTwotone` |
+| `liora-icons-ionic` | `liora::icons_ionic` | base, `Outline`, or `Sharp` suffix | `IconName::Add`, `IconName::AddOutline`, `IconName::AddSharp` |
+| `liora-icons-tabler` | `liora::icons_tabler` | outline base name, filled uses `Filled` suffix | `IconName::Home`, `IconName::HomeFilled` |
+| `liora-icons-carbon` | `liora::icons_carbon` | Carbon name flattened to PascalCase; one preferred size per icon | `IconName::Save`, `IconName::CheckmarkFilled` |
+| `liora-icons-material` | `liora::icons_material` | Material 24px style suffixes | `IconName::Search`, `IconName::SearchOutlined`, `IconName::SearchRound` |
+
+Icon primitives plus bundled icon names:
 
 ```rust
 use liora::core::Config;
@@ -551,9 +569,13 @@ use liora::components::Button;
 
 let save = Button::new("Save").primary().icon_prefix(IconName::Save);
 let icon = Icon::new(IconName::Settings).size(18.0);
+
+// Other bundled libraries use the same Icon API.
+let antd_save = Icon::new(liora::icons_antd::IconName::SaveOutlined);
+let tabler_home = Icon::new(liora::icons_tabler::IconName::HomeFilled);
 ```
 
-When using raw `gpui_platform::application()`, install the Liora icon asset source if your app uses bundled Lucide SVG payloads:
+When using raw `gpui_platform::application()`, install the Liora icon asset source if your app uses bundled SVG payloads:
 
 ```rust
 fn main() {

@@ -72,6 +72,11 @@ jobs:
             liora-theme
             liora-icons
             liora-icons-lucide
+            liora-icons-antd
+            liora-icons-ionic
+            liora-icons-tabler
+            liora-icons-carbon
+            liora-icons-material
             liora-components
             liora-tray
             liora-updater

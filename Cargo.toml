@@ -12,6 +12,11 @@ members = [
     "xtask",
     "crates/liora-icons",
     "crates/liora-icons-lucide",
+    "crates/liora-icons-antd",
+    "crates/liora-icons-ionic",
+    "crates/liora-icons-tabler",
+    "crates/liora-icons-carbon",
+    "crates/liora-icons-material",
     "apps/liora-gallery",
     "apps/liora-docs",
 ]

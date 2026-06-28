@@ -354,11 +354,11 @@ fn check_sdk_release_workflow(root: &Path, report: &mut ReleaseReadinessReport) 
                 && text.contains("cargo package -p")
                 && text.contains("cargo publish -p")
                 && !text.contains(concat!("cargo publish -p \"$crate\" ", "--", "token"))
-                && text.contains("liora-theme liora-core liora-icons liora-icons-lucide liora-components liora-tray liora-packager liora") =>
+                && text.contains("liora-theme liora-core liora-icons liora-icons-lucide liora-icons-antd liora-icons-ionic liora-icons-tabler liora-icons-carbon liora-icons-material liora-components liora-tray liora-packager liora") =>
         {
             report.pass(
                 "SDK release workflow",
-                "release-sdk.yml verifies and publishes SDK crates, including liora and liora-packager, with CARGO_REGISTRY_TOKEN authentication in dependency order",
+                "release-sdk.yml verifies and publishes SDK crates, including bundled icon libraries, liora, and liora-packager, with CARGO_REGISTRY_TOKEN authentication in dependency order",
             );
         }
         Ok(_) => report.fail(

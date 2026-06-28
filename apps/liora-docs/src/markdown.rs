@@ -27,7 +27,12 @@ use liora_core::{
 };
 use liora_gallery::category;
 use liora_icons::Icon;
+use liora_icons_antd::IconName as AntdIconName;
+use liora_icons_carbon::IconName as CarbonIconName;
+use liora_icons_ionic::IconName as IonicIconName;
 use liora_icons_lucide::IconName;
+use liora_icons_material::IconName as MaterialIconName;
+use liora_icons_tabler::IconName as TablerIconName;
 use liora_theme::Theme;
 use liora_tray::{TrayCloseAction, TrayCommand, TrayMenuItemSpec, default_liora_tray_menu};
 use liora_updater::{
@@ -1753,6 +1758,7 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "tray/residency.rs" => Some(include_str!("../content/snippets/tray/residency.rs")),
         "tray/close_confirm.rs" => Some(include_str!("../content/snippets/tray/close_confirm.rs")),
         "icon/lucide.rs" => Some(include_str!("../content/snippets/icon/lucide.rs")),
+        "icon/libraries.rs" => Some(include_str!("../content/snippets/icon/libraries.rs")),
         "icon/colors.rs" => Some(include_str!("../content/snippets/icon/colors.rs")),
         "icon/sizes.rs" => Some(include_str!("../content/snippets/icon/sizes.rs")),
         "image/basic.rs" => Some(include_str!("../content/snippets/image/basic.rs")),
@@ -5624,6 +5630,7 @@ impl Render for LiveDemoContent {
             "TableLoading" => table_basic_table().loading(true).into_any_element(),
             "TableEmpty" => table_basic_table().empty_text("暂无订单数据").into_any_element(),
             "IconLucide" => icon_lucide_demo(_cx),
+            "IconLibraries" => icon_libraries_demo(_cx),
             "IconColors" => icon_colors_demo(_cx),
             "IconSizes" => icon_sizes_demo(),
             "ImageBasic" => image_basic_demo(),
@@ -7063,6 +7070,36 @@ fn icon_lucide_demo(cx: &mut Context<LiveDemoContent>) -> AnyElement {
         })
         .collect(),
     )
+}
+
+fn icon_libraries_demo(_cx: &mut Context<LiveDemoContent>) -> AnyElement {
+    demo_row(vec![
+        icon_labeled(
+            liora_icons::Icon::new(AntdIconName::SaveOutlined).size_lg(),
+            "AntD",
+        )
+        .into_any_element(),
+        icon_labeled(
+            liora_icons::Icon::new(IonicIconName::AddCircleOutline).size_lg(),
+            "Ionic",
+        )
+        .into_any_element(),
+        icon_labeled(
+            liora_icons::Icon::new(TablerIconName::HomeFilled).size_lg(),
+            "Tabler",
+        )
+        .into_any_element(),
+        icon_labeled(
+            liora_icons::Icon::new(CarbonIconName::CheckmarkFilled).size_lg(),
+            "Carbon",
+        )
+        .into_any_element(),
+        icon_labeled(
+            liora_icons::Icon::new(MaterialIconName::SearchOutlined).size_lg(),
+            "Material",
+        )
+        .into_any_element(),
+    ])
 }
 
 fn icon_colors_demo(cx: &mut Context<LiveDemoContent>) -> AnyElement {
@@ -11228,7 +11265,7 @@ mod tests {
         assert!(sdk.contains("Audit crates.io SDK metadata"));
         assert!(sdk.contains("Package independently publishable crates"));
         assert!(sdk.contains("Verify patched crates.io consumer"));
-        assert!(sdk.contains("liora-theme liora-core liora-icons liora-icons-lucide liora-components liora-tray liora-packager liora-updater liora"));
+        assert!(sdk.contains("liora-theme liora-core liora-icons liora-icons-lucide liora-icons-antd liora-icons-ionic liora-icons-tabler liora-icons-carbon liora-icons-material liora-components liora-tray liora-packager liora-updater liora"));
         assert!(sdk.contains("cargo publish -p"));
         assert!(!sdk.contains(concat!("cargo publish -p \"$crate\" ", "--", "token")));
     }
@@ -11442,7 +11479,7 @@ mod tests {
         );
         assert!(sdk_workflow.contains("Publish Liora crates.io SDK crates"));
         assert!(sdk_workflow.contains("CRATES_IO_TOKEN"));
-        assert!(sdk_workflow.contains("liora-theme liora-core liora-icons liora-icons-lucide liora-components liora-tray liora-packager liora-updater liora"));
+        assert!(sdk_workflow.contains("liora-theme liora-core liora-icons liora-icons-lucide liora-icons-antd liora-icons-ionic liora-icons-tabler liora-icons-carbon liora-icons-material liora-components liora-tray liora-packager liora-updater liora"));
         assert!(package_workflow.contains("SHA256SUMS.txt"));
         assert!(package_workflow.contains("portable-staging/*|*.md|*.toml|*.json|*/checksums.txt"));
         assert!(!package_workflow.contains("cp release-notes.md release-assets/release-notes.md"));
@@ -11457,6 +11494,11 @@ mod tests {
             include_str!("../../../crates/liora-components/Cargo.toml"),
             include_str!("../../../crates/liora-icons/Cargo.toml"),
             include_str!("../../../crates/liora-icons-lucide/Cargo.toml"),
+            include_str!("../../../crates/liora-icons-antd/Cargo.toml"),
+            include_str!("../../../crates/liora-icons-ionic/Cargo.toml"),
+            include_str!("../../../crates/liora-icons-tabler/Cargo.toml"),
+            include_str!("../../../crates/liora-icons-carbon/Cargo.toml"),
+            include_str!("../../../crates/liora-icons-material/Cargo.toml"),
             include_str!("../../../crates/liora-tray/Cargo.toml"),
         ];
 
@@ -12807,7 +12849,12 @@ mod tests {
             (
                 include_str!("../content/pages/icon.md"),
                 "IconLucide",
-                &["icon/lucide.rs", "icon/colors.rs", "icon/sizes.rs"][..],
+                &[
+                    "icon/lucide.rs",
+                    "icon/libraries.rs",
+                    "icon/colors.rs",
+                    "icon/sizes.rs",
+                ][..],
             ),
             (
                 include_str!("../content/pages/image.md"),

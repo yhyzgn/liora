@@ -33,7 +33,12 @@ pub use liora_core::{
 pub use liora_components as components;
 pub use liora_core as core;
 pub use liora_icons as icons;
+pub use liora_icons_antd as icons_antd;
+pub use liora_icons_carbon as icons_carbon;
+pub use liora_icons_ionic as icons_ionic;
 pub use liora_icons_lucide as icons_lucide;
+pub use liora_icons_material as icons_material;
+pub use liora_icons_tabler as icons_tabler;
 pub use liora_theme as theme;
 pub use liora_tray as tray;
 
@@ -51,7 +56,10 @@ pub mod prelude {
         startup_maximized_window_bounds,
     };
 
-    pub use crate::{components, core, icons, icons_lucide, theme, tray};
+    pub use crate::{
+        components, core, icons, icons_antd, icons_carbon, icons_ionic, icons_lucide,
+        icons_material, icons_tabler, theme, tray,
+    };
 
     #[cfg(feature = "packager")]
     pub use crate::packager;

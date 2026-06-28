@@ -3374,7 +3374,12 @@ dependencies = [
  "liora-components",
  "liora-core",
  "liora-icons",
+ "liora-icons-antd",
+ "liora-icons-carbon",
+ "liora-icons-ionic",
  "liora-icons-lucide",
+ "liora-icons-material",
+ "liora-icons-tabler",
  "liora-packager",
  "liora-theme",
  "liora-tray",
@@ -3418,7 +3423,12 @@ dependencies = [
  "liora-core",
  "liora-gallery",
  "liora-icons",
+ "liora-icons-antd",
+ "liora-icons-carbon",
+ "liora-icons-ionic",
  "liora-icons-lucide",
+ "liora-icons-material",
+ "liora-icons-tabler",
  "liora-theme",
  "liora-tray",
  "liora-updater",
@@ -3436,7 +3446,12 @@ dependencies = [
  "liora-components",
  "liora-core",
  "liora-icons",
+ "liora-icons-antd",
+ "liora-icons-carbon",
+ "liora-icons-ionic",
  "liora-icons-lucide",
+ "liora-icons-material",
+ "liora-icons-tabler",
  "liora-theme",
  "liora-tray",
  "liora-updater",
@@ -3453,7 +3468,47 @@ dependencies = [
 ]
 
 [[package]]
+name = "liora-icons-antd"
+version = "0.1.17"
+dependencies = [
+ "gpui",
+ "liora-icons",
+]
+
+[[package]]
+name = "liora-icons-carbon"
+version = "0.1.17"
+dependencies = [
+ "gpui",
+ "liora-icons",
+]
+
+[[package]]
+name = "liora-icons-ionic"
+version = "0.1.17"
+dependencies = [
+ "gpui",
+ "liora-icons",
+]
+
+[[package]]
 name = "liora-icons-lucide"
+version = "0.1.17"
+dependencies = [
+ "gpui",
+ "liora-icons",
+]
+
+[[package]]
+name = "liora-icons-material"
+version = "0.1.17"
+dependencies = [
+ "gpui",
+ "liora-icons",
+]
+
+[[package]]
+name = "liora-icons-tabler"
 version = "0.1.17"
 dependencies = [
  "gpui",

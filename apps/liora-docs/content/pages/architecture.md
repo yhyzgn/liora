@@ -20,7 +20,7 @@ Liora 不包含 Web 渲染层。以下技术不属于本项目解法：HTML、CS
 | `crates/liora-core` | 全局配置、主题注入、Portal、Tooltip、Popover、Modal、Drawer 等基础设施。 |
 | `crates/liora-theme` | 设计 token：颜色、字号、圆角、按钮语义等。 |
 | `crates/liora-icons` | 通用图标抽象。 |
-| `crates/liora-icons-lucide` | Lucide 图标枚举与适配。 |
+| `crates/liora-icons-lucide` / `liora-icons-antd` / `liora-icons-ionic` / `liora-icons-tabler` / `liora-icons-carbon` / `liora-icons-material` | 内置图标库枚举与 `IntoIconPath` 适配。 |
 | `crates/liora-components` | 可复用 UI 组件与布局组件。 |
 | `apps/liora-gallery` | 组件看板，按 Gallery registry 展示每个组件的交互效果。 |
 | `apps/liora-docs` | 独立文档主程序，渲染 Markdown、展示 Live Demo、关联代码片段。 |

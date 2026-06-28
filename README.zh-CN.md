@@ -101,6 +101,11 @@ liora-core = "0.1"
 liora-theme = "0.1"
 liora-icons = "0.1"
 liora-icons-lucide = "0.1"
+liora-icons-antd = "0.1"
+liora-icons-ionic = "0.1"
+liora-icons-tabler = "0.1"
+liora-icons-carbon = "0.1"
+liora-icons-material = "0.1"
 liora-tray = "0.1"
 liora-updater = "0.1"
 liora-packager = "0.1"
@@ -109,7 +114,7 @@ liora-packager = "0.1"
 `liora` facade 重新导出了稳定模块名：
 
 ```rust
-use liora::{components, core, icons, icons_lucide, theme, tray};
+use liora::{components, core, icons, icons_lucide, icons_antd, icons_tabler, theme, tray};
 use liora::prelude::*;
 
 #[cfg(feature = "updater")]
@@ -460,7 +465,7 @@ fn register_linux_identity() {
 ```rust
 use liora::{init_liora, init_liora_with_mode, init_liora_with_options};
 use liora::{FontConfig, LioraOptions, ThemeMode};
-use liora::{components, core, icons, icons_lucide, theme, tray};
+use liora::{components, core, icons, icons_lucide, icons_antd, icons_tabler, theme, tray};
 ```
 
 ### `liora-core`
@@ -538,9 +543,22 @@ impl Render for SettingsView {
 }
 ```
 
-### `liora-icons` 与 `liora-icons-lucide`
+### `liora-icons` 与内置图标库
 
-图标 primitive 与内置 Lucide icon 名称：
+`liora-icons` 提供原生 GPUI `Icon` primitive 与 asset loader。各个内置图标库 crate 都严格沿用 `liora-icons-lucide` 的 API 形状：每个 crate 暴露 `IconName` enum、`IconName::all()`、`IconName::file()`、`IconName::svg_source()`，并实现 `liora_icons::IntoIconPath` 与 `gpui::IntoElement`。
+
+可用内置图标库：
+
+| Crate | facade 模块 | 命名规则 | 示例 |
+|---|---|---|---|
+| `liora-icons-lucide` | `liora::icons_lucide` | upstream kebab-case 转 PascalCase | `IconName::Settings` |
+| `liora-icons-antd` | `liora::icons_antd` | 名称 + AntD 风格后缀 | `IconName::SaveOutlined`, `IconName::SaveFilled`, `IconName::SaveTwotone` |
+| `liora-icons-ionic` | `liora::icons_ionic` | 基础名、`Outline`、`Sharp` 后缀 | `IconName::Add`, `IconName::AddOutline`, `IconName::AddSharp` |
+| `liora-icons-tabler` | `liora::icons_tabler` | outline 使用基础名，filled 使用 `Filled` 后缀 | `IconName::Home`, `IconName::HomeFilled` |
+| `liora-icons-carbon` | `liora::icons_carbon` | Carbon 名称扁平化成 PascalCase；每个图标保留一个优先尺寸 | `IconName::Save`, `IconName::CheckmarkFilled` |
+| `liora-icons-material` | `liora::icons_material` | Material 24px 风格后缀 | `IconName::Search`, `IconName::SearchOutlined`, `IconName::SearchRound` |
+
+图标 primitive 与内置 icon 名称：
 
 ```rust
 use liora::core::Config;
@@ -550,9 +568,13 @@ use liora::components::Button;
 
 let save = Button::new("Save").primary().icon_prefix(IconName::Save);
 let icon = Icon::new(IconName::Settings).size(18.0);
+
+// 其他内置图库使用同一套 Icon API。
+let antd_save = Icon::new(liora::icons_antd::IconName::SaveOutlined);
+let tabler_home = Icon::new(liora::icons_tabler::IconName::HomeFilled);
 ```
 
-如果应用使用 `gpui_platform::application()` 并渲染内置 Lucide SVG payload，建议安装 Liora icon asset source：
+如果应用使用 `gpui_platform::application()` 并渲染内置 SVG payload，建议安装 Liora icon asset source：
 
 ```rust
 fn main() {

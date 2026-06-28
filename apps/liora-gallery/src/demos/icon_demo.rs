@@ -2,7 +2,12 @@ use gpui::{AnyView, App, Context, Render, Window, prelude::*};
 use liora_components::{Space, Text};
 use liora_core::Config;
 use liora_icons::Icon;
+use liora_icons_antd::IconName as AntdIconName;
+use liora_icons_carbon::IconName as CarbonIconName;
+use liora_icons_ionic::IconName as IonicIconName;
 use liora_icons_lucide::IconName;
+use liora_icons_material::IconName as MaterialIconName;
+use liora_icons_tabler::IconName as TablerIconName;
 
 use liora_components::layout_helpers::{page, row, section};
 
@@ -90,6 +95,17 @@ impl Render for IconDemo {
                             Icon::new(IconName::Star).size_lg().color(theme.danger.base),
                             "Danger",
                         ),
+                    ]),
+                ))
+                .child(section(
+                    "Additional icon libraries",
+                    "Ant Design、Ionicons、Tabler、Carbon 和 Material 图标库与 Lucide 使用同一套 Icon API。",
+                    row(vec![
+                        icon_labeled(Icon::new(AntdIconName::SaveOutlined).size_lg(), "AntD"),
+                        icon_labeled(Icon::new(IonicIconName::AddCircleOutline).size_lg(), "Ionic"),
+                        icon_labeled(Icon::new(TablerIconName::HomeFilled).size_lg(), "Tabler"),
+                        icon_labeled(Icon::new(CarbonIconName::CheckmarkFilled).size_lg(), "Carbon"),
+                        icon_labeled(Icon::new(MaterialIconName::SearchOutlined).size_lg(), "Material"),
                     ]),
                 )),
         )

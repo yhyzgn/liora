@@ -34,6 +34,11 @@ liora-updater = { path = "../../crates/liora-updater" }
 liora-gallery = { path = "../liora-gallery" }
 liora-icons = { path = "../../crates/liora-icons" }
 liora-icons-lucide = { path = "../../crates/liora-icons-lucide" }
+liora-icons-antd = { path = "../../crates/liora-icons-antd" }
+liora-icons-ionic = { path = "../../crates/liora-icons-ionic" }
+liora-icons-tabler = { path = "../../crates/liora-icons-tabler" }
+liora-icons-carbon = { path = "../../crates/liora-icons-carbon" }
+liora-icons-material = { path = "../../crates/liora-icons-material" }
 pulldown-cmark = "0.13.3"
 
 [target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
