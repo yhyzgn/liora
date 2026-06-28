@@ -866,35 +866,60 @@ fn add_wrapped_selection_quads(
     color: gpui::Hsla,
     quads: &mut Vec<PaintQuad>,
 ) {
-    let mut segment_start = start;
-    while segment_start < end {
-        let Some(start_pos) = line.position_for_index(segment_start, line_height) else {
-            break;
+    for (row, row_start, row_end) in visual_row_ranges(line) {
+        let segment_start = start.max(row_start);
+        let segment_end = end.min(row_end);
+        if segment_start >= segment_end {
+            continue;
+        }
+
+        let start_x = if segment_start == row_start && row > 0 {
+            px(0.0)
+        } else {
+            line.position_for_index(segment_start, line_height)
+                .map(|pos| pos.x)
+                .unwrap_or(px(0.0))
         };
-        let mut segment_end = end;
-        let start_row = (start_pos.y / line_height).floor() as usize;
-        while segment_end > segment_start {
-            if let Some(end_pos) = line.position_for_index(segment_end, line_height) {
-                let end_row = (end_pos.y / line_height).floor() as usize;
-                if end_row == start_row {
-                    let width = (end_pos.x - start_pos.x).max(px(1.0));
-                    quads.push(fill(
-                        Bounds::new(
-                            point(bounds.left() + start_pos.x, y + start_pos.y),
-                            size(width, line_height),
-                        ),
-                        color,
-                    ));
-                    break;
-                }
-            }
-            segment_end = previous_boundary(line.text.as_ref(), segment_end);
-        }
-        if segment_end <= segment_start {
-            break;
-        }
-        segment_start = segment_end;
+        let end_x = if segment_end == row_start && row > 0 {
+            px(0.0)
+        } else {
+            line.position_for_index(segment_end, line_height)
+                .map(|pos| pos.x)
+                .unwrap_or_else(|| line.size(line_height).width)
+        };
+        let row_y = line_height * row as f32;
+        let width = (end_x - start_x).max(px(1.0));
+        quads.push(fill(
+            Bounds::new(
+                point(bounds.left() + start_x, y + row_y),
+                size(width, line_height),
+            ),
+            color,
+        ));
     }
+}
+
+fn visual_row_ranges(line: &gpui::WrappedLine) -> Vec<(usize, usize, usize)> {
+    let mut rows = Vec::new();
+    let mut row_start = 0;
+
+    for (row, boundary) in line.wrap_boundaries().iter().enumerate() {
+        let row_end = line
+            .runs()
+            .get(boundary.run_ix)
+            .and_then(|run| run.glyphs.get(boundary.glyph_ix))
+            .map(|glyph| glyph.index)
+            .unwrap_or(row_start);
+        rows.push((row, row_start, row_end.max(row_start)));
+        row_start = row_end.max(row_start);
+    }
+
+    rows.push((
+        line.wrap_boundaries().len(),
+        row_start,
+        line.len().max(row_start),
+    ));
+    rows
 }
 
 fn normalize_runs(mut runs: Vec<TextRun>, text_len: usize, color: gpui::Hsla) -> Vec<TextRun> {
@@ -938,14 +963,6 @@ fn normalize_runs(mut runs: Vec<TextRun>, text_len: usize, color: gpui::Hsla) ->
 
 fn is_word_char(ch: char) -> bool {
     ch.is_alphanumeric() || ch == '_' || ('\u{4e00}'..='\u{9fff}').contains(&ch)
-}
-
-fn previous_boundary(text: &str, mut offset: usize) -> usize {
-    offset = offset.saturating_sub(1).min(text.len());
-    while offset > 0 && !text.is_char_boundary(offset) {
-        offset -= 1;
-    }
-    offset
 }
 
 #[cfg(test)]
@@ -1023,5 +1040,8 @@ mod tests {
         assert!(source.contains("position, self.line_height"));
         assert!(source.contains("start - line_start"));
         assert!(source.contains("end - line_start"));
+        assert!(source.contains("fn visual_row_ranges"));
+        assert!(source.contains("line.wrap_boundaries()"));
+        assert!(source.contains("glyph.index"));
     }
 }
