@@ -188,9 +188,7 @@ impl ReleaseReadinessReport {
             text.push_str(&escape_markdown_table_cell(&item.detail));
             text.push_str(" |\n");
         }
-        text.push_str(
-            "\nWarnings document external release policy items. Failures block publishing.\n",
-        );
+        text.push_str("\nAdvisory policy items are informational. Failures block publishing.\n");
         text
     }
 }
