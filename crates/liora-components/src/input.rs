@@ -39,6 +39,12 @@ fn clamp_to_char_boundary(text: &str, mut offset: usize) -> usize {
     offset
 }
 
+fn normalize_replace_range(text: &str, range: Range<usize>) -> Range<usize> {
+    let start = clamp_to_char_boundary(text, range.start);
+    let end = clamp_to_char_boundary(text, range.end);
+    start.min(end)..start.max(end)
+}
+
 actions!(
     input,
     [
@@ -994,10 +1000,13 @@ impl EntityInputHandler for Input {
         _: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let range = range_utf16
-            .map(|r| self.offset_from_utf16(r.start)..self.offset_from_utf16(r.end))
-            .or_else(|| self.marked_range.clone())
-            .unwrap_or(self.selected_range.clone());
+        let range = normalize_replace_range(
+            self.value.as_ref(),
+            range_utf16
+                .map(|r| self.offset_from_utf16(r.start)..self.offset_from_utf16(r.end))
+                .or_else(|| self.marked_range.clone())
+                .unwrap_or(self.selected_range.clone()),
+        );
         let potential_v = {
             let mut temp = self.value.to_string();
             temp.replace_range(range.clone(), new_text);
@@ -1030,10 +1039,13 @@ impl EntityInputHandler for Input {
         _: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let range = range_utf16
-            .map(|r| self.offset_from_utf16(r.start)..self.offset_from_utf16(r.end))
-            .or(self.marked_range.clone())
-            .unwrap_or(self.selected_range.clone());
+        let range = normalize_replace_range(
+            self.value.as_ref(),
+            range_utf16
+                .map(|r| self.offset_from_utf16(r.start)..self.offset_from_utf16(r.end))
+                .or(self.marked_range.clone())
+                .unwrap_or(self.selected_range.clone()),
+        );
         let potential_v = {
             let mut temp = self.value.to_string();
             temp.replace_range(range.clone(), new_text);
@@ -1058,7 +1070,10 @@ impl EntityInputHandler for Input {
             self.marked_range = None;
         }
         if let Some(sel) = new_selected {
-            self.selected_range = range.start + sel.start..range.start + sel.end;
+            self.selected_range = normalize_replace_range(
+                self.value.as_ref(),
+                range.start + sel.start..range.start + sel.end,
+            );
         } else {
             self.selected_range = range.start + new_text.len()..range.start + new_text.len();
         }
@@ -1680,6 +1695,26 @@ impl Render for Input {
 
 #[cfg(test)]
 mod width_tests {
+
+    #[test]
+    fn platform_input_ranges_are_clamped_before_string_replacement() {
+        let source = include_str!("input.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert_eq!(super::normalize_replace_range("", 0..26), 0..0);
+        assert_eq!(super::normalize_replace_range("abc", 1..99), 1..3);
+        assert_eq!(super::normalize_replace_range("éx", 1..99), 0..3);
+        assert_eq!(super::normalize_replace_range("abc", 3..1), 1..3);
+        assert!(source.contains("fn normalize_replace_range"));
+        assert!(source.contains(
+            "let range = normalize_replace_range(
+            self.value.as_ref(),
+            range_utf16"
+        ));
+    }
+
     #[test]
     fn input_backspace_does_not_spawn_a_new_blink_task_per_keypress() {
         let source = include_str!("input.rs")
