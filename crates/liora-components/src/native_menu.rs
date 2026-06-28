@@ -760,18 +760,28 @@ fn render_menu_item(
                             }
                         })
                 })
-                .child(Text::new(item.label).sm().text_color(if disabled {
-                    theme.neutral.text_disabled
-                } else {
-                    theme.neutral.text_1
-                }))
+                .child(
+                    Text::new(item.label)
+                        .sm()
+                        .selectable(false)
+                        .text_color(if disabled {
+                            theme.neutral.text_disabled
+                        } else {
+                            theme.neutral.text_1
+                        }),
+                )
                 .child(
                     div()
                         .flex()
                         .items_center()
                         .gap_2()
                         .when_some(item.shortcut, |s, shortcut| {
-                            s.child(Text::new(shortcut).xs().text_color(theme.neutral.text_3))
+                            s.child(
+                                Text::new(shortcut)
+                                    .xs()
+                                    .selectable(false)
+                                    .text_color(theme.neutral.text_3),
+                            )
                         })
                         .when(has_children, |s| {
                             s.child(
@@ -833,6 +843,7 @@ mod tests {
         assert!(source.contains("NativeMenuItem::separator"));
         assert!(source.contains("command_count"));
         assert!(source.contains(".w_full()"));
+        assert!(source.contains(".selectable(false)"));
         assert!(source.contains("hover(|s| s.cursor_pointer().bg(theme.neutral.hover))"));
         assert!(source.contains("on_mouse_up(MouseButton::Left"));
         assert!(source.contains("pub enum NativeMenuAction"));
