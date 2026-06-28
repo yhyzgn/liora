@@ -1,4 +1,4 @@
-use gpui::{AnyView, App, Context, Render, Window, div, prelude::*, px};
+use gpui::{AnyView, App, Context, IntoElement, Render, Window, div, prelude::*, px, rgb};
 use liora_components::layout_helpers::{page, section, showcase_card_wide, showcase_stack};
 use liora_components::{Button, Space, StatusBar, StatusBarItem, Text};
 use liora_core::Config;
@@ -22,7 +22,7 @@ fn shell_preview(status_bar: StatusBar) -> impl IntoElement {
                 .flex()
                 .items_center()
                 .justify_center()
-                .child(Text::new("Application workspace").text_color(gpui::rgb(0x64748b).into())),
+                .child(Text::new("Application workspace").text_color(rgb(0x64748b).into())),
         )
         .child(status_bar)
 }
@@ -32,10 +32,10 @@ impl Render for StatusBarDemo {
         let theme = cx.global::<Config>().theme.clone();
         page(
             "StatusBar 状态栏",
-            "桌面应用底部状态条，提供 left / center / right 三段区域，用于连接状态、后台任务、版本、快捷键与当前上下文。",
+            "桌面应用底部状态条，提供 left / center / right 三段区域，可组合连接状态、后台任务、版本、快捷键、当前上下文与自定义交互区域。",
             Space::new().vertical().gap_xl().child(section(
                 "StatusBar showcase",
-                "状态栏示例统一放入工作区预览卡片，避免不同长度状态条在页面中散乱跳动。",
+                "状态栏示例统一放入工作区预览卡片；每个示例展示不同扩展点，避免只覆盖最简单文本场景。",
                 showcase_stack(vec![
                     showcase_card_wide(
                         "应用壳状态",
@@ -61,23 +61,27 @@ impl Render for StatusBarDemo {
                     )
                     .into_any_element(),
                     showcase_card_wide(
-                        "语义状态",
-                        "每个 item 可以单独使用 success/warning/danger/info/primary tone。",
+                        "语义状态 + 分隔",
+                        "每个 item 可以单独使用 tone、dot、detail、separator 组合成紧凑状态簇。",
                         shell_preview(
                             StatusBar::new()
                                 .background(theme.neutral.hover.opacity(0.42))
                                 .left_item(
                                     StatusBarItem::new("Connected")
                                         .success()
+                                        .dot()
                                         .icon(IconName::Wifi)
                                         .detail("42ms")
                                         .pill(),
                                 )
+                                .left_item(StatusBarItem::separator())
                                 .left_item(
                                     StatusBarItem::new("Queue")
                                         .warning()
+                                        .dot()
                                         .icon(IconName::Clock3)
-                                        .detail("3 jobs"),
+                                        .detail("3 jobs")
+                                        .min_width(px(96.0)),
                                 )
                                 .center_item(
                                     StatusBarItem::new("Preview mode")
@@ -87,6 +91,7 @@ impl Render for StatusBarDemo {
                                 .right_item(
                                     StatusBarItem::new("Offline cache")
                                         .danger()
+                                        .dot()
                                         .icon(IconName::WifiOff)
                                         .pill(),
                                 ),
@@ -95,7 +100,7 @@ impl Render for StatusBarDemo {
                     .into_any_element(),
                     showcase_card_wide(
                         "自定义区域",
-                        "StatusBarItem::custom 可以承载任意 Liora 控件。",
+                        "StatusBarItem::custom 可以承载任意 Liora 控件，适合运行/构建/同步等操作区。",
                         shell_preview(
                             StatusBar::new()
                                 .height(px(38.0))
@@ -119,6 +124,42 @@ impl Render for StatusBarDemo {
                                         ),
                                 ))
                                 .right_item(StatusBarItem::new("Native GPUI").info().pill()),
+                        ),
+                    )
+                    .into_any_element(),
+                    showcase_card_wide(
+                        "交互与品牌化",
+                        "支持 item 级点击、最小宽度、自定义前景/背景、spacer 和 borderless 变体。",
+                        shell_preview(
+                            StatusBar::new()
+                                .height(px(40.0))
+                                .borderless()
+                                .background(theme.primary.base.opacity(0.10))
+                                .left_item(
+                                    StatusBarItem::new("Deploy")
+                                        .icon(IconName::Rocket)
+                                        .dot()
+                                        .min_width(px(108.0))
+                                        .background(theme.primary.base.opacity(0.16))
+                                        .text_color(theme.primary.base)
+                                        .pill()
+                                        .on_click(|_, _| {}),
+                                )
+                                .left_item(StatusBarItem::new("main").icon(IconName::GitBranch))
+                                .center_item(StatusBarItem::spacer())
+                                .right_item(
+                                    StatusBarItem::new("Updates ready")
+                                        .info()
+                                        .icon(IconName::Download)
+                                        .on_click(|_, _| {})
+                                        .pill(),
+                                )
+                                .right_item(
+                                    StatusBarItem::new("Open docs")
+                                        .icon(IconName::ExternalLink)
+                                        .compact()
+                                        .on_click(|_, cx| cx.open_url("https://github.com/yhyzgn/liora")),
+                                ),
                         ),
                     )
                     .into_any_element(),

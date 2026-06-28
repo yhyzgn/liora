@@ -23,10 +23,10 @@ use crate::VirtualScrollbar;
 use crate::gpui_compat::element_id;
 use crate::table::{TableAlign, TableColumn, TableColumnFixed, TableSortOrder, TableSortState};
 use gpui::{
-    AnyElement, App, Component, ElementId, IntoElement, ListAlignment, ListState, Pixels,
-    RenderOnce, SharedString, Window, div, list, prelude::*, px,
+    AnyElement, App, Component, ElementId, InteractiveElement, IntoElement, ListAlignment,
+    ListState, Pixels, RenderOnce, SharedString, Window, div, list, prelude::*, px,
 };
-use liora_core::Config;
+use liora_core::{Config, stable_unique_id};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 use std::sync::Arc;
@@ -72,7 +72,7 @@ impl VirtualizedTable {
     ) -> Self {
         let overdraw = px(640.0);
         Self {
-            id: liora_core::unique_id("virtualized-table"),
+            id: "virtualized-table".into(),
             columns,
             row_count,
             list_state: ListState::new(row_count, ListAlignment::Top, overdraw),
@@ -274,13 +274,17 @@ impl VirtualizedTableState {
 impl RenderOnce for VirtualizedTable {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
+        let id = stable_unique_id(self.id.clone(), "virtualized-table", _window, cx);
+        let state_id = id.clone();
+        let header_id = id.clone();
+        let root_id = id.clone();
         let mut columns = self.columns;
         let border = self.border;
         let stripe = self.stripe;
         let row_height = self.row_height;
         let render_cell = self.render_cell.clone();
         let state = _window.use_keyed_state(
-            ElementId::from(format!("{}-state", self.id)),
+            ElementId::from(format!("{}-state", state_id)),
             cx,
             move |_, _| VirtualizedTableState::new(self.row_count, self.overdraw, self.row_height),
         );
@@ -317,7 +321,7 @@ impl RenderOnce for VirtualizedTable {
                     &theme,
                     active_order,
                     on_sort_change.clone(),
-                    &self.id,
+                    &header_id,
                 )
             }));
 
@@ -326,7 +330,8 @@ impl RenderOnce for VirtualizedTable {
                 .relative()
                 .w_full()
                 .h(self.height)
-                .overflow_hidden()
+                .id(element_id(format!("{}-body", root_id)))
+                .overflow_y_scroll()
                 .child(
                     list(list_state.clone(), move |row_index, window, cx| {
                         let striped = stripe && row_index % 2 == 1;
@@ -412,6 +417,7 @@ impl RenderOnce for VirtualizedTable {
         };
 
         div()
+            .id(root_id)
             .relative()
             .w_full()
             .overflow_hidden()
@@ -581,8 +587,12 @@ mod tests {
 
         assert!(source.contains("pub struct VirtualizedTable"));
         assert!(source.contains("use_keyed_state"));
+        assert!(source.contains("stable_unique_id"));
+        assert!(source.contains(r#"id: "virtualized-table".into()"#));
+        assert!(source.contains(".overflow_y_scroll()"));
         assert!(source.contains("VirtualizedTableState"));
         assert!(source.contains("state.sync"));
+        assert!(source.contains("state_id"));
         assert!(source.contains("list(list_state.clone()"));
         assert!(source.contains("VirtualScrollbar::new"));
         assert!(source.contains("render_cell"));

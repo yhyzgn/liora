@@ -7,12 +7,15 @@
 
 use crate::{Spinner, Text};
 use gpui::{
-    AnyElement, App, Component, Hsla, IntoElement, Pixels, RenderOnce, SharedString, Window, div,
-    prelude::*, px,
+    AnyElement, App, Component, Hsla, IntoElement, MouseButton, Pixels, RenderOnce, SharedString,
+    Window, div, prelude::*, px,
 };
 use liora_core::Config;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
+use std::sync::Arc;
+
+type StatusBarClickCallback = dyn Fn(&mut Window, &mut App) + 'static;
 
 /// Visual tone applied to a [`StatusBarItem`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -43,6 +46,13 @@ pub struct StatusBarItem {
     pill: bool,
     compact: bool,
     custom: Option<AnyElement>,
+    separator: bool,
+    spacer: bool,
+    dot: bool,
+    min_width: Option<Pixels>,
+    background: Option<Hsla>,
+    text_color: Option<Hsla>,
+    on_click: Option<Arc<StatusBarClickCallback>>,
 }
 
 impl StatusBarItem {
@@ -58,6 +68,13 @@ impl StatusBarItem {
             pill: false,
             compact: false,
             custom: None,
+            separator: false,
+            spacer: false,
+            dot: false,
+            min_width: None,
+            background: None,
+            text_color: None,
+            on_click: None,
         }
     }
 
@@ -73,7 +90,44 @@ impl StatusBarItem {
             pill: false,
             compact: false,
             custom: Some(content.into_any_element()),
+            separator: false,
+            spacer: false,
+            dot: false,
+            min_width: None,
+            background: None,
+            text_color: None,
+            on_click: None,
         }
+    }
+
+    /// Creates a vertical separator item between dense status clusters.
+    pub fn separator() -> Self {
+        Self {
+            id: None,
+            label: None,
+            detail: None,
+            icon: None,
+            tone: StatusBarTone::Neutral,
+            loading: false,
+            pill: false,
+            compact: true,
+            custom: None,
+            separator: true,
+            spacer: false,
+            dot: false,
+            min_width: None,
+            background: None,
+            text_color: None,
+            on_click: None,
+        }
+    }
+
+    /// Creates a flexible spacer item for advanced region composition.
+    pub fn spacer() -> Self {
+        let mut item = Self::separator();
+        item.separator = false;
+        item.spacer = true;
+        item
     }
 
     /// Assigns a stable element id used by GPUI state and tests.
@@ -131,6 +185,36 @@ impl StatusBarItem {
         self
     }
 
+    /// Shows a small semantic status dot before icon/text.
+    pub fn dot(mut self) -> Self {
+        self.dot = true;
+        self
+    }
+
+    /// Sets a minimum width for aligned status clusters.
+    pub fn min_width(mut self, width: impl Into<Pixels>) -> Self {
+        self.min_width = Some(width.into());
+        self
+    }
+
+    /// Overrides the item text/icon color.
+    pub fn text_color(mut self, color: Hsla) -> Self {
+        self.text_color = Some(color);
+        self
+    }
+
+    /// Overrides the item background color.
+    pub fn background(mut self, color: Hsla) -> Self {
+        self.background = Some(color);
+        self
+    }
+
+    /// Registers a click callback and renders the item as an interactive affordance.
+    pub fn on_click(mut self, callback: impl Fn(&mut Window, &mut App) + 'static) -> Self {
+        self.on_click = Some(Arc::new(callback));
+        self
+    }
+
     /// Renders the item with pill background and border.
     pub fn pill(mut self) -> Self {
         self.pill = true;
@@ -155,10 +239,24 @@ impl StatusBarItem {
     }
 
     fn render(self, theme: &liora_theme::Theme) -> AnyElement {
+        if self.separator {
+            return div()
+                .w(px(1.0))
+                .h(px(16.0))
+                .mx_1()
+                .bg(theme.neutral.divider)
+                .into_any_element();
+        }
+        if self.spacer {
+            return div().flex_1().min_w(px(8.0)).into_any_element();
+        }
         if let Some(custom) = self.custom {
             return custom;
         }
-        let (fg, bg) = self.colors(theme);
+        let (tone_fg, tone_bg) = self.colors(theme);
+        let fg = self.text_color.unwrap_or(tone_fg);
+        let bg = self.background.unwrap_or(tone_bg);
+        let click = self.on_click.clone();
         let mut item = div()
             .flex()
             .items_center()
@@ -167,12 +265,27 @@ impl StatusBarItem {
             .px(if self.compact { px(4.0) } else { px(7.0) })
             .text_color(fg)
             .text_size(px(theme.font_size.sm))
+            .when_some(self.min_width, |s, width| s.min_w(width))
+            .when(click.is_some(), |s| {
+                s.cursor_pointer().hover(|s| s.bg(bg)).on_mouse_up(
+                    MouseButton::Left,
+                    move |_, window, cx| {
+                        if let Some(callback) = &click {
+                            callback(window, cx);
+                        }
+                    },
+                )
+            })
             .when(self.pill, |s| {
                 s.rounded_full()
                     .bg(bg)
                     .border_1()
                     .border_color(theme.neutral.border)
             });
+
+        if self.dot {
+            item = item.child(div().size(px(7.0)).rounded_full().bg(fg));
+        }
 
         if self.loading {
             item = item.child(Spinner::new().small().color(fg));
@@ -401,5 +514,25 @@ mod tests {
         assert!(item.pill);
         assert!(item.compact);
         assert_eq!(item.detail.as_deref(), Some("42ms"));
+    }
+
+    #[test]
+    fn status_bar_item_supports_custom_interactive_layout_affordances() {
+        let source = include_str!("status_bar.rs");
+        let item = StatusBarItem::new("Build")
+            .dot()
+            .min_width(px(88.0))
+            .background(gpui::rgb(0x111827).into())
+            .text_color(gpui::white())
+            .on_click(|_, _| {});
+
+        assert!(item.dot);
+        assert_eq!(item.min_width, Some(px(88.0)));
+        assert!(item.background.is_some());
+        assert!(item.text_color.is_some());
+        assert!(item.on_click.is_some());
+        assert!(source.contains("StatusBarItem::separator"));
+        assert!(source.contains("StatusBarItem::spacer"));
+        assert!(source.contains("cursor_pointer"));
     }
 }

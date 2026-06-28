@@ -1,12 +1,12 @@
 //! StatusBar custom region example.
 
-use gpui::{IntoElement, px};
+use gpui::IntoElement;
 use liora_components::{Button, Space, StatusBar, StatusBarItem};
 use liora_icons_lucide::IconName;
 
 pub fn status_bar_custom() -> impl IntoElement {
     StatusBar::new()
-        .height(px(38.0))
+        .height(gpui::px(38.0))
         .left_item(StatusBarItem::new("Workspace: Liora").icon(IconName::FolderOpen))
         .center_item(StatusBarItem::custom(
             Space::new()

@@ -1340,6 +1340,9 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "status_bar/shell.rs" => Some(include_str!("../content/snippets/status_bar/shell.rs")),
         "status_bar/tones.rs" => Some(include_str!("../content/snippets/status_bar/tones.rs")),
         "status_bar/custom.rs" => Some(include_str!("../content/snippets/status_bar/custom.rs")),
+        "status_bar/advanced.rs" => {
+            Some(include_str!("../content/snippets/status_bar/advanced.rs"))
+        }
         "operation/basic.rs" => Some(include_str!("../content/snippets/operation/basic.rs")),
         "segment_ratio_bar/top.rs" => {
             Some(include_str!("../content/snippets/segment_ratio_bar/top.rs"))
@@ -3368,15 +3371,17 @@ impl Render for LiveDemoContent {
             "ClipboardHelper" => Text::new("Use write_text_to_clipboard(cx, text) inside event handlers.").into_any_element(),
             "FocusTrapPolicy" => { let policy = liora_components::FocusTrap::new().restore_focus(true).close_on_escape(false); Text::new(format!("trap={}, restore={}, esc={}", policy.enabled, policy.restore_focus, policy.close_on_escape)).into_any_element() },
             "NativeMenuDescriptor" => liora_components::NativeMenu::new("File")
-                .item(liora_components::NativeMenuItem::new("new-window", "New Window").shortcut("Ctrl+Shift+N"))
-                .item(liora_components::NativeMenuItem::new("open", "Open...").shortcut("Ctrl+O"))
+                .item(liora_components::NativeMenuItem::new_window())
+                .item(liora_components::NativeMenuItem::open())
                 .item(
                     liora_components::NativeMenuItem::new("recent", "Open Recent")
                         .child(liora_components::NativeMenuItem::new("recent-gallery", "liora-gallery"))
                         .child(liora_components::NativeMenuItem::new("recent-docs", "liora-docs")),
                 )
                 .item(liora_components::NativeMenuItem::separator())
-                .item(liora_components::NativeMenuItem::new("save", "Save").shortcut("Ctrl+S"))
+                .item(liora_components::NativeMenuItem::save())
+                .item(liora_components::NativeMenuItem::open_url("Open GitHub Repository", "https://github.com/yhyzgn/liora"))
+                .item(liora_components::NativeMenuItem::new("check-updates", "Check for Updates").with_action(liora_components::NativeMenuAction::Custom("check-updates".into())))
                 .item(liora_components::NativeMenuItem::new("publish", "Publish Release").disabled(true))
                 .into_any_element(),
             "DockLayoutWorkbench" => demo_row(vec![
@@ -3471,6 +3476,7 @@ impl Render for LiveDemoContent {
             "StatusBarShell" => docs_status_bar_shell(),
             "StatusBarTones" => docs_status_bar_tones(),
             "StatusBarCustom" => docs_status_bar_custom(),
+            "StatusBarAdvanced" => docs_status_bar_advanced(&_cx.global::<Config>().theme),
             "SearchableListBasic" => docs_searchable_list_basic(),
             "SearchableListFiltered" => docs_searchable_list_filtered(),
             "SearchableListEmpty" => docs_searchable_list_empty(),
@@ -5981,6 +5987,35 @@ fn docs_status_bar_custom() -> AnyElement {
             .right_item(
                 liora_components::StatusBarItem::new("Native GPUI")
                     .info()
+                    .pill(),
+            ),
+    )
+}
+
+fn docs_status_bar_advanced(theme: &Theme) -> AnyElement {
+    docs_status_bar_preview(
+        liora_components::StatusBar::new()
+            .height(px(40.0))
+            .borderless()
+            .background(theme.primary.base.opacity(0.10))
+            .left_item(
+                liora_components::StatusBarItem::new("Deploy")
+                    .icon(IconName::Rocket)
+                    .dot()
+                    .min_width(px(108.0))
+                    .background(theme.primary.base.opacity(0.16))
+                    .text_color(theme.primary.base)
+                    .pill()
+                    .on_click(|_, _| {}),
+            )
+            .left_item(liora_components::StatusBarItem::separator())
+            .left_item(liora_components::StatusBarItem::new("main").icon(IconName::GitBranch))
+            .center_item(liora_components::StatusBarItem::spacer())
+            .right_item(
+                liora_components::StatusBarItem::new("Updates ready")
+                    .info()
+                    .icon(IconName::Download)
+                    .on_click(|_, _| {})
                     .pill(),
             ),
     )

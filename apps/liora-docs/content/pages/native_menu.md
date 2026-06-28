@@ -9,6 +9,8 @@
 - 分隔线。
 - 禁用项。
 - 嵌套 submenu 描述。
+- 普通 item 自动使用 pointer cursor，并可通过 `on_select` 分发 action。
+- 内置常用 action：New/Open/Save/Quit、Command Palette、Sidebar/StatusBar toggle、Zoom、OpenUrl、CopyText。
 - 可直接渲染为 Liora 原生预览，便于 Gallery/Docs/设置页展示同一份 descriptor。
 
 ## Descriptor + Preview

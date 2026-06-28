@@ -34,3 +34,15 @@
 
 ```rust src="status_bar/custom.rs"
 ```
+
+
+## 高级交互布局
+
+### 效果
+
+::LioraDemo{component="StatusBarAdvanced"}::
+
+### 代码
+
+```rust src="status_bar/advanced.rs"
+```
