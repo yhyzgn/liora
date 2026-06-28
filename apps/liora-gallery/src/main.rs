@@ -3,11 +3,11 @@ use gpui::{
     WindowOptions, div, img, prelude::*, px, size,
 };
 use liora_components::{
-    AppWindowFrame, Button, Card, Checkbox, Container, Dialog, Input, Menu, MenuItem,
+    AppWindowFrame, Button, Card, Checkbox, Container, Dialog, Input, Menu, MenuBar, MenuItem,
     NavigationMenu, NavigationMenuMode, NavigationMenuNode, Paragraph, Segmented, SegmentedOption,
-    Sidebar, Space, Spinner, Switch, Tag, Text, Title, WindowFrameMode, apply_window_frame_mode,
-    frame_mode_switch_row, init_liora_with_options, request_window_frame_mode, toast_info,
-    toast_success,
+    Sidebar, Space, Spinner, Switch, Tag, Text, Title, TitleBar, WindowFrameMode,
+    apply_window_frame_mode, frame_mode_switch_row, init_liora_with_options,
+    request_window_frame_mode, toast_info, toast_success,
 };
 use liora_core::{
     Config, FontConfig, FontLoadMode, FontLoadOptions, LinuxDesktopIdentity, LinuxDesktopPngIcon,
@@ -877,7 +877,7 @@ impl Render for Gallery {
             .map(|entry| entry.name.to_string())
             .unwrap_or_else(|| "About".into());
 
-        let header = div()
+        let header_main = div()
             .flex()
             .items_center()
             .justify_between()
@@ -965,9 +965,17 @@ impl Render for Gallery {
         liora_core::render_active_modal_in_window(_window, cx);
         liora_core::render_active_drawer_in_window(_window, cx);
 
+        let header = div()
+            .w_full()
+            .flex()
+            .flex_col()
+            .gap_2()
+            .child(gallery_window_menu_bar())
+            .child(header_main);
+
         let shell = Container::new()
             .header(header)
-            .header_height_lg()
+            .header_height(px(112.0))
             .aside(
                 Sidebar::new()
                     .id("gallery-sidebar")
@@ -985,7 +993,7 @@ impl Render for Gallery {
             .overlay(PortalLayer);
 
         AppWindowFrame::new("Liora UI Gallery", shell)
-            .subtitle("Native component gallery")
+            .titlebar(gallery_titlebar())
             .mode(self.frame_mode)
             .on_close(request_gallery_window_close)
     }
@@ -1486,6 +1494,62 @@ fn gallery_nav_index(entries: &[demos::DemoEntry]) -> Vec<GalleryNavEntry> {
         .collect()
 }
 
+/// Builds the visible in-window menu bar used by the custom Gallery titlebar.
+fn gallery_titlebar() -> TitleBar {
+    TitleBar::new()
+        .title("Liora UI Gallery")
+        .subtitle("Native component gallery")
+}
+
+/// Builds the visible menu preview that mirrors the registered GPUI system menu.
+fn gallery_window_menu_bar() -> MenuBar {
+    MenuBar::new([
+        Menu::new("File")
+            .perform_builtin_actions(false)
+            .item(MenuItem::new_window())
+            .item(MenuItem::open_file())
+            .item(MenuItem::open_folder())
+            .item(MenuItem::separator())
+            .item(MenuItem::save())
+            .item(MenuItem::quit()),
+        Menu::new("Edit")
+            .perform_builtin_actions(false)
+            .item(MenuItem::undo())
+            .item(MenuItem::redo())
+            .item(MenuItem::separator())
+            .item(MenuItem::cut())
+            .item(MenuItem::copy())
+            .item(MenuItem::paste())
+            .item(MenuItem::separator())
+            .item(MenuItem::select_all()),
+        Menu::new("View")
+            .perform_builtin_actions(false)
+            .item(MenuItem::command_palette())
+            .item(MenuItem::toggle_sidebar())
+            .item(MenuItem::toggle_statusbar())
+            .item(MenuItem::separator())
+            .item(MenuItem::action(
+                liora_components::MenuAction::ZoomIn,
+                "Zoom In",
+            ))
+            .item(MenuItem::action(
+                liora_components::MenuAction::ZoomOut,
+                "Zoom Out",
+            ))
+            .item(MenuItem::action(
+                liora_components::MenuAction::ZoomReset,
+                "Reset Zoom",
+            )),
+        Menu::new("Help")
+            .perform_builtin_actions(false)
+            .item(MenuItem::open_url(
+                "Liora on GitHub",
+                "https://github.com/yhyzgn/liora",
+            ))
+            .item(MenuItem::new("about-gallery", "About Liora Gallery")),
+    ])
+}
+
 fn default_gallery_selection(entries: &[demos::DemoEntry]) -> usize {
     entries.len()
 }
@@ -1958,6 +2022,21 @@ mod shell_regression_tests {
         assert!(!source.contains("self.demos.get(selected)"));
         assert!(!render.contains("self.active_demo = Some((entry.render)(cx));"));
         assert!(!render.contains("self.wire_shell_controls(cx);"));
+    }
+
+    #[test]
+    fn gallery_header_embeds_visible_menu_bar_for_all_frame_modes() {
+        let source = include_str!("main.rs")
+            .split("mod shell_regression_tests")
+            .next()
+            .unwrap();
+
+        assert!(source.contains(".header(header)"));
+        assert!(source.contains(".child(gallery_window_menu_bar())"));
+        assert!(source.contains("fn gallery_window_menu_bar() -> MenuBar"));
+        assert!(source.contains("MenuBar::new(["));
+        assert!(source.contains(".titlebar(gallery_titlebar())"));
+        assert!(!source.contains(".leading(gallery_window_menu_bar())"));
     }
 
     #[test]
