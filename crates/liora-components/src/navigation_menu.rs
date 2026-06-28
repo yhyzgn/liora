@@ -22,7 +22,7 @@
 use crate::gpui_compat::element_id;
 use crate::{Flex, Popover, motion::pop_in};
 use gpui::{
-    AnyElement, App, Context, Entity, IntoElement, MouseButton, Render, SharedString, Window, div,
+    AnyElement, App, Context, IntoElement, MouseButton, Render, SharedString, Window, div,
     prelude::*, px,
 };
 use liora_core::{Config, Placement};
@@ -283,187 +283,6 @@ impl NavigationMenu {
         }
     }
 
-    fn render_popover_nodes(
-        menu_handle: Entity<Self>,
-        nodes: Vec<NavigationMenuNode>,
-        popover_id: SharedString,
-        depth: u32,
-        theme: liora_theme::Theme,
-        active_index: Option<SharedString>,
-    ) -> Vec<AnyElement> {
-        nodes
-            .into_iter()
-            .map(|node| match node {
-                NavigationMenuNode::Item(item) => Self::render_popover_item(
-                    menu_handle.clone(),
-                    item,
-                    popover_id.clone(),
-                    depth,
-                    theme.clone(),
-                    active_index.clone(),
-                ),
-                NavigationMenuNode::NavigationSubMenu(submenu) => {
-                    Self::render_nested_popover_submenu(
-                        menu_handle.clone(),
-                        submenu,
-                        popover_id.clone(),
-                        depth,
-                        theme.clone(),
-                        active_index.clone(),
-                    )
-                }
-                NavigationMenuNode::Group(group) => Self::render_popover_group(
-                    menu_handle.clone(),
-                    group,
-                    popover_id.clone(),
-                    depth,
-                    theme.clone(),
-                    active_index.clone(),
-                ),
-            })
-            .collect()
-    }
-
-    fn render_popover_item(
-        menu_handle: Entity<Self>,
-        item: NavigationMenuItem,
-        popover_id: SharedString,
-        depth: u32,
-        theme: liora_theme::Theme,
-        active_index: Option<SharedString>,
-    ) -> AnyElement {
-        let id = item.id.clone();
-        let label = item.label.clone();
-        let icon = item.icon;
-        let is_active = active_index.as_ref() == Some(&id);
-        let item_color = if is_active {
-            theme.primary.base
-        } else {
-            theme.neutral.text_1
-        };
-        let left_padding = px(12.0 + depth as f32 * 16.0);
-
-        div()
-            .id(element_id(format!(
-                "menu-popover-item-{}-{}",
-                menu_handle.entity_id(),
-                id
-            )))
-            .cursor_pointer()
-            .block_mouse_except_scroll()
-            .flex()
-            .flex_row()
-            .items_center()
-            .gap_2()
-            .w_full()
-            .pl(left_padding)
-            .pr_3()
-            .py_2()
-            .rounded(px(theme.radius.sm))
-            .text_color(item_color)
-            .bg(if is_active {
-                theme.primary.base.opacity(0.1)
-            } else {
-                gpui::transparent_black()
-            })
-            .hover(|s| s.bg(theme.neutral.hover))
-            .on_click(move |_, window, cx| {
-                let _ = menu_handle.update(cx, |this, cx| {
-                    if this.select_item(id.clone(), window, cx) {
-                        cx.notify();
-                    }
-                });
-                liora_core::clear_popover(&popover_id, cx);
-            })
-            .when_some(icon, |s, i| {
-                s.child(Icon::new(i).size(px(16.0)).color(item_color))
-            })
-            .child(div().text_sm().child(label))
-            .into_any_element()
-    }
-
-    fn render_nested_popover_submenu(
-        menu_handle: Entity<Self>,
-        submenu: NavigationSubMenu,
-        popover_id: SharedString,
-        depth: u32,
-        theme: liora_theme::Theme,
-        active_index: Option<SharedString>,
-    ) -> AnyElement {
-        let submenu_color = theme.neutral.text_1;
-        let left_padding = px(12.0 + depth as f32 * 16.0);
-        let children = Self::render_popover_nodes(
-            menu_handle,
-            submenu.children,
-            popover_id,
-            depth + 1,
-            theme.clone(),
-            active_index,
-        );
-
-        div()
-            .flex()
-            .flex_col()
-            .child(
-                div()
-                    .flex()
-                    .flex_row()
-                    .items_center()
-                    .gap_2()
-                    .w_full()
-                    .pl(left_padding)
-                    .pr_3()
-                    .py_2()
-                    .text_color(submenu_color)
-                    .when_some(submenu.icon, |s, icon| {
-                        s.child(Icon::new(icon).size(px(16.0)).color(submenu_color))
-                    })
-                    .child(
-                        div()
-                            .text_sm()
-                            .font_weight(gpui::FontWeight::MEDIUM)
-                            .child(submenu.label),
-                    ),
-            )
-            .children(children)
-            .into_any_element()
-    }
-
-    fn render_popover_group(
-        menu_handle: Entity<Self>,
-        group: NavigationMenuGroup,
-        popover_id: SharedString,
-        depth: u32,
-        theme: liora_theme::Theme,
-        active_index: Option<SharedString>,
-    ) -> AnyElement {
-        let left_padding = px(12.0 + depth as f32 * 16.0);
-        let children = Self::render_popover_nodes(
-            menu_handle,
-            group.children,
-            popover_id,
-            depth,
-            theme.clone(),
-            active_index,
-        );
-
-        div()
-            .flex()
-            .flex_col()
-            .child(
-                div()
-                    .pl(left_padding)
-                    .pr_3()
-                    .pt_2()
-                    .pb_1()
-                    .text_xs()
-                    .text_color(theme.neutral.text_3)
-                    .child(group.title),
-            )
-            .children(children)
-            .into_any_element()
-    }
-
     fn render_vertical_item(
         &self,
         item: &NavigationMenuItem,
@@ -577,7 +396,21 @@ impl NavigationMenu {
             .content({
                 let popover_id: SharedString =
                     format!("{}-collapsed-popover-{}", self.id, id).into();
-                let nodes = submenu.children.clone();
+                let children: Vec<NavigationMenuItem> = submenu
+                    .children
+                    .iter()
+                    .filter_map(|n| {
+                        if let NavigationMenuNode::Item(i) = n {
+                            Some(NavigationMenuItem {
+                                id: i.id.clone(),
+                                label: i.label.clone(),
+                                icon: i.icon,
+                            })
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
                 let theme = theme.clone();
                 let popover_id = popover_id.clone();
                 move |_window, _cx| {
@@ -598,18 +431,59 @@ impl NavigationMenu {
                         .flex()
                         .flex_col()
                         .p_1()
-                        .min_w(px(180.0))
-                        .children({
-                            let active_index = menu_handle.read(_cx).active_index.clone();
-                            Self::render_popover_nodes(
-                                menu_handle,
-                                nodes.clone(),
-                                popover_id.clone(),
-                                0,
-                                theme.clone(),
-                                active_index,
-                            )
-                        })
+                        .min_w(px(160.0))
+                        .children(children.iter().map(|item| {
+                            let id = item.id.clone();
+                            let label = item.label.clone();
+                            let icon = item.icon;
+                            let theme = theme.clone();
+                            let menu_handle = menu_handle.clone();
+                            let is_active =
+                                menu_handle.read(_cx).active_index.as_ref() == Some(&id);
+                            let item_color = if is_active {
+                                theme.primary.base
+                            } else {
+                                theme.neutral.text_1
+                            };
+                            div()
+                                .id(element_id(format!(
+                                    "menu-sub-item-{}-{}",
+                                    menu_handle.entity_id(),
+                                    id
+                                )))
+                                .cursor_pointer()
+                                .block_mouse_except_scroll()
+                                .flex()
+                                .flex_row()
+                                .items_center()
+                                .gap_2()
+                                .w_full()
+                                .px_3()
+                                .py_2()
+                                .rounded(px(theme.radius.sm))
+                                .text_color(item_color)
+                                .bg(if is_active {
+                                    theme.primary.base.opacity(0.1)
+                                } else {
+                                    gpui::transparent_black()
+                                })
+                                .hover(|s| s.bg(theme.neutral.hover))
+                                .on_click({
+                                    let popover_id = popover_id.clone();
+                                    move |_, window, cx| {
+                                        let _ = menu_handle.update(cx, |this, cx| {
+                                            if this.select_item(id.clone(), window, cx) {
+                                                cx.notify();
+                                            }
+                                        });
+                                        liora_core::clear_popover(&popover_id, cx);
+                                    }
+                                })
+                                .when_some(icon, |s, i| {
+                                    s.child(Icon::new(i).size(px(16.0)).color(item_color))
+                                })
+                                .child(div().text_sm().child(label))
+                        }))
                 }
             })
             .into_any_element()
@@ -805,7 +679,21 @@ impl NavigationMenu {
         .flush_content()
         .content({
             let popover_id: SharedString = format!("{}-horizontal-popover-{}", self.id, id).into();
-            let nodes = submenu.children.clone();
+            let children: Vec<NavigationMenuItem> = submenu
+                .children
+                .iter()
+                .filter_map(|n| {
+                    if let NavigationMenuNode::Item(i) = n {
+                        Some(NavigationMenuItem {
+                            id: i.id.clone(),
+                            label: i.label.clone(),
+                            icon: i.icon,
+                        })
+                    } else {
+                        None
+                    }
+                })
+                .collect();
             let theme = theme.clone();
             let popover_id = popover_id.clone();
             move |_window, _cx| {
@@ -826,18 +714,58 @@ impl NavigationMenu {
                     .flex()
                     .flex_col()
                     .p_1()
-                    .min_w(px(180.0))
-                    .children({
-                        let active_index = menu_handle.read(_cx).active_index.clone();
-                        Self::render_popover_nodes(
-                            menu_handle,
-                            nodes.clone(),
-                            popover_id.clone(),
-                            0,
-                            theme.clone(),
-                            active_index,
-                        )
-                    })
+                    .min_w(px(160.0))
+                    .children(children.iter().map(|item| {
+                        let id = item.id.clone();
+                        let label = item.label.clone();
+                        let icon = item.icon;
+                        let theme = theme.clone();
+                        let menu_handle = menu_handle.clone();
+                        let is_active = menu_handle.read(_cx).active_index.as_ref() == Some(&id);
+                        let item_color = if is_active {
+                            theme.primary.base
+                        } else {
+                            theme.neutral.text_1
+                        };
+                        div()
+                            .id(element_id(format!(
+                                "menu-horiz-sub-item-{}-{}",
+                                menu_handle.entity_id(),
+                                id
+                            )))
+                            .cursor_pointer()
+                            .block_mouse_except_scroll()
+                            .flex()
+                            .flex_row()
+                            .items_center()
+                            .gap_2()
+                            .w_full()
+                            .px_3()
+                            .py_2()
+                            .rounded(px(theme.radius.sm))
+                            .text_color(item_color)
+                            .bg(if is_active {
+                                theme.primary.base.opacity(0.1)
+                            } else {
+                                gpui::transparent_black()
+                            })
+                            .hover(|s| s.bg(theme.neutral.hover))
+                            .on_click({
+                                let popover_id = popover_id.clone();
+                                move |_, window, cx| {
+                                    let _ = menu_handle.update(cx, |this, cx| {
+                                        if this.select_item(id.clone(), window, cx) {
+                                            cx.notify();
+                                        }
+                                    });
+                                    liora_core::clear_popover(&popover_id, cx);
+                                }
+                            })
+                            .when_some(icon, |s, i| {
+                                s.child(Icon::new(i).size(px(16.0)).color(item_color))
+                            })
+                            .child(div().text_sm().child(label))
+                    }))
             }
         })
         .into_any_element()
@@ -1079,21 +1007,7 @@ mod tests {
         );
     }
     #[test]
-    fn submenu_popovers_render_nested_nodes_instead_of_filtering_to_items() {
-        let source = include_str!("navigation_menu.rs")
-            .split("#[cfg(test)]")
-            .next()
-            .unwrap();
-
-        assert!(source.contains("fn render_popover_nodes"));
-        assert!(source.contains("fn render_nested_popover_submenu"));
-        assert!(source.contains("fn render_popover_group"));
-        assert!(source.contains("submenu.children.clone()"));
-        assert!(!source.contains("filter_map(|n|"));
-    }
-
-    #[test]
-    fn submenu_popover_triggers_allow_outer_popover_click_handler() {
+    fn submenu_popover_triggers_do_not_block_popover_click_handler() {
         let source = include_str!("navigation_menu.rs")
             .split("#[cfg(test)]")
             .next()

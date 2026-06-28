@@ -997,7 +997,6 @@ fn render_menu_item(
                 })
                 .when(!disabled, |s| {
                     s.cursor_pointer()
-                        .block_mouse_except_scroll()
                         .hover(|s| s.cursor_pointer().bg(theme.neutral.hover))
                         .on_mouse_up(MouseButton::Left, move |_, window, cx| {
                             let selected_action = action
@@ -1130,5 +1129,22 @@ mod tests {
         assert!(source.contains("prompt_for_new_path"));
         assert!(source.contains("window.remove_window()"));
         assert!(source.contains("window.set_rem_size"));
+    }
+    #[test]
+    fn menu_preview_items_do_not_block_hover_or_pointer_tracking() {
+        let source = include_str!("menu.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+        let render_menu_item_source = source
+            .split("fn render_menu_item")
+            .nth(1)
+            .unwrap_or_default();
+
+        assert!(
+            render_menu_item_source
+                .contains(".hover(|s| s.cursor_pointer().bg(theme.neutral.hover))")
+        );
+        assert!(!render_menu_item_source.contains("block_mouse_except_scroll"));
     }
 }
