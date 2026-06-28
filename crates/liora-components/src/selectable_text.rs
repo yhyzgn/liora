@@ -751,6 +751,12 @@ impl Element for SelectableTextElement {
         let focus_handle_for_down = focus_handle.clone();
         let hitbox = prepaint.hitbox.clone();
         window.on_mouse_event(move |event: &MouseDownEvent, phase, window, cx| {
+            if phase.capture()
+                && event.button == MouseButton::Left
+                && !bounds.contains(&event.position)
+            {
+                input.update(cx, |input, cx| input.clear_selection(cx));
+            }
             if phase.bubble() && event.button == MouseButton::Left && hitbox.is_hovered(window) {
                 window.focus(&focus_handle_for_down, cx);
                 window.capture_pointer(hitbox.id);
@@ -1003,6 +1009,8 @@ mod tests {
         assert!(source.contains("event.click_count == 2"));
         assert!(source.contains("window.capture_pointer(hitbox.id)"));
         assert!(source.contains("phase.capture()"));
+        assert!(source.contains("!bounds.contains(&event.position)"));
+        assert!(source.contains("input.clear_selection(cx)"));
     }
 
     #[test]
