@@ -85,10 +85,10 @@ mod tests {
     #[test]
     fn facade_reexports_typed_locales_and_macro() {
         assert_eq!(
-            crate::locales::empty::description.as_str(),
+            crate::locales::empty::description().as_str(),
             "empty.description"
         );
-        assert_eq!(facade_test_keys::window::title.as_str(), "window.title");
+        assert_eq!(facade_test_keys::window::title().as_str(), "window.title");
     }
 
     #[test]

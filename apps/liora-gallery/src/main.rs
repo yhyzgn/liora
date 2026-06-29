@@ -27,7 +27,7 @@ use liora_updater::{
     AssetKind, AssetSelector, InstallAction, InstallPlan, Platform, UpdateRequest, Updater,
 };
 
-mod locales {
+pub mod locales {
     include!(concat!(env!("OUT_DIR"), "/locales_keys.rs"));
 }
 
@@ -112,7 +112,10 @@ impl UpdatePanelStatus {
     }
 }
 
-fn locale_template(cx: &impl liora_core::LocalesContext, key: liora_core::Locales) -> String {
+fn locale_template(
+    cx: &impl liora_core::LocalesContext,
+    key: impl liora_core::IntoLocalesKey,
+) -> String {
     tr(cx, key).to_string()
 }
 

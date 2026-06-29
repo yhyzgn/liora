@@ -213,11 +213,14 @@ fn render_locales_module(keys: &LocaleKeys, key_type_path: &str) -> String {
          // Edit assets/locales/*.toml or [package.metadata.liora.locales].paths and rerun cargo.\n",
     );
     for (group, entries) in keys {
+        out.push_str(&format!(
+            "/// Typed locale keys in the `{group}` resource group.\n"
+        ));
         out.push_str(&format!("pub mod {group} {{\n"));
         for (key, path) in entries {
-            out.push_str("    #[allow(dead_code, non_upper_case_globals)]\n");
+            out.push_str(&format!("    /// Locale key `{path}`.\n"));
             out.push_str(&format!(
-                "    pub const {key}: {key_type_path} = {key_type_path}::new({path:?});\n"
+                "    pub const fn {key}() -> {key_type_path} {{\n        {key_type_path}::new({path:?})\n    }}\n"
             ));
         }
         out.push_str("}\n");

@@ -46,6 +46,27 @@ impl fmt::Display for Locales {
     }
 }
 
+/// Converts a typed locale key or generated locale-key function into [`Locales`].
+pub trait IntoLocalesKey {
+    /// Returns the typed locale key.
+    fn into_locales_key(self) -> Locales;
+}
+
+impl IntoLocalesKey for Locales {
+    fn into_locales_key(self) -> Locales {
+        self
+    }
+}
+
+impl<F> IntoLocalesKey for F
+where
+    F: FnOnce() -> Locales,
+{
+    fn into_locales_key(self) -> Locales {
+        self()
+    }
+}
+
 /// User-facing text that can be either a literal string or a typed locale key.
 ///
 /// Component constructors accept this type through `impl Into<LocalizedText>`,
@@ -103,6 +124,15 @@ impl From<Locales> for LocalizedText {
     }
 }
 
+impl<F> From<F> for LocalizedText
+where
+    F: FnOnce() -> Locales,
+{
+    fn from(value: F) -> Self {
+        Self::Key(value())
+    }
+}
+
 impl From<SharedString> for LocalizedText {
     fn from(value: SharedString) -> Self {
         Self::Literal(value)
@@ -123,7 +153,7 @@ impl From<String> for LocalizedText {
 
 /// Defines typed locale key constants grouped by resource table.
 ///
-/// Applications normally use the generated [`locales`] module, which is rebuilt
+/// Applications normally use the generated `locales` module, which is rebuilt
 /// by Cargo from `assets/locales/*.toml`. This macro remains available for
 /// application-specific key modules outside Liora's default resources.
 ///
@@ -152,9 +182,10 @@ macro_rules! locales {
         $(
             $vis mod $group {
                 $(
-                    #[allow(dead_code, non_upper_case_globals)]
-                    pub const $key: $crate::locales::Locales =
-                        $crate::locales::Locales::new(concat!(stringify!($group), ".", stringify!($key)));
+                    #[doc = concat!("Returns locale key `", stringify!($group), ".", stringify!($key), "`.")]
+                    pub const fn $key() -> $crate::locales::Locales {
+                        $crate::locales::Locales::new(concat!(stringify!($group), ".", stringify!($key)))
+                    }
                 )+
             }
         )+
@@ -654,8 +685,9 @@ pub fn locales_version(cx: &impl LocalesContext) -> u64 {
 }
 
 /// Translates `key` using the active locale config.
-pub fn tr(cx: &impl LocalesContext, key: Locales) -> SharedString {
-    cx.locales_config().translate(key.as_str())
+pub fn tr(cx: &impl LocalesContext, key: impl IntoLocalesKey) -> SharedString {
+    cx.locales_config()
+        .translate(key.into_locales_key().as_str())
 }
 
 /// Replaces the complete locale config.
@@ -780,9 +812,10 @@ mod tests {
 
     #[test]
     fn typed_locales_preserve_dot_paths() {
-        assert_eq!(empty::description.as_str(), "empty.description");
-        assert_eq!(message_box::confirm.as_str(), "message_box.confirm");
-        assert_eq!(test_keys::demo::empty_state.as_str(), "demo.empty_state");
+        assert_eq!(empty::description().as_str(), "empty.description");
+        assert_eq!(message_box::confirm().as_str(), "message_box.confirm");
+        assert_eq!(test_keys::demo::title().as_str(), "demo.title");
+        assert_eq!(test_keys::demo::empty_state().as_str(), "demo.empty_state");
     }
 
     #[test]
