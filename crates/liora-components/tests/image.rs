@@ -40,12 +40,15 @@ fn image_supports_remote_url_sources() {
 }
 
 #[test]
-fn local_demo_asset_exists() {
-    assert!(
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../apps/liora-gallery/assets/local.jpeg")
-            .exists()
-    );
+fn image_supports_caller_owned_local_asset_paths() {
+    let path = std::env::temp_dir().join(format!(
+        "liora-components-image-fixture-{}.jpeg",
+        std::process::id()
+    ));
+    std::fs::write(&path, [0xff, 0xd8, 0xff, 0xd9]).expect("write image fixture");
+    let image = Image::local(path.clone());
+    assert!(image.source().is_some_and(|source| source.is_file()));
+    let _ = std::fs::remove_file(path);
 }
 
 #[test]

@@ -1,7 +1,7 @@
 //! Motion module.
 //!
 //! This public module implements the Liora motion presets and animation helpers used across interactive components. It keeps the reusable
-//! component logic inside `liora-components` rather than Gallery or Docs so
+//! component logic inside `liora-components` rather than host applications so
 //! downstream GPUI applications can compose the same behavior with their own
 //! app state, assets, and release policy.
 //!
@@ -16,7 +16,7 @@
 //!
 //! The implementation should use Liora theme tokens from `liora-core` and
 //! `liora-theme`, keep accessibility-oriented keyboard/pointer behavior close to
-//! the component, and avoid app-specific Gallery/Docs resources in this SDK
+//! the component, and avoid app-specific host-application resources in this SDK
 //! crate.
 
 use gpui::{Animation, AnimationElement, AnimationExt, ElementId, IntoElement, Styled, radians};

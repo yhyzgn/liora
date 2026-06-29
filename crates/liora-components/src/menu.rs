@@ -4,7 +4,7 @@
 //! the official GPUI application menu via [`App::set_menus`] or rendered as a
 //! Liora preview/custom-titlebar menu. Applications can use the same descriptor
 //! for OS menus, custom titlebar menus, settings previews, and command-palette
-//! bridges without coupling menu content to Gallery or Docs.
+//! bridges without coupling menu content to host applications.
 //!
 //! ## Usage model
 //!
@@ -17,7 +17,7 @@
 //!
 //! The implementation should use Liora theme tokens from `liora-core` and
 //! `liora-theme`, keep accessibility-oriented keyboard/pointer behavior close to
-//! the component, and avoid app-specific Gallery/Docs resources in this SDK
+//! the component, and avoid app-specific host-application resources in this SDK
 //! crate.
 
 use crate::{Popover, Text};
@@ -667,7 +667,7 @@ impl Menu {
         self
     }
 
-    /// Sets the preview width used by Gallery/Docs/custom titlebar previews.
+    /// Sets the preview width used by custom titlebar previews.
     pub fn preview_width(mut self, width: impl Into<gpui::Pixels>) -> Self {
         self.preview_width = width.into().max(px(180.0));
         self
@@ -675,8 +675,7 @@ impl Menu {
 
     /// Configures whether built-in generic effects run before `on_select`.
     ///
-    /// Keep this enabled for real application menus. Disable it for Gallery,
-    /// Docs, tests, or command preview surfaces where actions such as Quit or
+    /// Keep this enabled for real application menus. Disable it for tests or command preview surfaces where actions such as Quit or
     /// OpenUrl should be demonstrated without side effects.
     pub fn perform_builtin_actions(mut self, perform: bool) -> Self {
         self.perform_builtin_actions = perform;
@@ -768,7 +767,7 @@ impl Menu {
 
 /// Compact in-window menu bar that renders top-level menu names in one row.
 ///
-/// This is for custom titlebars, Gallery, Docs, and other in-window previews.
+/// This is for custom titlebars and other in-window previews.
 /// For the real OS/application menu bar, use [`Menu::register`]
 /// or [`Menu::register_with_action_mapper`], which delegate to
 /// GPUI's official `App::set_menus` API.

@@ -1,3 +1,4 @@
+use crate::tray_menu::gallery_tray_menu;
 use gpui::{AnyElement, AnyView, App, Context, Entity, IntoElement, Render, Window, prelude::*};
 use liora_components::layout_helpers::{page, section};
 use liora_components::{Button, Card, Flex, Space, Tag, Text};
@@ -5,9 +6,7 @@ use liora_core::Config;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 use liora_theme::Theme;
-use liora_tray::{
-    TrayCloseAction, TrayCommand, TrayControlCenter, TrayMenuItemSpec, default_liora_tray_menu,
-};
+use liora_tray::{TrayCloseAction, TrayCommand, TrayControlCenter, TrayMenuItemSpec};
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|_| TrayDemo {
@@ -57,7 +56,7 @@ impl Render for TrayDemo {
                 .gap_xl()
                 .child(section(
                     "真实托盘效果预览",
-                    "这个示例不是普通文档列表：左侧是应用后台状态，底部是系统状态栏托盘区域，右侧是由 default_liora_tray_menu() 生成的托盘弹出菜单；按钮会 dispatch 真实 TrayCommand。",
+                    "这个示例不是普通文档列表：左侧是应用后台状态，底部是系统状态栏托盘区域，右侧是由 Gallery 应用本地 tray_menu::gallery_tray_menu() 生成的托盘弹出菜单；按钮会 dispatch 真实 TrayCommand。",
                     desktop_tray_showcase(
                         &theme,
                         self.active_icon,
@@ -122,11 +121,7 @@ fn desktop_tray_showcase(
                         remembered_close_action,
                         entity.clone(),
                     ))
-                    .child(tray_menu_panel(
-                        theme,
-                        &default_liora_tray_menu(),
-                        entity.clone(),
-                    )),
+                    .child(tray_menu_panel(theme, &gallery_tray_menu(), entity.clone())),
             )
             .child(tray_status_bar(
                 theme,

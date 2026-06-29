@@ -1,6 +1,6 @@
-//! Native system tray facade for Liora applications.
+//! Native system tray facade for GPUI applications.
 //!
-//! `liora-tray` intentionally keeps `tray-icon` and `muda` behind a small Liora
+//! `liora-tray` intentionally keeps `tray-icon` and `muda` behind a small typed
 //! command API so GPUI apps can stay focused on window lifecycle commands while
 //! still supporting dynamic icon updates, check items, and deep nested menus.
 
@@ -514,48 +514,6 @@ pub fn solid_icon(color: [u8; 4], size: u32) -> Result<TrayIconImage> {
     icon_from_rgba(rgba, size, size)
 }
 
-/// Builds the default tray menu entries used by Liora apps.
-pub fn default_liora_tray_menu() -> Vec<TrayMenuItemSpec> {
-    vec![
-        TrayMenuItemSpec::action("显示窗口", TrayCommand::Show),
-        TrayMenuItemSpec::action("隐藏窗口", TrayCommand::Hide),
-        TrayMenuItemSpec::check(
-            "状态栏驻留",
-            TrayCommand::Custom("resident-enabled".into()),
-            true,
-        ),
-        TrayMenuItemSpec::check(
-            "启动时自动显示",
-            TrayCommand::Custom("auto-show".into()),
-            true,
-        ),
-        TrayMenuItemSpec::separator(),
-        TrayMenuItemSpec::submenu(
-            "切换图标",
-            vec![
-                TrayMenuItemSpec::action("默认图标", TrayCommand::SetIcon("default".into())),
-                TrayMenuItemSpec::action("同步中", TrayCommand::SetIcon("syncing".into())),
-                TrayMenuItemSpec::action("错误状态", TrayCommand::SetIcon("error".into())),
-            ],
-        ),
-        TrayMenuItemSpec::submenu(
-            "多级菜单",
-            vec![TrayMenuItemSpec::submenu(
-                "二级菜单",
-                vec![TrayMenuItemSpec::submenu(
-                    "三级菜单",
-                    vec![TrayMenuItemSpec::action(
-                        "三级动作",
-                        TrayCommand::Custom("deep-action".into()),
-                    )],
-                )],
-            )],
-        ),
-        TrayMenuItemSpec::separator(),
-        TrayMenuItemSpec::action("退出", TrayCommand::Quit),
-    ]
-}
-
 fn build_menu(
     specs: &[TrayMenuItemSpec],
 ) -> Result<(
@@ -701,17 +659,6 @@ mod tests {
     }
 
     #[test]
-    fn default_menu_covers_check_dynamic_icon_and_deep_submenus() {
-        let menu = default_liora_tray_menu();
-        assert!(matches!(menu[2], TrayMenuItemSpec::Check { .. }));
-        assert!(matches!(menu[3], TrayMenuItemSpec::Check { .. }));
-        assert!(menu.iter().any(
-            |item| matches!(item, TrayMenuItemSpec::Submenu { label, .. } if label == "切换图标")
-        ));
-        assert!(menu.iter().any(|item| matches!(item, TrayMenuItemSpec::Submenu { label, children, .. } if label == "多级菜单" && !children.is_empty())));
-    }
-
-    #[test]
     fn solid_icon_validates_rgba_size() {
         assert!(solid_icon([32, 96, 255, 255], 16).is_ok());
         assert!(icon_from_rgba(vec![0; 3], 1, 1).is_err());
@@ -722,7 +669,7 @@ mod tests {
         let manifest_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
         assert!(
             !manifest_dir.join("assets").exists(),
-            "liora-tray must not bundle Gallery/Docs icon assets"
+            "liora-tray must not bundle host application icon assets"
         );
         assert!(
             !manifest_dir.join("src/assets").exists(),

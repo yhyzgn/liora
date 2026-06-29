@@ -36,10 +36,9 @@ use liora_icons_lucide::IconName;
 use liora_icons_material::IconName as MaterialIconName;
 use liora_icons_tabler::IconName as TablerIconName;
 use liora_theme::Theme;
-use liora_tray::{TrayCloseAction, TrayCommand, TrayMenuItemSpec, default_liora_tray_menu};
+use liora_tray::{TrayCloseAction, TrayCommand, TrayMenuItemSpec};
 use liora_updater::{
-    AssetKind, InstallAction, InstallPlan, Platform, UpdateApp, UpdateRequest, Updater,
-    liora_asset_selector,
+    AssetKind, AssetSelector, InstallAction, InstallPlan, Platform, UpdateRequest, Updater,
 };
 use pulldown_cmark::{CodeBlockKind, Event, HeadingLevel, Options, Parser, Tag, TagEnd};
 use std::{
@@ -8305,13 +8304,36 @@ fn docs_tray_residency() -> impl IntoElement {
         ))
 }
 
+fn docs_preview_tray_menu() -> Vec<TrayMenuItemSpec> {
+    vec![
+        TrayMenuItemSpec::action("Show Window", TrayCommand::Show),
+        TrayMenuItemSpec::action("Hide Window", TrayCommand::Hide),
+        TrayMenuItemSpec::check(
+            "Keep Running in Tray",
+            TrayCommand::Custom("resident-enabled".into()),
+            true,
+        ),
+        TrayMenuItemSpec::separator(),
+        TrayMenuItemSpec::submenu(
+            "Icon State",
+            vec![
+                TrayMenuItemSpec::action("Default", TrayCommand::SetIcon("default".into())),
+                TrayMenuItemSpec::action("Syncing", TrayCommand::SetIcon("syncing".into())),
+                TrayMenuItemSpec::action("Error", TrayCommand::SetIcon("error".into())),
+            ],
+        ),
+        TrayMenuItemSpec::separator(),
+        TrayMenuItemSpec::action("Quit", TrayCommand::Quit),
+    ]
+}
+
 fn docs_tray_install() -> impl IntoElement {
     Space::new()
         .vertical()
         .gap_md()
         .child(Text::new("TrayConfig::new(\"liora-gallery\")").sm().bold())
-        .child(Text::new("tooltip + app-owned icon + default_liora_tray_menu()").sm())
-        .child(docs_tray_menu_preview(default_liora_tray_menu()))
+        .child(Text::new("tooltip + app-owned icon + app-owned menu").sm())
+        .child(docs_tray_menu_preview(docs_preview_tray_menu()))
 }
 
 fn docs_tray_dynamic_icon() -> impl IntoElement {
@@ -10708,11 +10730,23 @@ fn current_platform_label() -> &'static str {
     }
 }
 
-fn update_cache_dir(app: UpdateApp) -> std::path::PathBuf {
+const DOCS_UPDATE_APP: &str = "liora-docs";
+
+fn liora_updater() -> Updater {
+    Updater::new("yhyzgn", "liora")
+}
+
+fn docs_asset_selector(platform: Platform) -> AssetSelector {
+    AssetSelector::for_platform(platform)
+        .matching_prefix(DOCS_UPDATE_APP)
+        .kind_priority([AssetKind::RawExecutable])
+}
+
+fn update_cache_dir(app: &str) -> std::path::PathBuf {
     std::env::var_os("LIORA_UPDATE_CACHE")
         .map(std::path::PathBuf::from)
         .unwrap_or_else(|| std::env::temp_dir().join("liora-updates"))
-        .join(app.release_name())
+        .join(app)
         .join(env!("CARGO_PKG_VERSION"))
 }
 
@@ -10728,7 +10762,7 @@ fn check_docs_update(docs: Entity<DocsShell>, cx: &mut App) {
         .spawn(async move {
             let result = executor
                 .spawn(async move {
-                    Updater::default()
+                    liora_updater()
                         .update_available(&format!("v{}", env!("CARGO_PKG_VERSION")), false)
                 })
                 .await;
@@ -10786,17 +10820,13 @@ fn download_docs_update_sync() -> Result<Option<(String, InstallPlan)>, liora_up
         return Ok(None);
     };
     let request = UpdateRequest::new(
-        UpdateApp::Docs,
+        DOCS_UPDATE_APP,
         format!("v{}", env!("CARGO_PKG_VERSION")),
         platform,
-        update_cache_dir(UpdateApp::Docs),
+        update_cache_dir(DOCS_UPDATE_APP),
     )
-    .selector(liora_asset_selector(
-        UpdateApp::Docs,
-        platform,
-        AssetKind::RawExecutable,
-    ));
-    let Some(update) = Updater::default().prepare_update(&request)? else {
+    .selector(docs_asset_selector(platform));
+    let Some(update) = liora_updater().prepare_update(&request)? else {
         return Ok(None);
     };
     Ok(Some((update.release.tag, update.install_plan)))

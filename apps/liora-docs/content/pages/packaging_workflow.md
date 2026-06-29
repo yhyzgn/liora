@@ -14,8 +14,8 @@ Liora publishes three kinds of release outputs:
 
 The reusable packaging logic lives in:
 
-- `crates/liora-packager` — package metadata, format decisions, generated backend config, manifest/checksum helpers.
-- `crates/liora-updater` — GitHub Release checks, platform asset selection, cached downloads, checksum verification, and install plans used by Gallery/Docs About panels.
+- `crates/liora-packager` — generic package metadata, format decisions, generated backend config, manifest/checksum helpers. App identities, publisher/license metadata, icons, and application directories are supplied by the caller or repository-local `xtask`, not hardcoded in the SDK.
+- `crates/liora-updater` — generic GitHub Release checks, caller-defined platform asset selection, cached downloads, checksum verification, and install plans. Gallery/Docs wire their own app-local selectors in their app crates; the SDK does not contain official app presets.
 - `xtask` — command-line entry point used locally and by CI.
 - `.github/workflows/ci.yml` — ordinary quality gate for every pull request and `main` push.
 - `.github/workflows/package.yml` — GitHub Actions preview/release pipeline for native app binaries and Gallery installers.

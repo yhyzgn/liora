@@ -130,10 +130,10 @@ impl From<String> for LocalizedText {
 /// ```
 /// liora_core::locales! {
 ///     pub mod app_keys {
-///         docs { subtitle }
+///         window { title }
 ///     }
 /// }
-/// # let _ = app_keys::docs::subtitle;
+/// # let _ = app_keys::window::title;
 /// ```
 #[macro_export]
 macro_rules! locales {

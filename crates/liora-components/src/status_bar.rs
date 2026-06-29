@@ -3,7 +3,7 @@
 //! `StatusBar` renders a native GPUI desktop status strip with left, center,
 //! and right regions. It is intended for application shells that need to show
 //! connection state, background tasks, cursor position, current page, version,
-//! shortcuts, or update status without coupling that logic to Gallery or Docs.
+//! shortcuts, or update status without coupling that logic to host application code.
 
 use crate::{Spinner, Text};
 use gpui::{

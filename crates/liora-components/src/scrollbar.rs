@@ -1,7 +1,7 @@
 //! Scrollbar module.
 //!
 //! This public module implements the Liora custom scrollbar wrappers for GPUI virtual scroll areas. It keeps the reusable
-//! component logic inside `liora-components` rather than Gallery or Docs so
+//! component logic inside `liora-components` rather than host applications so
 //! downstream GPUI applications can compose the same behavior with their own
 //! app state, assets, and release policy.
 //!
@@ -16,7 +16,7 @@
 //!
 //! The implementation should use Liora theme tokens from `liora-core` and
 //! `liora-theme`, keep accessibility-oriented keyboard/pointer behavior close to
-//! the component, and avoid app-specific Gallery/Docs resources in this SDK
+//! the component, and avoid app-specific host-application resources in this SDK
 //! crate.
 
 use gpui::{
@@ -70,7 +70,7 @@ impl Scrollbar {
 
 /// Paints and drives a scrollbar for GPUI's virtual [`ListState`].
 ///
-/// This lets Liora Docs use GPUI's native virtual list for visible-area rendering
+/// This lets host applications use GPUI's native virtual list for visible-area rendering
 /// while still bootstrapping the visual scrollbar from Liora's component layer.
 pub struct VirtualScrollbar {
     list_state: ListState,

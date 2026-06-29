@@ -6,7 +6,7 @@
 
 ## 主窗口控制用例
 
-`cargo run -p liora-gallery` 与 `cargo run -p liora-docs` 会在应用启动时分别创建独立的系统托盘图标。Gallery 和 Docs 的 PNG/SVG 托盘状态图标分别位于 `apps/liora-gallery/assets/tray-icons/` 与 `apps/liora-docs/assets/tray-icons/`，由应用层通过 `icon_from_png_bytes(...)` 加载；`liora-tray` 只提供通用托盘 API，不内嵌任何应用专用资源。
+`cargo run -p liora-gallery` 与 `cargo run -p liora-docs` 会在应用启动时分别创建独立的系统托盘图标。Gallery 和 Docs 的 PNG/SVG 托盘状态图标分别位于 `apps/liora-gallery/assets/tray-icons/` 与 `apps/liora-docs/assets/tray-icons/`，由应用层通过 `icon_from_png_bytes(...)` 加载；托盘菜单也由各自应用本地定义。`liora-tray` 只提供通用托盘 API，不内嵌任何应用专用资源、默认菜单或业务行为。
 
 本页和 Gallery 内部的 Tray 页面额外在主窗口中提供可视化控制台：状态来自全局 `TrayControlCenter`，按钮会分发真实 `TrayCommand`，用于切换动态图标、显示/隐藏主窗口、开启/关闭状态栏驻留、显示/隐藏托盘图标、切换自动显示。这样 Docs 看到的并不是普通按钮列表，而是与 Gallery 同步的真实 tray 状态预览。
 
@@ -34,7 +34,7 @@
 
 ## 基础安装
 
-最小配置包含托盘 id、tooltip、图标和菜单。`Tray` 需要被保存到应用状态中，确保生命周期覆盖整个进程。
+最小配置包含托盘 id、tooltip、图标和菜单。菜单是应用策略：SDK 不提供 `default_*_tray_menu` 之类的默认业务菜单。`Tray` 需要被保存到应用状态中，确保生命周期覆盖整个进程。
 
 ### 效果
 

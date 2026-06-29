@@ -166,7 +166,7 @@ fn collect_toml_keys(prefix: Option<String>, value: &toml::Value, keys: &mut Loc
             };
             let Some((group, key)) = path.split_once('.') else {
                 panic!(
-                    "locale key `{path}` must use at least one table group, e.g. [docs] subtitle = ..."
+                    "locale key `{path}` must use at least one table group, e.g. [window] title = ..."
                 );
             };
             keys.entry(sanitize_ident(group, &path))

@@ -594,7 +594,7 @@ fn main() {
 
 ### `liora-tray`
 
-System tray facade:
+System tray facade. `liora-tray` only provides the generic tray primitives; application behavior such as menu labels, residency toggles, dynamic icon choices, and quit policy must live in the host app, not in the SDK:
 
 ```rust
 use liora::tray::{
@@ -671,10 +671,25 @@ fn check_for_update() -> Result<(), liora::updater::UpdaterError> {
 Reusable packaging metadata and validation helpers. Most applications will copy the repository's `xtask` pattern, but the library is publishable for custom release tools:
 
 ```rust
-use liora::packager::validate_packaging_layout;
+use liora::packager::{AppMetadata, validate_app_packaging_layout};
 
 fn validate_release_inputs() {
-    let report = validate_packaging_layout(std::env::current_dir().unwrap());
+    let app = AppMetadata::new(
+        "acme-notes",
+        "com.acme.Notes",
+        "Acme Notes",
+        "acme-notes",
+        "acme-notes",
+        "Utility",
+        "Native notes application.",
+        "acme-notes",
+    )
+    .with_license("MIT")
+    .with_homepage("https://acme.example/notes")
+    .with_authors(["Acme Team"])
+    .with_publisher("Acme")
+    .with_copyright("Copyright © Acme");
+    let report = validate_app_packaging_layout(std::env::current_dir().unwrap(), [&app]);
     if !report.is_ok() {
         for error in report.errors {
             eprintln!("{error}");

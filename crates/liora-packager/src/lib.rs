@@ -1,4 +1,4 @@
-//! Packaging domain logic for Liora native GPUI applications.
+//! Packaging domain logic for native GPUI applications.
 //!
 //! This crate intentionally contains no installer runtime and no Tauri runtime
 //! integration. It only models package metadata, package formats, generated
@@ -6,7 +6,7 @@
 //! `cargo run -p xtask -- package ...`.
 //!
 //! Public release policy is enforced by `xtask package release-readiness`, which
-//! checks layout, `LicenseRef-Liora`, tag/version policy, signing inputs, and
+//! checks repository-specific license, tag/version policy, signing inputs, and
 //! GitHub Release workflow wiring before formal packaging.
 
 mod app;
@@ -16,7 +16,7 @@ mod format;
 mod manifest;
 mod validate;
 
-pub use app::{AppId, AppMetadata, KnownApp, known_apps};
+pub use app::{AppId, AppMetadata};
 pub use cargo_packager::{
     CargoPackagerPlan, FontVariant, cargo_packager_formats, generated_config_path,
     generated_config_path_for, generated_rpm_config_path, generated_rpm_config_path_for,
@@ -27,4 +27,6 @@ pub use cargo_packager::{
 pub use checksum::{Checksum, sha256_file};
 pub use format::{PackageFormat, Platform};
 pub use manifest::{PackageArtifact, PackageManifest, collect_package_artifacts};
-pub use validate::{ValidationError, ValidationReport, validate_packaging_layout};
+pub use validate::{
+    ValidationError, ValidationReport, validate_app_packaging_layout, validate_packaging_layout,
+};

@@ -1,7 +1,7 @@
 //! Tree Select module.
 //!
 //! This public module implements the Liora tree-backed selection popup component. It keeps the reusable
-//! component logic inside `liora-components` rather than Gallery or Docs so
+//! component logic inside `liora-components` rather than host applications so
 //! downstream GPUI applications can compose the same behavior with their own
 //! app state, assets, and release policy.
 //!
@@ -16,7 +16,7 @@
 //!
 //! The implementation should use Liora theme tokens from `liora-core` and
 //! `liora-theme`, keep accessibility-oriented keyboard/pointer behavior close to
-//! the component, and avoid app-specific Gallery/Docs resources in this SDK
+//! the component, and avoid app-specific host-application resources in this SDK
 //! crate.
 
 use crate::Input;
@@ -412,7 +412,7 @@ mod tests {
     use super::*;
     fn nodes() -> Vec<TreeSelectNode> {
         vec![
-            TreeSelectNode::new("docs", "Docs")
+            TreeSelectNode::new("notes", "Notes")
                 .child(TreeSelectNode::new("quick-start", "Quick Start")),
             TreeSelectNode::new("charts", "Charts"),
         ]

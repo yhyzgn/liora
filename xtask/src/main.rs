@@ -5,10 +5,10 @@ use std::{
 };
 
 use liora_packager::{
-    FontVariant, KnownApp, PackageFormat, PackageManifest, Platform, cargo_packager_formats,
+    AppMetadata, FontVariant, PackageFormat, PackageManifest, Platform, cargo_packager_formats,
     collect_package_artifacts, generated_config_path_for, generated_rpm_config_path_for,
     package_out_dir_for, release_binaries_dir, render_cargo_packager_config_for,
-    render_generate_rpm_config_for, supplemental_formats, validate_packaging_layout,
+    render_generate_rpm_config_for, supplemental_formats, validate_app_packaging_layout,
 };
 
 fn main() {
@@ -50,7 +50,8 @@ fn package(args: Vec<String>) -> Result<(), String> {
 
 fn validate() -> Result<(), String> {
     let root = workspace_root()?;
-    let report = validate_packaging_layout(&root);
+    let apps = package_apps_metadata();
+    let report = validate_app_packaging_layout(&root, apps.iter());
     if report.is_ok() {
         println!("packaging layout OK");
         return Ok(());
@@ -388,7 +389,7 @@ fn escape_markdown_table_cell(value: &str) -> String {
 }
 
 fn smoke(
-    apps: Vec<KnownApp>,
+    apps: Vec<PackageApp>,
     format: PackageFormat,
     font_variant: FontVariant,
 ) -> Result<(), String> {
@@ -444,7 +445,7 @@ fn smoke(
 }
 
 fn install_smoke(
-    apps: Vec<KnownApp>,
+    apps: Vec<PackageApp>,
     format: PackageFormat,
     dry_run: bool,
     execute_install: bool,
@@ -857,7 +858,7 @@ fn require_magic(path: &Path, magic: &[u8], label: &str) -> Result<(), String> {
     }
 }
 
-fn build(apps: Vec<KnownApp>, font_variant: FontVariant) -> Result<(), String> {
+fn build(apps: Vec<PackageApp>, font_variant: FontVariant) -> Result<(), String> {
     for app in apps {
         let mut args = vec!["build", "--release", "-p", app.package()];
         if font_variant == FontVariant::WithFonts {
@@ -1067,7 +1068,7 @@ fn build_portable_tar_gz(
         return Err(format!(
             "release binary not found for portable tar.gz: {}; run `cargo run -p xtask -- package build --app {}` first or omit --skip-build",
             binary_path.display(),
-            app.app.key()
+            app.key()
         ));
     }
 
@@ -1423,7 +1424,7 @@ fn cargo_packager_args(
 
 fn generate_rpm_args(
     root: &std::path::Path,
-    app: KnownApp,
+    app: PackageApp,
     config_path: &std::path::Path,
     out_dir: &std::path::Path,
 ) -> Vec<String> {
@@ -1471,10 +1472,90 @@ fn run_cargo_packager(args: &[String]) -> Result<(), String> {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum PackageApp {
+    Gallery,
+    Docs,
+}
+
+impl PackageApp {
+    fn key(self) -> &'static str {
+        match self {
+            Self::Gallery => "gallery",
+            Self::Docs => "docs",
+        }
+    }
+
+    fn package(self) -> &'static str {
+        match self {
+            Self::Gallery => "liora-gallery",
+            Self::Docs => "liora-docs",
+        }
+    }
+
+    fn metadata(self) -> AppMetadata {
+        match self {
+            Self::Gallery => AppMetadata::new(
+                self.key(),
+                "dev.liora.Gallery",
+                "Liora Gallery",
+                self.package(),
+                self.package(),
+                "DeveloperTool",
+                "Native GPUI component gallery for Liora.",
+                "liora-gallery",
+            )
+            .with_license("LicenseRef-Liora")
+            .with_homepage("https://github.com/yhyzgn/liora")
+            .with_authors(["Liora Contributors"])
+            .with_publisher("Liora")
+            .with_copyright("Copyright © Liora Contributors"),
+            Self::Docs => AppMetadata::new(
+                self.key(),
+                "dev.liora.Docs",
+                "Liora Docs",
+                self.package(),
+                self.package(),
+                "DeveloperTool",
+                "Native GPUI documentation app for Liora.",
+                "liora-docs",
+            )
+            .with_license("LicenseRef-Liora")
+            .with_homepage("https://github.com/yhyzgn/liora")
+            .with_authors(["Liora Contributors"])
+            .with_publisher("Liora")
+            .with_copyright("Copyright © Liora Contributors"),
+        }
+    }
+}
+
+impl std::str::FromStr for PackageApp {
+    type Err = String;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        match value {
+            "gallery" | "liora-gallery" => Ok(Self::Gallery),
+            "docs" | "liora-docs" => Ok(Self::Docs),
+            other => Err(format!("unknown app '{other}'")),
+        }
+    }
+}
+
+fn package_apps() -> Vec<PackageApp> {
+    vec![PackageApp::Gallery, PackageApp::Docs]
+}
+
+fn package_apps_metadata() -> Vec<AppMetadata> {
+    package_apps()
+        .into_iter()
+        .map(PackageApp::metadata)
+        .collect()
+}
+
 #[derive(Debug)]
 struct PackageCommand {
     action: PackageAction,
-    apps: Vec<KnownApp>,
+    apps: Vec<PackageApp>,
     format: PackageFormat,
     dry_run: bool,
     skip_build: bool,
@@ -1496,7 +1577,7 @@ enum PackageAction {
 impl PackageCommand {
     fn parse(args: Vec<String>) -> Result<Self, String> {
         let mut action = PackageAction::Package;
-        let mut app: Option<KnownApp> = None;
+        let mut app: Option<PackageApp> = None;
         let mut all_apps = false;
         let mut format = PackageFormat::PlatformDefaults;
         let mut dry_run = false;
@@ -1538,9 +1619,9 @@ impl PackageCommand {
         }
 
         let apps = if all_apps {
-            liora_packager::known_apps().to_vec()
+            package_apps()
         } else {
-            vec![app.unwrap_or(KnownApp::Gallery)]
+            vec![app.unwrap_or(PackageApp::Gallery)]
         };
 
         Ok(Self {
@@ -1570,6 +1651,59 @@ fn print_help() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn sdk_crates_do_not_reference_repository_demo_apps() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        let crates = root.join("crates");
+        let forbidden = [
+            concat!("liora", "-gallery"),
+            concat!("liora", "-docs"),
+            concat!("Liora ", "Gallery"),
+            concat!("Liora ", "Docs"),
+            concat!("Update", "App"),
+            concat!("Known", "App"),
+        ];
+        let mut offenders = Vec::new();
+        collect_sdk_boundary_offenders(&crates, &forbidden, &mut offenders);
+        assert!(
+            offenders.is_empty(),
+            "SDK crates must not reference repository demo apps or app presets: {offenders:#?}"
+        );
+    }
+
+    fn collect_sdk_boundary_offenders(
+        path: &Path,
+        forbidden: &[&str],
+        offenders: &mut Vec<String>,
+    ) {
+        let entries = std::fs::read_dir(path)
+            .unwrap_or_else(|error| panic!("failed to read {}: {error}", path.display()));
+        for entry in entries {
+            let entry = entry.expect("read dir entry");
+            let path = entry.path();
+            if path.is_dir() {
+                if path.file_name().and_then(|name| name.to_str()) != Some("target") {
+                    collect_sdk_boundary_offenders(&path, forbidden, offenders);
+                }
+                continue;
+            }
+            let Some(ext) = path.extension().and_then(|ext| ext.to_str()) else {
+                continue;
+            };
+            if !matches!(ext, "rs" | "md" | "toml") {
+                continue;
+            }
+            let text = std::fs::read_to_string(&path)
+                .unwrap_or_else(|error| panic!("failed to read {}: {error}", path.display()));
+            for term in forbidden {
+                if text.contains(term) {
+                    offenders.push(format!("{} contains {}", path.display(), term));
+                    break;
+                }
+            }
+        }
+    }
 
     #[test]
     fn target_triple_prefers_explicit_env() {
@@ -1618,7 +1752,7 @@ mod tests {
     fn generate_rpm_args_use_metadata_overwrite_branch() {
         let args = generate_rpm_args(
             Path::new("/repo/liora"),
-            KnownApp::Gallery,
+            PackageApp::Gallery,
             Path::new("/repo/liora/target/liora-packager/GenerateRpm.gallery.toml"),
             Path::new("/repo/liora/target/packages/liora-gallery/linux"),
         );
@@ -1632,7 +1766,7 @@ mod tests {
 
     #[test]
     fn install_smoke_plan_contains_install_and_uninstall_steps() {
-        let app = KnownApp::Gallery.metadata();
+        let app = PackageApp::Gallery.metadata();
         let plan = install_smoke_plan(
             &app,
             Platform::Linux,
@@ -1659,7 +1793,7 @@ mod tests {
         assert_eq!(command.format, PackageFormat::TarGz);
         assert!(!command.dry_run);
         assert!(!command.execute_install);
-        assert_eq!(command.apps.len(), liora_packager::known_apps().len());
+        assert_eq!(command.apps.len(), package_apps().len());
     }
 
     #[test]

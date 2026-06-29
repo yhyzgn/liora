@@ -75,7 +75,7 @@ pub const LINUX_RPM_RUNTIME_DEPENDENCIES: &[(&str, &str)] = &[
     ("xdg-utils", "*"),
 ];
 
-/// A generated cargo-packager invocation plan for one Liora app.
+/// A generated cargo-packager invocation plan for one host application.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CargoPackagerPlan {
     /// Application metadata associated with this package artifact.
@@ -128,7 +128,7 @@ pub fn cargo_packager_formats(formats: &[PackageFormat]) -> Vec<PackageFormat> {
         .collect()
 }
 
-/// Returns the subset of formats that require Liora supplemental backends.
+/// Returns the subset of formats that require supplemental backends.
 pub fn supplemental_formats(formats: &[PackageFormat]) -> Vec<PackageFormat> {
     formats
         .iter()
@@ -141,7 +141,7 @@ pub fn supplemental_formats(formats: &[PackageFormat]) -> Vec<PackageFormat> {
 pub fn generated_config_path(root: &Path, app: &AppMetadata) -> PathBuf {
     root.join("target")
         .join("liora-packager")
-        .join(format!("Packager.{}.toml", app.app.key()))
+        .join(format!("Packager.{}.toml", app.key()))
 }
 
 /// Returns the path for the generated cargo-packager configuration file for a font variant.
@@ -152,7 +152,7 @@ pub fn generated_config_path_for(
 ) -> PathBuf {
     root.join("target").join("liora-packager").join(format!(
         "Packager.{}.{}.toml",
-        app.app.key(),
+        app.key(),
         font_variant.as_str()
     ))
 }
@@ -188,7 +188,7 @@ pub fn release_binaries_dir(root: &Path) -> PathBuf {
 pub fn generated_rpm_config_path(root: &Path, app: &AppMetadata) -> PathBuf {
     root.join("target")
         .join("liora-packager")
-        .join(format!("GenerateRpm.{}.toml", app.app.key()))
+        .join(format!("GenerateRpm.{}.toml", app.key()))
 }
 
 /// Returns the generated RPM metadata path for the selected app and font variant.
@@ -199,7 +199,7 @@ pub fn generated_rpm_config_path_for(
 ) -> PathBuf {
     root.join("target").join("liora-packager").join(format!(
         "GenerateRpm.{}.{}.toml",
-        app.app.key(),
+        app.key(),
         font_variant.as_str()
     ))
 }
@@ -227,10 +227,16 @@ pub fn render_generate_rpm_config_for(
     line(&mut out, "[package.metadata.generate-rpm]");
     kv(&mut out, "name", &app.package);
     kv(&mut out, "version", &rpm_package_version());
-    kv(&mut out, "license", "LicenseRef-Liora");
+    if let Some(license) = &app.license {
+        kv(&mut out, "license", license);
+    }
     kv(&mut out, "summary", &app.short_description);
-    kv(&mut out, "url", "https://github.com/yhyzgn/liora");
-    kv(&mut out, "vendor", "Liora");
+    if let Some(homepage) = &app.homepage {
+        kv(&mut out, "url", homepage);
+    }
+    if let Some(publisher) = &app.publisher {
+        kv(&mut out, "vendor", publisher);
+    }
     kv(&mut out, "release", "1");
     kv(&mut out, "auto-req", "builtin");
     line(&mut out, "require-sh = false");
@@ -338,10 +344,19 @@ pub fn render_cargo_packager_config_for(
     kv(&mut out, "version", &package_version());
     kv(&mut out, "identifier", app.id.as_str());
     kv(&mut out, "description", &app.short_description);
-    kv(&mut out, "homepage", "https://github.com/yhyzgn/liora");
-    arr(&mut out, "authors", &["Liora Contributors"]);
-    kv(&mut out, "publisher", "Liora");
-    kv(&mut out, "copyright", "Copyright © Liora Contributors");
+    if let Some(homepage) = &app.homepage {
+        kv(&mut out, "homepage", homepage);
+    }
+    if !app.authors.is_empty() {
+        let authors = app.authors.iter().map(String::as_str).collect::<Vec<_>>();
+        arr(&mut out, "authors", &authors);
+    }
+    if let Some(publisher) = &app.publisher {
+        kv(&mut out, "publisher", publisher);
+    }
+    if let Some(copyright) = &app.copyright {
+        kv(&mut out, "copyright", copyright);
+    }
     kv(&mut out, "category", &app.category);
     arr(&mut out, "formats", &cargo_formats);
     path_kv(&mut out, "outDir", out_dir);
@@ -507,12 +522,46 @@ fn escape(value: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::KnownApp;
+
+    fn sample_app() -> AppMetadata {
+        AppMetadata::new(
+            "sample",
+            "dev.example.Sample",
+            "Sample App",
+            "sample-app",
+            "sample-app",
+            "Utility",
+            "Sample native app.",
+            "sample-app",
+        )
+        .with_license("MIT")
+        .with_homepage("https://example.dev/sample")
+        .with_authors(["Example Contributors"])
+        .with_publisher("Example")
+        .with_copyright("Copyright © Example Contributors")
+    }
+
+    fn test_root(name: &str) -> PathBuf {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../..")
+            .join("target")
+            .join("liora-packager-tests")
+            .join(name);
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(root.join("apps/sample-app/assets/fonts"))
+            .expect("create sample font fixture");
+        std::fs::write(
+            root.join("apps/sample-app/assets/fonts/SampleSans-Regular.ttf"),
+            b"sample font fixture",
+        )
+        .expect("write sample font fixture");
+        root
+    }
 
     #[test]
     fn renders_cargo_packager_config_with_binary_and_icons() {
         let root = Path::new("/repo/liora");
-        let app = KnownApp::Gallery.metadata();
+        let app = sample_app();
         let text = render_cargo_packager_config(
             root,
             &app,
@@ -521,23 +570,27 @@ mod tests {
                 PackageFormat::Rpm,
                 PackageFormat::AppImage,
             ],
-            Path::new("/repo/liora/target/packages/liora-gallery/linux"),
+            Path::new("/repo/project/target/packages/sample-app/linux"),
             Path::new("/repo/liora/target/release"),
         );
-        assert!(text.contains("productName = \"Liora Gallery\""));
+        assert!(text.contains("productName = \"Sample App\""));
+        assert!(text.contains("homepage = \"https://example.dev/sample\""));
+        assert!(text.contains("authors = [\"Example Contributors\"]"));
+        assert!(text.contains("publisher = \"Example\""));
+        assert!(text.contains("copyright = \"Copyright © Example Contributors\""));
         assert!(text.contains("formats = [\"deb\", \"appimage\"]"));
         assert!(text.contains("depends = [\"libgtk-3-0\""));
         assert!(text.contains("\"libayatana-appindicator3-1\""));
         assert!(text.contains("\"libvulkan1\""));
         assert!(text.contains("[[binaries]]"));
-        assert!(text.contains("path = \"liora-gallery\""));
+        assert!(text.contains("path = \"sample-app\""));
         assert!(text.contains("installerIcon"));
         assert!(text.contains("[nsis]"));
         assert!(text.contains("installMode = \"currentUser\""));
         assert!(!text.contains("fragmentPaths"));
         let normalized_text = normalized_test_paths(&text);
-        assert!(normalized_text.contains("hicolor/16x16/apps/liora-gallery.png"));
-        assert!(normalized_text.contains("hicolor/512x512/apps/liora-gallery.png"));
+        assert!(normalized_text.contains("hicolor/16x16/apps/sample-app.png"));
+        assert!(normalized_text.contains("hicolor/512x512/apps/sample-app.png"));
         assert!(!text.contains("assets/fonts"));
     }
 
@@ -551,9 +604,8 @@ mod tests {
 
     #[test]
     fn renders_cargo_packager_config_with_font_resources_when_requested() {
-        let root = std::fs::canonicalize(Path::new(env!("CARGO_MANIFEST_DIR")).join("../.."))
-            .expect("workspace root should resolve");
-        let app = KnownApp::Gallery.metadata();
+        let root = test_root("cargo-packager-fonts");
+        let app = sample_app();
         let without_fonts = render_cargo_packager_config_for(
             &root,
             &app,
@@ -581,31 +633,33 @@ mod tests {
     #[test]
     fn renders_generate_rpm_config_with_desktop_and_icons() {
         let root = Path::new("/repo/liora");
-        let app = KnownApp::Docs.metadata();
+        let app = sample_app();
         let text = render_generate_rpm_config(root, &app);
         assert!(text.contains("[package.metadata.generate-rpm]"));
-        assert!(text.contains("name = \"liora-docs\""));
-        assert!(text.contains("/usr/bin/liora-docs"));
+        assert!(text.contains("name = \"sample-app\""));
+        assert!(text.contains("license = \"MIT\""));
+        assert!(text.contains("url = \"https://example.dev/sample\""));
+        assert!(text.contains("vendor = \"Example\""));
+        assert!(text.contains("/usr/bin/sample-app"));
         assert!(text.contains("[package.metadata.generate-rpm.requires]"));
         assert!(text.contains("gtk3 = \"*\""));
         assert!(text.contains("vulkan-loader = \"*\""));
-        assert!(text.contains("/usr/share/applications/liora-docs.desktop"));
-        assert!(text.contains("/usr/share/icons/hicolor/16x16/apps/liora-docs.png"));
-        assert!(text.contains("/usr/share/icons/hicolor/512x512/apps/liora-docs.png"));
-        assert!(text.contains("/usr/share/icons/hicolor/scalable/apps/liora-docs.svg"));
-        assert!(!text.contains("/usr/lib/liora-docs/assets/fonts"));
+        assert!(text.contains("/usr/share/applications/sample-app.desktop"));
+        assert!(text.contains("/usr/share/icons/hicolor/16x16/apps/sample-app.png"));
+        assert!(text.contains("/usr/share/icons/hicolor/512x512/apps/sample-app.png"));
+        assert!(text.contains("/usr/share/icons/hicolor/scalable/apps/sample-app.svg"));
+        assert!(!text.contains("/usr/lib/sample-app/assets/fonts"));
     }
 
     #[test]
     fn renders_rpm_font_assets_only_when_requested() {
-        let root = std::fs::canonicalize(Path::new(env!("CARGO_MANIFEST_DIR")).join("../.."))
-            .expect("workspace root should resolve");
-        let app = KnownApp::Gallery.metadata();
+        let root = test_root("rpm-fonts");
+        let app = sample_app();
         let without_fonts = render_generate_rpm_config_for(&root, &app, FontVariant::WithoutFonts);
         let with_fonts = render_generate_rpm_config_for(&root, &app, FontVariant::WithFonts);
 
-        assert!(!without_fonts.contains("/usr/lib/liora-gallery/assets/fonts"));
-        assert!(with_fonts.contains("/usr/lib/liora-gallery/assets/fonts"));
+        assert!(!without_fonts.contains("/usr/lib/sample-app/assets/fonts"));
+        assert!(with_fonts.contains("/usr/lib/sample-app/assets/fonts/SampleSans-Regular.ttf"));
     }
 }
 

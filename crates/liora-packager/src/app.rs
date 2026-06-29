@@ -1,63 +1,5 @@
 use std::path::{Path, PathBuf};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-/// Options that control known app behavior.
-pub enum KnownApp {
-    /// Identifies the Gallery application in packaging manifests.
-    Gallery,
-    /// Identifies the Docs application in packaging manifests.
-    Docs,
-}
-
-impl KnownApp {
-    /// Returns the stable key used to identify this value in callbacks or manifests.
-    pub fn key(self) -> &'static str {
-        match self {
-            Self::Gallery => "gallery",
-            Self::Docs => "docs",
-        }
-    }
-
-    /// Returns the Cargo package name for this known application.
-    pub fn package(self) -> &'static str {
-        match self {
-            Self::Gallery => "liora-gallery",
-            Self::Docs => "liora-docs",
-        }
-    }
-
-    /// Returns the release binary name for this known application.
-    pub fn binary(self) -> &'static str {
-        self.package()
-    }
-
-    /// Builds the full packaging metadata for this known application.
-    pub fn metadata(self) -> AppMetadata {
-        match self {
-            Self::Gallery => AppMetadata {
-                app: self,
-                id: AppId::new("dev.liora.Gallery"),
-                name: "Liora Gallery".into(),
-                binary: self.binary().into(),
-                package: self.package().into(),
-                category: "DeveloperTool".into(),
-                short_description: "Native GPUI component gallery for Liora.".into(),
-                icon_stem: "liora-gallery".into(),
-            },
-            Self::Docs => AppMetadata {
-                app: self,
-                id: AppId::new("dev.liora.Docs"),
-                name: "Liora Docs".into(),
-                binary: self.binary().into(),
-                package: self.package().into(),
-                category: "DeveloperTool".into(),
-                short_description: "Native GPUI documentation app for Liora.".into(),
-                icon_stem: "liora-docs".into(),
-            },
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 /// Packaging data model for app id.
 pub struct AppId(String);
@@ -75,11 +17,11 @@ impl AppId {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-/// Packaging data model for app metadata.
+/// Packaging data model for one host application.
 pub struct AppMetadata {
-    /// Application metadata associated with this package artifact.
-    pub app: KnownApp,
-    /// Stable identifier used for GPUI state, callbacks, and automation.
+    /// Stable key used for generated config names and CLI routing.
+    pub key: String,
+    /// Stable identifier used for desktop metadata and automation.
     pub id: AppId,
     /// Display name shown to users for this item.
     pub name: String,
@@ -87,19 +29,107 @@ pub struct AppMetadata {
     pub binary: String,
     /// Package identifier used by installer metadata.
     pub package: String,
+    /// Repository-relative application package directory.
+    pub app_dir: PathBuf,
     /// Desktop category used by Linux metadata and storefronts.
     pub category: String,
     /// Short package description shown by installer metadata.
     pub short_description: String,
     /// Base file name for the application icon resource.
     pub icon_stem: String,
+    /// Optional package license identifier written to backend metadata.
+    pub license: Option<String>,
+    /// Optional project homepage written to backend metadata.
+    pub homepage: Option<String>,
+    /// Optional package authors written to backend metadata.
+    pub authors: Vec<String>,
+    /// Optional package publisher/vendor written to backend metadata.
+    pub publisher: Option<String>,
+    /// Optional copyright notice written to backend metadata.
+    pub copyright: Option<String>,
 }
 
 impl AppMetadata {
+    /// Creates package metadata for a host application.
+    pub fn new(
+        key: impl Into<String>,
+        id: impl Into<String>,
+        name: impl Into<String>,
+        binary: impl Into<String>,
+        package: impl Into<String>,
+        category: impl Into<String>,
+        short_description: impl Into<String>,
+        icon_stem: impl Into<String>,
+    ) -> Self {
+        let binary = binary.into();
+        Self {
+            key: key.into(),
+            id: AppId::new(id),
+            name: name.into(),
+            package: package.into(),
+            app_dir: PathBuf::from("apps").join(&binary),
+            binary,
+            category: category.into(),
+            short_description: short_description.into(),
+            icon_stem: icon_stem.into(),
+            license: None,
+            homepage: None,
+            authors: Vec::new(),
+            publisher: None,
+            copyright: None,
+        }
+    }
+
+    /// Overrides the repository-relative application package directory.
+    pub fn with_app_dir(mut self, app_dir: impl Into<PathBuf>) -> Self {
+        self.app_dir = app_dir.into();
+        self
+    }
+
+    /// Sets the package license identifier for generated backend metadata.
+    pub fn with_license(mut self, license: impl Into<String>) -> Self {
+        self.license = Some(license.into());
+        self
+    }
+
+    /// Sets the package homepage URL for generated backend metadata.
+    pub fn with_homepage(mut self, homepage: impl Into<String>) -> Self {
+        self.homepage = Some(homepage.into());
+        self
+    }
+
+    /// Sets the package author list for generated backend metadata.
+    pub fn with_authors(mut self, authors: impl IntoIterator<Item = impl Into<String>>) -> Self {
+        self.authors = authors.into_iter().map(Into::into).collect();
+        self
+    }
+
+    /// Sets the package publisher/vendor for generated backend metadata.
+    pub fn with_publisher(mut self, publisher: impl Into<String>) -> Self {
+        self.publisher = Some(publisher.into());
+        self
+    }
+
+    /// Sets the package copyright notice for generated backend metadata.
+    pub fn with_copyright(mut self, copyright: impl Into<String>) -> Self {
+        self.copyright = Some(copyright.into());
+        self
+    }
+
+    /// Returns the stable app key.
+    pub fn key(&self) -> &str {
+        &self.key
+    }
+
+    /// Returns the filesystem path for the application package directory.
+    pub fn app_dir_path(&self, root: &Path) -> PathBuf {
+        root.join(&self.app_dir)
+    }
+
     /// Returns the filesystem path for the packager config resource.
     pub fn packager_config_path(&self, root: &Path) -> PathBuf {
         root.join("packaging")
-            .join(format!("Packager.{}.toml", self.app.key()))
+            .join(format!("Packager.{}.toml", self.key))
     }
 
     /// Returns the filesystem path for the linux desktop resource.
@@ -136,15 +166,12 @@ impl AppMetadata {
 
     /// Returns the filesystem path for the app-owned font assets directory.
     pub fn app_assets_fonts_path(&self, root: &Path) -> PathBuf {
-        root.join("apps")
-            .join(&self.binary)
-            .join("assets")
-            .join("fonts")
+        self.app_dir_path(root).join("assets").join("fonts")
     }
 
     /// Returns the filesystem path for the Windows resource build script.
     pub fn windows_resource_build_script_path(&self, root: &Path) -> PathBuf {
-        root.join("apps").join(&self.binary).join("build.rs")
+        self.app_dir_path(root).join("build.rs")
     }
 
     /// Returns the filesystem path for the shared Windows application manifest.
@@ -179,21 +206,11 @@ impl AppMetadata {
             .join("icons")
             .join(format!("{}.ico", self.icon_stem))
     }
-}
 
-/// Returns the built-in Liora applications supported by the package pipeline.
-pub fn known_apps() -> [KnownApp; 2] {
-    [KnownApp::Gallery, KnownApp::Docs]
-}
-
-impl std::str::FromStr for KnownApp {
-    type Err = String;
-
-    fn from_str(value: &str) -> Result<Self, Self::Err> {
-        match value {
-            "gallery" | "liora-gallery" => Ok(Self::Gallery),
-            "docs" | "liora-docs" => Ok(Self::Docs),
-            other => Err(format!("unknown app '{other}'")),
-        }
+    /// Returns the filesystem path for the icon svg resource.
+    pub fn icon_svg_path(&self, root: &Path) -> PathBuf {
+        root.join("packaging")
+            .join("icons")
+            .join(format!("{}.svg", self.icon_stem))
     }
 }

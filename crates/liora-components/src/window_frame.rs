@@ -16,7 +16,7 @@
 //!
 //! The implementation should only adapt GPUI window/frame primitives, use Liora
 //! theme tokens for custom chrome, preserve platform/server decorations when
-//! [`WindowFrameMode::System`] is selected, and avoid app-specific Gallery/Docs
+//! [`WindowFrameMode::System`] is selected, and avoid app-specific host-application
 //! resources in this SDK crate.
 
 use crate::{Space, Text, TitleBar};

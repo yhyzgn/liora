@@ -18,14 +18,13 @@ use liora_core::{
     linux_desktop_entry, linux_desktop_png_icon_path, load_app_fonts,
     startup_maximized_window_bounds, tr,
 };
-use liora_gallery::{category, demos};
+use liora_gallery::{category, demos, tray_menu::gallery_tray_menu};
 use liora_tray::{
     MouseButton, MouseButtonState, Tray, TrayCloseAction, TrayCommand, TrayConfig,
-    TrayControlCenter, TrayIconEvent, default_liora_tray_menu, icon_from_png_bytes, solid_icon,
+    TrayControlCenter, TrayIconEvent, icon_from_png_bytes, solid_icon,
 };
 use liora_updater::{
-    AssetKind, InstallAction, InstallPlan, Platform, UpdateApp, UpdateRequest, Updater,
-    liora_asset_selector,
+    AssetKind, AssetSelector, InstallAction, InstallPlan, Platform, UpdateRequest, Updater,
 };
 
 mod locales {
@@ -474,7 +473,7 @@ fn install_gallery_tray(cx: &mut App) {
 
     let mut config = TrayConfig::new("liora-gallery")
         .tooltip(tr(cx, locales::tray::tooltip_default).to_string())
-        .menu(default_liora_tray_menu());
+        .menu(gallery_tray_menu());
     if let Some(icon) = gallery_tray_icon("default") {
         config = config.icon(icon);
     }
@@ -1543,7 +1542,7 @@ fn check_gallery_update(gallery: gpui::Entity<Gallery>, cx: &mut App) {
         .spawn(async move {
             let result = executor
                 .spawn(async move {
-                    Updater::default()
+                    liora_updater()
                         .update_available(&format!("v{}", env!("CARGO_PKG_VERSION")), false)
                 })
                 .await;
@@ -1630,11 +1629,37 @@ fn install_gallery_update(gallery: gpui::Entity<Gallery>, cx: &mut App) {
     });
 }
 
-fn update_cache_dir(app: UpdateApp) -> std::path::PathBuf {
+const GALLERY_UPDATE_APP: &str = "liora-gallery";
+
+fn liora_updater() -> Updater {
+    Updater::new("yhyzgn", "liora")
+}
+
+fn gallery_asset_selector(platform: Platform) -> AssetSelector {
+    let priority = match platform {
+        Platform::LinuxX64 => [
+            AssetKind::Installer,
+            AssetKind::PortableArchive,
+            AssetKind::RawExecutable,
+        ]
+        .as_slice()
+        .to_vec(),
+        Platform::MacosArm64 | Platform::WindowsX64 => {
+            [AssetKind::Installer, AssetKind::RawExecutable]
+                .as_slice()
+                .to_vec()
+        }
+    };
+    AssetSelector::for_platform(platform)
+        .matching_prefix(GALLERY_UPDATE_APP)
+        .kind_priority(priority)
+}
+
+fn update_cache_dir(app: &str) -> std::path::PathBuf {
     std::env::var_os("LIORA_UPDATE_CACHE")
         .map(std::path::PathBuf::from)
         .unwrap_or_else(|| std::env::temp_dir().join("liora-updates"))
-        .join(app.release_name())
+        .join(app)
         .join(env!("CARGO_PKG_VERSION"))
 }
 
@@ -1644,17 +1669,13 @@ fn download_gallery_update_sync()
         return Ok(None);
     };
     let request = UpdateRequest::new(
-        UpdateApp::Gallery,
+        GALLERY_UPDATE_APP,
         format!("v{}", env!("CARGO_PKG_VERSION")),
         platform,
-        update_cache_dir(UpdateApp::Gallery),
+        update_cache_dir(GALLERY_UPDATE_APP),
     )
-    .selector(liora_asset_selector(
-        UpdateApp::Gallery,
-        platform,
-        AssetKind::Installer,
-    ));
-    let Some(update) = Updater::default().prepare_update(&request)? else {
+    .selector(gallery_asset_selector(platform));
+    let Some(update) = liora_updater().prepare_update(&request)? else {
         return Ok(None);
     };
     Ok(Some((update.release.tag, update.install_plan)))

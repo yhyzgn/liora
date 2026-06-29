@@ -1,7 +1,7 @@
 //! Liora's public GPUI component prelude.
 //!
-//! `liora-components` exports the visual and interactive controls used by the
-//! native Gallery and Docs applications: form controls, overlays, navigation,
+//! `liora-components` exports the visual and interactive controls used by
+//! native host applications: form controls, overlays, navigation,
 //! data display, charts, code blocks/editors, virtualized data views, and small
 //! utility widgets.
 //!
@@ -28,7 +28,7 @@
 //!
 //! Controls with focus, selection, open state, or text value should normally be
 //! stored as `gpui::Entity<T>` fields in a parent view. This preserves state
-//! across GPUI renders. Gallery and Docs are the maintained examples for this pattern.
+//! across GPUI renders. Host applications should keep these entities in their own view state.
 //!
 //! ## Architecture boundary
 //!
@@ -487,7 +487,7 @@ mod application_init_api_tests {
         for (path, source) in modules {
             assert!(
                 source.starts_with("//!"),
-                "{path} must start with module docs"
+                "{path} must start with module documentation"
             );
             assert!(
                 source.contains("## Usage model"),
@@ -499,7 +499,7 @@ mod application_init_api_tests {
             );
             assert!(
                 !source.contains("代目"),
-                "{path} docs must be English, not draft text"
+                "{path} module documentation must be English, not draft text"
             );
             for forbidden in [
                 "Configuration and state type for",
@@ -717,19 +717,6 @@ mod overlay_escape_coverage_tests {
     #[test]
     fn popup_key_bindings_are_registered_by_unified_component_init() {
         let source = include_str!("lib.rs");
-        let docs_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../apps/liora-docs/src/main.rs");
-        let gallery_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../apps/liora-gallery/src/main.rs");
-
-        if docs_path.exists() {
-            let docs = std::fs::read_to_string(&docs_path).expect("read docs main.rs");
-            assert!(docs.contains("init_liora(cx)"));
-        }
-        if gallery_path.exists() {
-            let gallery = std::fs::read_to_string(&gallery_path).expect("read gallery main.rs");
-            assert!(gallery.contains("init_liora(cx)"));
-        }
 
         for component in [
             "Autocomplete",

@@ -66,7 +66,7 @@ impl PackageManifest {
 
     /// Renders a Markdown table summarizing release artifacts and checksums.
     pub fn release_notes_markdown(&self) -> String {
-        let mut out = String::from("# Liora native package release\n\n");
+        let mut out = String::from("# Native package release\n\n");
         if self.artifacts.is_empty() {
             out.push_str("No package artifacts were discovered. This file was generated before backend package outputs existed.\n");
             return out;
@@ -221,13 +221,13 @@ mod tests {
     fn manifest_serializes_artifact_fields() {
         let mut manifest = PackageManifest::default();
         manifest.push(PackageArtifact {
-            app: "liora-gallery".into(),
+            app: "sample-app".into(),
             version: "0.1.0".into(),
             platform: Platform::Linux,
             target_triple: "x86_64-unknown-linux-gnu".into(),
             git_sha: Some("abc1234".into()),
             format: PackageFormat::AppImage,
-            path: "target/packages/liora-gallery.AppImage".into(),
+            path: "target/packages/sample-app.AppImage".into(),
             checksum: Checksum {
                 algorithm: "sha256",
                 hex: "abc".into(),
@@ -235,7 +235,7 @@ mod tests {
             signed: false,
         });
         let json = manifest.to_json_pretty();
-        assert!(json.contains("\"app\": \"liora-gallery\""));
+        assert!(json.contains("\"app\": \"sample-app\""));
         assert!(json.contains("\"targetTriple\": \"x86_64-unknown-linux-gnu\""));
         assert!(json.contains("\"gitSha\": \"abc1234\""));
         assert!(json.contains("\"format\": \"appimage\""));
@@ -243,10 +243,10 @@ mod tests {
         assert!(
             manifest
                 .checksums_txt()
-                .contains("abc  target/packages/liora-gallery.AppImage")
+                .contains("abc  target/packages/sample-app.AppImage")
         );
         let notes = manifest.release_notes_markdown();
-        assert!(notes.contains("# Liora native package release"));
+        assert!(notes.contains("# Native package release"));
         assert!(notes.contains("SHA256: `abc`"));
         assert!(notes.contains("Git: `abc1234`"));
         assert!(!notes.contains("\\n  Git"));
@@ -257,7 +257,7 @@ mod tests {
         let root = std::env::temp_dir().join(format!("liora-packager-test-{}", std::process::id()));
         let _ = fs::remove_dir_all(&root);
         fs::create_dir_all(&root).unwrap();
-        let artifact = root.join("liora-gallery_0.1.0_amd64.deb");
+        let artifact = root.join("sample-app_0.1.0_amd64.deb");
         fs::write(&artifact, b"deb").unwrap();
         fs::write(root.join("ignore.txt"), b"ignore").unwrap();
         fs::create_dir_all(root.join(".cargo-packager/deb/internal")).unwrap();
@@ -268,7 +268,7 @@ mod tests {
         .unwrap();
 
         let artifacts = collect_package_artifacts(
-            "liora-gallery",
+            "sample-app",
             "0.1.0",
             Platform::Linux,
             "x86_64-unknown-linux-gnu",

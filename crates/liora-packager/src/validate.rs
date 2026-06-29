@@ -3,8 +3,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::known_apps;
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// Validation failures that can be reported by packaging layout checks.
 pub enum ValidationError {
@@ -118,7 +116,7 @@ impl ValidationReport {
     }
 }
 
-/// Validates that all required packaging assets, metadata files, and icon resources exist.
+/// Validates the shared packaging directory and brand resources.
 pub fn validate_packaging_layout(root: impl Into<PathBuf>) -> ValidationReport {
     let root = root.into();
     let mut report = ValidationReport::default();
@@ -132,10 +130,18 @@ pub fn validate_packaging_layout(root: impl Into<PathBuf>) -> ValidationReport {
         root.join("packaging/windows"),
     );
 
-    require_icon_set(&mut report, &root, "liora", "Liora brand");
+    report
+}
 
-    for app in known_apps() {
-        let metadata = app.metadata();
+/// Validates shared packaging resources plus caller-provided app metadata.
+pub fn validate_app_packaging_layout<'a>(
+    root: impl Into<PathBuf>,
+    apps: impl IntoIterator<Item = &'a crate::AppMetadata>,
+) -> ValidationReport {
+    let root = root.into();
+    let mut report = validate_packaging_layout(root.clone());
+
+    for metadata in apps {
         report.require_path(
             format!("{} packager config", metadata.binary),
             metadata.packager_config_path(&root),
@@ -156,7 +162,7 @@ pub fn validate_packaging_layout(root: impl Into<PathBuf>) -> ValidationReport {
                 b"\x89PNG\r\n\x1a\n",
             );
         }
-        validate_windows_resources(&mut report, &root, &metadata);
+        validate_windows_resources(&mut report, &root, metadata);
     }
 
     report
@@ -216,6 +222,99 @@ fn require_icon_set(
 mod tests {
     use super::*;
 
+    fn test_root(name: &str) -> PathBuf {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../..")
+            .join("target")
+            .join("liora-packager-tests")
+            .join(name);
+        let _ = fs::remove_dir_all(&root);
+        root
+    }
+
+    fn write_file(path: &Path, bytes: &[u8]) {
+        fs::create_dir_all(path.parent().expect("fixture path has a parent"))
+            .expect("create fixture parent");
+        fs::write(path, bytes).expect("write fixture file");
+    }
+
+    fn write_icon_set(root: &Path, stem: &str) {
+        let icon_dir = root.join("packaging/icons");
+        write_file(
+            &icon_dir.join(format!("{stem}.svg")),
+            b"<svg xmlns=\"http://www.w3.org/2000/svg\"></svg>",
+        );
+        write_file(
+            &icon_dir.join(format!("{stem}.png")),
+            b"\x89PNG\r\n\x1a\npng",
+        );
+        write_file(
+            &icon_dir.join(format!("{stem}.ico")),
+            b"\x00\x00\x01\x00ico",
+        );
+        write_file(&icon_dir.join(format!("{stem}.icns")), b"icns");
+    }
+
+    fn write_shared_layout(root: &Path) {
+        fs::create_dir_all(root.join("packaging/linux")).expect("create linux packaging dir");
+        fs::create_dir_all(root.join("packaging/macos")).expect("create macos packaging dir");
+        fs::create_dir_all(root.join("packaging/windows")).expect("create windows packaging dir");
+    }
+
+    fn write_app_layout(root: &Path, app: &crate::AppMetadata) {
+        write_file(&app.packager_config_path(root), b"name = \"sample-app\"\n");
+        write_file(&app.linux_desktop_path(root), b"[Desktop Entry]\n");
+        write_file(&app.linux_metainfo_path(root), b"<component></component>\n");
+        write_icon_set(root, &app.icon_stem);
+        for size in [16, 24, 32, 48, 64, 128, 256, 512] {
+            write_file(&app.hicolor_png_path(root, size), b"\x89PNG\r\n\x1a\npng");
+        }
+        write_file(
+            &app.windows_common_controls_manifest_path(root),
+            br#"
+<assembly>
+  <dependency>
+    <dependentAssembly>
+      <assemblyIdentity type="win32" name="Microsoft.Windows.Common-Controls" version="6.0.0.0" processorArchitecture="*" publicKeyToken="6595b64144ccf1df" language="*" />
+    </dependentAssembly>
+  </dependency>
+  <trustInfo>
+    <security>
+      <requestedPrivileges>
+        <requestedExecutionLevel level="asInvoker" uiAccess="false" />
+      </requestedPrivileges>
+    </security>
+  </trustInfo>
+</assembly>
+"#,
+        );
+        write_file(
+            &app.windows_resource_build_script_path(root),
+            br#"
+fn main() {
+    let mut resource = winresource::WindowsResource::new();
+    resource.set_icon("icon.ico");
+    resource.set("ProductName", "Sample App");
+    resource.set("FileDescription", "Sample native app.");
+    resource.set("CompanyName", "Example");
+}
+"#,
+        );
+    }
+
+    fn sample_app() -> crate::AppMetadata {
+        crate::AppMetadata::new(
+            "sample",
+            "dev.example.Sample",
+            "Sample App",
+            "sample-app",
+            "sample-app",
+            "Utility",
+            "Sample native app.",
+            "sample-app",
+        )
+    }
+
     #[test]
     fn empty_layout_reports_missing_paths() {
         let report = validate_packaging_layout("target/definitely-missing-liora-packaging-layout");
@@ -229,13 +328,28 @@ mod tests {
     }
 
     #[test]
-    fn current_layout_keeps_windows_resources_without_duplicate_manifest() {
+    fn app_layout_validation_uses_caller_provided_metadata() {
+        let root = test_root("validate-sample-app-layout");
+        let app = sample_app();
+        write_shared_layout(&root);
+        write_app_layout(&root, &app);
+        let report = validate_app_packaging_layout(&root, [&app]);
+
+        assert!(
+            report.is_ok(),
+            "packaging validation should pass for caller-owned app fixture: {:#?}",
+            report.errors
+        );
+    }
+
+    #[test]
+    fn current_layout_keeps_shared_packaging_resources_valid() {
         let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
         let report = validate_packaging_layout(root);
 
         assert!(
             report.is_ok(),
-            "packaging validation should pass for current layout: {:#?}",
+            "shared packaging validation should pass for current layout: {:#?}",
             report.errors
         );
     }

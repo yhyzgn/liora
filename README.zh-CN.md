@@ -593,7 +593,7 @@ fn main() {
 
 ### `liora-tray`
 
-系统托盘 facade：
+系统托盘 facade。`liora-tray` 只提供通用托盘构件；菜单文案、驻留开关、动态图标选择、退出策略等应用行为必须放在宿主应用层，不放在 SDK 里：
 
 ```rust
 use liora::tray::{
@@ -670,10 +670,25 @@ fn check_for_update() -> Result<(), liora::updater::UpdaterError> {
 可复用的打包元数据与校验 helper。大多数应用可以复制本仓库 `xtask` 模式，也可以直接使用已发布的库：
 
 ```rust
-use liora::packager::validate_packaging_layout;
+use liora::packager::{AppMetadata, validate_app_packaging_layout};
 
 fn validate_release_inputs() {
-    let report = validate_packaging_layout(std::env::current_dir().unwrap());
+    let app = AppMetadata::new(
+        "acme-notes",
+        "com.acme.Notes",
+        "Acme Notes",
+        "acme-notes",
+        "acme-notes",
+        "Utility",
+        "Native notes application.",
+        "acme-notes",
+    )
+    .with_license("MIT")
+    .with_homepage("https://acme.example/notes")
+    .with_authors(["Acme Team"])
+    .with_publisher("Acme")
+    .with_copyright("Copyright © Acme");
+    let report = validate_app_packaging_layout(std::env::current_dir().unwrap(), [&app]);
     if !report.is_ok() {
         for error in report.errors {
             eprintln!("{error}");

@@ -2,8 +2,7 @@
 //!
 //! This public module implements the high-level Liora application shell. It
 //! composes native GPUI frame chrome, titlebar, sidebar, header, main, footer,
-//! right-sidebar, and overlay slots behind one fluent SDK component so Gallery,
-//! Docs, and downstream applications do not need to assemble raw GPUI layout
+//! right-sidebar, and overlay slots behind one fluent SDK component so downstream applications do not need to assemble raw GPUI layout
 //! trees for common app-window structures.
 
 use crate::{AppWindowFrame, TitleBar, WindowFrameMode};
@@ -143,7 +142,7 @@ impl Shell {
 
     /// Adds an overlay element above the shell layout.
     ///
-    /// Overlays are positioned by Shell itself so application demos and docs do
+    /// Overlays are positioned by Shell itself so host applications do
     /// not need raw GPUI absolute-positioning primitives for common badges,
     /// command palettes, floating actions, or transient hints.
     pub fn overlay(mut self, overlay: impl IntoElement) -> Self {

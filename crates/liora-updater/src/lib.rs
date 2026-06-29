@@ -1,12 +1,8 @@
 //! Reusable GitHub Release updater primitives for native Rust applications.
 //!
-//! `liora-updater` is intentionally split into two layers:
-//!
-//! - generic update primitives (`Updater`, `AssetSelector`, `UpdateRequest`,
-//!   `PreparedUpdate`) that any application can configure for its own GitHub
-//!   repository and asset naming convention;
-//! - small Liora presets (`UpdateApp`, `liora_asset_selector`, `select_asset`) used
-//!   by the official Gallery and Docs apps.
+//! `liora-updater` exposes generic update primitives (`Updater`, `AssetSelector`,
+//! `UpdateRequest`, `PreparedUpdate`) that any application can configure for its
+//! own GitHub repository, cache directory, and asset naming convention.
 //!
 //! The crate checks GitHub Releases, selects a platform asset, downloads it into
 //! caller-controlled cache/temp storage, verifies it against `SHA256SUMS.txt`,
@@ -26,43 +22,11 @@ use std::{
 };
 use thiserror::Error;
 
-/// Default GitHub owner queried by official Liora update checks.
-pub const DEFAULT_OWNER: &str = "yhyzgn";
-/// Default GitHub repository queried by official Liora update checks.
-pub const DEFAULT_REPO: &str = "liora";
 /// Default GitHub REST API base URL used when no custom endpoint is configured.
 pub const DEFAULT_API_BASE: &str = "https://api.github.com";
 /// Stable checksums asset constant used by the liora updater API.
 pub const CHECKSUMS_ASSET: &str = "SHA256SUMS.txt";
 const DEFAULT_USER_AGENT: &str = concat!("liora-updater/", env!("CARGO_PKG_VERSION"));
-
-/// Official applications published from the Liora repository.
-///
-/// Other applications should use [`AssetSelector`] and [`UpdateRequest`]
-/// directly instead of this preset enum.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum UpdateApp {
-    /// Targets the official Liora Docs application release assets.
-    Docs,
-    /// Targets the official Liora Gallery application release assets.
-    Gallery,
-}
-
-impl UpdateApp {
-    /// Returns the release asset prefix used by official Liora applications.
-    pub fn release_name(self) -> &'static str {
-        match self {
-            Self::Docs => "liora-docs",
-            Self::Gallery => "liora-gallery",
-        }
-    }
-}
-
-impl From<UpdateApp> for String {
-    fn from(value: UpdateApp) -> Self {
-        value.release_name().to_string()
-    }
-}
 
 /// Common desktop platforms encoded in release asset names.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -86,7 +50,7 @@ impl Platform {
         }
     }
 
-    /// Asset-name fragment used by Liora release packages.
+    /// Asset-name fragment used by the default release package convention.
     pub fn asset_fragment(self) -> &'static str {
         match self {
             Self::LinuxX64 => "linux-x64",
@@ -295,7 +259,7 @@ impl AssetSelector {
     }
 
     /// Use a custom platform/name fragment when your release assets do not use
-    /// Liora's `linux-x64`, `macos-arm64`, `windows-x64` convention.
+    /// the default `linux-x64`, `macos-arm64`, `windows-x64` convention.
     pub fn matching_platform_fragment(mut self, fragment: impl Into<String>) -> Self {
         self.platform_fragment = Some(fragment.into());
         self
@@ -505,12 +469,6 @@ pub struct Updater {
     checksum_asset_name: String,
 }
 
-impl Default for Updater {
-    fn default() -> Self {
-        Self::new(DEFAULT_OWNER, DEFAULT_REPO)
-    }
-}
-
 impl Updater {
     /// Creates `Updater` initialized from the supplied owner, and repo.
     pub fn new(owner: impl Into<String>, repo: impl Into<String>) -> Self {
@@ -689,27 +647,6 @@ pub fn select_asset_with(release: &Release, selector: &AssetSelector) -> Option<
     })
 }
 
-/// Select the best release asset for an official Liora app/platform preference.
-pub fn select_asset(
-    release: &Release,
-    app: UpdateApp,
-    platform: Platform,
-    preferred: AssetKind,
-) -> Option<ReleaseAsset> {
-    select_asset_with(release, &liora_asset_selector(app, platform, preferred))
-}
-
-/// Build the official Liora asset selector while keeping the core selector API generic.
-pub fn liora_asset_selector(
-    app: UpdateApp,
-    platform: Platform,
-    preferred: AssetKind,
-) -> AssetSelector {
-    AssetSelector::for_platform(platform)
-        .matching_prefix(app.release_name())
-        .kind_priority(liora_asset_priorities(app, platform, preferred))
-}
-
 /// Build an install plan for a downloaded and verified release asset.
 pub fn build_install_plan(
     app_name: impl Into<String>,
@@ -729,29 +666,6 @@ pub fn build_install_plan(
         action,
         notes,
     }
-}
-
-fn liora_asset_priorities(
-    app: UpdateApp,
-    platform: Platform,
-    preferred: AssetKind,
-) -> Vec<AssetKind> {
-    let mut kinds = match (app, platform) {
-        (UpdateApp::Docs, _) => vec![AssetKind::RawExecutable],
-        (UpdateApp::Gallery, Platform::LinuxX64) => vec![
-            AssetKind::Installer,
-            AssetKind::PortableArchive,
-            AssetKind::RawExecutable,
-        ],
-        (UpdateApp::Gallery, Platform::MacosArm64 | Platform::WindowsX64) => {
-            vec![AssetKind::Installer, AssetKind::RawExecutable]
-        }
-    };
-    if let Some(index) = kinds.iter().position(|kind| *kind == preferred) {
-        let selected = kinds.remove(index);
-        kinds.insert(0, selected);
-    }
-    kinds
 }
 
 fn dedupe_kinds<I>(kinds: I) -> Vec<AssetKind>
@@ -1013,7 +927,7 @@ mod tests {
         let release = release_with_assets(&[
             "acme-notes_0.4.0_x86_64.AppImage",
             "acme-notes_0.4.0_x86_64.tar.gz",
-            "liora-gallery-v0.2.0-linux-x64.AppImage",
+            "sample-app-v0.2.0-linux-x64.AppImage",
         ]);
         let selector = AssetSelector::new()
             .matching_prefix("acme-notes")
@@ -1038,65 +952,65 @@ mod tests {
     }
 
     #[test]
-    fn asset_selection_prefers_gallery_installers_by_platform() {
+    fn asset_selection_prefers_installers_by_platform() {
         let release = release_with_assets(&[
-            "liora-gallery-v0.2.0-linux-x64",
-            "liora-gallery-v0.2.0-linux-x64.tar.gz",
-            "liora-gallery-v0.2.0-linux-x64.AppImage",
-            "liora-docs-v0.2.0-linux-x64",
+            "sample-app-v0.2.0-linux-x64",
+            "sample-app-v0.2.0-linux-x64.tar.gz",
+            "sample-app-v0.2.0-linux-x64.AppImage",
+            "manual-app-v0.2.0-linux-x64",
             "SHA256SUMS.txt",
         ]);
 
-        let selected = select_asset(
+        let selected = select_asset_with(
             &release,
-            UpdateApp::Gallery,
-            Platform::LinuxX64,
-            AssetKind::Installer,
+            &AssetSelector::for_platform(Platform::LinuxX64)
+                .matching_prefix("sample-app")
+                .kind_priority([AssetKind::Installer, AssetKind::PortableArchive]),
         )
         .unwrap();
-        assert_eq!(selected.name, "liora-gallery-v0.2.0-linux-x64.AppImage");
+        assert_eq!(selected.name, "sample-app-v0.2.0-linux-x64.AppImage");
 
-        let selected = select_asset(
+        let selected = select_asset_with(
             &release,
-            UpdateApp::Gallery,
-            Platform::LinuxX64,
-            AssetKind::PortableArchive,
+            &AssetSelector::for_platform(Platform::LinuxX64)
+                .matching_prefix("sample-app")
+                .kind_priority([AssetKind::PortableArchive, AssetKind::Installer]),
         )
         .unwrap();
-        assert_eq!(selected.name, "liora-gallery-v0.2.0-linux-x64.tar.gz");
+        assert_eq!(selected.name, "sample-app-v0.2.0-linux-x64.tar.gz");
     }
 
     #[test]
-    fn asset_selection_keeps_docs_to_raw_executables() {
+    fn asset_selection_can_be_restricted_to_raw_executables() {
         let release = release_with_assets(&[
-            "liora-docs-v0.2.0-windows-x64.exe",
-            "liora-gallery-v0.2.0-windows-x64-setup.exe",
+            "manual-app-v0.2.0-windows-x64.exe",
+            "sample-app-v0.2.0-windows-x64-setup.exe",
         ]);
 
-        let selected = select_asset(
+        let selected = select_asset_with(
             &release,
-            UpdateApp::Docs,
-            Platform::WindowsX64,
-            AssetKind::Installer,
+            &AssetSelector::for_platform(Platform::WindowsX64)
+                .matching_prefix("manual-app")
+                .kind_priority([AssetKind::RawExecutable]),
         )
         .unwrap();
-        assert_eq!(selected.name, "liora-docs-v0.2.0-windows-x64.exe");
+        assert_eq!(selected.name, "manual-app-v0.2.0-windows-x64.exe");
     }
 
     #[test]
     fn checksum_manifest_parses_sha256sum_formats() {
         let manifest = ChecksumManifest::parse(
             "# comment\n\
-             e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  liora-docs-v0.1.3-linux-x64\n\
-             ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad *liora-gallery-v0.1.3-linux-x64.AppImage\n\
+             e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  manual-app-v0.1.3-linux-x64\n\
+             ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad *sample-app-v0.1.3-linux-x64.AppImage\n\
              not-a-checksum  ignored\n",
         );
         assert_eq!(
-            manifest.expected_sha256("liora-docs-v0.1.3-linux-x64"),
+            manifest.expected_sha256("manual-app-v0.1.3-linux-x64"),
             Some("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
         );
         assert_eq!(
-            manifest.expected_sha256("liora-gallery-v0.1.3-linux-x64.AppImage"),
+            manifest.expected_sha256("sample-app-v0.1.3-linux-x64.AppImage"),
             Some("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad")
         );
         assert!(manifest.expected_sha256("ignored").is_none());
@@ -1104,12 +1018,12 @@ mod tests {
 
     #[test]
     fn install_plan_does_not_auto_privilege_package_manager_assets() {
-        let asset = asset("liora-gallery-v0.2.0-linux-x64.deb");
+        let asset = asset("sample-app-v0.2.0-linux-x64.deb");
         let plan = build_install_plan(
-            UpdateApp::Gallery,
+            "sample-app",
             Platform::LinuxX64,
             &asset,
-            PathBuf::from("/tmp/liora.deb"),
+            PathBuf::from("/tmp/sample.deb"),
         );
         assert!(matches!(plan.action, InstallAction::Manual { .. }));
     }

@@ -78,7 +78,7 @@ pub mod prelude {
 mod tests {
     crate::locales! {
         mod facade_test_keys {
-            docs { subtitle }
+            window { title }
         }
     }
 
@@ -88,7 +88,7 @@ mod tests {
             crate::locales::empty::description.as_str(),
             "empty.description"
         );
-        assert_eq!(facade_test_keys::docs::subtitle.as_str(), "docs.subtitle");
+        assert_eq!(facade_test_keys::window::title.as_str(), "window.title");
     }
 
     #[test]

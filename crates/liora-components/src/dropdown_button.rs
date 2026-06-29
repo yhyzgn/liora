@@ -1,7 +1,7 @@
 //! Dropdown Button module.
 //!
 //! This public module implements a Liora split-capable dropdown button composed from native GPUI Button/Popover
-//! behavior. It keeps the reusable component logic inside `liora-components` rather than Gallery or Docs so
+//! behavior. It keeps the reusable component logic inside `liora-components` rather than host applications so
 //! downstream GPUI applications can compose command menus without app-specific resources.
 //!
 //! ## Usage model
@@ -15,7 +15,7 @@
 //!
 //! The implementation should use Liora theme tokens from `liora-core` and
 //! `liora-theme`, keep accessibility-oriented keyboard/pointer behavior close to
-//! the component, and avoid app-specific Gallery/Docs resources in this SDK
+//! the component, and avoid app-specific host-application resources in this SDK
 //! crate.
 
 use crate::{Button, Popover, gpui_compat::element_id};

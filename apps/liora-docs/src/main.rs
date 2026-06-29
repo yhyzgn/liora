@@ -18,7 +18,7 @@ use liora_core::{
 };
 use liora_tray::{
     MouseButton, MouseButtonState, Tray, TrayCloseAction, TrayCommand, TrayConfig,
-    TrayControlCenter, TrayIconEvent, default_liora_tray_menu, icon_from_png_bytes, solid_icon,
+    TrayControlCenter, TrayIconEvent, icon_from_png_bytes, solid_icon,
 };
 use std::{
     sync::{
@@ -302,6 +302,36 @@ fn register_docs_desktop_identity() {
     }
 }
 
+fn docs_tray_menu() -> Vec<liora_tray::TrayMenuItemSpec> {
+    use liora_tray::{TrayCommand, TrayMenuItemSpec};
+
+    vec![
+        TrayMenuItemSpec::action("Show Window", TrayCommand::Show),
+        TrayMenuItemSpec::action("Hide Window", TrayCommand::Hide),
+        TrayMenuItemSpec::check(
+            "Keep Running in Tray",
+            TrayCommand::Custom("resident-enabled".into()),
+            true,
+        ),
+        TrayMenuItemSpec::check(
+            "Show on Startup",
+            TrayCommand::Custom("auto-show".into()),
+            true,
+        ),
+        TrayMenuItemSpec::separator(),
+        TrayMenuItemSpec::submenu(
+            "Icon State",
+            vec![
+                TrayMenuItemSpec::action("Default", TrayCommand::SetIcon("default".into())),
+                TrayMenuItemSpec::action("Syncing", TrayCommand::SetIcon("syncing".into())),
+                TrayMenuItemSpec::action("Error", TrayCommand::SetIcon("error".into())),
+            ],
+        ),
+        TrayMenuItemSpec::separator(),
+        TrayMenuItemSpec::action("Quit", TrayCommand::Quit),
+    ]
+}
+
 fn install_docs_tray(cx: &mut App) {
     let (tx, rx) = mpsc::channel::<TrayCommand>();
     let menu_tx = tx.clone();
@@ -330,7 +360,7 @@ fn install_docs_tray(cx: &mut App) {
 
     let mut config = TrayConfig::new("liora-docs")
         .tooltip("Liora Docs")
-        .menu(default_liora_tray_menu());
+        .menu(docs_tray_menu());
     if let Some(icon) = docs_tray_icon("default") {
         config = config.icon(icon);
     }

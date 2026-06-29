@@ -1,5 +1,5 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-/// Operating-system target supported by Liora packaging and update selection.
+/// Operating-system target supported by packaging and update selection.
 pub enum Platform {
     /// Selects the linux package format.
     Linux,

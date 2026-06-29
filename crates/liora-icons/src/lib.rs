@@ -1,7 +1,7 @@
 //! Native GPUI icon rendering helpers for Liora.
 //!
 //! This crate exposes an `Icon` component plus the `IntoIconPath` trait used by
-//! Liora demos and docs. Icons are rendered as GPUI SVG/image assets and do not
+//! Liora applications. Icons are rendered as GPUI SVG/image assets and do not
 //! require a web icon runtime.
 
 use gpui::{
