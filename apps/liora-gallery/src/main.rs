@@ -2296,7 +2296,9 @@ mod shell_regression_tests {
 
         assert!(source.contains(".header(header)"));
         assert!(source.contains(".child(gallery_fallback_menu_bar(cx))"));
-        assert!(source.contains("fn gallery_fallback_menu_bar() -> MenuBar"));
+        assert!(source.contains(
+            "fn gallery_fallback_menu_bar(cx: &impl liora_core::LocalesContext) -> MenuBar"
+        ));
         assert!(source.contains("MenuBar::new(["));
         assert!(source.contains(".titlebar(gallery_titlebar())"));
         assert!(!source.contains(".leading(gallery_window_menu_bar())"));
@@ -2333,8 +2335,8 @@ mod shell_regression_tests {
 
         assert!(!open_window.contains("download_gallery_update("));
         assert!(!open_window.contains("auto_update_view"));
-        assert!(source.contains("Button::new(\"检查更新 / Check\")"));
-        assert!(source.contains("Button::new(\"下载更新 / Download\")"));
+        assert!(source.contains("Button::new(locales::gallery::check_updates)"));
+        assert!(source.contains("Button::new(locales::gallery::download_update)"));
     }
 }
 

@@ -1195,7 +1195,9 @@ mod tests {
 
         assert!(menu_bar_source.contains(".enumerate()"));
         assert!(menu_bar_source.contains(".map(move |(index, menu)|"));
-        assert!(menu_bar_source.contains("menu_bar_trigger_id(index, &title, window, cx)"));
+        assert!(
+            menu_bar_source.contains("menu_bar_trigger_id(index, title.stable_seed(), window, cx)")
+        );
         assert!(menu_bar_source.contains(".id(trigger_id)"));
     }
 

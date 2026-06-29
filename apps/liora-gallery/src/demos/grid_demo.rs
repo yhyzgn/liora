@@ -1,4 +1,4 @@
-use gpui::{AnyView, App, Context, IntoElement, Render, Window, prelude::*, px};
+use gpui::{AnyView, App, Context, IntoElement, Render, Window, prelude::*};
 use liora_components::layout_helpers::{page, section, showcase_card_wide, showcase_stack};
 use liora_components::{Grid, GridItem, Space, Tag, Text, toast_success};
 use liora_icons::Icon;
@@ -48,8 +48,8 @@ impl Render for GridDemo {
                         .into_any_element(),
                         showcase_card_wide(
                             "大尺寸图标墙",
-                            "fit_item(148px) + gap_lg() 给图标和名称留出更舒展的空间。",
-                            Grid::new().fit_item(px(148.0)).gap_lg().children(large_icon_items()),
+                            "fit_item_lg() + gap_lg() 给图标和名称留出更舒展的空间。",
+                            Grid::new().fit_item_lg().gap_lg().children(large_icon_items()),
                         )
                         .into_any_element(),
                         showcase_card_wide(

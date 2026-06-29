@@ -874,7 +874,7 @@ mod document_tests {
             .next()
             .unwrap();
 
-        assert!(source.contains("render_text_block(block, text.selectable, theme)"));
+        assert!(source.contains("render_text_block(block, text.selectable, cx, theme)"));
         assert!(source.contains("title_for_level(text.clone(), *level)"));
         assert!(source.contains(".selectable(selectable)"));
         assert!(source.contains("Paragraph::with_text(text.clone())"));

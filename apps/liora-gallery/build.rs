@@ -5,6 +5,7 @@ fn main() {
         res.set_icon("../../packaging/icons/liora.ico");
         res.set("FileDescription", "Liora Gallery");
         res.set("ProductName", "Liora");
+        res.set("CompanyName", "Liora Contributors");
         res.set("OriginalFilename", "liora-gallery.exe");
         let _ = res.compile();
     }
