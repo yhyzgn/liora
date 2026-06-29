@@ -25,12 +25,13 @@ pub use liora_components::{init_liora, init_liora_with_mode, init_liora_with_opt
 pub use liora_core::{
     EmbeddedFont, FontConfig, FontDiscoveryReport, FontLoadFailure, FontLoadMode, FontLoadOptions,
     FontLoadReport, FontWeight, LocaleId, Locales, LocalesConfig, LocalesLoadError, LocalesMap,
-    Options, TextDirection, ThemeMode, Translator, apply_locale, clear_translator, current_locale,
-    discover_font_files, fallback_locale, is_font_family_available, is_supported_font_path,
-    load_app_fonts, load_custom_fonts, load_embedded_fonts, load_font_assets, load_font_files,
-    load_fonts_from_dir, load_locale_file, load_locales_dir, locales, locales_version,
-    set_font_config, set_locale, set_locales_config, set_shared_translator, set_translator,
-    startup_maximized_window_bounds, switch_locale_from_dir, tr,
+    LocalizedText, Options, TextDirection, ThemeMode, Translator, apply_locale, clear_translator,
+    current_locale, discover_font_files, fallback_locale, is_font_family_available,
+    is_supported_font_path, load_app_fonts, load_custom_fonts, load_embedded_fonts,
+    load_font_assets, load_font_files, load_fonts_from_dir, load_locale_file, load_locales_dir,
+    locales, locales_version, set_font_config, set_locale, set_locales_config,
+    set_shared_translator, set_translator, startup_maximized_window_bounds, switch_locale_from_dir,
+    tr,
 };
 
 pub use liora_components as components;
@@ -55,10 +56,10 @@ pub use liora_updater as updater;
 pub mod prelude {
     pub use liora_components::{init_liora, init_liora_with_mode, init_liora_with_options};
     pub use liora_core::{
-        FontConfig, FontWeight, LocaleId, Locales, LocalesConfig, LocalesMap, Options,
-        TextDirection, ThemeMode, Translator, apply_locale, current_locale, load_custom_fonts,
-        load_locales_dir, locales, set_font_config, set_locale, startup_maximized_window_bounds,
-        tr,
+        FontConfig, FontWeight, LocaleId, Locales, LocalesConfig, LocalesMap, LocalizedText,
+        Options, TextDirection, ThemeMode, Translator, apply_locale, current_locale,
+        load_custom_fonts, load_locales_dir, locales, set_font_config, set_locale,
+        startup_maximized_window_bounds, tr,
     };
 
     pub use crate::{

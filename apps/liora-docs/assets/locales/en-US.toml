@@ -24,6 +24,17 @@ search_placeholder = "Search demos"
 theme = "Theme"
 subtitle = "Native Markdown · GPUI elements · Liora components"
 
+title = "Liora Docs"
+window_title = "Liora Docs — Native Main Window"
+native_subtitle = "Native documentation"
+theme_switched = "Docs theme switched to {mode}"
+about_updates = "About / Updates"
+version = "Docs {version}"
+github_releases = "GitHub Releases"
+update_body = "Docs checks GitHub Releases automatically. The project release policy provides cross-platform raw executables; downloads are verified against SHA256SUMS.txt, and replacing a running binary is left to an external launcher or the user."
+check_updates = "Check updates"
+download_update = "Download update"
+install_plan_button = "Install plan"
 [message_box]
 ok = "OK"
 cancel = "Cancel"
@@ -35,5 +46,67 @@ description = "No data"
 [image]
 loading = "Loading"
 
-[demo]
-test = "Test"
+[theme_mode]
+system = "System"
+light = "Light"
+dark = "Dark"
+
+[menu]
+file = "File"
+edit = "Edit"
+view = "View"
+help = "Help"
+zoom_in = "Zoom In"
+zoom_out = "Zoom Out"
+reset_zoom = "Reset Zoom"
+github = "Liora on GitHub"
+about_gallery = "About Liora Gallery"
+about_docs = "About Liora Docs"
+
+[tray]
+tooltip_default = "Liora Docs"
+tooltip_syncing = "Liora Docs · Syncing"
+tooltip_error = "Liora Docs · Error"
+
+[close_confirm]
+gallery_title = "Close Liora Gallery?"
+docs_title = "Close Liora Docs?"
+remember = "Remember this choice"
+gallery_body = "Exit now, or close the main window and keep the app running in the system tray."
+docs_body = "Exit now, or close the main window and keep Docs running in the system tray."
+hide_to_tray = "Hide to tray"
+exit_process = "Exit process"
+
+[update_status]
+idle = "Not checked"
+checking = "Checking GitHub Releases…"
+up_to_date = "Already on latest version {version}"
+available = "New version available: {version}"
+downloading = "Downloading and verifying {version}…"
+downloaded = "Downloaded and verified SHA-256: {version}"
+installing = "Install started: {detail}"
+install_plan = "Install plan: {detail}"
+error = "Update failed: {error}"
+download_first = "Download and verify the update first"
+
+[window_frame]
+gallery_switched = "Gallery window frame switched to {mode}"
+gallery_reopen = "Gallery window frame will reopen to apply {mode}"
+docs_switched = "Docs window frame switched to {mode}"
+docs_reopen = "Docs window frame will reopen to apply {mode}"
+custom = "custom"
+system = "system"
+custom_frame = "custom frame"
+system_frame = "system frame"
+
+[platform]
+linux_x64 = "Linux x64"
+macos_arm64 = "macOS arm64"
+windows_x64 = "Windows x64"
+unsupported = "Unsupported platform"
+
+[category]
+about = "About"
+icon_library = "Icon libraries"
+window_layout = "Window / Layout"
+control = "Controls"

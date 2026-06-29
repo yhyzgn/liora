@@ -20,16 +20,15 @@
 //! crate.
 
 use gpui::{
-    AnyElement, App, Component, Hsla, IntoElement, Pixels, RenderOnce, SharedString, Window, div,
-    prelude::*, px,
+    AnyElement, App, Component, Hsla, IntoElement, Pixels, RenderOnce, Window, div, prelude::*, px,
 };
-use liora_core::Config;
+use liora_core::{Config, LocalizedText};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
 /// Fluent native GPUI component for rendering Liora label.
 pub struct Label {
-    text: SharedString,
+    text: LocalizedText,
     icon: Option<IconName>,
     custom_icon: Option<AnyElement>,
     gap: Pixels,
@@ -39,7 +38,7 @@ pub struct Label {
 
 impl Label {
     /// Creates `Label` initialized from the supplied text.
-    pub fn new(text: impl Into<SharedString>) -> Self {
+    pub fn new(text: impl Into<LocalizedText>) -> Self {
         Self {
             text: text.into(),
             icon: None,
@@ -96,7 +95,7 @@ impl RenderOnce for Label {
                     s
                 }
             })
-            .child(self.text)
+            .child(self.text.resolve(cx))
     }
 }
 

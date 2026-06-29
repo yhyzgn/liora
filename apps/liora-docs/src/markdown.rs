@@ -10497,19 +10497,19 @@ impl Render for DocsShell {
                                     .vertical()
                                     .gap_xs()
                                     .child(Title::new("Liora Docs").h2())
-                                    .child(Text::new(tr(cx, locales::docs::subtitle))),
+                                    .child(Text::new(locales::docs::subtitle)),
                             ),
                     )
                     .child(
                         Space::new()
                             .gap_sm()
-                            .child(Text::new(tr(cx, locales::docs::theme)))
+                            .child(Text::new(locales::docs::theme))
                             .child(self.theme_mode_segmented.clone()),
                     )
                     .child(
                         Space::new()
                             .gap_sm()
-                            .child(Text::new(tr(cx, locales::language::label)))
+                            .child(Text::new(locales::language::label))
                             .child(self.locale_segmented.clone()),
                     )
                     .child(frame_mode_switch_row(
@@ -10852,10 +10852,10 @@ fn locale_segmented(cx: &App) -> Segmented {
         .value(current_locale(cx).as_str())
 }
 
-fn locale_segmented_options(cx: &impl liora_core::LocalesContext) -> Vec<SegmentedOption> {
+fn locale_segmented_options(_cx: &impl liora_core::LocalesContext) -> Vec<SegmentedOption> {
     vec![
-        SegmentedOption::new(tr(cx, locales::language::zh_cn), "zh-CN"),
-        SegmentedOption::new(tr(cx, locales::language::en_us), "en-US"),
+        SegmentedOption::new(locales::language::zh_cn, "zh-CN"),
+        SegmentedOption::new(locales::language::en_us, "en-US"),
     ]
 }
 

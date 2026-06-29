@@ -25,7 +25,7 @@ use gpui::{
     AbsoluteLength, AnyElement, App, Background, Component, ElementId, Hsla, IntoElement,
     RenderOnce, Rgba, SharedString, Window, linear_color_stop, linear_gradient, prelude::*, px,
 };
-use liora_core::{Config, stable_unique_id};
+use liora_core::{Config, LocalizedText, stable_unique_id};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 use liora_theme::{ButtonSize, ButtonVariant, ButtonVariantColors, Theme};
@@ -217,7 +217,7 @@ impl From<Icon> for ButtonIcon {
 
 /// Fluent native GPUI component for rendering Liora button.
 pub struct Button {
-    label: SharedString,
+    label: LocalizedText,
     variant: ButtonVariant,
     size: ButtonSize,
     disabled: bool,
@@ -239,7 +239,7 @@ pub struct Button {
 
 impl Button {
     /// Creates `Button` initialized from the supplied label.
-    pub fn new(label: impl Into<SharedString>) -> Self {
+    pub fn new(label: impl Into<LocalizedText>) -> Self {
         Self {
             label: label.into(),
             variant: ButtonVariant::Default,
@@ -526,7 +526,7 @@ impl Button {
             stable_unique_id(
                 format!(
                     "liora-button:{}:{:?}:{:?}:secondary={}:background={}:border={}:rounded={:?}",
-                    self.label,
+                    self.label.stable_seed(),
                     self.variant,
                     self.size,
                     self.secondary,
@@ -545,7 +545,7 @@ impl Button {
         let icon_only = self.icon_only.is_some();
         let vertical = self.icon_top.is_some() || self.icon_bottom.is_some() || icon_only;
 
-        let label = self.label.clone();
+        let label = self.label.resolve(cx);
         let hover_group = SharedString::from(format!("{}:hover", id));
 
         let gradient = self.gradient.clone();

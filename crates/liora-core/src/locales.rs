@@ -46,6 +46,81 @@ impl fmt::Display for Locales {
     }
 }
 
+/// User-facing text that can be either a literal string or a typed locale key.
+///
+/// Component constructors accept this type through `impl Into<LocalizedText>`,
+/// so callers can pass generated keys directly, e.g.
+/// `Button::new(locales::common::ok)`. The actual translation is resolved at
+/// render time from the current [`LocalesContext`], which keeps runtime
+/// language switching working without hardcoded string keys at call sites.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum LocalizedText {
+    /// Literal user-facing text that should not be translated.
+    Literal(SharedString),
+    /// Typed locale key resolved against the active locale during render.
+    Key(Locales),
+}
+
+impl LocalizedText {
+    /// Creates a literal localized text source.
+    pub fn literal(text: impl Into<SharedString>) -> Self {
+        Self::Literal(text.into())
+    }
+
+    /// Creates a localized text source from a typed key.
+    pub const fn key(key: Locales) -> Self {
+        Self::Key(key)
+    }
+
+    /// Resolves this text source against the active locale context.
+    pub fn resolve(&self, cx: &impl LocalesContext) -> SharedString {
+        match self {
+            Self::Literal(text) => text.clone(),
+            Self::Key(key) => tr(cx, *key),
+        }
+    }
+
+    /// Returns a stable seed for element ids, tests, and debug output.
+    pub fn stable_seed(&self) -> &str {
+        match self {
+            Self::Literal(text) => text.as_ref(),
+            Self::Key(key) => key.as_str(),
+        }
+    }
+
+    /// Returns whether this text source is definitely empty before translation.
+    pub fn is_empty_source(&self) -> bool {
+        match self {
+            Self::Literal(text) => text.is_empty(),
+            Self::Key(_) => false,
+        }
+    }
+}
+
+impl From<Locales> for LocalizedText {
+    fn from(value: Locales) -> Self {
+        Self::Key(value)
+    }
+}
+
+impl From<SharedString> for LocalizedText {
+    fn from(value: SharedString) -> Self {
+        Self::Literal(value)
+    }
+}
+
+impl From<&'static str> for LocalizedText {
+    fn from(value: &'static str) -> Self {
+        Self::Literal(value.into())
+    }
+}
+
+impl From<String> for LocalizedText {
+    fn from(value: String) -> Self {
+        Self::Literal(value.into())
+    }
+}
+
 /// Defines typed locale key constants grouped by resource table.
 ///
 /// Applications normally use the generated [`locales`] module, which is rebuilt
@@ -175,8 +250,8 @@ impl LocalesMap {
     /// Creates a map containing Liora's small built-in safety fallback.
     pub fn builtin() -> Self {
         let mut map = Self::new();
-        map = map.with_locale("en-US", builtin_en_us_pairs());
-        map = map.with_locale("zh-CN", builtin_zh_cn_pairs());
+        map = map.with_locale("en-US", builtin_locale_entries(BUILTIN_EN_US_TOML));
+        map = map.with_locale("zh-CN", builtin_locale_entries(BUILTIN_ZH_CN_TOML));
         map
     }
 
@@ -421,7 +496,7 @@ impl LocalesConfig {
             })
             .or_else(|| self.resources.translate(&self.locale, key))
             .or_else(|| self.resources.translate(&self.fallback_locale, key))
-            .or_else(|| builtin_en_us_value(key))
+            .or_else(|| builtin_locale_value(BUILTIN_EN_US_TOML, key))
             .unwrap_or_else(|| key.into())
     }
 
@@ -526,50 +601,29 @@ fn flatten_toml_value(
     }
 }
 
-fn builtin_en_us_pairs() -> Vec<(&'static str, &'static str)> {
-    vec![
-        ("common.ok", "OK"),
-        ("common.cancel", "Cancel"),
-        ("common.close", "Close"),
-        ("common.confirm", "Confirm"),
-        ("common.clear", "Clear"),
-        ("common.loading", "Loading"),
-        ("common.empty", "No data"),
-        ("message_box.ok", "OK"),
-        ("message_box.cancel", "Cancel"),
-        ("message_box.confirm", "Confirm"),
-        ("empty.description", "No data"),
-        ("image.loading", "Loading"),
-    ]
+const BUILTIN_EN_US_TOML: &str = include_str!("../assets/locales/en-US.toml");
+const BUILTIN_ZH_CN_TOML: &str = include_str!("../assets/locales/zh-CN.toml");
+
+fn builtin_locale_entries(source: &'static str) -> Vec<(SharedString, SharedString)> {
+    parse_toml_translations(source).expect("built-in locale resources must be valid TOML")
 }
 
-fn builtin_zh_cn_pairs() -> Vec<(&'static str, &'static str)> {
-    vec![
-        ("common.ok", "确定"),
-        ("common.cancel", "取消"),
-        ("common.close", "关闭"),
-        ("common.confirm", "确认"),
-        ("common.clear", "清空"),
-        ("common.loading", "加载中"),
-        ("common.empty", "暂无数据"),
-        ("message_box.ok", "确定"),
-        ("message_box.cancel", "取消"),
-        ("message_box.confirm", "确认"),
-        ("empty.description", "暂无数据"),
-        ("image.loading", "加载中"),
-    ]
-}
-
-fn builtin_en_us_value(key: &str) -> Option<SharedString> {
-    builtin_en_us_pairs()
+fn builtin_locale_value(source: &'static str, key: &str) -> Option<SharedString> {
+    builtin_locale_entries(source)
         .into_iter()
-        .find_map(|(entry_key, value)| (entry_key == key).then(|| value.into()))
+        .find_map(|(entry_key, value)| (entry_key.as_ref() == key).then_some(value))
 }
 
 /// Minimal context abstraction used by translation helpers.
 pub trait LocalesContext {
     /// Returns the active locale config.
     fn locales_config(&self) -> &LocalesConfig;
+}
+
+impl LocalesContext for LocalesConfig {
+    fn locales_config(&self) -> &LocalesConfig {
+        self
+    }
 }
 
 impl LocalesContext for App {
@@ -735,27 +789,27 @@ mod tests {
     fn toml_translations_flatten_nested_tables() {
         let entries = parse_toml_translations(
             r#"
-[common]
-ok = "OK"
+[demo]
+ready = "Ready"
 [select]
 no_data = "No data"
 "#,
         )
         .unwrap();
-        assert!(entries.contains(&("common.ok".into(), "OK".into())));
+        assert!(entries.contains(&("demo.ready".into(), "Ready".into())));
         assert!(entries.contains(&("select.no_data".into(), "No data".into())));
     }
 
     #[test]
     fn locales_map_uses_locale_specific_values() {
-        let map = LocalesMap::new().with_locale("zh-CN", [("common.ok", "确定")]);
+        let map = LocalesMap::new().with_locale("zh-CN", [("test.only", "测试")]);
         assert_eq!(
-            map.translate(&LocaleId::from("zh-CN"), "common.ok")
+            map.translate(&LocaleId::from("zh-CN"), "test.only")
                 .as_deref(),
-            Some("确定")
+            Some("测试")
         );
         assert_eq!(
-            map.translate(&LocaleId::from("en-US"), "common.ok")
+            map.translate(&LocaleId::from("en-US"), "test.only")
                 .as_deref(),
             None
         );
@@ -777,16 +831,16 @@ no_data = "No data"
     fn load_dir_uses_file_stems_as_locale_ids() {
         let dir = temp_dir("liora-locales");
         fs::create_dir_all(&dir).unwrap();
-        fs::write(dir.join("en-US.toml"), "[common]\nok = \"OK\"\n").unwrap();
-        fs::write(dir.join("zh-CN.toml"), "[common]\nok = \"确定\"\n").unwrap();
+        fs::write(dir.join("en-US.toml"), "[test]\nonly = \"Test\"\n").unwrap();
+        fs::write(dir.join("zh-CN.toml"), "[test]\nonly = \"测试\"\n").unwrap();
 
         let mut map = LocalesMap::new();
         let loaded = map.load_dir(&dir).unwrap();
         assert_eq!(loaded.len(), 2);
         assert_eq!(
-            map.translate(&LocaleId::from("zh-CN"), "common.ok")
+            map.translate(&LocaleId::from("zh-CN"), "test.only")
                 .as_deref(),
-            Some("确定")
+            Some("测试")
         );
 
         fs::remove_dir_all(dir).unwrap();

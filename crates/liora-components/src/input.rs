@@ -26,7 +26,7 @@ use gpui::{
     ShapedLine, SharedString, Style, TextRun, UTF16Selection, Window, actions, fill, point,
     prelude::*, px, size,
 };
-use liora_core::{Config, ui_font_family, ui_font_weight};
+use liora_core::{Config, LocalizedText, ui_font_family, ui_font_weight};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 use std::ops::{Add, Range};
@@ -103,7 +103,7 @@ pub enum InputType {
 /// Fluent native GPUI component for rendering Liora input.
 pub struct Input {
     value: SharedString,
-    placeholder: SharedString,
+    placeholder: LocalizedText,
     disabled: bool,
     clearable: bool,
     icon_prefix: Option<IconName>,
@@ -140,7 +140,7 @@ impl Input {
     pub fn new(value: impl Into<SharedString>, cx: &mut Context<Self>) -> Self {
         Self {
             value: value.into(),
-            placeholder: SharedString::default(),
+            placeholder: LocalizedText::literal(""),
             disabled: false,
             clearable: false,
             icon_prefix: None,
@@ -172,7 +172,7 @@ impl Input {
         }
     }
     /// Uses the supplied placeholder text when the value is empty.
-    pub fn placeholder(mut self, p: impl Into<SharedString>) -> Self {
+    pub fn placeholder(mut self, p: impl Into<LocalizedText>) -> Self {
         self.placeholder = p.into();
         self
     }
@@ -320,7 +320,7 @@ impl Input {
     }
 
     /// Updates the stored placeholder value and keeps the existing component identity.
-    pub fn set_placeholder(&mut self, p: impl Into<SharedString>, cx: &mut Context<Self>) {
+    pub fn set_placeholder(&mut self, p: impl Into<LocalizedText>, cx: &mut Context<Self>) {
         let p = p.into();
         if self.placeholder == p {
             return;
@@ -1149,9 +1149,9 @@ impl Input {
         }
         utf8
     }
-    fn text_for_display(&self) -> SharedString {
+    fn text_for_display(&self, cx: &impl liora_core::LocalesContext) -> SharedString {
         if self.value.is_empty() {
-            self.placeholder.clone()
+            self.placeholder.resolve(cx)
         } else if self.is_password() {
             let masked = self
                 .value
@@ -1266,7 +1266,7 @@ impl Element for InputElement {
     ) -> (LayoutId, ()) {
         let input = self.input.read(cx);
         let line_count = input
-            .text_for_display()
+            .text_for_display(cx)
             .split('\n')
             .count()
             .max(input.min_rows) as f32;
@@ -1303,7 +1303,7 @@ impl Element for InputElement {
         let font_size = style.font_size.to_pixels(window.rem_size());
         let line_height = window.line_height();
         let cursor_offset = input.cursor_offset();
-        let text = input.text_for_display();
+        let text = input.text_for_display(cx);
         let is_masked = input.is_password();
         let text_align = input.text_align;
         let text_lines: Vec<String> = text.split('\n').map(str::to_owned).collect();
@@ -1331,7 +1331,7 @@ impl Element for InputElement {
 
         for (i, line_text) in text_lines.iter().enumerate() {
             let (display, color) = if input.value.is_empty() {
-                (input.placeholder.clone(), theme.neutral.placeholder)
+                (input.placeholder.resolve(cx), theme.neutral.placeholder)
             } else {
                 (SharedString::from(line_text.clone()), text_c)
             };

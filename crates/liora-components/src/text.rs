@@ -28,7 +28,9 @@ use gpui::{
     Pixels, RenderOnce, SharedString, StrikethroughStyle, Styled, TextRun, TextStyle,
     UnderlineStyle, Window, div, prelude::*, px,
 };
-use liora_core::{Config, code_font_family, code_font_weight, ui_font_family, ui_font_weight};
+use liora_core::{
+    Config, LocalizedText, code_font_family, code_font_weight, ui_font_family, ui_font_weight,
+};
 use std::{
     collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},
@@ -43,12 +45,12 @@ pub enum TextBlock {
         /// Heading level. Values outside 1..=6 are clamped by the renderer.
         level: u8,
         /// Heading text content.
-        text: SharedString,
+        text: LocalizedText,
     },
     /// Plain paragraph text rendered with selectable wrapping.
-    Paragraph(SharedString),
+    Paragraph(LocalizedText),
     /// Quote paragraph rendered in a subtle card-like rail.
-    Quote(SharedString),
+    Quote(LocalizedText),
     /// Fenced or authored code block with syntax highlighting.
     Code {
         /// Code text rendered inside the block.
@@ -61,23 +63,23 @@ pub enum TextBlock {
         /// Whether the list uses numeric markers.
         ordered: bool,
         /// Item text rendered for each row.
-        items: Vec<SharedString>,
+        items: Vec<LocalizedText>,
     },
     /// Visual separator between sections.
     Divider,
 }
 
 impl TextContent {
-    pub(crate) fn inline(&self) -> SharedString {
+    pub(crate) fn inline(&self, cx: &impl liora_core::LocalesContext) -> SharedString {
         match self {
-            Self::Inline(content) => content.clone(),
+            Self::Inline(content) => content.resolve(cx),
             Self::Document(_) => SharedString::default(),
         }
     }
 
     pub(crate) fn is_empty(&self) -> bool {
         match self {
-            Self::Inline(content) => content.is_empty(),
+            Self::Inline(content) => content.is_empty_source(),
             Self::Document(blocks) => blocks.iter().all(TextBlock::is_empty),
         }
     }
@@ -86,7 +88,7 @@ impl TextContent {
 impl AsRef<str> for TextContent {
     fn as_ref(&self) -> &str {
         match self {
-            Self::Inline(content) => content.as_ref(),
+            Self::Inline(content) => content.stable_seed(),
             Self::Document(_) => "",
         }
     }
@@ -94,7 +96,7 @@ impl AsRef<str> for TextContent {
 
 impl TextBlock {
     /// Creates a heading block and clamps the level to the supported h1-h6 range.
-    pub fn heading(level: u8, text: impl Into<SharedString>) -> Self {
+    pub fn heading(level: u8, text: impl Into<LocalizedText>) -> Self {
         Self::Heading {
             level: level.clamp(1, 6),
             text: text.into(),
@@ -102,12 +104,12 @@ impl TextBlock {
     }
 
     /// Creates a paragraph block.
-    pub fn paragraph(text: impl Into<SharedString>) -> Self {
+    pub fn paragraph(text: impl Into<LocalizedText>) -> Self {
         Self::Paragraph(text.into())
     }
 
     /// Creates a quote block.
-    pub fn quote(text: impl Into<SharedString>) -> Self {
+    pub fn quote(text: impl Into<LocalizedText>) -> Self {
         Self::Quote(text.into())
     }
 
@@ -120,7 +122,7 @@ impl TextBlock {
     }
 
     /// Creates an unordered list block.
-    pub fn unordered(items: impl IntoIterator<Item = impl Into<SharedString>>) -> Self {
+    pub fn unordered(items: impl IntoIterator<Item = impl Into<LocalizedText>>) -> Self {
         Self::List {
             ordered: false,
             items: items.into_iter().map(Into::into).collect(),
@@ -128,7 +130,7 @@ impl TextBlock {
     }
 
     /// Creates an ordered list block.
-    pub fn ordered(items: impl IntoIterator<Item = impl Into<SharedString>>) -> Self {
+    pub fn ordered(items: impl IntoIterator<Item = impl Into<LocalizedText>>) -> Self {
         Self::List {
             ordered: true,
             items: items.into_iter().map(Into::into).collect(),
@@ -139,10 +141,10 @@ impl TextBlock {
     pub fn is_empty(&self) -> bool {
         match self {
             Self::Heading { text, .. } | Self::Paragraph(text) | Self::Quote(text) => {
-                text.trim().is_empty()
+                text.is_empty_source()
             }
             Self::Code { code, .. } => code.is_empty(),
-            Self::List { items, .. } => items.iter().all(|item| item.trim().is_empty()),
+            Self::List { items, .. } => items.iter().all(LocalizedText::is_empty_source),
             Self::Divider => false,
         }
     }
@@ -150,7 +152,7 @@ impl TextBlock {
 
 #[derive(Clone)]
 pub(crate) enum TextContent {
-    Inline(SharedString),
+    Inline(LocalizedText),
     Document(Vec<TextBlock>),
 }
 
@@ -183,9 +185,9 @@ pub struct Text {
 impl Text {
     /// Creates `Text` initialized from the supplied content.
     #[track_caller]
-    pub fn new(content: impl Into<SharedString>) -> Self {
+    pub fn new(content: impl Into<LocalizedText>) -> Self {
         let content = content.into();
-        let id = default_text_id("text", content.as_ref(), Location::caller());
+        let id = default_text_id("text", content.stable_seed(), Location::caller());
         Self {
             content: TextContent::Inline(content),
             color: None,
@@ -214,7 +216,7 @@ impl Text {
     /// Creates a lightweight document view from authored structural blocks.
     #[track_caller]
     pub fn document(blocks: impl IntoIterator<Item = TextBlock>) -> Self {
-        let mut this = Self::new(SharedString::default());
+        let mut this = Self::new("");
         let blocks = blocks.into_iter().collect::<Vec<_>>();
         this.id = default_text_id(
             "text-document",
@@ -436,13 +438,12 @@ impl Text {
         style
     }
 
-    fn inline_content(&self) -> SharedString {
-        self.content.inline()
+    fn inline_content(&self, cx: &impl liora_core::LocalesContext) -> SharedString {
+        self.content.inline(cx)
     }
 
-    pub(crate) fn to_text_run(&self, default_style: &TextStyle) -> TextRun {
-        self.apply_to_text_style(default_style.clone())
-            .to_run(self.inline_content().len())
+    pub(crate) fn to_text_run(&self, default_style: &TextStyle, len: usize) -> TextRun {
+        self.apply_to_text_style(default_style.clone()).to_run(len)
     }
 
     /// Registers GPUI key bindings required for keyboard interaction.
@@ -456,7 +457,7 @@ impl RenderOnce for Text {
         let theme = &cx.global::<Config>().theme;
 
         if matches!(self.content, TextContent::Document(_)) {
-            return render_text_document(self, theme).into_any_element();
+            return render_text_document(self, cx, theme).into_any_element();
         }
 
         let font_size = self.size.unwrap_or_else(|| px(theme.font_size.md));
@@ -490,11 +491,12 @@ impl RenderOnce for Text {
             } else {
                 gpui::WhiteSpace::Nowrap
             };
-            let run = text.to_text_run(&base_style);
+            let inline = text.inline_content(cx);
+            let run = text.to_text_run(&base_style, inline.len());
             return SelectableText::view(
                 SelectableTextOptions {
                     id: ElementId::from(text.id.clone()),
-                    text: text.inline_content(),
+                    text: inline,
                     runs: vec![run],
                     font_size,
                     line_height,
@@ -515,7 +517,7 @@ impl RenderOnce for Text {
 
         let mut el = div()
             .id(ElementId::from(text.id.clone()))
-            .child(text.inline_content())
+            .child(text.inline_content(cx))
             .text_size(font_size)
             .line_height(line_height)
             .text_color(text_color);
@@ -584,9 +586,13 @@ fn default_text_id(prefix: &str, seed: &str, location: &Location<'_>) -> SharedS
     .into()
 }
 
-fn render_text_document(text: Text, theme: &liora_theme::Theme) -> AnyElement {
+fn render_text_document(
+    text: Text,
+    cx: &impl liora_core::LocalesContext,
+    theme: &liora_theme::Theme,
+) -> AnyElement {
     let TextContent::Document(blocks) = &text.content else {
-        return Text::new(SharedString::default()).into_any_element();
+        return Text::new("").into_any_element();
     };
     let background = text.document_background.unwrap_or(theme.neutral.card);
     let content = Space::new()
@@ -596,7 +602,7 @@ fn render_text_document(text: Text, theme: &liora_theme::Theme) -> AnyElement {
             if block.is_empty() {
                 None
             } else {
-                Some(render_text_block(block, text.selectable, theme))
+                Some(render_text_block(block, text.selectable, cx, theme))
             }
         }));
 
@@ -621,6 +627,7 @@ fn render_text_document(text: Text, theme: &liora_theme::Theme) -> AnyElement {
 fn render_text_block(
     block: &TextBlock,
     selectable: bool,
+    cx: &impl liora_core::LocalesContext,
     theme: &liora_theme::Theme,
 ) -> AnyElement {
     match block {
@@ -652,7 +659,7 @@ fn render_text_block(
             .vertical()
             .gap_xs()
             .children(items.iter().enumerate().filter_map(|(index, item)| {
-                if item.trim().is_empty() {
+                if item.resolve(cx).trim().is_empty() {
                     return None;
                 }
                 let marker = if *ordered {
@@ -674,7 +681,7 @@ fn render_text_block(
     }
 }
 
-fn title_for_level(text: SharedString, level: u8) -> Title {
+fn title_for_level(text: LocalizedText, level: u8) -> Title {
     match level.clamp(1, 6) {
         1 => Title::new(text).h1(),
         2 => Title::new(text).h2(),
@@ -689,7 +696,7 @@ fn title_for_level(text: SharedString, level: u8) -> Title {
 pub fn parse_plain_markdown(markdown: &str) -> Vec<TextBlock> {
     let mut blocks = Vec::new();
     let mut paragraph = Vec::new();
-    let mut list_items: Vec<SharedString> = Vec::new();
+    let mut list_items: Vec<LocalizedText> = Vec::new();
     let mut ordered_list: Option<bool> = None;
     let mut code_lines = Vec::new();
     let mut code_language = CodeLanguage::PlainText;
@@ -702,7 +709,7 @@ pub fn parse_plain_markdown(markdown: &str) -> Vec<TextBlock> {
         }
     };
     let flush_list = |blocks: &mut Vec<TextBlock>,
-                      list_items: &mut Vec<SharedString>,
+                      list_items: &mut Vec<LocalizedText>,
                       ordered_list: &mut Option<bool>| {
         if !list_items.is_empty() {
             blocks.push(TextBlock::List {
@@ -751,7 +758,7 @@ pub fn parse_plain_markdown(markdown: &str) -> Vec<TextBlock> {
         if let Some((level, text)) = parse_heading(trimmed) {
             flush_paragraph(&mut blocks, &mut paragraph);
             flush_list(&mut blocks, &mut list_items, &mut ordered_list);
-            blocks.push(TextBlock::heading(level, text));
+            blocks.push(TextBlock::heading(level, text.to_string()));
             continue;
         }
 
@@ -761,7 +768,7 @@ pub fn parse_plain_markdown(markdown: &str) -> Vec<TextBlock> {
         {
             flush_paragraph(&mut blocks, &mut paragraph);
             flush_list(&mut blocks, &mut list_items, &mut ordered_list);
-            blocks.push(TextBlock::quote(text.trim()));
+            blocks.push(TextBlock::quote(text.trim().to_string()));
             continue;
         }
 
@@ -771,7 +778,7 @@ pub fn parse_plain_markdown(markdown: &str) -> Vec<TextBlock> {
                 flush_list(&mut blocks, &mut list_items, &mut ordered_list);
             }
             ordered_list = Some(false);
-            list_items.push(item.into());
+            list_items.push(LocalizedText::literal(item.to_string()));
             continue;
         }
 
@@ -781,7 +788,7 @@ pub fn parse_plain_markdown(markdown: &str) -> Vec<TextBlock> {
                 flush_list(&mut blocks, &mut list_items, &mut ordered_list);
             }
             ordered_list = Some(true);
-            list_items.push(item.into());
+            list_items.push(LocalizedText::literal(item.to_string()));
             continue;
         }
 

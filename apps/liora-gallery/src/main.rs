@@ -81,16 +81,25 @@ enum UpdatePanelStatus {
 }
 
 impl UpdatePanelStatus {
-    fn label(&self) -> String {
+    fn label(&self, cx: &impl liora_core::LocalesContext) -> String {
         match self {
-            Self::Idle => "未检查更新 / Not checked".into(),
-            Self::Checking => "正在检查 GitHub Release…".into(),
-            Self::UpToDate(version) => format!("已是最新版本 {version}"),
-            Self::Available(version) => format!("发现新版本 {version}"),
-            Self::Downloading(version) => format!("正在下载并校验 {version}…"),
-            Self::Downloaded(version) => format!("已下载并通过 SHA-256 校验：{version}"),
-            Self::Installing(detail) => format!("已启动安装流程：{detail}"),
-            Self::Error(error) => format!("更新失败：{error}"),
+            Self::Idle => tr(cx, locales::update_status::idle).to_string(),
+            Self::Checking => tr(cx, locales::update_status::checking).to_string(),
+            Self::UpToDate(version) => locale_template(cx, locales::update_status::up_to_date)
+                .replace("{version}", version),
+            Self::Available(version) => {
+                locale_template(cx, locales::update_status::available).replace("{version}", version)
+            }
+            Self::Downloading(version) => locale_template(cx, locales::update_status::downloading)
+                .replace("{version}", version),
+            Self::Downloaded(version) => locale_template(cx, locales::update_status::downloaded)
+                .replace("{version}", version),
+            Self::Installing(detail) => {
+                locale_template(cx, locales::update_status::installing).replace("{detail}", detail)
+            }
+            Self::Error(error) => {
+                locale_template(cx, locales::update_status::error).replace("{error}", error)
+            }
         }
     }
 
@@ -101,6 +110,35 @@ impl UpdatePanelStatus {
             Self::Error(_) => "error",
             Self::Idle | Self::UpToDate(_) => "ready",
         }
+    }
+}
+
+fn locale_template(cx: &impl liora_core::LocalesContext, key: liora_core::Locales) -> String {
+    tr(cx, key).to_string()
+}
+
+fn theme_mode_label(cx: &impl liora_core::LocalesContext, mode: ThemeMode) -> String {
+    match mode {
+        ThemeMode::System => tr(cx, locales::theme_mode::system).to_string(),
+        ThemeMode::Light => tr(cx, locales::theme_mode::light).to_string(),
+        ThemeMode::Dark => tr(cx, locales::theme_mode::dark).to_string(),
+    }
+}
+
+fn localized_platform_label(cx: &impl liora_core::LocalesContext) -> String {
+    match Platform::current() {
+        Some(Platform::LinuxX64) => tr(cx, locales::platform::linux_x64).to_string(),
+        Some(Platform::MacosArm64) => tr(cx, locales::platform::macos_arm64).to_string(),
+        Some(Platform::WindowsX64) => tr(cx, locales::platform::windows_x64).to_string(),
+        None => tr(cx, locales::platform::unsupported).to_string(),
+    }
+}
+
+fn localized_tray_tooltip(cx: &impl liora_core::LocalesContext, name: &str) -> String {
+    match name {
+        "syncing" => tr(cx, locales::tray::tooltip_syncing).to_string(),
+        "error" => tr(cx, locales::tray::tooltip_error).to_string(),
+        _ => tr(cx, locales::tray::tooltip_default).to_string(),
     }
 }
 
@@ -140,14 +178,14 @@ fn register_gallery_system_menus(cx: &mut App) {
     Menu::register(
         cx,
         [
-            Menu::new("File")
+            Menu::new(locales::menu::file)
                 .item(MenuItem::new_window())
                 .item(MenuItem::open_file())
                 .item(MenuItem::open_folder())
                 .item(MenuItem::separator())
                 .item(MenuItem::save())
                 .item(MenuItem::quit()),
-            Menu::new("Edit")
+            Menu::new(locales::menu::edit)
                 .item(MenuItem::undo())
                 .item(MenuItem::redo())
                 .item(MenuItem::separator())
@@ -156,29 +194,32 @@ fn register_gallery_system_menus(cx: &mut App) {
                 .item(MenuItem::paste())
                 .item(MenuItem::separator())
                 .item(MenuItem::select_all()),
-            Menu::new("View")
+            Menu::new(locales::menu::view)
                 .item(MenuItem::command_palette())
                 .item(MenuItem::toggle_sidebar())
                 .item(MenuItem::toggle_statusbar())
                 .item(MenuItem::separator())
                 .item(MenuItem::action(
                     liora_components::MenuAction::ZoomIn,
-                    "Zoom In",
+                    tr(cx, locales::menu::zoom_in),
                 ))
                 .item(MenuItem::action(
                     liora_components::MenuAction::ZoomOut,
-                    "Zoom Out",
+                    tr(cx, locales::menu::zoom_out),
                 ))
                 .item(MenuItem::action(
                     liora_components::MenuAction::ZoomReset,
-                    "Reset Zoom",
+                    tr(cx, locales::menu::reset_zoom),
                 )),
-            Menu::new("Help")
+            Menu::new(locales::menu::help)
                 .item(MenuItem::open_url(
-                    "Liora on GitHub",
+                    tr(cx, locales::menu::github),
                     "https://github.com/yhyzgn/liora",
                 ))
-                .item(MenuItem::new("about-gallery", "About Liora Gallery")),
+                .item(MenuItem::new(
+                    "about-gallery",
+                    tr(cx, locales::menu::about_gallery),
+                )),
         ],
     );
 }
@@ -274,7 +315,7 @@ fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
         attach_system_theme_observer(window, cx);
 
         let entries = demos::registry();
-        let nav_index = gallery_nav_index(&entries);
+        let nav_index = gallery_nav_index(&entries, cx);
         let view = cx.new(|cx| {
             let theme_mode = cx.global::<Config>().theme_mode;
             let selected = default_gallery_selection(&entries);
@@ -285,14 +326,13 @@ fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
                 pending_demo_index: None,
                 nav_index,
                 selected,
-                nav_filter: cx.new(|cx| {
-                    Input::new("", cx).placeholder(tr(cx, locales::gallery::search_placeholder))
-                }),
+                nav_filter: cx
+                    .new(|cx| Input::new("", cx).placeholder(locales::gallery::search_placeholder)),
                 nav_menu: None,
                 nav_query: String::new(),
                 nav_refresh_pending: false,
                 theme_mode,
-                theme_mode_segmented: cx.new(move |_| theme_mode_segmented(theme_mode)),
+                theme_mode_segmented: cx.new(move |cx| theme_mode_segmented(theme_mode, cx)),
                 locale_segmented: cx.new(|cx| locale_segmented(cx)),
                 frame_mode,
                 frame_mode_switch: cx.new(|cx| Switch::new(frame_mode.is_custom(), cx)),
@@ -329,7 +369,7 @@ fn gallery_window_options(cx: &App, frame_mode: WindowFrameMode) -> WindowOption
                 size(px(1920.0), px(1080.0)),
             )),
             titlebar: Some(gpui::TitlebarOptions {
-                title: Some("Liora UI Gallery".into()),
+                title: Some(tr(cx, locales::gallery::window_title)),
                 ..Default::default()
             }),
             app_id: Some("liora-gallery".into()),
@@ -433,7 +473,7 @@ fn install_gallery_tray(cx: &mut App) {
     }));
 
     let mut config = TrayConfig::new("liora-gallery")
-        .tooltip("Liora Gallery")
+        .tooltip(tr(cx, locales::tray::tooltip_default).to_string())
         .menu(default_liora_tray_menu());
     if let Some(icon) = gallery_tray_icon("default") {
         config = config.icon(icon);
@@ -492,18 +532,28 @@ fn set_gallery_frame_mode(mode: WindowFrameMode, window: &mut Window, cx: &mut A
     match request_window_frame_mode(window, mode) {
         liora_components::WindowFrameChange::AppliedLive => {
             toast_info!(
-                "Gallery window frame switched to {}",
-                if mode.is_custom() { "custom" } else { "system" }
+                "{}",
+                locale_template(cx, locales::window_frame::gallery_switched).replace(
+                    "{mode}",
+                    &if mode.is_custom() {
+                        tr(cx, locales::window_frame::custom).to_string()
+                    } else {
+                        tr(cx, locales::window_frame::system).to_string()
+                    },
+                )
             );
         }
         liora_components::WindowFrameChange::RequiresWindowReopen => {
             toast_info!(
-                "Gallery window frame will reopen to apply {}",
-                if mode.is_custom() {
-                    "custom frame"
-                } else {
-                    "system frame"
-                }
+                "{}",
+                locale_template(cx, locales::window_frame::gallery_reopen).replace(
+                    "{mode}",
+                    &if mode.is_custom() {
+                        tr(cx, locales::window_frame::custom_frame).to_string()
+                    } else {
+                        tr(cx, locales::window_frame::system_frame).to_string()
+                    },
+                )
             );
             window.defer(cx, |window, cx| {
                 window.remove_window();
@@ -550,17 +600,14 @@ fn handle_gallery_tray_command(command: TrayCommand, cx: &mut App) {
         TrayCommand::Quit => cx.quit(),
         TrayCommand::SetIcon(name) => {
             if cx.has_global::<GalleryTrayState>() {
+                let tooltip = localized_tray_tooltip(cx, name.as_str());
                 let state = cx.global_mut::<GalleryTrayState>();
                 if let Some(icon) = gallery_tray_icon(&name) {
                     if let Err(error) = state.tray.set_icon(icon) {
                         eprintln!("failed to update Liora Gallery tray icon: {error}");
                     }
                 }
-                let _ = state.tray.set_tooltip(Some(match name.as_str() {
-                    "syncing" => "Liora Gallery · Syncing",
-                    "error" => "Liora Gallery · Error",
-                    _ => "Liora Gallery",
-                }));
+                let _ = state.tray.set_tooltip(Some(&tooltip));
             }
             if cx.has_global::<TrayControlCenter>() {
                 cx.global_mut::<TrayControlCenter>().set_active_icon(name);
@@ -723,7 +770,7 @@ fn show_gallery_close_confirm(window: &mut Window, cx: &mut App) {
 
     Dialog::new()
         .id("gallery-close-confirm")
-        .title("关闭 Liora Gallery？")
+        .title(tr(cx, locales::close_confirm::gallery_title))
         .immediate()
         .close_on_click_outside(false)
         .close_on_escape(true)
@@ -733,10 +780,12 @@ fn show_gallery_close_confirm(window: &mut Window, cx: &mut App) {
             let remember_for_exit = remember.clone();
             let remember_for_hide = remember.clone();
             let checkbox = cx.new(move |cx| {
-                Checkbox::new(false, cx).label("记住本次选择").on_change({
-                    let remember = remember_for_checkbox.clone();
-                    move |checked, _, _| remember.store(checked, Ordering::Relaxed)
-                })
+                Checkbox::new(false, cx)
+                    .label(locales::close_confirm::remember)
+                    .on_change({
+                        let remember = remember_for_checkbox.clone();
+                        move |checked, _, _| remember.store(checked, Ordering::Relaxed)
+                    })
             });
 
             Space::new()
@@ -744,37 +793,46 @@ fn show_gallery_close_confirm(window: &mut Window, cx: &mut App) {
                 .gap_lg()
                 .grow()
                 .shrink()
-                .child(Paragraph::with_text(
-                    "你可以直接退出进程，或者关闭主窗口并让应用继续驻留在系统托盘。",
-                ))
+                .child(Paragraph::with_text(tr(
+                    cx,
+                    locales::close_confirm::gallery_body,
+                )))
                 .child(checkbox)
                 .child(
                     Space::new()
                         .gap_md()
                         .wrap()
-                        .child(Button::new("隐藏到托盘").on_click(move |_, window, cx| {
-                            if remember_for_hide.load(Ordering::Relaxed)
-                                && cx.has_global::<TrayControlCenter>()
-                            {
-                                cx.global_mut::<TrayControlCenter>()
-                                    .set_remembered_close_action(TrayCloseAction::HideToTray);
-                            }
-                            reset_gallery_close_confirm(cx);
-                            prepare_gallery_hide_to_tray(cx);
-                            Dialog::close(cx);
-                            window.remove_window();
-                        }))
-                        .child(Button::new("关闭进程").danger().on_click(move |_, _, cx| {
-                            if remember_for_exit.load(Ordering::Relaxed)
-                                && cx.has_global::<TrayControlCenter>()
-                            {
-                                cx.global_mut::<TrayControlCenter>()
-                                    .set_remembered_close_action(TrayCloseAction::ExitProcess);
-                            }
-                            reset_gallery_close_confirm(cx);
-                            Dialog::close(cx);
-                            cx.quit();
-                        })),
+                        .child(Button::new(locales::close_confirm::hide_to_tray).on_click(
+                            move |_, window, cx| {
+                                if remember_for_hide.load(Ordering::Relaxed)
+                                    && cx.has_global::<TrayControlCenter>()
+                                {
+                                    cx.global_mut::<TrayControlCenter>()
+                                        .set_remembered_close_action(TrayCloseAction::HideToTray);
+                                }
+                                reset_gallery_close_confirm(cx);
+                                prepare_gallery_hide_to_tray(cx);
+                                Dialog::close(cx);
+                                window.remove_window();
+                            },
+                        ))
+                        .child(
+                            Button::new(locales::close_confirm::exit_process)
+                                .danger()
+                                .on_click(move |_, _, cx| {
+                                    if remember_for_exit.load(Ordering::Relaxed)
+                                        && cx.has_global::<TrayControlCenter>()
+                                    {
+                                        cx.global_mut::<TrayControlCenter>()
+                                            .set_remembered_close_action(
+                                                TrayCloseAction::ExitProcess,
+                                            );
+                                    }
+                                    reset_gallery_close_confirm(cx);
+                                    Dialog::close(cx);
+                                    cx.quit();
+                                }),
+                        ),
                 )
         })
         .show_in_window(window, cx);
@@ -943,7 +1001,7 @@ impl Render for Gallery {
         let selected_demo = self.selected_demo(selected, cx);
         let selected_label = selected_entry
             .map(|entry| entry.name.to_string())
-            .unwrap_or_else(|| "About".into());
+            .unwrap_or_else(|| tr(cx, locales::gallery::about_label).to_string());
 
         let header_main = div()
             .flex()
@@ -964,11 +1022,11 @@ impl Render for Gallery {
                         Space::new()
                             .vertical()
                             .gap_xs()
-                            .child(Title::new("Liora UI").h2())
-                            .child(Text::new(format!(
-                                "Native Component Library · {} demos · rendering one demo at a time",
-                                self.entries.len()
-                            ))),
+                            .child(Title::new(locales::gallery::title).h2())
+                            .child(Text::new(
+                                locale_template(cx, locales::gallery::subtitle)
+                                    .replace("{count}", &self.entries.len().to_string()),
+                            )),
                     ),
             )
             .child(
@@ -980,7 +1038,7 @@ impl Render for Gallery {
                             .success()
                             .round(true),
                     )
-                    .child(Button::new(tr(cx, locales::gallery::refresh)).primary().on_click({
+                    .child(Button::new(locales::gallery::refresh).primary().on_click({
                         let gallery = cx.entity().clone();
                         move |_, _window, cx| {
                             let _ = gallery.update(cx, |gallery, cx| {
@@ -993,13 +1051,13 @@ impl Render for Gallery {
                     .child(
                         Space::new()
                             .gap_sm()
-                            .child(Text::new(tr(cx, locales::gallery::theme)))
+                            .child(Text::new(locales::gallery::theme))
                             .child(self.theme_mode_segmented.clone()),
                     )
                     .child(
                         Space::new()
                             .gap_sm()
-                            .child(Text::new(tr(cx, locales::language::label)))
+                            .child(Text::new(locales::language::label))
                             .child(self.locale_segmented.clone()),
                     )
                     .child(frame_mode_switch_row(
@@ -1026,7 +1084,7 @@ impl Render for Gallery {
 
             panel.into_any_element()
         } else {
-            Paragraph::with_text(tr(cx, locales::gallery::no_entry)).into_any_element()
+            Paragraph::with_text(locales::gallery::no_entry).into_any_element()
         };
 
         let content = Card::new(content_body).no_shadow().no_shrink();
@@ -1044,7 +1102,7 @@ impl Render for Gallery {
             .flex()
             .flex_col()
             .gap_2()
-            .child(gallery_fallback_menu_bar())
+            .child(gallery_fallback_menu_bar(cx))
             .child(header_main);
 
         let shell = Container::new()
@@ -1066,7 +1124,7 @@ impl Render for Gallery {
             .footer_height(px(38.0))
             .overlay(PortalLayer);
 
-        AppWindowFrame::new("Liora UI Gallery", shell)
+        AppWindowFrame::new(tr(cx, locales::gallery::window_title), shell)
             .titlebar(gallery_titlebar())
             .mode(self.frame_mode)
             .on_close(request_gallery_window_close)
@@ -1102,7 +1160,7 @@ impl Gallery {
                                 .size(px(22.0)),
                             ),
                     )
-                    .child(Text::new(self.updater_status.label()).sm().nowrap()),
+                    .child(Text::new(self.updater_status.label(cx)).sm().nowrap()),
             )
             .child(
                 Space::new()
@@ -1135,7 +1193,7 @@ impl Gallery {
             return nav_menu.clone();
         }
 
-        let items = gallery_nav_menu_items(&self.nav_index, &self.nav_query);
+        let items = gallery_nav_menu_items(&self.nav_index, &self.nav_query, cx);
         let gallery = cx.entity().downgrade();
         let nav_menu = cx.new(|_cx| {
             NavigationMenu::new()
@@ -1217,7 +1275,13 @@ impl Gallery {
             .gap_3()
             .text_color(theme.neutral.text_3)
             .child(Spinner::new().small().color(theme.primary.base))
-            .child(Text::new(format!("正在加载 {selected_name}…")).sm())
+            .child(
+                Text::new(
+                    locale_template(cx, locales::gallery::loading_demo)
+                        .replace("{name}", selected_name),
+                )
+                .sm(),
+            )
     }
 
     fn set_nav_query_deferred(&mut self, query: String, cx: &mut Context<Self>) {
@@ -1240,7 +1304,7 @@ impl Gallery {
     }
 
     fn refresh_nav_menu_for_current_query(&mut self, cx: &mut Context<Self>) {
-        let items = gallery_nav_menu_items(&self.nav_index, &self.nav_query);
+        let items = gallery_nav_menu_items(&self.nav_index, &self.nav_query, cx);
         let active_id = gallery_nav_item_id(self.selected);
         if let Some(nav_menu) = &self.nav_menu {
             cx.update_entity(nav_menu, |menu, cx| {
@@ -1264,39 +1328,46 @@ impl Gallery {
                 Space::new()
                     .vertical()
                     .gap_xs()
-                    .child(Title::new("About Liora Gallery").h3())
-                    .child(Paragraph::with_text(
-                        "Liora Gallery 是 Liora 原生 GPUI 组件库的 dogfooding 展示应用，用真实桌面应用壳验证主题、托盘、弹层、代码与数据组件。",
-                    )),
+                    .child(Title::new(locales::gallery::about_title).h3())
+                    .child(Paragraph::with_text(locales::gallery::about_body)),
             )
             .child(
                 Space::new()
                     .gap_sm()
                     .wrap()
-                    .child(Tag::new(format!("Version {}", env!("CARGO_PKG_VERSION"))).success().round(true))
-                    .child(Tag::new("Pure Rust + official Zed GPUI").round(true))
-                    .child(Tag::new(current_platform_label()).round(true)),
+                    .child(
+                        Tag::new(
+                            locale_template(cx, locales::gallery::version)
+                                .replace("{version}", env!("CARGO_PKG_VERSION")),
+                        )
+                        .success()
+                        .round(true),
+                    )
+                    .child(Tag::new(locales::gallery::pure_rust_gpui).round(true))
+                    .child(Tag::new(localized_platform_label(cx)).round(true)),
             )
-            .child(Paragraph::with_text(
-                "更新通道使用 GitHub Releases：Gallery 优先下载当前平台的安装器（AppImage/DMG/NSIS/MSI 等），下载后会校验 SHA256SUMS.txt。需要系统权限的包管理器安装会生成明确计划，不会静默提权。",
-            ))
+            .child(Paragraph::with_text(tr(
+                cx,
+                locales::gallery::update_channel,
+            )))
             .child(
                 Card::new(
                     Space::new()
                         .vertical()
                         .gap_md()
-                        .child(Title::new("What this app validates").h4())
-                        .child(Paragraph::with_text(
-                            "Gallery 不只是组件截图集合，而是 Liora SDK 的真实集成测试应用：它同时覆盖 Shell、TitleBar、Sidebar、Menu、Portal、Theme、托盘常驻、字体加载、更新检查和安装器资产选择。",
-                        ))
+                        .child(Title::new(locales::gallery::validates_title).h4())
+                        .child(Paragraph::with_text(tr(
+                            cx,
+                            locales::gallery::validates_body,
+                        )))
                         .child(
                             Space::new()
                                 .gap_sm()
                                 .wrap()
-                                .child(Tag::new("Dogfooding").round(true))
-                                .child(Tag::new("Theme parity").round(true))
-                                .child(Tag::new("Installer assets").round(true))
-                                .child(Tag::new("No WebView").round(true)),
+                                .child(Tag::new(locales::gallery::tag_dogfooding).round(true))
+                                .child(Tag::new(locales::gallery::tag_theme_parity).round(true))
+                                .child(Tag::new(locales::gallery::tag_installer_assets).round(true))
+                                .child(Tag::new(locales::gallery::tag_no_webview).round(true)),
                         ),
                 )
                 .no_shadow(),
@@ -1306,17 +1377,18 @@ impl Gallery {
                     Space::new()
                         .vertical()
                         .gap_md()
-                        .child(Title::new("Developer contract").h4())
-                        .child(Paragraph::with_text(
-                            "Gallery 示例应优先使用 Liora 组件和 layout helpers。除应用入口、prelude、unit 等必要上下文外，不应在示例布局中直接写 GPUI 原生元素；如果示例需要绕过封装，说明 SDK 控件扩展点还不够完整。",
-                        ))
+                        .child(Title::new(locales::gallery::contract_title).h4())
+                        .child(Paragraph::with_text(tr(
+                            cx,
+                            locales::gallery::contract_body,
+                        )))
                         .child(
                             Space::new()
                                 .gap_sm()
                                 .wrap()
-                                .child(Tag::new("Liora components first").round(true))
-                                .child(Tag::new("Official Zed GPUI only").round(true))
-                                .child(Tag::new("README sync on API changes").round(true)),
+                                .child(Tag::new(locales::gallery::tag_components_first).round(true))
+                                .child(Tag::new(locales::gallery::tag_official_gpui).round(true))
+                                .child(Tag::new(locales::gallery::tag_readme_sync).round(true)),
                         ),
                 )
                 .no_shadow(),
@@ -1326,23 +1398,41 @@ impl Gallery {
                     Space::new()
                         .vertical()
                         .gap_md()
-                        .child(Text::new(self.updater_status.label()).text_color(theme.primary.base).bold())
+                        .child(
+                            Text::new(self.updater_status.label(cx))
+                                .text_color(theme.primary.base)
+                                .bold(),
+                        )
                         .child(
                             Space::new()
                                 .gap_sm()
                                 .wrap()
-                                .child(Button::new("检查更新 / Check").primary().on_click({
+                                .child(
+                                    Button::new(locales::gallery::check_updates)
+                                        .primary()
+                                        .on_click({
+                                            let gallery = gallery.clone();
+                                            move |_, _window, cx| {
+                                                check_gallery_update(gallery.clone(), cx)
+                                            }
+                                        }),
+                                )
+                                .child(Button::new(locales::gallery::download_update).on_click({
                                     let gallery = gallery.clone();
-                                    move |_, _window, cx| check_gallery_update(gallery.clone(), cx)
+                                    move |_, _window, cx| {
+                                        download_gallery_update(gallery.clone(), cx)
+                                    }
                                 }))
-                                .child(Button::new("下载更新 / Download").on_click({
-                                    let gallery = gallery.clone();
-                                    move |_, _window, cx| download_gallery_update(gallery.clone(), cx)
-                                }))
-                                .child(Button::new("安装 / Install").disabled(!can_install).on_click({
-                                    let gallery = gallery.clone();
-                                    move |_, _window, cx| install_gallery_update(gallery.clone(), cx)
-                                })),
+                                .child(
+                                    Button::new(locales::gallery::install_update)
+                                        .disabled(!can_install)
+                                        .on_click({
+                                            let gallery = gallery.clone();
+                                            move |_, _window, cx| {
+                                                install_gallery_update(gallery.clone(), cx)
+                                            }
+                                        }),
+                                ),
                         ),
                 )
                 .no_shadow(),
@@ -1374,7 +1464,11 @@ impl Gallery {
                     gallery.theme_mode = mode;
                     cx.notify();
                 });
-                toast_info!("Gallery theme switched to {}", mode.label());
+                toast_info!(
+                    "{}",
+                    locale_template(cx, locales::gallery::theme_switched)
+                        .replace("{mode}", &theme_mode_label(cx, mode))
+                );
             });
         });
 
@@ -1392,12 +1486,29 @@ impl Gallery {
                             cx.update_entity(&gallery.locale_segmented, |segmented, cx| {
                                 segmented.set_options(locale_segmented_options(cx));
                             });
+                            cx.update_entity(&gallery.theme_mode_segmented, |segmented, cx| {
+                                segmented.set_options(theme_mode_segmented_options(cx));
+                            });
                             cx.update_entity(&gallery.nav_filter, |input, cx| {
                                 input.set_placeholder(
                                     tr(cx, locales::gallery::search_placeholder),
                                     cx,
                                 );
                             });
+                            register_gallery_system_menus(cx);
+                            if cx.has_global::<GalleryTrayState>() {
+                                let active_icon = cx
+                                    .has_global::<TrayControlCenter>()
+                                    .then(|| {
+                                        cx.global::<TrayControlCenter>().state.active_icon.clone()
+                                    })
+                                    .unwrap_or_else(|| "default".into());
+                                let tooltip = localized_tray_tooltip(cx, &active_icon);
+                                let _ = cx
+                                    .global_mut::<GalleryTrayState>()
+                                    .tray
+                                    .set_tooltip(Some(&tooltip));
+                            }
                             cx.notify();
                         });
                         toast_info!("{}", tr(cx, locales::language::switched));
@@ -1487,7 +1598,9 @@ fn download_gallery_update(gallery: gpui::Entity<Gallery>, cx: &mut App) {
 fn install_gallery_update(gallery: gpui::Entity<Gallery>, cx: &mut App) {
     let _ = gallery.update(cx, |gallery, cx| {
         let Some(plan) = &gallery.install_plan else {
-            gallery.updater_status = UpdatePanelStatus::Error("请先下载并校验更新".into());
+            gallery.updater_status = UpdatePanelStatus::Error(
+                tr(cx, locales::update_status::download_first).to_string(),
+            );
             cx.notify();
             return;
         };
@@ -1515,15 +1628,6 @@ fn install_gallery_update(gallery: gpui::Entity<Gallery>, cx: &mut App) {
         }
         cx.notify();
     });
-}
-
-fn current_platform_label() -> &'static str {
-    match Platform::current() {
-        Some(Platform::LinuxX64) => "Linux x64",
-        Some(Platform::MacosArm64) => "macOS arm64",
-        Some(Platform::WindowsX64) => "Windows x64",
-        None => "Unsupported platform",
-    }
 }
 
 fn update_cache_dir(app: UpdateApp) -> std::path::PathBuf {
@@ -1577,24 +1681,34 @@ fn locale_segmented(cx: &App) -> Segmented {
         .value(current_locale(cx).as_str())
 }
 
-fn locale_segmented_options(cx: &App) -> Vec<SegmentedOption> {
+fn locale_segmented_options(_cx: &App) -> Vec<SegmentedOption> {
     vec![
-        SegmentedOption::new(tr(cx, locales::language::zh_cn), "zh-CN"),
-        SegmentedOption::new(tr(cx, locales::language::en_us), "en-US"),
+        SegmentedOption::new(locales::language::zh_cn, "zh-CN"),
+        SegmentedOption::new(locales::language::en_us, "en-US"),
     ]
 }
 
-fn theme_mode_segmented(mode: ThemeMode) -> Segmented {
-    Segmented::new(vec![
-        SegmentedOption::new("System", ThemeMode::System.value()),
-        SegmentedOption::new("Light", ThemeMode::Light.value()),
-        SegmentedOption::new("Dark", ThemeMode::Dark.value()),
-    ])
-    .id("gallery-theme-mode")
-    .value(mode.value())
+fn theme_mode_segmented(mode: ThemeMode, cx: &App) -> Segmented {
+    Segmented::new(theme_mode_segmented_options(cx))
+        .id("gallery-theme-mode")
+        .value(mode.value())
 }
 
-fn gallery_nav_index(entries: &[demos::DemoEntry]) -> Vec<GalleryNavEntry> {
+fn theme_mode_segmented_options(cx: &impl liora_core::LocalesContext) -> Vec<SegmentedOption> {
+    vec![
+        SegmentedOption::new(
+            tr(cx, locales::theme_mode::system),
+            ThemeMode::System.value(),
+        ),
+        SegmentedOption::new(locales::theme_mode::light, ThemeMode::Light.value()),
+        SegmentedOption::new(locales::theme_mode::dark, ThemeMode::Dark.value()),
+    ]
+}
+
+fn gallery_nav_index(
+    entries: &[demos::DemoEntry],
+    cx: &impl liora_core::LocalesContext,
+) -> Vec<GalleryNavEntry> {
     entries
         .iter()
         .enumerate()
@@ -1603,8 +1717,8 @@ fn gallery_nav_index(entries: &[demos::DemoEntry]) -> Vec<GalleryNavEntry> {
             search_text: format!("{} {}", entry.name, entry.description).to_lowercase(),
         })
         .chain(std::iter::once(GalleryNavEntry {
-            label: "About / 关于".into(),
-            search_text: "about 关于 updates 更新".into(),
+            label: tr(cx, locales::gallery::about_nav),
+            search_text: tr(cx, locales::gallery::about_search).to_string(),
         }))
         .collect()
 }
@@ -1622,9 +1736,9 @@ fn gallery_titlebar() -> TitleBar {
 /// is not guaranteed to be visible inside a Linux/Windows application window.
 /// Gallery renders this fallback in the content header so both system-frame and
 /// custom-frame modes demonstrate the same command structure.
-fn gallery_fallback_menu_bar() -> MenuBar {
+fn gallery_fallback_menu_bar(cx: &impl liora_core::LocalesContext) -> MenuBar {
     MenuBar::new([
-        Menu::new("File")
+        Menu::new(locales::menu::file)
             .perform_builtin_actions(false)
             .item(MenuItem::new_window())
             .item(MenuItem::open_file())
@@ -1632,7 +1746,7 @@ fn gallery_fallback_menu_bar() -> MenuBar {
             .item(MenuItem::separator())
             .item(MenuItem::save())
             .item(MenuItem::quit()),
-        Menu::new("Edit")
+        Menu::new(locales::menu::edit)
             .perform_builtin_actions(false)
             .item(MenuItem::undo())
             .item(MenuItem::redo())
@@ -1642,7 +1756,7 @@ fn gallery_fallback_menu_bar() -> MenuBar {
             .item(MenuItem::paste())
             .item(MenuItem::separator())
             .item(MenuItem::select_all()),
-        Menu::new("View")
+        Menu::new(locales::menu::view)
             .perform_builtin_actions(false)
             .item(MenuItem::command_palette())
             .item(MenuItem::toggle_sidebar())
@@ -1660,13 +1774,16 @@ fn gallery_fallback_menu_bar() -> MenuBar {
                 liora_components::MenuAction::ZoomReset,
                 "Reset Zoom",
             )),
-        Menu::new("Help")
+        Menu::new(locales::menu::help)
             .perform_builtin_actions(false)
             .item(MenuItem::open_url(
-                "Liora on GitHub",
+                tr(cx, locales::menu::github),
                 "https://github.com/yhyzgn/liora",
             ))
-            .item(MenuItem::new("about-gallery", "About Liora Gallery")),
+            .item(MenuItem::new(
+                "about-gallery",
+                tr(cx, locales::menu::about_gallery),
+            )),
     ])
 }
 
@@ -1692,13 +1809,29 @@ fn gallery_nav_index_from_id(id: &str) -> Option<usize> {
     id.strip_prefix("gallery-nav-")?.parse().ok()
 }
 
-fn gallery_nav_menu_items(index: &[GalleryNavEntry], query: &str) -> Vec<NavigationMenuNode> {
+fn gallery_category_name(
+    category: category::Category,
+    cx: &impl liora_core::LocalesContext,
+) -> String {
+    match category {
+        category::Category::About => tr(cx, locales::category::about).to_string(),
+        category::Category::IconLibrary => tr(cx, locales::category::icon_library).to_string(),
+        category::Category::WindowLayout => tr(cx, locales::category::window_layout).to_string(),
+        category::Category::Control => tr(cx, locales::category::control).to_string(),
+    }
+}
+
+fn gallery_nav_menu_items(
+    index: &[GalleryNavEntry],
+    query: &str,
+    cx: &impl liora_core::LocalesContext,
+) -> Vec<NavigationMenuNode> {
     let mut visible = gallery_nav_visible_indices(index, query);
     if visible.is_empty() {
         return vec![NavigationMenuNode::Item(
             liora_components::NavigationMenuItem {
                 id: "gallery-nav-empty".into(),
-                label: "无匹配组件".into(),
+                label: tr(cx, locales::gallery::no_matches),
                 icon: None,
             },
         )];
@@ -1738,7 +1871,7 @@ fn gallery_nav_menu_items(index: &[GalleryNavEntry], query: &str) -> Vec<Navigat
         if !children.is_empty() {
             groups.push(NavigationMenuNode::Group(
                 liora_components::NavigationMenuGroup {
-                    title: group_category.name().into(),
+                    title: gallery_category_name(*group_category, cx).into(),
                     children,
                 },
             ));
@@ -1871,6 +2004,12 @@ mod shell_regression_tests {
         assert!(source.contains("fn reset_gallery_close_confirm(cx: &mut App)"));
     }
 
+    fn gallery_test_locales() -> liora_core::LocalesConfig {
+        liora_core::LocalesConfig::default()
+            .try_with_locales_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/locales"))
+            .expect("gallery test locales should load")
+    }
+
     fn sample_nav_entries() -> Vec<GalleryNavEntry> {
         vec![
             GalleryNavEntry {
@@ -1883,7 +2022,7 @@ mod shell_regression_tests {
             },
             GalleryNavEntry {
                 label: "About / 关于".into(),
-                search_text: "about 关于 updates 更新".into(),
+                search_text: "about 关于 gallery".into(),
             },
             GalleryNavEntry {
                 label: "Dialog".into(),
@@ -1930,7 +2069,8 @@ mod shell_regression_tests {
     #[test]
     fn gallery_nav_menu_items_group_by_component_category_then_label() {
         let entries = sample_nav_entries();
-        let items = gallery_nav_menu_items(&entries, "");
+        let locales = gallery_test_locales();
+        let items = gallery_nav_menu_items(&entries, "", &locales);
 
         assert_eq!(items.len(), 3);
 
@@ -1943,17 +2083,17 @@ mod shell_regression_tests {
         let liora_components::NavigationMenuNode::Group(window_group) = &items[1] else {
             panic!("Gallery nav should group visible menu items by component category");
         };
-        assert_eq!(window_group.title.as_ref(), "窗体布局");
+        assert_eq!(window_group.title.as_ref(), "Window / Layout");
         assert_eq!(menu_group_labels(window_group), vec!["Dialog", "Shell"]);
 
         let liora_components::NavigationMenuNode::Group(control_group) = &items[2] else {
             panic!("Controls should be grouped after window layout entries");
         };
-        assert_eq!(control_group.title.as_ref(), "控件");
+        assert_eq!(control_group.title.as_ref(), "Controls");
         assert_eq!(menu_group_labels(control_group), vec!["Input"]);
         assert_eq!(menu_group_ids(control_group), vec!["gallery-nav-1"]);
 
-        let empty_items = gallery_nav_menu_items(&entries, "missing");
+        let empty_items = gallery_nav_menu_items(&entries, "missing", &locales);
         let liora_components::NavigationMenuNode::Item(empty_item) = &empty_items[0] else {
             panic!("Gallery nav empty state should still be a Menu item");
         };
@@ -1963,13 +2103,14 @@ mod shell_regression_tests {
     #[test]
     fn gallery_nav_filter_keeps_matching_groups_only() {
         let entries = sample_nav_entries();
-        let items = gallery_nav_menu_items(&entries, "input");
+        let locales = gallery_test_locales();
+        let items = gallery_nav_menu_items(&entries, "input", &locales);
 
         assert_eq!(items.len(), 1);
         let liora_components::NavigationMenuNode::Group(control_group) = &items[0] else {
             panic!("Filtered Gallery nav should keep category headings for matching items");
         };
-        assert_eq!(control_group.title.as_ref(), "控件");
+        assert_eq!(control_group.title.as_ref(), "Controls");
         assert_eq!(menu_group_labels(control_group), vec!["Input"]);
         assert_eq!(menu_group_ids(control_group), vec!["gallery-nav-1"]);
     }
@@ -2154,7 +2295,7 @@ mod shell_regression_tests {
             .unwrap();
 
         assert!(source.contains(".header(header)"));
-        assert!(source.contains(".child(gallery_fallback_menu_bar())"));
+        assert!(source.contains(".child(gallery_fallback_menu_bar(cx))"));
         assert!(source.contains("fn gallery_fallback_menu_bar() -> MenuBar"));
         assert!(source.contains("MenuBar::new(["));
         assert!(source.contains(".titlebar(gallery_titlebar())"));

@@ -24,7 +24,9 @@ use gpui::{
     App, Component, ElementId, IntoElement, RenderOnce, SharedString, StyledText, TextRun,
     TextStyle, WhiteSpace, Window, div, prelude::*, px,
 };
-use liora_core::{Config, code_font_family, code_font_weight, ui_font_family, ui_font_weight};
+use liora_core::{
+    Config, LocalizedText, code_font_family, code_font_weight, ui_font_family, ui_font_weight,
+};
 use std::{
     collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},
@@ -51,9 +53,9 @@ impl Paragraph {
 
     /// Applies the text preset.
     #[track_caller]
-    pub fn with_text(text: impl Into<SharedString>) -> Self {
+    pub fn with_text(text: impl Into<LocalizedText>) -> Self {
         let text = text.into();
-        let id = default_paragraph_id(text.as_ref(), Location::caller());
+        let id = default_paragraph_id(text.stable_seed(), Location::caller());
         Self {
             children: vec![Text::new(text)],
             selectable: true,
@@ -114,6 +116,7 @@ impl Paragraph {
 
     pub(crate) fn selectable_text_parts(
         &self,
+        cx: &impl liora_core::LocalesContext,
         theme: &liora_theme::Theme,
         code_family: Option<SharedString>,
         ui_family: Option<SharedString>,
@@ -129,7 +132,7 @@ impl Paragraph {
                 continue;
             }
 
-            let segment_text = segment.content.clone();
+            let segment_text = segment.content.inline(cx);
             let text = segment_text.as_ref();
             let leading_glue_len = if runs.is_empty() {
                 0
@@ -161,7 +164,7 @@ impl Paragraph {
                 } else if !segment.is_code_style && segment.font_family.is_none() {
                     segment.font_family = ui_family.clone();
                 }
-                let mut run = segment.to_text_run(&default_style);
+                let mut run = segment.to_text_run(&default_style, remaining.len());
                 run.len = remaining.len();
                 runs.push(run);
             }
@@ -249,6 +252,7 @@ impl RenderOnce for Paragraph {
         let code_weight = code_font_weight(cx);
         let ui_weight = ui_font_weight(cx);
         let (full_text, runs) = self.selectable_text_parts(
+            cx,
             theme,
             Some(code_family),
             ui_family.clone(),
@@ -343,10 +347,11 @@ mod tests {
     #[test]
     fn paragraph_composes_segments_into_one_styled_text_run_list() {
         let theme = liora_theme::Theme::light();
+        let locales = liora_core::LocalesConfig::default();
         let (text, runs) = Paragraph::new()
             .child(Text::new("Hello ").bold())
             .child(Text::new("世界").italic())
-            .selectable_text_parts(&theme, Some("Monospace".into()), None, None, None);
+            .selectable_text_parts(&locales, &theme, Some("Monospace".into()), None, None, None);
 
         assert_eq!(text.as_ref(), "Hello 世界");
         assert_eq!(runs.len(), 2);
@@ -359,6 +364,7 @@ mod tests {
     #[test]
     fn paragraph_glues_line_start_forbidden_punctuation_to_previous_run() {
         let theme = liora_theme::Theme::light();
+        let locales = liora_core::LocalesConfig::default();
         let (text, runs) = Paragraph::new()
             .child(Text::new("crates/liora-components").code_style(&theme))
             .child(Text::new("：所有可复用组件，例如 "))
@@ -366,7 +372,7 @@ mod tests {
             .child(Text::new("、"))
             .child(Text::new("Input").code_style(&theme))
             .child(Text::new("。"))
-            .selectable_text_parts(&theme, Some("Monospace".into()), None, None, None);
+            .selectable_text_parts(&locales, &theme, Some("Monospace".into()), None, None, None);
 
         assert_eq!(
             text.as_ref(),
@@ -385,7 +391,7 @@ mod tests {
             .code_style(&theme)
             .bold()
             .underline()
-            .to_text_run(&default_style);
+            .to_text_run(&default_style, "code".len());
 
         assert_eq!(run.len, "code".len());
         assert_eq!(run.font.family.as_ref(), ".SystemUIFont");

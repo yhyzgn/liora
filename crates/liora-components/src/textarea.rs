@@ -23,7 +23,7 @@ use crate::Input;
 use gpui::{
     App, Context, Entity, FocusHandle, Focusable, Render, SharedString, Window, prelude::*, px,
 };
-use liora_core::Config;
+use liora_core::{Config, LocalizedText};
 
 /// Fluent native GPUI component for rendering Liora textarea.
 pub struct Textarea {
@@ -55,7 +55,7 @@ impl Textarea {
     }
 
     /// Uses the supplied placeholder text when the value is empty.
-    pub fn placeholder(self, p: impl Into<SharedString>, cx: &mut Context<Self>) -> Self {
+    pub fn placeholder(self, p: impl Into<LocalizedText>, cx: &mut Context<Self>) -> Self {
         self.input.update(cx, |input, cx| {
             input.set_placeholder(p, cx);
         });

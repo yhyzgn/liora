@@ -24,7 +24,7 @@ use gpui::{
     AnyElement, App, Component, IntoElement, Pixels, RenderOnce, SharedString, Window, div,
     prelude::*, px,
 };
-use liora_core::Config;
+use liora_core::{Config, LocalizedText};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
@@ -68,7 +68,7 @@ pub enum TagEffect {
 
 /// Fluent native GPUI component for rendering Liora tag.
 pub struct Tag {
-    label: SharedString,
+    label: LocalizedText,
     tag_type: TagType,
     size: TagSize,
     effect: TagEffect,
@@ -79,7 +79,7 @@ pub struct Tag {
 
 impl Tag {
     /// Creates `Tag` initialized from the supplied label.
-    pub fn new(label: impl Into<SharedString>) -> Self {
+    pub fn new(label: impl Into<LocalizedText>) -> Self {
         Self {
             label: label.into(),
             tag_type: TagType::Info,
@@ -224,9 +224,9 @@ impl RenderOnce for Tag {
             .rounded(radius)
             .text_size(text_size)
             .text_color(actual_text_color)
-            .child(div().child(self.label.clone()))
+            .child(div().child(self.label.resolve(cx)))
             .when(self.closable, |s| {
-                let label = self.label.clone();
+                let label = self.label.resolve(cx);
                 s.child(
                     div()
                         .id(element_id(format!("close-btn-{}", label)))

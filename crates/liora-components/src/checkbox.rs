@@ -23,8 +23,9 @@ use crate::gpui_compat::element_id;
 use crate::motion::pop_in;
 use gpui::{
     App, Context, EventEmitter, FocusHandle, Focusable, Hsla, KeyBinding, MouseButton, Render,
-    Rgba, SharedString, Window, prelude::*, px,
+    Rgba, Window, prelude::*, px,
 };
+use liora_core::LocalizedText;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
@@ -50,7 +51,7 @@ gpui::actions!(
 pub struct Checkbox {
     checked: bool,
     disabled: bool,
-    label: Option<SharedString>,
+    label: Option<LocalizedText>,
     focus_handle: FocusHandle,
     on_change: Option<Box<dyn Fn(bool, &mut Window, &mut App) + 'static>>,
 }
@@ -79,7 +80,7 @@ impl Checkbox {
         self
     }
     /// Returns the stable user-facing label for this value.
-    pub fn label(mut self, text: impl Into<SharedString>) -> Self {
+    pub fn label(mut self, text: impl Into<LocalizedText>) -> Self {
         self.label = Some(text.into());
         self
     }
@@ -209,7 +210,7 @@ impl Render for Checkbox {
                 gpui::div()
                     .text_size(px(theme.font_size.md))
                     .text_color(theme.neutral.text_1)
-                    .child(label.clone()),
+                    .child(label.resolve(cx)),
             );
         }
 

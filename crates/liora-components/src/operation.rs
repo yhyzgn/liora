@@ -24,7 +24,7 @@ use gpui::{
     AnyElement, App, Component, Hsla, IntoElement, Pixels, RenderOnce, SharedString, Window, div,
     prelude::*, px,
 };
-use liora_core::Config;
+use liora_core::{Config, LocalizedText};
 
 /// Fluent native GPUI component for rendering Liora operation.
 pub struct Operation {
@@ -54,7 +54,7 @@ impl Operation {
     }
 
     /// Applies the text preset.
-    pub fn with_text(text: impl Into<gpui::SharedString>, action: impl IntoElement) -> Self {
+    pub fn with_text(text: impl Into<LocalizedText>, action: impl IntoElement) -> Self {
         Self::new(Label::new(text), action)
     }
     /// Sets the spacing between child elements.

@@ -23,7 +23,7 @@ use gpui::{
     AnyElement, App, Component, Hsla, IntoElement, MouseButton, RenderOnce, SharedString, Window,
     div, prelude::*, px,
 };
-use liora_core::{Config, Placement, clear_popover, stable_unique_id};
+use liora_core::{Config, LocalizedText, Placement, clear_popover, stable_unique_id};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 use liora_theme::{ButtonSize, ButtonVariant};
@@ -247,7 +247,7 @@ impl DropdownButton {
         self
     }
 
-    fn resolved_button(&self, label: impl Into<SharedString>) -> Button {
+    fn resolved_button(&self, label: impl Into<LocalizedText>) -> Button {
         let mut button = Button::new(label).variant(self.variant).size(self.size);
         if self.secondary {
             button = button.secondary();

@@ -117,6 +117,7 @@ impl Default for SelectableTextGroup {
 impl SelectableTextGroup {
     fn text_parts(
         self,
+        cx: &impl liora_core::LocalesContext,
         theme: &liora_theme::Theme,
         code_family: SharedString,
         ui_family: Option<SharedString>,
@@ -159,7 +160,7 @@ impl SelectableTextGroup {
                     } else if text.font_family.is_none() {
                         text.font_family = ui_family.clone();
                     }
-                    let content = text.content.inline();
+                    let content = text.content.inline(cx);
                     if !content.is_empty() && !full_text.is_empty() && !self.separator.is_empty() {
                         append_text_run(
                             &mut full_text,
@@ -168,11 +169,12 @@ impl SelectableTextGroup {
                             default_style.to_run(self.separator.len()),
                         );
                     }
-                    let run = text.to_text_run(&default_style);
+                    let run = text.to_text_run(&default_style, content.len());
                     append_text_run(&mut full_text, &mut runs, content.as_ref(), run);
                 }
                 SelectableTextGroupBlock::Paragraph(paragraph) => {
                     let (paragraph_text, paragraph_runs) = paragraph.selectable_text_parts(
+                        cx,
                         theme,
                         Some(code_family.clone()),
                         ui_family.clone(),
@@ -217,6 +219,7 @@ impl RenderOnce for SelectableTextGroup {
         let selectable = self.selectable;
         let id = self.id.clone();
         let (full_text, runs) = self.text_parts(
+            cx,
             &theme,
             code_family,
             ui_family.clone(),
@@ -301,6 +304,7 @@ mod tests {
     #[test]
     fn text_parts_join_non_empty_blocks_without_edge_separators() {
         let theme = liora_theme::Theme::light();
+        let locales = liora_core::LocalesConfig::default();
         let (text, runs) = SelectableTextGroup::new()
             .separator("\n")
             .text(Text::new("Alpha"))
@@ -308,7 +312,14 @@ mod tests {
             .paragraph(Paragraph::with_text("Beta"))
             .text(Text::new(""))
             .text(Text::new("Gamma"))
-            .text_parts(&theme, "Monospace".into(), Some("Inter".into()), None, None);
+            .text_parts(
+                &locales,
+                &theme,
+                "Monospace".into(),
+                Some("Inter".into()),
+                None,
+                None,
+            );
 
         assert_eq!(text.as_ref(), "Alpha\nBeta\nGamma");
         assert_eq!(runs.iter().map(|run| run.len).sum::<usize>(), text.len());
@@ -317,6 +328,7 @@ mod tests {
     #[test]
     fn text_parts_preserves_mixed_paragraph_runs() {
         let theme = liora_theme::Theme::light();
+        let locales = liora_core::LocalesConfig::default();
         let (text, runs) = SelectableTextGroup::new()
             .separator("\n\n")
             .paragraph(
@@ -326,7 +338,14 @@ mod tests {
                     .child(Text::new(" Tail")),
             )
             .paragraph(Paragraph::with_text("Next"))
-            .text_parts(&theme, "Monospace".into(), Some("Inter".into()), None, None);
+            .text_parts(
+                &locales,
+                &theme,
+                "Monospace".into(),
+                Some("Inter".into()),
+                None,
+                None,
+            );
 
         assert_eq!(text.as_ref(), "Plain Code Tail\n\nNext");
         assert!(

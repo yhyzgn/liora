@@ -19,15 +19,15 @@
 //! the component, and avoid app-specific Gallery/Docs resources in this SDK
 //! crate.
 
-use gpui::{AnyElement, App, IntoElement, RenderOnce, SharedString, Window, div, prelude::*, px};
-use liora_core::{Config, locales, tr};
+use gpui::{AnyElement, App, IntoElement, RenderOnce, Window, div, prelude::*, px};
+use liora_core::{Config, LocalizedText, locales};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
 /// Fluent native GPUI component for rendering Liora empty.
 pub struct Empty {
     image: Option<AnyElement>,
-    description: Option<SharedString>,
+    description: Option<LocalizedText>,
     extra: Option<Box<dyn Fn(&mut Window, &mut App) -> AnyElement + 'static>>,
 }
 
@@ -48,7 +48,7 @@ impl Empty {
     }
 
     /// Sets secondary descriptive text shown below the primary label.
-    pub fn description(mut self, d: impl Into<SharedString>) -> Self {
+    pub fn description(mut self, d: impl Into<LocalizedText>) -> Self {
         self.description = Some(d.into());
         self
     }
@@ -68,7 +68,8 @@ impl RenderOnce for Empty {
         let theme = cx.global::<Config>().theme.clone();
         let description = self
             .description
-            .unwrap_or_else(|| tr(cx, locales::empty::description));
+            .unwrap_or_else(|| locales::empty::description.into())
+            .resolve(cx);
 
         div()
             .flex()

@@ -24,7 +24,7 @@ use gpui::{
     App, Component, ElementId, IntoElement, RenderOnce, SharedString, TextStyle, Window,
     prelude::*, px,
 };
-use liora_core::{Config, ui_font_family};
+use liora_core::{Config, LocalizedText, ui_font_family};
 use std::{
     collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},
@@ -33,7 +33,7 @@ use std::{
 
 /// Fluent native GPUI component for rendering Liora title.
 pub struct Title {
-    content: SharedString,
+    content: LocalizedText,
     level: u8,
     selectable: bool,
     id: SharedString,
@@ -55,9 +55,9 @@ fn default_title_id(seed: &str, location: &Location<'_>) -> SharedString {
 impl Title {
     /// Creates `Title` initialized from the supplied content.
     #[track_caller]
-    pub fn new(content: impl Into<SharedString>) -> Self {
+    pub fn new(content: impl Into<LocalizedText>) -> Self {
         let content = content.into();
-        let id = default_title_id(content.as_ref(), Location::caller());
+        let id = default_title_id(content.stable_seed(), Location::caller());
         Self {
             content,
             level: 1,
@@ -148,8 +148,8 @@ impl Title {
             return SelectableText::view(
                 SelectableTextOptions {
                     id: ElementId::from(self.id.clone()),
-                    text: self.content.clone(),
-                    runs: vec![style.to_run(self.content.len())],
+                    text: self.content.resolve(cx),
+                    runs: vec![style.to_run(self.content.resolve(cx).len())],
                     font_size,
                     line_height,
                     text_color,
@@ -168,7 +168,7 @@ impl Title {
             .line_height(line_height)
             .font_weight(weight)
             .text_color(text_color)
-            .child(self.content.clone());
+            .child(self.content.resolve(cx));
 
         if let Some(family) = ui_family {
             title = title.font_family(family);

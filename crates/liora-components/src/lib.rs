@@ -224,14 +224,14 @@ pub use link::*;
 pub use liora_core::{
     EmbeddedFont, FontConfig, FontDiscoveryReport, FontLoadFailure, FontLoadMode, FontLoadOptions,
     FontLoadReport, FontWeight, LinuxDesktopIdentity, LinuxDesktopPngIcon, LocaleId, Locales,
-    LocalesConfig, LocalesLoadError, LocalesMap, Options, TextDirection, ThemeMode, Translator,
-    apply_locale, apply_theme_mode, attach_system_theme_observer, clear_translator, current_locale,
-    discover_font_files, ensure_linux_desktop_identity, fallback_locale, is_font_family_available,
-    is_supported_font_path, linux_desktop_entry, linux_desktop_png_icon_path, load_app_fonts,
-    load_custom_fonts, load_embedded_fonts, load_font_assets, load_font_files, load_fonts_from_dir,
-    load_locale_file, load_locales_dir, locales, locales_version, set_font_config,
-    set_locales_config, set_shared_translator, set_translator, startup_maximized_window_bounds,
-    switch_locale_from_dir, sync_system_theme, tr,
+    LocalesConfig, LocalesLoadError, LocalesMap, LocalizedText, Options, TextDirection, ThemeMode,
+    Translator, apply_locale, apply_theme_mode, attach_system_theme_observer, clear_translator,
+    current_locale, discover_font_files, ensure_linux_desktop_identity, fallback_locale,
+    is_font_family_available, is_supported_font_path, linux_desktop_entry,
+    linux_desktop_png_icon_path, load_app_fonts, load_custom_fonts, load_embedded_fonts,
+    load_font_assets, load_font_files, load_fonts_from_dir, load_locale_file, load_locales_dir,
+    locales, locales_version, set_font_config, set_locales_config, set_shared_translator,
+    set_translator, startup_maximized_window_bounds, switch_locale_from_dir, sync_system_theme, tr,
 };
 pub use liora_theme::{ButtonSize, ButtonVariant};
 pub use list::*;
@@ -1108,6 +1108,26 @@ mod visual_theme_consistency_tests {
 #[cfg(test)]
 mod shell_component_api_tests {
     use super::*;
+
+    #[test]
+    fn locale_keys_can_be_passed_directly_to_text_builders() {
+        let _button = Button::new(liora_core::locales::common::ok);
+        let _text = Text::new(liora_core::locales::empty::description);
+        let _title = Title::new(liora_core::locales::common::loading);
+        let _paragraph = Paragraph::with_text(liora_core::locales::message_box::confirm);
+        let _label = Label::new(liora_core::locales::common::cancel);
+        let _tag = Tag::new(liora_core::locales::common::clear);
+        let _menu = Menu::new(liora_core::locales::common::ok).item(MenuItem::new(
+            "confirm",
+            liora_core::locales::message_box::confirm,
+        ));
+        let _option = SegmentedOption::new(liora_core::locales::common::ok, "ok");
+        let _empty = Empty::new().description(liora_core::locales::empty::description);
+        let _message_box = MessageBox::new(
+            liora_core::locales::message_box::confirm,
+            liora_core::locales::common::loading,
+        );
+    }
 
     #[test]
     fn titlebar_and_sidebar_public_builders_are_available() {

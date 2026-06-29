@@ -26,7 +26,7 @@ use gpui::{
     MenuItem as GpuiPlatformMenuItem, MouseButton, OsAction, PathPromptOptions, RenderOnce,
     SharedString, Window, div, prelude::*, px,
 };
-use liora_core::Config;
+use liora_core::{Config, LocalizedText};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 use std::{path::PathBuf, sync::Arc};
@@ -387,7 +387,7 @@ pub struct MenuItem {
     /// Stable command id emitted by application menu dispatchers.
     pub id: SharedString,
     /// User-facing menu label.
-    pub label: SharedString,
+    pub label: LocalizedText,
     /// Optional keyboard shortcut shown at the row end.
     pub shortcut: Option<SharedString>,
     /// Whether this item is visible but disabled.
@@ -404,7 +404,7 @@ pub struct MenuItem {
 
 impl MenuItem {
     /// Creates a clickable menu command item.
-    pub fn new(id: impl Into<SharedString>, label: impl Into<SharedString>) -> Self {
+    pub fn new(id: impl Into<SharedString>, label: impl Into<LocalizedText>) -> Self {
         Self {
             id: id.into(),
             label: label.into(),
@@ -421,7 +421,7 @@ impl MenuItem {
     pub fn separator() -> Self {
         Self {
             id: "separator".into(),
-            label: SharedString::default(),
+            label: LocalizedText::literal(""),
             shortcut: None,
             disabled: true,
             children: Vec::new(),
@@ -432,7 +432,7 @@ impl MenuItem {
     }
 
     /// Creates a menu item with a built-in action and conventional id.
-    pub fn action(action: MenuAction, label: impl Into<SharedString>) -> Self {
+    pub fn action(action: MenuAction, label: impl Into<LocalizedText>) -> Self {
         Self::new(action_id(&action), label).with_action(action)
     }
 
@@ -502,12 +502,12 @@ impl MenuItem {
     }
 
     /// Creates a built-in Open URL item.
-    pub fn open_url(label: impl Into<SharedString>, url: impl Into<SharedString>) -> Self {
+    pub fn open_url(label: impl Into<LocalizedText>, url: impl Into<SharedString>) -> Self {
         Self::action(MenuAction::OpenUrl(url.into()), label)
     }
 
     /// Creates a built-in Copy Text item.
-    pub fn copy_text(label: impl Into<SharedString>, text: impl Into<SharedString>) -> Self {
+    pub fn copy_text(label: impl Into<LocalizedText>, text: impl Into<SharedString>) -> Self {
         Self::action(MenuAction::CopyText(text.into()), label)
     }
 
@@ -594,7 +594,11 @@ impl MenuItem {
         !self.children.is_empty()
     }
 
-    fn to_gpui_menu_item_with_mapper<F>(&self, mapper: &mut F) -> GpuiPlatformMenuItem
+    fn to_gpui_menu_item_with_mapper<F>(
+        &self,
+        cx: &impl liora_core::LocalesContext,
+        mapper: &mut F,
+    ) -> GpuiPlatformMenuItem
     where
         F: FnMut(&MenuItem) -> Box<dyn gpui::Action>,
     {
@@ -604,11 +608,11 @@ impl MenuItem {
 
         if self.has_children() {
             return GpuiPlatformMenuItem::submenu(
-                GpuiPlatformMenu::new(self.label.clone())
+                GpuiPlatformMenu::new(self.label.resolve(cx))
                     .items(
                         self.children
                             .iter()
-                            .map(|child| child.to_gpui_menu_item_with_mapper(mapper))
+                            .map(|child| child.to_gpui_menu_item_with_mapper(cx, mapper))
                             .collect::<Vec<_>>(),
                     )
                     .disabled(self.disabled),
@@ -616,7 +620,7 @@ impl MenuItem {
         }
 
         GpuiPlatformMenuItem::Action {
-            name: self.label.clone(),
+            name: self.label.resolve(cx),
             action: mapper(self),
             os_action: self.os_action,
             checked: false,
@@ -629,7 +633,7 @@ impl MenuItem {
 #[derive(Clone)]
 pub struct Menu {
     /// Menu bar title, such as File/Edit/View.
-    pub title: SharedString,
+    pub title: LocalizedText,
     /// Top-level menu rows.
     pub items: Vec<MenuItem>,
     preview_width: gpui::Pixels,
@@ -640,7 +644,7 @@ pub struct Menu {
 
 impl Menu {
     /// Creates an empty menu descriptor.
-    pub fn new(title: impl Into<SharedString>) -> Self {
+    pub fn new(title: impl Into<LocalizedText>) -> Self {
         Self {
             title: title.into(),
             items: Vec::new(),
@@ -709,20 +713,24 @@ impl Menu {
     /// uses `gpui::NoAction` for command rows; use
     /// [`Menu::to_gpui_menu_with_action_mapper`] when a real application
     /// needs each row to invoke its own registered GPUI action.
-    pub fn to_gpui_menu(&self) -> GpuiPlatformMenu {
-        self.to_gpui_menu_with_action_mapper(|_| Box::new(gpui::NoAction))
+    pub fn to_gpui_menu(&self, cx: &impl liora_core::LocalesContext) -> GpuiPlatformMenu {
+        self.to_gpui_menu_with_action_mapper(cx, |_| Box::new(gpui::NoAction))
     }
 
     /// Converts this descriptor into GPUI's official application menu model and
     /// lets the application supply the GPUI action for each command row.
-    pub fn to_gpui_menu_with_action_mapper<F>(&self, mut mapper: F) -> GpuiPlatformMenu
+    pub fn to_gpui_menu_with_action_mapper<F>(
+        &self,
+        cx: &impl liora_core::LocalesContext,
+        mut mapper: F,
+    ) -> GpuiPlatformMenu
     where
         F: FnMut(&MenuItem) -> Box<dyn gpui::Action>,
     {
-        GpuiPlatformMenu::new(self.title.clone()).items(
+        GpuiPlatformMenu::new(self.title.resolve(cx)).items(
             self.items
                 .iter()
-                .map(|item| item.to_gpui_menu_item_with_mapper(&mut mapper))
+                .map(|item| item.to_gpui_menu_item_with_mapper(cx, &mut mapper))
                 .collect::<Vec<_>>(),
         )
     }
@@ -734,7 +742,11 @@ impl Menu {
     /// that need executable native menu entries should call
     /// [`Menu::register_with_action_mapper`] instead.
     pub fn register(cx: &mut App, menus: impl IntoIterator<Item = Menu>) {
-        cx.set_menus(menus.into_iter().map(|menu| menu.to_gpui_menu()));
+        let menus = menus
+            .into_iter()
+            .map(|menu| menu.to_gpui_menu(cx))
+            .collect::<Vec<_>>();
+        cx.set_menus(menus);
     }
 
     /// Registers descriptors as the official GPUI application menu bar while
@@ -749,7 +761,7 @@ impl Menu {
         cx.set_menus(
             menus
                 .into_iter()
-                .map(|menu| menu.to_gpui_menu_with_action_mapper(&mut mapper)),
+                .map(|menu| menu.to_gpui_menu_with_action_mapper(cx, &mut mapper)),
         );
     }
 }
@@ -827,8 +839,10 @@ impl RenderOnce for MenuBar {
                     .enumerate()
                     .map(move |(index, menu)| {
                         let title = menu.title.clone();
+                        let title_text = title.resolve(cx);
                         let items = menu.items.clone();
-                        let trigger_id = menu_bar_trigger_id(index, &title, window, cx);
+                        let trigger_id =
+                            menu_bar_trigger_id(index, title.stable_seed(), window, cx);
                         let trigger = div()
                             .px_3()
                             .py_1()
@@ -837,7 +851,7 @@ impl RenderOnce for MenuBar {
                             .bg(gpui::transparent_black())
                             .hover(|s| s.cursor_pointer().bg(theme.neutral.hover))
                             .child(
-                                Text::new(title)
+                                Text::new(title_text.clone())
                                     .sm()
                                     .selectable(false)
                                     .text_color(theme.neutral.text_1),
@@ -880,7 +894,7 @@ impl IntoElement for MenuBar {
 
 fn menu_bar_trigger_id(
     index: usize,
-    title: &SharedString,
+    title: &str,
     window: &mut Window,
     cx: &mut App,
 ) -> SharedString {
@@ -1115,14 +1129,15 @@ mod tests {
         assert!(MenuAction::Open.info().handled_by_liora);
         assert!(MenuAction::OpenFolder.info().handled_by_liora);
         assert!(MenuAction::SaveAs.info().handled_by_liora);
-        let gpui_menu = menu.to_gpui_menu();
+        let locales = liora_core::LocalesConfig::default();
+        let gpui_menu = menu.to_gpui_menu(&locales);
         assert_eq!(gpui_menu.name.as_ref(), "File");
         assert_eq!(gpui_menu.items.len(), 3);
         let edit_menu = Menu::new("Edit")
             .item(MenuItem::undo())
             .item(MenuItem::copy())
             .item(MenuItem::paste())
-            .to_gpui_menu();
+            .to_gpui_menu(&locales);
         assert_eq!(edit_menu.name.as_ref(), "Edit");
         match &edit_menu.items[1] {
             GpuiPlatformMenuItem::Action { os_action, .. } => {

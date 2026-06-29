@@ -20,21 +20,21 @@
 //! crate.
 
 use crate::{Button, Dialog};
-use gpui::{App, SharedString, Window, div, prelude::*};
-use liora_core::{locales, tr};
+use gpui::{App, Window, div, prelude::*};
+use liora_core::{LocalizedText, locales};
 use std::sync::Arc;
 
 /// Fluent native GPUI component for rendering Liora message box.
 pub struct MessageBox {
-    title: SharedString,
-    content: SharedString,
+    title: LocalizedText,
+    content: LocalizedText,
     close_on_click_outside: bool,
     close_on_escape: bool,
 }
 
 impl MessageBox {
     /// Creates `MessageBox` initialized from the supplied title, and content.
-    pub fn new(title: impl Into<SharedString>, content: impl Into<SharedString>) -> Self {
+    pub fn new(title: impl Into<LocalizedText>, content: impl Into<LocalizedText>) -> Self {
         Self {
             title: title.into(),
             content: content.into(),
@@ -59,7 +59,7 @@ impl MessageBox {
     pub fn alert(self, cx: &mut App) {
         let content = self.content.clone();
         Dialog::new()
-            .title(self.title)
+            .title(self.title.resolve(cx))
             .close_on_click_outside(self.close_on_click_outside)
             .close_on_escape(self.close_on_escape)
             .content(move |_, cx| {
@@ -67,10 +67,10 @@ impl MessageBox {
                     .flex()
                     .flex_col()
                     .gap_4()
-                    .child(content.clone())
+                    .child(content.resolve(cx))
                     .child(
                         div().flex().justify_end().child(
-                            Button::new(tr(cx, locales::message_box::ok))
+                            Button::new(locales::message_box::ok)
                                 .primary()
                                 .on_click(|_, _, cx| {
                                     Dialog::close(cx);
@@ -87,7 +87,7 @@ impl MessageBox {
         let on_confirm = Arc::new(on_confirm);
 
         Dialog::new()
-            .title(self.title)
+            .title(self.title.resolve(cx))
             .close_on_click_outside(self.close_on_click_outside)
             .close_on_escape(self.close_on_escape)
             .content(move |_window, cx| {
@@ -96,19 +96,19 @@ impl MessageBox {
                     .flex()
                     .flex_col()
                     .gap_4()
-                    .child(content.clone())
+                    .child(content.resolve(cx))
                     .child(
                         div()
                             .flex()
                             .justify_end()
                             .gap_2()
-                            .child(Button::new(tr(cx, locales::message_box::cancel)).on_click(
+                            .child(Button::new(locales::message_box::cancel).on_click(
                                 |_, _, cx| {
                                     Dialog::close(cx);
                                 },
                             ))
                             .child(
-                                Button::new(tr(cx, locales::message_box::confirm))
+                                Button::new(locales::message_box::confirm)
                                     .primary()
                                     .on_click(move |_, window, cx| {
                                         on_confirm(window, cx);
@@ -132,14 +132,14 @@ pub fn close(cx: &mut App) {
 }
 
 /// Performs the alert operation used by this component.
-pub fn alert(title: impl Into<SharedString>, content: impl Into<SharedString>, cx: &mut App) {
+pub fn alert(title: impl Into<LocalizedText>, content: impl Into<LocalizedText>, cx: &mut App) {
     MessageBox::new(title, content).alert(cx);
 }
 
 /// Performs the confirm operation used by this component.
 pub fn confirm(
-    title: impl Into<SharedString>,
-    content: impl Into<SharedString>,
+    title: impl Into<LocalizedText>,
+    content: impl Into<LocalizedText>,
     on_confirm: impl Fn(&mut Window, &mut App) + 'static,
     cx: &mut App,
 ) {

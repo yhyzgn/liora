@@ -22,12 +22,12 @@
 use crate::gpui_compat::element_id;
 use crate::motion::pop_in;
 use gpui::{App, Context, IntoElement, Render, SharedString, Window, div, prelude::*, px};
-use liora_core::Config;
+use liora_core::{Config, LocalizedText};
 
 /// Fluent native GPUI component for rendering Liora segmented option.
 pub struct SegmentedOption {
     /// User-facing label rendered for this item.
-    pub label: SharedString,
+    pub label: LocalizedText,
     /// Machine-readable value represented by this item.
     pub value: SharedString,
     /// Whether user interaction is disabled for this item.
@@ -36,7 +36,7 @@ pub struct SegmentedOption {
 
 impl SegmentedOption {
     /// Creates `SegmentedOption` initialized from the supplied label, and value.
-    pub fn new(label: impl Into<SharedString>, value: impl Into<SharedString>) -> Self {
+    pub fn new(label: impl Into<LocalizedText>, value: impl Into<SharedString>) -> Self {
         Self {
             label: label.into(),
             value: value.into(),
@@ -175,7 +175,7 @@ impl Render for Segmented {
                             }
                         }))
                     })
-                    .child(div().text_sm().child(opt.label.clone()));
+                    .child(div().text_sm().child(opt.label.resolve(cx)));
 
                 if is_active {
                     pop_in(
