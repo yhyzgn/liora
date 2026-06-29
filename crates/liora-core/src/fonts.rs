@@ -2,7 +2,7 @@
 //!
 //! GPUI resolves text in two separate steps: first an application registers any
 //! private font bytes with `App::text_system().add_fonts`, then elements refer to
-//! a family name such as `"PingFang SC"`, `"Inter"`, or an already installed
+//! a family name such as `"MiSans"`, `"Inter"`, or an already installed
 //! system family such as `"Segoe UI"`. This module keeps those steps explicit so
 //! a packaged application can mount large font files next to the executable while
 //! a bare executable can still fall back to small embedded font bytes.
@@ -10,7 +10,7 @@
 //! Important: GPUI's `add_fonts` API reports transport/registration errors, but
 //! some platform backends silently ignore font bytes they cannot parse. Use
 //! [`FontLoadOptions::require_family`] when the application must know that a
-//! selected family, such as `"PingFang SC"`, is actually visible after loading.
+//! selected family, such as `"MiSans"`, is actually visible after loading.
 
 use gpui::{App, SharedString};
 use std::{
@@ -107,7 +107,7 @@ impl FontLoadOptions {
         self
     }
 
-    /// Adds a GPUI asset path such as `"fonts/PingFangSC-Regular.ttf"`.
+    /// Adds a GPUI asset path such as `"fonts/MiSans-Regular.ttf"`.
     pub fn asset_path(mut self, path: impl Into<SharedString>) -> Self {
         self.asset_paths.push(path.into());
         self
@@ -406,8 +406,8 @@ mod tests {
         for path in [
             "Inter.ttf",
             "Inter.otf",
-            "PingFang.ttc",
-            "PingFang.otc",
+            "MiSans.ttc",
+            "MiSans.otc",
             "Brand.woff",
             "Brand.woff2",
             "UpperCase.TTF",
@@ -425,8 +425,8 @@ mod tests {
         let root = temp_dir("liora-font-discovery");
         let nested = root.join("nested");
         fs::create_dir_all(&nested).unwrap();
-        fs::write(root.join("PingFangSC-Regular.ttf"), b"fake").unwrap();
-        fs::write(nested.join("PingFangSC-Regular.woff2"), b"fake").unwrap();
+        fs::write(root.join("MiSans-Regular.ttf"), b"fake").unwrap();
+        fs::write(nested.join("MiSans-Regular.woff2"), b"fake").unwrap();
         fs::write(nested.join("README.md"), b"ignore").unwrap();
 
         let report = discover_font_files(&root).unwrap();
@@ -436,10 +436,7 @@ mod tests {
             .map(|path| path.file_name().unwrap().to_string_lossy().into_owned())
             .collect::<Vec<_>>();
 
-        assert_eq!(
-            names,
-            vec!["PingFangSC-Regular.ttf", "PingFangSC-Regular.woff2"]
-        );
+        assert_eq!(names, vec!["MiSans-Regular.ttf", "MiSans-Regular.woff2"]);
         assert_eq!(report.skipped_unsupported, 1);
 
         fs::remove_dir_all(root).unwrap();
@@ -464,7 +461,7 @@ mod tests {
     #[test]
     fn report_tracks_missing_required_families() {
         let report = FontLoadReport {
-            missing_required_families: vec![SharedString::from("PingFang SC")],
+            missing_required_families: vec![SharedString::from("MiSans")],
             ..Default::default()
         };
 

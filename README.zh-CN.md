@@ -323,8 +323,8 @@ cargo run -p liora-docs
 
 ```rust
 use gpui::App;
+use liora::{FontConfig, FontWeight, LioraOptions};
 use liora::{ThemeMode, init_liora, init_liora_with_mode, init_liora_with_options};
-use liora::{FontConfig, LioraOptions};
 
 fn init_default(cx: &mut App) {
     // 推荐默认：跟随系统主题。
@@ -339,7 +339,8 @@ fn init_dark(cx: &mut App) {
 fn init_with_system_font_names(cx: &mut App) {
     // 这里不加载任何字体文件，GPUI 会从操作系统字体中解析这些 family 名称。
     let fonts = FontConfig::system()
-        .with_ui_families(["Segoe UI", "PingFang SC", "Arial"])
+        .with_ui_families(["Segoe UI", "MiSans", "Arial"])
+        .with_ui_weight(FontWeight::MEDIUM)
         .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"]);
 
     init_liora_with_options(cx, LioraOptions::system().with_fonts(fonts));
@@ -1099,25 +1100,26 @@ fn theme_switcher(current: ThemeMode) -> Segmented {
 
 ### 自定义字体且保留系统默认策略
 
-Liora 把 **字体资源加载** 和 **字体族选择** 拆成两步：
+Liora 把 **字体资源加载** 和 **字体族 / 字重选择** 拆成两步：
 
 1. 如果字体已经安装在用户系统里，不需要加载文件，直接用 `FontConfig` 指定有序 family 兜底列表。
 2. 如果应用自带私有字体，先用 `load_app_fonts`、`load_fonts_from_dir`、`load_font_assets`、`load_embedded_fonts`，或底层兼容函数 `load_custom_fonts` 注册字体字节。
-3. 然后在启动时通过 `LioraOptions::with_fonts(...)`，或运行时通过 `set_font_config(...)` 选择 UI/code 字体族。
+3. 然后在启动时通过 `LioraOptions::with_fonts(...)`，或运行时通过 `set_font_config(...)` 选择 UI/code 字体族和可选默认字重。`with_ui_families(["MiSans", ...])` 只选择 family；如果想让该 family 以 Medium 字重渲染，需要再配置 `with_ui_weight(FontWeight::MEDIUM)`。
 
 支持的文件扩展名包括 `ttf`、`otf`、`ttc`、`otc`、`woff`、`woff2`，但真正解析能力由各平台官方 GPUI 后端决定。原生桌面应用优先使用 `ttf` / `otf` / `ttc` / `otc`。在 Linux/WGPU 上，当前 GPUI 的 `fontdb` 路径可能会忽略 WOFF/WOFF2 字节且不返回错误，所以只要某个 family 必须生效，就应该使用 `FontLoadOptions::require_family(...)` 并检查 `FontLoadReport::missing_required_families`。
 
 #### 只使用系统已安装字体
 
 ```rust
-use liora::{FontConfig, LioraOptions, init_liora_with_options, set_font_config};
+use liora::{FontConfig, FontWeight, LioraOptions, init_liora_with_options, set_font_config};
 
 fn init_with_system_fonts(cx: &mut gpui::App) {
     init_liora_with_options(
         cx,
         LioraOptions::system().with_fonts(
             FontConfig::system()
-                .with_ui_families(["Segoe UI", "PingFang SC", "Arial"]) // 按顺序自动降级。
+                .with_ui_families(["Segoe UI", "MiSans", "Arial"]) // 按顺序自动降级。
+                .with_ui_weight(FontWeight::MEDIUM)
                 .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"]),
         ),
     );
@@ -1127,7 +1129,8 @@ fn switch_to_system_ui_and_monospace_code(cx: &mut gpui::App) {
     set_font_config(
         cx,
         FontConfig::system()
-            .with_ui_families(["PingFang SC", "Segoe UI", "Arial"])
+            .with_ui_families(["MiSans", "Segoe UI", "Arial"])
+            .with_ui_weight(FontWeight::MEDIUM)
             .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"]),
     );
 }
@@ -1138,7 +1141,7 @@ fn switch_to_system_ui_and_monospace_code(cx: &mut gpui::App) {
 ```rust
 use std::borrow::Cow;
 use liora::{
-    FontConfig, FontLoadMode, FontLoadOptions, LioraOptions,
+    FontConfig, FontLoadMode, FontLoadOptions, FontWeight, LioraOptions,
     init_liora_with_options, load_app_fonts,
 };
 
@@ -1157,7 +1160,9 @@ fn init_with_embedded_font(cx: &mut gpui::App) {
     init_liora_with_options(
         cx,
         LioraOptions::system().with_fonts(
-            FontConfig::system().with_ui_families(["Inter", "Segoe UI", "Arial"]),
+            FontConfig::system()
+                .with_ui_families(["Inter", "Segoe UI", "Arial"])
+                .with_ui_weight(FontWeight::MEDIUM),
         ),
     );
 }
@@ -1170,7 +1175,7 @@ fn init_with_embedded_font(cx: &mut gpui::App) {
 ```rust
 use std::{borrow::Cow, path::PathBuf};
 use liora::{
-    FontConfig, FontLoadMode, FontLoadOptions, LioraOptions,
+    FontConfig, FontLoadMode, FontLoadOptions, FontWeight, LioraOptions,
     init_liora_with_options, load_app_fonts,
 };
 
@@ -1192,10 +1197,10 @@ fn font_dirs(app_binary: &str) -> Vec<PathBuf> {
 
 fn init_with_external_then_embedded(cx: &mut gpui::App) {
     let mut options = FontLoadOptions::new(FontLoadMode::ExternalThenEmbedded).embedded(
-        "PingFangSC-Regular.ttf",
-        Cow::Borrowed(include_bytes!("../assets/fonts/PingFangSC-Regular.ttf").as_slice()),
+        "MiSans-Medium.ttf",
+        Cow::Borrowed(include_bytes!("../assets/fonts/MiSans/MiSans-Medium.ttf").as_slice()),
     )
-    .require_family("PingFang SC");
+    .require_family("MiSans");
 
     for dir in font_dirs("my-gpui-app") {
         options = options.external_dir(dir);
@@ -1206,12 +1211,13 @@ fn init_with_external_then_embedded(cx: &mut gpui::App) {
         eprintln!("font load failures: {report:?}");
     }
 
-    // 混合来源示例：UI 使用随应用分发的 PingFang，代码字体使用系统族名。
+    // 混合来源示例：UI 使用随应用分发的 MiSans，代码字体使用系统族名。
     init_liora_with_options(
         cx,
         LioraOptions::system().with_fonts(
             FontConfig::system()
-                .with_ui_families(["PingFang SC", "Segoe UI", "Arial"])
+                .with_ui_families(["MiSans", "Segoe UI", "Arial"])
+                .with_ui_weight(FontWeight::MEDIUM)
                 .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"]),
         ),
     );
@@ -1236,7 +1242,7 @@ fn register_more_fonts(cx: &mut gpui::App) {
 }
 ```
 
-Liora 自带的 Gallery 和 Docs 把完整 PingFangSC TTF 字体族分别放在各自应用的 `assets/fonts/PingFangSC/` 下。发布打包明确拆成两种字体变体：`without-fonts` 是默认更小的产物，不携带应用字体文件；`with-fonts` 会在安装包 / portable archive 中挂载外部 `assets/fonts`，并把裸可执行程序用应用的 `embedded-fonts` feature 构建，以提供一个较小的字体 fallback。
+Liora 自带的 Gallery 和 Docs 把完整 MiSans TTF 字体族分别放在各自应用的 `assets/fonts/MiSans/` 下，并通过 `FontConfig::with_ui_weight(...)` 把应用 UI 默认字重设置为 `FontWeight::MEDIUM`。发布打包明确拆成两种字体变体：`without-fonts` 是默认更小的产物，不携带应用字体文件；`with-fonts` 会在安装包 / portable archive 中挂载外部 `assets/fonts`，并把裸可执行程序用应用的 `embedded-fonts` feature 构建，以提供一个较小的字体 fallback。
 
 ### 平台菜单与窗口内可见菜单栏
 

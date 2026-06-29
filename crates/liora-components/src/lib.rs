@@ -223,7 +223,7 @@ pub use line_chart::*;
 pub use link::*;
 pub use liora_core::{
     EmbeddedFont, FontConfig, FontDiscoveryReport, FontLoadFailure, FontLoadMode, FontLoadOptions,
-    FontLoadReport, LinuxDesktopIdentity, LinuxDesktopPngIcon, LioraOptions, ThemeMode,
+    FontLoadReport, FontWeight, LinuxDesktopIdentity, LinuxDesktopPngIcon, LioraOptions, ThemeMode,
     apply_theme_mode, attach_system_theme_observer, discover_font_files,
     ensure_linux_desktop_identity, is_font_family_available, is_supported_font_path,
     linux_desktop_entry, linux_desktop_png_icon_path, load_app_fonts, load_custom_fonts,
@@ -309,7 +309,7 @@ pub use window_frame::*;
 ///
 /// Use [`init_liora_with_mode`] when a product needs an explicit Light or Dark
 /// startup mode, or [`init_liora_with_options`] when it needs custom font
-/// families after registering app-provided font bytes. The lower-level
+/// families and default weights after registering app-provided font bytes. The lower-level
 /// `liora_core::init_liora(...)` functions remain
 /// available for advanced crate-local setup, but they intentionally initialize
 /// only core/theme state and not component services.
@@ -539,7 +539,8 @@ mod application_init_api_tests {
         assert!(
             source.contains("pub fn init_liora_with_mode(cx: &mut gpui::App, mode: ThemeMode)")
         );
-        assert!(source.contains("pub use liora_core::ThemeMode"));
+        assert!(source.contains("ThemeMode"));
+        assert!(source.contains("FontWeight"));
         assert!(source.contains("fn register_liora_key_bindings(cx: &mut gpui::App)"));
         assert!(source.contains("MessageManager::init(cx)"));
 

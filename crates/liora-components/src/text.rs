@@ -28,7 +28,7 @@ use gpui::{
     Pixels, RenderOnce, SharedString, StrikethroughStyle, Styled, TextRun, TextStyle,
     UnderlineStyle, Window, div, prelude::*, px,
 };
-use liora_core::{Config, code_font_family, ui_font_family};
+use liora_core::{Config, code_font_family, code_font_weight, ui_font_family, ui_font_weight};
 use std::{
     collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},
@@ -464,6 +464,16 @@ impl RenderOnce for Text {
         let text_color = self.color.unwrap_or(theme.neutral.text_2);
 
         let mut text = self;
+        let default_weight = if text.is_code_style {
+            code_font_weight(cx).or_else(|| ui_font_weight(cx))
+        } else {
+            ui_font_weight(cx)
+        };
+
+        if text.weight.is_none() {
+            text.weight = default_weight;
+        }
+
         if text.is_code_style && text.font_family.is_none() {
             text.font_family = Some(code_font_family(cx));
         } else if text.font_family.is_none() {

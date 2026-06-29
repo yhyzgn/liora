@@ -110,9 +110,9 @@ GPUI 的推荐写法是：状态放在 View 字段里，渲染时把这些字段
 
 ## 8. 应用级字体自定义
 
-Liora 把字体分成两个步骤：**加载资源** 和 **选择 family**。系统已安装字体不需要加载文件，直接用 `FontConfig::system().with_ui_families([...]).with_code_families([...])` 指定有序兜底列表即可；随应用分发的私有字体要先通过 `load_app_fonts` / `load_fonts_from_dir` / `load_font_assets` / `load_embedded_fonts` 注册，再用 `init_liora_with_options(...)` 或运行时 `set_font_config(...)` 生效。
+Liora 把字体分成两个步骤：**加载资源** 和 **选择 family / weight**。系统已安装字体不需要加载文件，直接用 `FontConfig::system().with_ui_families([...]).with_ui_weight(...).with_code_families([...])` 指定有序兜底列表和可选默认字重即可；随应用分发的私有字体要先通过 `load_app_fonts` / `load_fonts_from_dir` / `load_font_assets` / `load_embedded_fonts` 注册，再用 `init_liora_with_options(...)` 或运行时 `set_font_config(...)` 生效。
 
-Gallery 和 Docs 当前采用同一策略：源码运行时扫描 `apps/<app>/assets/fonts`；发布产物拆成 `without-fonts` 和 `with-fonts` 两种。默认 `without-fonts` 不携带应用字体文件、体积更小；`with-fonts` 安装包 / portable archive 会带上外部 `assets/fonts`，裸可执行程序则通过 `embedded-fonts` feature 内嵌一个较小的 `PingFangSC-Regular.ttf` fallback。这样既能保证源码运行时可直接看到 PingFang SC，也能让正式发布产物在体积和字体一致性之间明确选择。
+Gallery 和 Docs 当前采用同一策略：源码运行时扫描 `apps/<app>/assets/fonts`，并通过 `with_ui_weight(FontWeight::MEDIUM)` 指定默认 UI 字重；发布产物拆成 `without-fonts` 和 `with-fonts` 两种。默认 `without-fonts` 不携带应用字体文件、体积更小；`with-fonts` 安装包 / portable archive 会带上外部 `assets/fonts`，裸可执行程序则通过 `embedded-fonts` feature 内嵌一个较小的 `MiSans-Medium.ttf` fallback。这样既能保证源码运行时可直接看到 MiSans，也能让正式发布产物在体积和字体一致性之间明确选择。
 
 ```rust src="quick_start/fonts.rs"
 ```
@@ -121,7 +121,7 @@ Gallery 和 Docs 当前采用同一策略：源码运行时扫描 `apps/<app>/as
 
 - 支持的输入扩展名包括 `ttf`、`otf`、`ttc`、`otc`、`woff`、`woff2`，但实际解析能力取决于官方 GPUI 在当前平台的字体后端。
 - 原生桌面发布优先使用 `ttf` / `otf` / `ttc` / `otc`；如果使用 `woff` / `woff2`，务必配合 `FontLoadOptions::require_family(...)` 检查目标 family 是否真的可见。
-- `with_ui_families([...])` 和 `with_code_families([...])` 都是有序 fallback 列表，不是单个 family。建议把品牌字体放前面，把跨平台系统字体放后面。
+- `with_ui_families([...])` 和 `with_code_families([...])` 都是有序 fallback 列表，不是单个 family；它们不会自动选择 Medium/Bold face。要指定默认字重，请用 `with_ui_weight(FontWeight::MEDIUM)` / `with_code_weight(...)`。建议把品牌字体放前面，把跨平台系统字体放后面。
 - 字体资源属于应用级资产。SDK 只提供加载和配置 API，不会强制把某套字体耦合进所有下游应用。
 
 ## 9. 运行和验证

@@ -11,6 +11,8 @@ use gpui::{
     Window, WindowAppearance, WindowBounds, prelude::*, px,
 };
 
+pub use gpui::FontWeight;
+
 use std::borrow::Cow;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
@@ -21,14 +23,16 @@ pub use fonts::*;
 
 static NEXT_UNIQUE_ID: AtomicU64 = AtomicU64::new(1);
 
-/// Ordered font fallback lists used by Liora-rendered UI and code surfaces.
+/// Ordered font fallback lists and optional default weights used by
+/// Liora-rendered UI and code surfaces.
 ///
-/// The default value intentionally leaves the UI list empty, so GPUI keeps using
-/// its platform/system default (`.SystemUIFont`) for normal text. The code list
-/// is also optional; when it is empty, Liora asks GPUI for the generic
-/// `Monospace` family for code-oriented surfaces. Applications that want
-/// branded typography can load font bytes with [`load_custom_fonts`] and then
-/// provide ordered fallback lists through [`FontConfig`].
+/// The default value intentionally leaves the UI list and weights empty, so GPUI
+/// keeps using its platform/system default (`.SystemUIFont`) and normal text
+/// weight. The code list is also optional; when it is empty, Liora asks GPUI for
+/// the generic `Monospace` family for code-oriented surfaces. Applications that
+/// want branded typography can load font bytes with [`load_custom_fonts`] and
+/// then provide ordered fallback lists and default weights through
+/// [`FontConfig`].
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct FontConfig {
     /// Ordered UI font candidates. The first currently available family wins;
@@ -39,6 +43,13 @@ pub struct FontConfig {
     /// if none are visible to GPUI, the final candidate is used as the declared
     /// fallback. Empty lists resolve to GPUI's generic `Monospace`.
     pub code_families: Vec<SharedString>,
+    /// Optional default UI text weight. `None` keeps GPUI's normal/platform
+    /// default weight; explicit per-component weights such as bold headings
+    /// continue to override this value.
+    pub ui_weight: Option<FontWeight>,
+    /// Optional default code text weight. `None` keeps GPUI's normal/platform
+    /// default weight for code surfaces.
+    pub code_weight: Option<FontWeight>,
 }
 
 impl FontConfig {
@@ -65,6 +76,18 @@ impl FontConfig {
         self
     }
 
+    /// Returns a config that uses `weight` as the default UI text weight.
+    pub fn with_ui_weight(mut self, weight: FontWeight) -> Self {
+        self.ui_weight = Some(weight);
+        self
+    }
+
+    /// Returns a config that uses `weight` as the default code text weight.
+    pub fn with_code_weight(mut self, weight: FontWeight) -> Self {
+        self.code_weight = Some(weight);
+        self
+    }
+
     /// Returns the ordered UI fallback list.
     pub fn ui_families(&self) -> &[SharedString] {
         &self.ui_families
@@ -74,6 +97,16 @@ impl FontConfig {
     pub fn code_families(&self) -> &[SharedString] {
         &self.code_families
     }
+
+    /// Returns the configured default UI text weight, if any.
+    pub fn ui_weight(&self) -> Option<FontWeight> {
+        self.ui_weight
+    }
+
+    /// Returns the configured default code text weight, if any.
+    pub fn code_weight(&self) -> Option<FontWeight> {
+        self.code_weight
+    }
 }
 
 /// Complete options for initializing Liora core state.
@@ -81,7 +114,7 @@ impl FontConfig {
 pub struct LioraOptions {
     /// Startup theme mode. Defaults to following the operating system.
     pub theme_mode: ThemeMode,
-    /// Optional app typography overrides. Defaults to system fonts.
+    /// Optional app typography overrides. Defaults to system font families and weights.
     pub fonts: FontConfig,
 }
 
@@ -97,7 +130,7 @@ impl LioraOptions {
         self
     }
 
-    /// Returns options with custom Liora font families.
+    /// Returns options with custom Liora font families and default weights.
     pub fn with_fonts(mut self, fonts: FontConfig) -> Self {
         self.fonts = fonts;
         self
@@ -677,6 +710,11 @@ pub fn ui_font_family(cx: &App) -> Option<SharedString> {
     resolve_font_family_from_available(&config.fonts.ui_families, &available, None)
 }
 
+/// Returns the configured default UI text weight, if the app overrides it.
+pub fn ui_font_weight(cx: &App) -> Option<FontWeight> {
+    cx.global::<Config>().fonts.ui_weight
+}
+
 /// Returns the resolved code font family or GPUI's generic monospace family.
 pub fn code_font_family(cx: &App) -> SharedString {
     let config = cx.global::<Config>();
@@ -687,6 +725,11 @@ pub fn code_font_family(cx: &App) -> SharedString {
         Some("Monospace".into()),
     )
     .unwrap_or_else(|| "Monospace".into())
+}
+
+/// Returns the configured default code text weight, if the app overrides it.
+pub fn code_font_weight(cx: &App) -> Option<FontWeight> {
+    cx.global::<Config>().fonts.code_weight
 }
 
 /// Applies a new theme mode and refreshes the active GPUI window.
@@ -961,10 +1004,14 @@ mod theme_mode_tests {
         let default = FontConfig::default();
         assert!(default.ui_families.is_empty());
         assert!(default.code_families.is_empty());
+        assert_eq!(default.ui_weight(), None);
+        assert_eq!(default.code_weight(), None);
 
         let custom = FontConfig::system()
             .with_ui_families(["Inter", "Segoe UI"])
-            .with_code_families(["JetBrains Mono", "Monospace"]);
+            .with_code_families(["JetBrains Mono", "Monospace"])
+            .with_ui_weight(FontWeight::MEDIUM)
+            .with_code_weight(FontWeight::NORMAL);
         assert_eq!(
             custom.ui_families(),
             &[SharedString::from("Inter"), SharedString::from("Segoe UI")]
@@ -976,7 +1023,8 @@ mod theme_mode_tests {
                 SharedString::from("Monospace")
             ]
         );
-
+        assert_eq!(custom.ui_weight(), Some(FontWeight::MEDIUM));
+        assert_eq!(custom.code_weight(), Some(FontWeight::NORMAL));
         let options = LioraOptions::system()
             .with_theme_mode(ThemeMode::Dark)
             .with_fonts(custom.clone());
@@ -987,13 +1035,14 @@ mod theme_mode_tests {
     #[test]
     fn font_config_accepts_ordered_fallback_family_lists() {
         let custom = FontConfig::system()
-            .with_ui_families(["PingFang SC", "Segoe UI", "Arial"])
-            .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"]);
+            .with_ui_families(["MiSans", "Segoe UI", "Arial"])
+            .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"])
+            .with_ui_weight(FontWeight::MEDIUM);
 
         assert_eq!(
             custom.ui_families(),
             &[
-                SharedString::from("PingFang SC"),
+                SharedString::from("MiSans"),
                 SharedString::from("Segoe UI"),
                 SharedString::from("Arial")
             ]
@@ -1006,12 +1055,13 @@ mod theme_mode_tests {
                 SharedString::from("Monospace")
             ]
         );
+        assert_eq!(custom.ui_weight(), Some(FontWeight::MEDIUM));
     }
 
     #[test]
     fn font_family_resolution_uses_first_available_then_final_fallback() {
         let candidates = [
-            SharedString::from("PingFang SC"),
+            SharedString::from("MiSans"),
             SharedString::from("Segoe UI"),
             SharedString::from("Arial"),
         ];

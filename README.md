@@ -324,8 +324,8 @@ Use the facade entry points for normal app binaries:
 
 ```rust
 use gpui::App;
+use liora::{FontConfig, FontWeight, LioraOptions};
 use liora::{ThemeMode, init_liora, init_liora_with_mode, init_liora_with_options};
-use liora::{FontConfig, LioraOptions};
 
 fn init_default(cx: &mut App) {
     // Recommended default: follow the operating system theme.
@@ -340,7 +340,8 @@ fn init_dark(cx: &mut App) {
 fn init_with_system_font_names(cx: &mut App) {
     // No font files are loaded here. GPUI resolves these names from the OS.
     let fonts = FontConfig::system()
-        .with_ui_families(["Segoe UI", "PingFang SC", "Arial"])
+        .with_ui_families(["Segoe UI", "MiSans", "Arial"])
+        .with_ui_weight(FontWeight::MEDIUM)
         .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"]);
 
     init_liora_with_options(cx, LioraOptions::system().with_fonts(fonts));
@@ -1100,25 +1101,26 @@ fn theme_switcher(current: ThemeMode) -> Segmented {
 
 ### Custom fonts without losing system defaults
 
-Liora separates **font resource loading** from **font family selection**:
+Liora separates **font resource loading** from **font family / weight selection**:
 
 1. If the family is already installed on the user's system, do not load any file. Set the ordered fallback family list with `FontConfig`.
 2. If the app ships private fonts, register bytes first with `load_app_fonts`, `load_fonts_from_dir`, `load_font_assets`, `load_embedded_fonts`, or the low-level `load_custom_fonts` compatibility helper.
-3. Then choose the ordered UI and code fallback lists with `LioraOptions::with_fonts(...)` at startup or `set_font_config(...)` at runtime.
+3. Then choose the ordered UI/code fallback lists and optional default weights with `LioraOptions::with_fonts(...)` at startup or `set_font_config(...)` at runtime. `with_ui_families(["MiSans", ...])` selects a family; use `with_ui_weight(FontWeight::MEDIUM)` when the desired face should render at Medium weight.
 
 Supported file extensions are `ttf`, `otf`, `ttc`, `otc`, `woff`, and `woff2`, but actual parsing is delegated to the official GPUI backend for each platform. Prefer `ttf`/`otf`/`ttc`/`otc` for native desktop apps. On Linux/WGPU, the current GPUI `fontdb` path can ignore WOFF/WOFF2 bytes without returning an error, so use `FontLoadOptions::require_family(...)` and check `FontLoadReport::missing_required_families` whenever a specific family must be active.
 
 #### Use only system-installed fonts
 
 ```rust
-use liora::{FontConfig, LioraOptions, init_liora_with_options, set_font_config};
+use liora::{FontConfig, FontWeight, LioraOptions, init_liora_with_options, set_font_config};
 
 fn init_with_system_fonts(cx: &mut gpui::App) {
     init_liora_with_options(
         cx,
         LioraOptions::system().with_fonts(
             FontConfig::system()
-                .with_ui_families(["Segoe UI", "PingFang SC", "Arial"]) // Ordered fallback list.
+                .with_ui_families(["Segoe UI", "MiSans", "Arial"]) // Ordered fallback list.
+                .with_ui_weight(FontWeight::MEDIUM)
                 .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"]),
         ),
     );
@@ -1128,7 +1130,8 @@ fn switch_to_system_ui_and_monospace_code(cx: &mut gpui::App) {
     set_font_config(
         cx,
         FontConfig::system()
-            .with_ui_families(["PingFang SC", "Segoe UI", "Arial"])
+            .with_ui_families(["MiSans", "Segoe UI", "Arial"])
+            .with_ui_weight(FontWeight::MEDIUM)
             .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"]),
     );
 }
@@ -1139,7 +1142,7 @@ fn switch_to_system_ui_and_monospace_code(cx: &mut gpui::App) {
 ```rust
 use std::borrow::Cow;
 use liora::{
-    FontConfig, FontLoadMode, FontLoadOptions, LioraOptions,
+    FontConfig, FontLoadMode, FontLoadOptions, FontWeight, LioraOptions,
     init_liora_with_options, load_app_fonts,
 };
 
@@ -1158,7 +1161,9 @@ fn init_with_embedded_font(cx: &mut gpui::App) {
     init_liora_with_options(
         cx,
         LioraOptions::system().with_fonts(
-            FontConfig::system().with_ui_families(["Inter", "Segoe UI", "Arial"]),
+            FontConfig::system()
+                .with_ui_families(["Inter", "Segoe UI", "Arial"])
+                .with_ui_weight(FontWeight::MEDIUM),
         ),
     );
 }
@@ -1171,7 +1176,7 @@ This is the recommended pattern when full font families are large. Keep a small 
 ```rust
 use std::{borrow::Cow, path::PathBuf};
 use liora::{
-    FontConfig, FontLoadMode, FontLoadOptions, LioraOptions,
+    FontConfig, FontLoadMode, FontLoadOptions, FontWeight, LioraOptions,
     init_liora_with_options, load_app_fonts,
 };
 
@@ -1193,10 +1198,10 @@ fn font_dirs(app_binary: &str) -> Vec<PathBuf> {
 
 fn init_with_external_then_embedded(cx: &mut gpui::App) {
     let mut options = FontLoadOptions::new(FontLoadMode::ExternalThenEmbedded).embedded(
-        "PingFangSC-Regular.ttf",
-        Cow::Borrowed(include_bytes!("../assets/fonts/PingFangSC-Regular.ttf").as_slice()),
+        "MiSans-Medium.ttf",
+        Cow::Borrowed(include_bytes!("../assets/fonts/MiSans/MiSans-Medium.ttf").as_slice()),
     )
-    .require_family("PingFang SC");
+    .require_family("MiSans");
 
     for dir in font_dirs("my-gpui-app") {
         options = options.external_dir(dir);
@@ -1207,12 +1212,13 @@ fn init_with_external_then_embedded(cx: &mut gpui::App) {
         eprintln!("font load failures: {report:?}");
     }
 
-    // Mixed source example: UI uses the shipped PingFang family, code uses a system family.
+    // Mixed source example: UI uses the shipped MiSans family, code uses a system family.
     init_liora_with_options(
         cx,
         LioraOptions::system().with_fonts(
             FontConfig::system()
-                .with_ui_families(["PingFang SC", "Segoe UI", "Arial"])
+                .with_ui_families(["MiSans", "Segoe UI", "Arial"])
+                .with_ui_weight(FontWeight::MEDIUM)
                 .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"]),
         ),
     );
@@ -1237,7 +1243,7 @@ fn register_more_fonts(cx: &mut gpui::App) {
 }
 ```
 
-For Liora's own apps, Gallery and Docs keep the full PingFangSC TTF family under each app's `assets/fonts/PingFangSC/`. Release packaging is split into two explicit font variants: `without-fonts` is the default smaller asset and does not bundle app font files; `with-fonts` bundles external `assets/fonts` for installers/portable archives and builds raw executables with the app `embedded-fonts` feature for a small fallback face.
+For Liora's own apps, Gallery and Docs keep the full MiSans TTF family under each app's `assets/fonts/MiSans/` and set the app UI default to `FontWeight::MEDIUM` through `FontConfig::with_ui_weight(...)`. Release packaging is split into two explicit font variants: `without-fonts` is the default smaller asset and does not bundle app font files; `with-fonts` bundles external `assets/fonts` for installers/portable archives and builds raw executables with the app `embedded-fonts` feature for a small fallback face.
 
 ### Platform menus and visible in-window menu bars
 
@@ -1417,7 +1423,7 @@ Font variants:
 | Variant | Raw executable | Installers / portable archives | Use when |
 |---|---|---|---|
 | `without-fonts` | Normal release build, no app font bytes embedded | Does not include app `assets/fonts` | Default/smaller download; uses system fonts or user-provided external font paths |
-| `with-fonts` | Builds app with `--features embedded-fonts` | Includes app `assets/fonts` as external resources | You want bundled PingFangSC resources/fallback for Gallery/Docs typography |
+| `with-fonts` | Builds app with `--features embedded-fonts` | Includes app `assets/fonts` as external resources | You want bundled MiSans resources/fallback for Gallery/Docs typography |
 
 `--font-variant` defaults to `without-fonts`. CI publishes both variants and names release assets with `-without-fonts` or `-with-fonts` suffixes.
 

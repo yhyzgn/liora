@@ -24,7 +24,7 @@ use gpui::{
     App, Component, ElementId, IntoElement, RenderOnce, SharedString, StyledText, TextRun,
     TextStyle, WhiteSpace, Window, div, prelude::*, px,
 };
-use liora_core::{Config, code_font_family, ui_font_family};
+use liora_core::{Config, code_font_family, code_font_weight, ui_font_family, ui_font_weight};
 use std::{
     collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},
@@ -93,6 +93,7 @@ impl Paragraph {
     fn default_text_style(
         theme: &liora_theme::Theme,
         ui_family: Option<SharedString>,
+        ui_weight: Option<gpui::FontWeight>,
     ) -> TextStyle {
         let font_size = px(theme.font_size.md);
         let mut style = TextStyle::default();
@@ -105,6 +106,9 @@ impl Paragraph {
         if let Some(family) = ui_family {
             style.font_family = family;
         }
+        if let Some(weight) = ui_weight {
+            style.font_weight = weight;
+        }
         style
     }
 
@@ -113,8 +117,10 @@ impl Paragraph {
         theme: &liora_theme::Theme,
         code_family: Option<SharedString>,
         ui_family: Option<SharedString>,
+        code_weight: Option<gpui::FontWeight>,
+        ui_weight: Option<gpui::FontWeight>,
     ) -> (SharedString, Vec<TextRun>) {
-        let default_style = Self::default_text_style(theme, ui_family);
+        let default_style = Self::default_text_style(theme, ui_family.clone(), ui_weight);
         let mut full_text = String::new();
         let mut runs: Vec<TextRun> = Vec::new();
 
@@ -142,10 +148,18 @@ impl Paragraph {
             if !remaining.is_empty() {
                 full_text.push_str(remaining);
                 let mut segment = segment.clone();
+                if segment.weight.is_none() {
+                    segment.weight = if segment.is_code_style {
+                        code_weight.or(ui_weight)
+                    } else {
+                        ui_weight
+                    };
+                }
                 if segment.is_code_style && segment.font_family.is_none() {
-                    if let Some(code_family) = code_family.clone() {
-                        segment.font_family = Some(code_family);
-                    }
+                    segment.font_family =
+                        Some(code_family.clone().unwrap_or_else(|| "Monospace".into()));
+                } else if !segment.is_code_style && segment.font_family.is_none() {
+                    segment.font_family = ui_family.clone();
                 }
                 let mut run = segment.to_text_run(&default_style);
                 run.len = remaining.len();
@@ -232,8 +246,15 @@ impl RenderOnce for Paragraph {
         let theme = &cx.global::<Config>().theme;
         let code_family = code_font_family(cx);
         let ui_family = ui_font_family(cx);
-        let (full_text, runs) =
-            self.selectable_text_parts(theme, Some(code_family), ui_family.clone());
+        let code_weight = code_font_weight(cx);
+        let ui_weight = ui_font_weight(cx);
+        let (full_text, runs) = self.selectable_text_parts(
+            theme,
+            Some(code_family),
+            ui_family.clone(),
+            code_weight,
+            ui_weight,
+        );
         let font_size = px(theme.font_size.md);
 
         if self.selectable {
@@ -325,7 +346,7 @@ mod tests {
         let (text, runs) = Paragraph::new()
             .child(Text::new("Hello ").bold())
             .child(Text::new("世界").italic())
-            .selectable_text_parts(&theme, Some("Monospace".into()), None);
+            .selectable_text_parts(&theme, Some("Monospace".into()), None, None, None);
 
         assert_eq!(text.as_ref(), "Hello 世界");
         assert_eq!(runs.len(), 2);
@@ -345,7 +366,7 @@ mod tests {
             .child(Text::new("、"))
             .child(Text::new("Input").code_style(&theme))
             .child(Text::new("。"))
-            .selectable_text_parts(&theme, Some("Monospace".into()), None);
+            .selectable_text_parts(&theme, Some("Monospace".into()), None, None, None);
 
         assert_eq!(
             text.as_ref(),
@@ -359,7 +380,7 @@ mod tests {
     #[test]
     fn text_segments_map_inline_code_style_to_text_runs_without_forcing_app_font() {
         let theme = liora_theme::Theme::light();
-        let default_style = Paragraph::default_text_style(&theme, None);
+        let default_style = Paragraph::default_text_style(&theme, None, None);
         let run = Text::new("code")
             .code_style(&theme)
             .bold()
@@ -375,17 +396,19 @@ mod tests {
     }
 
     #[test]
-    fn paragraph_default_style_accepts_app_ui_font_family() {
+    fn paragraph_default_style_accepts_app_ui_font_family_and_weight() {
         let theme = liora_theme::Theme::light();
-        let style = Paragraph::default_text_style(&theme, Some("PingFang SC".into()));
+        let style =
+            Paragraph::default_text_style(&theme, Some("MiSans".into()), Some(FontWeight::MEDIUM));
 
-        assert_eq!(style.font_family.as_ref(), "PingFang SC");
+        assert_eq!(style.font_family.as_ref(), "MiSans");
+        assert_eq!(style.font_weight, FontWeight::MEDIUM);
     }
 
     #[test]
     fn paragraph_default_style_keeps_native_wrapping_without_truncation() {
         let theme = liora_theme::Theme::light();
-        let style = Paragraph::default_text_style(&theme, None);
+        let style = Paragraph::default_text_style(&theme, None, None);
 
         assert_eq!(style.white_space, WhiteSpace::Normal);
         assert!(style.text_overflow.is_none());

@@ -154,7 +154,7 @@ Generated Gallery package outputs are uploaded as:
 liora-<preview|release>-gallery-packages-<platform>
 ```
 
-The Actions package artifact bundle includes generated backend TOML files and package manifest/checksum/release-note files under `target/packages/`; the public GitHub Release uploads only distributable binaries/installers/archives plus one `SHA256SUMS.txt`. Public asset names include `without-fonts` or `with-fonts`: default `without-fonts` assets are smaller and do not bundle app font files, while `with-fonts` assets include PingFangSC resources or embedded fallback where applicable. The manifest records `version`, `platform`, `targetTriple`, optional `gitSha`, format, path, checksum, and signing state.
+The Actions package artifact bundle includes generated backend TOML files and package manifest/checksum/release-note files under `target/packages/`; the public GitHub Release uploads only distributable binaries/installers/archives plus one `SHA256SUMS.txt`. Public asset names include `without-fonts` or `with-fonts`: default `without-fonts` assets are smaller and do not bundle app font files, while `with-fonts` assets include MiSans resources or embedded fallback where applicable. The manifest records `version`, `platform`, `targetTriple`, optional `gitSha`, format, path, checksum, and signing state.
 
 Linux `.deb` and `.rpm` configs include explicit runtime dependency metadata for GTK3, Ayatana/AppIndicator, X11/Wayland, xkbcommon, fontconfig/freetype, Vulkan, ALSA, and xdg desktop integration.
 

@@ -9,7 +9,7 @@ use gpui::{
     App, Component, ElementId, IntoElement, RenderOnce, SharedString, TextRun, TextStyle, Window,
     prelude::*, px,
 };
-use liora_core::{Config, code_font_family, ui_font_family};
+use liora_core::{Config, code_font_family, code_font_weight, ui_font_family, ui_font_weight};
 use std::{
     collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},
@@ -120,6 +120,8 @@ impl SelectableTextGroup {
         theme: &liora_theme::Theme,
         code_family: SharedString,
         ui_family: Option<SharedString>,
+        code_weight: Option<gpui::FontWeight>,
+        ui_weight: Option<gpui::FontWeight>,
     ) -> (SharedString, Vec<TextRun>) {
         let font_size = px(theme.font_size.md);
         let line_height = font_size * 1.6;
@@ -131,6 +133,9 @@ impl SelectableTextGroup {
         if let Some(family) = ui_family.clone() {
             default_style.font_family = family;
         }
+        if let Some(weight) = ui_weight {
+            default_style.font_weight = weight;
+        }
 
         let mut full_text = String::new();
         let mut runs = Vec::<TextRun>::new();
@@ -141,6 +146,13 @@ impl SelectableTextGroup {
                 SelectableTextGroupBlock::Text(mut text) => {
                     if text.content.is_empty() {
                         continue;
+                    }
+                    if text.weight.is_none() {
+                        text.weight = if text.is_code_style {
+                            code_weight.or(ui_weight)
+                        } else {
+                            ui_weight
+                        };
                     }
                     if text.is_code_style && text.font_family.is_none() {
                         text.font_family = Some(code_family.clone());
@@ -164,6 +176,8 @@ impl SelectableTextGroup {
                         theme,
                         Some(code_family.clone()),
                         ui_family.clone(),
+                        code_weight,
+                        ui_weight,
                     );
                     if paragraph_text.is_empty() {
                         continue;
@@ -196,11 +210,19 @@ impl RenderOnce for SelectableTextGroup {
         let theme = cx.global::<Config>().theme.clone();
         let ui_family = ui_font_family(cx);
         let code_family = code_font_family(cx);
+        let ui_weight = ui_font_weight(cx);
+        let code_weight = code_font_weight(cx);
         let font_size = px(theme.font_size.md);
         let line_height = font_size * 1.6;
         let selectable = self.selectable;
         let id = self.id.clone();
-        let (full_text, runs) = self.text_parts(&theme, code_family, ui_family.clone());
+        let (full_text, runs) = self.text_parts(
+            &theme,
+            code_family,
+            ui_family.clone(),
+            code_weight,
+            ui_weight,
+        );
 
         if full_text.is_empty() {
             return gpui::div().into_any_element();
@@ -286,7 +308,7 @@ mod tests {
             .paragraph(Paragraph::with_text("Beta"))
             .text(Text::new(""))
             .text(Text::new("Gamma"))
-            .text_parts(&theme, "Monospace".into(), Some("Inter".into()));
+            .text_parts(&theme, "Monospace".into(), Some("Inter".into()), None, None);
 
         assert_eq!(text.as_ref(), "Alpha\nBeta\nGamma");
         assert_eq!(runs.iter().map(|run| run.len).sum::<usize>(), text.len());
@@ -304,7 +326,7 @@ mod tests {
                     .child(Text::new(" Tail")),
             )
             .paragraph(Paragraph::with_text("Next"))
-            .text_parts(&theme, "Monospace".into(), Some("Inter".into()));
+            .text_parts(&theme, "Monospace".into(), Some("Inter".into()), None, None);
 
         assert_eq!(text.as_ref(), "Plain Code Tail\n\nNext");
         assert!(

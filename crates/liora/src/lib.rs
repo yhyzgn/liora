@@ -24,9 +24,9 @@
 pub use liora_components::{init_liora, init_liora_with_mode, init_liora_with_options};
 pub use liora_core::{
     EmbeddedFont, FontConfig, FontDiscoveryReport, FontLoadFailure, FontLoadMode, FontLoadOptions,
-    FontLoadReport, LioraOptions, ThemeMode, discover_font_files, is_font_family_available,
-    is_supported_font_path, load_app_fonts, load_custom_fonts, load_embedded_fonts,
-    load_font_assets, load_font_files, load_fonts_from_dir, set_font_config,
+    FontLoadReport, FontWeight, LioraOptions, ThemeMode, discover_font_files,
+    is_font_family_available, is_supported_font_path, load_app_fonts, load_custom_fonts,
+    load_embedded_fonts, load_font_assets, load_font_files, load_fonts_from_dir, set_font_config,
     startup_maximized_window_bounds,
 };
 
@@ -52,7 +52,7 @@ pub use liora_updater as updater;
 pub mod prelude {
     pub use liora_components::{init_liora, init_liora_with_mode, init_liora_with_options};
     pub use liora_core::{
-        FontConfig, LioraOptions, ThemeMode, load_custom_fonts, set_font_config,
+        FontConfig, FontWeight, LioraOptions, ThemeMode, load_custom_fonts, set_font_config,
         startup_maximized_window_bounds,
     };
 
@@ -66,4 +66,14 @@ pub mod prelude {
 
     #[cfg(feature = "updater")]
     pub use crate::updater;
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn facade_reexports_font_weight_for_font_config_api() {
+        let weight = crate::FontWeight::MEDIUM;
+        let fonts = crate::FontConfig::system().with_ui_weight(weight);
+        assert_eq!(fonts.ui_weight(), Some(weight));
+    }
 }

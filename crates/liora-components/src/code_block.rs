@@ -27,7 +27,7 @@ use gpui::{
     Rgba, ShapedLine, SharedString, Style, StyledText, TextRun, TextStyle, UnderlineStyle,
     WhiteSpace, Window, actions, div, fill, point, prelude::*, px, relative, size,
 };
-use liora_core::{Config, code_font_family, stable_unique_id};
+use liora_core::{Config, code_font_family, code_font_weight, stable_unique_id};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 use std::{
@@ -433,6 +433,7 @@ impl RenderOnce for CodeBlock {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
         let code_family = code_font_family(cx);
+        let code_weight = code_font_weight(cx);
         let id = self.id.clone().unwrap_or_else(|| {
             stable_unique_id(
                 format!(
@@ -461,6 +462,7 @@ impl RenderOnce for CodeBlock {
                 self.theme,
                 &theme,
                 &code_family,
+                code_weight,
             ),
             CodeFormat::Block => render_block_code(
                 id,
@@ -472,6 +474,7 @@ impl RenderOnce for CodeBlock {
                 self.theme,
                 &theme,
                 &code_family,
+                code_weight,
                 self.on_copy,
                 window,
                 cx,
@@ -495,6 +498,7 @@ fn render_inline_code(
     code_theme: CodeTheme,
     theme: &liora_theme::Theme,
     code_family: &SharedString,
+    code_weight: Option<FontWeight>,
 ) -> gpui::AnyElement {
     let resolved_theme = resolve_code_theme(code_theme, theme);
     div()
@@ -511,6 +515,7 @@ fn render_inline_code(
             resolved_theme,
             theme,
             code_family,
+            code_weight,
             false,
         ))
         .into_any_element()
@@ -526,6 +531,7 @@ fn render_block_code(
     code_theme: CodeTheme,
     theme: &liora_theme::Theme,
     code_family: &SharedString,
+    code_weight: Option<FontWeight>,
     on_copy: Option<Arc<CodeCopyCallback>>,
     window: &mut Window,
     cx: &mut App,
@@ -541,6 +547,7 @@ fn render_block_code(
         resolved_theme,
         theme,
         code_family,
+        code_weight,
         window,
         cx,
     );
@@ -630,6 +637,7 @@ fn render_block_code(
                         selectable,
                         theme,
                         code_family,
+                        code_weight,
                         window,
                         cx,
                     )
@@ -648,6 +656,7 @@ fn should_render_code_now(
     code_theme: ResolvedCodeTheme,
     theme: &liora_theme::Theme,
     code_family: &SharedString,
+    code_weight: Option<FontWeight>,
     window: &mut Window,
     cx: &mut App,
 ) -> bool {
@@ -659,6 +668,7 @@ fn should_render_code_now(
         true,
         theme,
         code_family,
+        code_weight,
     );
     if lock_highlight_cache().runs.contains_key(&cache_key) {
         return true;
@@ -756,6 +766,7 @@ fn render_highlighted_text(
     code_theme: ResolvedCodeTheme,
     theme: &liora_theme::Theme,
     code_family: &SharedString,
+    code_weight: Option<FontWeight>,
     block: bool,
 ) -> StyledText {
     let runs = cached_highlight_runs(
@@ -765,6 +776,7 @@ fn render_highlighted_text(
         code_theme,
         theme,
         code_family,
+        code_weight,
         block,
     );
     StyledText::new(code).with_runs(runs.to_vec())
@@ -779,6 +791,7 @@ fn render_code_content(
     selectable: bool,
     theme: &liora_theme::Theme,
     code_family: &SharedString,
+    code_weight: Option<FontWeight>,
     window: &mut Window,
     cx: &mut App,
 ) -> gpui::AnyElement {
@@ -789,6 +802,7 @@ fn render_code_content(
         code_theme,
         theme,
         code_family,
+        code_weight,
         true,
     );
 
@@ -883,6 +897,7 @@ fn cached_highlight_runs(
     code_theme: ResolvedCodeTheme,
     theme: &liora_theme::Theme,
     code_family: &SharedString,
+    code_weight: Option<FontWeight>,
     block: bool,
 ) -> Vec<TextRun> {
     cached_highlight_runs_with_key(
@@ -892,6 +907,7 @@ fn cached_highlight_runs(
         code_theme,
         theme,
         code_family,
+        code_weight,
         block,
     )
     .1
@@ -905,6 +921,7 @@ fn cached_highlight_runs_with_key(
     code_theme: ResolvedCodeTheme,
     theme: &liora_theme::Theme,
     code_family: &SharedString,
+    code_weight: Option<FontWeight>,
     block: bool,
 ) -> (HighlightCacheKey, HighlightRuns) {
     let key = HighlightCacheKey::new(
@@ -915,6 +932,7 @@ fn cached_highlight_runs_with_key(
         block,
         theme,
         code_family,
+        code_weight,
     );
     if let Some(runs) = lock_highlight_cache().runs.get(&key).cloned() {
         return (key, runs);
@@ -927,6 +945,7 @@ fn cached_highlight_runs_with_key(
         code_theme,
         theme,
         code_family,
+        code_weight,
         block,
     ));
     let mut cache = lock_highlight_cache();
@@ -944,6 +963,7 @@ struct HighlightCacheKey {
     block: bool,
     font_size_bits: u32,
     code_family: SharedString,
+    code_weight_bits: Option<u32>,
 }
 
 impl HighlightCacheKey {
@@ -955,6 +975,7 @@ impl HighlightCacheKey {
         block: bool,
         theme: &liora_theme::Theme,
         code_family: &SharedString,
+        code_weight: Option<FontWeight>,
     ) -> Self {
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
         text.hash(&mut hasher);
@@ -972,6 +993,7 @@ impl HighlightCacheKey {
             }
             .to_bits(),
             code_family: code_family.clone(),
+            code_weight_bits: code_weight.map(|weight| weight.0.to_bits()),
         }
     }
 }
@@ -1025,12 +1047,19 @@ fn highlight_runs(
     code_theme: ResolvedCodeTheme,
     theme: &liora_theme::Theme,
     code_family: &SharedString,
+    code_weight: Option<FontWeight>,
     block: bool,
 ) -> Vec<TextRun> {
     match highlighter {
-        CodeHighlighter::Syntect => {
-            syntect_runs(text, language, code_theme, theme, code_family, block)
-        }
+        CodeHighlighter::Syntect => syntect_runs(
+            text,
+            language,
+            code_theme,
+            theme,
+            code_family,
+            code_weight,
+            block,
+        ),
     }
 }
 
@@ -1040,10 +1069,11 @@ fn syntect_runs(
     code_theme: ResolvedCodeTheme,
     theme: &liora_theme::Theme,
     code_family: &SharedString,
+    code_weight: Option<FontWeight>,
     block: bool,
 ) -> Vec<TextRun> {
     if text.is_empty() {
-        return vec![base_style(theme, code_theme, code_family, block).to_run(0)];
+        return vec![base_style(theme, code_theme, code_family, code_weight, block).to_run(0)];
     }
 
     let syntax_set = syntax_set();
@@ -1068,6 +1098,7 @@ fn syntect_runs(
                                 theme,
                                 code_theme,
                                 code_family,
+                                code_weight,
                                 block,
                             ),
                         );
@@ -1076,13 +1107,15 @@ fn syntect_runs(
             }
             Err(_) => push_run(
                 &mut runs,
-                base_style(theme, code_theme, code_family, block).to_run(line.len()),
+                base_style(theme, code_theme, code_family, code_weight, block).to_run(line.len()),
             ),
         }
     }
 
     if runs.is_empty() {
-        runs.push(base_style(theme, code_theme, code_family, block).to_run(text.len()));
+        runs.push(
+            base_style(theme, code_theme, code_family, code_weight, block).to_run(text.len()),
+        );
     }
 
     runs
@@ -1114,9 +1147,10 @@ fn syntect_style_run(
     theme: &liora_theme::Theme,
     code_theme: ResolvedCodeTheme,
     code_family: &SharedString,
+    code_weight: Option<FontWeight>,
     block: bool,
 ) -> TextRun {
-    let mut style = base_style(theme, code_theme, code_family, block);
+    let mut style = base_style(theme, code_theme, code_family, code_weight, block);
     style.color = syntect_color(syntect_style.foreground);
 
     if syntect_style.font_style.contains(SyntectFontStyle::BOLD) {
@@ -1145,10 +1179,14 @@ fn base_style(
     theme: &liora_theme::Theme,
     code_theme: ResolvedCodeTheme,
     code_family: &SharedString,
+    code_weight: Option<FontWeight>,
     block: bool,
 ) -> TextStyle {
     let mut style = TextStyle::default();
     style.font_family = code_family.clone();
+    if let Some(weight) = code_weight {
+        style.font_weight = weight;
+    }
     style.font_size = px(if block {
         theme.font_size.sm
     } else {
@@ -2062,6 +2100,7 @@ mod tests {
             code_theme,
             &theme,
             &code_family,
+            None,
             true,
         );
 
@@ -2127,6 +2166,7 @@ mod tests {
             code_theme,
             &theme,
             &code_family,
+            None,
             true,
         );
         let second = cached_highlight_runs(
@@ -2136,6 +2176,7 @@ mod tests {
             code_theme,
             &theme,
             &code_family,
+            None,
             true,
         );
 
@@ -2154,6 +2195,7 @@ mod tests {
             code_theme,
             &theme,
             &code_family,
+            None,
             true,
         );
         let (_, second) = cached_highlight_runs_with_key(
@@ -2163,6 +2205,7 @@ mod tests {
             code_theme,
             &theme,
             &code_family,
+            None,
             true,
         );
 
@@ -2183,6 +2226,7 @@ mod tests {
             true,
             &theme,
             &code_family,
+            None,
         );
         let last_key = HighlightCacheKey::new(
             "let item_256 = 256;",
@@ -2192,6 +2236,7 @@ mod tests {
             true,
             &theme,
             &code_family,
+            None,
         );
 
         for index in 0..=HIGHLIGHT_CACHE_CAPACITY {
@@ -2204,11 +2249,12 @@ mod tests {
                 true,
                 &theme,
                 &code_family,
+                None,
             );
             cache.insert(
                 key,
                 HighlightRuns::from(vec![
-                    base_style(&theme, code_theme, &code_family, true).to_run(text.len()),
+                    base_style(&theme, code_theme, &code_family, None, true).to_run(text.len()),
                 ]),
             );
         }

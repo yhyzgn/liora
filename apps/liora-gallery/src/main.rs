@@ -1,8 +1,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use gpui::{
-    AnyView, App, Component, Context, Global, Render, RenderImage, SharedString, Window,
-    WindowOptions, div, img, prelude::*, px, size,
+    AnyView, App, Component, Context, FontWeight, Global, Render, RenderImage, SharedString,
+    Window, WindowOptions, div, img, prelude::*, px, size,
 };
 use liora_components::{
     AppWindowFrame, Button, Card, Checkbox, Container, Dialog, Input, Menu, MenuBar, MenuItem,
@@ -180,13 +180,14 @@ fn register_gallery_system_menus(cx: &mut App) {
 fn gallery_liora_options() -> LioraOptions {
     LioraOptions::system().with_fonts(
         FontConfig::system()
-            .with_ui_families(["PingFang SC", "Segoe UI", "Arial"])
+            .with_ui_families(["MiSans", "Segoe UI", "Arial"])
+            .with_ui_weight(FontWeight::MEDIUM)
             .with_code_families(["Consolas", "JetBrains Mono", "SF Mono", "Monospace"]),
     )
 }
 
 fn install_gallery_fonts(cx: &mut App) {
-    let options = FontLoadOptions::new(app_font_load_mode()).require_family("PingFang SC");
+    let options = FontLoadOptions::new(app_font_load_mode()).require_family("MiSans");
 
     let mut options = add_embedded_app_fonts(options);
 
@@ -211,9 +212,9 @@ fn app_font_load_mode() -> FontLoadMode {
 #[cfg(feature = "embedded-fonts")]
 fn add_embedded_app_fonts(options: FontLoadOptions) -> FontLoadOptions {
     options.embedded(
-        "PingFangSC-Regular.ttf",
+        "MiSans-Medium.ttf",
         std::borrow::Cow::Borrowed(
-            include_bytes!("../assets/fonts/PingFangSC/PingFangSC-Regular.ttf").as_slice(),
+            include_bytes!("../assets/fonts/MiSans/MiSans-Medium.ttf").as_slice(),
         ),
     )
 }
@@ -851,8 +852,9 @@ mod shell_tests {
             .expect("Gallery shell should end before app frame");
         assert!(!production_shell.contains(".aside_width_lg()"));
         assert!(source.contains("check_gallery_update"));
-        assert!(source.contains("PingFangSC-Regular.ttf"));
-        assert!(source.contains("require_family(\"PingFang SC\")"));
+        assert!(source.contains("MiSans-Medium.ttf"));
+        assert!(source.contains("require_family(\"MiSans\")"));
+        assert!(source.contains(".with_ui_weight(FontWeight::MEDIUM)"));
     }
 }
 

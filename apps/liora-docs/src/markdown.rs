@@ -11285,7 +11285,11 @@ mod tests {
         assert!(QUICK_START_DOC.contains("## 8. 应用级字体自定义"));
         assert!(QUICK_START_DOC.contains(r#"src="quick_start/fonts.rs""#));
         assert!(QUICK_START_DOC.contains("Gallery 和 Docs 当前采用同一策略"));
-        assert!(load_code_snippet("quick_start/fonts.rs").is_some());
+        assert!(QUICK_START_DOC.contains("with_ui_weight(FontWeight::MEDIUM)"));
+        assert!(QUICK_START_DOC.contains("with_code_weight"));
+        let snippet = load_code_snippet("quick_start/fonts.rs").expect("font snippet should load");
+        assert!(snippet.contains("FontWeight"));
+        assert!(snippet.contains(".with_ui_weight(FontWeight::MEDIUM)"));
     }
 
     #[test]
@@ -11297,15 +11301,16 @@ mod tests {
     }
 
     #[test]
-    fn gallery_and_docs_share_pingfang_font_bootstrap_policy() {
+    fn gallery_and_docs_share_misans_font_bootstrap_policy() {
         let gallery = include_str!("../../liora-gallery/src/main.rs");
         let docs = include_str!("main.rs");
 
         for source in [gallery, docs] {
             assert!(source.contains("FontLoadMode::ExternalThenEmbedded"));
-            assert!(source.contains("PingFangSC-Regular.ttf"));
-            assert!(source.contains(r#"require_family("PingFang SC")"#));
-            assert!(source.contains(r#"with_ui_families(["PingFang SC", "Segoe UI", "Arial"])"#));
+            assert!(source.contains("MiSans-Medium.ttf"));
+            assert!(source.contains(r#"require_family("MiSans")"#));
+            assert!(source.contains(r#"with_ui_families(["MiSans", "Segoe UI", "Arial"])"#));
+            assert!(source.contains(".with_ui_weight(FontWeight::MEDIUM)"));
             assert!(source.contains(
                 r#"with_code_families(["Consolas", "JetBrains Mono", "SF Mono", "Monospace"])"#
             ));

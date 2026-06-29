@@ -24,7 +24,7 @@ use gpui::{
     App, Context, Entity, FocusHandle, Focusable, Hsla, IntoElement, KeyBinding, Pixels, Render,
     SharedString, Window, actions, div, prelude::*, px,
 };
-use liora_core::{Config, code_font_family};
+use liora_core::{Config, code_font_family, code_font_weight};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 use std::sync::Arc;
@@ -480,6 +480,7 @@ impl Render for CodeEditor {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
         let code_family = code_font_family(cx);
+        let code_weight = code_font_weight(cx);
         let value = self.value(cx);
         let line_count = line_count(value.as_ref());
         let rows = self.rows.max(line_count).max(1);
@@ -560,7 +561,7 @@ impl Render for CodeEditor {
                     .min_h(px(220.0))
                     .bg(theme.neutral.hover.opacity(0.24))
                     .child(if self.line_numbers {
-                        line_number_gutter(line_count, &theme, code_family.clone())
+                        line_number_gutter(line_count, &theme, code_family.clone(), code_weight)
                             .into_any_element()
                     } else {
                         div().into_any_element()
@@ -570,6 +571,7 @@ impl Render for CodeEditor {
                             .flex_1()
                             .p_3()
                             .font_family(code_family.clone())
+                            .when_some(code_weight, |s, weight| s.font_weight(weight))
                             .text_sm()
                             .child(self.input.clone()),
                     ),
@@ -624,6 +626,7 @@ fn line_number_gutter(
     line_count: usize,
     theme: &liora_theme::Theme,
     code_family: SharedString,
+    code_weight: Option<gpui::FontWeight>,
 ) -> gpui::Div {
     let mut gutter = div()
         .flex_none()
@@ -633,6 +636,7 @@ fn line_number_gutter(
         .border_r_1()
         .border_color(theme.neutral.border)
         .font_family(code_family)
+        .when_some(code_weight, |s, weight| s.font_weight(weight))
         .text_xs()
         .text_color(theme.neutral.text_3)
         .flex()

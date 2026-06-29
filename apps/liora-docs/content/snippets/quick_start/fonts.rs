@@ -6,7 +6,7 @@
 
 use gpui::App;
 use liora_components::{
-    FontConfig, FontLoadMode, FontLoadOptions, LioraOptions, init_liora_with_options,
+    FontConfig, FontLoadMode, FontLoadOptions, FontWeight, LioraOptions, init_liora_with_options,
     load_app_fonts, set_font_config,
 };
 use std::{borrow::Cow, path::PathBuf};
@@ -39,13 +39,12 @@ fn app_font_dirs(app_binary: &str) -> Vec<PathBuf> {
 pub fn init_with_packaged_fonts(cx: &mut App) {
     let mut options = FontLoadOptions::new(FontLoadMode::ExternalThenEmbedded)
         .embedded(
-            "PingFangSC-Regular.ttf",
+            "MiSans-Medium.ttf",
             Cow::Borrowed(
-                include_bytes!("../../../assets/fonts/PingFangSC/PingFangSC-Regular.ttf")
-                    .as_slice(),
+                include_bytes!("../../../assets/fonts/MiSans/MiSans-Medium.ttf").as_slice(),
             ),
         )
-        .require_family("PingFang SC");
+        .require_family("MiSans");
 
     for dir in app_font_dirs("my-liora-app") {
         options = options.external_dir(dir);
@@ -60,7 +59,8 @@ pub fn init_with_packaged_fonts(cx: &mut App) {
         cx,
         LioraOptions::system().with_fonts(
             FontConfig::system()
-                .with_ui_families(["PingFang SC", "Segoe UI", "Arial"])
+                .with_ui_families(["MiSans", "Segoe UI", "Arial"])
+                .with_ui_weight(FontWeight::MEDIUM)
                 .with_code_families(["Consolas", "JetBrains Mono", "SF Mono", "Monospace"]),
         ),
     );
@@ -70,7 +70,8 @@ pub fn switch_to_system_fallbacks(cx: &mut App) {
     set_font_config(
         cx,
         FontConfig::system()
-            .with_ui_families(["Segoe UI", "PingFang SC", "Arial"])
+            .with_ui_families(["Segoe UI", "MiSans", "Arial"])
+            .with_ui_weight(FontWeight::NORMAL)
             .with_code_families(["Consolas", "JetBrains Mono", "SF Mono", "Monospace"]),
     );
 }

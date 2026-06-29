@@ -158,6 +158,7 @@ impl RenderOnce for Container {
         let main_id = stable_unique_id("container-main-scroll", "main", window, cx);
         let config = cx.global::<liora_core::Config>();
         let theme = config.theme.clone();
+        let ui_weight = liora_core::ui_font_weight(cx);
         let ui_family = liora_core::ui_font_family(cx);
         let aside_right = self.aside_right;
         let main_children = self.main;
@@ -177,6 +178,9 @@ impl RenderOnce for Container {
 
         if let Some(family) = ui_family {
             page = page.font_family(family);
+        }
+        if let Some(weight) = ui_weight {
+            page = page.font_weight(weight);
         }
 
         // Header
