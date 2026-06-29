@@ -51,9 +51,15 @@ impl From<Pixels> for GridGap {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum GridMode {
     /// Keep item width stable and let the number of columns change with parent width.
-    FitItem { item_size: Pixels },
+    FitItem {
+        /// Target item width before wrapping to the next row.
+        item_size: Pixels,
+    },
     /// Keep the column count stable and let item width scale with parent width.
-    FitColumns { columns: u16 },
+    FitColumns {
+        /// Fixed number of columns to distribute across the available width.
+        columns: u16,
+    },
 }
 
 /// Native responsive grid container.
