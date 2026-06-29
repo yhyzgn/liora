@@ -1440,7 +1440,7 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "bar_chart/grouped.rs" => Some(include_str!("../content/snippets/bar_chart/grouped.rs")),
         "bar_chart/gradient.rs" => Some(include_str!("../content/snippets/bar_chart/gradient.rs")),
         "bar_chart/per_bar_gradient.rs" => Some(include_str!(
-            "../content/snippets/bar_chart/per_bar_gradient.rs",
+            "../content/snippets/bar_chart/per_bar_gradient.rs"
         )),
         "bar_chart/stacked.rs" => Some(include_str!("../content/snippets/bar_chart/stacked.rs")),
         "bar_chart/custom.rs" => Some(include_str!("../content/snippets/bar_chart/custom.rs")),
