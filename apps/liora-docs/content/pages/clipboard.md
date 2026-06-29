@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="ClipboardHelper"}::
+::Demo{component="ClipboardHelper"}::
 
 ### 代码
 

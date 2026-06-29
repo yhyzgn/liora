@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="SparklineBasic"}::
+::Demo{component="SparklineBasic"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="SparklineCards"}::
+::Demo{component="SparklineCards"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="SparklineArea"}::
+::Demo{component="SparklineArea"}::
 
 ### 代码
 
@@ -39,7 +39,7 @@
 
 ### 效果
 
-::LioraDemo{component="SparklineStyles"}::
+::Demo{component="SparklineStyles"}::
 
 ### 代码
 
@@ -51,7 +51,7 @@
 
 ### 效果
 
-::LioraDemo{component="SparklineDownsample"}::
+::Demo{component="SparklineDownsample"}::
 
 ### 代码
 

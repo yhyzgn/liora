@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="ParagraphWrapped"}::
+::Demo{component="ParagraphWrapped"}::
 
 ### 代码
 
@@ -22,7 +22,7 @@
 
 ### 效果
 
-::LioraDemo{component="SelectableTextGroupBasic"}::
+::Demo{component="SelectableTextGroupBasic"}::
 
 ### 代码
 
@@ -35,7 +35,7 @@
 
 ### 效果
 
-::LioraDemo{component="TypographyParagraph"}::
+::Demo{component="TypographyParagraph"}::
 
 ### 代码
 

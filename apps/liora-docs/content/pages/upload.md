@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="UploadBasic"}::
+::Demo{component="UploadBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="UploadDrag"}::
+::Demo{component="UploadDrag"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@
 
 ### 效果
 
-::LioraDemo{component="UploadPictureCard"}::
+::Demo{component="UploadPictureCard"}::
 
 ### 代码
 
@@ -47,7 +47,7 @@
 
 ### 效果
 
-::LioraDemo{component="UploadLimits"}::
+::Demo{component="UploadLimits"}::
 
 ### 代码
 

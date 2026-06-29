@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="CandlestickChartBasic"}::
+::Demo{component="CandlestickChartBasic"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="CandlestickChartCustom"}::
+::Demo{component="CandlestickChartCustom"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="CandlestickChartDense"}::
+::Demo{component="CandlestickChartDense"}::
 
 ### 代码
 

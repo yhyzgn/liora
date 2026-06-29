@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="KbdBasic"}::
+::Demo{component="KbdBasic"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="KbdSizes"}::
+::Demo{component="KbdSizes"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="KbdComposition"}::
+::Demo{component="KbdComposition"}::
 
 ### 代码
 

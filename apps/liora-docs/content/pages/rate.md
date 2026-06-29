@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="RateBasic"}::
+::Demo{component="RateBasic"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="RateCustom"}::
+::Demo{component="RateCustom"}::
 
 ### 代码
 

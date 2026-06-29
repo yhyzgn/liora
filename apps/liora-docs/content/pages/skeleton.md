@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="SkeletonBasic"}::
+::Demo{component="SkeletonBasic"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="SkeletonVariants"}::
+::Demo{component="SkeletonVariants"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="SkeletonTemplate"}::
+::Demo{component="SkeletonTemplate"}::
 
 ### 代码
 

@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="TransferBasic"}::
+::Demo{component="TransferBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="TransferFilterable"}::
+::Demo{component="TransferFilterable"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@
 
 ### 效果
 
-::LioraDemo{component="TransferDisabled"}::
+::Demo{component="TransferDisabled"}::
 
 ### 代码
 

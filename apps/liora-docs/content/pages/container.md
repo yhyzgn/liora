@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="ContainerSpace"}::
+::Demo{component="ContainerSpace"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="ContainerDivider"}::
+::Demo{component="ContainerDivider"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@
 
 ### 效果
 
-::LioraDemo{component="ContainerLayout"}::
+::Demo{component="ContainerLayout"}::
 
 ### 代码
 

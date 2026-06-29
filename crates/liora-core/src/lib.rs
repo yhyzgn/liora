@@ -14,12 +14,16 @@ use gpui::{
 pub use gpui::FontWeight;
 
 use std::borrow::Cow;
+use std::path::Path;
+use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
 pub mod fonts;
+pub mod locales;
 
 pub use fonts::*;
+pub use locales::*;
 
 static NEXT_UNIQUE_ID: AtomicU64 = AtomicU64::new(1);
 
@@ -111,14 +115,16 @@ impl FontConfig {
 
 /// Complete options for initializing Liora core state.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct LioraOptions {
+pub struct Options {
     /// Startup theme mode. Defaults to following the operating system.
     pub theme_mode: ThemeMode,
     /// Optional app typography overrides. Defaults to system font families and weights.
     pub fonts: FontConfig,
+    /// Runtime locale resources config. Defaults to `en-US` with built-in fallback resources.
+    pub locales: LocalesConfig,
 }
 
-impl LioraOptions {
+impl Options {
     /// Creates options that follow the operating-system theme and font choices.
     pub fn system() -> Self {
         Self::default()
@@ -133,6 +139,48 @@ impl LioraOptions {
     /// Returns options with custom Liora font families and default weights.
     pub fn with_fonts(mut self, fonts: FontConfig) -> Self {
         self.fonts = fonts;
+        self
+    }
+
+    /// Returns options with an active locale.
+    pub fn with_locale(mut self, locale: impl Into<LocaleId>) -> Self {
+        self.locales = self.locales.with_locale(locale);
+        self
+    }
+
+    /// Returns options with a fallback locale.
+    pub fn with_fallback_locale(mut self, locale: impl Into<LocaleId>) -> Self {
+        self.locales = self.locales.with_fallback_locale(locale);
+        self
+    }
+
+    /// Returns options with a complete locales config.
+    pub fn with_locales(mut self, locales: LocalesConfig) -> Self {
+        self.locales = locales;
+        self
+    }
+
+    /// Returns options with file-backed locales resources.
+    pub fn with_locales_resources(mut self, resources: LocalesMap) -> Self {
+        self.locales = self.locales.with_resources(resources);
+        self
+    }
+
+    /// Loads all TOML language files from `dir` and returns options using them.
+    pub fn try_with_locales_dir(mut self, dir: impl AsRef<Path>) -> Result<Self, LocalesLoadError> {
+        self.locales = self.locales.try_with_locales_dir(dir)?;
+        Ok(self)
+    }
+
+    /// Returns options with a custom translator. The translator is consulted before file-backed resources.
+    pub fn with_translator(mut self, translator: impl Translator + 'static) -> Self {
+        self.locales = self.locales.with_translator(translator);
+        self
+    }
+
+    /// Returns options with a shared custom translator.
+    pub fn with_shared_translator(mut self, translator: Arc<dyn Translator>) -> Self {
+        self.locales = self.locales.with_shared_translator(translator);
         self
     }
 }
@@ -604,6 +652,8 @@ pub struct Config {
     pub theme_mode: ThemeMode,
     /// Optional UI/code font family overrides.
     pub fonts: FontConfig,
+    /// Runtime locale resources state.
+    pub locales: LocalesConfig,
     /// Base z-index offset for overlay layering.
     pub z_index_base: u32,
 }
@@ -620,6 +670,11 @@ impl Config {
     /// Replaces the app typography policy while preserving the active theme.
     pub fn set_font_config(&mut self, fonts: FontConfig) {
         self.fonts = fonts;
+    }
+
+    /// Replaces the app locales policy while preserving the active theme.
+    pub fn set_locales_config(&mut self, locales: LocalesConfig) {
+        self.locales = locales;
     }
 
     /// Synchronizes the active theme from the current system/window appearance.
@@ -643,6 +698,7 @@ pub fn init_liora(cx: &mut App, theme: Theme) {
             theme,
             theme_mode,
             fonts: FontConfig::default(),
+            locales: LocalesConfig::default(),
             z_index_base: 1000,
         },
     );
@@ -659,11 +715,11 @@ fn set_core_config(cx: &mut App, config: Config) {
 
 /// Initializes Liora core state from a theme mode, including system mode resolution.
 pub fn init_liora_with_mode(cx: &mut App, mode: ThemeMode) {
-    init_liora_with_options(cx, LioraOptions::default().with_theme_mode(mode));
+    init_liora_with_options(cx, Options::default().with_theme_mode(mode));
 }
 
 /// Initializes Liora core state from full startup options.
-pub fn init_liora_with_options(cx: &mut App, options: LioraOptions) {
+pub fn init_liora_with_options(cx: &mut App, options: Options) {
     let appearance = startup_system_appearance(cx);
     set_core_config(
         cx,
@@ -671,6 +727,7 @@ pub fn init_liora_with_options(cx: &mut App, options: LioraOptions) {
             theme: options.theme_mode.resolve(appearance),
             theme_mode: options.theme_mode,
             fonts: options.fonts,
+            locales: options.locales,
             z_index_base: 1000,
         },
     );
@@ -987,6 +1044,7 @@ mod theme_mode_tests {
             theme: Theme::light(),
             theme_mode: ThemeMode::Light,
             fonts: FontConfig::default(),
+            locales: LocalesConfig::default(),
             z_index_base: 1000,
         };
         assert!(!config.sync_system_theme(WindowAppearance::Dark));
@@ -1025,11 +1083,12 @@ mod theme_mode_tests {
         );
         assert_eq!(custom.ui_weight(), Some(FontWeight::MEDIUM));
         assert_eq!(custom.code_weight(), Some(FontWeight::NORMAL));
-        let options = LioraOptions::system()
+        let options = Options::system()
             .with_theme_mode(ThemeMode::Dark)
             .with_fonts(custom.clone());
         assert_eq!(options.theme_mode, ThemeMode::Dark);
         assert_eq!(options.fonts, custom);
+        assert_eq!(options.locales.locale.as_str(), "en-US");
     }
 
     #[test]

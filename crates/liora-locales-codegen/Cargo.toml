@@ -1,0 +1,11 @@
+[package]
+name = "liora-locales-codegen"
+version = "0.1.20"
+edition = "2024"
+description = "Build-time locale key generation for Liora applications."
+license-file = "../../LICENSE.md"
+repository = "https://github.com/yhyzgn/liora"
+publish = true
+
+[dependencies]
+toml.workspace = true

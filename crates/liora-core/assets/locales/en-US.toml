@@ -1,0 +1,19 @@
+[common]
+ok = "OK"
+cancel = "Cancel"
+close = "Close"
+confirm = "Confirm"
+clear = "Clear"
+loading = "Loading"
+empty = "No data"
+
+[message_box]
+ok = "OK"
+cancel = "Cancel"
+confirm = "Confirm"
+
+[empty]
+description = "No data"
+
+[image]
+loading = "Loading"

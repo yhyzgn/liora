@@ -13,4 +13,4 @@ let icon = Icon::new(IconName::Settings).size_lg();
 
 ## 完整 IconName 清单
 
-::LioraDemo{component="IconCatalogLucide"}::
+::Demo{component="IconCatalogLucide"}::

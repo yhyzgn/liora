@@ -7,7 +7,7 @@
 
 ### 效果
 
-::LioraDemo{component="ProgressBasic"}::
+::Demo{component="ProgressBasic"}::
 
 ### 代码
 
@@ -18,7 +18,7 @@
 
 ### 效果
 
-::LioraDemo{component="ProgressInside"}::
+::Demo{component="ProgressInside"}::
 
 ### 代码
 
@@ -29,7 +29,7 @@
 
 ### 效果
 
-::LioraDemo{component="ProgressStatus"}::
+::Demo{component="ProgressStatus"}::
 
 ### 代码
 
@@ -40,7 +40,7 @@
 
 ### 效果
 
-::LioraDemo{component="ProgressColor"}::
+::Demo{component="ProgressColor"}::
 
 ### 代码
 
@@ -53,7 +53,7 @@
 
 ### 效果
 
-::LioraDemo{component="ProgressGradientComplete"}::
+::Demo{component="ProgressGradientComplete"}::
 
 ### 代码
 
@@ -64,7 +64,7 @@
 
 ### 效果
 
-::LioraDemo{component="ProgressCircle"}::
+::Demo{component="ProgressCircle"}::
 
 ### 代码
 
@@ -75,7 +75,7 @@
 
 ### 效果
 
-::LioraDemo{component="ProgressCustom"}::
+::Demo{component="ProgressCustom"}::
 
 ### 代码
 
@@ -86,7 +86,7 @@
 
 ### 效果
 
-::LioraDemo{component="ProgressCircleGradient"}::
+::Demo{component="ProgressCircleGradient"}::
 
 ### 代码
 

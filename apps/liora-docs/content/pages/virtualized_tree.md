@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="VirtualizedTreeBasic"}::
+::Demo{component="VirtualizedTreeBasic"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="VirtualizedTreeCheckable"}::
+::Demo{component="VirtualizedTreeCheckable"}::
 
 ### 代码
 

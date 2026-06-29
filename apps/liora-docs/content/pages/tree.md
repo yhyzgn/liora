@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="TreeBasic"}::
+::Demo{component="TreeBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="TreeCheckable"}::
+::Demo{component="TreeCheckable"}::
 
 ### 代码
 

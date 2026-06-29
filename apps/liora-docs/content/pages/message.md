@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="MessageTypes"}::
+::Demo{component="MessageTypes"}::
 
 ### 代码
 
@@ -19,7 +19,7 @@
 
 ### 效果
 
-::LioraDemo{component="MessageFormatting"}::
+::Demo{component="MessageFormatting"}::
 
 ### 代码
 

@@ -13,4 +13,4 @@ let icon = Icon::new(IconName::SaveOutlined).size_lg();
 
 ## 完整 IconName 清单
 
-::LioraDemo{component="IconCatalogAntd"}::
+::Demo{component="IconCatalogAntd"}::

@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="TimePickerBasic"}::
+::Demo{component="TimePickerBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="TimePickerFormatted"}::
+::Demo{component="TimePickerFormatted"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@
 
 ### 效果
 
-::LioraDemo{component="TimePickerStepped"}::
+::Demo{component="TimePickerStepped"}::
 
 ### 代码
 
@@ -47,7 +47,7 @@
 
 ### 效果
 
-::LioraDemo{component="TimePickerNoSeconds"}::
+::Demo{component="TimePickerNoSeconds"}::
 
 ### 代码
 
@@ -60,7 +60,7 @@
 
 ### 效果
 
-::LioraDemo{component="TimePickerDisabled"}::
+::Demo{component="TimePickerDisabled"}::
 
 ### 代码
 

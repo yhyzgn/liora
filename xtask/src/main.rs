@@ -607,11 +607,11 @@ fn install_smoke_plan(
             app.package
         ),
         (Platform::Windows, PackageFormat::Nsis) => format!(
-            "install-smoke plan: app={} format=nsis\n  install: {path} /S /D=%TEMP%\\LioraInstallSmoke\\{}\n  smoke: run installed {}.exe with timeout if runner policy allows\n  uninstall: invoke generated uninstaller silently, then remove temp directory",
+            "install-smoke plan: app={} format=nsis\n  install: {path} /S /D=%TEMP%\\InstallSmoke\\{}\n  smoke: run installed {}.exe with timeout if runner policy allows\n  uninstall: invoke generated uninstaller silently, then remove temp directory",
             app.package, app.binary, app.binary
         ),
         (Platform::Windows, PackageFormat::Msi) => format!(
-            "install-smoke plan: app={} format=msi\n  install: msiexec /i {path} /qn TARGETDIR=%TEMP%\\LioraInstallSmoke\\{}\n  smoke: run installed {}.exe with timeout if runner policy allows\n  uninstall: msiexec /x {path} /qn",
+            "install-smoke plan: app={} format=msi\n  install: msiexec /i {path} /qn TARGETDIR=%TEMP%\\InstallSmoke\\{}\n  smoke: run installed {}.exe with timeout if runner policy allows\n  uninstall: msiexec /x {path} /qn",
             app.package, app.binary, app.binary
         ),
         (_, other) => format!(

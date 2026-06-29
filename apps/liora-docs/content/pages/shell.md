@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="ShellFullProduct"}::
+::Demo{component="ShellFullProduct"}::
 
 ### 代码
 
@@ -19,7 +19,7 @@
 
 ### 效果
 
-::LioraDemo{component="ShellContentFirst"}::
+::Demo{component="ShellContentFirst"}::
 
 ### 代码
 
@@ -30,7 +30,7 @@
 
 ### 效果
 
-::LioraDemo{component="ShellMinimal"}::
+::Demo{component="ShellMinimal"}::
 
 ### 代码
 

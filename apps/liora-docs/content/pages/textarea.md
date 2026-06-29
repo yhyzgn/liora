@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="TextareaBasic"}::
+::Demo{component="TextareaBasic"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="TextareaLimit"}::
+::Demo{component="TextareaLimit"}::
 
 ### 代码
 

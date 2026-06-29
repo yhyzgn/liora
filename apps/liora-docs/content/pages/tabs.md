@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="TabsBasic"}::
+::Demo{component="TabsBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="TabsStretch"}::
+::Demo{component="TabsStretch"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@
 
 ### 效果
 
-::LioraDemo{component="TabsCard"}::
+::Demo{component="TabsCard"}::
 
 ### 代码
 
@@ -47,7 +47,7 @@
 
 ### 效果
 
-::LioraDemo{component="TabsBorderCard"}::
+::Demo{component="TabsBorderCard"}::
 
 ### 代码
 
@@ -60,7 +60,7 @@
 
 ### 效果
 
-::LioraDemo{component="TabsPosition"}::
+::Demo{component="TabsPosition"}::
 
 ### 代码
 
@@ -73,7 +73,7 @@
 
 ### 效果
 
-::LioraDemo{component="TabsEditable"}::
+::Demo{component="TabsEditable"}::
 
 ### 代码
 

@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="DialogBasic"}::
+::Demo{component="DialogBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="DialogManualClose"}::
+::Demo{component="DialogManualClose"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@
 
 ### 效果
 
-::LioraDemo{component="DialogCustomContent"}::
+::Demo{component="DialogCustomContent"}::
 
 ### 代码
 

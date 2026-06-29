@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="OperationBasic"}::
+::Demo{component="OperationBasic"}::
 
 ### 代码
 

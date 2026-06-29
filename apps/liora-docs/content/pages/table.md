@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="TableSortable"}::
+::Demo{component="TableSortable"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="TableBasic"}::
+::Demo{component="TableBasic"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@
 
 ### 效果
 
-::LioraDemo{component="TableStripeBorder"}::
+::Demo{component="TableStripeBorder"}::
 
 ### 代码
 
@@ -47,7 +47,7 @@
 
 ### 效果
 
-::LioraDemo{component="TableFixedHeader"}::
+::Demo{component="TableFixedHeader"}::
 
 ### 代码
 
@@ -60,7 +60,7 @@
 
 ### 效果
 
-::LioraDemo{component="TableLoading"}::
+::Demo{component="TableLoading"}::
 
 ### 代码
 
@@ -73,7 +73,7 @@
 
 ### 效果
 
-::LioraDemo{component="TableEmpty"}::
+::Demo{component="TableEmpty"}::
 
 ### 代码
 

@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="FocusTrapPolicy"}::
+::Demo{component="FocusTrapPolicy"}::
 
 ### 代码
 

@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="SignalMeterMobile"}::
+::Demo{component="SignalMeterMobile"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="SignalMeterWifi"}::
+::Demo{component="SignalMeterWifi"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="SignalMeterLevels"}::
+::Demo{component="SignalMeterLevels"}::
 
 ### 代码
 
@@ -39,7 +39,7 @@
 
 ### 效果
 
-::LioraDemo{component="SignalMeterThresholdColors"}::
+::Demo{component="SignalMeterThresholdColors"}::
 
 ### 代码
 

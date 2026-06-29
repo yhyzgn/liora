@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="IconLucide"}::
+::Demo{component="IconLucide"}::
 
 ### 代码
 
@@ -22,7 +22,7 @@
 
 ### 效果
 
-::LioraDemo{component="IconLibraries"}::
+::Demo{component="IconLibraries"}::
 
 ### 代码
 
@@ -35,7 +35,7 @@
 
 ### 效果
 
-::LioraDemo{component="IconColors"}::
+::Demo{component="IconColors"}::
 
 ### 代码
 
@@ -48,7 +48,7 @@
 
 ### 效果
 
-::LioraDemo{component="IconSizes"}::
+::Demo{component="IconSizes"}::
 
 ### 代码
 

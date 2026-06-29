@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="LoadingBasic"}::
+::Demo{component="LoadingBasic"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="LoadingFullscreen"}::
+::Demo{component="LoadingFullscreen"}::
 
 ### 代码
 

@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="SpinnerSizes"}::
+::Demo{component="SpinnerSizes"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="SpinnerColors"}::
+::Demo{component="SpinnerColors"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="SpinnerComposition"}::
+::Demo{component="SpinnerComposition"}::
 
 ### 代码
 

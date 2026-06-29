@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="DatePickerBasic"}::
+::Demo{component="DatePickerBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="DatePickerFormatted"}::
+::Demo{component="DatePickerFormatted"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@
 
 ### 效果
 
-::LioraDemo{component="DatePickerRange"}::
+::Demo{component="DatePickerRange"}::
 
 ### 代码
 
@@ -47,7 +47,7 @@
 
 ### 效果
 
-::LioraDemo{component="DatePickerMonth"}::
+::Demo{component="DatePickerMonth"}::
 
 ### 代码
 
@@ -60,7 +60,7 @@
 
 ### 效果
 
-::LioraDemo{component="DatePickerMonthRange"}::
+::Demo{component="DatePickerMonthRange"}::
 
 ### 代码
 
@@ -73,7 +73,7 @@
 
 ### 效果
 
-::LioraDemo{component="DatePickerYear"}::
+::Demo{component="DatePickerYear"}::
 
 ### 代码
 
@@ -86,7 +86,7 @@
 
 ### 效果
 
-::LioraDemo{component="DatePickerYearRange"}::
+::Demo{component="DatePickerYearRange"}::
 
 ### 代码
 
@@ -99,7 +99,7 @@
 
 ### 效果
 
-::LioraDemo{component="DatePickerDisabled"}::
+::Demo{component="DatePickerDisabled"}::
 
 ### 代码
 

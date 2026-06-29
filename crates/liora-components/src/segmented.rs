@@ -102,6 +102,15 @@ impl Segmented {
         self.on_change = Some(Box::new(f));
     }
 
+    /// Replaces options while preserving the selected value when possible.
+    pub fn set_options(&mut self, options: Vec<SegmentedOption>) {
+        let current = self.value.clone();
+        self.value = current
+            .filter(|value| options.iter().any(|option| &option.value == value))
+            .or_else(|| options.first().map(|option| option.value.clone()));
+        self.options = options;
+    }
+
     fn select_option(&mut self, value: SharedString, window: &mut Window, cx: &mut Context<Self>) {
         if Some(&value) != self.value.as_ref() {
             self.value = Some(value.clone());

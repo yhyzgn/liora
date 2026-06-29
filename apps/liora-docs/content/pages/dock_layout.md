@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="DockLayoutWorkbench"}::
+::Demo{component="DockLayoutWorkbench"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="DockLayoutInspector"}::
+::Demo{component="DockLayoutInspector"}::
 
 ### 代码
 

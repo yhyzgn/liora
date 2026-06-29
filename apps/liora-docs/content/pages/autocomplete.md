@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="AutocompleteBasic"}::
+::Demo{component="AutocompleteBasic"}::
 
 ### 代码
 
@@ -19,7 +19,7 @@
 
 ### 效果
 
-::LioraDemo{component="AutocompleteCustom"}::
+::Demo{component="AutocompleteCustom"}::
 
 ### 代码
 
@@ -30,7 +30,7 @@
 
 ### 效果
 
-::LioraDemo{component="AutocompleteNoSuffix"}::
+::Demo{component="AutocompleteNoSuffix"}::
 
 ### 代码
 
@@ -41,7 +41,7 @@
 
 ### 效果
 
-::LioraDemo{component="AutocompleteDisabled"}::
+::Demo{component="AutocompleteDisabled"}::
 
 ### 代码
 

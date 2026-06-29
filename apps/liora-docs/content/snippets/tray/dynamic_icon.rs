@@ -1,6 +1,6 @@
 //! Dynamic tray icon switching for running states with app-owned assets.
 
-use liora_tray::{LioraTray, Result, TrayCommand, TrayIconImage, icon_from_png_bytes};
+use liora_tray::{Result, Tray, TrayCommand, TrayIconImage, icon_from_png_bytes};
 
 fn tray_icon_bytes(name: &str) -> &'static [u8] {
     match name {
@@ -17,7 +17,7 @@ pub fn icon_for_command(command: &TrayCommand) -> Result<Option<TrayIconImage>> 
     }
 }
 
-pub fn apply_icon_command(tray: &LioraTray, command: &TrayCommand) -> Result<bool> {
+pub fn apply_icon_command(tray: &Tray, command: &TrayCommand) -> Result<bool> {
     if let Some(icon) = icon_for_command(command)? {
         tray.set_icon(icon)?;
         Ok(true)

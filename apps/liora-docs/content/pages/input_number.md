@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="InputNumberBasic"}::
+::Demo{component="InputNumberBasic"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="InputNumberVertical"}::
+::Demo{component="InputNumberVertical"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="InputNumberPrecision"}::
+::Demo{component="InputNumberPrecision"}::
 
 ### 代码
 

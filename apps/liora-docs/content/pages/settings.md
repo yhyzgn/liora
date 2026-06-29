@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="SettingsPageBasic"}::
+::Demo{component="SettingsPageBasic"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="SettingsSensitive"}::
+::Demo{component="SettingsSensitive"}::
 
 ### 代码
 

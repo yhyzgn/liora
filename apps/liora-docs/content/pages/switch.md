@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="SwitchBasic"}::
+::Demo{component="SwitchBasic"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="SwitchDisabled"}::
+::Demo{component="SwitchDisabled"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="SwitchCallback"}::
+::Demo{component="SwitchCallback"}::
 
 ### 代码
 

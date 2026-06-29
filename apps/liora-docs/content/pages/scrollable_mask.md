@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="ScrollableMaskBasic"}::
+::Demo{component="ScrollableMaskBasic"}::
 
 ### 代码
 

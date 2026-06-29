@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="PopconfirmBasic"}::
+::Demo{component="PopconfirmBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@ Popconfirm 支持与 Popover 一致的方向配置，常用于贴近触发按钮
 
 ### 效果
 
-::LioraDemo{component="PopconfirmPlacements"}::
+::Demo{component="PopconfirmPlacements"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@ Popconfirm 支持与 Popover 一致的方向配置，常用于贴近触发按钮
 
 ### 效果
 
-::LioraDemo{component="PopconfirmCustomText"}::
+::Demo{component="PopconfirmCustomText"}::
 
 ### 代码
 

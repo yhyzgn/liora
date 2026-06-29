@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="DrawerPlacements"}::
+::Demo{component="DrawerPlacements"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="DrawerSizes"}::
+::Demo{component="DrawerSizes"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@
 
 ### 效果
 
-::LioraDemo{component="DrawerManualClose"}::
+::Demo{component="DrawerManualClose"}::
 
 ### 代码
 
@@ -48,7 +48,7 @@
 
 ### 效果
 
-::LioraDemo{component="DrawerSheetPlacements"}::
+::Demo{component="DrawerSheetPlacements"}::
 
 ### 代码
 
@@ -61,7 +61,7 @@
 
 ### 效果
 
-::LioraDemo{component="DrawerSheetControlled"}::
+::Demo{component="DrawerSheetControlled"}::
 
 ### 代码
 

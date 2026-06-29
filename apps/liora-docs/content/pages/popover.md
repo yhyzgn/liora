@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="PopoverBasic"}::
+::Demo{component="PopoverBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="PopoverPlacements"}::
+::Demo{component="PopoverPlacements"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@
 
 ### 效果
 
-::LioraDemo{component="PopoverCloseStrategy"}::
+::Demo{component="PopoverCloseStrategy"}::
 
 ### 代码
 

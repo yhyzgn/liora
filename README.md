@@ -324,7 +324,7 @@ Use the facade entry points for normal app binaries:
 
 ```rust
 use gpui::App;
-use liora::{FontConfig, FontWeight, LioraOptions};
+use liora::{FontConfig, FontWeight, Options};
 use liora::{ThemeMode, init_liora, init_liora_with_mode, init_liora_with_options};
 
 fn init_default(cx: &mut App) {
@@ -344,7 +344,7 @@ fn init_with_system_font_names(cx: &mut App) {
         .with_ui_weight(FontWeight::MEDIUM)
         .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"]);
 
-    init_liora_with_options(cx, LioraOptions::system().with_fonts(fonts));
+    init_liora_with_options(cx, Options::system().with_fonts(fonts));
 }
 ```
 
@@ -466,7 +466,7 @@ The recommended app dependency. It re-exports:
 
 ```rust
 use liora::{init_liora, init_liora_with_mode, init_liora_with_options};
-use liora::{FontConfig, LioraOptions, ThemeMode};
+use liora::{FontConfig, Options, ThemeMode};
 use liora::{components, core, icons, icons_lucide, icons_antd, icons_tabler, theme, tray};
 ```
 
@@ -597,7 +597,7 @@ System tray facade:
 
 ```rust
 use liora::tray::{
-    LioraTray, TrayCommand, TrayConfig, TrayMenuItemSpec, icon_from_png_bytes,
+    Tray, TrayCommand, TrayConfig, TrayMenuItemSpec, icon_from_png_bytes,
 };
 fn install_tray() -> liora::tray::Result<()> {
     let icon = icon_from_png_bytes(include_bytes!("../assets/tray-default.png"))?;
@@ -619,7 +619,7 @@ fn install_tray() -> liora::tray::Result<()> {
             TrayMenuItemSpec::action("Quit", TrayCommand::Quit),
         ]);
 
-    let tray = LioraTray::install(config)?;
+    let tray = Tray::install(config)?;
 
     // In your app event loop, map platform menu events with:
     // if let Some(command) = tray.command_for_event(&event) { ... }
@@ -1105,19 +1105,19 @@ Liora separates **font resource loading** from **font family / weight selection*
 
 1. If the family is already installed on the user's system, do not load any file. Set the ordered fallback family list with `FontConfig`.
 2. If the app ships private fonts, register bytes first with `load_app_fonts`, `load_fonts_from_dir`, `load_font_assets`, `load_embedded_fonts`, or the low-level `load_custom_fonts` compatibility helper.
-3. Then choose the ordered UI/code fallback lists and optional default weights with `LioraOptions::with_fonts(...)` at startup or `set_font_config(...)` at runtime. `with_ui_families(["MiSans", ...])` selects a family; use `with_ui_weight(FontWeight::MEDIUM)` when the desired face should render at Medium weight.
+3. Then choose the ordered UI/code fallback lists and optional default weights with `Options::with_fonts(...)` at startup or `set_font_config(...)` at runtime. `with_ui_families(["MiSans", ...])` selects a family; use `with_ui_weight(FontWeight::MEDIUM)` when the desired face should render at Medium weight.
 
 Supported file extensions are `ttf`, `otf`, `ttc`, `otc`, `woff`, and `woff2`, but actual parsing is delegated to the official GPUI backend for each platform. Prefer `ttf`/`otf`/`ttc`/`otc` for native desktop apps. On Linux/WGPU, the current GPUI `fontdb` path can ignore WOFF/WOFF2 bytes without returning an error, so use `FontLoadOptions::require_family(...)` and check `FontLoadReport::missing_required_families` whenever a specific family must be active.
 
 #### Use only system-installed fonts
 
 ```rust
-use liora::{FontConfig, FontWeight, LioraOptions, init_liora_with_options, set_font_config};
+use liora::{FontConfig, FontWeight, Options, init_liora_with_options, set_font_config};
 
 fn init_with_system_fonts(cx: &mut gpui::App) {
     init_liora_with_options(
         cx,
-        LioraOptions::system().with_fonts(
+        Options::system().with_fonts(
             FontConfig::system()
                 .with_ui_families(["Segoe UI", "MiSans", "Arial"]) // Ordered fallback list.
                 .with_ui_weight(FontWeight::MEDIUM)
@@ -1142,7 +1142,7 @@ fn switch_to_system_ui_and_monospace_code(cx: &mut gpui::App) {
 ```rust
 use std::borrow::Cow;
 use liora::{
-    FontConfig, FontLoadMode, FontLoadOptions, FontWeight, LioraOptions,
+    FontConfig, FontLoadMode, FontLoadOptions, FontWeight, Options,
     init_liora_with_options, load_app_fonts,
 };
 
@@ -1160,7 +1160,7 @@ fn init_with_embedded_font(cx: &mut gpui::App) {
 
     init_liora_with_options(
         cx,
-        LioraOptions::system().with_fonts(
+        Options::system().with_fonts(
             FontConfig::system()
                 .with_ui_families(["Inter", "Segoe UI", "Arial"])
                 .with_ui_weight(FontWeight::MEDIUM),
@@ -1176,7 +1176,7 @@ This is the recommended pattern when full font families are large. Keep a small 
 ```rust
 use std::{borrow::Cow, path::PathBuf};
 use liora::{
-    FontConfig, FontLoadMode, FontLoadOptions, FontWeight, LioraOptions,
+    FontConfig, FontLoadMode, FontLoadOptions, FontWeight, Options,
     init_liora_with_options, load_app_fonts,
 };
 
@@ -1215,7 +1215,7 @@ fn init_with_external_then_embedded(cx: &mut gpui::App) {
     // Mixed source example: UI uses the shipped MiSans family, code uses a system family.
     init_liora_with_options(
         cx,
-        LioraOptions::system().with_fonts(
+        Options::system().with_fonts(
             FontConfig::system()
                 .with_ui_families(["MiSans", "Segoe UI", "Arial"])
                 .with_ui_weight(FontWeight::MEDIUM)
@@ -1562,7 +1562,7 @@ cargo run --release -p xtask -- package release-readiness
 
 Use `liora::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)` when the product needs to choose an explicit startup theme mode. Runtime theme switches use `apply_theme_mode(window, cx, mode)` from `liora_core` or the facade's `core` module.
 
-Typography defaults are system-native: Liora does not load branded fonts by default and does not map the whole UI to Zed-specific font aliases. Custom fonts are opt-in via ordered `FontConfig` fallback lists, `LioraOptions`, `load_app_fonts`, `load_fonts_from_dir`, `load_font_assets`, `load_embedded_fonts`, the low-level `load_custom_fonts`, and `set_font_config`.
+Typography defaults are system-native: Liora does not load branded fonts by default and does not map the whole UI to Zed-specific font aliases. Custom fonts are opt-in via ordered `FontConfig` fallback lists, `Options`, `load_app_fonts`, `load_fonts_from_dir`, `load_font_assets`, `load_embedded_fonts`, the low-level `load_custom_fonts`, and `set_font_config`.
 
 Stateful controls such as `Input`, `Switch`, `Select`, `TreeSelect`, `CodeEditor`, and virtualized views should live in `gpui::Entity<T>` fields so focus, open state, selections, scroll state, and text values survive re-rendering.
 
@@ -1602,4 +1602,49 @@ Read `CONTRIBUTING.md` before opening a pull request. Important boundaries:
 
 ## License
 
-Liora currently uses `LicenseRef-Liora`; see `LICENSE.md`. Do not assume an OSS license until the project maintainer replaces that policy with explicit OSS or commercial terms.
+Liora currently uses `LicenseRef-Liora`; see `LICENSE.md`. Do not assume an OSS license until the project maintainer replaces that policy with explicit OSS or commercial terms.### External locales language files
+
+Liora supports runtime locale resources through external TOML language files. Keep files under `assets/locales/<locale>.toml`, load them through `Options::try_with_locales_dir(...)`, and switch at runtime with `apply_locale(window, cx, locale)` without rebuilding the window or losing component state.
+
+```toml
+# assets/locales/en-US.toml
+[common]
+ok = "OK"
+cancel = "Cancel"
+
+[empty]
+description = "No data"
+```
+
+```rust
+use liora::{Options, apply_locale, locales, init_liora_with_options, tr};
+
+fn setup(cx: &mut gpui::App) {
+    let options = Options::system()
+        .with_locale("en-US")
+        .with_fallback_locale("zh-CN")
+        .try_with_locales_dir("assets/locales")
+        .unwrap_or_else(|_| Options::system().with_locale("en-US"));
+
+    init_liora_with_options(cx, options);
+}
+
+fn switch_language(window: &mut gpui::Window, cx: &mut gpui::App) {
+    let _ = apply_locale(window, cx, "zh-CN");
+}
+
+fn empty_label(cx: &gpui::App) -> gpui::SharedString {
+    tr(cx, locales::empty::description)
+}
+```
+
+Use typed keys such as `locales::empty::description` instead of hardcoded strings like `"empty.description"`. During development, `liora-locales-codegen` scans the current package's `./assets/locales` directory from `build.rs` and regenerates `locales::section::key` constants whenever TOML files change. Custom directories can be configured in Cargo metadata:
+
+```toml
+[package.metadata.liora.locales]
+paths = ["assets/locales", "../shared/locales"]
+```
+
+For app-specific resources outside that generated module, define your own module with `liora::locales! { pub mod app_locales { docs { subtitle } } }` and pass those constants to `tr(cx, app_locales::docs::subtitle)`.
+
+Applications with an existing localization stack can implement `Translator` and pass it with `Options::with_translator(...)` or replace it at runtime with `set_translator(...)`. Liora components only depend on typed `Locales` values at call sites while `Translator` still receives the underlying string path, so the translation backend remains swappable.

@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="BadgeBasic"}::
+::Demo{component="BadgeBasic"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="BadgeMax"}::
+::Demo{component="BadgeMax"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="BadgeDot"}::
+::Demo{component="BadgeDot"}::
 
 ### 代码
 

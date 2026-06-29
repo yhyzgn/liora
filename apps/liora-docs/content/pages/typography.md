@@ -13,7 +13,7 @@ Liora Typography 可以把多个不同样式的文本片段合成为同一个 `S
 
 ### 效果
 
-::LioraDemo{component="TextBasic"}::
+::Demo{component="TextBasic"}::
 
 ### 代码
 
@@ -26,7 +26,7 @@ Liora Typography 可以把多个不同样式的文本片段合成为同一个 `S
 
 ### 效果
 
-::LioraDemo{component="TypographyParagraph"}::
+::Demo{component="TypographyParagraph"}::
 
 ### 代码
 
@@ -44,7 +44,7 @@ Liora Typography 可以把多个不同样式的文本片段合成为同一个 `S
 
 ### 效果
 
-::LioraDemo{component="TextDocumentBlocks"}::
+::Demo{component="TextDocumentBlocks"}::
 
 ### 代码
 
@@ -57,7 +57,7 @@ Liora Typography 可以把多个不同样式的文本片段合成为同一个 `S
 
 ### 效果
 
-::LioraDemo{component="TextMarkdown"}::
+::Demo{component="TextMarkdown"}::
 
 ### 代码
 
@@ -70,7 +70,7 @@ Liora Typography 可以把多个不同样式的文本片段合成为同一个 `S
 
 ### 效果
 
-::LioraDemo{component="TextDocumentInline"}::
+::Demo{component="TextDocumentInline"}::
 
 ### 代码
 

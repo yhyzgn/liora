@@ -13,4 +13,4 @@ let icon = Icon::new(IconName::CheckmarkFilled).size_lg();
 
 ## 完整 IconName 清单
 
-::LioraDemo{component="IconCatalogCarbon"}::
+::Demo{component="IconCatalogCarbon"}::

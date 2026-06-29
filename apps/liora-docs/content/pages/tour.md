@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="Tour"}::
+::Demo{component="Tour"}::
 
 ### 代码
 
@@ -19,7 +19,7 @@
 
 ### 效果
 
-::LioraDemo{component="TourMiddle"}::
+::Demo{component="TourMiddle"}::
 
 ### 代码
 
@@ -32,7 +32,7 @@
 
 ### 效果
 
-::LioraDemo{component="TourNoMask"}::
+::Demo{component="TourNoMask"}::
 
 ### 代码
 
@@ -45,7 +45,7 @@
 
 ### 效果
 
-::LioraDemo{component="TourClosePolicy"}::
+::Demo{component="TourClosePolicy"}::
 
 ### 代码
 

@@ -111,11 +111,11 @@ liora-gallery/Cargo.toml:
 
 `liora-tray` 是应用壳层 crate，用于封装 `tray-icon` 和 `muda`，避免 Gallery/Docs/业务 app 直接绑定三方 API。
 
-- 公开 Liora 自有类型：`TrayConfig`、`TrayMenuItemSpec`、`TrayCommand`、`LioraTray`。
+- 公开 Liora 自有类型：`TrayConfig`、`TrayMenuItemSpec`、`TrayCommand`、`Tray`。
 - 通过 `tray-icon::menu` re-export 使用 `muda` 菜单类型，不额外引入平行菜单依赖。
 - 动态图标通过 `TrayIcon::set_icon` 封装为 `set_icon` / `set_icon_from_rgba` / `set_icon_from_path`。
 - 菜单事件映射为稳定 command id，主程序负责将 `Show/Hide/Toggle/Quit/SetIcon/Custom` 应用到 GPUI 窗口和业务状态。
-- 启用托盘的 GPUI app 必须在应用状态中持有 `LioraTray` 全生命周期，并由应用关闭策略决定隐藏窗口或显式退出。
+- 启用托盘的 GPUI app 必须在应用状态中持有 `Tray` 全生命周期，并由应用关闭策略决定隐藏窗口或显式退出。
 - Linux 需要 GTK/AppIndicator 系统库；macOS 创建要求主线程；普通文档/demo 仅展示配置预览，避免创建真实 OS 托盘副作用。
 
 ### 2.6 原生打包架构（P12）
@@ -333,7 +333,7 @@ crates/liora-components/src/
 Markdown 中的特殊语法：
 
 ```text
-::LioraDemo{component="Button"}::
+::Demo{component="Button"}::
 ```
 
 由 renderer 识别为真实 Liora 组件节点，而不是文本。示例：识别 `Button` 后插入 `Button::new("Button").primary()` 等真实 view node，保留 hover/click 等原生交互。
@@ -352,13 +352,13 @@ Markdown 中的特殊语法：
 | Icon | `Icon` trait | P1 | 图标系统，集成 SVG |
 | Link | `Link` | P1 | 链接按钮样式 |
 | Text | `Text` | P1 | 文本组件（单行/多行截断） |
-| Typography | `LioraTitle` / `LioraParagraph` | P1 | 排版组件 |
-| Space | `LioraSpace` | P1 | 间距组件 |
-| Divider | `LioraDivider` | P1 | 分割线 |
+| Typography | `Title` / `Paragraph` | P1 | 排版组件 |
+| Space | `Space` | P1 | 间距组件 |
+| Divider | `Divider` | P1 | 分割线 |
 | CodeBlock | `CodeBlock` | P1 ✅ | 代码高亮显示，支持语言标签、复制、块级/行内格式 |
-| Scrollbar | `LioraScrollbar` | P2 | 自定义滚动条 |
-| Layout | `LioraRow` / `LioraCol` | P2 | 24 栅格布局（GPUI flexbox 已有基础，此为语义封装） |
-| Container | `LioraContainer` | P2 | 布局容器（header/aside/main/footer） |
+| Scrollbar | `Scrollbar` | P2 | 自定义滚动条 |
+| Layout | `Row` / `Col` | P2 | 24 栅格布局（GPUI flexbox 已有基础，此为语义封装） |
+| Container | `Container` | P2 | 布局容器（header/aside/main/footer） |
 | Border | — GPUI 原生 | — | `.border_1()` `.border_color()` |
 | Color | — Theme Token | — | 设计 Token 中已定义 |
 
@@ -372,28 +372,28 @@ Markdown 中的特殊语法：
 
 | Element-Plus | Liora 组件 | 阶段 | 说明 |
 |-------------|----------|------|------|
-| Input | `LioraInput` | P2 | 文本输入（含 prefix/suffix icon、clearable、password toggle） |
-| InputNumber | `LioraInputNumber` | P2 | 数字输入（步进按钮、min/max 限制） |
+| Input | `Input` | P2 | 文本输入（含 prefix/suffix icon、clearable、password toggle） |
+| InputNumber | `InputNumber` | P2 | 数字输入（步进按钮、min/max 限制） |
 | Textarea | `Textarea` | P2 | 多行文本（自动撑高、maxlength 计数） |
-| Checkbox | `LioraCheckbox` / `LioraCheckboxGroup` | P2 | 多选 |
-| Radio | `LioraRadio` / `LioraRadioGroup` | P2 | 单选 |
-| Switch | `LioraSwitch` | P2 | 开关 |
-| Select | `LioraSelect` | P3 | 下拉选择 ⚠️ Popper 定位 |
-| Slider | `LioraSlider` | P3 | 滑块 |
-| Form | `LioraForm` / `LioraFormItem` | P3 | 表单容器 + 校验 |
-| Rate | `LioraRate` | P3 | 评分 |
-| DatePicker | `LioraDatePicker` | P5 | 日期选择（自定义日历面板） |
-| TimePicker | `LioraTimePicker` | P5 | 时间选择 |
-| DateTimePicker | `LioraDateTimePicker` | P5 | 日期时间选择 |
-| ColorPicker | `LioraColorPicker` | P5 | 颜色选择 |
-| Cascader | `LioraCascader` | P5 | 级联选择 |
-| Transfer | `LioraTransfer` | P5 | 穿梭框 |
-| Upload | `LioraUpload` | P5 | 文件上传 |
-| Autocomplete | `LioraAutocomplete` | P5 | 自动补全 |
-| TreeSelect | `LioraTreeSelect` | P5 | 树形选择 |
+| Checkbox | `Checkbox` / `CheckboxGroup` | P2 | 多选 |
+| Radio | `Radio` / `RadioGroup` | P2 | 单选 |
+| Switch | `Switch` | P2 | 开关 |
+| Select | `Select` | P3 | 下拉选择 ⚠️ Popper 定位 |
+| Slider | `Slider` | P3 | 滑块 |
+| Form | `Form` / `FormItem` | P3 | 表单容器 + 校验 |
+| Rate | `Rate` | P3 | 评分 |
+| DatePicker | `DatePicker` | P5 | 日期选择（自定义日历面板） |
+| TimePicker | `TimePicker` | P5 | 时间选择 |
+| DateTimePicker | `DateTimePicker` | P5 | 日期时间选择 |
+| ColorPicker | `ColorPicker` | P5 | 颜色选择 |
+| Cascader | `Cascader` | P5 | 级联选择 |
+| Transfer | `Transfer` | P5 | 穿梭框 |
+| Upload | `Upload` | P5 | 文件上传 |
+| Autocomplete | `Autocomplete` | P5 | 自动补全 |
+| TreeSelect | `TreeSelect` | P5 | 树形选择 |
 | VirtualizedSelect | — v2 | P6 | 虚拟化选择器（GPUI 已有 UniformList） |
-| InputTag | `LioraInputTag` | P5 | 标签输入 |
-| Mention | `LioraMention` | P5 | @提及 |
+| InputTag | `InputTag` | P5 | 标签输入 |
+| Mention | `Mention` | P5 | @提及 |
 | DatePickerPanel | — 子组件 | P5 | 日期面板（内部组件） |
 | ColorPickerPanel | — 子组件 | P5 | 颜色面板（内部组件） |
 
@@ -401,26 +401,26 @@ Markdown 中的特殊语法：
 
 | Element-Plus | Liora 组件 | 阶段 | 说明 |
 |-------------|----------|------|------|
-| Avatar | `LioraAvatar` | P2 | 头像 |
-| Badge | `LioraBadge` | P2 | 徽章 |
-| Tag | `LioraTag` | P2 | 标签 |
-| Card | `LioraCard` | P3 | 卡片 |
-| Collapse | `LioraCollapse` / `LioraCollapseItem` | P3 | 折叠面板 |
-| Progress | `LioraProgress` | P3 | 进度条 |
-| Skeleton | `LioraSkeleton` | P3 | 骨架屏 |
-| Empty | `LioraEmpty` | P3 | 空状态 |
-| Result | `LioraResult` | P4 | 结果页 |
-| Descriptions | `LioraDescriptions` | P4 | 描述列表 |
-| Timeline | `LioraTimeline` | P4 | 时间线 |
-| Tree | `LioraTree` | P4 | 树形控件 |
-| Pagination | `LioraPagination` | P4 | 分页 |
-| Statistic | `LioraStatistic` | P4 | 统计数值 |
-| Segmented | `LioraSegmented` | P4 | 分段控制器 |
-| Table | `LioraTable` | P5 ⚠️ | 表格 ⚠️ 重难点 |
-| Calendar | `LioraCalendar` | P5 | 日历 |
-| Carousel | `LioraCarousel` | P5 | 走马灯 |
-| Image | `LioraImage` | P5 | 图片（懒加载、预览） |
-| Tour | `LioraTour` | P5 | 漫游引导 |
+| Avatar | `Avatar` | P2 | 头像 |
+| Badge | `Badge` | P2 | 徽章 |
+| Tag | `DocTag` | P2 | 标签 |
+| Card | `Card` | P3 | 卡片 |
+| Collapse | `Collapse` / `CollapseItem` | P3 | 折叠面板 |
+| Progress | `Progress` | P3 | 进度条 |
+| Skeleton | `Skeleton` | P3 | 骨架屏 |
+| Empty | `Empty` | P3 | 空状态 |
+| Result | `DocResult` | P4 | 结果页 |
+| Descriptions | `Descriptions` | P4 | 描述列表 |
+| Timeline | `Timeline` | P4 | 时间线 |
+| Tree | `Tree` | P4 | 树形控件 |
+| Pagination | `Pagination` | P4 | 分页 |
+| Statistic | `Statistic` | P4 | 统计数值 |
+| Segmented | `Segmented` | P4 | 分段控制器 |
+| Table | `Table` | P5 ⚠️ | 表格 ⚠️ 重难点 |
+| Calendar | `Calendar` | P5 | 日历 |
+| Carousel | `Carousel` | P5 | 走马灯 |
+| Image | `Image` | P5 | 图片（懒加载、预览） |
+| Tour | `Tour` | P5 | 漫游引导 |
 | VirtualizedTable | — v2 | P6 | 虚拟化表格 |
 | VirtualizedTree | — v2 | P6 | 虚拟化树 |
 | InfiniteScroll | — GPUI UniformList | — | GPUI 已有列表虚拟滚动 |
@@ -429,30 +429,30 @@ Markdown 中的特殊语法：
 
 | Element-Plus | Liora 组件 | 阶段 | 说明 |
 |-------------|----------|------|------|
-| Dropdown | `LioraDropdown` | P3 | 下拉菜单 ⚠️ Popper 定位 |
-| Menu | `LioraMenu` | P4 | 导航菜单 |
-| Tabs | `LioraTabs` / `LioraTabPane` | P4 | 标签页（下划线动画） |
-| Breadcrumb | `LioraBreadcrumb` | P4 | 面包屑 |
-| Steps | `LioraSteps` | P4 | 步骤条 |
-| PageHeader | `LioraPageHeader` | P4 | 页头 |
-| Affix | `LioraAffix` | P4 | 固钉（滚动吸顶） |
-| Backtop | `LioraBacktop` | P4 | 回到顶部 |
-| Anchor | `LioraAnchor` | P4 | 锚点链接 |
+| Dropdown | `Dropdown` | P3 | 下拉菜单 ⚠️ Popper 定位 |
+| Menu | `Menu` | P4 | 导航菜单 |
+| Tabs | `Tabs` / `TabPane` | P4 | 标签页（下划线动画） |
+| Breadcrumb | `Breadcrumb` | P4 | 面包屑 |
+| Steps | `Steps` | P4 | 步骤条 |
+| PageHeader | `PageHeader` | P4 | 页头 |
+| Affix | `Affix` | P4 | 固钉（滚动吸顶） |
+| Backtop | `Backtop` | P4 | 回到顶部 |
+| Anchor | `Anchor` | P4 | 锚点链接 |
 
 ### 3.6 Feedback 反馈组件 (10)
 
 | Element-Plus | Liora 组件 | 阶段 | 说明 |
 |-------------|----------|------|------|
-| Tooltip | `LioraTooltip` | P3 | 文字提示 ⚠️ Popper 定位 |
-| Popover | `LioraPopover` | P3 | 气泡卡片 ⚠️ Popper 定位 |
-| Popconfirm | `LioraPopconfirm` | P3 | 气泡确认 ⚠️ Popper 定位 |
-| Dialog | `LioraDialog` | P3 | 模态对话框（遮罩、焦点锁定） |
-| Drawer | `LioraDrawer` | P3 | 抽屉面板 |
-| Message | `LioraMessage` | P3 | 全局消息提示 |
-| Notification | `LioraNotification` | P3 | 通知 |
-| Alert | `LioraAlert` | P3 | 警示提示 |
-| Loading | `LioraLoading` | P3 | 加载状态（全屏/局部） |
-| MessageBox | `LioraMessageBox` | P4 | 消息弹窗（confirm/prompt） |
+| Tooltip | `Tooltip` | P3 | 文字提示 ⚠️ Popper 定位 |
+| Popover | `Popover` | P3 | 气泡卡片 ⚠️ Popper 定位 |
+| Popconfirm | `Popconfirm` | P3 | 气泡确认 ⚠️ Popper 定位 |
+| Dialog | `Dialog` | P3 | 模态对话框（遮罩、焦点锁定） |
+| Drawer | `Drawer` | P3 | 抽屉面板 |
+| Message | `Message` | P3 | 全局消息提示 |
+| Notification | `Notification` | P3 | 通知 |
+| Alert | `Alert` | P3 | 警示提示 |
+| Loading | `Loading` | P3 | 加载状态（全屏/局部） |
+| MessageBox | `MessageBox` | P4 | 消息弹窗（confirm/prompt） |
 
 ### 3.7 Charts 统计图 (6+)
 
@@ -469,8 +469,8 @@ Markdown 中的特殊语法：
 
 | Element-Plus | Liora 组件 | 阶段 | 说明 |
 |-------------|----------|------|------|
-| Divider | `LioraDivider` | P1 | 分割线（横向/纵向/带文字） |
-| Watermark | `LioraWatermark` | P5 | 水印 |
+| Divider | `Divider` | P1 | 分割线（横向/纵向/带文字） |
+| Watermark | `Watermark` | P5 | 水印 |
 
 ---
 
@@ -637,7 +637,7 @@ Table 是企业级组件库中最复杂、工作量最大的组件。Liora Table
 | **Markdown 解析引擎** | `pulldown-cmark` 生成 AST/Event；`apps/liora-docs/src/markdown.rs` 映射为 Liora/GPUI 原生元素树 |
 | **代码块/行内代码渲染** | 等宽字体、主题化背景、代码块水平滚动、行内代码不破坏段落换行 |
 | **双栏文档窗口** | 左侧文档/组件导航树，右侧 Markdown 渲染结果区，右侧支持垂直滚动 |
-| **Live Demo 注入** | `::LioraDemo{component="Button"}::` 映射为真实 Liora 组件 view node，保留原生交互 |
+| **Live Demo 注入** | `::Demo{component="Button"}::` 映射为真实 Liora 组件 view node，保留原生交互 |
 | **组件 API 文档** | 每个组件：Builder 方法 / Events 回调 / Slots 子元素 / 示例代码 / Live Demo |
 | **测试体系** | 单元测试（crate 级）、Markdown renderer 回归测试、组件测试、集成测试 |
 | **CI/CD** | GitHub Actions：cargo check / clippy / test / doc build |
@@ -728,7 +728,7 @@ Button::new("Click Me")
 接受 `impl IntoElement` 作为子内容：
 
 ```rust
-LioraCard::new()
+Card::new()
     .header(div().child("Card Title"))
     .body(div().child("Card Content"))
     .build(&theme)
@@ -736,7 +736,7 @@ LioraCard::new()
 
 ### 5.5 组件命名规范
 
-- 组件名：`Liora` + PascalCase → `Button`, `LioraInput`, `LioraDialog`
+- 组件名：`Liora` + PascalCase → `Button`, `Input`, `Dialog`
 - Builder 方法：`pub fn new(...) -> Self` 构造函数，`.variant()` / `.size()` 配置方法
 - 快捷方法：`.primary()` = `.variant(ButtonVariant::Primary)`，`.small()` = `.size(ButtonSize::Small)`
 - 构建方法：`.build(&theme) -> impl IntoElement`
@@ -856,9 +856,9 @@ pub struct FormRule {
 - Table 需要在此基础上支持**不等高行**和**固定列**
 - 方案：按列拆分为多个 `UniformList`，横向滚动时同步位移
 
-### 7.4 国际化 (i18n)
+### 7.4 国际化 (locales)
 
-- `Config` 中扩展 `locale: LioraLocale`
+- `Config` 中扩展 `locale: Locale`
 - 组件内部文案从 `cx.global::<Config>().locale` 读取
 - 预设 `zh-CN` / `en-US` 语言包
 

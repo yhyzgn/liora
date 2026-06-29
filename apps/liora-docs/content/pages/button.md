@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="ButtonTypes"}::
+::Demo{component="ButtonTypes"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="ButtonSecondary"}::
+::Demo{component="ButtonSecondary"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="ButtonText"}::
+::Demo{component="ButtonText"}::
 
 ### 代码
 
@@ -39,7 +39,7 @@
 
 ### 效果
 
-::LioraDemo{component="ButtonSizes"}::
+::Demo{component="ButtonSizes"}::
 
 ### 代码
 
@@ -50,7 +50,7 @@
 
 ### 效果
 
-::LioraDemo{component="ButtonStates"}::
+::Demo{component="ButtonStates"}::
 
 ### 代码
 
@@ -61,7 +61,7 @@
 
 ### 效果
 
-::LioraDemo{component="ButtonRounded"}::
+::Demo{component="ButtonRounded"}::
 
 ### 代码
 
@@ -73,7 +73,7 @@
 
 ### 效果
 
-::LioraDemo{component="ButtonCustomColors"}::
+::Demo{component="ButtonCustomColors"}::
 
 ### 代码
 
@@ -84,7 +84,7 @@
 
 ### 效果
 
-::LioraDemo{component="ButtonGradient"}::
+::Demo{component="ButtonGradient"}::
 
 ### 代码
 

@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="ImageBasic"}::
+::Demo{component="ImageBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="ImageFit"}::
+::Demo{component="ImageFit"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@
 
 ### 效果
 
-::LioraDemo{component="ImageStates"}::
+::Demo{component="ImageStates"}::
 
 ### 代码
 
@@ -47,7 +47,7 @@
 
 ### 效果
 
-::LioraDemo{component="ImagePreview"}::
+::Demo{component="ImagePreview"}::
 
 ### 代码
 

@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="ListUnordered"}::
+::Demo{component="ListUnordered"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="ListCustomUnordered"}::
+::Demo{component="ListCustomUnordered"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@
 
 ### 效果
 
-::LioraDemo{component="ListOrdered"}::
+::Demo{component="ListOrdered"}::
 
 ### 代码
 
@@ -47,7 +47,7 @@
 
 ### 效果
 
-::LioraDemo{component="ListCustomOrdered"}::
+::Demo{component="ListCustomOrdered"}::
 
 ### 代码
 

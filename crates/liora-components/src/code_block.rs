@@ -157,9 +157,9 @@ pub enum CodeTheme {
     /// Uses a neutral dark syntax theme.
     Dark,
     /// Uses Liora’s branded light syntax palette.
-    LioraLight,
+    BrandLight,
     /// Uses Liora’s branded dark syntax palette.
-    LioraDark,
+    BrandDark,
     /// Uses a GitHub-inspired light syntax palette.
     GitHubLight,
     /// Uses a GitHub-inspired dark syntax palette.
@@ -189,8 +189,8 @@ impl CodeTheme {
     pub fn label(self) -> &'static str {
         match self {
             Self::Auto => "auto",
-            Self::Light | Self::LioraLight => "liora-light",
-            Self::Dark | Self::LioraDark => "liora-dark",
+            Self::Light | Self::BrandLight => "liora-light",
+            Self::Dark | Self::BrandDark => "liora-dark",
             Self::GitHubLight => "github-light",
             Self::GitHubDark => "github-dark",
             Self::OneDark => "one-dark",
@@ -201,9 +201,9 @@ impl CodeTheme {
 
     fn mode(self) -> CodeThemeMode {
         match self {
-            Self::Auto | Self::Light | Self::LioraLight | Self::GitHubLight => CodeThemeMode::Light,
+            Self::Auto | Self::Light | Self::BrandLight | Self::GitHubLight => CodeThemeMode::Light,
             Self::Dark
-            | Self::LioraDark
+            | Self::BrandDark
             | Self::GitHubDark
             | Self::OneDark
             | Self::Nord
@@ -213,8 +213,8 @@ impl CodeTheme {
 
     fn embedded_theme(self) -> EmbeddedThemeName {
         match self {
-            Self::Auto | Self::Light | Self::LioraLight => EmbeddedThemeName::CatppuccinLatte,
-            Self::Dark | Self::LioraDark => EmbeddedThemeName::CatppuccinMocha,
+            Self::Auto | Self::Light | Self::BrandLight => EmbeddedThemeName::CatppuccinLatte,
+            Self::Dark | Self::BrandDark => EmbeddedThemeName::CatppuccinMocha,
             Self::GitHubLight => EmbeddedThemeName::Github,
             Self::GitHubDark => EmbeddedThemeName::OneHalfDark,
             Self::OneDark => EmbeddedThemeName::TwoDark,
@@ -343,12 +343,12 @@ impl CodeBlock {
 
     /// Sets the liora light theme value used by the component.
     pub fn liora_light_theme(self) -> Self {
-        self.theme(CodeTheme::LioraLight)
+        self.theme(CodeTheme::BrandLight)
     }
 
     /// Sets the liora dark theme value used by the component.
     pub fn liora_dark_theme(self) -> Self {
-        self.theme(CodeTheme::LioraDark)
+        self.theme(CodeTheme::BrandDark)
     }
 
     /// Sets the github light theme value used by the component.
@@ -410,8 +410,8 @@ impl CodeBlock {
         let _ = syntax_set();
         let themes = theme_set();
         for theme in [
-            CodeTheme::LioraLight,
-            CodeTheme::LioraDark,
+            CodeTheme::BrandLight,
+            CodeTheme::BrandDark,
             CodeTheme::GitHubLight,
             CodeTheme::GitHubDark,
             CodeTheme::OneDark,
@@ -1206,10 +1206,10 @@ fn syntax_set() -> &'static SyntaxSet {
 
 fn resolve_code_theme(code_theme: CodeTheme, theme: &liora_theme::Theme) -> ResolvedCodeTheme {
     let resolved = match code_theme {
-        CodeTheme::Auto if theme.name.eq_ignore_ascii_case("dark") => CodeTheme::LioraDark,
-        CodeTheme::Auto => CodeTheme::LioraLight,
-        CodeTheme::Light => CodeTheme::LioraLight,
-        CodeTheme::Dark => CodeTheme::LioraDark,
+        CodeTheme::Auto if theme.name.eq_ignore_ascii_case("dark") => CodeTheme::BrandDark,
+        CodeTheme::Auto => CodeTheme::BrandLight,
+        CodeTheme::Light => CodeTheme::BrandLight,
+        CodeTheme::Dark => CodeTheme::BrandDark,
         theme => theme,
     };
 
@@ -2117,26 +2117,26 @@ mod tests {
         assert_eq!(
             resolve_code_theme(CodeTheme::Auto, &light),
             ResolvedCodeTheme {
-                theme: CodeTheme::LioraLight,
+                theme: CodeTheme::BrandLight,
                 mode: CodeThemeMode::Light
             }
         );
         assert_eq!(
             resolve_code_theme(CodeTheme::Auto, &dark),
             ResolvedCodeTheme {
-                theme: CodeTheme::LioraDark,
+                theme: CodeTheme::BrandDark,
                 mode: CodeThemeMode::Dark
             }
         );
         assert_ne!(
             syntect_theme(ResolvedCodeTheme {
-                theme: CodeTheme::LioraLight,
+                theme: CodeTheme::BrandLight,
                 mode: CodeThemeMode::Light,
             })
             .settings
             .background,
             syntect_theme(ResolvedCodeTheme {
-                theme: CodeTheme::LioraDark,
+                theme: CodeTheme::BrandDark,
                 mode: CodeThemeMode::Dark,
             })
             .settings
@@ -2144,11 +2144,11 @@ mod tests {
         );
         assert_ne!(
             code_surface(ResolvedCodeTheme {
-                theme: CodeTheme::LioraLight,
+                theme: CodeTheme::BrandLight,
                 mode: CodeThemeMode::Light,
             }),
             code_surface(ResolvedCodeTheme {
-                theme: CodeTheme::LioraDark,
+                theme: CodeTheme::BrandDark,
                 mode: CodeThemeMode::Dark,
             })
         );

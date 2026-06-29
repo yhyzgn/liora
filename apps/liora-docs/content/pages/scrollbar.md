@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="ScrollbarBasic"}::
+::Demo{component="ScrollbarBasic"}::
 
 ### 代码
 

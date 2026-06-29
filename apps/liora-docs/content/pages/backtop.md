@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="BacktopBasic"}::
+::Demo{component="BacktopBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="BacktopCustom"}::
+::Demo{component="BacktopCustom"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@
 
 ### 效果
 
-::LioraDemo{component="BacktopContainer"}::
+::Demo{component="BacktopContainer"}::
 
 ### 代码
 

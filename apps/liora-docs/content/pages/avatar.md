@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="AvatarShapes"}::
+::Demo{component="AvatarShapes"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="AvatarSizes"}::
+::Demo{component="AvatarSizes"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="AvatarContent"}::
+::Demo{component="AvatarContent"}::
 
 ### 代码
 

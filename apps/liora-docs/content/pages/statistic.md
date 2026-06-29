@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="StatisticBasic"}::
+::Demo{component="StatisticBasic"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="StatisticAffix"}::
+::Demo{component="StatisticAffix"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="StatisticIcons"}::
+::Demo{component="StatisticIcons"}::
 
 ### 代码
 
@@ -39,7 +39,7 @@
 
 ### 效果
 
-::LioraDemo{component="StatisticLayout"}::
+::Demo{component="StatisticLayout"}::
 
 ### 代码
 

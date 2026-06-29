@@ -9,7 +9,7 @@ Live Demo 是 Liora Docs 区别于静态 Markdown 文档的核心能力。
 
 下面的按钮不是截图或文本，而是真实的 Liora `Button` 节点：
 
-::LioraDemo{component="Button"}::
+::Demo{component="Button"}::
 
 ## 为什么这样设计
 

@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="ResultSuccess"}::
+::Demo{component="ResultSuccess"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="ResultStatuses"}::
+::Demo{component="ResultStatuses"}::
 
 ### 代码
 

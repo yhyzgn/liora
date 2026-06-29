@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="CheckboxBasic"}::
+::Demo{component="CheckboxBasic"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="CheckboxGroup"}::
+::Demo{component="CheckboxGroup"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="CheckboxButtons"}::
+::Demo{component="CheckboxButtons"}::
 
 ### 代码
 
@@ -40,7 +40,7 @@
 
 ### 效果
 
-::LioraDemo{component="CheckboxCustom"}::
+::Demo{component="CheckboxCustom"}::
 
 ### 代码
 

@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="SidebarBrand"}::
+::Demo{component="SidebarBrand"}::
 
 ### 代码
 
@@ -19,7 +19,7 @@
 
 ### 效果
 
-::LioraDemo{component="SidebarScrollable"}::
+::Demo{component="SidebarScrollable"}::
 
 ### 代码
 
@@ -30,7 +30,7 @@
 
 ### 效果
 
-::LioraDemo{component="SidebarInspector"}::
+::Demo{component="SidebarInspector"}::
 
 ### 代码
 
@@ -41,7 +41,7 @@
 
 ### 效果
 
-::LioraDemo{component="SidebarIconRail"}::
+::Demo{component="SidebarIconRail"}::
 
 ### 代码
 
@@ -52,7 +52,7 @@
 
 ### 效果
 
-::LioraDemo{component="SidebarCustomSlots"}::
+::Demo{component="SidebarCustomSlots"}::
 
 ### 代码
 

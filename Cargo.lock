@@ -3409,7 +3409,9 @@ name = "liora-core"
 version = "0.1.20"
 dependencies = [
  "gpui",
+ "liora-locales-codegen",
  "liora-theme",
+ "toml 0.8.23",
 ]
 
 [[package]]
@@ -3429,6 +3431,7 @@ dependencies = [
  "liora-icons-lucide",
  "liora-icons-material",
  "liora-icons-tabler",
+ "liora-locales-codegen",
  "liora-theme",
  "liora-tray",
  "liora-updater",
@@ -3452,6 +3455,7 @@ dependencies = [
  "liora-icons-lucide",
  "liora-icons-material",
  "liora-icons-tabler",
+ "liora-locales-codegen",
  "liora-theme",
  "liora-tray",
  "liora-updater",
@@ -3513,6 +3517,13 @@ version = "0.1.20"
 dependencies = [
  "gpui",
  "liora-icons",
+]
+
+[[package]]
+name = "liora-locales-codegen"
+version = "0.1.20"
+dependencies = [
+ "toml 0.8.23",
 ]
 
 [[package]]

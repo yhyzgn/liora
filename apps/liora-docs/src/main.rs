@@ -1,5 +1,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+pub mod locales {
+    include!(concat!(env!("OUT_DIR"), "/locales_keys.rs"));
+}
+
 mod markdown;
 
 use gpui::{App, AppContext, FontWeight, Global, Window, WindowOptions, px, size};
@@ -8,12 +12,12 @@ use liora_components::{
     apply_window_frame_mode, init_liora_with_options, request_window_frame_mode,
 };
 use liora_core::{
-    FontConfig, FontLoadMode, FontLoadOptions, LinuxDesktopIdentity, LinuxDesktopPngIcon,
-    LioraOptions, attach_system_theme_observer, ensure_linux_desktop_identity, linux_desktop_entry,
+    FontConfig, FontLoadMode, FontLoadOptions, LinuxDesktopIdentity, LinuxDesktopPngIcon, Options,
+    attach_system_theme_observer, ensure_linux_desktop_identity, linux_desktop_entry,
     linux_desktop_png_icon_path, load_app_fonts, startup_maximized_window_bounds,
 };
 use liora_tray::{
-    LioraTray, MouseButton, MouseButtonState, TrayCloseAction, TrayCommand, TrayConfig,
+    MouseButton, MouseButtonState, Tray, TrayCloseAction, TrayCommand, TrayConfig,
     TrayControlCenter, TrayIconEvent, default_liora_tray_menu, icon_from_png_bytes, solid_icon,
 };
 use std::{
@@ -26,7 +30,7 @@ use std::{
 };
 
 struct DocsTrayState {
-    tray: LioraTray,
+    tray: Tray,
     window: Option<gpui::AnyWindowHandle>,
     window_visible: bool,
     resident_enabled: bool,
@@ -104,13 +108,24 @@ fn register_docs_system_menus(cx: &mut App) {
 }
 
 // This app uses init_liora_with_options instead of init_liora(cx) because it sets app fonts.
-fn docs_liora_options() -> LioraOptions {
-    LioraOptions::system().with_fonts(
-        FontConfig::system()
-            .with_ui_families(["MiSans", "Segoe UI", "Arial"])
-            .with_ui_weight(FontWeight::MEDIUM)
-            .with_code_families(["Consolas", "JetBrains Mono", "SF Mono", "Monospace"]),
-    )
+fn docs_liora_options() -> Options {
+    let options = Options::system()
+        .with_locale("zh-CN")
+        .with_fallback_locale("en-US")
+        .with_fonts(
+            FontConfig::system()
+                .with_ui_families(["MiSans", "Segoe UI", "Arial"])
+                .with_ui_weight(FontWeight::MEDIUM)
+                .with_code_families(["Consolas", "JetBrains Mono", "SF Mono", "Monospace"]),
+        );
+
+    match options.clone().try_with_locales_dir(app_locales_dir()) {
+        Ok(options) => options,
+        Err(error) => {
+            eprintln!("Liora Docs locales loading report: {error}");
+            options
+        }
+    }
 }
 
 fn install_docs_fonts(cx: &mut App) {
@@ -171,6 +186,10 @@ fn app_font_dirs(binary: &str) -> Vec<std::path::PathBuf> {
     );
 
     dirs
+}
+
+fn app_locales_dir() -> std::path::PathBuf {
+    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/locales")
 }
 
 fn open_docs_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
@@ -316,7 +335,7 @@ fn install_docs_tray(cx: &mut App) {
         config = config.icon(icon);
     }
 
-    match LioraTray::install(config) {
+    match Tray::install(config) {
         Ok(tray) => {
             cx.set_global(DocsTrayState {
                 tray,

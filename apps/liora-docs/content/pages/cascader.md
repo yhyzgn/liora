@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="CascaderBasic"}::
+::Demo{component="CascaderBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="CascaderSelected"}::
+::Demo{component="CascaderSelected"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@
 
 ### 效果
 
-::LioraDemo{component="CascaderDisabled"}::
+::Demo{component="CascaderDisabled"}::
 
 ### 代码
 
@@ -47,7 +47,7 @@
 
 ### 效果
 
-::LioraDemo{component="CascaderFilterable"}::
+::Demo{component="CascaderFilterable"}::
 
 ### 代码
 
@@ -60,7 +60,7 @@
 
 ### 效果
 
-::LioraDemo{component="CascaderLazy"}::
+::Demo{component="CascaderLazy"}::
 
 ### 代码
 

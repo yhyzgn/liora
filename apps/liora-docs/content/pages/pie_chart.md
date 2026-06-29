@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="PieChart"}::
+::Demo{component="PieChart"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="PieChartCustom"}::
+::Demo{component="PieChartCustom"}::
 
 ### 代码
 

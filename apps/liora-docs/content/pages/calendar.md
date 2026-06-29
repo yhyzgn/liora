@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="CalendarEvents"}::
+::Demo{component="CalendarEvents"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="CalendarRange"}::
+::Demo{component="CalendarRange"}::
 
 ### 代码
 

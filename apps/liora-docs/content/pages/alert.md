@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="AlertTypes"}::
+::Demo{component="AlertTypes"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="AlertDescription"}::
+::Demo{component="AlertDescription"}::
 
 ### 代码
 

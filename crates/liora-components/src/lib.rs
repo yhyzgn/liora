@@ -223,12 +223,15 @@ pub use line_chart::*;
 pub use link::*;
 pub use liora_core::{
     EmbeddedFont, FontConfig, FontDiscoveryReport, FontLoadFailure, FontLoadMode, FontLoadOptions,
-    FontLoadReport, FontWeight, LinuxDesktopIdentity, LinuxDesktopPngIcon, LioraOptions, ThemeMode,
-    apply_theme_mode, attach_system_theme_observer, discover_font_files,
-    ensure_linux_desktop_identity, is_font_family_available, is_supported_font_path,
-    linux_desktop_entry, linux_desktop_png_icon_path, load_app_fonts, load_custom_fonts,
-    load_embedded_fonts, load_font_assets, load_font_files, load_fonts_from_dir, set_font_config,
-    startup_maximized_window_bounds, sync_system_theme,
+    FontLoadReport, FontWeight, LinuxDesktopIdentity, LinuxDesktopPngIcon, LocaleId, Locales,
+    LocalesConfig, LocalesLoadError, LocalesMap, Options, TextDirection, ThemeMode, Translator,
+    apply_locale, apply_theme_mode, attach_system_theme_observer, clear_translator, current_locale,
+    discover_font_files, ensure_linux_desktop_identity, fallback_locale, is_font_family_available,
+    is_supported_font_path, linux_desktop_entry, linux_desktop_png_icon_path, load_app_fonts,
+    load_custom_fonts, load_embedded_fonts, load_font_assets, load_font_files, load_fonts_from_dir,
+    load_locale_file, load_locales_dir, locales, locales_version, set_font_config,
+    set_locales_config, set_shared_translator, set_translator, startup_maximized_window_bounds,
+    switch_locale_from_dir, sync_system_theme, tr,
 };
 pub use liora_theme::{ButtonSize, ButtonVariant};
 pub use list::*;
@@ -319,11 +322,11 @@ pub fn init_liora(cx: &mut gpui::App) {
 
 /// Initialize Liora's recommended application runtime with an explicit theme mode.
 pub fn init_liora_with_mode(cx: &mut gpui::App, mode: ThemeMode) {
-    init_liora_with_options(cx, LioraOptions::default().with_theme_mode(mode));
+    init_liora_with_options(cx, Options::default().with_theme_mode(mode));
 }
 
 /// Initialize Liora's recommended application runtime with full startup options.
-pub fn init_liora_with_options(cx: &mut gpui::App, options: LioraOptions) {
+pub fn init_liora_with_options(cx: &mut gpui::App, options: Options) {
     liora_core::init_liora_with_options(cx, options);
     MessageManager::init(cx);
     register_liora_key_bindings(cx);

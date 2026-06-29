@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="StatusBarShell"}::
+::Demo{component="StatusBarShell"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="StatusBarTones"}::
+::Demo{component="StatusBarTones"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="StatusBarCustom"}::
+::Demo{component="StatusBarCustom"}::
 
 ### 代码
 
@@ -40,7 +40,7 @@
 
 ### 效果
 
-::LioraDemo{component="StatusBarAdvanced"}::
+::Demo{component="StatusBarAdvanced"}::
 
 ### 代码
 

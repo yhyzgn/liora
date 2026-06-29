@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="AffixTop"}::
+::Demo{component="AffixTop"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="AffixBottom"}::
+::Demo{component="AffixBottom"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@ Affix 通常放在一个有明确高度的原生滚动容器内。容器需要 `
 
 ### 效果
 
-::LioraDemo{component="AffixContainer"}::
+::Demo{component="AffixContainer"}::
 
 ### 代码
 

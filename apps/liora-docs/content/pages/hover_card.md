@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="HoverCardBasic"}::
+::Demo{component="HoverCardBasic"}::
 
 ### 代码
 

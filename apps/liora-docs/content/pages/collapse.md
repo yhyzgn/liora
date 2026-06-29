@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="CollapseBasic"}::
+::Demo{component="CollapseBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="CollapseAccordion"}::
+::Demo{component="CollapseAccordion"}::
 
 ### 代码
 

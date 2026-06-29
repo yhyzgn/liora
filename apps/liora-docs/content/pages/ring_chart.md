@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="RingChart"}::
+::Demo{component="RingChart"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="RingChartCustom"}::
+::Demo{component="RingChartCustom"}::
 
 ### 代码
 
@@ -30,7 +30,7 @@
 
 ### 效果
 
-::LioraDemo{component="RingChartExternal"}::
+::Demo{component="RingChartExternal"}::
 
 ### 代码
 

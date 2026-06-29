@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="TextBasic"}::
+::Demo{component="TextBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="TextDocumentBlocks"}::
+::Demo{component="TextDocumentBlocks"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@
 
 ### 效果
 
-::LioraDemo{component="TextMarkdown"}::
+::Demo{component="TextMarkdown"}::
 
 ### 代码
 

@@ -19,7 +19,7 @@
 
 ### 效果
 
-::LioraDemo{component="CodeBlockBasic"}::
+::Demo{component="CodeBlockBasic"}::
 
 ### 代码
 
@@ -30,7 +30,7 @@
 
 ### 效果
 
-::LioraDemo{component="CodeBlockLanguage"}::
+::Demo{component="CodeBlockLanguage"}::
 
 ### 代码
 
@@ -41,7 +41,7 @@
 
 ### 效果
 
-::LioraDemo{component="CodeBlockTheme"}::
+::Demo{component="CodeBlockTheme"}::
 
 ### 代码
 
@@ -52,7 +52,7 @@
 
 ### 效果
 
-::LioraDemo{component="CodeBlockInline"}::
+::Demo{component="CodeBlockInline"}::
 
 ### 代码
 

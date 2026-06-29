@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="PreviewImageTrigger"}::
+::Demo{component="PreviewImageTrigger"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@ Preview 的 child 可以是任意 Liora/GPUI 元素，例如卡片、按钮或�
 
 ### 效果
 
-::LioraDemo{component="PreviewCustomTrigger"}::
+::Demo{component="PreviewCustomTrigger"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@ Preview 的 child 可以是任意 Liora/GPUI 元素，例如卡片、按钮或�
 
 ### 效果
 
-::LioraDemo{component="PreviewEscape"}::
+::Demo{component="PreviewEscape"}::
 
 ### 代码
 

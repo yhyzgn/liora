@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="PageHeaderBasic"}::
+::Demo{component="PageHeaderBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="PageHeaderExtra"}::
+::Demo{component="PageHeaderExtra"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@
 
 ### 效果
 
-::LioraDemo{component="PageHeaderFull"}::
+::Demo{component="PageHeaderFull"}::
 
 ### 代码
 

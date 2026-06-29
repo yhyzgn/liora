@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="ColorPickerBasic"}::
+::Demo{component="ColorPickerBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="ColorPickerPresets"}::
+::Demo{component="ColorPickerPresets"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@
 
 ### 效果
 
-::LioraDemo{component="ColorPickerCompact"}::
+::Demo{component="ColorPickerCompact"}::
 
 ### 代码
 
@@ -47,7 +47,7 @@
 
 ### 效果
 
-::LioraDemo{component="ColorPickerDisabled"}::
+::Demo{component="ColorPickerDisabled"}::
 
 ### 代码
 

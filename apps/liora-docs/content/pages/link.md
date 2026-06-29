@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="LinkVariants"}::
+::Demo{component="LinkVariants"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="LinkUnderline"}::
+::Demo{component="LinkUnderline"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="LinkStates"}::
+::Demo{component="LinkStates"}::
 
 ### 代码
 
@@ -39,7 +39,7 @@
 
 ### 效果
 
-::LioraDemo{component="LinkIcons"}::
+::Demo{component="LinkIcons"}::
 
 ### 代码
 

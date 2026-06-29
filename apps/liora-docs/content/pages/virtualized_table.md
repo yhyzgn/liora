@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="VirtualizedTableBasic"}::
+::Demo{component="VirtualizedTableBasic"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="VirtualizedTableSortable"}::
+::Demo{component="VirtualizedTableSortable"}::
 
 ### 代码
 
@@ -39,7 +39,7 @@
 
 ### 效果
 
-::LioraDemo{component="VirtualizedTableDataTable"}::
+::Demo{component="VirtualizedTableDataTable"}::
 
 ### 代码
 

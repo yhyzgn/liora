@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="EmptyBasic"}::
+::Demo{component="EmptyBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="EmptyDescription"}::
+::Demo{component="EmptyDescription"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@
 
 ### 效果
 
-::LioraDemo{component="EmptyImage"}::
+::Demo{component="EmptyImage"}::
 
 ### 代码
 
@@ -47,7 +47,7 @@
 
 ### 效果
 
-::LioraDemo{component="EmptyExtra"}::
+::Demo{component="EmptyExtra"}::
 
 ### 代码
 

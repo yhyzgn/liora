@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="Grid"}::
+::Demo{component="Grid"}::
 
 ### 代码
 

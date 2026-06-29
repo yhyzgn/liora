@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="DropdownBasic"}::
+::Demo{component="DropdownBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="DropdownPlacements"}::
+::Demo{component="DropdownPlacements"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@
 
 ### 效果
 
-::LioraDemo{component="DropdownCloseStrategy"}::
+::Demo{component="DropdownCloseStrategy"}::
 
 ### 代码
 

@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="NotificationTypes"}::
+::Demo{component="NotificationTypes"}::
 
 ### 代码
 

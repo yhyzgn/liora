@@ -106,7 +106,7 @@ GPUI 的推荐写法是：状态放在 View 字段里，渲染时把这些字段
 - 事件回调用 `cx.listener(...)` 或组件自己的 `on_click` / `on_change` API。
 - 修改 View 自身状态后调用 `cx.notify()`，让 GPUI 安排下一帧重绘。
 - 需要弹层或全局提示的应用，要在根布局末尾渲染对应 Portal / Message 层。
-- 字体默认走系统；如果要像 Gallery/Docs 一样指定应用级字体，请先注册字体资源，再在 `LioraOptions::system().with_fonts(...)` 中指定有序 fallback family。详见下一节“应用级字体自定义”。
+- 字体默认走系统；如果要像 Gallery/Docs 一样指定应用级字体，请先注册字体资源，再在 `Options::system().with_fonts(...)` 中指定有序 fallback family。详见下一节“应用级字体自定义”。
 
 ## 8. 应用级字体自定义
 

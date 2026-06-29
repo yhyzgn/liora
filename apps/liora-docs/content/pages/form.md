@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="FormBasic"}::
+::Demo{component="FormBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="FormValidation"}::
+::Demo{component="FormValidation"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@
 
 ### 效果
 
-::LioraDemo{component="FormInline"}::
+::Demo{component="FormInline"}::
 
 ### 代码
 

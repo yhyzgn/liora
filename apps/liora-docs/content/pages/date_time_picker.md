@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="DateTimePickerBasic"}::
+::Demo{component="DateTimePickerBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="DateTimePickerFormatted"}::
+::Demo{component="DateTimePickerFormatted"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@
 
 ### 效果
 
-::LioraDemo{component="DateTimePickerStepped"}::
+::Demo{component="DateTimePickerStepped"}::
 
 ### 代码
 
@@ -47,7 +47,7 @@
 
 ### 效果
 
-::LioraDemo{component="DateTimePickerNoSeconds"}::
+::Demo{component="DateTimePickerNoSeconds"}::
 
 ### 代码
 
@@ -60,7 +60,7 @@
 
 ### 效果
 
-::LioraDemo{component="DateTimePickerRange"}::
+::Demo{component="DateTimePickerRange"}::
 
 ### 代码
 
@@ -73,7 +73,7 @@
 
 ### 效果
 
-::LioraDemo{component="DateTimePickerDisabled"}::
+::Demo{component="DateTimePickerDisabled"}::
 
 ### 代码
 

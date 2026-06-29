@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="HorizontalListBasic"}::
+::Demo{component="HorizontalListBasic"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="HorizontalListDivider"}::
+::Demo{component="HorizontalListDivider"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="HorizontalListDraggable"}::
+::Demo{component="HorizontalListDraggable"}::
 
 ### 代码
 

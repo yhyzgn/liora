@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="SplitterBasic"}::
+::Demo{component="SplitterBasic"}::
 
 ### 代码
 

@@ -1,3 +1,4 @@
+use crate::locales;
 use gpui::{
     AnyElement, AnyView, App, Component, Context, Entity, FontWeight, Hsla, IntoElement, Render,
     RenderImage, RenderOnce, ScrollHandle, SharedString, WeakEntity, Window, div, img, prelude::*,
@@ -7,23 +8,24 @@ use liora_components::{
     Affix, AffixPosition, Alert, AlertType, Anchor, AnchorLink, AnchorTarget, AppWindowFrame,
     Autocomplete, AutocompleteItem, Avatar, Backtop, Badge, BadgeType, Button, ButtonColors,
     Calendar, CalendarDate, CalendarEvent, Card, Carousel, CarouselIndicatorPosition, CarouselItem,
-    Checkbox, CheckboxGroup, CheckboxOptionStyle, CodeBlock as LioraCodeBlock, CodeDiagnostic,
+    Checkbox, CheckboxGroup, CheckboxOptionStyle, CodeBlock as DocCodeBlock, CodeDiagnostic,
     CodeEditor, CodeHighlighter, CodeLanguage, CodeTheme, Container, Dropdown, DropdownButton,
     DropdownButtonItem, Flex, Form, FormItem, Grid, GridItem, HorizontalList, Image, Input,
     InputNumber, InputNumberControlsPosition, Link, Loading, NavigationMenu, NavigationMenuMode,
     NotificationType, Paragraph, Popconfirm, Popover, Preview, Progress, ProgressStatus, QrCode,
     QrEcLevel, QrFinderStyle, QrGradientDirection, QrModuleStyle, Radio, RadioGroup,
-    RadioOptionStyle, Rate, Result as LioraResult, ResultStatus, Segmented, SegmentedOption,
-    Select, SelectableTextGroup, Shell, Sidebar, Skeleton, SkeletonItem, SkeletonVariant, Slider,
-    Space, Statistic, Switch, Tag as LioraTag, Text, Textarea, Timer, TimerFormat, TimerUnit,
-    Title, TitleBar, TitleBarContentAlign, Tour, TourPlacement, TourStep, Transfer, TransferItem,
-    Tree, TreeNode, TreeSelect, TreeSelectNode, Upload, UploadFile, UploadStatus, VirtualizedList,
+    RadioOptionStyle, Rate, Result as DocResult, ResultStatus, Segmented, SegmentedOption, Select,
+    SelectableTextGroup, Shell, Sidebar, Skeleton, SkeletonItem, SkeletonVariant, Slider, Space,
+    Statistic, Switch, Tag as DocTag, Text, Textarea, Timer, TimerFormat, TimerUnit, Title,
+    TitleBar, TitleBarContentAlign, Tour, TourPlacement, TourStep, Transfer, TransferItem, Tree,
+    TreeNode, TreeSelect, TreeSelectNode, Upload, UploadFile, UploadStatus, VirtualizedList,
     VirtualizedTable, VirtualizedTree, Watermark, WindowControlsPosition, WindowFrameMode,
     frame_mode_switch_row, show_notification, toast_error, toast_info, toast_success,
     toast_warning,
 };
 use liora_core::{
-    Config, PassivePortal, Placement, Portal, ThemeMode, apply_theme_mode, clear_popover,
+    Config, PassivePortal, Placement, Portal, ThemeMode, apply_locale, apply_theme_mode,
+    clear_popover, current_locale, tr,
 };
 use liora_gallery::category;
 use liora_icons::Icon;
@@ -36,7 +38,7 @@ use liora_icons_tabler::IconName as TablerIconName;
 use liora_theme::Theme;
 use liora_tray::{TrayCloseAction, TrayCommand, TrayMenuItemSpec, default_liora_tray_menu};
 use liora_updater::{
-    AssetKind, InstallAction, InstallPlan, LioraApp, Platform, UpdateRequest, Updater,
+    AssetKind, InstallAction, InstallPlan, Platform, UpdateApp, UpdateRequest, Updater,
     liora_asset_selector,
 };
 use pulldown_cmark::{CodeBlockKind, Event, HeadingLevel, Options, Parser, Tag, TagEnd};
@@ -55,6 +57,7 @@ const DASHBOARD_APP_DOC: &str = include_str!("../content/pages/dashboard_app.md"
 const DASHBOARD_PATTERNS_DOC: &str = include_str!("../content/pages/dashboard_patterns.md");
 const DASHBOARD_STATE_DOC: &str = include_str!("../content/pages/dashboard_state.md");
 const THEME_SYSTEM_DOC: &str = include_str!("../content/pages/theme_system.md");
+const LOCALES_DOC: &str = include_str!("../content/pages/locales.md");
 const TITLEBAR_DOC: &str = include_str!("../content/pages/titlebar.md");
 const ABOUT_DOC: &str = include_str!("../content/pages/about.md");
 
@@ -615,6 +618,10 @@ const DOC_PAGES: &[DocPage] = &[
         markdown: THEME_SYSTEM_DOC,
     },
     DocPage {
+        title: "Locales",
+        markdown: LOCALES_DOC,
+    },
+    DocPage {
         title: "TimePicker",
         markdown: TIME_PICKER_DOC,
     },
@@ -1139,7 +1146,7 @@ enum TextPart<'a> {
 }
 
 fn split_live_demo_parts(text: &str) -> Vec<TextPart<'_>> {
-    const START: &str = "::LioraDemo{";
+    const START: &str = "::Demo{";
     const END: &str = "}::";
 
     let mut parts = Vec::new();
@@ -3381,56 +3388,56 @@ impl Render for LiveDemoContent {
                 .description("More detailed description of the warning.")
                 .into_any_element(),
             "TagTypes" => demo_row(vec![
-                LioraTag::new("Tag 1").into_any_element(),
-                LioraTag::new("Tag 2").success().into_any_element(),
-                LioraTag::new("Tag 3").warning().into_any_element(),
-                LioraTag::new("Tag 4").danger().into_any_element(),
+                DocTag::new("Tag 1").into_any_element(),
+                DocTag::new("Tag 2").success().into_any_element(),
+                DocTag::new("Tag 3").warning().into_any_element(),
+                DocTag::new("Tag 4").danger().into_any_element(),
             ]),
             "TagClosable" => demo_row(vec![
-                LioraTag::new("Tag 1").closable(true).into_any_element(),
-                LioraTag::new("Tag 2")
+                DocTag::new("Tag 1").closable(true).into_any_element(),
+                DocTag::new("Tag 2")
                     .success()
                     .closable(true)
                     .into_any_element(),
-                LioraTag::new("Tag 3")
+                DocTag::new("Tag 3")
                     .warning()
                     .closable(true)
                     .into_any_element(),
-                LioraTag::new("Tag 4")
+                DocTag::new("Tag 4")
                     .danger()
                     .closable(true)
                     .into_any_element(),
             ]),
             "TagThemes" => demo_stack(vec![
                 demo_row(vec![
-                    LioraTag::new("Dark").dark().into_any_element(),
-                    LioraTag::new("Success").success().dark().into_any_element(),
-                    LioraTag::new("Warning").warning().dark().into_any_element(),
-                    LioraTag::new("Danger").danger().dark().into_any_element(),
+                    DocTag::new("Dark").dark().into_any_element(),
+                    DocTag::new("Success").success().dark().into_any_element(),
+                    DocTag::new("Warning").warning().dark().into_any_element(),
+                    DocTag::new("Danger").danger().dark().into_any_element(),
                 ]),
                 demo_row(vec![
-                    LioraTag::new("Plain").plain().into_any_element(),
-                    LioraTag::new("Success").success().plain().into_any_element(),
-                    LioraTag::new("Warning").warning().plain().into_any_element(),
-                    LioraTag::new("Danger").danger().plain().into_any_element(),
+                    DocTag::new("Plain").plain().into_any_element(),
+                    DocTag::new("Success").success().plain().into_any_element(),
+                    DocTag::new("Warning").warning().plain().into_any_element(),
+                    DocTag::new("Danger").danger().plain().into_any_element(),
                 ]),
             ]),
             "TagSizes" => demo_row(vec![
-                LioraTag::new("Default").into_any_element(),
-                LioraTag::new("Large").large().into_any_element(),
-                LioraTag::new("Small").small().into_any_element(),
+                DocTag::new("Default").into_any_element(),
+                DocTag::new("Large").large().into_any_element(),
+                DocTag::new("Small").small().into_any_element(),
             ]),
             "TagRound" => demo_row(vec![
-                LioraTag::new("Tag 1").round(true).into_any_element(),
-                LioraTag::new("Tag 2")
+                DocTag::new("Tag 1").round(true).into_any_element(),
+                DocTag::new("Tag 2")
                     .success()
                     .round(true)
                     .into_any_element(),
-                LioraTag::new("Tag 3")
+                DocTag::new("Tag 3")
                     .warning()
                     .round(true)
                     .into_any_element(),
-                LioraTag::new("Tag 4")
+                DocTag::new("Tag 4")
                     .danger()
                     .round(true)
                     .into_any_element(),
@@ -4392,7 +4399,7 @@ impl Render for LiveDemoContent {
                     )
                     .into_any_element()
             }
-            "ResultSuccess" => LioraResult::new("成功购买云服务器")
+            "ResultSuccess" => DocResult::new("成功购买云服务器")
                 .status(ResultStatus::Success)
                 .sub_title("订单编号：2017182818828182881，请耐心等待审核。")
                 .extra(|_, _| {
@@ -4404,17 +4411,17 @@ impl Render for LiveDemoContent {
                 })
                 .into_any_element(),
             "ResultStatuses" => demo_stack(vec![
-                LioraResult::new("您的账户存在安全风险")
+                DocResult::new("您的账户存在安全风险")
                     .status(ResultStatus::Warning)
                     .sub_title("请及时修改密码并开启双重验证。")
                     .extra(|_, _| Button::new("立即处理").primary().into_any_element())
                     .into_any_element(),
-                LioraResult::new("提交失败")
+                DocResult::new("提交失败")
                     .status(ResultStatus::Error)
                     .sub_title("请检查网络连接并重试。")
                     .extra(|_, _| Button::new("重新提交").primary().into_any_element())
                     .into_any_element(),
-                LioraResult::new("您的申请已提交")
+                DocResult::new("您的申请已提交")
                     .status(ResultStatus::Info)
                     .sub_title("我们将在 3 个工作日内完成审核。")
                     .extra(|_, _| Button::new("知道了").into_any_element())
@@ -6157,11 +6164,11 @@ fn menu_action_catalog() -> impl IntoElement {
                             .gap_sm()
                             .wrap()
                             .child(Text::new(info.name).bold())
-                            .child(LioraTag::new(info.id).info().round(true))
+                            .child(DocTag::new(info.id).info().round(true))
                             .child(if info.handled_by_liora {
-                                LioraTag::new("Liora handles").success().round(true)
+                                DocTag::new("Liora handles").success().round(true)
                             } else {
-                                LioraTag::new("App dispatch").warning().round(true)
+                                DocTag::new("App dispatch").warning().round(true)
                             }),
                     )
                     .child(Text::new(info.description).sm().wrap())
@@ -7897,7 +7904,7 @@ fn docs_virtualized_list(cx: &mut Context<VirtualizedList>, draggable: bool) -> 
                         "Rendered inside the native virtual viewport."
                     })),
             )
-            .child(LioraTag::new(if index % 2 == 0 { "even" } else { "odd" }).info())
+            .child(DocTag::new(if index % 2 == 0 { "even" } else { "odd" }).info())
             .into_any_element()
     });
 
@@ -8000,14 +8007,14 @@ fn docs_carousel_custom() -> impl IntoElement {
 }
 
 fn docs_code_block_basic() -> impl IntoElement {
-    LioraCodeBlock::new("cargo run -p liora-docs")
+    DocCodeBlock::new("cargo run -p liora-docs")
         .shell()
         .copyable(true)
         .selectable(true)
 }
 
 fn docs_code_block_language() -> impl IntoElement {
-    LioraCodeBlock::new(r#"fn main() { println!("Liora"); }"#)
+    DocCodeBlock::new(r#"fn main() { println!("Liora"); }"#)
         .language("rust")
         .copyable(true)
 }
@@ -8017,17 +8024,17 @@ fn docs_code_block_theme() -> impl IntoElement {
         .vertical()
         .gap_md()
         .child(
-            LioraCodeBlock::new("cargo run -p liora-docs")
+            DocCodeBlock::new("cargo run -p liora-docs")
                 .shell()
                 .auto_theme(),
         )
         .child(
-            LioraCodeBlock::new(r#"fn main() { println!("Liora"); }"#)
+            DocCodeBlock::new(r#"fn main() { println!("Liora"); }"#)
                 .rust()
                 .github_dark_theme(),
         )
         .child(
-            LioraCodeBlock::new("[package]\nname = \"liora\"")
+            DocCodeBlock::new("[package]\nname = \"liora\"")
                 .toml()
                 .highlighter(CodeHighlighter::Syntect)
                 .theme(CodeTheme::Nord)
@@ -8042,7 +8049,7 @@ fn docs_code_block_inline() -> impl IntoElement {
         .align_center()
         .gap_sm()
         .child(Text::new("Run").sm())
-        .child(LioraCodeBlock::new("cargo check").shell().inline())
+        .child(DocCodeBlock::new("cargo check").shell().inline())
         .child(Text::new("before publishing docs snippets.").sm())
 }
 
@@ -8222,17 +8229,17 @@ fn docs_timer_result() -> impl IntoElement {
                 .row()
                 .wrap()
                 .gap_sm()
-                .child(LioraTag::new(format!(
+                .child(DocTag::new(format!(
                     "elapsed: {:.0}s",
                     snapshot.elapsed_as(TimerUnit::Seconds)
                 )))
-                .child(LioraTag::new(format!(
+                .child(DocTag::new(format!(
                     "remaining: {:.1}m",
                     snapshot
                         .remaining_as(TimerUnit::Minutes)
                         .unwrap_or_default()
                 )))
-                .child(LioraTag::new(format!("finished: {}", snapshot.finished))),
+                .child(DocTag::new(format!("finished: {}", snapshot.finished))),
         )
 }
 
@@ -8315,7 +8322,7 @@ fn docs_tray_dynamic_icon() -> impl IntoElement {
         .child(docs_icon_chip("default", rgb(0x2563eb).into()))
         .child(docs_icon_chip("syncing", rgb(0xf97316).into()))
         .child(docs_icon_chip("error", rgb(0xdc2626).into()))
-        .child(LioraTag::new(TrayCommand::SetIcon("syncing".into()).id()).round(true))
+        .child(DocTag::new(TrayCommand::SetIcon("syncing".into()).id()).round(true))
 }
 
 fn docs_tray_checkbox() -> impl IntoElement {
@@ -10155,7 +10162,7 @@ fn render_code_block(
     } else {
         code
     };
-    let mut code_block = LioraCodeBlock::new(rendered_code);
+    let mut code_block = DocCodeBlock::new(rendered_code);
     code_block = code_block.selectable(true).on_copy(|_, _, _| {
         toast_success!("Code copied");
     });
@@ -10339,6 +10346,7 @@ pub fn render_docs_shell(
             install_plan: None,
             theme_mode,
             theme_mode_segmented: cx.new(move |_| theme_mode_segmented(theme_mode)),
+            locale_segmented: cx.new(|cx| locale_segmented(cx)),
             frame_mode,
             frame_mode_switch: cx.new(|cx| Switch::new(frame_mode.is_custom(), cx)),
             on_frame_mode_change,
@@ -10396,6 +10404,7 @@ pub struct DocsShell {
     install_plan: Option<InstallPlan>,
     theme_mode: ThemeMode,
     theme_mode_segmented: Entity<Segmented>,
+    locale_segmented: Entity<Segmented>,
     frame_mode: WindowFrameMode,
     frame_mode_switch: Entity<Switch>,
     on_frame_mode_change: fn(WindowFrameMode, &mut Window, &mut App),
@@ -10488,16 +10497,20 @@ impl Render for DocsShell {
                                     .vertical()
                                     .gap_xs()
                                     .child(Title::new("Liora Docs").h2())
-                                    .child(Text::new(
-                                        "Native Markdown · GPUI elements · Liora components",
-                                    )),
+                                    .child(Text::new(tr(cx, locales::docs::subtitle))),
                             ),
                     )
                     .child(
                         Space::new()
                             .gap_sm()
-                            .child(Text::new("Theme"))
+                            .child(Text::new(tr(cx, locales::docs::theme)))
                             .child(self.theme_mode_segmented.clone()),
+                    )
+                    .child(
+                        Space::new()
+                            .gap_sm()
+                            .child(Text::new(tr(cx, locales::language::label)))
+                            .child(self.locale_segmented.clone()),
                     )
                     .child(frame_mode_switch_row(
                         self.frame_mode_switch.clone(),
@@ -10695,7 +10708,7 @@ fn current_platform_label() -> &'static str {
     }
 }
 
-fn update_cache_dir(app: LioraApp) -> std::path::PathBuf {
+fn update_cache_dir(app: UpdateApp) -> std::path::PathBuf {
     std::env::var_os("LIORA_UPDATE_CACHE")
         .map(std::path::PathBuf::from)
         .unwrap_or_else(|| std::env::temp_dir().join("liora-updates"))
@@ -10773,13 +10786,13 @@ fn download_docs_update_sync() -> Result<Option<(String, InstallPlan)>, liora_up
         return Ok(None);
     };
     let request = UpdateRequest::new(
-        LioraApp::Docs,
+        UpdateApp::Docs,
         format!("v{}", env!("CARGO_PKG_VERSION")),
         platform,
-        update_cache_dir(LioraApp::Docs),
+        update_cache_dir(UpdateApp::Docs),
     )
     .selector(liora_asset_selector(
-        LioraApp::Docs,
+        UpdateApp::Docs,
         platform,
         AssetKind::RawExecutable,
     ));
@@ -10833,6 +10846,19 @@ fn install_plan_description(plan: &InstallPlan) -> String {
     }
 }
 
+fn locale_segmented(cx: &App) -> Segmented {
+    Segmented::new(locale_segmented_options(cx))
+        .id("docs-locale")
+        .value(current_locale(cx).as_str())
+}
+
+fn locale_segmented_options(cx: &impl liora_core::LocalesContext) -> Vec<SegmentedOption> {
+    vec![
+        SegmentedOption::new(tr(cx, locales::language::zh_cn), "zh-CN"),
+        SegmentedOption::new(tr(cx, locales::language::en_us), "en-US"),
+    ]
+}
+
 fn theme_mode_segmented(mode: ThemeMode) -> Segmented {
     Segmented::new(vec![
         SegmentedOption::new("System", ThemeMode::System.value()),
@@ -10882,7 +10908,7 @@ impl DocsShell {
                             .nowrap(),
                     )
                     .child(
-                        LioraTag::new(format!("v{}", env!("CARGO_PKG_VERSION")))
+                        DocTag::new(format!("v{}", env!("CARGO_PKG_VERSION")))
                             .small()
                             .round(true),
                     ),
@@ -10913,12 +10939,12 @@ impl DocsShell {
                                 .gap_sm()
                                 .wrap()
                                 .child(
-                                    LioraTag::new(format!("Docs {}", env!("CARGO_PKG_VERSION")))
+                                    DocTag::new(format!("Docs {}", env!("CARGO_PKG_VERSION")))
                                         .success()
                                         .round(true),
                                 )
-                                .child(LioraTag::new("GitHub Releases").round(true))
-                                .child(LioraTag::new(current_platform_label()).round(true)),
+                                .child(DocTag::new("GitHub Releases").round(true))
+                                .child(DocTag::new(current_platform_label()).round(true)),
                         )
                         .child(Paragraph::with_text(
                             "Docs 会自动检查 GitHub Releases。Docs 当前按项目发布策略提供跨平台原始可执行程序；下载后会校验 SHA256SUMS.txt，替换正在运行的二进制文件需要由外部启动器或用户手动完成。",
@@ -10967,6 +10993,28 @@ impl DocsShell {
                     cx.notify();
                 });
                 toast_info!("Docs theme switched to {}", mode.label());
+            });
+        });
+
+        cx.update_entity(&self.locale_segmented, |segmented, cx| {
+            segmented.set_options(locale_segmented_options(cx));
+        });
+
+        let docs = cx.entity().clone();
+        cx.update_entity(&self.locale_segmented, |segmented, _cx| {
+            segmented.set_on_change(move |value, window, cx| {
+                if apply_locale(window, cx, value.as_ref()).is_ok() {
+                    let docs = docs.clone();
+                    window.defer(cx, move |_window, cx| {
+                        let _ = docs.update(cx, |docs, cx| {
+                            cx.update_entity(&docs.locale_segmented, |segmented, cx| {
+                                segmented.set_options(locale_segmented_options(cx));
+                            });
+                            cx.notify();
+                        });
+                        toast_info!("{}", tr(cx, locales::language::switched));
+                    });
+                }
             });
         });
 
@@ -11406,7 +11454,7 @@ mod tests {
         assert!(titles.contains(&"Button"));
         assert!(titles.contains(&"Grid"));
         assert!(GRID_DOC.contains("# Grid"));
-        assert!(GRID_DOC.contains(r#"::LioraDemo{component="Grid"}::"#));
+        assert!(GRID_DOC.contains(r#"::Demo{component="Grid"}::"#));
         assert!(GRID_DOC.contains(r#"src="gallery/grid_demo.rs""#));
         assert!(titles.contains(&"CodeBlock"));
         assert!(titles.contains(&"Input"));
@@ -12026,7 +12074,7 @@ mod tests {
             .collect::<Vec<_>>();
 
         for page in DOC_PAGES {
-            if !gallery_keys.contains(&page.title) || !page.markdown.contains("::LioraDemo") {
+            if !gallery_keys.contains(&page.title) || !page.markdown.contains("::Demo") {
                 continue;
             }
 
@@ -12042,12 +12090,12 @@ mod tests {
             );
 
             let mut remaining = page.markdown;
-            while let Some(effect_start) = remaining.find("LioraDemo") {
+            while let Some(effect_start) = remaining.find("Demo") {
                 let after_effect = &remaining[effect_start..];
                 let next_section = after_effect.find("\n## ").unwrap_or(after_effect.len());
                 let current_example = &after_effect[..next_section];
                 assert_eq!(
-                    current_example.matches("LioraDemo").count(),
+                    current_example.matches("Demo").count(),
                     1,
                     "{} should not batch multiple effects before one code block; keep one example followed by its code",
                     page.title
@@ -12310,7 +12358,7 @@ mod tests {
             ("virtualized_list", VIRTUALIZED_LIST_DOC),
         ] {
             assert!(
-                !page.contains("::::LioraDemo"),
+                !page.contains("::::Demo"),
                 "{page_name} contains malformed live demo marker"
             );
             let document = MarkdownDocument::parse(page);
@@ -12378,7 +12426,7 @@ mod tests {
                 .find("fn collect_live_demo_components(")
                 .expect("collect_live_demo_components should follow")];
 
-        assert!(render_code_block.contains("LioraCodeBlock::new(rendered_code)"));
+        assert!(render_code_block.contains("DocCodeBlock::new(rendered_code)"));
         assert!(!render_code_block.contains("reference_annotated_code"));
         assert!(!render_code_block.contains("explain_reference_statement"));
     }
@@ -12620,8 +12668,7 @@ mod tests {
 
     #[test]
     fn parses_live_demo_marker_as_real_block() {
-        let document =
-            MarkdownDocument::parse("Before\n\n::LioraDemo{component=\"Button\"}::\n\nAfter");
+        let document = MarkdownDocument::parse("Before\n\n::Demo{component=\"Button\"}::\n\nAfter");
         let blocks = document.blocks();
 
         assert_eq!(blocks.len(), 3);
@@ -12631,7 +12678,7 @@ mod tests {
         ));
         assert!(
             !blocks.iter().any(|block| {
-                matches!(block, Block::Paragraph(segments) if segments.iter().any(|segment| segment.text.as_ref().contains("::LioraDemo")))
+                matches!(block, Block::Paragraph(segments) if segments.iter().any(|segment| segment.text.as_ref().contains("::Demo")))
             }),
             "live demo marker should not remain as literal paragraph text"
         );
@@ -12639,7 +12686,7 @@ mod tests {
 
     #[test]
     fn splits_live_demo_markers_from_surrounding_text() {
-        let parts = split_live_demo_parts("A ::LioraDemo{component=\"Button\"}:: B");
+        let parts = split_live_demo_parts("A ::Demo{component=\"Button\"}:: B");
 
         assert_eq!(parts.len(), 3);
         assert!(matches!(parts[0], TextPart::Text("A ")));
@@ -12719,8 +12766,8 @@ mod tests {
         for (name, doc) in pages {
             let mut seen = std::collections::HashSet::new();
             let mut remaining = doc;
-            while let Some(index) = remaining.find("::LioraDemo{component=\"") {
-                let after = &remaining[index + "::LioraDemo{component=\"".len()..];
+            while let Some(index) = remaining.find("::Demo{component=\"") {
+                let after = &remaining[index + "::Demo{component=\"".len()..];
                 let end = after
                     .find('\"')
                     .expect("live demo marker should close component");
@@ -12785,15 +12832,14 @@ mod tests {
 
         for page in DOC_PAGES {
             if !gallery_keys.contains(&page.title)
-                || (!page.markdown.contains("::LioraDemo")
-                    && !page.markdown.contains("```rust src="))
+                || (!page.markdown.contains("::Demo") && !page.markdown.contains("```rust src="))
             {
                 continue;
             }
 
             assert!(
-                !page.markdown.contains(":::LioraDemo"),
-                "{} must use the exact ::LioraDemo marker, not a malformed fenced marker",
+                !page.markdown.contains(":::Demo"),
+                "{} must use the exact ::Demo marker, not a malformed fenced marker",
                 page.title
             );
 
@@ -12801,8 +12847,8 @@ mod tests {
             sections.next();
             for section in sections {
                 let section_title = section.lines().next().unwrap_or(page.title);
-                let live_count = section.matches("\n::LioraDemo{component=\"").count()
-                    + usize::from(section.starts_with("::LioraDemo{component=\""));
+                let live_count = section.matches("\n::Demo{component=\"").count()
+                    + usize::from(section.starts_with("::Demo{component=\""));
                 let code_count = section.matches("```rust src=\"").count();
 
                 if live_count == 0 && code_count == 0 {
@@ -12821,7 +12867,7 @@ mod tests {
                 );
 
                 let live_index = section
-                    .find("::LioraDemo{component=\"")
+                    .find("::Demo{component=\"")
                     .expect("checked live_count");
                 let code_index = section.find("```rust src=\"").expect("checked code_count");
                 assert!(
@@ -13407,7 +13453,7 @@ mod tests {
         ] {
             assert!(!page.contains("## 完整示例"));
             assert!(!page.contains("src=\"gallery/"));
-            assert!(page.contains(&format!("::LioraDemo{{component=\"{first_demo}\"}}::")));
+            assert!(page.contains(&format!("::Demo{{component=\"{first_demo}\"}}::")));
 
             for snippet in snippets {
                 let marker = format!("src=\"{snippet}\"");

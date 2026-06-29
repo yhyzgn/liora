@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="PaginationBasic"}::
+::Demo{component="PaginationBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="PaginationBackground"}::
+::Demo{component="PaginationBackground"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@
 
 ### 效果
 
-::LioraDemo{component="PaginationAdvanced"}::
+::Demo{component="PaginationAdvanced"}::
 
 ### 代码
 

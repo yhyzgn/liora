@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="SelectBasic"}::
+::Demo{component="SelectBasic"}::
 
 ### 代码
 
@@ -22,7 +22,7 @@
 
 ### 效果
 
-::LioraDemo{component="SelectSearchable"}::
+::Demo{component="SelectSearchable"}::
 
 ### 代码
 
@@ -35,7 +35,7 @@
 
 ### 效果
 
-::LioraDemo{component="SelectGrouped"}::
+::Demo{component="SelectGrouped"}::
 
 ### 代码
 
@@ -48,7 +48,7 @@
 
 ### 效果
 
-::LioraDemo{component="SelectMultiple"}::
+::Demo{component="SelectMultiple"}::
 
 ### 代码
 
@@ -61,7 +61,7 @@
 
 ### 效果
 
-::LioraDemo{component="SelectFooter"}::
+::Demo{component="SelectFooter"}::
 
 ### 代码
 

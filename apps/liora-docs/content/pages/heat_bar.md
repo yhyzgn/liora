@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="HeatBarEvents"}::
+::Demo{component="HeatBarEvents"}::
 
 ### 代码
 

@@ -19,7 +19,7 @@ Liora UI 是一套基于 GPUI 的原生企业级组件库。它把常见后台 /
 Liora 的目标不是输出网页组件，而是验证一套 GPUI 原生 UI 体系是否足够支撑真实产品。因此文档站本身也必须使用 Liora 组件完成：
 
 1. **组件自举**：文档中的标题、段落、代码块、滚动容器和弹层都由组件库自己渲染。
-2. **真实 Live Demo**：`::LioraDemo{component="ButtonTypes"}::` 会插入真实组件节点，不是截图或 iframe。
+2. **真实 Live Demo**：`::Demo{component="ButtonTypes"}::` 会插入真实组件节点，不是截图或 iframe。
 3. **反馈闭环**：如果文档排版、滚动、代码选择或弹层不好用，说明组件库也需要修。
 4. **一致运行时**：Gallery 和 Docs 都使用相同的 `liora_components::init_liora`、主题、Portal 和 key binding 初始化方式。
 

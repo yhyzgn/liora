@@ -1,0 +1,36 @@
+[common]
+ok = "确定"
+cancel = "取消"
+close = "关闭"
+confirm = "确认"
+clear = "清空"
+loading = "加载中"
+empty = "暂无数据"
+
+[language]
+label = "语言"
+zh_cn = "中文"
+en_us = "English"
+switched = "语言已切换为中文"
+
+[gallery]
+refresh = "刷新"
+refreshed = "Gallery 已刷新"
+theme = "主题"
+no_entry = "未选择 Gallery 条目。"
+search_placeholder = "搜索组件 / Search demos"
+
+[docs]
+theme = "主题"
+subtitle = "原生 Markdown · GPUI 元素 · Liora 组件"
+
+[message_box]
+ok = "确定"
+cancel = "取消"
+confirm = "确认"
+
+[empty]
+description = "暂无数据"
+
+[image]
+loading = "加载中"

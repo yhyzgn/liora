@@ -312,7 +312,7 @@ P8 的目标不是搭建网页文档站，而是把 `liora-gallery` 维持组件
 Markdown 中的特殊语法：
 
 ```text
-::LioraDemo{component="Button"}::
+::Demo{component="Button"}::
 ```
 
 必须被解析为真实 Liora/GPUI view node，而不是普通文本。插入后的组件必须保留 hover、click 等真实交互能力。

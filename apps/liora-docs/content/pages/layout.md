@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="LayoutDivider"}::
+::Demo{component="LayoutDivider"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="LayoutSpace"}::
+::Demo{component="LayoutSpace"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@
 
 ### 效果
 
-::LioraDemo{component="LayoutGrid"}::
+::Demo{component="LayoutGrid"}::
 
 ### 代码
 

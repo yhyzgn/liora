@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="StepsBasic"}::
+::Demo{component="StepsBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="StepsDescription"}::
+::Demo{component="StepsDescription"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@
 
 ### 效果
 
-::LioraDemo{component="StepsStatus"}::
+::Demo{component="StepsStatus"}::
 
 ### 代码
 
@@ -47,7 +47,7 @@
 
 ### 效果
 
-::LioraDemo{component="StepsVertical"}::
+::Demo{component="StepsVertical"}::
 
 ### 代码
 

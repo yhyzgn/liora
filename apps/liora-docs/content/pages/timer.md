@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="TimerCountUp"}::
+::Demo{component="TimerCountUp"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="TimerCountDown"}::
+::Demo{component="TimerCountDown"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="TimerUnits"}::
+::Demo{component="TimerUnits"}::
 
 ### 代码
 
@@ -39,7 +39,7 @@
 
 ### 效果
 
-::LioraDemo{component="TimerResult"}::
+::Demo{component="TimerResult"}::
 
 ### 代码
 
@@ -50,7 +50,7 @@
 
 ### 效果
 
-::LioraDemo{component="TimerClock"}::
+::Demo{component="TimerClock"}::
 
 ### 代码
 

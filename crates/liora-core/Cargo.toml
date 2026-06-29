@@ -10,3 +10,7 @@ publish = true
 [dependencies]
 gpui.workspace = true
 liora-theme = { version = "0.1.20", path = "../liora-theme" }
+toml.workspace = true
+
+[build-dependencies]
+liora-locales-codegen = { version = "0.1.20", path = "../liora-locales-codegen" }

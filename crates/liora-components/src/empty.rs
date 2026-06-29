@@ -20,14 +20,14 @@
 //! crate.
 
 use gpui::{AnyElement, App, IntoElement, RenderOnce, SharedString, Window, div, prelude::*, px};
-use liora_core::Config;
+use liora_core::{Config, locales, tr};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
 /// Fluent native GPUI component for rendering Liora empty.
 pub struct Empty {
     image: Option<AnyElement>,
-    description: SharedString,
+    description: Option<SharedString>,
     extra: Option<Box<dyn Fn(&mut Window, &mut App) -> AnyElement + 'static>>,
 }
 
@@ -36,7 +36,7 @@ impl Empty {
     pub fn new() -> Self {
         Self {
             image: None,
-            description: "暂无数据".into(),
+            description: None,
             extra: None,
         }
     }
@@ -49,7 +49,7 @@ impl Empty {
 
     /// Sets secondary descriptive text shown below the primary label.
     pub fn description(mut self, d: impl Into<SharedString>) -> Self {
-        self.description = d.into();
+        self.description = Some(d.into());
         self
     }
 
@@ -66,6 +66,9 @@ impl Empty {
 impl RenderOnce for Empty {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
+        let description = self
+            .description
+            .unwrap_or_else(|| tr(cx, locales::empty::description));
 
         div()
             .flex()
@@ -94,7 +97,7 @@ impl RenderOnce for Empty {
                 div()
                     .text_sm()
                     .text_color(theme.neutral.text_3)
-                    .child(self.description),
+                    .child(description),
             )
             .when_some(self.extra, |s, extra| {
                 s.child(div().mt_2().child((extra)(window, cx)))

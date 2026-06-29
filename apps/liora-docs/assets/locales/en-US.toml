@@ -1,0 +1,39 @@
+[common]
+ok = "OK"
+cancel = "Cancel"
+close = "Close"
+confirm = "Confirm"
+clear = "Clear"
+loading = "Loading"
+empty = "No data"
+
+[language]
+label = "Language"
+zh_cn = "中文"
+en_us = "English"
+switched = "Language switched to English"
+
+[gallery]
+refresh = "Refresh"
+refreshed = "Gallery refreshed"
+theme = "Theme"
+no_entry = "No gallery entry selected."
+search_placeholder = "Search demos"
+
+[docs]
+theme = "Theme"
+subtitle = "Native Markdown · GPUI elements · Liora components"
+
+[message_box]
+ok = "OK"
+cancel = "Cancel"
+confirm = "Confirm"
+
+[empty]
+description = "No data"
+
+[image]
+loading = "Loading"
+
+[demo]
+test = "Test"

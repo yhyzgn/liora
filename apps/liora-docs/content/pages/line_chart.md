@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="LineChartBasic"}::
+::Demo{component="LineChartBasic"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="LineChartMulti"}::
+::Demo{component="LineChartMulti"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="LineChartEmpty"}::
+::Demo{component="LineChartEmpty"}::
 
 ### 代码
 
@@ -39,7 +39,7 @@
 
 ### 效果
 
-::LioraDemo{component="LineChartCustom"}::
+::Demo{component="LineChartCustom"}::
 
 ### 代码
 
@@ -50,7 +50,7 @@
 
 ### 效果
 
-::LioraDemo{component="LineChartLineStyles"}::
+::Demo{component="LineChartLineStyles"}::
 
 ### 代码
 
@@ -64,7 +64,7 @@
 
 ### 效果
 
-::LioraDemo{component="LineChartDownsample"}::
+::Demo{component="LineChartDownsample"}::
 
 ### 代码
 

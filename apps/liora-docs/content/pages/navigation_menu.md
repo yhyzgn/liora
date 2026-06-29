@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="NavigationMenuHorizontal"}::
+::Demo{component="NavigationMenuHorizontal"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="NavigationMenuVertical"}::
+::Demo{component="NavigationMenuVertical"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@
 
 ### 效果
 
-::LioraDemo{component="NavigationMenuCollapsed"}::
+::Demo{component="NavigationMenuCollapsed"}::
 
 ### 代码
 

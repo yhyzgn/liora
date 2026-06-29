@@ -12,7 +12,7 @@
 
 ### 效果
 
-::LioraDemo{component="Tray"}::
+::Demo{component="Tray"}::
 
 ### 代码
 
@@ -21,11 +21,11 @@
 
 ## 状态栏驻留开关
 
-应用可以在页面/设置中暴露「是否开启状态栏驻留」，不要只藏在托盘菜单里。开启时保留 `LioraTray` 并在关闭窗口时隐藏到托盘；关闭时隐藏托盘并在用户选择退出时调用 `cx.quit()`，避免留下不可见进程。
+应用可以在页面/设置中暴露「是否开启状态栏驻留」，不要只藏在托盘菜单里。开启时保留 `Tray` 并在关闭窗口时隐藏到托盘；关闭时隐藏托盘并在用户选择退出时调用 `cx.quit()`，避免留下不可见进程。
 
 ### 效果
 
-::LioraDemo{component="TrayResidency"}::
+::Demo{component="TrayResidency"}::
 
 ### 代码
 
@@ -34,11 +34,11 @@
 
 ## 基础安装
 
-最小配置包含托盘 id、tooltip、图标和菜单。`LioraTray` 需要被保存到应用状态中，确保生命周期覆盖整个进程。
+最小配置包含托盘 id、tooltip、图标和菜单。`Tray` 需要被保存到应用状态中，确保生命周期覆盖整个进程。
 
 ### 效果
 
-::LioraDemo{component="TrayInstall"}::
+::Demo{component="TrayInstall"}::
 
 ### 代码
 
@@ -51,7 +51,7 @@
 
 ### 效果
 
-::LioraDemo{component="TrayDynamicIcon"}::
+::Demo{component="TrayDynamicIcon"}::
 
 ### 代码
 
@@ -64,7 +64,7 @@
 
 ### 效果
 
-::LioraDemo{component="TrayCheckbox"}::
+::Demo{component="TrayCheckbox"}::
 
 ### 代码
 
@@ -81,7 +81,7 @@
 
 ### 效果
 
-::LioraDemo{component="TrayCloseConfirm"}::
+::Demo{component="TrayCloseConfirm"}::
 
 ### 代码
 
@@ -94,7 +94,7 @@
 
 ### 效果
 
-::LioraDemo{component="TrayNestedMenu"}::
+::Demo{component="TrayNestedMenu"}::
 
 ### 代码
 

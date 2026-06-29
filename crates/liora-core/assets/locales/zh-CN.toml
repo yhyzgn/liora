@@ -1,0 +1,19 @@
+[common]
+ok = "确定"
+cancel = "取消"
+close = "关闭"
+confirm = "确认"
+clear = "清空"
+loading = "加载中"
+empty = "暂无数据"
+
+[message_box]
+ok = "确定"
+cancel = "取消"
+confirm = "确认"
+
+[empty]
+description = "暂无数据"
+
+[image]
+loading = "加载中"

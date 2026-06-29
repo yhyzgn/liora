@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="InputBasic"}::
+::Demo{component="InputBasic"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="InputPassword"}::
+::Demo{component="InputPassword"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="InputAffix"}::
+::Demo{component="InputAffix"}::
 
 ### 代码
 
@@ -39,7 +39,7 @@
 
 ### 效果
 
-::LioraDemo{component="InputStates"}::
+::Demo{component="InputStates"}::
 
 ### 代码
 

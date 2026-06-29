@@ -5,7 +5,7 @@
 //! - generic update primitives (`Updater`, `AssetSelector`, `UpdateRequest`,
 //!   `PreparedUpdate`) that any application can configure for its own GitHub
 //!   repository and asset naming convention;
-//! - small Liora presets (`LioraApp`, `liora_asset_selector`, `select_asset`) used
+//! - small Liora presets (`UpdateApp`, `liora_asset_selector`, `select_asset`) used
 //!   by the official Gallery and Docs apps.
 //!
 //! The crate checks GitHub Releases, selects a platform asset, downloads it into
@@ -41,14 +41,14 @@ const DEFAULT_USER_AGENT: &str = concat!("liora-updater/", env!("CARGO_PKG_VERSI
 /// Other applications should use [`AssetSelector`] and [`UpdateRequest`]
 /// directly instead of this preset enum.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum LioraApp {
+pub enum UpdateApp {
     /// Targets the official Liora Docs application release assets.
     Docs,
     /// Targets the official Liora Gallery application release assets.
     Gallery,
 }
 
-impl LioraApp {
+impl UpdateApp {
     /// Returns the release asset prefix used by official Liora applications.
     pub fn release_name(self) -> &'static str {
         match self {
@@ -58,8 +58,8 @@ impl LioraApp {
     }
 }
 
-impl From<LioraApp> for String {
-    fn from(value: LioraApp) -> Self {
+impl From<UpdateApp> for String {
+    fn from(value: UpdateApp) -> Self {
         value.release_name().to_string()
     }
 }
@@ -692,7 +692,7 @@ pub fn select_asset_with(release: &Release, selector: &AssetSelector) -> Option<
 /// Select the best release asset for an official Liora app/platform preference.
 pub fn select_asset(
     release: &Release,
-    app: LioraApp,
+    app: UpdateApp,
     platform: Platform,
     preferred: AssetKind,
 ) -> Option<ReleaseAsset> {
@@ -701,7 +701,7 @@ pub fn select_asset(
 
 /// Build the official Liora asset selector while keeping the core selector API generic.
 pub fn liora_asset_selector(
-    app: LioraApp,
+    app: UpdateApp,
     platform: Platform,
     preferred: AssetKind,
 ) -> AssetSelector {
@@ -732,18 +732,18 @@ pub fn build_install_plan(
 }
 
 fn liora_asset_priorities(
-    app: LioraApp,
+    app: UpdateApp,
     platform: Platform,
     preferred: AssetKind,
 ) -> Vec<AssetKind> {
     let mut kinds = match (app, platform) {
-        (LioraApp::Docs, _) => vec![AssetKind::RawExecutable],
-        (LioraApp::Gallery, Platform::LinuxX64) => vec![
+        (UpdateApp::Docs, _) => vec![AssetKind::RawExecutable],
+        (UpdateApp::Gallery, Platform::LinuxX64) => vec![
             AssetKind::Installer,
             AssetKind::PortableArchive,
             AssetKind::RawExecutable,
         ],
-        (LioraApp::Gallery, Platform::MacosArm64 | Platform::WindowsX64) => {
+        (UpdateApp::Gallery, Platform::MacosArm64 | Platform::WindowsX64) => {
             vec![AssetKind::Installer, AssetKind::RawExecutable]
         }
     };
@@ -1049,7 +1049,7 @@ mod tests {
 
         let selected = select_asset(
             &release,
-            LioraApp::Gallery,
+            UpdateApp::Gallery,
             Platform::LinuxX64,
             AssetKind::Installer,
         )
@@ -1058,7 +1058,7 @@ mod tests {
 
         let selected = select_asset(
             &release,
-            LioraApp::Gallery,
+            UpdateApp::Gallery,
             Platform::LinuxX64,
             AssetKind::PortableArchive,
         )
@@ -1075,7 +1075,7 @@ mod tests {
 
         let selected = select_asset(
             &release,
-            LioraApp::Docs,
+            UpdateApp::Docs,
             Platform::WindowsX64,
             AssetKind::Installer,
         )
@@ -1106,7 +1106,7 @@ mod tests {
     fn install_plan_does_not_auto_privilege_package_manager_assets() {
         let asset = asset("liora-gallery-v0.2.0-linux-x64.deb");
         let plan = build_install_plan(
-            LioraApp::Gallery,
+            UpdateApp::Gallery,
             Platform::LinuxX64,
             &asset,
             PathBuf::from("/tmp/liora.deb"),

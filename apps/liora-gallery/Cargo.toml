@@ -34,6 +34,9 @@ liora-icons-tabler = { path = "../../crates/liora-icons-tabler" }
 liora-icons-carbon = { path = "../../crates/liora-icons-carbon" }
 liora-icons-material = { path = "../../crates/liora-icons-material" }
 
+[build-dependencies]
+liora-locales-codegen = { version = "0.1.20", path = "../../crates/liora-locales-codegen" }
+
 [target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
 gpui = { workspace = true, features = ["wayland", "x11", "font-kit"] }
 gpui_platform = { workspace = true, features = ["wayland", "x11", "font-kit"] }

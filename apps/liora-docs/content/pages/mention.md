@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="MentionPeople"}::
+::Demo{component="MentionPeople"}::
 
 ### 代码
 
@@ -19,7 +19,7 @@
 
 ### 效果
 
-::LioraDemo{component="MentionIssues"}::
+::Demo{component="MentionIssues"}::
 
 ### 代码
 
@@ -30,7 +30,7 @@
 
 ### 效果
 
-::LioraDemo{component="MentionDisabled"}::
+::Demo{component="MentionDisabled"}::
 
 ### 代码
 

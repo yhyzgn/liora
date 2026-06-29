@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="AreaChartBasic"}::
+::Demo{component="AreaChartBasic"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="AreaChartOverlay"}::
+::Demo{component="AreaChartOverlay"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="AreaChartStacked"}::
+::Demo{component="AreaChartStacked"}::
 
 ### 代码
 
@@ -39,7 +39,7 @@
 
 ### 效果
 
-::LioraDemo{component="AreaChartCustom"}::
+::Demo{component="AreaChartCustom"}::
 
 ### 代码
 
@@ -53,7 +53,7 @@
 
 ### 效果
 
-::LioraDemo{component="AreaChartDownsample"}::
+::Demo{component="AreaChartDownsample"}::
 
 ### 代码
 

@@ -1,12 +1,12 @@
 //! Application-level font setup used by native Liora apps.
 //!
 //! Load font resources first, then select ordered UI/code fallback families in
-//! `LioraOptions`. This keeps raw executables small while installers can mount
+//! `Options`. This keeps raw executables small while installers can mount
 //! a full `assets/fonts` directory next to the app.
 
 use gpui::App;
 use liora_components::{
-    FontConfig, FontLoadMode, FontLoadOptions, FontWeight, LioraOptions, init_liora_with_options,
+    FontConfig, FontLoadMode, FontLoadOptions, FontWeight, Options, init_liora_with_options,
     load_app_fonts, set_font_config,
 };
 use std::{borrow::Cow, path::PathBuf};
@@ -57,7 +57,7 @@ pub fn init_with_packaged_fonts(cx: &mut App) {
 
     init_liora_with_options(
         cx,
-        LioraOptions::system().with_fonts(
+        Options::system().with_fonts(
             FontConfig::system()
                 .with_ui_families(["MiSans", "Segoe UI", "Arial"])
                 .with_ui_weight(FontWeight::MEDIUM)

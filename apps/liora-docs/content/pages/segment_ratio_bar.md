@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="SegmentRatioBarBottom"}::
+::Demo{component="SegmentRatioBarBottom"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="SegmentRatioBarTop"}::
+::Demo{component="SegmentRatioBarTop"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="SegmentRatioBarBoth"}::
+::Demo{component="SegmentRatioBarBoth"}::
 
 ### 代码
 
@@ -39,7 +39,7 @@
 
 ### 效果
 
-::LioraDemo{component="SegmentRatioBarHidden"}::
+::Demo{component="SegmentRatioBarHidden"}::
 
 ### 代码
 
@@ -50,7 +50,7 @@
 
 ### 效果
 
-::LioraDemo{component="SegmentRatioBarPattern"}::
+::Demo{component="SegmentRatioBarPattern"}::
 
 ### 代码
 
@@ -61,7 +61,7 @@
 
 ### 效果
 
-::LioraDemo{component="SegmentRatioBarCompact"}::
+::Demo{component="SegmentRatioBarCompact"}::
 
 ### 代码
 

@@ -5,7 +5,7 @@
 //! dispatch an explicit quit action when your product should terminate.
 
 use gpui::App;
-use liora_tray::{LioraTray, Result, TrayCommand, TrayControlCenter};
+use liora_tray::{Result, Tray, TrayCommand, TrayControlCenter};
 
 pub struct TrayResidencyConfig {
     pub resident_enabled: bool,
@@ -13,7 +13,7 @@ pub struct TrayResidencyConfig {
 }
 
 impl TrayResidencyConfig {
-    pub fn apply(&self, tray: &LioraTray, cx: &mut App) -> Result<()> {
+    pub fn apply(&self, tray: &Tray, cx: &mut App) -> Result<()> {
         tray.set_visible(self.resident_enabled && self.tray_visible)?;
         Ok(())
     }

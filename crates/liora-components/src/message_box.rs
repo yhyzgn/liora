@@ -21,6 +21,7 @@
 
 use crate::{Button, Dialog};
 use gpui::{App, SharedString, Window, div, prelude::*};
+use liora_core::{locales, tr};
 use std::sync::Arc;
 
 /// Fluent native GPUI component for rendering Liora message box.
@@ -61,19 +62,20 @@ impl MessageBox {
             .title(self.title)
             .close_on_click_outside(self.close_on_click_outside)
             .close_on_escape(self.close_on_escape)
-            .content(move |_, _| {
+            .content(move |_, cx| {
                 div()
                     .flex()
                     .flex_col()
                     .gap_4()
                     .child(content.clone())
                     .child(
-                        div()
-                            .flex()
-                            .justify_end()
-                            .child(Button::new("OK").primary().on_click(|_, _, cx| {
-                                Dialog::close(cx);
-                            })),
+                        div().flex().justify_end().child(
+                            Button::new(tr(cx, locales::message_box::ok))
+                                .primary()
+                                .on_click(|_, _, cx| {
+                                    Dialog::close(cx);
+                                }),
+                        ),
                     )
             })
             .show(cx);
@@ -88,7 +90,7 @@ impl MessageBox {
             .title(self.title)
             .close_on_click_outside(self.close_on_click_outside)
             .close_on_escape(self.close_on_escape)
-            .content(move |_window, _cx| {
+            .content(move |_window, cx| {
                 let on_confirm = on_confirm.clone();
                 div()
                     .flex()
@@ -100,15 +102,19 @@ impl MessageBox {
                             .flex()
                             .justify_end()
                             .gap_2()
-                            .child(Button::new("Cancel").on_click(|_, _, cx| {
-                                Dialog::close(cx);
-                            }))
-                            .child(Button::new("Confirm").primary().on_click(
-                                move |_, window, cx| {
-                                    on_confirm(window, cx);
+                            .child(Button::new(tr(cx, locales::message_box::cancel)).on_click(
+                                |_, _, cx| {
                                     Dialog::close(cx);
                                 },
-                            )),
+                            ))
+                            .child(
+                                Button::new(tr(cx, locales::message_box::confirm))
+                                    .primary()
+                                    .on_click(move |_, window, cx| {
+                                        on_confirm(window, cx);
+                                        Dialog::close(cx);
+                                    }),
+                            ),
                     )
             })
             .show(cx);

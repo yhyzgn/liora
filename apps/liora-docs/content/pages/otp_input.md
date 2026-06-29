@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="OtpInputInteractive"}::
+::Demo{component="OtpInputInteractive"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="OtpInputMasked"}::
+::Demo{component="OtpInputMasked"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="OtpInputStates"}::
+::Demo{component="OtpInputStates"}::
 
 ### 代码
 

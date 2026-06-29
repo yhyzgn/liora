@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="TagTypes"}::
+::Demo{component="TagTypes"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="TagClosable"}::
+::Demo{component="TagClosable"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="TagThemes"}::
+::Demo{component="TagThemes"}::
 
 ### 代码
 
@@ -39,7 +39,7 @@
 
 ### 效果
 
-::LioraDemo{component="TagSizes"}::
+::Demo{component="TagSizes"}::
 
 ### 代码
 
@@ -50,7 +50,7 @@
 
 ### 效果
 
-::LioraDemo{component="TagRound"}::
+::Demo{component="TagRound"}::
 
 ### 代码
 
@@ -61,7 +61,7 @@
 
 ### 效果
 
-::LioraDemo{component="TagFlow"}::
+::Demo{component="TagFlow"}::
 
 ### 代码
 

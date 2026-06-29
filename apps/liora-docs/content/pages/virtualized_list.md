@@ -17,7 +17,7 @@
 
 ## 基础用法
 
-::LioraDemo{component="VirtualizedListBasic"}::
+::Demo{component="VirtualizedListBasic"}::
 
 ### 代码
 
@@ -26,7 +26,7 @@
 
 ## 垂直拖动排序
 
-::LioraDemo{component="VirtualizedListDraggable"}::
+::Demo{component="VirtualizedListDraggable"}::
 
 ### 代码
 

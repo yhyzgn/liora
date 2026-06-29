@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="AnchorBasic"}::
+::Demo{component="AnchorBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@ AnchorLink 支持子链接，适合 API 文档中的二级标题，例如 Attrib
 
 ### 效果
 
-::LioraDemo{component="AnchorNested"}::
+::Demo{component="AnchorNested"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@ AnchorLink 支持子链接，适合 API 文档中的二级标题，例如 Attrib
 
 ### 效果
 
-::LioraDemo{component="AnchorTargets"}::
+::Demo{component="AnchorTargets"}::
 
 ### 代码
 

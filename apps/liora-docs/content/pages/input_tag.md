@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="InputTagBasic"}::
+::Demo{component="InputTagBasic"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="InputTagLimited"}::
+::Demo{component="InputTagLimited"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="InputTagDuplicates"}::
+::Demo{component="InputTagDuplicates"}::
 
 ### 代码
 

@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="CardBasic"}::
+::Demo{component="CardBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="CardFooter"}::
+::Demo{component="CardFooter"}::
 
 ### 代码
 

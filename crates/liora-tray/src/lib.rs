@@ -17,7 +17,7 @@ use tray_icon::{TrayIcon, TrayIconBuilder};
 
 #[derive(Debug, thiserror::Error)]
 /// Errors raised while creating or updating platform tray integrations.
-pub enum LioraTrayError {
+pub enum TrayError {
     #[error("tray icon error: {0}")]
     /// Reports a tray failure.
     Tray(#[from] tray_icon::Error),
@@ -48,7 +48,7 @@ pub enum LioraTrayError {
 }
 
 /// Type alias for result values used by the liora tray API.
-pub type Result<T> = std::result::Result<T, LioraTrayError>;
+pub type Result<T> = std::result::Result<T, TrayError>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Close-window policy used by resident tray applications.
@@ -328,13 +328,13 @@ impl TrayConfig {
 }
 
 /// Installed tray integration handle owned by the host application.
-pub struct LioraTray {
+pub struct Tray {
     tray: TrayIcon,
     command_by_id: HashMap<String, TrayCommand>,
     check_by_id: HashMap<String, CheckMenuItem>,
 }
 
-impl LioraTray {
+impl Tray {
     /// Executes installer-style update actions and returns the process exit status.
     pub fn install(config: TrayConfig) -> Result<Self> {
         init_platform_tray_runtime()?;
@@ -475,7 +475,7 @@ fn init_platform_tray_runtime() -> Result<()> {
         return Ok(());
     }
 
-    gtk::init().map_err(|error| LioraTrayError::PlatformInit(error.to_string()))
+    gtk::init().map_err(|error| TrayError::PlatformInit(error.to_string()))
 }
 
 #[cfg(not(any(target_os = "linux", target_os = "freebsd")))]
@@ -488,7 +488,7 @@ pub fn icon_from_rgba(rgba: Vec<u8>, width: u32, height: u32) -> Result<TrayIcon
     let expected = width as usize * height as usize * 4;
     let actual = rgba.len();
     if actual != expected {
-        return Err(LioraTrayError::InvalidRgba {
+        return Err(TrayError::InvalidRgba {
             width,
             height,
             expected,

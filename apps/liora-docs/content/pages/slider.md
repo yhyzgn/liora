@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="SliderBasic"}::
+::Demo{component="SliderBasic"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="SliderStep"}::
+::Demo{component="SliderStep"}::
 
 ### 代码
 

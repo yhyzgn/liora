@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="BreadcrumbBasic"}::
+::Demo{component="BreadcrumbBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="BreadcrumbIcon"}::
+::Demo{component="BreadcrumbIcon"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@
 
 ### 效果
 
-::LioraDemo{component="BreadcrumbSeparator"}::
+::Demo{component="BreadcrumbSeparator"}::
 
 ### 代码
 
@@ -47,7 +47,7 @@
 
 ### 效果
 
-::LioraDemo{component="BreadcrumbSeparatorIcon"}::
+::Demo{component="BreadcrumbSeparatorIcon"}::
 
 ### 代码
 
@@ -60,7 +60,7 @@
 
 ### 效果
 
-::LioraDemo{component="BreadcrumbClickable"}::
+::Demo{component="BreadcrumbClickable"}::
 
 ### 代码
 

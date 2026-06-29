@@ -13,19 +13,25 @@ use liora_components::{
 };
 use liora_core::{
     Config, FontConfig, FontLoadMode, FontLoadOptions, LinuxDesktopIdentity, LinuxDesktopPngIcon,
-    LioraOptions, PassivePortal, Portal, ThemeMode, apply_theme_mode, attach_system_theme_observer,
-    ensure_linux_desktop_identity, linux_desktop_entry, linux_desktop_png_icon_path,
-    load_app_fonts, startup_maximized_window_bounds,
+    Options, PassivePortal, Portal, ThemeMode, apply_locale, apply_theme_mode,
+    attach_system_theme_observer, current_locale, ensure_linux_desktop_identity,
+    linux_desktop_entry, linux_desktop_png_icon_path, load_app_fonts,
+    startup_maximized_window_bounds, tr,
 };
 use liora_gallery::{category, demos};
 use liora_tray::{
-    LioraTray, MouseButton, MouseButtonState, TrayCloseAction, TrayCommand, TrayConfig,
+    MouseButton, MouseButtonState, Tray, TrayCloseAction, TrayCommand, TrayConfig,
     TrayControlCenter, TrayIconEvent, default_liora_tray_menu, icon_from_png_bytes, solid_icon,
 };
 use liora_updater::{
-    AssetKind, InstallAction, InstallPlan, LioraApp, Platform, UpdateRequest, Updater,
+    AssetKind, InstallAction, InstallPlan, Platform, UpdateApp, UpdateRequest, Updater,
     liora_asset_selector,
 };
+
+mod locales {
+    include!(concat!(env!("OUT_DIR"), "/locales_keys.rs"));
+}
+
 use std::{
     process::Command,
     sync::{
@@ -49,6 +55,7 @@ pub struct Gallery {
     nav_refresh_pending: bool,
     theme_mode: ThemeMode,
     theme_mode_segmented: gpui::Entity<Segmented>,
+    locale_segmented: gpui::Entity<Segmented>,
     frame_mode: WindowFrameMode,
     frame_mode_switch: gpui::Entity<Switch>,
     refresh_revision: u32,
@@ -98,7 +105,7 @@ impl UpdatePanelStatus {
 }
 
 struct GalleryTrayState {
-    tray: LioraTray,
+    tray: Tray,
     window: Option<gpui::AnyWindowHandle>,
     window_visible: bool,
     resident_enabled: bool,
@@ -177,13 +184,24 @@ fn register_gallery_system_menus(cx: &mut App) {
 }
 
 // This app uses init_liora_with_options instead of init_liora(cx) because it sets app fonts.
-fn gallery_liora_options() -> LioraOptions {
-    LioraOptions::system().with_fonts(
-        FontConfig::system()
-            .with_ui_families(["MiSans", "Segoe UI", "Arial"])
-            .with_ui_weight(FontWeight::MEDIUM)
-            .with_code_families(["Consolas", "JetBrains Mono", "SF Mono", "Monospace"]),
-    )
+fn gallery_liora_options() -> Options {
+    let options = Options::system()
+        .with_locale("zh-CN")
+        .with_fallback_locale("en-US")
+        .with_fonts(
+            FontConfig::system()
+                .with_ui_families(["MiSans", "Segoe UI", "Arial"])
+                .with_ui_weight(FontWeight::MEDIUM)
+                .with_code_families(["Consolas", "JetBrains Mono", "SF Mono", "Monospace"]),
+        );
+
+    match options.clone().try_with_locales_dir(app_locales_dir()) {
+        Ok(options) => options,
+        Err(error) => {
+            eprintln!("Liora Gallery locales loading report: {error}");
+            options
+        }
+    }
 }
 
 fn install_gallery_fonts(cx: &mut App) {
@@ -246,6 +264,10 @@ fn app_font_dirs(binary: &str) -> Vec<std::path::PathBuf> {
     dirs
 }
 
+fn app_locales_dir() -> std::path::PathBuf {
+    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/locales")
+}
+
 fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
     let frame_mode = gallery_frame_mode(cx);
     match cx.open_window(gallery_window_options(cx, frame_mode), |window, cx| {
@@ -263,12 +285,15 @@ fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
                 pending_demo_index: None,
                 nav_index,
                 selected,
-                nav_filter: cx.new(|cx| Input::new("", cx).placeholder("搜索组件 / Search demos")),
+                nav_filter: cx.new(|cx| {
+                    Input::new("", cx).placeholder(tr(cx, locales::gallery::search_placeholder))
+                }),
                 nav_menu: None,
                 nav_query: String::new(),
                 nav_refresh_pending: false,
                 theme_mode,
                 theme_mode_segmented: cx.new(move |_| theme_mode_segmented(theme_mode)),
+                locale_segmented: cx.new(|cx| locale_segmented(cx)),
                 frame_mode,
                 frame_mode_switch: cx.new(|cx| Switch::new(frame_mode.is_custom(), cx)),
                 refresh_revision: 0,
@@ -414,7 +439,7 @@ fn install_gallery_tray(cx: &mut App) {
         config = config.icon(icon);
     }
 
-    match LioraTray::install(config) {
+    match Tray::install(config) {
         Ok(tray) => {
             cx.set_global(GalleryTrayState {
                 tray,
@@ -955,21 +980,27 @@ impl Render for Gallery {
                             .success()
                             .round(true),
                     )
-                    .child(Button::new("Refresh").primary().on_click({
+                    .child(Button::new(tr(cx, locales::gallery::refresh)).primary().on_click({
                         let gallery = cx.entity().clone();
                         move |_, _window, cx| {
                             let _ = gallery.update(cx, |gallery, cx| {
                                 gallery.refresh_revision += 1;
                                 cx.notify();
                             });
-                            toast_success!("Gallery refreshed");
+                            toast_success!("{}", tr(cx, locales::gallery::refreshed));
                         }
                     }))
                     .child(
                         Space::new()
                             .gap_sm()
-                            .child(Text::new("Theme"))
+                            .child(Text::new(tr(cx, locales::gallery::theme)))
                             .child(self.theme_mode_segmented.clone()),
+                    )
+                    .child(
+                        Space::new()
+                            .gap_sm()
+                            .child(Text::new(tr(cx, locales::language::label)))
+                            .child(self.locale_segmented.clone()),
                     )
                     .child(frame_mode_switch_row(
                         self.frame_mode_switch.clone(),
@@ -995,7 +1026,7 @@ impl Render for Gallery {
 
             panel.into_any_element()
         } else {
-            Paragraph::with_text("No gallery entry selected.").into_any_element()
+            Paragraph::with_text(tr(cx, locales::gallery::no_entry)).into_any_element()
         };
 
         let content = Card::new(content_body).no_shadow().no_shrink();
@@ -1347,6 +1378,34 @@ impl Gallery {
             });
         });
 
+        cx.update_entity(&self.locale_segmented, |segmented, cx| {
+            segmented.set_options(locale_segmented_options(cx));
+        });
+
+        let gallery = cx.entity().clone();
+        cx.update_entity(&self.locale_segmented, |segmented, _cx| {
+            segmented.set_on_change(move |value, window, cx| {
+                if apply_locale(window, cx, value.as_ref()).is_ok() {
+                    let gallery = gallery.clone();
+                    window.defer(cx, move |_window, cx| {
+                        let _ = gallery.update(cx, |gallery, cx| {
+                            cx.update_entity(&gallery.locale_segmented, |segmented, cx| {
+                                segmented.set_options(locale_segmented_options(cx));
+                            });
+                            cx.update_entity(&gallery.nav_filter, |input, cx| {
+                                input.set_placeholder(
+                                    tr(cx, locales::gallery::search_placeholder),
+                                    cx,
+                                );
+                            });
+                            cx.notify();
+                        });
+                        toast_info!("{}", tr(cx, locales::language::switched));
+                    });
+                }
+            });
+        });
+
         let gallery = cx.entity().clone();
         cx.update_entity(&self.frame_mode_switch, |switch, _cx| {
             switch.set_on_change(move |enabled, window, cx| {
@@ -1467,7 +1526,7 @@ fn current_platform_label() -> &'static str {
     }
 }
 
-fn update_cache_dir(app: LioraApp) -> std::path::PathBuf {
+fn update_cache_dir(app: UpdateApp) -> std::path::PathBuf {
     std::env::var_os("LIORA_UPDATE_CACHE")
         .map(std::path::PathBuf::from)
         .unwrap_or_else(|| std::env::temp_dir().join("liora-updates"))
@@ -1481,13 +1540,13 @@ fn download_gallery_update_sync()
         return Ok(None);
     };
     let request = UpdateRequest::new(
-        LioraApp::Gallery,
+        UpdateApp::Gallery,
         format!("v{}", env!("CARGO_PKG_VERSION")),
         platform,
-        update_cache_dir(LioraApp::Gallery),
+        update_cache_dir(UpdateApp::Gallery),
     )
     .selector(liora_asset_selector(
-        LioraApp::Gallery,
+        UpdateApp::Gallery,
         platform,
         AssetKind::Installer,
     ));
@@ -1510,6 +1569,19 @@ fn install_plan_description(plan: &InstallPlan) -> String {
         }
         InstallAction::Manual { description } => description.clone(),
     }
+}
+
+fn locale_segmented(cx: &App) -> Segmented {
+    Segmented::new(locale_segmented_options(cx))
+        .id("gallery-locale")
+        .value(current_locale(cx).as_str())
+}
+
+fn locale_segmented_options(cx: &App) -> Vec<SegmentedOption> {
+    vec![
+        SegmentedOption::new(tr(cx, locales::language::zh_cn), "zh-CN"),
+        SegmentedOption::new(tr(cx, locales::language::en_us), "en-US"),
+    ]
 }
 
 fn theme_mode_segmented(mode: ThemeMode) -> Segmented {

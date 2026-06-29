@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="TimelineBasic"}::
+::Demo{component="TimelineBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="TimelineCustom"}::
+::Demo{component="TimelineCustom"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@
 
 ### 效果
 
-::LioraDemo{component="TimelinePlacement"}::
+::Demo{component="TimelinePlacement"}::
 
 ### 代码
 
@@ -47,7 +47,7 @@
 
 ### 效果
 
-::LioraDemo{component="TimelineReverse"}::
+::Demo{component="TimelineReverse"}::
 
 ### 代码
 

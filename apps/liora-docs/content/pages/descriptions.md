@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="DescriptionsBasic"}::
+::Demo{component="DescriptionsBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="DescriptionsBorder"}::
+::Demo{component="DescriptionsBorder"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@
 
 ### 效果
 
-::LioraDemo{component="DescriptionsVertical"}::
+::Demo{component="DescriptionsVertical"}::
 
 ### 代码
 

@@ -32,7 +32,7 @@ let options = apply_window_frame_mode(
 
 ### 效果
 
-::LioraDemo{component="TitleBarControlsRight"}::
+::Demo{component="TitleBarControlsRight"}::
 
 ### 代码
 
@@ -43,7 +43,7 @@ let options = apply_window_frame_mode(
 
 ### 效果
 
-::LioraDemo{component="TitleBarControlsLeft"}::
+::Demo{component="TitleBarControlsLeft"}::
 
 ### 代码
 
@@ -54,7 +54,7 @@ let options = apply_window_frame_mode(
 
 ### 效果
 
-::LioraDemo{component="TitleBarCommandCenter"}::
+::Demo{component="TitleBarCommandCenter"}::
 
 ### 代码
 
@@ -65,7 +65,7 @@ let options = apply_window_frame_mode(
 
 ### 效果
 
-::LioraDemo{component="TitleBarBorderless"}::
+::Demo{component="TitleBarBorderless"}::
 
 ### 代码
 

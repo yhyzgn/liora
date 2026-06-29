@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="MessageBoxBasic"}::
+::Demo{component="MessageBoxBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="MessageBoxManualClose"}::
+::Demo{component="MessageBoxManualClose"}::
 
 ### 代码
 

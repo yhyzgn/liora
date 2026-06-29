@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="SearchableListBasic"}::
+::Demo{component="SearchableListBasic"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="SearchableListFiltered"}::
+::Demo{component="SearchableListFiltered"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="SearchableListEmpty"}::
+::Demo{component="SearchableListEmpty"}::
 
 ### 代码
 

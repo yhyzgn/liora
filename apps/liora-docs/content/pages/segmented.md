@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="SegmentedBasic"}::
+::Demo{component="SegmentedBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="SegmentedDisabled"}::
+::Demo{component="SegmentedDisabled"}::
 
 ### 代码
 
@@ -34,7 +34,7 @@
 
 ### 效果
 
-::LioraDemo{component="SegmentedBlock"}::
+::Demo{component="SegmentedBlock"}::
 
 ### 代码
 

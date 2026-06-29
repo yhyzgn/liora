@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="QrCodeBasic"}::
+::Demo{component="QrCodeBasic"}::
 
 ### 代码
 
@@ -19,7 +19,7 @@
 
 ### 效果
 
-::LioraDemo{component="QrCodeStyle"}::
+::Demo{component="QrCodeStyle"}::
 
 ### 代码
 
@@ -32,7 +32,7 @@
 
 ### 效果
 
-::LioraDemo{component="QrCodeDecode"}::
+::Demo{component="QrCodeDecode"}::
 
 ### 代码
 

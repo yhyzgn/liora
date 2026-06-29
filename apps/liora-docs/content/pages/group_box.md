@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="GroupBoxBasic"}::
+::Demo{component="GroupBoxBasic"}::
 
 ### 代码
 

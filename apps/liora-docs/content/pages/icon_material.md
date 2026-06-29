@@ -13,4 +13,4 @@ let icon = Icon::new(IconName::SearchOutlined).size_lg();
 
 ## 完整 IconName 清单
 
-::LioraDemo{component="IconCatalogMaterial"}::
+::Demo{component="IconCatalogMaterial"}::

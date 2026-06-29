@@ -8,7 +8,7 @@
 
 ### 效果
 
-::LioraDemo{component="TooltipBasic"}::
+::Demo{component="TooltipBasic"}::
 
 ### 代码
 
@@ -21,7 +21,7 @@
 
 ### 效果
 
-::LioraDemo{component="TooltipMore"}::
+::Demo{component="TooltipMore"}::
 
 ### 代码
 

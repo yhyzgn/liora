@@ -63,7 +63,7 @@ fn visible_fallback_menu_bar() -> MenuBar {
 
 ### 效果
 
-::LioraDemo{component="MenuPlatformRegistration"}::
+::Demo{component="MenuPlatformRegistration"}::
 
 ### 代码
 
@@ -76,7 +76,7 @@ fn visible_fallback_menu_bar() -> MenuBar {
 
 ### 效果
 
-::LioraDemo{component="MenuDescriptor"}::
+::Demo{component="MenuDescriptor"}::
 
 ### 代码
 
@@ -89,7 +89,7 @@ fn visible_fallback_menu_bar() -> MenuBar {
 
 ### 效果
 
-::LioraDemo{component="MenuBar"}::
+::Demo{component="MenuBar"}::
 
 ### 代码
 
@@ -102,7 +102,7 @@ fn visible_fallback_menu_bar() -> MenuBar {
 
 ### 效果
 
-::LioraDemo{component="MenuBarWindowUsage"}::
+::Demo{component="MenuBarWindowUsage"}::
 
 ### 代码
 
@@ -117,7 +117,7 @@ fn visible_fallback_menu_bar() -> MenuBar {
 
 ### 效果
 
-::LioraDemo{component="MenuActions"}::
+::Demo{component="MenuActions"}::
 
 ### 代码
 

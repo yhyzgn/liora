@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="RadioBasic"}::
+::Demo{component="RadioBasic"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="RadioGroup"}::
+::Demo{component="RadioGroup"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="RadioButtons"}::
+::Demo{component="RadioButtons"}::
 
 ### 代码
 
@@ -40,7 +40,7 @@
 
 ### 效果
 
-::LioraDemo{component="RadioCustom"}::
+::Demo{component="RadioCustom"}::
 
 ### 代码
 

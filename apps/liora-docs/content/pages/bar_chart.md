@@ -6,7 +6,7 @@
 
 ### 效果
 
-::LioraDemo{component="BarChartBasic"}::
+::Demo{component="BarChartBasic"}::
 
 ### 代码
 
@@ -17,7 +17,7 @@
 
 ### 效果
 
-::LioraDemo{component="BarChartGrouped"}::
+::Demo{component="BarChartGrouped"}::
 
 ### 代码
 
@@ -28,7 +28,7 @@
 
 ### 效果
 
-::LioraDemo{component="BarChartGradient"}::
+::Demo{component="BarChartGradient"}::
 
 ### 代码
 
@@ -39,7 +39,7 @@
 
 ### 效果
 
-::LioraDemo{component="BarChartPerBarGradient"}::
+::Demo{component="BarChartPerBarGradient"}::
 
 ### 代码
 
@@ -50,7 +50,7 @@
 
 ### 效果
 
-::LioraDemo{component="BarChartStacked"}::
+::Demo{component="BarChartStacked"}::
 
 ### 代码
 
@@ -61,7 +61,7 @@
 
 ### 效果
 
-::LioraDemo{component="BarChartCustom"}::
+::Demo{component="BarChartCustom"}::
 
 ### 代码
 
@@ -74,7 +74,7 @@
 
 ### 效果
 
-::LioraDemo{component="BarChartStandalone"}::
+::Demo{component="BarChartStandalone"}::
 
 ### 代码
 
@@ -85,7 +85,7 @@
 
 ### 效果
 
-::LioraDemo{component="BarChartStandaloneStyles"}::
+::Demo{component="BarChartStandaloneStyles"}::
 
 ### 代码
 
