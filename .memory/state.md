@@ -18,13 +18,14 @@ Local implementation phases are complete through P21. Current repository-owned s
 - P19 Dashboard State/Data Flow: complete; state/data-flow guidance now lives in Docs and app-layer Gallery patterns; business sample models are not stored in `liora-components`.
 - P20 Theme/Interaction Polish: complete; System/Light/Dark theme mode, tokenized overlays/masks, custom window frame polish, and Theme docs/demo are in place.
 - P21 Release Candidate Readiness: complete; `docs/release-candidate-checklist.md`, explicit package metadata, updated README/CHANGELOG/prompt/memory state, and release-boundary regression tests lock the local `0.1.0` RC path.
+- P22 gpui-component Harvest: complete; the full `design/gpui-component-collection-list.md` backlog is closed through standalone components, in-place enhancements, or explicit non-collection decisions.
 
 P12/P21 external-policy items remain protected-environment work: crates.io SDK publication approval, real macOS notarization, Windows signing, destructive system-level installs, formal license replacement if any, and real `v*` release publication.
 
 
-## P22 gpui-component Harvest — 2026-06-25
+## P22 gpui-component Harvest — Complete (2026-06-29)
 
-P22 has started from `design/gpui-component-collection-list.md`. First Wave A low-risk controls now include Spinner, Kbd, OtpInput, and DropdownButton as Liora-native GPUI components with Gallery/Docs/snippet coverage. Remaining Wave A candidates: Accordion and Combobox.
+P22 is complete. The full `design/gpui-component-collection-list.md` backlog has been handled either by standalone Liora components, by in-place enhancement of existing controls, or by explicit non-collection decisions for boundary violations/duplicates. Standalone delivered surfaces include Spinner, Kbd, OtpInput, DropdownButton, Accordion, Sidebar, StatusBar, DockLayout, Settings, Sheet, Toggle, HoverCard, GroupBox, ScrollableMask, CandlestickChart, and SearchableList. Combobox is intentionally not a standalone component: those workflows are covered by searchable Select/Autocomplete plus shared SearchableList. DataTable/TextView/WindowExt/resizable/code-editor style items are folded into existing VirtualizedTable/Text+Docs renderer/WindowFrame+TitleBar/Splitter/CodeEditor surfaces. No P22 backlog remains.
 
 
 ## P19 Dashboard State/Data Flow — 2026-06-18
@@ -102,6 +103,9 @@ Non-blocking residuals: `MessageManager::init` panic is intentional usage-contra
 | P17 Dashboard Dogfooding | ✅ Done | dogfood gate passed | folded into Gallery/Docs; standalone dashboard app removed |
 | P18 Dashboard Polish/API Ergonomics | ✅ Done | ergonomics gate passed | Gallery shell polish + theme toggle + Dashboard Patterns docs; no dashboard sample exports |
 | P19 Dashboard State/Data Flow | ✅ Done | state/data gate passed | app-layer state/filter/refresh guidance in Gallery/Docs |
+| P20 Theme/Interaction Polish | ✅ Done | theme/interaction gate passed | System/Light/Dark + tokenized overlays/masks |
+| P21 Release Candidate Readiness | ✅ Done | RC gate passed | release checklist + package metadata + protected release boundaries |
+| P22 gpui-component Harvest | ✅ Done | collection backlog closed | full gpui-component collection list handled; no P22 backlog remains |
 
 ## Git Status
 

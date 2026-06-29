@@ -2,7 +2,7 @@
 
 ## Status
 
-🧭 Active — started 2026-06-25
+✅ Complete — started 2026-06-25; closed 2026-06-29
 
 ## Goal
 
@@ -16,18 +16,15 @@ Turn the `design/gpui-component-collection-list.md` research into Liora-native c
 - Existing components must be enhanced in place rather than replaced by parallel controls.
 - Keep Gallery and Docs as the canonical adoption/dogfooding apps; do not re-add standalone sample apps.
 
-## Wave A — low-risk high-value controls
+## Harvest closure
 
-Initial wave:
+The full `design/gpui-component-collection-list.md` backlog is closed. Outcomes are one of:
 
-- ✅ `Spinner` — standalone inline loading indicator for buttons, status bars, rows, and toolbars.
-- ✅ `Kbd` — keyboard shortcut keycap display for menus, command palettes, empty states, and docs.
-- ✅ `OtpInput` — interactive OTP/PIN input for 2FA/device pairing flows; click-to-focus, caret positioning, keyboard input, backspace, paste, mask/status/size demos.
-- ✅ `DropdownButton` — split-capable dropdown command button with Gallery/Docs/snippet coverage
-- ✅ `Accordion`
-- ⬜ `Combobox`
+- ✅ Standalone Liora components added where the capability needed a distinct public surface: `Spinner`, `Kbd`, `OtpInput`, `DropdownButton`, `Accordion`, `Sidebar`, `StatusBar`, `DockLayout`, `Settings`, `Sheet`, `Toggle`, `HoverCard`, `GroupBox`, `ScrollableMask`, `CandlestickChart`, and `SearchableList`.
+- ✅ Existing controls enhanced in place where a parallel component would fragment the API: Combobox-style workflows live in searchable `Select`/`Autocomplete` plus shared `SearchableList`; DataTable capability is folded into `VirtualizedTable`; TextView/document needs are covered by `Text`, `SelectableText`, `CodeBlock`, and the native Docs markdown renderer; WindowExt/TitleBar/WindowBorder capability is covered by `WindowFrame`/`TitleBar`; resizable panel capability is covered by `Splitter`; CodeEditor advanced work remains in the existing `CodeEditor` extension surface.
+- ✅ Explicitly not collected where it conflicts with project boundaries or duplicates existing coverage: WebView, WASM gallery, browser runtime paths, and basic controls already present in Liora.
 
-## Required pattern for each new component
+## Required pattern for any future follow-up
 
 1. Add reusable component source under `crates/liora-components/src/<name>.rs`.
 2. Export from `crates/liora-components/src/lib.rs` and keep module docs covered by the public-doc regression.
@@ -38,4 +35,4 @@ Initial wave:
 
 ## Next recommended work
 
-Continue Wave A with `Accordion`. Treat `Combobox` as a larger step because it should likely share SearchableList/Select/Autocomplete infrastructure instead of duplicating popup filtering logic.
+No remaining P22 collection backlog. Future requests that resemble gpui-component items should be treated as ordinary Liora maintenance: enhance the existing closest component in place, keep Gallery/Docs canonical, and do not revive standalone `Combobox` or browser/WebView/WASM paths.

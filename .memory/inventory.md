@@ -222,7 +222,7 @@
 | 8 | VirtualizedTable | `crates/liora-components/src/virtualized_table.rs` | ✅ | ✅ | Implemented Wave 5 |
 | 9 | VirtualizedTree | `crates/liora-components/src/virtualized_tree.rs` | ✅ | ✅ | Implemented Wave 6 |
 
-## P22 gpui-component Harvest 🧭 Active
+## P22 gpui-component Harvest ✅ Complete
 
 | # | Component / Enhancement | File | Demo | Docs | Status |
 |---|-------------------------|------|------|------|--------|
@@ -231,4 +231,23 @@
 | 3 | OtpInput | `crates/liora-components/src/otp_input.rs` | ✅ | ✅ | Implemented Wave A: interactive OTP/PIN input backed by Liora Input editing, with dedicated Gallery/Docs pages and length/mask/status/size demos |
 | 4 | DropdownButton | `crates/liora-components/src/dropdown_button.rs` | ✅ | ✅ | Implemented Wave A: split-capable dropdown command button with item icons, disabled/danger states, placement, close policy, sizes, and semantic variants |
 | 5 | Accordion | `crates/liora-components/src/accordion.rs` | `apps/liora-gallery/src/demos/accordion_demo.rs` | `apps/liora-docs/content/pages/accordion.md` | Done Wave A |
-| 6 | Combobox | — | — | — | Planned Wave A; likely needs SearchableList/shared popup infrastructure |
+| 6 | Combobox | `crates/liora-components/src/select.rs`, `crates/liora-components/src/autocomplete.rs`, `crates/liora-components/src/searchable_list.rs` | Existing Select/Autocomplete/SearchableList demos | Existing Select/Autocomplete/SearchableList docs | Closed as in-place coverage; no standalone Combobox |
+
+
+### P22 collection closure notes
+
+The remaining `design/gpui-component-collection-list.md` candidates are closed as follows:
+
+| Candidate | Closure |
+|---|---|
+| Sidebar / StatusBar / DockLayout / Settings / Sheet | Implemented as Liora app-shell components with Gallery/Docs coverage |
+| DataTable enhancement | Folded into `VirtualizedTable` capabilities rather than a parallel DataTable component |
+| TextView / Document View | Covered by `Text`, `SelectableText`, `CodeBlock`, and the native Docs markdown renderer |
+| CandlestickChart | Implemented as native chart component |
+| SearchableList | Implemented as shared filtering/list primitive and reused by searchable Select flows |
+| Native menu | Covered by existing menu/dropdown/tray surfaces; no separate component backlog remains |
+| FocusTrap | Folded into overlay interaction infrastructure rather than public standalone component |
+| WindowExt / TitleBar / WindowBorder | Covered by `WindowFrame` / `TitleBar` surfaces |
+| Toggle / HoverCard / GroupBox / ScrollableMask | Implemented as Liora components |
+| Clipboard helper / Resizable panels / Root global-state patterns | Covered by existing CodeBlock/clipboard usage, `Splitter`, and `Config`/context infrastructure |
+| WebView / WASM web gallery / browser runtime paths | Explicitly not collected due to pure Rust + GPUI native boundary |

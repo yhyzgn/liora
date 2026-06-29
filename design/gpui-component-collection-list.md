@@ -1,8 +1,11 @@
 # gpui-component → Liora 控件采集清单
 
-> 目的：调研 `longbridge/gpui-component` 中对 Liora 有增量价值的组件/能力，形成后续 P22 或独立阶段的候选 backlog。  
-> 范围：只做采集清单与优先级判断，不包含代码实现。  
+> 目的：调研 `longbridge/gpui-component` 中对 Liora 有增量价值的组件/能力；该清单已经在 P22 收口，现仅作为历史研究记录。
+> 原始范围：只做采集清单与优先级判断，不包含代码实现。
 > 调研日期：2026-06-25
+
+> **Closure status (2026-06-29)**: this collection list is fully processed. It is kept as historical research, not an active backlog. Items were closed by adding standalone Liora components, enhancing existing Liora controls in place, or explicitly declining boundary-violating/duplicate paths. Do not reopen this file as a task list unless the owner creates a new phase.
+
 
 ## 调研依据
 
