@@ -701,8 +701,6 @@ mod titlebar_window_controls;
 mod titlebar_window_controls_left;
 #[path = "../../content/snippets/titlebar/window_controls_right.rs"]
 mod titlebar_window_controls_right;
-#[path = "../../content/snippets/toggle/basic.rs"]
-mod toggle_basic;
 #[path = "../../content/snippets/tooltip/basic.rs"]
 mod tooltip_basic;
 #[path = "../../content/snippets/tooltip/more.rs"]

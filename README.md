@@ -1379,7 +1379,7 @@ impl Render for OrdersView {
 | Category | Components |
 |---|---|
 | Basic and layout | `Button`, `ButtonGroup`, `Icon`, `Link`, `Text`, `Title`, `Paragraph`, `SelectableTextGroup`, `Space`, `Grid`, `GridItem`, `Divider`, `Row`, `Col`, `Container`, `Shell`, `Sidebar`, `TitleBar`, `Flex`, `Scrollbar`, `ScrollableMask`, `Splitter`, `DockLayout`, `Affix`, `Backtop` |
-| Form controls | `Input`, `InputNumber`, `Textarea`, `Checkbox`, `CheckboxGroup`, `Radio`, `RadioGroup`, `Switch`, `Select`, `Slider`, `Form`, `FormItem`, `Rate`, `DatePicker`, `TimePicker`, `DateTimePicker`, `Upload`, `Cascader`, `Transfer`, `ColorPicker`, `Autocomplete`, `InputTag`, `Mention`, `TreeSelect`, `SearchableList`, `OtpInput`, `Toggle`, `ToggleGroup` |
+| Form controls | `Input`, `InputNumber`, `Textarea`, `Checkbox`, `CheckboxGroup`, `Radio`, `RadioGroup`, `Switch`, `Select`, `Slider`, `Form`, `FormItem`, `Rate`, `DatePicker`, `TimePicker`, `DateTimePicker`, `Upload`, `Cascader`, `Transfer`, `ColorPicker`, `Autocomplete`, `InputTag`, `Mention`, `TreeSelect`, `SearchableList`, `OtpInput` |
 | Feedback and overlays | `Alert`, `Tooltip`, `Popover`, `Popconfirm`, `Dialog`, `Drawer`, `Message`, `Notification`, `MessageBox`, `Loading`, `Dropdown`, `DropdownButton`, `Preview`, `Tour`, `HoverCard`, `FocusTrap` |
 | Navigation | `NavigationMenu`, `Tabs`, `Breadcrumb`, `Steps`, `PageHeader`, `Anchor`, `Accordion` |
 | Data display | `Table`, `List`, `VirtualizedTable`, `VirtualizedTree`, `VirtualizedList`, `Progress`, `Skeleton`, `Empty`, `Result`, `Descriptions`, `Timeline`, `Tree`, `Pagination`, `Statistic`, `Segmented`, `Tag`, `Avatar`, `Badge`, `Calendar`, `Carousel`, `Image`, `Watermark`, `Kbd`, `GroupBox`, `StatusBar`, `SettingsPage`, `SettingsGroup`, `SettingsItem` |
@@ -1393,6 +1393,7 @@ Liora avoids duplicate controls for the same job:
 
 - Use `Drawer` for both full drawers and lightweight sheet-style panels. `Drawer::sheet()` provides the compact defaults that would otherwise become a separate Sheet control.
 - Use `Select` for fixed options and searchable selection. `Select::searchable(...)`, `.multiple()`, item groups, disabled items, and footer slots cover Combobox-style workflows.
+- Use `Switch` for settings booleans and `Segmented` / button-style selections for toolbar or view-mode choices; the former standalone Toggle control was removed to avoid API duplication.
 - Use `Text` for both inline text and lightweight app documents. `Text::document(...)`, `TextBlock`, and `Text::markdown(...)` cover TextView-style About/Help/Release notes content. `Text`, `Title`, and `Paragraph` are mouse-selectable by default; call `.selectable(false)` only for decorative labels or non-copyable chrome. Use `SelectableTextGroup` when selection must continue across multiple `Text` and `Paragraph` blocks, such as release notes, help pages, and documentation articles.
 
 ## Native packaging

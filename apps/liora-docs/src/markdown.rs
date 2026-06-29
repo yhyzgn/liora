@@ -87,7 +87,6 @@ const DESCRIPTIONS_DOC: &str = include_str!("../content/pages/descriptions.md");
 const DIALOG_DOC: &str = include_str!("../content/pages/dialog.md");
 const DRAWER_DOC: &str = include_str!("../content/pages/drawer.md");
 const DOCK_LAYOUT_DOC: &str = include_str!("../content/pages/dock_layout.md");
-const TOGGLE_DOC: &str = include_str!("../content/pages/toggle.md");
 const GROUP_BOX_DOC: &str = include_str!("../content/pages/group_box.md");
 const HOVER_CARD_DOC: &str = include_str!("../content/pages/hover_card.md");
 const SCROLLABLE_MASK_DOC: &str = include_str!("../content/pages/scrollable_mask.md");
@@ -318,10 +317,6 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Dialog",
         markdown: DIALOG_DOC,
-    },
-    DocPage {
-        title: "Toggle",
-        markdown: TOGGLE_DOC,
     },
     DocPage {
         title: "GroupBox",
@@ -1850,7 +1845,6 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "dialog/custom_content.rs" => {
             Some(include_str!("../content/snippets/dialog/custom_content.rs"))
         }
-        "toggle/basic.rs" => Some(include_str!("../content/snippets/toggle/basic.rs")),
         "group_box/basic.rs" => Some(include_str!("../content/snippets/group_box/basic.rs")),
         "hover_card/basic.rs" => Some(include_str!("../content/snippets/hover_card/basic.rs")),
         "scrollable_mask/basic.rs" => {
@@ -3516,14 +3510,6 @@ impl Render for LiveDemoContent {
             "SelectableTextGroupBasic" => Card::new(docs_selectable_text_group(_cx)).no_shadow().into_any_element(),
 
 
-            "ToggleBasic" => demo_stack(vec![
-                liora_components::Toggle::new("Bold", true).into_any_element(),
-                liora_components::ToggleGroup::new([
-                    liora_components::ToggleOption::new("preview", "Preview"),
-                    liora_components::ToggleOption::new("code", "Code"),
-                    liora_components::ToggleOption::new("split", "Split"),
-                ]).selected("preview").into_any_element(),
-            ]),
             "GroupBoxBasic" => liora_components::GroupBox::new("Editor", demo_stack(vec![Text::new("Tab size: 4").into_any_element(), Text::new("Soft tabs enabled").into_any_element()])).description("Project-level editor preferences.").into_any_element(),
             "HoverCardBasic" => liora_components::HoverCard::new(Text::new("Hover target").underline()).content(|_, _| demo_stack(vec![Text::new("Preview card").bold().into_any_element(), Text::new("Use this for profile or link previews.").into_any_element()])).into_any_element(),
             "ScrollableMaskBasic" => liora_components::ScrollableMask::new(demo_stack((1..=16).map(|i| Text::new(format!("Scrollable row {i}")).into_any_element()).collect())).height(gpui::px(160.0)).into_any_element(),

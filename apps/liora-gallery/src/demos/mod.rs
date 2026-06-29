@@ -15,6 +15,7 @@ pub mod candlestick_chart_demo;
 pub mod card_demo;
 pub mod carousel_demo;
 pub mod cascader_demo;
+pub mod clipboard_demo;
 pub mod code_block_demo;
 pub mod code_editor_demo;
 pub mod collapse_demo;
@@ -29,11 +30,14 @@ pub mod drawer_demo;
 pub mod dropdown_button_demo;
 pub mod dropdown_demo;
 pub mod empty_demo;
+pub mod focus_trap_demo;
 pub mod form_controls_demo;
 pub mod form_demo;
 pub mod grid_demo;
+pub mod group_box_demo;
 pub mod heat_bar_demo;
 pub mod horizontal_list_demo;
+pub mod hover_card_demo;
 pub mod icon_demo;
 pub mod icon_libraries_demo;
 pub mod image_demo;
@@ -64,6 +68,7 @@ pub mod progress_demo;
 pub mod qr_code_demo;
 pub mod result_demo;
 pub mod ring_chart_demo;
+pub mod scrollable_mask_demo;
 pub mod scrollbar_demo;
 pub mod searchable_list_demo;
 pub mod segment_ratio_bar_demo;
@@ -97,7 +102,6 @@ pub mod tree_demo;
 pub mod tree_select_demo;
 pub mod typography_demo;
 pub mod upload_demo;
-pub mod utility_components_demo;
 pub mod virtualized_list_demo;
 pub mod virtualized_table_demo;
 pub mod virtualized_tree_demo;
@@ -250,9 +254,29 @@ pub fn registry() -> Vec<DemoEntry> {
             render: |cx| form_controls_demo::render_rate(cx),
         },
         DemoEntry {
-            name: "Toggle 工具控件",
-            description: "Toggle、GroupBox、HoverCard 等轻量控件和 facade",
-            render: |cx| utility_components_demo::render(cx).into(),
+            name: "GroupBox 分组容器",
+            description: "设置页和表单片段分组容器",
+            render: |cx| group_box_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "HoverCard 悬停卡片",
+            description: "Profile、链接和上下文预览",
+            render: |cx| hover_card_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "ScrollableMask 滚动渐隐",
+            description: "滚动边缘渐隐提示",
+            render: |cx| scrollable_mask_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "Clipboard 剪贴板辅助",
+            description: "文本剪贴板 helper",
+            render: |cx| clipboard_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "FocusTrap 焦点策略",
+            description: "Overlay 焦点策略 facade",
+            render: |cx| focus_trap_demo::render(cx).into(),
         },
         DemoEntry {
             name: "DockLayout 停靠布局",
@@ -711,6 +735,11 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "DropdownButton" => Some(dropdown_button_demo::render(cx).into()),
         "Empty" => Some(empty_demo::render(cx).into()),
         "Form" => Some(form_demo::render(cx).into()),
+        "GroupBox" => Some(group_box_demo::render(cx).into()),
+        "HoverCard" => Some(hover_card_demo::render(cx).into()),
+        "ScrollableMask" => Some(scrollable_mask_demo::render(cx).into()),
+        "Clipboard" => Some(clipboard_demo::render(cx).into()),
+        "FocusTrap" => Some(focus_trap_demo::render(cx).into()),
         "Grid" => Some(grid_demo::render(cx).into()),
         "HeatBar" => Some(heat_bar_demo::render(cx).into()),
         "HorizontalList" => Some(horizontal_list_demo::render(cx).into()),
@@ -768,7 +797,6 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Steps" => Some(steps_demo::render(cx).into()),
         "Switch" => Some(form_controls_demo::render_switch(cx)),
         "Table" => Some(table_demo::render(cx).into()),
-        "Toggle" => Some(utility_components_demo::render(cx).into()),
         "Theme" => Some(theme_demo::render(cx).into()),
         "Tabs" => Some(tabs_demo::render(cx).into()),
         "Tag" => Some(tag_demo::render(cx).into()),
@@ -782,7 +810,6 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Tray" => Some(tray_demo::render(cx).into()),
         "Transfer" => Some(transfer_demo::render(cx).into()),
         "TreeSelect" => Some(tree_select_demo::render(cx).into()),
-        "UtilityComponents" => Some(utility_components_demo::render(cx).into()),
         "Tree" => Some(tree_demo::render(cx).into()),
         "Typography" => Some(typography_demo::render(cx).into()),
         "Upload" => Some(upload_demo::render(cx).into()),

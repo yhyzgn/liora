@@ -152,7 +152,6 @@ pub mod timeline;
 pub mod timer;
 pub mod title;
 pub mod titlebar;
-pub mod toggle;
 pub mod tooltip;
 pub mod tour;
 pub mod transfer;
@@ -289,7 +288,6 @@ pub use timeline::*;
 pub use timer::*;
 pub use title::*;
 pub use titlebar::*;
-pub use toggle::*;
 pub use tooltip::*;
 pub use tour::*;
 pub use transfer::*;
@@ -470,7 +468,6 @@ mod application_init_api_tests {
             ("timeline.rs", include_str!("timeline.rs")),
             ("timer.rs", include_str!("timer.rs")),
             ("title.rs", include_str!("title.rs")),
-            ("toggle.rs", include_str!("toggle.rs")),
             ("tooltip.rs", include_str!("tooltip.rs")),
             ("tour.rs", include_str!("tour.rs")),
             ("transfer.rs", include_str!("transfer.rs")),
@@ -1179,7 +1176,6 @@ mod component_backlog_export_tests {
         assert!(source.contains("pub mod scrollable_mask;"));
         assert!(source.contains("pub mod hover_card;"));
         assert!(source.contains("pub mod group_box;"));
-        assert!(source.contains("pub mod toggle;"));
         assert!(source.contains("pub use searchable_list::*;"));
         assert!(source.contains("pub use list::*;"));
         assert!(source.contains("pub use status_bar::*;"));
@@ -1192,6 +1188,5 @@ mod component_backlog_export_tests {
         assert!(source.contains("pub use scrollable_mask::*;"));
         assert!(source.contains("pub use hover_card::*;"));
         assert!(source.contains("pub use group_box::*;"));
-        assert!(source.contains("pub use toggle::*;"));
     }
 }

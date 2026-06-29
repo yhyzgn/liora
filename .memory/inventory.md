@@ -248,6 +248,7 @@ The remaining `design/gpui-component-collection-list.md` candidates are closed a
 | Native menu | Covered by existing menu/dropdown/tray surfaces; no separate component backlog remains |
 | FocusTrap | Folded into overlay interaction infrastructure rather than public standalone component |
 | WindowExt / TitleBar / WindowBorder | Covered by `WindowFrame` / `TitleBar` surfaces |
-| Toggle / HoverCard / GroupBox / ScrollableMask | Implemented as Liora components |
+| HoverCard / GroupBox / ScrollableMask | Implemented as Liora components |
+| Toggle / ToggleGroup | Removed as duplicate standalone surface; use Switch for boolean settings and Segmented/button-style selections for toolbar/view-mode choices |
 | Clipboard helper / Resizable panels / Root global-state patterns | Covered by existing CodeBlock/clipboard usage, `Splitter`, and `Config`/context infrastructure |
 | WebView / WASM web gallery / browser runtime paths | Explicitly not collected due to pure Rust + GPUI native boundary |
