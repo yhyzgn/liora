@@ -30,11 +30,11 @@ fn switch_to_english(window: &mut gpui::Window, cx: &mut gpui::App) {
 }
 
 fn empty_label(cx: &gpui::App) -> gpui::SharedString {
-    locales::empty::description
+    tr(cx, locales::empty::description)
 }
 ```
 
-组件默认文案会在 render 阶段通过 `locales::empty::description` 这类型化 key 查询当前语言；用户显式传入的文案仍然优先，不会被全局语言覆盖。
+组件默认文案可以直接把 `locales::empty::description` 传给组件构造器；如果你需要立即拿到 `SharedString`，仍然使用 `tr(cx, locales::empty::description)`。用户显式传入的文案仍然优先，不会被全局语言覆盖。
 
 ## 类型化资源 Key
 
@@ -58,7 +58,7 @@ liora::locales! {
 }
 
 fn subtitle(cx: &gpui::App) -> gpui::SharedString {
-    app_locales::docs::subtitle
+    tr(cx, app_locales::docs::subtitle)
 }
 ```
 
