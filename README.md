@@ -41,6 +41,7 @@
 - [Using the Liora modules](#using-the-liora-modules)
 - [Component examples](#component-examples)
 - [Advanced usage](#advanced-usage)
+- [Internationalization and locales](#internationalization-and-locales)
 - [Component catalog](#component-catalog)
 - [Native packaging](#native-packaging)
 - [Troubleshooting](#troubleshooting)
@@ -1380,6 +1381,179 @@ impl Render for OrdersView {
 }
 ```
 
+## Internationalization and locales
+
+Liora's locale system is deliberately low-coupling: language resources live in external TOML files, Rust code uses typed keys such as `locales::empty::description`, and the runtime translator can be replaced by the application.
+
+Use this feature when you need:
+
+- `assets/locales/<locale>.toml` files outside Rust source code;
+- generated `locales::section::key` constants instead of hardcoded strings like `"empty.description"`;
+- runtime language switching with `apply_locale(window, cx, locale)`;
+- a fallback locale plus Liora's small built-in fallback resources;
+- an escape hatch for a custom translation backend through `Translator`.
+
+### 1. Add language files
+
+Create one TOML file per locale. Nested TOML tables become dot-separated keys internally, while Rust call sites use generated modules.
+
+```toml
+# assets/locales/en-US.toml
+[common]
+ok = "OK"
+cancel = "Cancel"
+
+[empty]
+description = "No data"
+
+[docs]
+subtitle = "Native documentation"
+```
+
+```toml
+# assets/locales/zh-CN.toml
+[common]
+ok = "确定"
+cancel = "取消"
+
+[empty]
+description = "暂无数据"
+
+[docs]
+subtitle = "原生文档"
+```
+
+Keep the same key set in every locale file whenever possible. Missing keys fall back to the configured fallback locale, then Liora's built-in core resources, then the key path itself.
+
+### 2. Generate typed keys for the current package
+
+Add the build dependency and a tiny `build.rs` to your application crate:
+
+```toml
+[build-dependencies]
+liora-locales-codegen = "0.1"
+```
+
+```rust
+// build.rs
+fn main() {
+    liora_locales_codegen::generate_locales_from_package("liora_core::Locales");
+}
+```
+
+Then include the generated module from your app:
+
+```rust
+pub mod locales {
+    include!(concat!(env!("OUT_DIR"), "/locales_keys.rs"));
+}
+```
+
+By default the generator scans the current package's `./assets/locales` directory and emits constants like:
+
+```rust
+locales::common::ok
+locales::empty::description
+locales::docs::subtitle
+```
+
+If your resources live elsewhere, configure paths in `Cargo.toml`. Relative paths are resolved from the package root.
+
+```toml
+[package.metadata.liora.locales]
+paths = ["assets/locales", "../shared/locales"]
+```
+
+### 3. Load resources during app initialization
+
+```rust
+use liora::{Options, init_liora_with_options};
+
+fn setup(cx: &mut gpui::App) {
+    let options = Options::system()
+        .with_locale("en-US")
+        .with_fallback_locale("zh-CN")
+        .try_with_locales_dir("assets/locales")
+        .unwrap_or_else(|_| Options::system().with_locale("en-US"));
+
+    init_liora_with_options(cx, options);
+}
+```
+
+Gallery and Docs use `env!("CARGO_MANIFEST_DIR")` to build an absolute path for packaged applications:
+
+```rust
+fn app_locales_dir() -> std::path::PathBuf {
+    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/locales")
+}
+```
+
+### 4. Use keys in UI code
+
+For Liora text-oriented component builders, pass the typed key directly. The component resolves it during render, so runtime language switching updates the UI after a window refresh.
+
+```rust
+use liora::components::{Button, Empty, Paragraph, Text, Title};
+
+fn content() -> impl gpui::IntoElement {
+    gpui::div()
+        .child(Title::new(locales::docs::subtitle).h2())
+        .child(Text::new(locales::empty::description))
+        .child(Paragraph::with_text(locales::common::loading))
+        .child(Button::new(locales::common::ok).primary())
+        .child(Empty::new().description(locales::empty::description))
+}
+```
+
+When you need an immediate `SharedString` for APIs that do not accept `LocalizedText` yet, call `tr(cx, key)` explicitly:
+
+```rust
+use liora::{locales, tr};
+
+fn window_title(cx: &gpui::App) -> gpui::SharedString {
+    tr(cx, locales::common::loading)
+}
+```
+
+### 5. Switch language at runtime
+
+```rust
+use liora::apply_locale;
+
+fn switch_to_chinese(window: &mut gpui::Window, cx: &mut gpui::App) {
+    if let Err(error) = apply_locale(window, cx, "zh-CN") {
+        eprintln!("failed to switch locale: {error}");
+    }
+}
+```
+
+If the target locale is not already loaded, use `switch_locale_from_dir(window, cx, locale, dir)` to load it from disk and switch in one operation.
+
+### 6. Replace the translator when needed
+
+Applications with an existing localization stack can implement `Translator` and inject it with `Options::with_translator(...)`, `set_translator(...)`, or `set_shared_translator(...)`. Liora components depend only on typed `Locales` keys; the backend still receives the string path so your app can map it to a database, remote service, ICU/Fluent layer, or any other system.
+
+```rust
+use gpui::SharedString;
+use liora::{LocaleId, Translator};
+
+struct AppTranslator;
+
+impl Translator for AppTranslator {
+    fn translate(&self, locale: &LocaleId, key: &str) -> Option<SharedString> {
+        Some(format!("{}:{}", locale.as_str(), key).into())
+    }
+}
+```
+
+### Rules of thumb
+
+- Do not hardcode translation paths at call sites; prefer `locales::section::key`.
+- Use direct keys for component builders, and `tr(cx, key)` only when an immediate string is required.
+- Keep language files external to Rust source code.
+- Keep all app shell text in TOML; Docs markdown page bodies can remain single-language unless your product requires translated markdown content.
+- Re-run `cargo check` after editing TOML so build scripts regenerate the typed keys.
+
 ## Component catalog
 
 | Category | Components |
@@ -1602,49 +1776,4 @@ Read `CONTRIBUTING.md` before opening a pull request. Important boundaries:
 
 ## License
 
-Liora currently uses `LicenseRef-Liora`; see `LICENSE.md`. Do not assume an OSS license until the project maintainer replaces that policy with explicit OSS or commercial terms.### External locales language files
-
-Liora supports runtime locale resources through external TOML language files. Keep files under `assets/locales/<locale>.toml`, load them through `Options::try_with_locales_dir(...)`, and switch at runtime with `apply_locale(window, cx, locale)` without rebuilding the window or losing component state.
-
-```toml
-# assets/locales/en-US.toml
-[common]
-ok = "OK"
-cancel = "Cancel"
-
-[empty]
-description = "No data"
-```
-
-```rust
-use liora::{Options, apply_locale, locales, init_liora_with_options, tr};
-
-fn setup(cx: &mut gpui::App) {
-    let options = Options::system()
-        .with_locale("en-US")
-        .with_fallback_locale("zh-CN")
-        .try_with_locales_dir("assets/locales")
-        .unwrap_or_else(|_| Options::system().with_locale("en-US"));
-
-    init_liora_with_options(cx, options);
-}
-
-fn switch_language(window: &mut gpui::Window, cx: &mut gpui::App) {
-    let _ = apply_locale(window, cx, "zh-CN");
-}
-
-fn empty_label(cx: &gpui::App) -> gpui::SharedString {
-    tr(cx, locales::empty::description)
-}
-```
-
-Use typed keys such as `locales::empty::description` instead of hardcoded strings like `"empty.description"`. During development, `liora-locales-codegen` scans the current package's `./assets/locales` directory from `build.rs` and regenerates `locales::section::key` constants whenever TOML files change. Custom directories can be configured in Cargo metadata:
-
-```toml
-[package.metadata.liora.locales]
-paths = ["assets/locales", "../shared/locales"]
-```
-
-For app-specific resources outside that generated module, define your own module with `liora::locales! { pub mod app_locales { docs { subtitle } } }` and pass those constants to `tr(cx, app_locales::docs::subtitle)`.
-
-Applications with an existing localization stack can implement `Translator` and pass it with `Options::with_translator(...)` or replace it at runtime with `set_translator(...)`. Liora components only depend on typed `Locales` values at call sites while `Translator` still receives the underlying string path, so the translation backend remains swappable.
+Liora currently uses `LicenseRef-Liora`; see `LICENSE.md`. Do not assume an OSS license until the project maintainer replaces that policy with explicit OSS or commercial terms.

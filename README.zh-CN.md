@@ -41,6 +41,7 @@
 - [liora 下各个模块怎么用](#liora-下各个模块怎么用)
 - [组件代码示例](#组件代码示例)
 - [高级用法](#高级用法)
+- [国际化与 Locales](#国际化与-locales)
 - [组件清单](#组件清单)
 - [原生打包](#原生打包)
 - [常见问题与排查](#常见问题与排查)
@@ -1379,6 +1380,179 @@ impl Render for OrdersView {
 }
 ```
 
+## 国际化与 Locales
+
+Liora 的国际化系统保持低耦合：语言资源放在外部 TOML 文件中，Rust 调用处使用 `locales::empty::description` 这样的类型化 key，运行时翻译后端也可以由应用完全替换。
+
+适合以下需求：
+
+- 语言包放在 `assets/locales/<locale>.toml`，而不是写死在 Rust 源码里；
+- 调用处使用生成的 `locales::section::key` 常量，避免 `"empty.description"` 这种硬编码字符串；
+- 运行时通过 `apply_locale(window, cx, locale)` 自由切换语言；
+- 支持 fallback locale，以及 Liora 内置核心 fallback 文案；
+- 需要通过 `Translator` 接入应用自己的翻译系统。
+
+### 1. 添加语言文件
+
+每个语言一个 TOML 文件。TOML 的嵌套表在内部会被展平成点分隔 key，但 Rust 调用处使用生成模块。
+
+```toml
+# assets/locales/zh-CN.toml
+[common]
+ok = "确定"
+cancel = "取消"
+
+[empty]
+description = "暂无数据"
+
+[docs]
+subtitle = "原生文档"
+```
+
+```toml
+# assets/locales/en-US.toml
+[common]
+ok = "OK"
+cancel = "Cancel"
+
+[empty]
+description = "No data"
+
+[docs]
+subtitle = "Native documentation"
+```
+
+建议所有语言文件保持相同 key 集合。缺失 key 会依次 fallback 到配置的 fallback locale、Liora 内置核心资源，最后返回 key 路径本身。
+
+### 2. 为当前 package 生成类型化 key
+
+在应用 crate 中添加 build dependency 和 `build.rs`：
+
+```toml
+[build-dependencies]
+liora-locales-codegen = "0.1"
+```
+
+```rust
+// build.rs
+fn main() {
+    liora_locales_codegen::generate_locales_from_package("liora_core::Locales");
+}
+```
+
+在应用中 include 生成模块：
+
+```rust
+pub mod locales {
+    include!(concat!(env!("OUT_DIR"), "/locales_keys.rs"));
+}
+```
+
+默认扫描当前 package 的 `./assets/locales` 目录，并生成类似以下常量：
+
+```rust
+locales::common::ok
+locales::empty::description
+locales::docs::subtitle
+```
+
+如果资源目录不在默认位置，可以在 `Cargo.toml` 中配置。相对路径会从 package root 解析。
+
+```toml
+[package.metadata.liora.locales]
+paths = ["assets/locales", "../shared/locales"]
+```
+
+### 3. 应用初始化时加载资源
+
+```rust
+use liora::{Options, init_liora_with_options};
+
+fn setup(cx: &mut gpui::App) {
+    let options = Options::system()
+        .with_locale("zh-CN")
+        .with_fallback_locale("en-US")
+        .try_with_locales_dir("assets/locales")
+        .unwrap_or_else(|_| Options::system().with_locale("zh-CN"));
+
+    init_liora_with_options(cx, options);
+}
+```
+
+Gallery 和 Docs 会用 `env!("CARGO_MANIFEST_DIR")` 构造绝对路径，便于打包后的应用定位资源：
+
+```rust
+fn app_locales_dir() -> std::path::PathBuf {
+    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/locales")
+}
+```
+
+### 4. 在 UI 代码中使用 key
+
+对于 Liora 的文本类组件构造器，直接传类型化 key。组件会在 render 阶段解析当前语言，因此运行时切换语言并刷新窗口后，UI 会更新。
+
+```rust
+use liora::components::{Button, Empty, Paragraph, Text, Title};
+
+fn content() -> impl gpui::IntoElement {
+    gpui::div()
+        .child(Title::new(locales::docs::subtitle).h2())
+        .child(Text::new(locales::empty::description))
+        .child(Paragraph::with_text(locales::common::loading))
+        .child(Button::new(locales::common::ok).primary())
+        .child(Empty::new().description(locales::empty::description))
+}
+```
+
+如果目标 API 还不接收 `LocalizedText`，或者你需要立即得到 `SharedString`，使用 `tr(cx, key)`：
+
+```rust
+use liora::{locales, tr};
+
+fn window_title(cx: &gpui::App) -> gpui::SharedString {
+    tr(cx, locales::common::loading)
+}
+```
+
+### 5. 运行时切换语言
+
+```rust
+use liora::apply_locale;
+
+fn switch_to_english(window: &mut gpui::Window, cx: &mut gpui::App) {
+    if let Err(error) = apply_locale(window, cx, "en-US") {
+        eprintln!("failed to switch locale: {error}");
+    }
+}
+```
+
+如果目标语言尚未加载，可以使用 `switch_locale_from_dir(window, cx, locale, dir)` 从磁盘加载并切换。
+
+### 6. 替换翻译系统
+
+如果应用已有自己的翻译系统，可以实现 `Translator`，并通过 `Options::with_translator(...)`、`set_translator(...)` 或 `set_shared_translator(...)` 注入。Liora 组件只依赖类型化 `Locales` key；翻译后端仍接收字符串路径，因此可以映射到数据库、远程服务、ICU/Fluent 或任意系统。
+
+```rust
+use gpui::SharedString;
+use liora::{LocaleId, Translator};
+
+struct AppTranslator;
+
+impl Translator for AppTranslator {
+    fn translate(&self, locale: &LocaleId, key: &str) -> Option<SharedString> {
+        Some(format!("{}:{}", locale.as_str(), key).into())
+    }
+}
+```
+
+### 使用原则
+
+- 调用处不要硬编码翻译路径，优先使用 `locales::section::key`。
+- 组件构造器直接传 key；只有立即需要字符串时才用 `tr(cx, key)`。
+- 语言资源保持为外部 TOML 文件，不写进 Rust 代码。
+- 应用壳 UI 文案应放进 TOML；Docs 的 markdown 页面正文不强制拆成多语言 markdown，除非产品明确需要。
+- 修改 TOML 后重新运行 `cargo check`，让 build script 重新生成类型化 key。
+
 ## 组件清单
 
 | 分类 | 组件 |
@@ -1589,49 +1763,4 @@ cargo run --release -p xtask -- package release-readiness
 
 ## License
 
-Liora 当前使用 `LicenseRef-Liora`；见 `LICENSE.md`。在项目维护者明确替换为 OSS 或商业 license 条款前，不要假设本项目为开源 license。### 外部 locales 语言文件
-
-Liora 支持通过外部 TOML 语言文件做运行时国际化。语言包放在 `assets/locales/<locale>.toml`，通过 `Options::try_with_locales_dir(...)` 加载，运行时用 `apply_locale(window, cx, locale)` 切换语言，不需要重建窗口，也不会丢组件状态。
-
-```toml
-# assets/locales/zh-CN.toml
-[common]
-ok = "确定"
-cancel = "取消"
-
-[empty]
-description = "暂无数据"
-```
-
-```rust
-use liora::{Options, apply_locale, locales, init_liora_with_options, tr};
-
-fn setup(cx: &mut gpui::App) {
-    let options = Options::system()
-        .with_locale("zh-CN")
-        .with_fallback_locale("en-US")
-        .try_with_locales_dir("assets/locales")
-        .unwrap_or_else(|_| Options::system().with_locale("zh-CN"));
-
-    init_liora_with_options(cx, options);
-}
-
-fn switch_language(window: &mut gpui::Window, cx: &mut gpui::App) {
-    let _ = apply_locale(window, cx, "en-US");
-}
-
-fn empty_label(cx: &gpui::App) -> gpui::SharedString {
-    tr(cx, locales::empty::description)
-}
-```
-
-使用 `locales::empty::description` 这类型化 key，不要在调用处写 `"empty.description"` 硬编码字符串。开发时 `liora-locales-codegen` 会在 `build.rs` 中默认扫描当前 package 的 `./assets/locales` 目录，TOML 变更后自动重新生成 `locales::section::key` 常量。自定义目录可在 Cargo metadata 中配置：
-
-```toml
-[package.metadata.liora.locales]
-paths = ["assets/locales", "../shared/locales"]
-```
-
-如果应用资源不放进生成模块，也可以用 `liora::locales! { pub mod app_locales { docs { subtitle } } }` 定义模块，再调用 `tr(cx, app_locales::docs::subtitle)`。
-
-如果应用已有自己的翻译系统，可以实现 `Translator`，通过 `Options::with_translator(...)` 注入，或运行时用 `set_translator(...)` 替换。Liora 组件调用处依赖类型化 `Locales`，`Translator` 仍接收底层字符串路径，因此翻译后端可以完全替换。
+Liora 当前使用 `LicenseRef-Liora`；见 `LICENSE.md`。在项目维护者明确替换为 OSS 或商业 license 条款前，不要假设本项目为开源 license。
