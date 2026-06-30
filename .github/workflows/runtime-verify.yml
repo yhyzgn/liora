@@ -58,6 +58,9 @@ jobs:
             if [[ "$WORKFLOW_RUN_CONCLUSION" != "success" ]]; then
               should_run="false"
             fi
+            if [[ "$tag" != v* ]]; then
+              should_run="false"
+            fi
           fi
 
           if [[ -z "$source_run_id" ]]; then
