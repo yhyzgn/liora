@@ -8,7 +8,7 @@ This page documents the packaging pipeline used by this repository and the piece
 
 Liora publishes three kinds of release outputs:
 
-- crates.io GPUI SDK — `liora` is the one-stop facade published to crates.io; `liora-theme`, `liora-core`, `liora-icons`, `liora-icons-lucide`, `liora-icons-antd`, `liora-icons-ionic`, `liora-icons-tabler`, `liora-icons-carbon`, `liora-icons-material`, `liora-components`, and `liora-tray` are published with Cargo's `gpui = 0.2.2` registry fallback and are verified through a downstream `[patch.crates-io]` override to the official Zed GPUI git revision.
+- crates.io GPUI SDK — `liora` is the one-stop facade published to crates.io; `liora-theme`, `liora-locales-codegen`, `liora-core`, `liora-icons`, `liora-icons-lucide`, `liora-icons-antd`, `liora-icons-ionic`, `liora-icons-tabler`, `liora-icons-carbon`, `liora-icons-material`, `liora-components`, `liora-tray`, `liora-packager`, and `liora-updater` are published with Cargo's `gpui = 0.2.2` registry fallback and are verified through a downstream `[patch.crates-io]` override to the official Zed GPUI git revision.
 - `liora-docs` raw executables — cross-platform runnable documentation binaries for Linux, macOS, and Windows.
 - `liora-gallery` raw executables plus installers — the component gallery is both directly downloadable as a binary and packaged into the planned native installer formats.
 
@@ -220,7 +220,7 @@ For a real signed public release, create a protected `vX.Y.Z` tag that matches `
 The repository-owned release-candidate checklist lives at `docs/release-candidate-checklist.md`. It covers the Liora 0.1.x release gate:
 
 - local validation commands for formatting, workspace checks/tests, snippet checks, Rustdoc, packaging validation, release-readiness, dry-run packaging, install-smoke dry-run, and Gallery/Docs GUI smoke;
-- package metadata expectations: SDK crates (`liora`, `liora-theme`, `liora-core`, `liora-icons`, `liora-icons-lucide`, `liora-icons-antd`, `liora-icons-ionic`, `liora-icons-tabler`, `liora-icons-carbon`, `liora-icons-material`, `liora-components`, `liora-tray`, `liora-packager`, `liora-updater`) use the repository license file and are crates.io-publishable; apps and `xtask` remain `publish = false`;
+- package metadata expectations: SDK crates (`liora`, `liora-theme`, `liora-locales-codegen`, `liora-core`, `liora-icons`, `liora-icons-lucide`, `liora-icons-antd`, `liora-icons-ionic`, `liora-icons-tabler`, `liora-icons-carbon`, `liora-icons-material`, `liora-components`, `liora-tray`, `liora-packager`, `liora-updater`) use the repository license file and are crates.io-publishable; apps and `xtask` remain `publish = false`;
 - the canonical app boundary: Gallery and Docs only, with no standalone `minimal-app` or `dashboard-app`;
 - protected release-only work such as real `vX.Y.Z` tag publication, macOS notarization, Windows signing, and destructive system installer smoke tests.
 

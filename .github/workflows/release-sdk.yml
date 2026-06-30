@@ -19,7 +19,7 @@ permissions:
   contents: read
 
 env:
-  CRATES_IO_CRATES: "liora-theme liora-core liora-icons liora-icons-lucide liora-icons-antd liora-icons-ionic liora-icons-tabler liora-icons-carbon liora-icons-material liora-components liora-tray liora-packager liora-updater liora"
+  CRATES_IO_CRATES: "liora-theme liora-locales-codegen liora-core liora-icons liora-icons-lucide liora-icons-antd liora-icons-ionic liora-icons-tabler liora-icons-carbon liora-icons-material liora-components liora-tray liora-packager liora-updater liora"
   ZED_GPUI_REV: "2c346f60a76fe3f0367ef924927f50a6efdf5718"
 
 jobs:
@@ -79,7 +79,7 @@ jobs:
           assert gpui_platform_dep["rev"] == gpui_dep["rev"]
           assert gpui_platform_dep["default-features"] is False
 
-          crates = "liora-theme liora-core liora-icons liora-icons-lucide liora-icons-antd liora-icons-ionic liora-icons-tabler liora-icons-carbon liora-icons-material liora-components liora-tray liora-packager liora-updater liora".split()
+          crates = "liora-theme liora-locales-codegen liora-core liora-icons liora-icons-lucide liora-icons-antd liora-icons-ionic liora-icons-tabler liora-icons-carbon liora-icons-material liora-components liora-tray liora-packager liora-updater liora".split()
           for crate in crates:
               path = Path("crates") / crate / "Cargo.toml"
               package = tomllib.loads(path.read_text())["package"]
@@ -97,7 +97,7 @@ jobs:
           # Crates that depend on unpublished sibling versions are validated by
           # the patched consumer smoke test below and published sequentially in
           # the publish job after each dependency appears in the registry index.
-          for crate in liora-theme liora-tray liora-packager liora-updater; do
+          for crate in liora-theme liora-locales-codegen liora-tray liora-packager liora-updater; do
             cargo package -p "$crate" --no-verify
           done
 
@@ -177,6 +177,7 @@ jobs:
           crate_dir() {
             case "$1" in
               liora-theme) echo "crates/liora-theme" ;;
+              liora-locales-codegen) echo "crates/liora-locales-codegen" ;;
               liora-core) echo "crates/liora-core" ;;
               liora-icons) echo "crates/liora-icons" ;;
               liora-icons-lucide) echo "crates/liora-icons-lucide" ;;
