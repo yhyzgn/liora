@@ -657,11 +657,11 @@ jobs:
 
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release edit "$tag" \
-              --title "Liora ${tag}" \
+              --title "$tag" \
               --notes-file release-notes.md
             gh release upload "$tag" "${files[@]}" --clobber
           else
             gh release create "$tag" "${files[@]}" \
-              --title "Liora ${tag}" \
+              --title "$tag" \
               --notes-file release-notes.md
           fi
