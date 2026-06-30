@@ -20,6 +20,8 @@ The reusable packaging logic lives in:
 - `.github/workflows/ci.yml` — ordinary quality gate for every pull request and `main` push.
 - `.github/workflows/package.yml` — GitHub Actions preview/release pipeline for native app binaries and Gallery installers.
 - `.github/workflows/release-sdk.yml` — GitHub Actions workflow that audits SDK crate metadata, packages the publishable crates, verifies a patched downstream consumer, and publishes all Liora SDK crates to crates.io in dependency order.
+- `.github/workflows/runtime-verify.yml` — independent runtime verification workflow that starts after the native package workflow, downloads the produced binaries/installers, runs platform smoke checks on Linux/macOS/Windows runners, uploads machine-readable and Markdown reports, and appends the summary to the GitHub Release body for tagged releases.
+- `scripts/runtime_verify.py` — shared runner-safe verifier used by the workflow for raw executable launch checks and package install/run/uninstall smoke checks.
 - `packaging/` — icons, desktop metadata, macOS/Windows/Linux package resources.
 
 ## Local Commands
@@ -74,6 +76,7 @@ Liora intentionally separates ordinary quality gates from packaging/release gene
 | `.github/workflows/ci.yml` | pull requests, `main` pushes, manual dispatch | Fast correctness gate split into two jobs: `rust-quality` runs formatting, workspace check/test, and docs snippets with native Linux build dependencies; `packaging-dry-run` runs package metadata validation, packaging dry-run, and install-smoke dry-run with only lightweight packaging prerequisites. | No. It must not upload installers or mutate GitHub Releases. |
 | `.github/workflows/package.yml` | `main` pushes, `v*` tags, manual dispatch | Native app release matrix for Linux/macOS/Windows: build raw release binaries for Docs/Gallery, generate installer/package artifacts for Gallery only, smoke Gallery package outputs, and plan Gallery install/uninstall checks. | Only `v*` tag runs publish GitHub Release assets. `main` runs produce preview Actions artifacts for QA. |
 | `.github/workflows/release-sdk.yml` | manual dispatch, `v*` tags | SDK crate pipeline: static manifest audit verifies official `zed-industries/zed` pins, crates.io publish metadata, Cargo multiple-location `gpui` fallback, package archives, and a patched downstream consumer smoke check. | Only explicit `publish=true` manual runs or `v*` tags publish SDK crates to crates.io. Package verification alone never publishes. |
+| `.github/workflows/runtime-verify.yml` | successful completion of `package.yml`, manual dispatch | Runtime gate for built release assets: launches raw Docs/Gallery executables, performs runner-safe Gallery package install/run/uninstall checks on the matching OS, and writes JSON/Markdown reports. | It does not create release assets. For `v*` releases it updates the existing GitHub Release body with the runtime verification report. |
 
 Because Cargo does not allow crates.io packages to depend on git-only dependencies, Liora publishes SDK crates with Cargo's multiple-location `gpui` dependency: local development uses the official Zed git rev, while crates.io receives the registry fallback. Downstream applications should depend on `liora` from crates.io and add `[patch.crates-io] gpui = { git = "https://github.com/zed-industries/zed", rev = "..." }` so every transitive GPUI dependency resolves to the matching official Zed commit.
 
@@ -185,6 +188,16 @@ cargo run -p xtask -- package install-smoke --app gallery --format platform-defa
 ### 8. Preview artifacts
 
 Every push to `main` produces preview artifacts for Linux, macOS, and Windows. These artifacts are retained for a shorter period and are intended for quick QA rather than public distribution. The preview matrix was runner-verified on GitHub Actions run `27613242837` for Linux, macOS, and Windows package generation, artifact smoke, raw binary upload, and package artifact upload.
+
+### 9. Runtime verification report
+
+After `package.yml` finishes successfully, `runtime-verify.yml` downloads the package run artifacts and verifies them on matching GitHub-hosted operating systems:
+
+- Linux: raw executables are launched under `xvfb-run` when available; `.tar.gz` portable archives are extracted and launched; AppImage is run directly or through AppImage extraction fallback; `.deb` and `.rpm` packages are installed, launched, and removed in a runner-safe way.
+- macOS: raw executables are launched long enough to prove startup; `.dmg` artifacts are mounted, the `.app` bundle is copied to a temporary directory, opened, and the image is detached.
+- Windows: raw `.exe` files are launched; NSIS and MSI installers are installed silently into temporary locations where possible, the installed executable is launched, and uninstall cleanup is attempted.
+
+The verifier treats a GUI process that remains alive until the smoke timeout as a successful startup. Each platform uploads JSON and Markdown reports, then the summary job publishes a combined runtime report. For tagged releases, the report is appended to the GitHub Release body between stable markers so repeated verification runs replace the previous report instead of duplicating it.
 
 ### 9. GitHub Release assets
 

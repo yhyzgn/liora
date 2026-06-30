@@ -1,0 +1,298 @@
+name: Runtime verify Liora release assets
+
+on:
+  workflow_run:
+    workflows:
+      - Package native Liora apps
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: "Package native Liora apps run id to verify. Leave empty to use latest successful run for tag."
+        required: false
+        type: string
+      tag:
+        description: "Release tag whose notes should receive the runtime report, e.g. v0.1.21."
+        required: false
+        type: string
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: runtime-verify-${{ github.event.workflow_run.id || github.event.inputs.source_run_id || github.event.inputs.tag || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Resolve package run
+    runs-on: ubuntu-24.04
+    outputs:
+      source_run_id: ${{ steps.resolve.outputs.source_run_id }}
+      tag: ${{ steps.resolve.outputs.tag }}
+      is_release: ${{ steps.resolve.outputs.is_release }}
+      should_run: ${{ steps.resolve.outputs.should_run }}
+    steps:
+      - name: Resolve source package run
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
+          WORKFLOW_RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          WORKFLOW_RUN_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          INPUT_SOURCE_RUN_ID: ${{ github.event.inputs.source_run_id }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          should_run="true"
+          source_run_id="${INPUT_SOURCE_RUN_ID:-}"
+          tag="${INPUT_TAG:-}"
+
+          if [[ "$EVENT_NAME" == "workflow_run" ]]; then
+            source_run_id="$WORKFLOW_RUN_ID"
+            tag="$WORKFLOW_RUN_HEAD_BRANCH"
+            if [[ "$WORKFLOW_RUN_CONCLUSION" != "success" ]]; then
+              should_run="false"
+            fi
+          fi
+
+          if [[ -z "$source_run_id" ]]; then
+            if [[ -z "$tag" ]]; then
+              echo "source_run_id or tag is required for manual runtime verification" >&2
+              exit 1
+            fi
+            source_run_id="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow package.yml --branch "$tag" --status success --limit 1 --json databaseId --jq '.[0].databaseId')"
+            if [[ -z "$source_run_id" || "$source_run_id" == "null" ]]; then
+              echo "No successful package.yml run found for $tag" >&2
+              exit 1
+            fi
+          fi
+
+          is_release="false"
+          if [[ "$tag" == v* ]]; then
+            is_release="true"
+          fi
+
+          echo "source_run_id=$source_run_id" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "is_release=$is_release" >> "$GITHUB_OUTPUT"
+          echo "should_run=$should_run" >> "$GITHUB_OUTPUT"
+          echo "Resolved package run: $source_run_id tag=$tag release=$is_release should_run=$should_run"
+
+  verify:
+    name: ${{ matrix.platform }} runtime smoke
+    needs: prepare
+    if: needs.prepare.outputs.should_run == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux
+            os: ubuntu-24.04
+          - platform: macos
+            os: macos-14
+          - platform: windows
+            os: windows-2022
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Linux runtime prerequisites
+        if: matrix.platform == 'linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            file \
+            fuse \
+            libasound2-dev \
+            libatk1.0-dev \
+            libayatana-appindicator3-dev \
+            libcairo2-dev \
+            libfontconfig1-dev \
+            libfreetype6-dev \
+            libgdk-pixbuf-2.0-dev \
+            libglib2.0-dev \
+            libgtk-3-dev \
+            libpango1.0-dev \
+            librsvg2-dev \
+            libvulkan-dev \
+            libwayland-dev \
+            libx11-dev \
+            libxkbcommon-dev \
+            libxkbcommon-x11-dev \
+            pkg-config \
+            rpm \
+            xvfb
+
+      - name: Download package run artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN_ID: ${{ needs.prepare.outputs.source_run_id }}
+          PLATFORM: ${{ matrix.platform }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf runtime-dist
+          mkdir -p runtime-dist
+          gh run download "$SOURCE_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern "liora-*-binaries-${PLATFORM}" \
+            --dir runtime-dist
+          gh run download "$SOURCE_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern "liora-*-gallery-packages-${PLATFORM}" \
+            --dir runtime-dist
+          find runtime-dist -type f | sort
+
+      - name: Runtime smoke verify artifacts
+        shell: bash
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          set -euo pipefail
+          python3 scripts/runtime_verify.py \
+            --platform "$PLATFORM" \
+            --dist runtime-dist \
+            --out runtime-report
+
+      - name: Upload runtime verification report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: liora-runtime-verification-${{ matrix.platform }}
+          path: runtime-report/*
+          if-no-files-found: warn
+          retention-days: 90
+
+  publish-report:
+    name: Publish runtime report to release notes
+    needs:
+      - prepare
+      - verify
+    if: always() && needs.prepare.outputs.should_run == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download runtime reports
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf runtime-reports
+          mkdir -p runtime-reports
+          gh run download "$GITHUB_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern 'liora-runtime-verification-*' \
+            --dir runtime-reports
+          find runtime-reports -type f | sort
+
+      - name: Build combined runtime report
+        shell: bash
+        env:
+          TAG: ${{ needs.prepare.outputs.tag }}
+          IS_RELEASE: ${{ needs.prepare.outputs.is_release }}
+          VERIFY_RESULT: ${{ needs.verify.result }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+          import json
+          import os
+          from pathlib import Path
+
+          reports = sorted(Path('runtime-reports').rglob('runtime-verification-*.json'))
+          rows = []
+          for report in reports:
+              rows.extend(json.loads(report.read_text()))
+
+          passed = sum(1 for row in rows if row['status'] == 'pass')
+          failed = sum(1 for row in rows if row['status'] == 'fail')
+          skipped = sum(1 for row in rows if row['status'] == 'skip')
+          status_icon = '✅' if failed == 0 and rows else '❌'
+          tag = os.environ.get('TAG') or 'preview'
+          run_url = f"{os.environ['GITHUB_SERVER_URL']}/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}"
+
+          lines = [
+              '<!-- LIORA_RUNTIME_VERIFICATION:START -->',
+              '## Runtime verification report',
+              '',
+              f'{status_icon} Runtime verification for `{tag}`: **{passed} passed**, **{failed} failed**, **{skipped} skipped**.',
+              '',
+              f'Workflow run: {run_url}',
+              '',
+              '| Status | Platform | Kind | Artifact | Action | Notes |',
+              '| --- | --- | --- | --- | --- | --- |',
+          ]
+          for row in rows:
+              icon = {'pass': '✅', 'fail': '❌', 'skip': '⏭️'}.get(row['status'], row['status'])
+              notes = row['notes'].replace('|', '\\|')
+              lines.append(f"| {icon} {row['status']} | {row['platform']} | {row['kind']} | `{row['artifact']}` | `{row['action']}` | {notes} |")
+          if not rows:
+              lines.append('| ❌ fail | all | Runtime verification | `discover reports` | No runtime report JSON files were produced. | Check workflow artifacts. |')
+          lines.extend([
+              '',
+              'This runtime gate launches raw executables and performs runner-safe install/run/uninstall smoke checks for platform packages on GitHub-hosted Linux, macOS, and Windows runners. A GUI process that remains alive until the smoke timeout is treated as a successful launch.',
+              '<!-- LIORA_RUNTIME_VERIFICATION:END -->',
+              '',
+          ])
+          Path('runtime-verification-report.md').write_text('\n'.join(lines), encoding='utf-8')
+          print('\n'.join(lines))
+          Path('runtime-verification-failed-count.txt').write_text(str(failed), encoding='utf-8')
+          PY
+
+      - name: Upload combined runtime report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: liora-runtime-verification-summary
+          path: runtime-verification-report.md
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Update GitHub Release body
+        if: needs.prepare.outputs.is_release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json body --jq .body > release-body.md
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          body = Path('release-body.md').read_text(encoding='utf-8')
+          report = Path('runtime-verification-report.md').read_text(encoding='utf-8')
+          start = '<!-- LIORA_RUNTIME_VERIFICATION:START -->'
+          end = '<!-- LIORA_RUNTIME_VERIFICATION:END -->'
+          if start in body and end in body:
+              before = body.split(start, 1)[0].rstrip()
+              after = body.split(end, 1)[1].lstrip()
+              body = before + '\n\n' + report.rstrip() + '\n\n' + after
+          else:
+              body = body.rstrip() + '\n\n' + report.rstrip() + '\n'
+          Path('release-body-with-runtime.md').write_text(body, encoding='utf-8')
+          PY
+          gh release edit "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --notes-file release-body-with-runtime.md
+
+      - name: Fail workflow when runtime verification failed
+        shell: bash
+        run: |
+          set -euo pipefail
+          failed=0
+          if [[ -f runtime-verification-failed-count.txt ]]; then
+            failed="$(cat runtime-verification-failed-count.txt)"
+          fi
+          if [[ "$failed" != "0" ]]; then
+            echo "Runtime verification reported $failed failed check(s)." >&2
+            exit 1
+          fi
