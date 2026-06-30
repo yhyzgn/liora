@@ -102,6 +102,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.x"
+
       - name: Install Linux runtime prerequisites
         if: matrix.platform == 'linux'
         shell: bash
@@ -157,7 +162,7 @@ jobs:
           PLATFORM: ${{ matrix.platform }}
         run: |
           set -euo pipefail
-          python3 scripts/runtime_verify.py \
+          python scripts/runtime_verify.py \
             --platform "$PLATFORM" \
             --dist runtime-dist \
             --out runtime-report
@@ -179,6 +184,11 @@ jobs:
     if: always() && needs.prepare.outputs.should_run == 'true'
     runs-on: ubuntu-24.04
     steps:
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.x"
+
       - name: Download runtime reports
         env:
           GH_TOKEN: ${{ github.token }}
@@ -201,7 +211,7 @@ jobs:
           VERIFY_RESULT: ${{ needs.verify.result }}
         run: |
           set -euo pipefail
-          python3 - <<'PY'
+          python - <<'PY'
           from __future__ import annotations
           import json
           import os
@@ -265,7 +275,7 @@ jobs:
         run: |
           set -euo pipefail
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json body --jq .body > release-body.md
-          python3 - <<'PY'
+          python - <<'PY'
           from pathlib import Path
           import os
           body = Path('release-body.md').read_text(encoding='utf-8')
