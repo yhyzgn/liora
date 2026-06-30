@@ -88,7 +88,13 @@ def truncate(text: str, limit: int = 500) -> str:
 
 def smoke_executable(path: Path, platform: str, root: Path) -> CheckResult:
     if platform != "windows":
-        path.chmod(path.stat().st_mode | 0o755)
+        try:
+            path.chmod(path.stat().st_mode | 0o755)
+        except PermissionError:
+            # System package installs may place binaries under /usr/bin with
+            # executable bits already set but without chmod permission for the
+            # runner user. Launch verification does not require chmod there.
+            pass
 
     env = os.environ.copy()
     if platform == "linux":
@@ -358,9 +364,15 @@ def main() -> int:
         results.append(CheckResult(args.platform, str(root), "Gallery package", "discover", "fail", "no package artifacts found", 0.0))
 
     for path in raw:
-        results.append(smoke_executable(path, args.platform, root))
+        try:
+            results.append(smoke_executable(path, args.platform, root))
+        except Exception as error:  # noqa: BLE001 - keep report generation robust.
+            results.append(CheckResult(args.platform, rel(path, root), "Raw executable", "run", "fail", truncate(str(error)), 0.0))
     for path in packages:
-        results.append(verify_package(path, args.platform, root))
+        try:
+            results.append(verify_package(path, args.platform, root))
+        except Exception as error:  # noqa: BLE001 - keep report generation robust.
+            results.append(CheckResult(args.platform, rel(path, root), "Gallery package", "verify package", "fail", truncate(str(error)), 0.0))
 
     write_reports(results, args.platform, args.out)
     failed = [result for result in results if result.status == "fail"]

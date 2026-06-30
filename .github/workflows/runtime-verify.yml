@@ -219,8 +219,23 @@ jobs:
 
           reports = sorted(Path('runtime-reports').rglob('runtime-verification-*.json'))
           rows = []
+          seen_platforms = set()
           for report in reports:
-              rows.extend(json.loads(report.read_text()))
+              data = json.loads(report.read_text())
+              rows.extend(data)
+              for row in data:
+                  seen_platforms.add(row.get('platform'))
+
+          for expected_platform in ('linux', 'macos', 'windows'):
+              if expected_platform not in seen_platforms:
+                  rows.append({
+                      'status': 'fail',
+                      'platform': expected_platform,
+                      'kind': 'Runtime verification',
+                      'artifact': 'platform report',
+                      'action': 'collect platform report',
+                      'notes': 'No runtime report was produced for this platform; inspect the matrix job logs.',
+                  })
 
           passed = sum(1 for row in rows if row['status'] == 'pass')
           failed = sum(1 for row in rows if row['status'] == 'fail')
