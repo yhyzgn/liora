@@ -11651,7 +11651,7 @@ mod tests {
         assert!(sdk.contains("Audit crates.io SDK metadata"));
         assert!(sdk.contains("Package independently publishable crates"));
         assert!(sdk.contains("Verify patched crates.io consumer"));
-        assert!(sdk.contains("liora-theme liora-core liora-icons liora-icons-lucide liora-icons-antd liora-icons-ionic liora-icons-tabler liora-icons-carbon liora-icons-material liora-components liora-tray liora-packager liora-updater liora"));
+        assert!(sdk.contains("liora-theme liora-locales-codegen liora-core liora-icons liora-icons-lucide liora-icons-antd liora-icons-ionic liora-icons-tabler liora-icons-carbon liora-icons-material liora-components liora-tray liora-packager liora-updater liora"));
         assert!(sdk.contains("cargo publish -p"));
         assert!(!sdk.contains(concat!("cargo publish -p \"$crate\" ", "--", "token")));
     }
@@ -11906,7 +11906,7 @@ mod tests {
         );
         assert!(sdk_workflow.contains("Publish Liora crates.io SDK crates"));
         assert!(sdk_workflow.contains("CRATES_IO_TOKEN"));
-        assert!(sdk_workflow.contains("liora-theme liora-core liora-icons liora-icons-lucide liora-icons-antd liora-icons-ionic liora-icons-tabler liora-icons-carbon liora-icons-material liora-components liora-tray liora-packager liora-updater liora"));
+        assert!(sdk_workflow.contains("liora-theme liora-locales-codegen liora-core liora-icons liora-icons-lucide liora-icons-antd liora-icons-ionic liora-icons-tabler liora-icons-carbon liora-icons-material liora-components liora-tray liora-packager liora-updater liora"));
         assert!(package_workflow.contains("SHA256SUMS.txt"));
         assert!(package_workflow.contains("portable-staging/*|*.md|*.toml|*.json|*/checksums.txt"));
         assert!(!package_workflow.contains("cp release-notes.md release-assets/release-notes.md"));
