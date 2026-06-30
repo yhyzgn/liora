@@ -1,6 +1,6 @@
 [package]
 name = "liora"
-version = "0.1.20"
+version = "0.1.21"
 edition = "2024"
 description = "One-stop Liora SDK facade for native Rust GPUI apps: core, themes, components, icons, tray, packaging, and updater helpers."
 license-file = "../../LICENSE.md"
@@ -8,19 +8,19 @@ repository = "https://github.com/yhyzgn/liora"
 publish = true
 
 [dependencies]
-liora-core = { version = "0.1.20", path = "../liora-core" }
-liora-theme = { version = "0.1.20", path = "../liora-theme" }
-liora-icons = { version = "0.1.20", path = "../liora-icons" }
-liora-icons-lucide = { version = "0.1.20", path = "../liora-icons-lucide" }
-liora-icons-antd = { version = "0.1.20", path = "../liora-icons-antd" }
-liora-icons-ionic = { version = "0.1.20", path = "../liora-icons-ionic" }
-liora-icons-tabler = { version = "0.1.20", path = "../liora-icons-tabler" }
-liora-icons-carbon = { version = "0.1.20", path = "../liora-icons-carbon" }
-liora-icons-material = { version = "0.1.20", path = "../liora-icons-material" }
-liora-components = { version = "0.1.20", path = "../liora-components" }
-liora-tray = { version = "0.1.20", path = "../liora-tray" }
-liora-packager = { version = "0.1.20", path = "../liora-packager", optional = true }
-liora-updater = { version = "0.1.20", path = "../liora-updater", optional = true }
+liora-core = { version = "0.1.21", path = "../liora-core" }
+liora-theme = { version = "0.1.21", path = "../liora-theme" }
+liora-icons = { version = "0.1.21", path = "../liora-icons" }
+liora-icons-lucide = { version = "0.1.21", path = "../liora-icons-lucide" }
+liora-icons-antd = { version = "0.1.21", path = "../liora-icons-antd" }
+liora-icons-ionic = { version = "0.1.21", path = "../liora-icons-ionic" }
+liora-icons-tabler = { version = "0.1.21", path = "../liora-icons-tabler" }
+liora-icons-carbon = { version = "0.1.21", path = "../liora-icons-carbon" }
+liora-icons-material = { version = "0.1.21", path = "../liora-icons-material" }
+liora-components = { version = "0.1.21", path = "../liora-components" }
+liora-tray = { version = "0.1.21", path = "../liora-tray" }
+liora-packager = { version = "0.1.21", path = "../liora-packager", optional = true }
+liora-updater = { version = "0.1.21", path = "../liora-updater", optional = true }
 
 [features]
 default = ["packager", "updater"]

@@ -3369,7 +3369,7 @@ checksum = "32a66949e030da00e8c7d4434b251670a91556f4144941d37452769c25d58a53"
 
 [[package]]
 name = "liora"
-version = "0.1.20"
+version = "0.1.21"
 dependencies = [
  "liora-components",
  "liora-core",
@@ -3388,7 +3388,7 @@ dependencies = [
 
 [[package]]
 name = "liora-components"
-version = "0.1.20"
+version = "0.1.21"
 dependencies = [
  "gpui",
  "image",
@@ -3406,7 +3406,7 @@ dependencies = [
 
 [[package]]
 name = "liora-core"
-version = "0.1.20"
+version = "0.1.21"
 dependencies = [
  "gpui",
  "liora-locales-codegen",
@@ -3416,7 +3416,7 @@ dependencies = [
 
 [[package]]
 name = "liora-docs"
-version = "0.1.20"
+version = "0.1.21"
 dependencies = [
  "gpui",
  "gpui_platform",
@@ -3441,7 +3441,7 @@ dependencies = [
 
 [[package]]
 name = "liora-gallery"
-version = "0.1.20"
+version = "0.1.21"
 dependencies = [
  "gpui",
  "gpui_platform",
@@ -3464,7 +3464,7 @@ dependencies = [
 
 [[package]]
 name = "liora-icons"
-version = "0.1.20"
+version = "0.1.21"
 dependencies = [
  "gpui",
  "liora-core",
@@ -3473,7 +3473,7 @@ dependencies = [
 
 [[package]]
 name = "liora-icons-antd"
-version = "0.1.20"
+version = "0.1.21"
 dependencies = [
  "gpui",
  "liora-icons",
@@ -3481,7 +3481,7 @@ dependencies = [
 
 [[package]]
 name = "liora-icons-carbon"
-version = "0.1.20"
+version = "0.1.21"
 dependencies = [
  "gpui",
  "liora-icons",
@@ -3489,7 +3489,7 @@ dependencies = [
 
 [[package]]
 name = "liora-icons-ionic"
-version = "0.1.20"
+version = "0.1.21"
 dependencies = [
  "gpui",
  "liora-icons",
@@ -3497,7 +3497,7 @@ dependencies = [
 
 [[package]]
 name = "liora-icons-lucide"
-version = "0.1.20"
+version = "0.1.21"
 dependencies = [
  "gpui",
  "liora-icons",
@@ -3505,7 +3505,7 @@ dependencies = [
 
 [[package]]
 name = "liora-icons-material"
-version = "0.1.20"
+version = "0.1.21"
 dependencies = [
  "gpui",
  "liora-icons",
@@ -3513,7 +3513,7 @@ dependencies = [
 
 [[package]]
 name = "liora-icons-tabler"
-version = "0.1.20"
+version = "0.1.21"
 dependencies = [
  "gpui",
  "liora-icons",
@@ -3521,28 +3521,28 @@ dependencies = [
 
 [[package]]
 name = "liora-locales-codegen"
-version = "0.1.20"
+version = "0.1.21"
 dependencies = [
  "toml 0.8.23",
 ]
 
 [[package]]
 name = "liora-packager"
-version = "0.1.20"
+version = "0.1.21"
 dependencies = [
  "thiserror 2.0.18",
 ]
 
 [[package]]
 name = "liora-theme"
-version = "0.1.20"
+version = "0.1.21"
 dependencies = [
  "gpui",
 ]
 
 [[package]]
 name = "liora-tray"
-version = "0.1.20"
+version = "0.1.21"
 dependencies = [
  "gpui",
  "gtk",
@@ -3553,7 +3553,7 @@ dependencies = [
 
 [[package]]
 name = "liora-updater"
-version = "0.1.20"
+version = "0.1.21"
 dependencies = [
  "serde",
  "serde_json",
@@ -7813,7 +7813,7 @@ checksum = "ec7a2a501ed189703dba8b08142f057e887dfc4b2cc4db2d343ac6376ba3e0b9"
 
 [[package]]
 name = "xtask"
-version = "0.1.20"
+version = "0.1.21"
 dependencies = [
  "liora-packager",
 ]

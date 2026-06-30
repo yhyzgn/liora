@@ -1,6 +1,6 @@
 [package]
 name = "liora-docs"
-version = "0.1.20"
+version = "0.1.21"
 edition = "2024"
 description = "Native GPUI documentation application for Liora."
 license = "LicenseRef-Liora"
@@ -42,7 +42,7 @@ liora-icons-material = { path = "../../crates/liora-icons-material" }
 pulldown-cmark = "0.13.3"
 
 [build-dependencies]
-liora-locales-codegen = { version = "0.1.20", path = "../../crates/liora-locales-codegen" }
+liora-locales-codegen = { version = "0.1.21", path = "../../crates/liora-locales-codegen" }
 
 [target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
 gpui = { workspace = true, features = ["wayland", "x11", "font-kit"] }
