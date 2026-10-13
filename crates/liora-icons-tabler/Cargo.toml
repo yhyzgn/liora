@@ -1,6 +1,6 @@
 [package]
 name = "liora-icons-tabler"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2024"
 description = "Bundled Tabler icon paths rendered through Liora native GPUI icon primitives."
 license-file = "../../LICENSE.md"
@@ -10,4 +10,4 @@ publish = true
 
 [dependencies]
 gpui = { workspace = true }
-liora-icons = { version = "0.3.0", path = "../liora-icons" }
+liora-icons = { version = "0.4.0", path = "../liora-icons" }

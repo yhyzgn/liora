@@ -5,11 +5,11 @@
 //!
 //! ```toml
 //! [dependencies]
-//! liora = "0.1"
+//! liora = "0.4"
 //! gpui = { version = "0.2.2", default-features = false }
 //!
 //! [patch.crates-io]
-//! gpui = { git = "https://github.com/zed-industries/zed", rev = "492acd6c815cbe8c7366d54e6092341340afa6c7" }
+//! gpui = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf" }
 //! ```
 //!
 //! The published crates use Cargo's registry fallback for `gpui = 0.2.2`, then

@@ -99,7 +99,7 @@ Workspace 中的 `gpui` 设置为 `default-features = false`。原因是：
 - app crate 才知道自己要运行在哪个平台。
 - `liora-docs` 和 `liora-gallery` 作为最终应用，通过 target-specific dependencies 启用平台 feature：Linux/FreeBSD 启用 `wayland`、`x11`、`font-kit`；macOS 启用 `font-kit`；Windows 使用官方 GPUI Windows 后端。
 
-发布 SDK 还有一条额外边界：`liora`、`liora-core`、`liora-components`、`liora-packager` 等包必须依赖 Zed 官方 `zed-industries/zed` 来源进行本地开发，同时发布物使用 Cargo multiple-location fallback 保留 `gpui = 0.2.2`。最终应用通过 `[patch.crates-io]` 把 `gpui` 覆盖到匹配的官方 Zed revision（当前 `492acd6c815cbe8c7366d54e6092341340afa6c7`）。不能依赖重命名 fork，也不能把 `third_party/zed` path 依赖写入可发布 manifest。
+发布 SDK 还有一条额外边界：`liora`、`liora-core`、`liora-components`、`liora-packager` 等包必须依赖 Zed 官方 `zed-industries/zed` 来源进行本地开发，同时发布物使用 Cargo multiple-location fallback 保留 `gpui = 0.2.2`。最终应用通过 `[patch.crates-io]` 把 `gpui` 覆盖到匹配的官方 Zed revision（当前 `1de16662ee0d704285c524a7753f0f8858e86abf`）。不能依赖重命名 fork，也不能把 `third_party/zed` path 依赖写入可发布 manifest。
 
 本仓库保留 `third_party/zed` 只用于早期 Gallery / Docs 首帧窗口状态验证和 upstream PR 对照。正常开发和发布都使用官方 `zed-industries/zed` git dependency。需要验证本地 patch 时，只能在临时 app-only 分支使用 path override，且该 override 不进入 SDK 发布物。
 

@@ -162,7 +162,7 @@ LIORA_ICON_DEBUG=1 cargo run -p your-app
 
 ```toml
 [build-dependencies]
-liora-icons-optimizer = "0.2"
+liora-icons-optimizer = "0.4"
 ```
 
 在应用唯一的 Cargo build script 中调用：

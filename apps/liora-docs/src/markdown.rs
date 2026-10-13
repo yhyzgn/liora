@@ -737,7 +737,7 @@ pub struct DocPage {
     pub markdown: &'static str,
 }
 
-#[allow(dead_code)]
+#[cfg(test)]
 pub fn render_markdown(md_text: &str) -> AnyElement {
     Component::new(MarkdownDocument::parse(md_text)).into_any_element()
 }
@@ -11974,7 +11974,7 @@ mod tests {
     #[test]
     fn quick_start_documents_automatic_icon_optimizer_setup() {
         assert!(QUICK_START_DOC.contains("## 5. 启用自动图标资源优化"));
-        assert!(QUICK_START_DOC.contains("liora-icons-optimizer = \"0.2\""));
+        assert!(QUICK_START_DOC.contains("liora-icons-optimizer = \"0.4\""));
         assert!(QUICK_START_DOC.contains("target/liora/icons/apps/<app>/assets/liora-icons"));
         assert!(QUICK_START_DOC.contains("不需要手动复制 SVG"));
         assert!(QUICK_START_DOC.contains("LIORA_ICON_DEBUG=1"));
@@ -11982,7 +11982,7 @@ mod tests {
         let cargo = load_code_snippet("quick_start/app_cargo.toml")
             .expect("quick start cargo snippet should load");
         assert!(cargo.contains("[build-dependencies]"));
-        assert!(cargo.contains("liora-icons-optimizer = \"0.2\""));
+        assert!(cargo.contains("liora-icons-optimizer = \"0.4\""));
     }
 
     #[test]
@@ -12406,7 +12406,7 @@ mod tests {
             "Runtime model",
             "liora::init_liora(cx)",
             "liora::init_liora_with_mode",
-            r#"liora = "0.2""#,
+            r#"liora = "0.4""#,
             "Native packaging",
             "Quality gates",
             "Technical differentiators",
@@ -12423,7 +12423,7 @@ mod tests {
             "运行时模型",
             "liora::init_liora(cx)",
             "liora::init_liora_with_mode",
-            r#"liora = "0.2""#,
+            r#"liora = "0.4""#,
             "原生打包",
             "质量门禁",
             "技术创新点",
@@ -12492,8 +12492,8 @@ mod tests {
         let changelog = include_str!("../../../CHANGELOG.md");
         let agents = include_str!("../../../AGENTS.md");
         let context_readme = include_str!("../../../.context/README.md");
-        let plan = include_str!("../../../.context/plans/002_gpui_latest_upgrade.md");
-        let task = include_str!("../../../.context/tasks/002_gpui_latest_upgrade.md");
+        let plan = include_str!("../../../.context/plans/004_gpui_native_replacement_20261013.md");
+        let task = include_str!("../../../.context/tasks/004_gpui_native_replacement_20261013.md");
         let cargo = include_str!("../../../Cargo.toml");
         let package_workflow = include_str!("../../../.github/workflows/package.yml");
         let sdk_workflow = include_str!("../../../.github/workflows/release-sdk.yml");
@@ -12538,7 +12538,7 @@ mod tests {
         assert!(readme.contains("Runtime model"));
         assert!(readme.contains("liora::init_liora(cx)"));
         assert!(readme.contains("liora::init_liora_with_mode"));
-        assert!(readme.contains(r#"liora = "0.2""#));
+        assert!(readme.contains(r#"liora = "0.4""#));
         assert!(readme.contains("Native packaging"));
         assert!(readme.contains("Quality gates"));
         assert!(readme.contains("Technical differentiators"));
@@ -12568,10 +12568,10 @@ mod tests {
             assert!(!logo.contains(wrong_name));
         }
         assert!(changelog.contains("P21 release-candidate readiness"));
-        assert!(agents.contains(".context/plans/002_gpui_latest_upgrade.md"));
+        assert!(agents.contains(".context/plans/004_gpui_native_replacement_20261013.md"));
         assert!(context_readme.contains("Canonical reading order"));
-        assert!(plan.contains("GPUI Latest Upgrade"));
-        assert!(task.contains("GPUI Latest Upgrade Execution"));
+        assert!(plan.contains("GPUI Native Replacement"));
+        assert!(task.contains("GPUI Native Replacement Execution"));
         assert!(!cargo.contains("examples/minimal-app"));
         assert!(!cargo.contains("examples/dashboard-app"));
         assert!(!cargo.contains("[patch.crates-io]"));

@@ -90,26 +90,26 @@ Liora 明确不是 Web 外壳：
 
 ```toml
 [dependencies]
-liora = "0.2"
+liora = "0.4"
 ```
 
 只有当你明确需要更窄依赖面时，才直接依赖底层 focused crates：
 
 ```toml
 [dependencies]
-liora-components = "0.2"
-liora-core = "0.2"
-liora-theme = "0.2"
-liora-icons = "0.2"
-liora-icons-lucide = "0.2"
-liora-icons-antd = "0.2"
-liora-icons-ionic = "0.2"
-liora-icons-tabler = "0.2"
-liora-icons-carbon = "0.2"
-liora-icons-material = "0.2"
-liora-tray = "0.2"
-liora-updater = "0.2"
-liora-packager = "0.2"
+liora-components = "0.4"
+liora-core = "0.4"
+liora-theme = "0.4"
+liora-icons = "0.4"
+liora-icons-lucide = "0.4"
+liora-icons-antd = "0.4"
+liora-icons-ionic = "0.4"
+liora-icons-tabler = "0.4"
+liora-icons-carbon = "0.4"
+liora-icons-material = "0.4"
+liora-tray = "0.4"
+liora-updater = "0.4"
+liora-packager = "0.4"
 ```
 
 `liora` facade 重新导出了稳定模块名：
@@ -129,13 +129,15 @@ use liora::packager;
 
 ```toml
 [dependencies]
-liora = { version = "0.2", default-features = false }
+liora = { version = "0.4", default-features = false }
 
 # 或者只保留 updater：
-liora = { version = "0.2", default-features = false, features = ["updater"] }
+liora = { version = "0.4", default-features = false, features = ["updater"] }
 ```
 
 ## GPUI 依赖与本地 patch 策略
+
+2026-10-13 本轮上游刷新将官方 Zed `main` 固定到 `1de16662ee0d704285c524a7753f0f8858e86abf`。新增可选的 `MotionSpring::{Gentle, Snappy, Bouncy}.animation_to(target)` 原生弹簧预设；重定向目标时应保持 `with_spring` 的 element ID 稳定，原有 duration-based 动效不变。GPUI 动画包装器遵循 `cx.set_reduce_motion(true)`；这是应用级偏好，并不代表自动读取操作系统偏好。完整变更与平台风险见[升级记录](docs/gpui-latest-upgrade.md)。
 
 Liora **只能使用官方 Zed GPUI**。禁止使用 `open-gpui` 等重命名或社区 fork。
 
@@ -157,7 +159,7 @@ edition = "2024"
 publish = false
 
 [dependencies]
-liora = "0.2"
+liora = "0.4"
 
 # 什么时候需要手动添加 gpui？
 # 当你的 crate 直接写到这些内容时：
@@ -168,22 +170,22 @@ gpui = { version = "0.2.2", default-features = false }
 
 # 什么时候需要手动添加 gpui_platform？
 # 最终会打开窗口的 binary crate 使用 gpui_platform::application().run(...) 时需要。
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "492acd6c815cbe8c7366d54e6092341340afa6c7", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false }
 
 [target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
 gpui = { version = "0.2.2", default-features = false, features = ["wayland", "x11", "font-kit"] }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "492acd6c815cbe8c7366d54e6092341340afa6c7", default-features = false, features = ["wayland", "x11", "font-kit"] }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false, features = ["wayland", "x11", "font-kit"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 gpui = { version = "0.2.2", default-features = false, features = ["font-kit"] }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "492acd6c815cbe8c7366d54e6092341340afa6c7", default-features = false, features = ["font-kit"] }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false, features = ["font-kit"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 gpui = { version = "0.2.2", default-features = false }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "492acd6c815cbe8c7366d54e6092341340afa6c7", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false }
 
 [patch.crates-io]
-gpui = { git = "https://github.com/zed-industries/zed", rev = "492acd6c815cbe8c7366d54e6092341340afa6c7" }
+gpui = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf" }
 ```
 
 什么时候必须手动添加 `gpui`？看这个例子：
@@ -232,24 +234,24 @@ edition = "2024"
 publish = false
 
 [dependencies]
-liora = "0.2"
+liora = "0.4"
 gpui = { version = "0.2.2", default-features = false }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "492acd6c815cbe8c7366d54e6092341340afa6c7", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false }
 
 [target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
 gpui = { version = "0.2.2", default-features = false, features = ["wayland", "x11", "font-kit"] }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "492acd6c815cbe8c7366d54e6092341340afa6c7", default-features = false, features = ["wayland", "x11", "font-kit"] }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false, features = ["wayland", "x11", "font-kit"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 gpui = { version = "0.2.2", default-features = false, features = ["font-kit"] }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "492acd6c815cbe8c7366d54e6092341340afa6c7", default-features = false, features = ["font-kit"] }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false, features = ["font-kit"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 gpui = { version = "0.2.2", default-features = false }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "492acd6c815cbe8c7366d54e6092341340afa6c7", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false }
 
 [patch.crates-io]
-gpui = { git = "https://github.com/zed-industries/zed", rev = "492acd6c815cbe8c7366d54e6092341340afa6c7" }
+gpui = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf" }
 ```
 
 ### 3. 写入 `src/main.rs`
@@ -381,7 +383,7 @@ Windows release 构建建议使用与 Zed 相同的 subsystem 设置，这样双
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 ```
 
-`WindowFrameMode::Custom` 遵循 Zed 的 GPUI 兼容模型：Windows/macOS 在创建窗口时通过 `TitlebarOptions::appears_transparent` 隐藏系统标题栏；Linux/FreeBSD 通过 `WindowDecorations::Client` 使用客户端装饰。因此 Windows/macOS 的 frame mode 变更需要重开窗口生效，而 Linux 可以通过 `request_window_frame_mode` 实时请求 decorations 切换。
+`WindowFrameMode::Custom` 遵循 Zed 的 GPUI 兼容模型：Windows/macOS 在创建窗口时通过 `TitlebarOptions::appears_transparent` 隐藏系统标题栏；macOS 另用 `app_owns_titlebar_drag` 接管拖动，同时保留原生窗口可移动性与平铺菜单；Linux/FreeBSD 通过 `WindowDecorations::Client` 使用客户端装饰。因此 Windows/macOS 的 frame mode 变更需要重开窗口生效，而 Linux 可以通过 `request_window_frame_mode` 实时请求 decorations 切换。
 
 ```rust
 use gpui::{App, AppContext, Context, Render, Window, WindowOptions, px, size};
@@ -583,7 +585,7 @@ let tabler_home = Icon::new(liora::icons_tabler::IconName::HomeFilled);
 
 ```toml
 [build-dependencies]
-liora-icons-optimizer = "0.2"
+liora-icons-optimizer = "0.4"
 ```
 
 ```rust
@@ -706,7 +708,7 @@ fn check_for_update() -> Result<(), liora::updater::UpdaterError> {
     let platform = Platform::current().expect("supported desktop platform");
     let request = UpdateRequest::new(
         "acme-notes",
-        "v0.3.0",
+        "v0.4.0",
         platform,
         std::env::temp_dir().join("acme-notes-updates"),
     )
@@ -1838,7 +1840,7 @@ cargo run -p xtask -- package install-smoke --app gallery --format platform-defa
 
 ```toml
 [patch.crates-io]
-gpui = { git = "https://github.com/zed-industries/zed", rev = "492acd6c815cbe8c7366d54e6092341340afa6c7" }
+gpui = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf" }
 ```
 
 用以下命令确认：
@@ -1855,7 +1857,7 @@ cargo tree -p gpui
 ```toml
 [dependencies]
 gpui = { version = "0.2.2", default-features = false }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "492acd6c815cbe8c7366d54e6092341340afa6c7", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false }
 ```
 
 ### Linux 缺 GTK、Wayland、X11、Vulkan、ALSA 或字体包导致构建失败

@@ -91,26 +91,26 @@ Most applications should depend on the facade crate:
 
 ```toml
 [dependencies]
-liora = "0.2"
+liora = "0.4"
 ```
 
 Use focused crates only when you deliberately want a narrower surface:
 
 ```toml
 [dependencies]
-liora-components = "0.2"
-liora-core = "0.2"
-liora-theme = "0.2"
-liora-icons = "0.2"
-liora-icons-lucide = "0.2"
-liora-icons-antd = "0.2"
-liora-icons-ionic = "0.2"
-liora-icons-tabler = "0.2"
-liora-icons-carbon = "0.2"
-liora-icons-material = "0.2"
-liora-tray = "0.2"
-liora-updater = "0.2"
-liora-packager = "0.2"
+liora-components = "0.4"
+liora-core = "0.4"
+liora-theme = "0.4"
+liora-icons = "0.4"
+liora-icons-lucide = "0.4"
+liora-icons-antd = "0.4"
+liora-icons-ionic = "0.4"
+liora-icons-tabler = "0.4"
+liora-icons-carbon = "0.4"
+liora-icons-material = "0.4"
+liora-tray = "0.4"
+liora-updater = "0.4"
+liora-packager = "0.4"
 ```
 
 The facade re-exports stable module names:
@@ -130,13 +130,15 @@ If you do not need packaging or updater helpers in your app dependency graph, tu
 
 ```toml
 [dependencies]
-liora = { version = "0.2", default-features = false }
+liora = { version = "0.4", default-features = false }
 
 # Or keep only updater helpers:
-liora = { version = "0.2", default-features = false, features = ["updater"] }
+liora = { version = "0.4", default-features = false, features = ["updater"] }
 ```
 
 ## GPUI dependency and local patch policy
+
+The 2026-10-13 upstream refresh pins official Zed `main` at `1de16662ee0d704285c524a7753f0f8858e86abf`. `MotionSpring::{Gentle, Snappy, Bouncy}.animation_to(target)` exposes opt-in interruptible GPUI springs; keep a stable `with_spring` element ID when retargeting. Existing duration-based effects remain unchanged. GPUI animation wrappers honor `cx.set_reduce_motion(true)`; this is an app-level preference, not automatic OS preference detection. See [upgrade notes and platform risks](docs/gpui-latest-upgrade.md).
 
 Liora uses **official Zed GPUI only** from the official Zed upstream repository. Do not use renamed or community forks such as `open-gpui`.
 
@@ -158,7 +160,7 @@ edition = "2024"
 publish = false
 
 [dependencies]
-liora = "0.2"
+liora = "0.4"
 
 # Add gpui manually when your crate mentions gpui types directly:
 # - gpui::App / Window / Context / Render / RenderOnce
@@ -168,22 +170,22 @@ gpui = { version = "0.2.2", default-features = false }
 
 # Add gpui_platform manually in final binary crates that create native windows
 # with gpui_platform::application().run(...).
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "492acd6c815cbe8c7366d54e6092341340afa6c7", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false }
 
 [target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
 gpui = { version = "0.2.2", default-features = false, features = ["wayland", "x11", "font-kit"] }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "492acd6c815cbe8c7366d54e6092341340afa6c7", default-features = false, features = ["wayland", "x11", "font-kit"] }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false, features = ["wayland", "x11", "font-kit"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 gpui = { version = "0.2.2", default-features = false, features = ["font-kit"] }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "492acd6c815cbe8c7366d54e6092341340afa6c7", default-features = false, features = ["font-kit"] }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false, features = ["font-kit"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 gpui = { version = "0.2.2", default-features = false }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "492acd6c815cbe8c7366d54e6092341340afa6c7", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false }
 
 [patch.crates-io]
-gpui = { git = "https://github.com/zed-industries/zed", rev = "492acd6c815cbe8c7366d54e6092341340afa6c7" }
+gpui = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf" }
 ```
 
 When do you manually add `gpui`?
@@ -232,24 +234,24 @@ edition = "2024"
 publish = false
 
 [dependencies]
-liora = "0.2"
+liora = "0.4"
 gpui = { version = "0.2.2", default-features = false }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "492acd6c815cbe8c7366d54e6092341340afa6c7", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false }
 
 [target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
 gpui = { version = "0.2.2", default-features = false, features = ["wayland", "x11", "font-kit"] }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "492acd6c815cbe8c7366d54e6092341340afa6c7", default-features = false, features = ["wayland", "x11", "font-kit"] }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false, features = ["wayland", "x11", "font-kit"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 gpui = { version = "0.2.2", default-features = false, features = ["font-kit"] }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "492acd6c815cbe8c7366d54e6092341340afa6c7", default-features = false, features = ["font-kit"] }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false, features = ["font-kit"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 gpui = { version = "0.2.2", default-features = false }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "492acd6c815cbe8c7366d54e6092341340afa6c7", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false }
 
 [patch.crates-io]
-gpui = { git = "https://github.com/zed-industries/zed", rev = "492acd6c815cbe8c7366d54e6092341340afa6c7" }
+gpui = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf" }
 ```
 
 ### 3. Write a minimal `src/main.rs`
@@ -382,7 +384,7 @@ On Windows release builds, use the same subsystem setting as Zed so launching th
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 ```
 
-`WindowFrameMode::Custom` follows Zed's GPUI compatibility model: Windows/macOS hide the native titlebar through `TitlebarOptions::appears_transparent` when the window is created; Linux/FreeBSD use `WindowDecorations::Client`. That means Windows/macOS frame-mode changes need a window reopen, while Linux can request decorations live through `request_window_frame_mode`.
+`WindowFrameMode::Custom` follows Zed's GPUI compatibility model: Windows/macOS hide the native titlebar through `TitlebarOptions::appears_transparent` when the window is created; macOS additionally uses `app_owns_titlebar_drag` while keeping native window movability/tiling enabled; Linux/FreeBSD use `WindowDecorations::Client`. That means Windows/macOS frame-mode changes need a window reopen, while Linux can request decorations live through `request_window_frame_mode`.
 
 ```rust
 use gpui::{App, AppContext, Context, Render, Window, WindowOptions, px, size};
@@ -584,7 +586,7 @@ Icon bundle auto optimization keeps application code unchanged while reducing pa
 
 ```toml
 [build-dependencies]
-liora-icons-optimizer = "0.2"
+liora-icons-optimizer = "0.4"
 ```
 
 ```rust
@@ -707,7 +709,7 @@ fn check_for_update() -> Result<(), liora::updater::UpdaterError> {
     let platform = Platform::current().expect("supported desktop platform");
     let request = UpdateRequest::new(
         "acme-notes",
-        "v0.3.0",
+        "v0.4.0",
         platform,
         std::env::temp_dir().join("acme-notes-updates"),
     )
@@ -1849,7 +1851,7 @@ Your application is missing the root patch:
 
 ```toml
 [patch.crates-io]
-gpui = { git = "https://github.com/zed-industries/zed", rev = "492acd6c815cbe8c7366d54e6092341340afa6c7" }
+gpui = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf" }
 ```
 
 Verify with:
@@ -1866,7 +1868,7 @@ Add direct dependencies when your final binary names GPUI types or starts the ap
 ```toml
 [dependencies]
 gpui = { version = "0.2.2", default-features = false }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "492acd6c815cbe8c7366d54e6092341340afa6c7", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false }
 ```
 
 ### Linux build fails because GTK, Wayland, X11, Vulkan, ALSA, or font packages are missing

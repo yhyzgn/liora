@@ -20,7 +20,7 @@
 //! crate.
 
 use crate::gpui_compat::element_id;
-use crate::motion::{MotionDuration, MotionEasing, motion_animation, slide_snap};
+use crate::motion::MotionSpring;
 use gpui::{
     AnimationExt, App, Context, FocusHandle, Focusable, Hsla, KeyBinding, MouseButton, Render,
     Rgba, Window, prelude::*, px,
@@ -47,7 +47,6 @@ gpui::actions!(
 /// Fluent native GPUI component for rendering Liora switch.
 pub struct Switch {
     checked: bool,
-    thumb_from_checked: bool,
     disabled: bool,
     focus_handle: FocusHandle,
     on_change: Option<Box<dyn Fn(bool, &mut Window, &mut App) + 'static>>,
@@ -58,7 +57,6 @@ impl Switch {
     pub fn new(checked: bool, cx: &mut Context<Self>) -> Self {
         Self {
             checked,
-            thumb_from_checked: checked,
             disabled: false,
             focus_handle: cx.focus_handle(),
             on_change: None,
@@ -96,7 +94,6 @@ impl Switch {
 
     fn toggle(&mut self, _: &SwitchToggle, window: &mut Window, cx: &mut Context<Self>) {
         if !self.disabled {
-            self.thumb_from_checked = self.checked;
             self.checked = !self.checked;
             cx.notify();
             if let Some(ref cb) = self.on_change {
@@ -122,13 +119,8 @@ impl Render for Switch {
         let thumb_start = 3.0;
         let thumb_end = w - thumb_sz - 3.0;
         let checked = self.checked;
-        let from_checked = self.thumb_from_checked;
-        let from_left = if from_checked { thumb_end } else { thumb_start };
         let to_left = if checked { thumb_end } else { thumb_start };
-        let thumb_motion_id = format!(
-            "liora-switch-thumb-motion:{:?}:{from_checked}:{checked}",
-            self.focus_handle
-        );
+        let thumb_motion_id = format!("liora-switch-thumb-motion:{:?}", self.focus_handle);
 
         let thumb_color = if self.disabled {
             theme.neutral.text_disabled
@@ -165,18 +157,10 @@ impl Render for Switch {
                     .h(px(thumb_sz))
                     .rounded(px(thumb_sz / 2.0))
                     .bg(thumb_color)
-                    .with_animation(
+                    .with_spring(
                         element_id(thumb_motion_id),
-                        motion_animation(MotionDuration::Normal, MotionEasing::Linear),
-                        move |thumb, delta| {
-                            let left = if (to_left - from_left).abs() < f32::EPSILON {
-                                to_left
-                            } else {
-                                slide_snap(from_left, to_left, delta)
-                            };
-
-                            thumb.left(px(left))
-                        },
+                        MotionSpring::Snappy.animation_to(px(to_left)),
+                        |thumb, left| thumb.left(left),
                     ),
             );
 
@@ -219,15 +203,16 @@ impl Render for Switch {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn switch_thumb_uses_elastic_motion() {
+    fn switch_thumb_uses_native_retargeted_spring_motion() {
         let source = include_str!("switch.rs")
             .split("#[cfg(test)]")
             .next()
             .unwrap();
 
-        assert!(source.contains("with_animation("));
-        assert!(source.contains("MotionEasing::Linear"));
-        assert!(source.contains("slide_snap(from_left, to_left, delta)"));
-        assert!(source.contains("thumb_from_checked"));
+        assert!(source.contains("with_spring("));
+        assert!(source.contains("MotionSpring::Snappy.animation_to(px(to_left))"));
+        assert!(source.contains("liora-switch-thumb-motion:{:?}"));
+        assert!(!source.contains("thumb_from_checked"));
+        assert!(!source.contains("slide_snap("));
     }
 }

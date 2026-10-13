@@ -16,7 +16,7 @@
 
 ```toml
 [build-dependencies]
-liora-icons-optimizer = "0.2"
+liora-icons-optimizer = "0.4"
 ```
 
 Liora monorepo 内部应用使用 workspace path：

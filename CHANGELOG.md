@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.0 - 2026-10-14
+
+- Pin official Zed GPUI, platform backends, and collections to `1de16662ee0d704285c524a7753f0f8858e86abf`; update only the upstream dependency closure rather than unrelated workspace dependencies.
+- Add opt-in `MotionSpring` Gentle/Snappy/Bouncy presets over GPUI's velocity-preserving spring API, numerical regression tests, a compile-tested rustdoc example, and an interruptible Gallery demonstration.
+- Replace Switch's hand-rolled thumb interpolation with a stable-ID native GPUI spring so rapid toggles preserve position and velocity; retain the old public motion helpers for compatibility.
+- Correct custom macOS frame setup to use app-owned titlebar dragging without disabling native window movement/tiling; reset the flag when returning to system frames. This fixes a previously missed official API integration, not a newly introduced upstream field.
+- Inherit upstream virtualized-list, wrapped-text hit-testing, SVG rasterization, dynamic/fallback font, IME, Wayland/X11, Windows and macOS fixes. Document touch/headless/visibility/display/profiler capabilities without adding web or mobile runtime paths.
+- Refresh bilingual README, Docs adoption manifests, facade rustdoc, release checklist, and canonical CTX pointers. Remove the unused workspace `unexpected_cfgs` warning suppression.
+- Platform runtime coverage and compatibility risks are recorded in `docs/gpui-latest-upgrade.md`; release metadata and validation are now prepared for v0.4.0.
+
 ## 0.3.0 - 2026-08-20
 
 - Upgraded the workspace to the official Zed GPUI revision `492acd6c815cbe8c7366d54e6092341340afa6c7`, including the new animation, accessibility, and native platform API integrations documented in `docs/gpui-latest-upgrade.md`.

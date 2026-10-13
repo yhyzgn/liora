@@ -73,7 +73,7 @@ Liora SDK 从 crates.io 安装；GPUI 通过 Cargo `[patch.crates-io]` 解析到
 - macOS app 需要同时为 `gpui` 与 `gpui_platform` 启用 `font-kit`。
 - Windows app 使用官方 GPUI Windows 后端即可。
 - 组件库 crate 不应该开启平台 feature；平台 feature 应放在最终 app crate 的 `cfg(...)` target dependency 中。
-- 如果你在 Liora 仓库内开发，优先使用 workspace 中已有的 path dependency；外部应用优先使用 crates.io `liora = "0.2"`。
+- 如果你在 Liora 仓库内开发，优先使用 workspace 中已有的 path dependency；外部应用优先使用 crates.io `liora = "0.4"`。
 
 ## 5. 启用自动图标资源优化
 
@@ -81,7 +81,7 @@ Liora SDK 从 crates.io 安装；GPUI 通过 Cargo `[patch.crates-io]` 解析到
 
 ```toml
 [build-dependencies]
-liora-icons-optimizer = "0.2"
+liora-icons-optimizer = "0.4"
 ```
 
 ```rust

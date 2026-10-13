@@ -32,11 +32,19 @@ git diff --check -- . ':(exclude).omx'
 
 ## Current GPUI baseline
 
-Current upgrade branch target: official `zed-industries/zed` revision `492acd6c815cbe8c7366d54e6092341340afa6c7` for `gpui`/`gpui_platform` source dependencies. GPUI crate version remains `0.2.2`; re-verify before merging or releasing because this tracks an upstream git revision.
+Current validated refresh target: official `zed-industries/zed` revision `1de16662ee0d704285c524a7753f0f8858e86abf` for `gpui`/`gpui_platform`/`collections` and the Zed dependency closure. GPUI crate version remains `0.2.2`; the git SHA defines compatibility. Intake date: 2026-10-13. Final observed main `d3267a39ff900f114711c26720c7cbf12c41f204` changes only agent-server/agent-UI/terminal-view code, with no GPUI/collections/workspace dependency diff.
 
-## Current release state
+## Current work and release boundary
 
-Release candidate prepared on `main` as `0.3.0`; after the protected tag push, verify `git tag --sort=-v:refname | head` and the GitHub Actions package/release workflow before treating it as published.
+Current plan/task: `004_gpui_native_replacement_20261013`. Workspace package versions remain `0.3.0`; this refresh does not publish, tag, commit or push. Prior release-candidate context is historical, not proof of current published assets.
+
+## GPUI refresh integration
+
+- `MotionSpring` provides opt-in native interruptible presets; old duration-based helpers remain unchanged.
+- Gallery Spinner demonstrates spring retargeting; `gpui_upgrade_smoke` example exercises native Linux headless layout and reduced-motion target resolution without a display or GPU.
+- Custom macOS frame setup separates app-owned titlebar dragging from native movability; System resets ownership.
+- New touch/headless/display/profiler APIs are available upstream; no blanket touch/mobile/web support claim is made for custom Liora controls.
+- Upgrade evidence and risk details: `docs/gpui-latest-upgrade.md` and `.context/tasks/004_gpui_native_replacement_20261013.md`.
 
 <!-- ctx-managed-legacy-migration:start -->
 

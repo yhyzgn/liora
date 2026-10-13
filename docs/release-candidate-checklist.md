@@ -1,15 +1,15 @@
-# Liora 0.3.x Release Candidate Checklist
+# Liora 0.4.x Release Candidate Checklist
 
-This checklist defines the repository-owned readiness gate for the Liora 0.3.x release-candidate path. It is intentionally stricter than a normal feature-phase checklist because RC work must prove that docs, package metadata, workflows, and canonical apps still agree.
+This checklist defines the repository-owned readiness gate for the Liora 0.4.x release-candidate path. It is intentionally stricter than a normal feature-phase checklist because RC work must prove that docs, package metadata, workflows, and canonical apps still agree.
 
 ## Scope
 
-- Target version: the next `0.3.x` tag matching `crates/liora-packager/Cargo.toml`.
+- Target version: `0.4.0`, matching every workspace package manifest and `crates/liora-packager/Cargo.toml`.
 - Runtime boundary: pure Rust + GPUI native apps only. Do not introduce Tauri, WebView, HTML/CSS/DOM, WASM chart runtimes, or browser shells.
 - Canonical apps: `apps/liora-gallery` and `apps/liora-docs`.
 - Removed sample-app boundary: do not re-add `examples/minimal-app`, `examples/dashboard-app`, `liora-minimal-app`, or `liora-dashboard-app`; their useful adoption and dogfooding behavior lives in Gallery and Docs.
 - Package policy: SDK crates (`liora`, `liora-theme`, `liora-core`, `liora-icons`, `liora-icons-lucide`, `liora-icons-antd`, `liora-icons-ionic`, `liora-icons-tabler`, `liora-icons-carbon`, `liora-icons-material`, `liora-components`, `liora-tray`, `liora-packager`, `liora-updater`) use the repository license file and publish to crates.io. App packages and the repository-local `xtask` wrapper remain private workspace packages. `LicenseRef-Liora` remains the explicit package/install metadata until the owner replaces it with formal OSS or commercial terms.
-- GPUI source policy: public SDK manifests must use official `https://github.com/zed-industries/zed` for local development and Cargo's multiple-location `gpui = 0.2.2` registry fallback for crates.io publishing. Downstream applications must use `[patch.crates-io]` to resolve `gpui` to the matching official Zed revision (currently `492acd6c815cbe8c7366d54e6092341340afa6c7`). Manifests must not contain renamed GPUI fork dependencies, `[patch."https://github.com/zed-industries/zed"]`, `third_party/zed`, or local path GPUI overrides. The `third_party/zed` snapshot is app-root-only historical verification/reference material and is not part of Liora crates.
+- GPUI source policy: public SDK manifests must use official `https://github.com/zed-industries/zed` for local development and Cargo's multiple-location `gpui = 0.2.2` registry fallback for crates.io publishing. Downstream applications must use `[patch.crates-io]` to resolve `gpui` to the matching official Zed revision (currently `1de16662ee0d704285c524a7753f0f8858e86abf`). Manifests must not contain renamed GPUI fork dependencies, `[patch."https://github.com/zed-industries/zed"]`, `third_party/zed`, or local path GPUI overrides. The `third_party/zed` snapshot is app-root-only historical verification/reference material and is not part of Liora crates.
 
 ## Local RC gates
 

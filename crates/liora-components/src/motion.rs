@@ -19,7 +19,10 @@
 //! the component, and avoid app-specific host-application resources in this SDK
 //! crate.
 
-use gpui::{Animation, AnimationElement, AnimationExt, ElementId, IntoElement, Styled, radians};
+use gpui::{
+    Animation, AnimationElement, AnimationExt, ElementId, IntoElement, SpringAnimation,
+    SpringConfig, SpringTarget, Styled, radians,
+};
 use liora_icons::Icon;
 use std::{f32::consts::TAU, time::Duration};
 
@@ -45,6 +48,55 @@ pub enum MotionEasing {
     EaseOut,
     /// Uses the `Elastic` option for `MotionEasing`.
     Elastic,
+}
+
+/// Physical spring presets for interruptible native GPUI motion.
+///
+/// Unlike duration-based easing, GPUI retains position and velocity when the
+/// target changes under the same element ID. Existing motion helpers keep their
+/// duration-based behavior; springs are opt-in.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MotionSpring {
+    /// A critically damped spring for smooth motion without overshoot.
+    Gentle,
+    /// A faster critically damped spring for compact interactive controls.
+    Snappy,
+    /// An underdamped spring with a visible overshoot before settling.
+    Bouncy,
+}
+
+impl MotionSpring {
+    /// Returns the finite, positive physical parameters for this preset.
+    pub fn config(self) -> SpringConfig {
+        match self {
+            Self::Gentle => SpringConfig::new(100.0, 20.0, 1.0),
+            Self::Snappy => SpringConfig::new(400.0, 40.0, 1.0),
+            Self::Bouncy => SpringConfig::new(200.0, 15.0, 1.0),
+        }
+    }
+
+    /// Creates a stateful spring targeting a scalar, pixels, or another GPUI target.
+    ///
+    /// ```
+    /// use gpui::{AnimationExt, px};
+    /// use liora_components::{MotionSpring, Space, Text};
+    ///
+    /// let animated_row = Space::new()
+    ///     .child(Text::new("Status"))
+    ///     .with_spring(
+    ///         "status-gap",
+    ///         MotionSpring::Snappy.animation_to(px(24.0)).from(px(4.0)),
+    ///         |row, gap| row.gap(gap),
+    ///     );
+    /// ```
+    ///
+    /// Apply it with `AnimationExt::with_spring` and reuse a stable element ID
+    /// across renders. A newly mounted spring starts at the target; use `.from`
+    /// for an entrance animation. Running springs respect `App::set_reduce_motion`.
+    /// Avoid spring overshoot for values constrained to a range, such as opacity.
+    pub fn animation_to<T: SpringTarget>(self, target: T) -> SpringAnimation<T> {
+        SpringAnimation::new(self.config()).to(target)
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -282,6 +334,56 @@ fn pulse_alpha(delta: f32) -> f32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use gpui::SpringState;
+
+    #[test]
+    fn spring_presets_are_valid_and_settle_in_finite_time() {
+        for preset in [
+            MotionSpring::Gentle,
+            MotionSpring::Snappy,
+            MotionSpring::Bouncy,
+        ] {
+            let config = preset.config();
+            let initial = SpringState::default();
+            let duration = config.settle_time(initial, 1.0, 0.001);
+            assert!(duration > Duration::ZERO && duration < Duration::from_secs(3));
+            let settled = config.step(initial, 1.0, duration.as_secs_f32());
+            assert!(config.is_settled(settled, 1.0, 0.001));
+            let _animation = preset.animation_to(gpui::px(24.0)).from(gpui::px(0.0));
+        }
+    }
+
+    #[test]
+    fn spring_step_is_independent_of_frame_partitioning() {
+        for preset in [
+            MotionSpring::Gentle,
+            MotionSpring::Snappy,
+            MotionSpring::Bouncy,
+        ] {
+            let config = preset.config();
+            let initial = SpringState {
+                position: 0.0,
+                velocity: 2.0,
+            };
+            let whole = config.step(initial, 1.0, 0.2);
+            let split = config.step(config.step(initial, 1.0, 0.1), 1.0, 0.1);
+            assert!((whole.position - split.position).abs() < 0.0001);
+            assert!((whole.velocity - split.velocity).abs() < 0.0001);
+        }
+    }
+
+    #[test]
+    fn spring_presets_have_intentional_damping_and_retarget_continuity() {
+        assert_eq!(MotionSpring::Gentle.config().canonical().1, 1.0);
+        assert_eq!(MotionSpring::Snappy.config().canonical().1, 1.0);
+        let config = MotionSpring::Bouncy.config();
+        assert!(config.canonical().1 < 1.0);
+        assert!(config.step(SpringState::default(), 1.0, 0.25).position > 1.0);
+        let moving = config.step(SpringState::default(), 1.0, 0.1);
+        let retargeted = config.step(moving, -1.0, 0.0);
+        assert!((moving.position - retargeted.position).abs() < 0.0001);
+        assert!((moving.velocity - retargeted.velocity).abs() < 0.0001);
+    }
 
     #[test]
     fn motion_duration_tokens_track_liora_defaults() {

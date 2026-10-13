@@ -69,6 +69,7 @@ pub fn apply_window_frame_mode(mut options: WindowOptions, mode: WindowFrameMode
                 titlebar.traffic_light_position = None;
             }
             options.is_movable = true;
+            options.app_owns_titlebar_drag = false;
             options.window_decorations = Some(WindowDecorations::Server);
         }
         WindowFrameMode::Custom => {
@@ -76,9 +77,11 @@ pub fn apply_window_frame_mode(mut options: WindowOptions, mode: WindowFrameMode
                 titlebar.appears_transparent = true;
                 titlebar.traffic_light_position = Some(point(px(12.0), px(12.0)));
             }
-            // Zed disables platform titlebar dragging when custom chrome owns
-            // WindowControlArea::Drag and calls Window::start_window_move().
-            options.is_movable = false;
+            // macOS separates app-owned titlebar dragging from window movability:
+            // keep native tiling actions enabled while Liora owns drag handling.
+            // Other platforms retain the existing custom-frame policy.
+            options.is_movable = cfg!(target_os = "macos");
+            options.app_owns_titlebar_drag = true;
             options.window_decorations = Some(WindowDecorations::Client);
         }
     }
@@ -219,6 +222,24 @@ mod tests {
     use super::*;
 
     #[test]
+    fn frame_modes_preserve_caller_frame_pacing_and_window_constraints() {
+        for mode in [WindowFrameMode::System, WindowFrameMode::Custom] {
+            let options = apply_window_frame_mode(
+                WindowOptions {
+                    inactive_frame_interval: None,
+                    is_resizable: false,
+                    is_minimizable: false,
+                    ..WindowOptions::default()
+                },
+                mode,
+            );
+            assert_eq!(options.inactive_frame_interval, None);
+            assert!(!options.is_resizable);
+            assert!(!options.is_minimizable);
+        }
+    }
+
+    #[test]
     fn frame_mode_tracks_custom_state_and_labels() {
         assert!(!WindowFrameMode::System.is_custom());
         assert!(WindowFrameMode::Custom.is_custom());
@@ -236,7 +257,8 @@ mod tests {
                 .as_ref()
                 .is_some_and(|titlebar| titlebar.appears_transparent)
         );
-        assert!(!custom.is_movable);
+        assert_eq!(custom.is_movable, cfg!(target_os = "macos"));
+        assert!(custom.app_owns_titlebar_drag);
         assert_eq!(custom.window_decorations, Some(WindowDecorations::Client));
 
         let system = apply_window_frame_mode(custom, WindowFrameMode::System);
@@ -247,6 +269,7 @@ mod tests {
                 .is_some_and(|titlebar| !titlebar.appears_transparent)
         );
         assert!(system.is_movable);
+        assert!(!system.app_owns_titlebar_drag);
         assert_eq!(system.window_decorations, Some(WindowDecorations::Server));
         let production = include_str!("window_frame.rs")
             .split("#[cfg(test)]")

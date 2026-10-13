@@ -1,16 +1,19 @@
-use gpui::{AnyElement, AnyView, App, Context, Render, Window, prelude::*, px, rgb};
+use gpui::{AnimationExt, AnyElement, AnyView, App, Context, Render, Window, prelude::*, px, rgb};
 use liora_components::layout_helpers::{page, section, showcase_card, showcase_grid};
-use liora_components::{Button, Label, Space, Spinner, Text};
+use liora_components::{Button, Label, MotionSpring, Space, Spinner, Text};
 use liora_icons_lucide::IconName;
 
 pub fn render(cx: &mut App) -> AnyView {
-    cx.new(|_| SpinnerDemo).into()
+    cx.new(|_| SpinnerDemo { expanded: false }).into()
 }
 
-struct SpinnerDemo;
+struct SpinnerDemo {
+    expanded: bool,
+}
 
 impl Render for SpinnerDemo {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let gap = px(if self.expanded { 48.0 } else { 8.0 });
         page(
             "Spinner 旋转加载",
             "独立的细粒度加载图标，适合按钮、状态栏、工具栏、列表行和卡片局部刷新。",
@@ -58,6 +61,30 @@ impl Render for SpinnerDemo {
                             Spinner::new().large().color(rgb(0xdc2626).into()),
                         ),
                     ]),
+                ))
+                .child(section(
+                    "Native spring motion",
+                    "快速重复点击可以重定向动画；同一 element ID 保留位置与速度，不重启动画。",
+                    Space::new()
+                        .vertical()
+                        .gap_md()
+                        .child(Button::new("Toggle spring target").on_click(cx.listener(
+                            |this, _, _, cx| {
+                                this.expanded = !this.expanded;
+                                cx.notify();
+                            },
+                        )))
+                        .child(
+                            Space::new()
+                                .align_center()
+                                .child(Spinner::new())
+                                .child(Text::new("Interruptible native spring"))
+                                .with_spring(
+                                    "spinner-demo-spring-gap",
+                                    MotionSpring::Snappy.animation_to(gap),
+                                    |row, gap| row.gap(gap),
+                                ),
+                        ),
                 ))
                 .child(section(
                     "组合场景",
