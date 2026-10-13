@@ -102,6 +102,7 @@ pub enum InputType {
 
 /// Fluent native GPUI component for rendering Liora input.
 pub struct Input {
+    id: Option<SharedString>,
     value: SharedString,
     placeholder: LocalizedText,
     disabled: bool,
@@ -139,6 +140,7 @@ impl Input {
     /// Creates `Input` initialized from the supplied value.
     pub fn new(value: impl Into<SharedString>, cx: &mut Context<Self>) -> Self {
         Self {
+            id: None,
             value: value.into(),
             placeholder: LocalizedText::literal(""),
             disabled: false,
@@ -170,6 +172,11 @@ impl Input {
             on_change: None,
             on_clear: None,
         }
+    }
+    /// Assigns a stable root element ID for automation and interaction isolation.
+    pub fn id(mut self, id: impl Into<SharedString>) -> Self {
+        self.id = Some(id.into());
+        self
     }
     /// Uses the supplied placeholder text when the value is empty.
     pub fn placeholder(mut self, p: impl Into<LocalizedText>) -> Self {
@@ -1693,7 +1700,7 @@ impl Render for Input {
             );
         }
 
-        row
+        row.into_any_element()
     }
 }
 

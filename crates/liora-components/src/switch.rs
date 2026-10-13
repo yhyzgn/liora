@@ -46,6 +46,7 @@ gpui::actions!(
 
 /// Fluent native GPUI component for rendering Liora switch.
 pub struct Switch {
+    id: Option<gpui::SharedString>,
     checked: bool,
     disabled: bool,
     focus_handle: FocusHandle,
@@ -56,11 +57,17 @@ impl Switch {
     /// Creates `Switch` initialized from the supplied checked.
     pub fn new(checked: bool, cx: &mut Context<Self>) -> Self {
         Self {
+            id: None,
             checked,
             disabled: false,
             focus_handle: cx.focus_handle(),
             on_change: None,
         }
+    }
+    /// Assigns a stable root element ID for automation and interaction isolation.
+    pub fn id(mut self, id: impl Into<gpui::SharedString>) -> Self {
+        self.id = Some(id.into());
+        self
     }
 
     /// Toggles the disabled state and suppresses user interaction when enabled.
@@ -174,7 +181,6 @@ impl Render for Switch {
         }
 
         let mut el = gpui::div().p(px(2.0)).child(track);
-
         if focused && !self.disabled {
             el = el
                 .rounded(px((h + 4.0) / 2.0))

@@ -64,6 +64,7 @@ pub struct Flex {
     flex_1: bool,
     flex_none: bool,
     min_h_0: bool,
+    min_w_0: bool,
     bg: Option<Hsla>,
     text_color: Option<Hsla>,
     text_size: Option<Pixels>,
@@ -101,6 +102,7 @@ impl Flex {
             flex_1: false,
             flex_none: false,
             min_h_0: false,
+            min_w_0: false,
             bg: None,
             text_color: None,
             text_size: None,
@@ -267,6 +269,12 @@ impl Flex {
     /// Sets the minimum h 0 limit.
     pub fn min_h_0(mut self) -> Self {
         self.min_h_0 = true;
+        self
+    }
+
+    /// Sets the minimum width to zero so flex children can shrink without overflowing.
+    pub fn min_w_0(mut self) -> Self {
+        self.min_w_0 = true;
         self
     }
 
@@ -492,6 +500,9 @@ impl RenderOnce for Flex {
         }
         if self.min_h_0 {
             el = el.min_h_0();
+        }
+        if self.min_w_0 {
+            el = el.min_w_0();
         }
         if let Some(bg) = self.bg {
             el = el.bg(bg);

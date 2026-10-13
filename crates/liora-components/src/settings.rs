@@ -159,7 +159,13 @@ impl SettingsItem {
                             ),
                     )
                     .when_some(self.control, |s, control| {
-                        s.child(div().flex_none().child(control))
+                        s.child(
+                            div()
+                                .flex_none()
+                                .min_w(px(0.0))
+                                .cursor_pointer()
+                                .child(control),
+                        )
                     }),
             )
             .when_some(self.extra, |s, extra| {

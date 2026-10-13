@@ -54,6 +54,7 @@ pub enum SelectMode {
 
 /// Fluent native GPUI component for rendering Liora select.
 pub struct Select {
+    id: Option<SharedString>,
     options: Vec<SharedString>,
     items: Vec<SearchableListItem>,
     selected_idx: Option<usize>,
@@ -92,6 +93,7 @@ impl Select {
         cx: &mut Context<Self>,
     ) -> Self {
         Self {
+            id: None,
             options: options.into_iter().map(|o| o.into()).collect(),
             items: Vec::new(),
             selected_idx,
@@ -121,6 +123,11 @@ impl Select {
             close_on_click_outside: true,
             close_on_escape: true,
         }
+    }
+    /// Assigns a stable root element ID for automation and interaction isolation.
+    pub fn id(mut self, id: impl Into<SharedString>) -> Self {
+        self.id = Some(id.into());
+        self
     }
 
     /// Creates a searchable select from reusable list items.
@@ -925,7 +932,7 @@ impl Render for Select {
 
         let close_on_click_outside = self.close_on_click_outside;
 
-        el.child(trigger_content)
+        let element = el
             .child(
                 gpui::div()
                     .absolute()
@@ -936,6 +943,7 @@ impl Render for Select {
                         select: cx.entity().clone(),
                     }),
             )
+            .child(trigger_content)
             .on_mouse_down(
                 MouseButton::Left,
                 cx.listener(|this, _, window, cx| {
@@ -949,7 +957,8 @@ impl Render for Select {
                 }))
             })
             .on_action(cx.listener(Self::close_on_escape_action))
-            .into_any_element()
+            .into_any_element();
+        element
     }
 }
 
