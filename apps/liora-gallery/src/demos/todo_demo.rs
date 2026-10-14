@@ -257,12 +257,23 @@ fn project_leading(context: TodoItemRenderContext, icon: IconName) -> AnyElement
 }
 
 fn project_check(context: TodoItemRenderContext) -> AnyElement {
-    let (background, border, mark) = if context.disabled {
-        (rgb(0xf1f5f9), rgb(0xcbd5e1), "🔒")
+    let (background, border) = if context.disabled {
+        (rgb(0xf1f5f9), rgb(0xcbd5e1))
     } else if context.checked {
-        (rgb(0x22c55e), rgb(0x16a34a), "★")
+        (rgb(0x22c55e), rgb(0x16a34a))
     } else {
-        (rgb(0xfffbeb), rgb(0xf59e0b), "☆")
+        (rgb(0xfffbeb), rgb(0xf59e0b))
+    };
+    let marker = if context.disabled {
+        Icon::new(IconName::Lock)
+            .size(px(13.0))
+            .color(border.into())
+            .into_any_element()
+    } else {
+        Text::new(if context.checked { "★" } else { "☆" })
+            .text_color(border.into())
+            .bold()
+            .into_any_element()
     };
     Flex::new()
         .width_px(22.0)
@@ -273,7 +284,7 @@ fn project_check(context: TodoItemRenderContext) -> AnyElement {
         .border_color(border.into())
         .align_center()
         .justify_center()
-        .child(Text::new(mark).text_color(border.into()).bold())
+        .child(marker)
         .into_any_element()
 }
 
