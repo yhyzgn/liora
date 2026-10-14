@@ -403,11 +403,11 @@ fn focus_content(context: TodoItemRenderContext) -> AnyElement {
         .child(
             Text::new(context.title.clone())
                 .bold()
-                .text_color(rgb(0xf8fafc).into())
+                .text_color(rgb(0x0f172a).into())
                 .when(context.checked, |text| text.strikethrough()),
         )
         .when_some(context.description, |content, description| {
-            content.child(Text::new(description).sm().text_color(rgb(0xcbd5e1).into()))
+            content.child(Text::new(description).sm().text_color(rgb(0x64748b).into()))
         })
         .into_any_element()
 }
@@ -437,19 +437,37 @@ impl Render for TodoDemo {
                 ))
                 .child(section(
                     "专注任务",
-                    "使用深色背景、圆角图标、星形勾选和时间胶囊，演示另一套完全不同的视觉语言。",
+                    "使用高对比深色表面、圆角图标、星形勾选和时间胶囊，演示另一套完全不同的视觉语言。",
                     Space::new()
                         .vertical()
                         .gap_md()
                         .child(
                             Flex::new()
                                 .row()
+                                .align_center()
                                 .gap_px(8.0)
                                 .child(Avatar::new().small().icon(IconName::User))
-                                .child(Text::new("Maya 的本周专注清单").bold())
-                                .child(Progress::new(66.0).status(ProgressStatus::Success)),
+                                .child(
+                                    Flex::new()
+                                        .flex_1()
+                                        .min_w_0()
+                                        .child(Text::new("Maya 的本周专注清单").bold().nowrap()),
+                                )
+                                .child(
+                                    Flex::new()
+                                        .width_px(220.0)
+                                        .flex_none()
+                                        .child(Progress::new(66.0).status(ProgressStatus::Success)),
+                                ),
                         )
-                        .child(Card::new(self.focus.clone())),
+                        .child(
+                            Flex::new()
+                                .column()
+                                .padding_md()
+                                .rounded_px(12.0)
+                                .bg(rgb(0x0f172a).into())
+                                .child(self.focus.clone()),
+                        ),
                 )),
         )
     }
