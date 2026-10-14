@@ -15,7 +15,7 @@ impl Render for HoverCardDemo {
             "基于 Popover 的轻量预览 facade，适合 profile、链接预览和上下文摘要。",
             Space::new().vertical().gap_xl().child(section(
                 "基础预览",
-                "悬停或触发目标后展示更丰富的说明内容。",
+                "无需点击：将指针悬停在目标上，移入卡片继续阅读，离开后自动关闭。",
                 showcase_grid(vec![
                     HoverCard::new(Text::new("Open profile").underline())
                         .content(|_, _| {

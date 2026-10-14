@@ -50,6 +50,7 @@ pub struct Popover {
     close_on_escape: bool,
     trigger_id: Option<ElementId>,
     content_padding: Option<Pixels>,
+    open_on_hover: bool,
 }
 
 /// Fluent native GPUI component for rendering Liora popover view.
@@ -62,6 +63,8 @@ pub struct PopoverView {
     close_on_escape: bool,
     id: SharedString,
     content_padding: Option<Pixels>,
+    close_on_hover_outside: bool,
+    content_bounds: Rc<Cell<Option<Bounds<Pixels>>>>,
     on_close: Arc<dyn Fn(&mut Window, &mut App) + 'static>,
 }
 
@@ -78,6 +81,32 @@ impl PopoverView {
         content_padding: Option<Pixels>,
         on_close: impl Fn(&mut Window, &mut App) + 'static,
     ) -> Self {
+        Self::with_hover_close(
+            content,
+            anchor_bounds,
+            placement,
+            offset,
+            close_on_click_outside,
+            close_on_escape,
+            id,
+            content_padding,
+            false,
+            on_close,
+        )
+    }
+
+    fn with_hover_close(
+        content: Arc<dyn Fn(&mut Window, &mut Context<Self>) -> AnyElement + 'static>,
+        anchor_bounds: Bounds<Pixels>,
+        placement: Placement,
+        offset: Pixels,
+        close_on_click_outside: bool,
+        close_on_escape: bool,
+        id: SharedString,
+        content_padding: Option<Pixels>,
+        close_on_hover_outside: bool,
+        on_close: impl Fn(&mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             content,
             anchor_bounds,
@@ -87,6 +116,8 @@ impl PopoverView {
             close_on_escape,
             id,
             content_padding,
+            close_on_hover_outside,
+            content_bounds: Rc::new(Cell::new(None)),
             on_close: Arc::new(on_close),
         }
     }
@@ -103,6 +134,8 @@ impl Render for PopoverView {
         let close_on_escape = self.close_on_escape;
         let id = self.id.clone();
         let content_padding = self.content_padding;
+        let close_on_hover_outside = self.close_on_hover_outside;
+        let content_bounds = self.content_bounds.clone();
 
         let content = (self.content)(_window, cx);
         let viewport_size = _window.viewport_size();
@@ -123,8 +156,10 @@ impl Render for PopoverView {
             .on_hover(|_, _, cx| {
                 cx.stop_propagation();
             })
-            .on_mouse_move(|_, _, cx| {
-                cx.stop_propagation();
+            .when(!close_on_hover_outside, |s| {
+                s.on_mouse_move(|_, _, cx| {
+                    cx.stop_propagation();
+                })
             })
             .when(close_on_escape, |s| {
                 let on_close = on_close.clone();
@@ -133,6 +168,7 @@ impl Render for PopoverView {
                 })
             })
             .when(close_on_click_outside, |s| {
+                let on_close = on_close.clone();
                 s.on_mouse_down(
                     MouseButton::Left,
                     cx.listener(move |_, _, window, cx| {
@@ -140,40 +176,55 @@ impl Render for PopoverView {
                     }),
                 )
             })
+            .when(close_on_hover_outside, |s| {
+                let on_close = on_close.clone();
+                s.on_mouse_move(move |event, window, cx| {
+                    if let Some(content_bounds) = content_bounds.get()
+                        && !hover_popover_safe_bounds(anchor_bounds, content_bounds)
+                            .contains(&event.position)
+                    {
+                        on_close(window, cx);
+                    }
+                })
+            })
             .child(
                 gpui::anchored()
                     .position(popover_anchor)
                     .anchor(popover_anchor_corner)
                     .snap_to_window_with_margin(viewport_margin)
-                    .child(pop_in(
-                        element_id(format!("{}-motion", id)),
-                        div()
-                            .id(element_id(format!("{}-content", id)))
-                            .flex()
-                            .flex_col()
-                            .flex_none()
-                            .self_start()
-                            .cursor_default()
-                            .occlude()
-                            .max_w(max_w)
-                            .on_hover(|_, _, cx| {
-                                cx.stop_propagation();
-                            })
-                            .on_mouse_move(|_, _, cx| {
-                                cx.stop_propagation();
-                            })
-                            .on_mouse_down(MouseButton::Left, |_, _, cx| {
-                                cx.stop_propagation();
-                            }) // Consume click so it doesn't trigger the background
-                            .bg(theme.neutral.popover)
-                            .text_color(theme.neutral.text_1)
-                            .border_1()
-                            .border_color(theme.neutral.border)
-                            .rounded(px(theme.radius.md))
-                            .shadow_lg()
-                            .when_some(content_padding, |s, padding| s.p(padding))
-                            .child(content),
-                    )),
+                    .child(BoundsTracker {
+                        child: pop_in(
+                            element_id(format!("{}-motion", id)),
+                            div()
+                                .id(element_id(format!("{}-content", id)))
+                                .flex()
+                                .flex_col()
+                                .flex_none()
+                                .self_start()
+                                .cursor_default()
+                                .occlude()
+                                .max_w(max_w)
+                                .on_hover(|_, _, cx| {
+                                    cx.stop_propagation();
+                                })
+                                .on_mouse_move(|_, _, cx| {
+                                    cx.stop_propagation();
+                                })
+                                .on_mouse_down(MouseButton::Left, |_, _, cx| {
+                                    cx.stop_propagation();
+                                }) // Consume click so it doesn't trigger the background
+                                .bg(theme.neutral.popover)
+                                .text_color(theme.neutral.text_1)
+                                .border_1()
+                                .border_color(theme.neutral.border)
+                                .rounded(px(theme.radius.md))
+                                .shadow_lg()
+                                .when_some(content_padding, |s, padding| s.p(padding))
+                                .child(content),
+                        )
+                        .into_any_element(),
+                        bounds: self.content_bounds.clone(),
+                    }),
             )
     }
 }
@@ -240,6 +291,7 @@ impl Popover {
             close_on_escape: true,
             trigger_id: None,
             content_padding: Some(px(16.0)),
+            open_on_hover: false,
         }
     }
 
@@ -294,6 +346,12 @@ impl Popover {
         self
     }
 
+    /// Opens the popover when the pointer hovers the trigger. Click behavior remains available.
+    pub fn open_on_hover(mut self, open: bool) -> Self {
+        self.open_on_hover = open;
+        self
+    }
+
     /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([KeyBinding::new("escape", PopoverClose, None)]);
@@ -313,6 +371,7 @@ impl RenderOnce for Popover {
         let close_on_click_outside = self.close_on_click_outside;
         let close_on_escape = self.close_on_escape;
         let content_padding = self.content_padding;
+        let open_on_hover = self.open_on_hover;
         let content = self.content.clone();
         let trigger_id = self.trigger_id.unwrap_or_else(|| {
             stable_unique_id("popover-trigger", "popover-trigger", _window, _cx).into()
@@ -323,43 +382,103 @@ impl RenderOnce for Popover {
         };
 
         let bounds_cell = Rc::new(Cell::new(None));
-        let bounds_cell_clone = bounds_cell.clone();
+        let hover_bounds_cell = bounds_cell.clone();
+        let click_bounds_cell = bounds_cell.clone();
+        let hover_content = content.clone();
+        let hover_popover_id = popover_id.clone();
+        let click_popover_id = popover_id.clone();
 
         div()
             .id(trigger_id)
             .child(BoundsTracker {
-                trigger: self.trigger,
+                child: self.trigger,
                 bounds: bounds_cell,
             })
-            .on_click(move |_event, _window, cx| {
-                if is_popover_active(&popover_id, cx) {
-                    clear_popover(&popover_id, cx);
-                    return;
-                }
-
-                if let Some(anchor_bounds) = bounds_cell_clone.get() {
-                    let content = content.clone();
-                    let popover_id_for_close = popover_id.clone();
-                    let popover_id_for_view = popover_id.clone();
-                    let view = cx.new(|_cx| {
-                        PopoverView::new(
-                            content,
-                            anchor_bounds,
+            .when(open_on_hover, |s| {
+                s.on_hover(move |hovered, _window, cx| {
+                    if *hovered {
+                        open_popover_view(OpenPopoverRequest {
+                            id: hover_popover_id.clone(),
+                            anchor_bounds: hover_bounds_cell.get(),
+                            content: hover_content.clone(),
                             placement,
                             offset,
                             close_on_click_outside,
                             close_on_escape,
-                            popover_id_for_view,
                             content_padding,
-                            move |_window, _cx| {
-                                clear_popover(&popover_id_for_close, _cx);
-                            },
-                        )
-                    });
-                    set_active_popover(popover_id.clone(), view.into(), cx);
+                            close_on_hover_outside: true,
+                            cx,
+                        });
+                    }
+                })
+            })
+            .on_click(move |_event, _window, cx| {
+                if is_popover_active(&click_popover_id, cx) {
+                    clear_popover(&click_popover_id, cx);
+                    return;
                 }
+
+                open_popover_view(OpenPopoverRequest {
+                    id: click_popover_id.clone(),
+                    anchor_bounds: click_bounds_cell.get(),
+                    content: content.clone(),
+                    placement,
+                    offset,
+                    close_on_click_outside,
+                    close_on_escape,
+                    content_padding,
+                    close_on_hover_outside: false,
+                    cx,
+                });
             })
     }
+}
+
+struct OpenPopoverRequest<'a> {
+    id: SharedString,
+    anchor_bounds: Option<Bounds<Pixels>>,
+    content: Arc<dyn Fn(&mut Window, &mut Context<PopoverView>) -> AnyElement + 'static>,
+    placement: Placement,
+    offset: Pixels,
+    close_on_click_outside: bool,
+    close_on_escape: bool,
+    content_padding: Option<Pixels>,
+    close_on_hover_outside: bool,
+    cx: &'a mut App,
+}
+
+fn open_popover_view(request: OpenPopoverRequest<'_>) {
+    let Some(anchor_bounds) = request.anchor_bounds else {
+        return;
+    };
+
+    let content = request.content;
+    let popover_id_for_close = request.id.clone();
+    let popover_id_for_view = request.id.clone();
+    let view = request.cx.new(|_cx| {
+        PopoverView::with_hover_close(
+            content,
+            anchor_bounds,
+            request.placement,
+            request.offset,
+            request.close_on_click_outside,
+            request.close_on_escape,
+            popover_id_for_view,
+            request.content_padding,
+            request.close_on_hover_outside,
+            move |_window, _cx| {
+                clear_popover(&popover_id_for_close, _cx);
+            },
+        )
+    });
+    set_active_popover(request.id, view.into(), request.cx);
+}
+
+fn hover_popover_safe_bounds(
+    anchor_bounds: Bounds<Pixels>,
+    content_bounds: Bounds<Pixels>,
+) -> Bounds<Pixels> {
+    anchor_bounds.union(&content_bounds).inset(px(-12.0))
 }
 
 impl IntoElement for Popover {
@@ -370,7 +489,7 @@ impl IntoElement for Popover {
 }
 
 struct BoundsTracker {
-    trigger: AnyElement,
+    child: AnyElement,
     bounds: Rc<Cell<Option<Bounds<Pixels>>>>,
 }
 
@@ -399,7 +518,7 @@ impl gpui::Element for BoundsTracker {
         window: &mut Window,
         cx: &mut App,
     ) -> (LayoutId, ()) {
-        (self.trigger.request_layout(window, cx), ())
+        (self.child.request_layout(window, cx), ())
     }
 
     fn prepaint(
@@ -411,7 +530,7 @@ impl gpui::Element for BoundsTracker {
         window: &mut Window,
         cx: &mut App,
     ) -> () {
-        self.trigger.prepaint(window, cx);
+        self.child.prepaint(window, cx);
     }
 
     fn paint(
@@ -425,7 +544,7 @@ impl gpui::Element for BoundsTracker {
         cx: &mut App,
     ) {
         self.bounds.set(Some(bounds));
-        self.trigger.paint(window, cx);
+        self.child.paint(window, cx);
     }
 }
 
@@ -451,6 +570,29 @@ mod tests {
                 .content_padding,
             Some(px(8.0))
         );
+    }
+
+    #[test]
+    fn popover_hover_builder_preserves_click_default() {
+        assert!(!Popover::new("trigger").open_on_hover);
+        assert!(Popover::new("trigger").open_on_hover(true).open_on_hover);
+    }
+
+    #[test]
+    fn hover_safe_bounds_keeps_trigger_to_card_transition_open() {
+        let anchor = Bounds {
+            origin: point(px(20.0), px(20.0)),
+            size: gpui::size(px(80.0), px(24.0)),
+        };
+        let content = Bounds {
+            origin: point(px(20.0), px(52.0)),
+            size: gpui::size(px(160.0), px(72.0)),
+        };
+        let safe = hover_popover_safe_bounds(anchor, content);
+
+        assert!(safe.contains(&point(px(40.0), px(44.0))));
+        assert!(safe.contains(&point(px(40.0), px(70.0))));
+        assert!(!safe.contains(&point(px(260.0), px(180.0))));
     }
 
     #[test]

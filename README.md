@@ -2001,6 +2001,28 @@ Read `CONTRIBUTING.md` before opening a pull request. Important boundaries:
 - do not put product data models or page-only helpers into `liora-components`;
 - keep Gallery, Docs, snippets, tests, and both READMEs in sync with public behavior.
 
+### Hover previews and watermark transforms
+
+`HoverCard` opens on pointer hover. `Watermark` paints rotated/skewed text natively:
+
+```rust
+Watermark::new(content, "CONFIDENTIAL")
+    .rotate(-32.0)
+    .skew(16.0, 0.0)
+    .rotation_center(0.0, 0.5); // normalized tile-local origin
+```
+
 ## License
 
 Liora currently uses `LicenseRef-Liora`; see `LICENSE.md`. Do not assume an OSS license until the project maintainer replaces that policy with explicit OSS or commercial terms.
+
+### Hover previews and watermark transforms
+
+`HoverCard` opens on pointer hover. `Watermark` paints rotated/skewed text natively:
+
+```rust
+Watermark::new(content, "CONFIDENTIAL")
+    .rotate(-32.0)
+    .skew(16.0, 0.0)
+    .rotation_center(0.0, 0.5); // normalized tile-local origin
+```

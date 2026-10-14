@@ -1,6 +1,6 @@
-use gpui::{AnyView, App, Context, Render, Window, div, prelude::*, px, rgb};
+use gpui::{AnyView, App, Context, Render, Window, prelude::*};
 use liora_components::layout_helpers::{page, section};
-use liora_components::{Card, Space, Watermark};
+use liora_components::{Card, Flex, Space, Text, Watermark};
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|_| WatermarkDemo).into()
@@ -9,28 +9,18 @@ pub fn render(cx: &mut App) -> AnyView {
 struct WatermarkDemo;
 
 fn document_card(title: &'static str, body: &'static str) -> impl IntoElement {
-    div()
-        .min_h(px(180.0))
-        .rounded_lg()
-        .bg(gpui::white())
-        .border_1()
-        .border_color(rgb(0xe2e8f0))
-        .p_5()
-        .flex()
-        .flex_col()
-        .gap_3()
-        .child(
-            div()
-                .text_lg()
-                .font_weight(gpui::FontWeight::BOLD)
-                .text_color(rgb(0x0f172a))
-                .child(title),
-        )
-        .child(div().text_sm().text_color(rgb(0x475569)).child(body))
+    Flex::new()
+        .column()
+        .height_px(180.0)
+        .padding_lg()
+        .gap_md()
+        .child(Text::new(title).bold())
+        .child(Text::new(body).sm().wrap())
 }
 
 impl Render for WatermarkDemo {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let theme = cx.global::<liora_core::Config>().theme.clone();
         page(
             "Watermark 水印",
             "为卡片、文档预览或页面局部区域添加原生文字水印。",
@@ -65,13 +55,13 @@ impl Render for WatermarkDemo {
                         )
                         .header()
                         .density(1, 3)
-                        .color(rgb(0x2563eb).into())
+                        .color(theme.primary.base)
                         .opacity(0.24),
                     ),
                 ))
                 .child(section(
-                    "自定义密度与颜色",
-                    "gap、density、opacity 和 color 共同控制水印强度。",
+                    "旋转、倾斜与旋转中心",
+                    "rotate 控制角度，skew 控制双轴倾斜，rotation_center 使用每块文字的归一化坐标。",
                     Card::new(
                         Watermark::new(
                             document_card(
@@ -81,10 +71,12 @@ impl Render for WatermarkDemo {
                             "DRAFT",
                         )
                         .density(4, 5)
-                        .gap(px(72.0), px(48.0))
-                        .color(rgb(0xf97316).into())
+                        .gap(72.0, 48.0)
+                        .color(theme.warning.base)
                         .opacity(0.22)
-                        .rotate(-32.0),
+                        .rotate(-32.0)
+                        .skew(16.0, 0.0)
+                        .rotation_center(0.0, 0.5),
                     ),
                 )),
         )

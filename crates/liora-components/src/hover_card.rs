@@ -21,7 +21,7 @@
 
 use crate::{Popover, PopoverView};
 use gpui::{
-    AnyElement, App, Context, IntoElement, ParentElement, Pixels, RenderOnce,
+    AnyElement, App, Context, IntoElement, ParentElement, Pixels, RenderOnce, SharedString,
     ViewElement as Component, Window, div, px,
 };
 use liora_core::Placement;
@@ -35,6 +35,7 @@ pub struct HoverCard {
     content: Arc<HoverCardContent>,
     placement: Placement,
     offset: Pixels,
+    trigger_id: Option<SharedString>,
 }
 
 impl HoverCard {
@@ -45,6 +46,7 @@ impl HoverCard {
             content: Arc::new(|_, _| div().child("Hover card").into_any_element()),
             placement: Placement::Top,
             offset: px(8.0),
+            trigger_id: None,
         }
     }
 
@@ -69,6 +71,12 @@ impl HoverCard {
         self.offset = offset.into();
         self
     }
+
+    /// Assigns a stable trigger id forwarded to the underlying popover.
+    pub fn id(mut self, id: impl Into<SharedString>) -> Self {
+        self.trigger_id = Some(id.into());
+        self
+    }
 }
 
 impl IntoElement for HoverCard {
@@ -81,11 +89,18 @@ impl IntoElement for HoverCard {
 impl RenderOnce for HoverCard {
     fn render(self, _window: &mut Window, _cx: &mut App) -> impl IntoElement {
         let content = self.content.clone();
-        Popover::new(self.trigger)
+        let popover = Popover::new(self.trigger)
             .content(move |window, cx| content(window, cx))
             .placement(self.placement)
             .offset(self.offset)
-            .close_on_click_outside(true)
+            .open_on_hover(true)
+            .close_on_click_outside(true);
+
+        if let Some(trigger_id) = self.trigger_id {
+            popover.id(trigger_id)
+        } else {
+            popover
+        }
     }
 }
 
@@ -96,5 +111,21 @@ mod tests {
     fn hover_card_tracks_placement() {
         let card = HoverCard::new(div()).placement(Placement::Bottom);
         assert_eq!(card.placement, Placement::Bottom);
+    }
+
+    #[test]
+    fn hover_card_configures_popover_for_hover_opening() {
+        let source = include_str!("hover_card.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(source.contains(".open_on_hover(true)"));
+    }
+
+    #[test]
+    fn hover_card_tracks_stable_id_for_tests_and_downstream() {
+        let card = HoverCard::new(div()).id("profile-hover");
+        assert_eq!(card.trigger_id.as_deref(), Some("profile-hover"));
     }
 }

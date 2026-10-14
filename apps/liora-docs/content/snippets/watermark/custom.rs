@@ -8,4 +8,6 @@ pub fn custom_watermark() -> impl IntoElement {
         .color(rgb(0xf97316).into())
         .opacity(0.22)
         .rotate(-32.0)
+        .skew(16.0, 0.0)
+        .rotation_center(0.0, 0.5)
 }
