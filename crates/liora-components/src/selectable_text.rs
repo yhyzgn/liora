@@ -488,11 +488,11 @@ impl SelectableTextState {
             window.refresh();
         }
         if changed || cleared_other_selection {
-            cx.notify();
+            window.refresh();
         }
     }
 
-    fn on_mouse_move(&mut self, event: &MouseMoveEvent, cx: &mut Context<Self>) {
+    fn on_mouse_move(&mut self, event: &MouseMoveEvent, window: &mut Window) {
         let dragging = event.pressed_button == Some(MouseButton::Left);
         let idx = dragging.then(|| self.index_for_point(event.position));
         let changed = with_selection_state(&self.id, |state| {
@@ -507,8 +507,17 @@ impl SelectableTextState {
             }
         });
         if changed {
-            cx.notify();
+            // Selection is stored outside the entity so a drag only needs a
+            // paint refresh; invalidating the whole entity tree here makes
+            // fast mouse moves visibly lag behind the pointer.
+            window.refresh();
         }
+    }
+
+    fn is_selecting(&self) -> bool {
+        lock_selection_state_map()
+            .get(&selection_key(&self.id))
+            .is_some_and(|state| state.selecting)
     }
 
     fn on_mouse_up(&mut self, _: &MouseUpEvent, _: &mut Window, cx: &mut Context<Self>) {
@@ -871,16 +880,21 @@ impl Element for SelectableTextElement {
 
         let input = self.input.clone();
         let hitbox = prepaint.hitbox.clone();
-        window.on_mouse_event(move |event: &MouseMoveEvent, phase, window, cx| {
-            if phase.capture() && hitbox.is_hovered(window) {
-                input.update(cx, |input, cx| input.on_mouse_move(event, cx));
+        window.on_mouse_event(move |event: &MouseMoveEvent, phase, event_window, cx| {
+            let selecting = input.read(cx).is_selecting();
+            if phase.capture() && (hitbox.is_hovered(event_window) || selecting) {
+                input.update(cx, |input, _cx| input.on_mouse_move(event, event_window));
             }
         });
 
         let input = self.input.clone();
         let hitbox = prepaint.hitbox.clone();
         window.on_mouse_event(move |event: &MouseUpEvent, phase, window, cx| {
-            if phase.capture() && event.button == MouseButton::Left && hitbox.is_hovered(window) {
+            let selecting = input.read(cx).is_selecting();
+            if phase.capture()
+                && event.button == MouseButton::Left
+                && (hitbox.is_hovered(window) || selecting)
+            {
                 input.update(cx, |input, cx| input.on_mouse_up(event, window, cx));
             }
         });
@@ -1195,8 +1209,8 @@ mod tests {
         assert!(source.contains("fn clear_other_selection_states"));
         assert!(source.contains("fn clear_selection_state_for"));
         assert!(source.contains("window.refresh()"));
-        assert!(source.contains("phase.capture() && hitbox.is_hovered(window)"));
-        assert!(!source.contains("hitbox.is_hovered(window) || input.read(cx).is_selecting()"));
+        assert!(source.contains("hitbox.is_hovered(window) || selecting"));
+        assert!(source.contains("fn is_selecting(&self) -> bool"));
         assert!(source.contains("phase.capture()"));
         assert!(source.contains("!bounds.contains(&event.position)"));
         assert!(source.contains("clear_selection_state_for(&input_id)"));
