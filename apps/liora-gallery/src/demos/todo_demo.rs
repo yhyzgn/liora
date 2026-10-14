@@ -437,7 +437,7 @@ impl Render for TodoDemo {
                 ))
                 .child(section(
                     "专注任务",
-                    "使用高对比深色表面、圆角图标、星形勾选和时间胶囊，演示另一套完全不同的视觉语言。",
+                    "使用高对比浅色卡片、圆角图标、星形勾选和时间胶囊，演示另一套完全不同的视觉语言。",
                     Space::new()
                         .vertical()
                         .gap_md()
@@ -460,14 +460,7 @@ impl Render for TodoDemo {
                                         .child(Progress::new(66.0).status(ProgressStatus::Success)),
                                 ),
                         )
-                        .child(
-                            Flex::new()
-                                .column()
-                                .padding_md()
-                                .rounded_px(12.0)
-                                .bg(rgb(0x0f172a).into())
-                                .child(self.focus.clone()),
-                        ),
+                        .child(Card::new(self.focus.clone())),
                 )),
         )
     }
