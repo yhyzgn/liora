@@ -709,6 +709,12 @@ mod titlebar_window_controls;
 mod titlebar_window_controls_left;
 #[path = "../../content/snippets/titlebar/window_controls_right.rs"]
 mod titlebar_window_controls_right;
+#[path = "../../content/snippets/todo/basic.rs"]
+mod todo_basic;
+#[path = "../../content/snippets/todo/changes.rs"]
+mod todo_changes;
+#[path = "../../content/snippets/todo/custom.rs"]
+mod todo_custom;
 #[path = "../../content/snippets/tooltip/basic.rs"]
 mod tooltip_basic;
 #[path = "../../content/snippets/tooltip/more.rs"]

@@ -79,6 +79,7 @@ const CAROUSEL_DOC: &str = include_str!("../content/pages/carousel.md");
 const CARD_DOC: &str = include_str!("../content/pages/card.md");
 const CASCADER_DOC: &str = include_str!("../content/pages/cascader.md");
 const CHECKBOX_DOC: &str = include_str!("../content/pages/checkbox.md");
+const TODO_DOC: &str = include_str!("../content/pages/todo.md");
 const CODE_BLOCK_DOC: &str = include_str!("../content/pages/code_block.md");
 const CODE_EDITOR_DOC: &str = include_str!("../content/pages/code_editor.md");
 const COLLAPSE_DOC: &str = include_str!("../content/pages/collapse.md");
@@ -285,6 +286,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Checkbox",
         markdown: CHECKBOX_DOC,
+    },
+    DocPage {
+        title: "TodoList",
+        markdown: TODO_DOC,
     },
     DocPage {
         title: "CodeBlock",
@@ -1524,6 +1529,9 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "checkbox/group.rs" => Some(include_str!("../content/snippets/checkbox/group.rs")),
         "checkbox/buttons.rs" => Some(include_str!("../content/snippets/checkbox/buttons.rs")),
         "checkbox/custom.rs" => Some(include_str!("../content/snippets/checkbox/custom.rs")),
+        "todo/basic.rs" => Some(include_str!("../content/snippets/todo/basic.rs")),
+        "todo/custom.rs" => Some(include_str!("../content/snippets/todo/custom.rs")),
+        "todo/changes.rs" => Some(include_str!("../content/snippets/todo/changes.rs")),
         "radio/basic.rs" => Some(include_str!("../content/snippets/radio/basic.rs")),
         "radio/group.rs" => Some(include_str!("../content/snippets/radio/group.rs")),
         "radio/buttons.rs" => Some(include_str!("../content/snippets/radio/buttons.rs")),

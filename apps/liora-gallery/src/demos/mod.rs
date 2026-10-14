@@ -94,6 +94,7 @@ pub mod time_picker_demo;
 pub mod timeline_demo;
 pub mod timer_demo;
 pub mod titlebar_demo;
+pub mod todo_demo;
 pub mod tooltip_demo;
 pub mod tour_demo;
 pub mod transfer_demo;
@@ -337,6 +338,11 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "Mention 提及",
             description: "@成员、#事项与触发符候选",
             render: |cx| mention_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "TodoList 待办列表",
+            description: "稳定 ID、完成状态和自定义待办内容",
+            render: |cx| todo_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Watermark 水印",
@@ -720,6 +726,10 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Cascader" => Some(cascader_demo::render(cx).into()),
         "CandlestickChart" => Some(candlestick_chart_demo::render(cx).into()),
         "Checkbox" => Some(form_controls_demo::render_checkbox(cx)),
+        "TodoList" => Some(todo_demo::render(cx).into()),
+        "TodoListBasic" | "TodoListCustom" | "TodoListChanges" => {
+            Some(todo_demo::render(cx).into())
+        }
         "CodeBlock" => Some(code_block_demo::render(cx).into()),
         "CodeEditor" => Some(code_editor_demo::render(cx).into()),
         "Collapse" => Some(collapse_demo::render(cx).into()),
