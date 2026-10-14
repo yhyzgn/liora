@@ -48,3 +48,17 @@
 
 ```rust src="checkbox/custom.rs"
 ```
+
+## 待办任务列表的选型建议
+
+`Checkbox` 适合单个完成状态，`CheckboxGroup` 适合一组同质选项。临时实现简单待办列表时，可以使用 `CheckboxGroup::option_renderer` 自定义多行文本、图标、标签和状态徽标。
+
+如果待办项需要复杂视觉和交互，建议提供专门的 `TodoList` / `TodoItem` 控件，而不是继续扩展 `Checkbox`：
+
+- 每项使用稳定 `id`，支持标题、描述、标签、优先级、截止时间和禁用状态。
+- 勾选图标、未勾选图标、完成态图标和动画都允许替换。
+- 文本区域使用自定义渲染器，可实现删除线、渐变、富文本、折叠说明和状态徽标。
+- 保留键盘焦点、无障碍语义和 `on_change`，同时支持异步保存、加载中和错误态。
+- 后续可扩展拖拽排序、分组、批量完成和虚拟化，而不会污染基础 `Checkbox` API。
+
+因此建议：**短期用 `CheckboxGroup::option_renderer` 验证场景；正式的待办产品直接设计 `TodoList`，内部复用 `Checkbox` 的交互语义，但把视觉和内容区域开放为 slot/renderer。**
