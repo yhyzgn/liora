@@ -25,6 +25,14 @@
 - `remove`：按 ID 删除任务；`clear`：清空并返回被移除的实体。
 - `on_mutation`：监听 added / removed / updated / checked 变更，适合持久化或同步远端状态。
 
+列表也支持原地编辑，不需要再放置一个固定的外部表单：
+
+- `TodoItem::editor_renderer`：只在当前项进入编辑态时渲染输入框、保存按钮或取消按钮。
+- `TodoList::set_editing`：按稳定 ID 切换展示态和编辑态，并保留原有 entity 身份。
+- `TodoList::footer_renderer`：在列表底部放置“+ 新增”按钮或其他列表级操作。
+
+新增任务时可以先插入一个空标题的临时项，再立即设为编辑态；保存时写回 `set_title` / `set_description`，取消时删除该临时项。已有任务取消编辑只需恢复展示态。
+
 这些操作只改变列表状态和对应 entity，不会丢失其他任务的焦点或自定义 renderer。
 
 ## 自定义视觉插槽
@@ -43,7 +51,7 @@
 - `content_renderer`：自定义标题、描述、富文本和完成态删除线。
 - `trailing_renderer`：放置优先级、标签、截止时间或状态徽标。
 
-renderer 接收 `TodoItemRenderContext`，其中包含稳定 ID、标题、描述、完成态和禁用态。
+renderer 接收 `TodoItemRenderContext`，其中包含稳定 ID、标题、描述、完成态、禁用态和 `editing` 状态。
 
 renderer 可以返回任意原生 GPUI `AnyElement`，因此图标、头像、图片、emoji、标签、按钮和自定义组合都可以直接嵌入：
 
@@ -61,6 +69,22 @@ TodoItem::new("design", "Polish the hero", cx)
 ```
 
 建议将图片地址、emoji、业务图标名称保存在宿主数据模型中，再由 renderer 闭包捕获；不要把一次性 `AnyElement` 存进 `TodoItemData`。
+
+原地编辑 renderer 可以直接捕获每个任务自己的 `Entity<Input>`：
+
+```rust
+TodoItem::new("design", "Polish the hero", cx)
+    .editor_renderer(move |_| {
+        Flex::new()
+            .column()
+            .child(title_input.clone())
+            .child(description_input.clone())
+            .child(Button::new("Save").on_click(save_handler))
+            .into_any_element()
+    })
+```
+
+将编辑、删除动作放到 `trailing_renderer`，将新增动作放到 `footer_renderer`，即可得到“每行操作 + 列表底部新增”的紧凑交互。
 
 ## 项目交付看板
 

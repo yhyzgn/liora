@@ -1,5 +1,8 @@
+use std::collections::HashMap;
+
 use gpui::{
-    AnyElement, AnyView, App, Context, Entity, Render, SharedString, Window, prelude::*, px, rgb,
+    AnyElement, AnyView, App, Context, Entity, MouseButton, Render, SharedString, Window,
+    prelude::*, px, rgb,
 };
 use liora_components::layout_helpers::{page, section};
 use liora_components::{
@@ -190,139 +193,314 @@ impl TodoDemo {
     }
 }
 
+struct TodoEditorState {
+    title: Entity<Input>,
+    description: Entity<Input>,
+    is_new: bool,
+}
+
 struct DynamicTodoDemo {
     todos: Entity<TodoList>,
-    title_input: Entity<Input>,
-    description_input: Entity<Input>,
+    editors: HashMap<String, TodoEditorState>,
     image_src: SharedString,
     next_id: usize,
-    selected_id: Option<SharedString>,
 }
 
 impl DynamicTodoDemo {
     fn new(cx: &mut Context<Self>) -> Self {
+        let owner = cx.entity().clone();
         let todos = cx.new(|cx| {
-            TodoList::from_data(
-                vec![
-                    TodoItemData::new("first", "Try adding a task")
-                        .description("Select a task, edit it, or remove it"),
-                ],
-                cx,
-            )
+            TodoList::new(cx).footer_renderer({
+                let owner = owner.clone();
+                move || todo_add_button(owner.clone())
+            })
         });
-        Self {
+        let mut demo = Self {
             todos,
-            title_input: cx.new(|cx| Input::new("", cx).placeholder("Task title")),
-            description_input: cx
-                .new(|cx| Input::new("", cx).placeholder("Description (optional)")),
+            editors: HashMap::new(),
             image_src: format!("file://{}/assets/local.jpeg", env!("CARGO_MANIFEST_DIR")).into(),
             next_id: 1,
-            selected_id: None,
+        };
+        let item = demo.create_item(
+            TodoItemData::new("first", "Try inline editing")
+                .description("Use the row actions to edit, or the + button below to add a task."),
+            false,
+            cx,
+        );
+        demo.todos.update(cx, |todos, cx| todos.push(item, cx));
+        demo
+    }
+
+    fn create_item(
+        &mut self,
+        data: TodoItemData,
+        is_new: bool,
+        cx: &mut Context<Self>,
+    ) -> Entity<TodoItem> {
+        let id = data.id.clone();
+        let title_value = data.title.clone();
+        let description_value = data.description.clone().unwrap_or_default();
+        let title_input = cx.new(|cx| {
+            Input::new(title_value.clone(), cx)
+                .placeholder("Task title")
+                .clearable(true)
+        });
+        let description_input = cx.new(|cx| {
+            Input::new(description_value.clone(), cx)
+                .placeholder("Description (optional)")
+                .clearable(true)
+        });
+        self.editors.insert(
+            id.to_string(),
+            TodoEditorState {
+                title: title_input.clone(),
+                description: description_input.clone(),
+                is_new,
+            },
+        );
+
+        let owner = cx.entity().clone();
+        let editor_owner = owner.clone();
+        let editor_id = id.clone();
+        let action_owner = owner.clone();
+        let action_id = id.clone();
+        let image_src = self.image_src.clone();
+        cx.new(|cx| {
+            TodoItem::from_data(data, cx)
+                .leading_renderer(move |_| {
+                    Image::new(image_src.clone())
+                        .thumbnail_sm()
+                        .round()
+                        .into_any_element()
+                })
+                .check_renderer(|context| {
+                    Text::new(if context.checked { "✅" } else { "🟡" }).into_any_element()
+                })
+                .content_renderer(dynamic_content)
+                .editor_renderer(move |_| {
+                    inline_todo_editor(
+                        editor_owner.clone(),
+                        editor_id.clone(),
+                        title_input.clone(),
+                        description_input.clone(),
+                    )
+                })
+                .trailing_renderer(move |context| {
+                    todo_item_actions(action_owner.clone(), action_id.clone(), context.editing)
+                })
+        })
+    }
+
+    fn begin_new(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let id: SharedString = format!("dynamic-{}", self.next_id).into();
+        self.next_id += 1;
+        let item = self.create_item(TodoItemData::new(id.clone(), ""), true, cx);
+        self.todos.update(cx, |todos, cx| {
+            todos.push(item, cx);
+            todos.set_editing(id.as_ref(), true, cx);
+        });
+        self.focus_title(&id, window, cx);
+        cx.notify();
+    }
+
+    fn begin_edit(&mut self, id: SharedString, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(item) = self.todos.read(cx).item(id.as_ref(), cx) else {
+            return;
+        };
+        let (title, description) = {
+            let item = item.read(cx);
+            (item.title(), item.description_value().unwrap_or_default())
+        };
+        if let Some(editor) = self.editors.get(id.as_ref()) {
+            editor
+                .title
+                .update(cx, |input, cx| input.set_value(title, cx));
+            editor
+                .description
+                .update(cx, |input, cx| input.set_value(description, cx));
+        }
+        self.todos
+            .update(cx, |todos, cx| todos.set_editing(id.as_ref(), true, cx));
+        self.focus_title(&id, window, cx);
+        cx.notify();
+    }
+
+    fn focus_title(&self, id: &str, window: &mut Window, cx: &mut Context<Self>) {
+        if let Some(editor) = self.editors.get(id) {
+            cx.focus_view(&editor.title, window);
         }
     }
 
-    fn add_task(&mut self, cx: &mut Context<Self>) {
-        let title = self.title_input.read(cx).value();
+    fn save_edit(&mut self, id: SharedString, cx: &mut Context<Self>) {
+        let Some(editor) = self.editors.get(id.as_ref()) else {
+            return;
+        };
+        let title = editor.title.read(cx).value();
         if title.trim().is_empty() {
             return;
         }
-        let description = self.description_input.read(cx).value();
-        let image_src = self.image_src.clone();
-        let id: SharedString = format!("dynamic-{}", self.next_id).into();
-        self.next_id += 1;
-        let item = cx.new(|cx| {
-            TodoItem::from_data(
-                TodoItemData::new(id.clone(), title.clone())
-                    .description(description.clone())
-                    .checked(false),
-                cx,
-            )
-            .leading_renderer(move |_| {
-                Image::new(image_src.clone())
-                    .thumbnail_sm()
-                    .round()
-                    .into_any_element()
-            })
-            .check_renderer(|context| {
-                Text::new(if context.checked { "✅" } else { "🟡" }).into_any_element()
-            })
-            .trailing_renderer(|_| Tag::new("NEW").small().round(true).into_any_element())
-        });
-        self.todos.update(cx, |todos, cx| todos.push(item, cx));
-        self.selected_id = Some(id);
-        self.title_input
-            .update(cx, |input, cx| input.set_value("", cx));
-        self.description_input
-            .update(cx, |input, cx| input.set_value("", cx));
-        cx.notify();
-    }
-
-    fn edit_selected(&mut self, cx: &mut Context<Self>) {
-        let Some(id) = self.selected_id.clone() else {
-            return;
-        };
-        let title = self.title_input.read(cx).value();
-        let description = self.description_input.read(cx).value();
+        let description = editor.description.read(cx).value();
         self.todos.update(cx, |todos, cx| {
-            if !title.trim().is_empty() {
-                todos.set_title(id.as_ref(), title, cx);
-            }
-            todos.set_description(id.as_ref(), Some(description), cx);
+            todos.set_title(id.as_ref(), title.trim().to_owned(), cx);
+            let description = description.trim();
+            todos.set_description(
+                id.as_ref(),
+                (!description.is_empty()).then(|| description.to_owned().into()),
+                cx,
+            );
+            todos.set_editing(id.as_ref(), false, cx);
         });
+        if let Some(editor) = self.editors.get_mut(id.as_ref()) {
+            editor.is_new = false;
+        }
         cx.notify();
     }
 
-    fn remove_selected(&mut self, cx: &mut Context<Self>) {
-        let Some(id) = self.selected_id.take() else {
-            return;
-        };
+    fn cancel_edit(&mut self, id: SharedString, cx: &mut Context<Self>) {
+        let is_new = self
+            .editors
+            .get(id.as_ref())
+            .is_some_and(|editor| editor.is_new);
+        if is_new {
+            self.todos.update(cx, |todos, cx| {
+                todos.remove(id.as_ref(), cx);
+            });
+            self.editors.remove(id.as_ref());
+        } else {
+            self.todos
+                .update(cx, |todos, cx| todos.set_editing(id.as_ref(), false, cx));
+        }
+        cx.notify();
+    }
+
+    fn remove_task(&mut self, id: SharedString, cx: &mut Context<Self>) {
         self.todos.update(cx, |todos, cx| {
             todos.remove(id.as_ref(), cx);
         });
+        self.editors.remove(id.as_ref());
         cx.notify();
     }
 }
 
 impl Render for DynamicTodoDemo {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let view = cx.entity().clone();
-        let add_view = view.clone();
-        let edit_view = view.clone();
-        let remove_view = view.clone();
-        let selected = self
-            .selected_id
-            .as_ref()
-            .map(|id| id.to_string())
-            .unwrap_or_else(|| "none".to_owned());
-        Space::new()
-            .vertical()
-            .gap_md()
-            .child(
-                Space::new()
-                    .vertical()
-                    .gap_sm()
-                    .child(self.title_input.clone())
-                    .child(self.description_input.clone())
-                    .child(
-                        Space::new()
-                            .wrap()
-                            .gap_sm()
-                            .child(Button::new("Add task").primary().on_click(move |_, _, cx| {
-                                add_view.update(cx, |this, cx| this.add_task(cx));
-                            }))
-                            .child(Button::new("Edit selected").on_click(move |_, _, cx| {
-                                edit_view.update(cx, |this, cx| this.edit_selected(cx));
-                            }))
-                            .child(Button::new("Delete selected").danger().on_click(
-                                move |_, _, cx| {
-                                    remove_view.update(cx, |this, cx| this.remove_selected(cx));
-                                },
-                            )),
-                    )
-                    .child(Text::new(format!("Selected: {selected}")).xs()),
-            )
-            .child(Card::new(self.todos.clone()).no_shadow())
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        Card::new(self.todos.clone()).no_shadow()
     }
+}
+
+fn todo_add_button(owner: Entity<DynamicTodoDemo>) -> AnyElement {
+    Button::new("Add task")
+        .small()
+        .primary()
+        .icon_start(IconName::Plus)
+        .on_click(move |_, window, cx| {
+            cx.stop_propagation();
+            owner.update(cx, |demo, cx| demo.begin_new(window, cx));
+        })
+        .into_any_element()
+}
+
+fn inline_todo_editor(
+    owner: Entity<DynamicTodoDemo>,
+    id: SharedString,
+    title: Entity<Input>,
+    description: Entity<Input>,
+) -> AnyElement {
+    let save_owner = owner.clone();
+    let save_id = id.clone();
+    let cancel_owner = owner;
+    let cancel_id = id;
+    Flex::new()
+        .column()
+        .gap_px(6.0)
+        .flex_1()
+        .child(title)
+        .child(description)
+        .child(
+            Space::new()
+                .gap_xs()
+                .child(
+                    Button::new("Save")
+                        .small()
+                        .success()
+                        .icon_start(IconName::Check)
+                        .on_click(move |_, _, cx| {
+                            cx.stop_propagation();
+                            save_owner.update(cx, |demo, cx| demo.save_edit(save_id.clone(), cx));
+                        }),
+                )
+                .child(
+                    Button::new("Cancel")
+                        .small()
+                        .icon_start(IconName::X)
+                        .on_click(move |_, _, cx| {
+                            cx.stop_propagation();
+                            cancel_owner
+                                .update(cx, |demo, cx| demo.cancel_edit(cancel_id.clone(), cx));
+                        }),
+                ),
+        )
+        .into_any_element()
+}
+
+fn todo_item_actions(
+    owner: Entity<DynamicTodoDemo>,
+    id: SharedString,
+    editing: bool,
+) -> AnyElement {
+    if editing {
+        return Space::new().into_any_element();
+    }
+    let edit_owner = owner.clone();
+    let edit_id = id.clone();
+    let delete_owner = owner;
+    let delete_id = id;
+    Space::new()
+        .gap_xs()
+        .child(stop_row_toggle(
+            Button::new("")
+                .small()
+                .icon_only(IconName::Pencil)
+                .on_click(move |_, window, cx| {
+                    cx.stop_propagation();
+                    edit_owner.update(cx, |demo, cx| demo.begin_edit(edit_id.clone(), window, cx));
+                }),
+        ))
+        .child(stop_row_toggle(
+            Button::new("")
+                .small()
+                .danger()
+                .icon_only(IconName::Trash2)
+                .on_click(move |_, _, cx| {
+                    cx.stop_propagation();
+                    delete_owner.update(cx, |demo, cx| demo.remove_task(delete_id.clone(), cx));
+                }),
+        ))
+        .into_any_element()
+}
+
+fn stop_row_toggle(button: Button) -> AnyElement {
+    gpui::div()
+        .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+        .on_mouse_up(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+        .child(button)
+        .into_any_element()
+}
+
+fn dynamic_content(context: TodoItemRenderContext) -> AnyElement {
+    Flex::new()
+        .column()
+        .gap_px(4.0)
+        .flex_1()
+        .child(
+            Text::new(context.title.clone())
+                .bold()
+                .when(context.checked, |text| text.strikethrough()),
+        )
+        .when_some(context.description, |content, description| {
+            content.child(Text::new(description).sm().text_color(rgb(0x64748b).into()))
+        })
+        .into_any_element()
 }
 
 fn custom_check(context: TodoItemRenderContext) -> AnyElement {

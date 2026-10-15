@@ -31,6 +31,8 @@ impl TodoChanges {
                 Some("Include icon, image, and emoji renderer examples".into()),
                 cx,
             );
+            todos.set_editing("docs", true, cx);
+            todos.set_editing("docs", false, cx);
             todos.remove("ship", cx);
         });
         Self { todos }

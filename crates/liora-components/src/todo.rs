@@ -37,6 +37,8 @@ pub struct TodoItemRenderContext {
     pub checked: bool,
     /// Whether user interaction is disabled.
     pub disabled: bool,
+    /// Whether the item is currently rendered in its inline editor state.
+    pub editing: bool,
 }
 
 /// Data used to create a stateful [`TodoItem`] entity.
@@ -101,10 +103,12 @@ pub struct TodoItem {
     description: Option<SharedString>,
     checked: bool,
     disabled: bool,
+    editing: bool,
     focus_handle: FocusHandle,
     leading_renderer: Option<Arc<dyn Fn(TodoItemRenderContext) -> AnyElement + 'static>>,
     check_renderer: Option<Arc<dyn Fn(TodoItemRenderContext) -> AnyElement + 'static>>,
     content_renderer: Option<Arc<dyn Fn(TodoItemRenderContext) -> AnyElement + 'static>>,
+    editor_renderer: Option<Arc<dyn Fn(TodoItemRenderContext) -> AnyElement + 'static>>,
     trailing_renderer: Option<Arc<dyn Fn(TodoItemRenderContext) -> AnyElement + 'static>>,
     on_change: Option<Box<dyn Fn(bool, &mut Window, &mut App) + 'static>>,
 }
@@ -129,10 +133,12 @@ impl TodoItem {
             description: data.description,
             checked: data.checked,
             disabled: data.disabled,
+            editing: false,
             focus_handle: cx.focus_handle(),
             leading_renderer: None,
             check_renderer: None,
             content_renderer: None,
+            editor_renderer: None,
             trailing_renderer: None,
             on_change: None,
         }
@@ -180,6 +186,15 @@ impl TodoItem {
         renderer: impl Fn(TodoItemRenderContext) -> AnyElement + 'static,
     ) -> Self {
         self.content_renderer = Some(Arc::new(renderer));
+        self
+    }
+
+    /// Replaces the default content with an inline editor while the item is editing.
+    pub fn editor_renderer(
+        mut self,
+        renderer: impl Fn(TodoItemRenderContext) -> AnyElement + 'static,
+    ) -> Self {
+        self.editor_renderer = Some(Arc::new(renderer));
         self
     }
 
@@ -240,6 +255,16 @@ impl TodoItem {
         self.disabled
     }
 
+    /// Returns the current supporting description.
+    pub fn description_value(&self) -> Option<SharedString> {
+        self.description.clone()
+    }
+
+    /// Returns whether the item is currently being edited.
+    pub fn is_editing(&self) -> bool {
+        self.editing
+    }
+
     /// Updates completion state without emitting a user-change event.
     pub fn set_checked(&mut self, checked: bool, cx: &mut Context<Self>) {
         if self.checked != checked {
@@ -252,6 +277,14 @@ impl TodoItem {
     pub fn set_disabled(&mut self, disabled: bool, cx: &mut Context<Self>) {
         if self.disabled != disabled {
             self.disabled = disabled;
+            cx.notify();
+        }
+    }
+
+    /// Switches the item between display and inline editor states.
+    pub fn set_editing(&mut self, editing: bool, cx: &mut Context<Self>) {
+        if self.editing != editing {
+            self.editing = editing;
             cx.notify();
         }
     }
@@ -271,6 +304,7 @@ impl TodoItem {
             description: self.description.clone(),
             checked: self.checked,
             disabled: self.disabled,
+            editing: self.editing,
         }
     }
 
@@ -353,7 +387,7 @@ impl Render for TodoItem {
 
         if self.disabled {
             row = row.cursor_not_allowed().opacity(0.64);
-        } else {
+        } else if !self.editing {
             row = row.cursor_pointer().on_mouse_down(
                 MouseButton::Left,
                 cx.listener(|this, _, window, cx| {
@@ -379,7 +413,11 @@ impl Render for TodoItem {
             .unwrap_or_else(|| self.default_check(&theme));
         row = row.child(check);
 
-        if let Some(renderer) = &self.content_renderer {
+        if self.editing {
+            if let Some(renderer) = &self.editor_renderer {
+                row = row.child(renderer(context.clone()));
+            }
+        } else if let Some(renderer) = &self.content_renderer {
             row = row.child(renderer(context.clone()));
         } else {
             let title_color = if self.checked {
@@ -457,6 +495,7 @@ pub struct TodoList {
     gap: gpui::Pixels,
     on_change: Option<Box<dyn Fn(TodoListChanged, &mut Context<Self>) + 'static>>,
     on_mutation: Option<Box<dyn Fn(TodoListMutation, &mut Context<Self>) + 'static>>,
+    footer_renderer: Option<Arc<dyn Fn() -> AnyElement + 'static>>,
 }
 
 impl EventEmitter<TodoListChanged> for TodoList {}
@@ -470,6 +509,7 @@ impl TodoList {
             gap: px(4.0),
             on_change: None,
             on_mutation: None,
+            footer_renderer: None,
         }
     }
 
@@ -627,6 +667,19 @@ impl TodoList {
         true
     }
 
+    /// Switches an item between display and inline editor states.
+    pub fn set_editing(&mut self, id: &str, editing: bool, cx: &mut Context<Self>) -> bool {
+        let Some(item) = self.item(id, cx) else {
+            return false;
+        };
+        if item.read(cx).is_editing() == editing {
+            return true;
+        }
+        item.update(cx, |item, cx| item.set_editing(editing, cx));
+        self.emit_updated(id, cx);
+        true
+    }
+
     /// Sets vertical spacing between items.
     pub fn gap(mut self, gap: impl Into<gpui::Pixels>) -> Self {
         self.gap = gap.into();
@@ -648,6 +701,12 @@ impl TodoList {
         callback: impl Fn(TodoListMutation, &mut Context<Self>) + 'static,
     ) -> Self {
         self.on_mutation = Some(Box::new(callback));
+        self
+    }
+
+    /// Renders an element at the bottom of the list, such as an inline add button.
+    pub fn footer_renderer(mut self, renderer: impl Fn() -> AnyElement + 'static) -> Self {
+        self.footer_renderer = Some(Arc::new(renderer));
         self
     }
 
@@ -711,11 +770,15 @@ impl TodoList {
 
 impl Render for TodoList {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        gpui::div()
+        let mut list = gpui::div()
             .flex()
             .flex_col()
             .gap(self.gap)
-            .children(self.items.iter().cloned())
+            .children(self.items.iter().cloned());
+        if let Some(renderer) = &self.footer_renderer {
+            list = list.child(renderer());
+        }
+        list
     }
 }
 
@@ -747,6 +810,7 @@ mod tests {
             "pub fn check_renderer",
             "pub fn content_renderer",
             "pub fn trailing_renderer",
+            "pub fn editor_renderer",
             "cx.subscribe(",
             "TodoItemChanged",
             "TodoItemToggle",
@@ -757,6 +821,8 @@ mod tests {
             "pub fn set_description",
             "pub fn set_checked",
             "pub fn set_disabled",
+            "pub fn set_editing",
+            "pub fn footer_renderer",
             "pub fn on_mutation",
             "TodoListMutationKind",
         ] {
