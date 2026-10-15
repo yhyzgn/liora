@@ -1,7 +1,9 @@
 //! Custom checkbox, content, leading, and trailing todo slots.
 
 use gpui::{AnyElement, AppContext, Context, Render, Window, prelude::*, px, rgb};
-use liora_components::{Flex, Tag, TagType, Text, TodoItem, TodoItemRenderContext, TodoList};
+use liora_components::{
+    Flex, Image, Tag, TagType, Text, TodoItem, TodoItemRenderContext, TodoList,
+};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
@@ -93,6 +95,27 @@ impl CustomTodoList {
                     })
             });
             list.push(overdue, cx);
+            let rich = cx.new(|cx| {
+                TodoItem::new("rich", "Polish the launch board", cx)
+                    .description("Image + emoji + native icon slots")
+                    .leading_renderer(|_| {
+                        Image::new("https://images.unsplash.com/photo-1558655146-d09347e92766")
+                            .thumbnail_sm()
+                            .round()
+                            .into_any_element()
+                    })
+                    .check_renderer(|context| {
+                        Text::new(if context.checked { "✅" } else { "🟡" }).into_any_element()
+                    })
+                    .content_renderer(custom_content)
+                    .trailing_renderer(|_| {
+                        Tag::new("RICH")
+                            .tag_type(TagType::Warning)
+                            .round(true)
+                            .into_any_element()
+                    })
+            });
+            list.push(rich, cx);
             list
         });
         Self { todos }

@@ -15,6 +15,18 @@
 
 `TodoItemData` 支持稳定 `id`、标题、描述、初始完成状态和禁用状态。列表项本身是 GPUI entity，可以在父视图中保留并更新；运行中可通过 `set_checked`、`set_title` 和 `set_description` 修改状态与内容。
 
+## 动态增删改
+
+`TodoList` 提供面向宿主状态的 CRUD API，不要求销毁并重建整个列表：
+
+- `push_data`：运行中新增任务，并返回可继续操作的 `Entity<TodoItem>`。
+- `find` / `item`：按稳定 ID 查找任务。
+- `set_title`、`set_description`、`set_checked`、`set_disabled`：按 ID 编辑任务。
+- `remove`：按 ID 删除任务；`clear`：清空并返回被移除的实体。
+- `on_mutation`：监听 added / removed / updated / checked 变更，适合持久化或同步远端状态。
+
+这些操作只改变列表状态和对应 entity，不会丢失其他任务的焦点或自定义 renderer。
+
 ## 自定义视觉插槽
 
 ### 效果
@@ -32,6 +44,23 @@
 - `trailing_renderer`：放置优先级、标签、截止时间或状态徽标。
 
 renderer 接收 `TodoItemRenderContext`，其中包含稳定 ID、标题、描述、完成态和禁用态。
+
+renderer 可以返回任意原生 GPUI `AnyElement`，因此图标、头像、图片、emoji、标签、按钮和自定义组合都可以直接嵌入：
+
+```rust
+TodoItem::new("design", "Polish the hero", cx)
+    .leading_renderer(|_| {
+        Image::new("https://images.unsplash.com/photo-1558655146-d09347e92766")
+            .thumbnail_sm()
+            .round()
+            .into_any_element()
+    })
+    .check_renderer(|context| {
+        Text::new(if context.checked { "✅" } else { "🟡" }).into_any_element()
+    })
+```
+
+建议将图片地址、emoji、业务图标名称保存在宿主数据模型中，再由 renderer 闭包捕获；不要把一次性 `AnyElement` 存进 `TodoItemData`。
 
 ## 项目交付看板
 

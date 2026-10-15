@@ -1,8 +1,10 @@
-use gpui::{AnyElement, AnyView, App, Context, Render, Window, prelude::*, px, rgb};
+use gpui::{
+    AnyElement, AnyView, App, Context, Entity, Render, SharedString, Window, prelude::*, px, rgb,
+};
 use liora_components::layout_helpers::{page, section};
 use liora_components::{
-    Avatar, Card, Flex, Progress, ProgressStatus, Space, Tag, TagType, Text, TodoItem,
-    TodoItemData, TodoItemRenderContext, TodoList,
+    Avatar, Button, Card, Flex, Image, Input, Progress, ProgressStatus, Space, Tag, TagType, Text,
+    TodoItem, TodoItemData, TodoItemRenderContext, TodoList,
 };
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
@@ -16,6 +18,7 @@ struct TodoDemo {
     styled: gpui::Entity<TodoList>,
     project: gpui::Entity<TodoList>,
     focus: gpui::Entity<TodoList>,
+    dynamic: Entity<DynamicTodoDemo>,
 }
 
 impl TodoDemo {
@@ -175,12 +178,150 @@ impl TodoDemo {
             list
         });
 
+        let dynamic = cx.new(DynamicTodoDemo::new);
+
         Self {
             basic,
             styled,
             project,
             focus,
+            dynamic,
         }
+    }
+}
+
+struct DynamicTodoDemo {
+    todos: Entity<TodoList>,
+    title_input: Entity<Input>,
+    description_input: Entity<Input>,
+    next_id: usize,
+    selected_id: Option<SharedString>,
+}
+
+impl DynamicTodoDemo {
+    fn new(cx: &mut Context<Self>) -> Self {
+        let todos = cx.new(|cx| {
+            TodoList::from_data(
+                vec![
+                    TodoItemData::new("first", "Try adding a task")
+                        .description("Select a task, edit it, or remove it"),
+                ],
+                cx,
+            )
+            .on_mutation(|mutation, _cx| {
+                println!("TodoList mutation: {} ({:?})", mutation.id, mutation.kind);
+            })
+        });
+        Self {
+            todos,
+            title_input: cx.new(|cx| Input::new("", cx).placeholder("Task title")),
+            description_input: cx
+                .new(|cx| Input::new("", cx).placeholder("Description (optional)")),
+            next_id: 1,
+            selected_id: None,
+        }
+    }
+
+    fn add_task(&mut self, cx: &mut Context<Self>) {
+        let title = self.title_input.read(cx).value();
+        if title.trim().is_empty() {
+            return;
+        }
+        let description = self.description_input.read(cx).value();
+        let id: SharedString = format!("dynamic-{}", self.next_id).into();
+        self.next_id += 1;
+        let item = cx.new(|cx| {
+            TodoItem::from_data(
+                TodoItemData::new(id.clone(), title.clone())
+                    .description(description.clone())
+                    .checked(false),
+                cx,
+            )
+            .leading_renderer(|_| {
+                Image::new("https://images.unsplash.com/photo-1558655146-d09347e92766")
+                    .thumbnail_sm()
+                    .round()
+                    .into_any_element()
+            })
+            .check_renderer(|context| {
+                Text::new(if context.checked { "✅" } else { "🟡" }).into_any_element()
+            })
+            .trailing_renderer(|_| Tag::new("NEW").small().round(true).into_any_element())
+        });
+        self.todos.update(cx, |todos, cx| todos.push(item, cx));
+        self.selected_id = Some(id);
+        self.title_input
+            .update(cx, |input, cx| input.set_value("", cx));
+        self.description_input
+            .update(cx, |input, cx| input.set_value("", cx));
+        cx.notify();
+    }
+
+    fn edit_selected(&mut self, cx: &mut Context<Self>) {
+        let Some(id) = self.selected_id.clone() else {
+            return;
+        };
+        let title = self.title_input.read(cx).value();
+        let description = self.description_input.read(cx).value();
+        self.todos.update(cx, |todos, cx| {
+            if !title.trim().is_empty() {
+                todos.set_title(id.as_ref(), title, cx);
+            }
+            todos.set_description(id.as_ref(), Some(description), cx);
+        });
+        cx.notify();
+    }
+
+    fn remove_selected(&mut self, cx: &mut Context<Self>) {
+        let Some(id) = self.selected_id.take() else {
+            return;
+        };
+        self.todos.update(cx, |todos, cx| {
+            todos.remove(id.as_ref(), cx);
+        });
+        cx.notify();
+    }
+}
+
+impl Render for DynamicTodoDemo {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let view = cx.entity().clone();
+        let add_view = view.clone();
+        let edit_view = view.clone();
+        let remove_view = view.clone();
+        let selected = self
+            .selected_id
+            .as_ref()
+            .map(|id| id.to_string())
+            .unwrap_or_else(|| "none".to_owned());
+        Space::new()
+            .vertical()
+            .gap_md()
+            .child(
+                Space::new()
+                    .vertical()
+                    .gap_sm()
+                    .child(self.title_input.clone())
+                    .child(self.description_input.clone())
+                    .child(
+                        Space::new()
+                            .wrap()
+                            .gap_sm()
+                            .child(Button::new("Add task").primary().on_click(move |_, _, cx| {
+                                add_view.update(cx, |this, cx| this.add_task(cx));
+                            }))
+                            .child(Button::new("Edit selected").on_click(move |_, _, cx| {
+                                edit_view.update(cx, |this, cx| this.edit_selected(cx));
+                            }))
+                            .child(Button::new("Delete selected").danger().on_click(
+                                move |_, _, cx| {
+                                    remove_view.update(cx, |this, cx| this.remove_selected(cx));
+                                },
+                            )),
+                    )
+                    .child(Text::new(format!("Selected: {selected}")).xs()),
+            )
+            .child(Card::new(self.todos.clone()).no_shadow())
     }
 }
 
@@ -461,6 +602,11 @@ impl Render for TodoDemo {
                                 ),
                         )
                         .child(Card::new(self.focus.clone())),
+                ))
+                .child(section(
+                    "动态增删改与富元素",
+                    "输入标题和描述即可新增任务；选中最近新增的任务后可以编辑或删除。动态任务同时演示图片、emoji 和标签 renderer。",
+                    Card::new(self.dynamic.clone()),
                 )),
         )
     }

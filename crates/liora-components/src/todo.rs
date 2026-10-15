@@ -427,14 +427,40 @@ pub struct TodoListChanged {
     pub checked: bool,
 }
 
+/// Kind of structural or content mutation emitted by a [`TodoList`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TodoListMutationKind {
+    /// A new item was inserted.
+    Added,
+    /// An item was removed.
+    Removed,
+    /// An item's title, description, or disabled state changed.
+    Updated,
+    /// An item's completion state changed.
+    Checked,
+}
+
+/// Mutation event emitted by a [`TodoList`] for dynamic CRUD operations.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TodoListMutation {
+    /// Stable ID of the affected item.
+    pub id: SharedString,
+    /// Mutation category.
+    pub kind: TodoListMutationKind,
+    /// Completion state when the mutation concerns a checked item.
+    pub checked: Option<bool>,
+}
+
 /// Native GPUI list that groups interactive [`TodoItem`] entities.
 pub struct TodoList {
     items: Vec<gpui::Entity<TodoItem>>,
     gap: gpui::Pixels,
     on_change: Option<Box<dyn Fn(TodoListChanged, &mut Context<Self>) + 'static>>,
+    on_mutation: Option<Box<dyn Fn(TodoListMutation, &mut Context<Self>) + 'static>>,
 }
 
 impl EventEmitter<TodoListChanged> for TodoList {}
+impl EventEmitter<TodoListMutation> for TodoList {}
 
 impl TodoList {
     /// Creates an empty todo list.
@@ -443,6 +469,7 @@ impl TodoList {
             items: Vec::new(),
             gap: px(4.0),
             on_change: None,
+            on_mutation: None,
         }
     }
 
@@ -458,20 +485,146 @@ impl TodoList {
 
     /// Adds an existing todo item entity and subscribes to its changes.
     pub fn push(&mut self, item: gpui::Entity<TodoItem>, cx: &mut Context<Self>) {
+        let id = item.read(cx).id();
         cx.subscribe(&item, |this, _item, event: &TodoItemChanged, cx| {
-            let changed = TodoListChanged {
-                id: event.id.clone(),
-                checked: event.checked,
-            };
-            cx.emit(changed.clone());
-            if let Some(callback) = &this.on_change {
-                callback(changed, cx);
-            }
+            this.emit_checked(event.id.as_ref(), event.checked, cx);
             cx.notify();
         })
         .detach();
         self.items.push(item);
+        self.emit_mutation(
+            TodoListMutation {
+                id,
+                kind: TodoListMutationKind::Added,
+                checked: None,
+            },
+            cx,
+        );
         cx.notify();
+    }
+
+    /// Creates and inserts an item from data, returning its entity handle.
+    pub fn push_data(
+        &mut self,
+        data: TodoItemData,
+        cx: &mut Context<Self>,
+    ) -> gpui::Entity<TodoItem> {
+        let item = cx.new(|cx| TodoItem::from_data(data, cx));
+        self.push(item.clone(), cx);
+        item
+    }
+
+    /// Returns the item with the supplied stable ID.
+    pub fn item(&self, id: &str, cx: &App) -> Option<gpui::Entity<TodoItem>> {
+        self.items
+            .iter()
+            .find(|item| item.read(cx).id().as_ref() == id)
+            .cloned()
+    }
+
+    /// Alias for [`TodoList::item`] that reads naturally in lookup-heavy code.
+    pub fn find(&self, id: &str, cx: &App) -> Option<gpui::Entity<TodoItem>> {
+        self.item(id, cx)
+    }
+
+    /// Removes and returns an item by stable ID.
+    pub fn remove(&mut self, id: &str, cx: &mut Context<Self>) -> Option<gpui::Entity<TodoItem>> {
+        let index = self
+            .items
+            .iter()
+            .position(|item| item.read(cx).id().as_ref() == id)?;
+        let item = self.items.remove(index);
+        self.emit_mutation(
+            TodoListMutation {
+                id: id.into(),
+                kind: TodoListMutationKind::Removed,
+                checked: None,
+            },
+            cx,
+        );
+        cx.notify();
+        Some(item)
+    }
+
+    /// Removes every item and returns the removed entity handles.
+    pub fn clear(&mut self, cx: &mut Context<Self>) -> Vec<gpui::Entity<TodoItem>> {
+        let items = std::mem::take(&mut self.items);
+        for item in &items {
+            let id = item.read(cx).id();
+            self.emit_mutation(
+                TodoListMutation {
+                    id,
+                    kind: TodoListMutationKind::Removed,
+                    checked: None,
+                },
+                cx,
+            );
+        }
+        cx.notify();
+        items
+    }
+
+    /// Replaces an item's title. Returns `false` when no item has that ID.
+    pub fn set_title(
+        &mut self,
+        id: &str,
+        title: impl Into<SharedString>,
+        cx: &mut Context<Self>,
+    ) -> bool {
+        let Some(item) = self.item(id, cx) else {
+            return false;
+        };
+        let title = title.into();
+        if item.read(cx).title() == title {
+            return true;
+        }
+        item.update(cx, |item, cx| item.set_title(title, cx));
+        self.emit_updated(id, cx);
+        true
+    }
+
+    /// Replaces an item's description. Pass `None` to clear it.
+    pub fn set_description(
+        &mut self,
+        id: &str,
+        description: Option<SharedString>,
+        cx: &mut Context<Self>,
+    ) -> bool {
+        let Some(item) = self.item(id, cx) else {
+            return false;
+        };
+        if item.read(cx).description.as_ref() == description.as_ref() {
+            return true;
+        }
+        item.update(cx, |item, cx| item.set_description(description, cx));
+        self.emit_updated(id, cx);
+        true
+    }
+
+    /// Replaces an item's completion state without synthesizing a user toggle.
+    pub fn set_checked(&mut self, id: &str, checked: bool, cx: &mut Context<Self>) -> bool {
+        let Some(item) = self.item(id, cx) else {
+            return false;
+        };
+        if item.read(cx).is_checked() == checked {
+            return true;
+        }
+        item.update(cx, |item, cx| item.set_checked(checked, cx));
+        self.emit_checked(id, checked, cx);
+        true
+    }
+
+    /// Replaces an item's disabled state.
+    pub fn set_disabled(&mut self, id: &str, disabled: bool, cx: &mut Context<Self>) -> bool {
+        let Some(item) = self.item(id, cx) else {
+            return false;
+        };
+        if item.read(cx).is_disabled() == disabled {
+            return true;
+        }
+        item.update(cx, |item, cx| item.set_disabled(disabled, cx));
+        self.emit_updated(id, cx);
+        true
     }
 
     /// Sets vertical spacing between items.
@@ -489,6 +642,15 @@ impl TodoList {
         self
     }
 
+    /// Registers a callback for insert, remove, update, and checked mutations.
+    pub fn on_mutation(
+        mut self,
+        callback: impl Fn(TodoListMutation, &mut Context<Self>) + 'static,
+    ) -> Self {
+        self.on_mutation = Some(Box::new(callback));
+        self
+    }
+
     /// Returns the number of items in the list.
     pub fn len(&self) -> usize {
         self.items.len()
@@ -499,9 +661,51 @@ impl TodoList {
         self.items.is_empty()
     }
 
+    /// Returns a snapshot of the current item handles.
+    pub fn items(&self) -> Vec<gpui::Entity<TodoItem>> {
+        self.items.clone()
+    }
+
     /// Registers keyboard bindings for all todo items.
     pub fn register_key_bindings(cx: &mut App) {
         TodoItem::register_key_bindings(cx);
+    }
+
+    fn emit_updated(&mut self, id: &str, cx: &mut Context<Self>) {
+        self.emit_mutation(
+            TodoListMutation {
+                id: id.into(),
+                kind: TodoListMutationKind::Updated,
+                checked: None,
+            },
+            cx,
+        );
+    }
+
+    fn emit_checked(&mut self, id: &str, checked: bool, cx: &mut Context<Self>) {
+        let changed = TodoListChanged {
+            id: id.into(),
+            checked,
+        };
+        cx.emit(changed.clone());
+        if let Some(callback) = &self.on_change {
+            callback(changed, cx);
+        }
+        self.emit_mutation(
+            TodoListMutation {
+                id: id.into(),
+                kind: TodoListMutationKind::Checked,
+                checked: Some(checked),
+            },
+            cx,
+        );
+    }
+
+    fn emit_mutation(&mut self, mutation: TodoListMutation, cx: &mut Context<Self>) {
+        cx.emit(mutation.clone());
+        if let Some(callback) = &self.on_mutation {
+            callback(mutation, cx);
+        }
     }
 }
 
@@ -546,6 +750,15 @@ mod tests {
             "cx.subscribe(",
             "TodoItemChanged",
             "TodoItemToggle",
+            "pub fn push_data",
+            "pub fn remove",
+            "pub fn clear",
+            "pub fn set_title",
+            "pub fn set_description",
+            "pub fn set_checked",
+            "pub fn set_disabled",
+            "pub fn on_mutation",
+            "TodoListMutationKind",
         ] {
             assert!(source.contains(required), "missing {required}");
         }
