@@ -1356,10 +1356,11 @@ impl Gallery {
         self.nav_refresh_pending = true;
         cx.spawn(async move |gallery, cx| {
             // Coalesce bursts of keystrokes into one menu rebuild. The input
-            // entity still updates immediately; only the filtered navigation
-            // tree waits for the next frame-sized slice.
+            // entity still updates immediately; the filtered navigation tree
+            // refreshes on the next executor turn without an artificial frame
+            // delay in the visible search field.
             cx.background_executor()
-                .timer(Duration::from_millis(16))
+                .timer(Duration::from_millis(0))
                 .await;
             let _ = gallery.update(cx, |gallery, cx| {
                 gallery.nav_refresh_pending = false;
@@ -2242,7 +2243,7 @@ mod shell_regression_tests {
         assert!(!source.contains("ListState::new"));
         assert!(!source.contains("list(self.list_state.clone()"));
         assert!(!source.contains("list_state.reset"));
-        assert!(source.contains("timer(Duration::from_millis(16))"));
+        assert!(source.contains("timer(Duration::from_millis(0))"));
         let shell = source
             .rsplit("let shell = Container::new()")
             .next()

@@ -808,6 +808,10 @@ impl Input {
         self.value = SharedString::from(v);
         let pos = self.selected_range.start + new_text.len();
         self.selected_range = pos..pos;
+        // Invalidate the input before invoking host callbacks. Callback code
+        // may update a parent view or rebuild a filtered list; doing that
+        // first makes the newly typed character wait behind unrelated work.
+        cx.notify();
         self.emit_change(cx);
         self.reset_blink(cx);
     }
@@ -832,6 +836,7 @@ impl Input {
         self.selected_range =
             next_selection.start.min(self.value.len())..next_selection.end.min(self.value.len());
         self.selection_reversed = false;
+        cx.notify();
         self.emit_change(cx);
         self.reset_blink(cx);
     }
@@ -1034,8 +1039,8 @@ impl EntityInputHandler for Input {
         self.value = SharedString::from(v);
         self.selected_range = range.start + new_text.len()..range.start + new_text.len();
         self.marked_range = None;
-        self.emit_change(cx);
         cx.notify();
+        self.emit_change(cx);
     }
 
     fn replace_and_mark_text_in_range(
@@ -1084,8 +1089,8 @@ impl EntityInputHandler for Input {
         } else {
             self.selected_range = range.start + new_text.len()..range.start + new_text.len();
         }
-        self.emit_change(cx);
         cx.notify();
+        self.emit_change(cx);
     }
 
     fn bounds_for_range(
@@ -1314,7 +1319,6 @@ impl Element for InputElement {
         let is_masked = input.is_password();
         let text_align = input.text_align;
         let text_lines: Vec<String> = text.split('\n').map(str::to_owned).collect();
-
         let original_cursor_line = if input.value.is_empty() {
             0
         } else {
@@ -1786,6 +1790,21 @@ mod width_tests {
             "self.input.update(cx, |input, _| {
             input.last_line_layouts = line_layouts;"
         ));
+    }
+
+    #[test]
+    fn input_notifies_before_change_callbacks() {
+        let source = include_str!("input.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        let replace_region = source
+            .split("fn replace_text_in_range(")
+            .nth(1)
+            .and_then(|region| region.split("fn replace_and_mark_text_in_range(").next())
+            .expect("replacement handler should exist");
+        assert!(replace_region.find("cx.notify();") < replace_region.find("self.emit_change(cx)"));
     }
 
     #[test]
