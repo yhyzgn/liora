@@ -21,9 +21,9 @@
 
 use gpui::{
     AnyElement, App, Bounds, Context, Element, ElementId, ElementInputHandler, Entity,
-    EntityInputHandler, FocusHandle, Focusable, GlobalElementId, InspectorElementId, IntoElement,
-    KeyBinding, LayoutId, MouseButton, MouseDownEvent, MouseMoveEvent, Pixels, Point, Render,
-    ShapedLine, SharedString, Style, TextRun, UTF16Selection, Window, actions, fill, point,
+    EntityInputHandler, FocusHandle, Focusable, GlobalElementId, Hsla, InspectorElementId,
+    IntoElement, KeyBinding, LayoutId, MouseButton, MouseDownEvent, MouseMoveEvent, Pixels, Point,
+    Render, ShapedLine, SharedString, Style, TextRun, UTF16Selection, Window, actions, fill, point,
     prelude::*, px, size,
 };
 use liora_core::{Config, LocalizedText, ui_font_family, ui_font_weight};
@@ -117,6 +117,9 @@ pub struct Input {
     last_layout_text: SharedString,
     last_bounds: Option<Bounds<Pixels>>,
     last_layout_is_masked: bool,
+    last_layout_font_size: Pixels,
+    last_layout_line_height: Pixels,
+    last_layout_color: Hsla,
     cursor_visible: bool,
     blink_task: Option<gpui::Task<()>>,
     filter: Option<Box<dyn Fn(&str) -> bool + 'static>>,
@@ -155,6 +158,9 @@ impl Input {
             last_layout_text: SharedString::default(),
             last_bounds: None,
             last_layout_is_masked: false,
+            last_layout_font_size: px(0.0),
+            last_layout_line_height: px(0.0),
+            last_layout_color: gpui::transparent_black(),
             cursor_visible: true,
             blink_task: None,
             filter: None,
@@ -1314,6 +1320,21 @@ impl Element for InputElement {
         let is_masked = input.is_password();
         let text_align = input.text_align;
         let text_lines: Vec<String> = text.split('\n').map(str::to_owned).collect();
+        let layout_color = if input.value.is_empty() {
+            theme.neutral.placeholder
+        } else {
+            text_c
+        };
+        let cached_lines = {
+            let cache_matches = input.last_bounds == Some(bounds)
+                && input.last_layout_text == text
+                && input.last_layout_is_masked == is_masked
+                && input.last_layout_font_size == font_size
+                && input.last_layout_line_height == line_height
+                && input.last_layout_color == layout_color
+                && input.last_line_layouts.len() == text_lines.len();
+            cache_matches.then(|| input.last_line_layouts.clone())
+        };
 
         let original_cursor_line = if input.value.is_empty() {
             0
@@ -1350,9 +1371,14 @@ impl Element for InputElement {
                 underline: None,
                 strikethrough: None,
             };
-            let shaped = window
-                .text_system()
-                .shape_line(display, font_size, &[run], None);
+            let shaped = cached_lines
+                .as_ref()
+                .and_then(|lines| lines.get(i).map(|(line, _)| line.clone()))
+                .unwrap_or_else(|| {
+                    window
+                        .text_system()
+                        .shape_line(display, font_size, &[run], None)
+                });
 
             let x_offset = match text_align {
                 gpui::TextAlign::Left => px(0.0),
@@ -1485,11 +1511,26 @@ impl Element for InputElement {
             .join("\n");
         let layout_text = SharedString::from(layout_text);
         let is_masked = prepaint.is_masked;
+        let font_size = window.text_style().font_size.to_pixels(window.rem_size());
+        let line_height = window.line_height();
+        let layout_color = {
+            let current_input = self.input.read(cx);
+            if current_input.value.is_empty() {
+                cx.global::<Config>().theme.neutral.placeholder
+            } else if current_input.disabled {
+                cx.global::<Config>().theme.neutral.text_disabled
+            } else {
+                cx.global::<Config>().theme.neutral.text_1
+            }
+        };
         let should_update_layout_cache = {
             let input = self.input.read(cx);
             input.last_bounds != Some(bounds)
                 || input.last_layout_is_masked != is_masked
                 || input.last_layout_text != layout_text
+                || input.last_layout_font_size != font_size
+                || input.last_layout_line_height != line_height
+                || input.last_layout_color != layout_color
                 || input.last_line_layouts.len() != line_layouts.len()
                 || input
                     .last_line_layouts
@@ -1503,6 +1544,9 @@ impl Element for InputElement {
                 input.last_layout_text = layout_text;
                 input.last_bounds = Some(bounds);
                 input.last_layout_is_masked = is_masked;
+                input.last_layout_font_size = font_size;
+                input.last_layout_line_height = line_height;
+                input.last_layout_color = layout_color;
             });
         }
     }
@@ -1779,6 +1823,8 @@ mod width_tests {
         assert!(source.contains("should_update_layout_cache"));
         assert!(source.contains("last_layout_text"));
         assert!(source.contains("if should_update_layout_cache"));
+        assert!(source.contains("let cached_lines ="));
+        assert!(source.contains("cached_lines\n                .as_ref()"));
         assert!(!source.contains(
             "self.input.update(cx, |input, _| {
             input.last_line_layouts = line_layouts;"

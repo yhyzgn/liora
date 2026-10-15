@@ -194,6 +194,7 @@ struct DynamicTodoDemo {
     todos: Entity<TodoList>,
     title_input: Entity<Input>,
     description_input: Entity<Input>,
+    image_src: SharedString,
     next_id: usize,
     selected_id: Option<SharedString>,
 }
@@ -208,15 +209,13 @@ impl DynamicTodoDemo {
                 ],
                 cx,
             )
-            .on_mutation(|mutation, _cx| {
-                println!("TodoList mutation: {} ({:?})", mutation.id, mutation.kind);
-            })
         });
         Self {
             todos,
             title_input: cx.new(|cx| Input::new("", cx).placeholder("Task title")),
             description_input: cx
                 .new(|cx| Input::new("", cx).placeholder("Description (optional)")),
+            image_src: format!("file://{}/assets/local.jpeg", env!("CARGO_MANIFEST_DIR")).into(),
             next_id: 1,
             selected_id: None,
         }
@@ -228,6 +227,7 @@ impl DynamicTodoDemo {
             return;
         }
         let description = self.description_input.read(cx).value();
+        let image_src = self.image_src.clone();
         let id: SharedString = format!("dynamic-{}", self.next_id).into();
         self.next_id += 1;
         let item = cx.new(|cx| {
@@ -237,8 +237,8 @@ impl DynamicTodoDemo {
                     .checked(false),
                 cx,
             )
-            .leading_renderer(|_| {
-                Image::new("https://images.unsplash.com/photo-1558655146-d09347e92766")
+            .leading_renderer(move |_| {
+                Image::new(image_src.clone())
                     .thumbnail_sm()
                     .round()
                     .into_any_element()

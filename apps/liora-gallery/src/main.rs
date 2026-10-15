@@ -1356,8 +1356,8 @@ impl Gallery {
         self.nav_refresh_pending = true;
         cx.spawn(async move |gallery, cx| {
             // Coalesce bursts of keystrokes into one menu rebuild. The input
-            // entity still updates immediately; only the expensive filtered
-            // navigation tree waits for the next frame-sized slice.
+            // entity still updates immediately; only the filtered navigation
+            // tree waits for the next frame-sized slice.
             cx.background_executor()
                 .timer(Duration::from_millis(16))
                 .await;
