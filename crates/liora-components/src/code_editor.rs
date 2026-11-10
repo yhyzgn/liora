@@ -3913,14 +3913,6 @@ struct CodeEditorInputLayer {
     editor: Entity<CodeEditor>,
 }
 
-impl IntoElement for CodeEditorInputLayer {
-    type Element = Self;
-
-    fn into_element(self) -> Self::Element {
-        self
-    }
-}
-
 impl Element for CodeEditorInputLayer {
     type RequestLayoutState = ();
     type PrepaintState = ();
@@ -4511,14 +4503,6 @@ struct CodeEditorLinePrepaint {
     indent_guides: Vec<PaintQuad>,
     marked: Option<PaintQuad>,
     caret: Option<PaintQuad>,
-}
-
-impl IntoElement for CodeEditorLineElement {
-    type Element = Self;
-
-    fn into_element(self) -> Self::Element {
-        self
-    }
 }
 
 impl Element for CodeEditorLineElement {

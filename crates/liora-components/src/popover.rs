@@ -493,13 +493,6 @@ struct BoundsTracker {
     bounds: Rc<Cell<Option<Bounds<Pixels>>>>,
 }
 
-impl IntoElement for BoundsTracker {
-    type Element = Self;
-    fn into_element(self) -> Self::Element {
-        self
-    }
-}
-
 impl gpui::Element for BoundsTracker {
     type RequestLayoutState = ();
     type PrepaintState = ();

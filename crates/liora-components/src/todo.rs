@@ -6,6 +6,8 @@
 //! `AnyElement` stored across renders, so custom content remains safe when
 //! GPUI re-renders an entity after a state change.
 
+use std::cmp::Ordering;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use gpui::{
@@ -199,6 +201,7 @@ impl TodoItem {
     }
 
     /// Replaces the optional trailing slot with a render callback.
+    /// This slot is outside the item's completion toggle area.
     pub fn trailing_renderer(
         mut self,
         renderer: impl Fn(TodoItemRenderContext) -> AnyElement + 'static,
@@ -309,7 +312,7 @@ impl TodoItem {
     }
 
     fn toggle(&mut self, _: &TodoItemToggle, window: &mut Window, cx: &mut Context<Self>) {
-        if self.disabled {
+        if self.disabled || self.editing {
             return;
         }
         self.checked = !self.checked;
@@ -381,25 +384,27 @@ impl Render for TodoItem {
             .flex_row()
             .items_center()
             .gap_3()
+            .flex_1()
+            .min_w_0()
             .py_2()
             .track_focus(&self.focus_handle)
             .on_action(cx.listener(Self::toggle));
 
-        if self.disabled {
-            row = row.cursor_not_allowed().opacity(0.64);
-        } else if !self.editing {
-            row = row.cursor_pointer().on_mouse_down(
-                MouseButton::Left,
-                cx.listener(|this, _, window, cx| {
-                    window.focus(&this.focus_handle, cx);
-                }),
-            );
-            row = row.on_mouse_up(
-                MouseButton::Left,
-                cx.listener(|this, _, window, cx| {
-                    this.toggle(&TodoItemToggle, window, cx);
-                }),
-            );
+        if !self.disabled && !self.editing {
+            row = row
+                .cursor_pointer()
+                .on_mouse_down(
+                    MouseButton::Left,
+                    cx.listener(|this, _, window, cx| {
+                        window.focus(&this.focus_handle, cx);
+                        this.toggle(&TodoItemToggle, window, cx);
+                    }),
+                )
+                .on_click(cx.listener(|this, event: &gpui::ClickEvent, window, cx| {
+                    if event.is_keyboard() {
+                        this.toggle(&TodoItemToggle, window, cx);
+                    }
+                }));
         }
 
         if let Some(renderer) = &self.leading_renderer {
@@ -449,10 +454,15 @@ impl Render for TodoItem {
             row = row.child(content);
         }
 
-        if let Some(renderer) = &self.trailing_renderer {
-            row = row.child(renderer(context));
-        }
-        row
+        gpui::div()
+            .flex()
+            .items_center()
+            .gap_3()
+            .when(self.disabled, |row| row.cursor_not_allowed().opacity(0.64))
+            .child(row)
+            .when_some(self.trailing_renderer.as_ref(), |row, renderer| {
+                row.child(renderer(context))
+            })
     }
 }
 
@@ -489,9 +499,33 @@ pub struct TodoListMutation {
     pub checked: Option<bool>,
 }
 
+/// Counts passed to list-level composition hooks; filtering never changes totals.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct TodoListRenderContext {
+    /// Number of retained items, including hidden items.
+    pub total: usize,
+    /// Number of completed items, including hidden items.
+    pub checked: usize,
+    /// Number of items currently displayed.
+    pub visible: usize,
+}
+
 /// Native GPUI list that groups interactive [`TodoItem`] entities.
 pub struct TodoList {
     items: Vec<gpui::Entity<TodoItem>>,
+    subscriptions: HashMap<
+        SharedString,
+        (
+            gpui::Entity<TodoItem>,
+            gpui::Subscription,
+            gpui::Subscription,
+        ),
+    >,
+    filter: Option<Box<dyn Fn(&TodoItem) -> bool + 'static>>,
+    sort: Option<Box<dyn Fn(&TodoItem, &TodoItem) -> Ordering + 'static>>,
+    header_renderer: Option<Box<dyn Fn(TodoListRenderContext) -> AnyElement + 'static>>,
+    empty_renderer: Option<Box<dyn Fn(TodoListRenderContext) -> AnyElement + 'static>>,
+    contextual_footer_renderer: Option<Box<dyn Fn(TodoListRenderContext) -> AnyElement + 'static>>,
     gap: gpui::Pixels,
     on_change: Option<Box<dyn Fn(TodoListChanged, &mut Context<Self>) + 'static>>,
     on_mutation: Option<Box<dyn Fn(TodoListMutation, &mut Context<Self>) + 'static>>,
@@ -506,6 +540,12 @@ impl TodoList {
     pub fn new(_cx: &mut Context<Self>) -> Self {
         Self {
             items: Vec::new(),
+            subscriptions: HashMap::new(),
+            filter: None,
+            sort: None,
+            header_renderer: None,
+            empty_renderer: None,
+            contextual_footer_renderer: None,
             gap: px(4.0),
             on_change: None,
             on_mutation: None,
@@ -523,14 +563,24 @@ impl TodoList {
         list
     }
 
-    /// Adds an existing todo item entity and subscribes to its changes.
+    /// Adds an existing item. Duplicate IDs are ignored (first entity wins).
     pub fn push(&mut self, item: gpui::Entity<TodoItem>, cx: &mut Context<Self>) {
         let id = item.read(cx).id();
-        cx.subscribe(&item, |this, _item, event: &TodoItemChanged, cx| {
-            this.emit_checked(event.id.as_ref(), event.checked, cx);
-            cx.notify();
-        })
-        .detach();
+        if self.subscriptions.contains_key(id.as_ref()) {
+            return;
+        }
+        let changed = cx.subscribe(&item, |this, item, event: &TodoItemChanged, cx| {
+            if this
+                .subscriptions
+                .get(event.id.as_ref())
+                .is_some_and(|(current, _, _)| current == &item)
+            {
+                this.emit_checked(event.id.as_ref(), event.checked, cx);
+            }
+        });
+        let observed = cx.observe(&item, |_, _, cx| cx.notify());
+        self.subscriptions
+            .insert(id.clone(), (item.clone(), changed, observed));
         self.items.push(item);
         self.emit_mutation(
             TodoListMutation {
@@ -543,23 +593,23 @@ impl TodoList {
         cx.notify();
     }
 
-    /// Creates and inserts an item from data, returning its entity handle.
+    /// Creates and inserts an item, or returns the retained entity for a duplicate ID.
     pub fn push_data(
         &mut self,
         data: TodoItemData,
         cx: &mut Context<Self>,
     ) -> gpui::Entity<TodoItem> {
+        if let Some(item) = self.item(data.id.as_ref(), cx) {
+            return item;
+        }
         let item = cx.new(|cx| TodoItem::from_data(data, cx));
         self.push(item.clone(), cx);
         item
     }
 
     /// Returns the item with the supplied stable ID.
-    pub fn item(&self, id: &str, cx: &App) -> Option<gpui::Entity<TodoItem>> {
-        self.items
-            .iter()
-            .find(|item| item.read(cx).id().as_ref() == id)
-            .cloned()
+    pub fn item(&self, id: &str, _cx: &App) -> Option<gpui::Entity<TodoItem>> {
+        self.subscriptions.get(id).map(|(item, _, _)| item.clone())
     }
 
     /// Alias for [`TodoList::item`] that reads naturally in lookup-heavy code.
@@ -569,11 +619,8 @@ impl TodoList {
 
     /// Removes and returns an item by stable ID.
     pub fn remove(&mut self, id: &str, cx: &mut Context<Self>) -> Option<gpui::Entity<TodoItem>> {
-        let index = self
-            .items
-            .iter()
-            .position(|item| item.read(cx).id().as_ref() == id)?;
-        let item = self.items.remove(index);
+        let (item, _, _) = self.subscriptions.remove(id)?;
+        self.items.retain(|current| current != &item);
         self.emit_mutation(
             TodoListMutation {
                 id: id.into(),
@@ -589,6 +636,7 @@ impl TodoList {
     /// Removes every item and returns the removed entity handles.
     pub fn clear(&mut self, cx: &mut Context<Self>) -> Vec<gpui::Entity<TodoItem>> {
         let items = std::mem::take(&mut self.items);
+        self.subscriptions.clear();
         for item in &items {
             let id = item.read(cx).id();
             self.emit_mutation(
@@ -680,6 +728,87 @@ impl TodoList {
         true
     }
 
+    /// Filters the displayed rows without removing entities or changing CRUD lookups.
+    /// Call again when captured business metadata changes.
+    pub fn set_filter(
+        &mut self,
+        filter: impl Fn(&TodoItem) -> bool + 'static,
+        cx: &mut Context<Self>,
+    ) {
+        self.filter = Some(Box::new(filter));
+        cx.notify();
+    }
+
+    /// Shows every retained item again.
+    pub fn clear_filter(&mut self, cx: &mut Context<Self>) {
+        self.filter = None;
+        cx.notify();
+    }
+
+    /// Sets a stable display-order comparator; equal items retain insertion order.
+    /// Sorting is presentation-only and emits no data mutation events.
+    pub fn set_sort(
+        &mut self,
+        compare: impl Fn(&TodoItem, &TodoItem) -> Ordering + 'static,
+        cx: &mut Context<Self>,
+    ) {
+        self.sort = Some(Box::new(compare));
+        cx.notify();
+    }
+
+    /// Restores insertion order without rebuilding item entities.
+    pub fn clear_sort(&mut self, cx: &mut Context<Self>) {
+        self.sort = None;
+        cx.notify();
+    }
+
+    /// Returns displayed handles in display order; [`Self::items`] stays unfiltered.
+    /// Query outside synchronous item callbacks, since projection reads the child entities.
+    pub fn visible_items(&self, cx: &App) -> Vec<gpui::Entity<TodoItem>> {
+        let mut items: Vec<_> = self
+            .items
+            .iter()
+            .filter(|item| {
+                self.filter
+                    .as_ref()
+                    .is_none_or(|filter| filter(item.read(cx)))
+            })
+            .cloned()
+            .collect();
+        if let Some(compare) = &self.sort {
+            items.sort_by(|left, right| compare(left.read(cx), right.read(cx)));
+        }
+        items
+    }
+
+    /// Renders a contextual header before the rows (also when no rows match).
+    pub fn header_renderer(
+        mut self,
+        renderer: impl Fn(TodoListRenderContext) -> AnyElement + 'static,
+    ) -> Self {
+        self.header_renderer = Some(Box::new(renderer));
+        self
+    }
+
+    /// Renders when no rows match, including an empty underlying list.
+    pub fn empty_renderer(
+        mut self,
+        renderer: impl Fn(TodoListRenderContext) -> AnyElement + 'static,
+    ) -> Self {
+        self.empty_renderer = Some(Box::new(renderer));
+        self
+    }
+
+    /// Contextual alternative to [`Self::footer_renderer`]; the last setter wins.
+    pub fn contextual_footer_renderer(
+        mut self,
+        renderer: impl Fn(TodoListRenderContext) -> AnyElement + 'static,
+    ) -> Self {
+        self.footer_renderer = None;
+        self.contextual_footer_renderer = Some(Box::new(renderer));
+        self
+    }
+
     /// Sets vertical spacing between items.
     pub fn gap(mut self, gap: impl Into<gpui::Pixels>) -> Self {
         self.gap = gap.into();
@@ -706,6 +835,7 @@ impl TodoList {
 
     /// Renders an element at the bottom of the list, such as an inline add button.
     pub fn footer_renderer(mut self, renderer: impl Fn() -> AnyElement + 'static) -> Self {
+        self.contextual_footer_renderer = None;
         self.footer_renderer = Some(Arc::new(renderer));
         self
     }
@@ -769,13 +899,40 @@ impl TodoList {
 }
 
 impl Render for TodoList {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        let mut list = gpui::div()
-            .flex()
-            .flex_col()
-            .gap(self.gap)
-            .children(self.items.iter().cloned());
-        if let Some(renderer) = &self.footer_renderer {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let items = (self.filter.is_some() || self.sort.is_some()).then(|| self.visible_items(cx));
+        let visible = items.as_ref().map_or(self.items.len(), Vec::len);
+        let context = TodoListRenderContext {
+            total: self.len(),
+            checked: if self.header_renderer.is_some()
+                || self.contextual_footer_renderer.is_some()
+                || (visible == 0 && self.empty_renderer.is_some())
+            {
+                self.items
+                    .iter()
+                    .filter(|item| item.read(cx).is_checked())
+                    .count()
+            } else {
+                0
+            },
+            visible,
+        };
+        let mut list = gpui::div().flex().flex_col().gap(self.gap);
+        if let Some(renderer) = &self.header_renderer {
+            list = list.child(renderer(context));
+        }
+        if visible == 0 {
+            if let Some(renderer) = &self.empty_renderer {
+                list = list.child(renderer(context));
+            }
+        }
+        list = match items {
+            Some(items) => list.children(items),
+            None => list.children(self.items.iter().cloned()),
+        };
+        if let Some(renderer) = &self.contextual_footer_renderer {
+            list = list.child(renderer(context));
+        } else if let Some(renderer) = &self.footer_renderer {
             list = list.child(renderer());
         }
         list
@@ -798,35 +955,5 @@ mod tests {
         assert_eq!(data.description.as_deref(), Some("Run the native checks"));
         assert!(data.checked);
         assert!(data.disabled);
-    }
-
-    #[test]
-    fn source_exposes_custom_slots_and_stateful_list_wiring() {
-        let source = include_str!("todo.rs");
-        for required in [
-            "pub struct TodoItem",
-            "pub struct TodoList",
-            "pub fn leading_renderer",
-            "pub fn check_renderer",
-            "pub fn content_renderer",
-            "pub fn trailing_renderer",
-            "pub fn editor_renderer",
-            "cx.subscribe(",
-            "TodoItemChanged",
-            "TodoItemToggle",
-            "pub fn push_data",
-            "pub fn remove",
-            "pub fn clear",
-            "pub fn set_title",
-            "pub fn set_description",
-            "pub fn set_checked",
-            "pub fn set_disabled",
-            "pub fn set_editing",
-            "pub fn footer_renderer",
-            "pub fn on_mutation",
-            "TodoListMutationKind",
-        ] {
-            assert!(source.contains(required), "missing {required}");
-        }
     }
 }

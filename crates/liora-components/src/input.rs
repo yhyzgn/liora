@@ -1253,13 +1253,6 @@ struct InputPrepaint {
     is_masked: bool,
 }
 
-impl IntoElement for InputElement {
-    type Element = Self;
-    fn into_element(self) -> Self::Element {
-        self
-    }
-}
-
 impl Element for InputElement {
     type RequestLayoutState = ();
     type PrepaintState = InputPrepaint;

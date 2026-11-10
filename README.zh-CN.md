@@ -81,7 +81,7 @@ Liora 明确不是 Web 外壳：
 | Rust | `rustc 1.95+`，Rust edition 2024。 |
 | UI 后端 | 官方 Zed GPUI git 依赖，并 pin 到 Liora 验证过的 revision。 |
 | Linux 原生依赖 | GTK3、Wayland/X11、xkbcommon、fontconfig/freetype、Vulkan、ALSA、`pkg-config`；Fedora 可参考 `scripts/install-fedora-deps.sh`。 |
-| macOS | Release workflow 覆盖 Apple Silicon；需要 Xcode Command Line Tools。 |
+| macOS | 当前源码要求 macOS 12 或更高版本，构建使用 macOS 26 SDK（Xcode 26）。 |
 | Windows | MSVC toolchain；GPUI Windows backend 会通过 `windows-manifest` 提供应用 manifest。 |
 
 ## 如何选择依赖方式
@@ -137,7 +137,9 @@ liora = { version = "0.4", default-features = false, features = ["updater"] }
 
 ## GPUI 依赖与本地 patch 策略
 
-2026-10-13 本轮上游刷新将官方 Zed `main` 固定到 `1de16662ee0d704285c524a7753f0f8858e86abf`。新增可选的 `MotionSpring::{Gentle, Snappy, Bouncy}.animation_to(target)` 原生弹簧预设；重定向目标时应保持 `with_spring` 的 element ID 稳定，原有 duration-based 动效不变。GPUI 动画包装器遵循 `cx.set_reduce_motion(true)`；这是应用级偏好，并不代表自动读取操作系统偏好。完整变更与平台风险见[升级记录](docs/gpui-latest-upgrade.md)。
+当前工作区将官方 Zed `main` 固定到 `f0d896f2c18a543335eb155f729d36b624695591`。`MotionSpring::{Gentle, Snappy, Bouncy}.animation_to(target)` 提供可选的原生弹簧动画；重定向目标时应保持 `with_spring` 的 element ID 稳定，原有 duration-based 动效不变。GPUI 动画包装器遵循 `cx.set_reduce_motion(true)`；这是应用级偏好，并不代表自动读取操作系统偏好。完整变更与平台风险见[升级记录](docs/gpui-latest-upgrade.md)。
+
+以下示例面向 crates.io 已发布的 Liora 0.4.0，使用与该版本兼容的旧 GPUI revision。若通过 path 依赖当前源码，请把两处 GPUI 依赖统一改为上面的工作区 revision。
 
 Liora **只能使用官方 Zed GPUI**。禁止使用 `open-gpui` 等重命名或社区 fork。
 
@@ -1792,6 +1794,8 @@ impl Translator for AppTranslator {
 | Charts / Metrics 图表指标 | `LineChart`, `AreaChart`, `BarChart`, `PieChart`, `RingChart`, `Sparkline`, `SignalMeter`, `HeatBar`, `SegmentRatioBar`, `CandlestickChart` |
 | Editing / Utility 编辑工具 | `CodeBlock`, `CodeEditor`, `QrCode`, `Timer`, `Label`, `Operation`, `Clipboard`, draggable list helpers |
 | App shell / Platform 平台 | `Shell`, `AppWindowFrame`, `TitleBar`, `Sidebar`, `WindowFrameMode`, `StatusBar`, `DockLayout`, `Menu` / `MenuBar`, `liora-tray`, Linux desktop identity helpers, package metadata helpers, updater helpers |
+
+`TodoList` 支持不改变任务数据的显示筛选和排序，并开放带统计上下文的头部、空态和底部插槽。`TodoItem` 在鼠标左键按下时立即切换勾选，尾部操作独立于勾选区域。参见 [TodoList 指南](apps/liora-docs/content/pages/todo.md)与 [Clipboard 交互示例](apps/liora-docs/content/pages/clipboard.md)。
 
 ### 控件收敛说明
 

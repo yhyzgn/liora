@@ -688,14 +688,6 @@ struct SelectableTextPrepaint {
     hitbox: gpui::Hitbox,
 }
 
-impl IntoElement for SelectableTextElement {
-    type Element = Self;
-
-    fn into_element(self) -> Self::Element {
-        self
-    }
-}
-
 impl Element for SelectableTextElement {
     type RequestLayoutState = Arc<SelectableTextLayout>;
     type PrepaintState = SelectableTextPrepaint;

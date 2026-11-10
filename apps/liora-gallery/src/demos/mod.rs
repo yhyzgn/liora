@@ -727,9 +727,8 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "CandlestickChart" => Some(candlestick_chart_demo::render(cx).into()),
         "Checkbox" => Some(form_controls_demo::render_checkbox(cx)),
         "TodoList" => Some(todo_demo::render(cx).into()),
-        "TodoListBasic" | "TodoListCustom" | "TodoListChanges" => {
-            Some(todo_demo::render(cx).into())
-        }
+        "TodoListChanges" => Some(todo_demo::render_task_queue(cx).into()),
+        "TodoListBasic" | "TodoListCustom" => Some(todo_demo::render(cx).into()),
         "CodeBlock" => Some(code_block_demo::render(cx).into()),
         "CodeEditor" => Some(code_editor_demo::render(cx).into()),
         "Collapse" => Some(collapse_demo::render(cx).into()),

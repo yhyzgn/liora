@@ -1397,14 +1397,6 @@ struct ReadOnlyCodePrepaint {
     layout: Arc<SelectableCodeLayout>,
 }
 
-impl IntoElement for ReadOnlyCodeElement {
-    type Element = Self;
-
-    fn into_element(self) -> Self::Element {
-        self
-    }
-}
-
 impl Element for ReadOnlyCodeElement {
     type RequestLayoutState = Arc<SelectableCodeLayout>;
     type PrepaintState = ReadOnlyCodePrepaint;
@@ -1897,14 +1889,6 @@ struct SelectableCodePrepaint {
     layout: Arc<SelectableCodeLayout>,
     selection: Vec<PaintQuad>,
     hitbox: gpui::Hitbox,
-}
-
-impl IntoElement for SelectableCodeElement {
-    type Element = Self;
-
-    fn into_element(self) -> Self::Element {
-        self
-    }
 }
 
 impl Element for SelectableCodeElement {

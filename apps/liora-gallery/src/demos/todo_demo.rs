@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
 use gpui::{
-    AnyElement, AnyView, App, Context, Entity, MouseButton, Render, SharedString, Window,
-    prelude::*, px, rgb,
+    AnyElement, AnyView, App, Context, Entity, Render, SharedString, Window, prelude::*, px, rgb,
 };
 use liora_components::layout_helpers::{page, section};
 use liora_components::{
@@ -14,6 +13,10 @@ use liora_icons_lucide::IconName;
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(TodoDemo::new).into()
+}
+
+pub(crate) fn render_task_queue(cx: &mut App) -> AnyView {
+    cx.new(DynamicTodoDemo::new).into()
 }
 
 struct TodoDemo {
@@ -210,10 +213,27 @@ impl DynamicTodoDemo {
     fn new(cx: &mut Context<Self>) -> Self {
         let owner = cx.entity().clone();
         let todos = cx.new(|cx| {
-            TodoList::new(cx).footer_renderer({
-                let owner = owner.clone();
-                move || todo_add_button(owner.clone())
-            })
+            TodoList::new(cx)
+                .header_renderer(|context| {
+                    Text::new(format!(
+                        "Release queue · {} shown / {} tasks · {} complete",
+                        context.visible, context.total, context.checked,
+                    ))
+                    .bold()
+                    .into_any_element()
+                })
+                .empty_renderer(|context| {
+                    Text::new(if context.total == 0 {
+                        "No tasks yet. Add a release task below."
+                    } else {
+                        "No tasks match this view. Switch to All to see retained tasks."
+                    })
+                    .into_any_element()
+                })
+                .footer_renderer({
+                    let owner = owner.clone();
+                    move || todo_add_button(owner.clone())
+                })
         });
         let mut demo = Self {
             todos,
@@ -224,6 +244,14 @@ impl DynamicTodoDemo {
         let item = demo.create_item(
             TodoItemData::new("first", "Try inline editing")
                 .description("Use the row actions to edit, or the + button below to add a task."),
+            false,
+            cx,
+        );
+        demo.todos.update(cx, |todos, cx| todos.push(item, cx));
+        let item = demo.create_item(
+            TodoItemData::new("approved", "Approve release scope")
+                .description("Completed tasks stay available in the Done view.")
+                .checked(true),
             false,
             cx,
         );
@@ -274,7 +302,9 @@ impl DynamicTodoDemo {
                         .into_any_element()
                 })
                 .check_renderer(|context| {
-                    Text::new(if context.checked { "✅" } else { "🟡" }).into_any_element()
+                    Text::new(if context.checked { "✅" } else { "🟡" })
+                        .selectable(false)
+                        .into_any_element()
                 })
                 .content_renderer(dynamic_content)
                 .editor_renderer(move |_| {
@@ -384,7 +414,48 @@ impl DynamicTodoDemo {
 
 impl Render for DynamicTodoDemo {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        Card::new(self.todos.clone()).no_shadow()
+        let mut filters = Space::new().gap_xs();
+        for (label, checked) in [("All", None), ("Open", Some(false)), ("Done", Some(true))] {
+            let todos = self.todos.clone();
+            filters = filters.child(Button::new(label).small().on_click(move |_, _, cx| {
+                todos.update(cx, |todos, cx| {
+                    if let Some(checked) = checked {
+                        todos.set_filter(
+                            move |item| item.is_editing() || item.is_checked() == checked,
+                            cx,
+                        );
+                    } else {
+                        todos.clear_filter(cx);
+                    }
+                });
+            }));
+        }
+        let sorted = self.todos.clone();
+        let original = self.todos.clone();
+        Card::new(
+            Space::new()
+                .vertical()
+                .gap_md()
+                .child(filters)
+                .child(
+                    Space::new()
+                        .gap_xs()
+                        .child(Button::new("Title A–Z").small().on_click(move |_, _, cx| {
+                            sorted.update(cx, |todos, cx| {
+                                todos.set_sort(|left, right| left.title().cmp(&right.title()), cx)
+                            });
+                        }))
+                        .child(
+                            Button::new("Insertion order")
+                                .small()
+                                .on_click(move |_, _, cx| {
+                                    original.update(cx, |todos, cx| todos.clear_sort(cx));
+                                }),
+                        ),
+                )
+                .child(self.todos.clone()),
+        )
+        .no_shadow()
     }
 }
 
@@ -457,7 +528,7 @@ fn todo_item_actions(
     let delete_id = id;
     Space::new()
         .gap_xs()
-        .child(stop_row_toggle(
+        .child(
             Button::new("")
                 .small()
                 .icon_only(IconName::Pencil)
@@ -465,8 +536,8 @@ fn todo_item_actions(
                     cx.stop_propagation();
                     edit_owner.update(cx, |demo, cx| demo.begin_edit(edit_id.clone(), window, cx));
                 }),
-        ))
-        .child(stop_row_toggle(
+        )
+        .child(
             Button::new("")
                 .small()
                 .danger()
@@ -475,15 +546,7 @@ fn todo_item_actions(
                     cx.stop_propagation();
                     delete_owner.update(cx, |demo, cx| demo.remove_task(delete_id.clone(), cx));
                 }),
-        ))
-        .into_any_element()
-}
-
-fn stop_row_toggle(button: Button) -> AnyElement {
-    gpui::div()
-        .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
-        .on_mouse_up(MouseButton::Left, |_, _, cx| cx.stop_propagation())
-        .child(button)
+        )
         .into_any_element()
 }
 
@@ -494,11 +557,17 @@ fn dynamic_content(context: TodoItemRenderContext) -> AnyElement {
         .flex_1()
         .child(
             Text::new(context.title.clone())
+                .selectable(false)
                 .bold()
                 .when(context.checked, |text| text.strikethrough()),
         )
         .when_some(context.description, |content, description| {
-            content.child(Text::new(description).sm().text_color(rgb(0x64748b).into()))
+            content.child(
+                Text::new(description)
+                    .selectable(false)
+                    .sm()
+                    .text_color(rgb(0x64748b).into()),
+            )
         })
         .into_any_element()
 }
@@ -511,13 +580,14 @@ fn custom_check(context: TodoItemRenderContext) -> AnyElement {
     };
     let mark = if context.checked { "✓" } else { "○" };
     Text::new(mark)
+        .selectable(false)
         .text_color(color.into())
         .bold()
         .into_any_element()
 }
 
 fn custom_content(context: TodoItemRenderContext) -> AnyElement {
-    let title = Text::new(context.title.clone()).bold();
+    let title = Text::new(context.title.clone()).selectable(false).bold();
     let title = if context.checked {
         title.text_color(rgb(0x64748b).into()).strikethrough()
     } else {
@@ -529,7 +599,12 @@ fn custom_content(context: TodoItemRenderContext) -> AnyElement {
         .flex_1()
         .child(title)
         .when_some(context.description, |content, description| {
-            content.child(Text::new(description).sm().text_color(rgb(0x64748b).into()))
+            content.child(
+                Text::new(description)
+                    .selectable(false)
+                    .sm()
+                    .text_color(rgb(0x64748b).into()),
+            )
         })
         .into_any_element()
 }
@@ -590,6 +665,7 @@ fn project_check(context: TodoItemRenderContext) -> AnyElement {
             .into_any_element()
     } else {
         Text::new(if context.checked { "★" } else { "☆" })
+            .selectable(false)
             .text_color(border.into())
             .bold()
             .into_any_element()
@@ -645,12 +721,18 @@ fn project_content(context: TodoItemRenderContext, progress_value: f32, label: &
         .flex_1()
         .child(
             Text::new(context.title.clone())
+                .selectable(false)
                 .bold()
                 .text_color(title_color.into())
                 .when(context.checked, |text| text.strikethrough()),
         )
         .when_some(context.description, |content, description| {
-            content.child(Text::new(description).sm().text_color(rgb(0x64748b).into()))
+            content.child(
+                Text::new(description)
+                    .selectable(false)
+                    .sm()
+                    .text_color(rgb(0x64748b).into()),
+            )
         })
         .child(
             Flex::new()
@@ -658,7 +740,12 @@ fn project_content(context: TodoItemRenderContext, progress_value: f32, label: &
                 .align_center()
                 .gap_px(8.0)
                 .child(progress)
-                .child(Text::new(format!("{progress_value:.0}%")).sm().bold()),
+                .child(
+                    Text::new(format!("{progress_value:.0}%"))
+                        .selectable(false)
+                        .sm()
+                        .bold(),
+                ),
         )
         .into_any_element()
 }
@@ -710,7 +797,12 @@ fn focus_check(context: TodoItemRenderContext) -> AnyElement {
         })
         .align_center()
         .justify_center()
-        .child(Text::new(mark).text_color(rgb(0xfffbeb).into()).bold())
+        .child(
+            Text::new(mark)
+                .selectable(false)
+                .text_color(rgb(0xfffbeb).into())
+                .bold(),
+        )
         .into_any_element()
 }
 
@@ -721,12 +813,18 @@ fn focus_content(context: TodoItemRenderContext) -> AnyElement {
         .flex_1()
         .child(
             Text::new(context.title.clone())
+                .selectable(false)
                 .bold()
                 .text_color(rgb(0x0f172a).into())
                 .when(context.checked, |text| text.strikethrough()),
         )
         .when_some(context.description, |content, description| {
-            content.child(Text::new(description).sm().text_color(rgb(0x64748b).into()))
+            content.child(
+                Text::new(description)
+                    .selectable(false)
+                    .sm()
+                    .text_color(rgb(0x64748b).into()),
+            )
         })
         .into_any_element()
 }
@@ -782,8 +880,8 @@ impl Render for TodoDemo {
                         .child(Card::new(self.focus.clone())),
                 ))
                 .child(section(
-                    "动态增删改与富元素",
-                    "输入标题和描述即可新增任务；选中最近新增的任务后可以编辑或删除。动态任务同时演示图片、emoji 和标签 renderer。",
+                    "业务任务队列：筛选、排序与原地编辑",
+                    "All / Open / Done 仅筛选显示，不删除任务；排序保留 entity、编辑器和完成状态。上下文标题与空态反映完整队列。",
                     Card::new(self.dynamic.clone()),
                 )),
         )

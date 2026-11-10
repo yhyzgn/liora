@@ -723,14 +723,6 @@ struct ColorSurfaceElement {
     kind: ColorSurfaceKind,
 }
 
-impl IntoElement for ColorSurfaceElement {
-    type Element = Self;
-
-    fn into_element(self) -> Self::Element {
-        self
-    }
-}
-
 impl Element for ColorSurfaceElement {
     type RequestLayoutState = ();
     type PrepaintState = ();
@@ -885,14 +877,6 @@ fn hsla_from_hsv(hue: f32, saturation: f32, value: f32, alpha: f32) -> Hsla {
 
 struct BoundsCapturer {
     picker: gpui::Entity<ColorPicker>,
-}
-
-impl IntoElement for BoundsCapturer {
-    type Element = Self;
-
-    fn into_element(self) -> Self::Element {
-        self
-    }
 }
 
 impl Element for BoundsCapturer {

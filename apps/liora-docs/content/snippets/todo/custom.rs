@@ -10,13 +10,14 @@ use liora_icons_lucide::IconName;
 fn custom_check(context: TodoItemRenderContext) -> AnyElement {
     let mark = if context.checked { "✓" } else { "○" };
     Text::new(mark)
+        .selectable(false)
         .bold()
         .text_color(rgb(0x16a34a).into())
         .into_any_element()
 }
 
 fn custom_content(context: TodoItemRenderContext) -> AnyElement {
-    let title = Text::new(context.title.clone());
+    let title = Text::new(context.title.clone()).selectable(false);
     let title = if context.checked {
         title.strikethrough().text_color(rgb(0x64748b).into())
     } else {
@@ -28,7 +29,12 @@ fn custom_content(context: TodoItemRenderContext) -> AnyElement {
         .flex_1()
         .child(title)
         .when_some(context.description, |content, description| {
-            content.child(Text::new(description).sm().text_color(rgb(0x64748b).into()))
+            content.child(
+                Text::new(description)
+                    .selectable(false)
+                    .sm()
+                    .text_color(rgb(0x64748b).into()),
+            )
         })
         .into_any_element()
 }
@@ -105,7 +111,9 @@ impl CustomTodoList {
                             .into_any_element()
                     })
                     .check_renderer(|context| {
-                        Text::new(if context.checked { "✅" } else { "🟡" }).into_any_element()
+                        Text::new(if context.checked { "✅" } else { "🟡" })
+                            .selectable(false)
+                            .into_any_element()
                     })
                     .content_renderer(custom_content)
                     .trailing_renderer(|_| {

@@ -934,14 +934,6 @@ struct BoundsCapturer {
     cascader: Entity<Cascader>,
 }
 
-impl IntoElement for BoundsCapturer {
-    type Element = Self;
-
-    fn into_element(self) -> Self::Element {
-        self
-    }
-}
-
 impl Element for BoundsCapturer {
     type RequestLayoutState = ();
     type PrepaintState = ();

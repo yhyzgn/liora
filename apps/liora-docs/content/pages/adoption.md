@@ -55,7 +55,7 @@ gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662
 gpui = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf" }
 ```
 
-For local monorepo development, use `liora = { path = "../liora/crates/liora" }` while keeping `gpui` patched to the official Zed repository revision across the app and Liora. The published SDK crates rely on Cargo's supported registry fallback plus downstream `[patch.crates-io]` override so consumers can choose the matching official GPUI rev without using community forks.
+The example targets the published Liora 0.4.0 SDK. For local monorepo development, use `liora = { path = "../liora/crates/liora" }` and use the exact GPUI revision from that checkout's workspace manifest for both `gpui` and `gpui_platform`.
 
 ## Component adoption checklist
 

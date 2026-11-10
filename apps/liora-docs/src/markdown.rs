@@ -3732,7 +3732,6 @@ impl Render for LiveDemoContent {
             "GroupBoxBasic" => liora_components::GroupBox::new("Editor", demo_stack(vec![Text::new("Tab size: 4").into_any_element(), Text::new("Soft tabs enabled").into_any_element()])).description("Project-level editor preferences.").into_any_element(),
             "HoverCardBasic" => liora_components::HoverCard::new(Text::new("Hover target").underline()).content(|_, _| demo_stack(vec![Text::new("Preview card").bold().into_any_element(), Text::new("Use this for profile or link previews.").into_any_element()])).into_any_element(),
             "ScrollableMaskBasic" => liora_components::ScrollableMask::new(demo_stack((1..=16).map(|i| Text::new(format!("Scrollable row {i}")).into_any_element()).collect())).height(gpui::px(160.0)).into_any_element(),
-            "ClipboardHelper" => Text::new("Use write_text_to_clipboard(cx, text) inside event handlers.").into_any_element(),
             "FocusTrapPolicy" => { let policy = liora_components::FocusTrap::new().restore_focus(true).close_on_escape(false); Text::new(format!("trap={}, restore={}, esc={}", policy.enabled, policy.restore_focus, policy.close_on_escape)).into_any_element() },
             "MenuPlatformRegistration" => demo_stack(vec![
                 Text::new("GPUI platform menu registration").bold().into_any_element(),

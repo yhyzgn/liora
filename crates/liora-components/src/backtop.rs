@@ -156,13 +156,6 @@ struct BacktopVisibilityTracker {
     visibility_height: Pixels,
 }
 
-impl IntoElement for BacktopVisibilityTracker {
-    type Element = Self;
-    fn into_element(self) -> Self::Element {
-        self
-    }
-}
-
 impl gpui::Element for BacktopVisibilityTracker {
     type RequestLayoutState = ();
     type PrepaintState = ();

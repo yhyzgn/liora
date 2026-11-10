@@ -88,13 +88,6 @@ impl VirtualScrollbar {
     }
 }
 
-impl IntoElement for VirtualScrollbar {
-    type Element = Self;
-    fn into_element(self) -> Self::Element {
-        self
-    }
-}
-
 /// Fluent native GPUI component for rendering Liora virtual scrollbar prepaint.
 pub struct VirtualScrollbarPrepaint {
     thumb_bounds: Option<Bounds<Pixels>>,
@@ -463,7 +456,7 @@ impl Render for Scrollbar {
                     .id("scroll-viewport")
                     .overflow_y_scroll()
                     .track_scroll(&scroll_handle)
-                    .on_scroll_wheel(cx.listener(|_, _, _, cx| {
+                    .on_scroll(cx.listener(|_, _, _, cx| {
                         cx.notify();
                     }))
                     .child(content),
@@ -485,13 +478,6 @@ struct ScrollbarThumbPrepaint {
     owner: u64,
     active: bool,
     dragging: bool,
-}
-
-impl IntoElement for ScrollbarThumb {
-    type Element = Self;
-    fn into_element(self) -> Self::Element {
-        self
-    }
 }
 
 impl gpui::Element for ScrollbarThumb {

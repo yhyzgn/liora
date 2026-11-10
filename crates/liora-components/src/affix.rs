@@ -182,13 +182,6 @@ struct BoundsTracker {
     on_bounds_change: Box<dyn Fn(Bounds<Pixels>, &mut Window, &mut App)>,
 }
 
-impl IntoElement for BoundsTracker {
-    type Element = Self;
-    fn into_element(self) -> Self::Element {
-        self
-    }
-}
-
 impl gpui::Element for BoundsTracker {
     type RequestLayoutState = ();
     type PrepaintState = ();

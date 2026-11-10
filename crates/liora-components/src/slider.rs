@@ -150,13 +150,6 @@ struct SliderElement {
     slider: Entity<Slider>,
 }
 
-impl IntoElement for SliderElement {
-    type Element = Self;
-    fn into_element(self) -> Self::Element {
-        self
-    }
-}
-
 impl Element for SliderElement {
     type RequestLayoutState = ();
     type PrepaintState = ();

@@ -276,14 +276,6 @@ impl WatermarkTile {
     }
 }
 
-impl IntoElement for WatermarkTile {
-    type Element = Self;
-
-    fn into_element(self) -> Self::Element {
-        self
-    }
-}
-
 impl Element for WatermarkTile {
     type RequestLayoutState = ();
     type PrepaintState = ();

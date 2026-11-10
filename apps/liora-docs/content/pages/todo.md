@@ -35,6 +35,32 @@
 
 这些操作只改变列表状态和对应 entity，不会丢失其他任务的焦点或自定义 renderer。
 
+## 业务视图：筛选、排序与上下文组合
+
+### 效果
+
+::Demo{component="TodoListChanges"}::
+
+Gallery 的业务任务队列包含 All / Open / Done 按钮、标题排序、恢复插入顺序、原地编辑和真实空态。勾选 Open 视图里的任务会让它从当前视图消失，切到 Done 后仍能看到同一个任务。
+
+### 代码
+
+```rust src="todo/changes.rs"
+```
+
+- `set_filter(|item| ..., cx)` 只决定显示哪些行；可以按完成状态、标题或闭包捕获的业务 ID 集合筛选。`clear_filter(cx)` 恢复全部任务。
+- 筛选不是访问控制：先在宿主层确定用户有权访问哪些任务，再把它们传给列表。
+- `set_sort(|left, right| ..., cx)` 稳定排序显示的行；相等项保留插入顺序。`clear_sort(cx)` 恢复插入顺序。过滤、排序不发出数据变更事件。
+- `visible_items(cx)` 返回当前显示顺序的 entity；`items()`、`len()`、`item()` 和所有 CRUD 仍针对完整列表。隐藏、排序不会重建 entity，编辑器、焦点句柄、自定义 renderer 和完成状态都会保留。
+- `header_renderer` / `empty_renderer` / `contextual_footer_renderer` 接收 `TodoListRenderContext { total, checked, visible }`。前两项总数包含隐藏项；无匹配行时也保留标题和底部操作。
+- `footer_renderer` 继续支持无参数闭包；与 `contextual_footer_renderer` 互斥，最后设置者生效。
+
+列表会观察子项状态，直接更新 `TodoItem` 也会刷新筛选、排序和统计；宿主闭包捕获的业务元数据变化后，应重新调用对应 setter。API 不内置负责人、截止日期或优先级，业务模型通过闭包接入即可。
+
+同一列表的 ID 必须唯一且不可变：`push` 遇到重复 ID 保留原 entity、忽略新 entity；`push_data` 返回已存在的 entity，不覆盖其状态。删除或清空会释放相应订阅，即便宿主还持有被移除的任务，后续事件也不会再触发该列表回调；同 ID 新任务可以重新插入。
+
+尾部 renderer 中的按钮由控件隔离鼠标事件，不会同时触发整行勾选。
+
 ## 自定义视觉插槽
 
 ### 效果
@@ -64,7 +90,7 @@ TodoItem::new("design", "Polish the hero", cx)
             .into_any_element()
     })
     .check_renderer(|context| {
-        Text::new(if context.checked { "✅" } else { "🟡" }).into_any_element()
+        Text::new(if context.checked { "✅" } else { "🟡" }).selectable(false).into_any_element()
     })
 ```
 
@@ -103,16 +129,11 @@ Gallery 中的“项目交付看板”示例覆盖已完成、进行中、逾期
 
 ## 监听完成状态
 
-### 效果
-
-::Demo{component="TodoListChanges"}::
-
-### 代码
-
-```rust src="todo/changes.rs"
-```
-
 通过 `TodoList::on_change` 统一监听任意子项的完成状态变化。回调适合连接异步保存、错误提示或业务状态同步；控件本身不绑定具体的数据层。
+
+鼠标左键按下任务的勾选标记或正文区域时，立即切换完成状态；聚焦后也可用 Space 或 Enter 切换。编辑态和禁用态不会切换。尾部插槽不属于勾选区域，按钮无需阻止事件冒泡来避免误勾选。
+
+自定义条目中的展示文字和勾选字符应使用 `Text::selectable(false)`。`Text` 默认启用文字选择，会消费鼠标按下事件，阻止条目切换；编辑器仍应保留输入交互。
 
 ## 实现建议
 

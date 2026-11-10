@@ -230,13 +230,6 @@ impl AnchorTarget {
     }
 }
 
-impl IntoElement for AnchorTarget {
-    type Element = Self;
-    fn into_element(self) -> Self::Element {
-        self
-    }
-}
-
 impl gpui::Element for AnchorTarget {
     type RequestLayoutState = ();
     type PrepaintState = ();

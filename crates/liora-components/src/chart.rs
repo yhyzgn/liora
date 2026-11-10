@@ -45,14 +45,6 @@ impl ChartBoundsTracker {
     }
 }
 
-impl IntoElement for ChartBoundsTracker {
-    type Element = Self;
-
-    fn into_element(self) -> Self::Element {
-        self
-    }
-}
-
 impl Element for ChartBoundsTracker {
     type RequestLayoutState = ();
     type PrepaintState = ();

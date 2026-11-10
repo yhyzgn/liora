@@ -574,14 +574,6 @@ pub(crate) struct RasterImageElement {
     pub(crate) round_options: ImageRoundOptions,
 }
 
-impl IntoElement for RasterImageElement {
-    type Element = Self;
-
-    fn into_element(self) -> Self::Element {
-        self
-    }
-}
-
 impl Element for RasterImageElement {
     type RequestLayoutState = ();
     type PrepaintState = ();
@@ -669,14 +661,6 @@ impl Element for RasterImageElement {
 
 struct RingSleeveElement {
     ring: ImageRing,
-}
-
-impl IntoElement for RingSleeveElement {
-    type Element = Self;
-
-    fn into_element(self) -> Self::Element {
-        self
-    }
 }
 
 impl Element for RingSleeveElement {

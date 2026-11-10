@@ -1,3 +1,19 @@
+# GPUI upstream refresh — 2026-11-10
+
+The workspace pins `gpui`, `gpui_platform`, and `collections` to [official Zed main at intake](https://github.com/zed-industries/zed/commit/f0d896f2c18a543335eb155f729d36b624695591). GPUI remains `0.2.2`; the Git revision defines compatibility. See the [upstream comparison](https://github.com/zed-industries/zed/compare/1de16662ee0d704285c524a7753f0f8858e86abf...f0d896f2c18a543335eb155f729d36b624695591).
+
+Highlights: less per-line and per-glyph text work (#66682, #66722), lazy tab-stop ordering (#66721), corrected horizontal list padding (#64056), and unavailable macOS pasteboard handling (#66736). The lockfile follows upstream's WGPU 30 Git revision. Target-specific upstream dependencies do not add an iOS or browser app to Liora.
+
+GPUI now supplies `IntoElement` for all `Element` implementations (#64864). Liora removes its redundant identity implementations, retains the conversions for `RenderOnce` components, and uses `on_scroll` in place of `on_scroll_wheel`.
+
+Published Liora 0.4.0 still needs its original GPUI revision, `1de16662ee0d704285c524a7753f0f8858e86abf`: its explicit `IntoElement` implementations conflict with the new blanket implementation. Use the new pin only with the migrated Liora source.
+
+[Upstream raised the macOS runtime minimum to 12 and switched to SDK 26](https://github.com/zed-industries/zed/commit/f14592c4a5bd1dcd3545041a620055c5d4be0622). Build this checkout with Xcode 26 and `MACOSX_DEPLOYMENT_TARGET=12.0` (or higher). Native macOS build, bundle deployment metadata, and runtime remain release verification items.
+
+Linux verification: `cargo check --workspace --all-targets --locked` and `cargo run -p liora-gallery --example gpui_upgrade_smoke --locked` passed. The smoke exercises native text/layout and reduced-motion spring retargeting, not real-display GPU rendering or other platforms.
+
+For rollback, restore the previous manifest and lockfile together with the matching downstream examples.
+
 # GPUI upstream refresh — 2026-10-13
 
 ## Verified source snapshot

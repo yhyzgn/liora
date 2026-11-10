@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Update official Zed GPUI, platform backends, and collections to `f0d896f2c18a543335eb155f729d36b624695591`, including upstream text layout and focus navigation optimizations and a macOS pasteboard fix. GPUI remains at package version `0.2.2`.
+- The updated GPUI raises the macOS runtime minimum to macOS 12; use the macOS 26 SDK for source builds.
+- Make the Clipboard examples interactive: edit a source value, copy it to the native clipboard, then read it back to see the actual result.
+- Add non-destructive filtering, stable display sorting, and contextual header/empty/footer slots to `TodoList`. Retain item identity and stop forwarding events from removed rows.
+- Toggle TodoItem completion on primary press without waiting for a click release; keep trailing actions outside the toggle area.
+- Disable text selection in Todo renderer examples so clicks on titles, descriptions, and check marks reach the item instead of being consumed by text selection.
+
 ## 0.4.0 - 2026-10-14
 
 - Pin official Zed GPUI, platform backends, and collections to `1de16662ee0d704285c524a7753f0f8858e86abf`; update only the upstream dependency closure rather than unrelated workspace dependencies.

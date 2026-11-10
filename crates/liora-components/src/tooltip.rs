@@ -159,13 +159,6 @@ struct TooltipBoundsTracker {
     offset: Pixels,
 }
 
-impl IntoElement for TooltipBoundsTracker {
-    type Element = Self;
-    fn into_element(self) -> Self::Element {
-        self
-    }
-}
-
 impl gpui::Element for TooltipBoundsTracker {
     type RequestLayoutState = ();
     type PrepaintState = ();

@@ -32,11 +32,11 @@ git diff --check -- . ':(exclude).omx'
 
 ## Current GPUI baseline
 
-Current validated refresh target: official `zed-industries/zed` revision `1de16662ee0d704285c524a7753f0f8858e86abf` for `gpui`/`gpui_platform`/`collections` and the Zed dependency closure. GPUI crate version remains `0.2.2`; the git SHA defines compatibility. Intake date: 2026-10-13. Final observed main `d3267a39ff900f114711c26720c7cbf12c41f204` changes only agent-server/agent-UI/terminal-view code, with no GPUI/collections/workspace dependency diff.
+Current workspace pin: official `zed-industries/zed` revision `f0d896f2c18a543335eb155f729d36b624695591` for `gpui`, `gpui_platform`, `collections`, and their Zed dependency closure. GPUI remains `0.2.2`; the git SHA defines compatibility. See `docs/gpui-latest-upgrade.md` for the upstream comparison and validation.
 
 ## Current work and release boundary
 
-Current plan/task: `004_gpui_native_replacement_20261013`. Workspace package versions remain `0.3.0`; this refresh does not publish, tag, commit or push. Prior release-candidate context is historical, not proof of current published assets.
+Current completed native replacement plan/task: `004_gpui_native_replacement_20261013`. Workspace package versions remain `0.4.0`; the subsequent dependency refresh does not publish or tag a release.
 
 ## GPUI refresh integration
 

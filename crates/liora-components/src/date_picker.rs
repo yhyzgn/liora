@@ -1108,13 +1108,6 @@ struct DatePickerBoundsCapturer {
     picker: Entity<DatePicker>,
 }
 
-impl IntoElement for DatePickerBoundsCapturer {
-    type Element = Self;
-    fn into_element(self) -> Self::Element {
-        self
-    }
-}
-
 impl Element for DatePickerBoundsCapturer {
     type RequestLayoutState = ();
     type PrepaintState = ();

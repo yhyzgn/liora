@@ -82,7 +82,7 @@ Use Liora when you want a Rust desktop app with:
 | Rust | `rustc 1.95+`, Rust edition 2024. |
 | UI backend | Official Zed GPUI git dependency pinned to Liora's verified revision. |
 | Linux native deps | GTK3, Wayland/X11, xkbcommon, fontconfig/freetype, Vulkan, ALSA, `pkg-config`; see `scripts/install-fedora-deps.sh` for a Fedora-oriented baseline. |
-| macOS | Apple Silicon is covered by the release workflow; install Xcode Command Line Tools. |
+| macOS | The current checkout requires macOS 12+ and the macOS 26 SDK (Xcode 26). |
 | Windows | MSVC toolchain; GPUI's Windows backend provides the application manifest through `windows-manifest`. |
 
 ## Choose the right dependency setup
@@ -138,7 +138,9 @@ liora = { version = "0.4", default-features = false, features = ["updater"] }
 
 ## GPUI dependency and local patch policy
 
-The 2026-10-13 upstream refresh pins official Zed `main` at `1de16662ee0d704285c524a7753f0f8858e86abf`. `MotionSpring::{Gentle, Snappy, Bouncy}.animation_to(target)` exposes opt-in interruptible GPUI springs; keep a stable `with_spring` element ID when retargeting. Existing duration-based effects remain unchanged. GPUI animation wrappers honor `cx.set_reduce_motion(true)`; this is an app-level preference, not automatic OS preference detection. See [upgrade notes and platform risks](docs/gpui-latest-upgrade.md).
+The workspace pins official Zed `main` at `f0d896f2c18a543335eb155f729d36b624695591`. `MotionSpring::{Gentle, Snappy, Bouncy}.animation_to(target)` exposes opt-in interruptible GPUI springs; keep a stable `with_spring` element ID when retargeting. Existing duration-based effects remain unchanged. GPUI animation wrappers honor `cx.set_reduce_motion(true)`; this is an app-level preference, not automatic OS preference detection. See [upgrade notes and platform risks](docs/gpui-latest-upgrade.md).
+
+The examples below target crates.io Liora 0.4.0 and use its older GPUI pin. For a path dependency on this checkout, use the workspace revision above for both GPUI entries instead.
 
 Liora uses **official Zed GPUI only** from the official Zed upstream repository. Do not use renamed or community forks such as `open-gpui`.
 
@@ -1793,6 +1795,8 @@ impl Translator for AppTranslator {
 | Charts and metrics | `LineChart`, `AreaChart`, `BarChart`, `PieChart`, `RingChart`, `Sparkline`, `SignalMeter`, `HeatBar`, `SegmentRatioBar`, `CandlestickChart` |
 | Editing and utility | `CodeBlock`, `CodeEditor`, `QrCode`, `Timer`, `Label`, `Operation`, `Clipboard`, draggable list helpers |
 | App shell and platform | `Shell`, `AppWindowFrame`, `TitleBar`, `Sidebar`, `WindowFrameMode`, `StatusBar`, `DockLayout`, `Menu` / `MenuBar`, `liora-tray`, Linux desktop identity helpers, package metadata helpers, updater helpers |
+
+`TodoList` supports display-only filtering and sorting plus contextual header, empty-state, and footer renderers. `TodoItem` toggles on primary press; trailing actions are independent of completion. See the [TodoList guide](apps/liora-docs/content/pages/todo.md) and the [interactive Clipboard example](apps/liora-docs/content/pages/clipboard.md).
 
 ### Component consolidation notes
 
