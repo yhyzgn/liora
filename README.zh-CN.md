@@ -141,6 +141,8 @@ liora = { version = "0.4", default-features = false, features = ["updater"] }
 
 以下示例面向 crates.io 已发布的 Liora 0.4.0，使用与该版本兼容的旧 GPUI revision。若通过 path 依赖当前源码，请把两处 GPUI 依赖统一改为上面的工作区 revision。
 
+Liora 0.5.0 使用当前工作区的 GPUI pin。升级到 0.5 时，将下方 Liora 依赖版本改为 `0.5`，并将两处 GPUI revision 统一改为 `f0d896f2c18a543335eb155f729d36b624695591`；macOS 要求 12+，构建使用 macOS 26 SDK。
+
 Liora **只能使用官方 Zed GPUI**。禁止使用 `open-gpui` 等重命名或社区 fork。
 
 为什么需要额外配置 GPUI：

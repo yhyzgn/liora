@@ -1,10 +1,10 @@
-# Liora 0.4.x Release Candidate Checklist
+# Liora 0.5.x Release Candidate Checklist
 
-This checklist defines the repository-owned readiness gate for the Liora 0.4.x release-candidate path. It is intentionally stricter than a normal feature-phase checklist because RC work must prove that docs, package metadata, workflows, and canonical apps still agree.
+This checklist defines the repository-owned readiness gate for the Liora 0.5.x release-candidate path. It is intentionally stricter than a normal feature-phase checklist because RC work must prove that docs, package metadata, workflows, and canonical apps still agree.
 
 ## Scope
 
-- Target version: `0.4.0`, matching every workspace package manifest and `crates/liora-packager/Cargo.toml`.
+- Target version: `0.5.0`, matching every workspace package manifest and `crates/liora-packager/Cargo.toml`.
 - Runtime boundary: pure Rust + GPUI native apps only. Do not introduce Tauri, WebView, HTML/CSS/DOM, WASM chart runtimes, or browser shells.
 - Canonical apps: `apps/liora-gallery` and `apps/liora-docs`.
 - Removed sample-app boundary: do not re-add `examples/minimal-app`, `examples/dashboard-app`, `liora-minimal-app`, or `liora-dashboard-app`; their useful adoption and dogfooding behavior lives in Gallery and Docs.
@@ -41,6 +41,7 @@ Before a tag release, verify these files agree:
 - `docs/packaging-installer-technical-plan.md` and `apps/liora-docs/content/pages/packaging_workflow.md` keep packaging as a pure native installer pipeline.
 - `.github/workflows/ci.yml` remains validation-only and must not publish installers or mutate GitHub Releases.
 - `.github/workflows/package.yml` owns native app preview/release artifacts: cross-platform raw binaries for Docs/Gallery, Gallery installer packages, grouped changelog generation, and `v*` GitHub Release publication.
+- macOS packaging and runtime verification use `macos-26`; packaging selects Xcode 26.0.1 and `MACOSX_DEPLOYMENT_TARGET=12.0`. Compatibility on macOS 12 still requires dedicated runtime verification.
 
 ## Protected release-only items
 

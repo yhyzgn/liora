@@ -97,7 +97,7 @@ jobs:
           - platform: linux
             os: ubuntu-24.04
           - platform: macos
-            os: macos-14
+            os: macos-26
           - platform: windows
             os: windows-2022
     runs-on: ${{ matrix.os }}

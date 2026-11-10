@@ -40,7 +40,7 @@ jobs:
         include:
           - os: ubuntu-24.04
             platform: linux
-          - os: macos-14
+          - os: macos-26
             platform: macos
           - os: windows-2022
             platform: windows
@@ -48,6 +48,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+
+      - name: Select macOS release toolchain
+        if: matrix.platform == 'macos'
+        shell: bash
+        run: |
+          sudo xcode-select --switch /Applications/Xcode_26.0.1.app/Contents/Developer
+          echo "MACOSX_DEPLOYMENT_TARGET=12.0" >> "$GITHUB_ENV"
+          xcrun --sdk macosx --show-sdk-version
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable

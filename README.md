@@ -142,6 +142,8 @@ The workspace pins official Zed `main` at `f0d896f2c18a543335eb155f729d36b624695
 
 The examples below target crates.io Liora 0.4.0 and use its older GPUI pin. For a path dependency on this checkout, use the workspace revision above for both GPUI entries instead.
 
+Liora 0.5.0 uses the current workspace GPUI pin. When adopting 0.5, change the Liora dependency versions below to `0.5` and both GPUI revisions to `f0d896f2c18a543335eb155f729d36b624695591`; macOS requires version 12+ and the macOS 26 SDK.
+
 Liora uses **official Zed GPUI only** from the official Zed upstream repository. Do not use renamed or community forks such as `open-gpui`.
 
 Why the extra GPUI setup exists:
