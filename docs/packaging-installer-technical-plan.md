@@ -255,7 +255,7 @@ CI 模式要求：
 - 生成 `checksums.txt`
 - 输出 machine-readable manifest：`package-manifest.json`
 - 不依赖交互输入
-- 签名缺失时允许构建 unsigned 包，但必须在 manifest 中标记
+- 本地/preview 可构建 unsigned 包并在 manifest 中标记；RPM 正式发布必须签名，不受 `LIORA_ALLOW_UNSIGNED_RELEASE` 豁免。
 
 ## 8. 应用元数据
 
@@ -302,6 +302,8 @@ repository: repository URL
 - `.desktop` 必须包含 `Name`、`Exec`、`Icon`、`Categories`、`StartupNotify`。
 - AppImage 必须包含图标和 desktop entry。
 - `.deb` / `.rpm` 必须声明系统依赖，不能只复制二进制。
+- RPM 使用现有 `cargo-generate-rpm 0.21.0 --signing-key` 原生签名后再生成 checksum。CI 的 `LIORA_RPM_SIGNING_PRIVATE_KEY` secret 保存固定、专用的 OpenPGP 私钥；独立配置的 `LIORA_RPM_SIGNING_FINGERPRINT` 仓库变量保存通过外部可信渠道发布的完整 40 位 v4 指纹，CI 先校验二者一致再签名。Release 发布公钥和已验证指纹；验签只用隔离 keyring，两种字体变体必须分别存在且通过检查。
+- 安装/更新前通过独立可信渠道核对完整指纹，再显式执行 `sudo rpm --import <公钥>`，并要求 `rpmkeys --define '_pkgverify_level all' --checksig <包>` 验签成功后才安装；Fedora/RHEL 用 `dnf --setopt=localpkg_gpgcheck=1 install`，openSUSE/SLES 用 `zypper install`。更新器不提权、不自动导入信任、不重签下载包。Fedora 的 `rpm-setup-autosign` 仅配置本地 `rpmbuild`，不会自动作用于此后端；详见 `packaging/signing-policy.md`。
 - tray 驻留应用必须保证关闭最后窗口时进程不退出；这属于运行时逻辑，打包只负责 desktop integration。
 
 推荐首批：
@@ -545,9 +547,9 @@ release-notes.md
 P12 的本地与仓库内可交付工作已完成。剩余的签名证书、Apple notarization 凭据、Windows 证书、受保护 runner、真实系统级安装/卸载权限不再作为“未实现代码”存在，而是被收敛为显式 gate：
 
 - `LICENSE.md` 明确当前 `LicenseRef-Liora` 策略，避免无意宣称 OSS license。
-- `packaging/signing-policy.md` 记录 macOS 与 Windows 签名/公证所需环境变量、CI secret 映射和执行顺序。
+- `packaging/signing-policy.md` 记录 RPM 签名/密钥信任与 macOS、Windows 签名/公证所需环境变量、CI secret 映射和执行顺序。
 - `cargo run -p xtask -- package release-readiness` 生成 `target/packages/release-readiness.md`，并检查 layout、license、tag/version、signing policy、release workflow wiring。
 - `.github/workflows/ci.yml` 在普通 CI 中以非严格模式运行 readiness gate。
-- `.github/workflows/package.yml` 在打包前运行 readiness gate；`v*` tag release 自动启用 `LIORA_REQUIRE_SIGNING=true`，没有签名 secret 时会阻止正式发布。
+- `.github/workflows/package.yml` 在打包前运行 readiness gate；`v*` RPM release 始终要求签名密钥；macOS/Windows 的签名强制仍由 `LIORA_REQUIRE_SIGNING=true` 控制。
 
 因此 P12 的完成标准是：仓库可以构建、打包、校验、上传 preview artifacts；正式 release path 有强 gate，避免在外部凭据缺失时误发 unsigned release。真正发布只需 owner 配置受保护 secrets 并推送匹配版本的 `vX.Y.Z` tag。

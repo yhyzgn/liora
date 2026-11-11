@@ -106,6 +106,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             file \
+            gnupg \
             libasound2-dev \
             libatk1.0-dev \
             libayatana-appindicator3-dev \
@@ -130,7 +131,7 @@ jobs:
         if: matrix.platform == 'linux'
         run: |
           cargo install cargo-packager --locked
-          cargo install cargo-generate-rpm --locked
+          cargo install cargo-generate-rpm --version 0.21.0 --locked
 
       - name: Install macOS package backend
         if: matrix.platform == 'macos'
@@ -144,6 +145,47 @@ jobs:
       - name: Validate packaging metadata
         run: cargo run --release -p xtask -- package validate
 
+      - name: Prepare RPM release signing key
+        if: matrix.platform == 'linux' && (startsWith(github.ref, 'refs/tags/v') || vars.LIORA_REQUIRE_SIGNING == 'true') && github.event.inputs.dry_run != 'true' && github.event.inputs.app != 'docs'
+        shell: bash
+        env:
+          LIORA_RPM_SIGNING_PRIVATE_KEY: ${{ secrets.LIORA_RPM_SIGNING_PRIVATE_KEY }}
+          LIORA_RPM_SIGNING_FINGERPRINT: ${{ vars.LIORA_RPM_SIGNING_FINGERPRINT }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$LIORA_RPM_SIGNING_PRIVATE_KEY" ]]; then
+            echo "RPM releases require the LIORA_RPM_SIGNING_PRIVATE_KEY secret; unsigned RPMs cannot be published." >&2
+            exit 1
+          fi
+          if [[ -z "$LIORA_RPM_SIGNING_FINGERPRINT" ]]; then
+            echo "RPM releases require the independently published LIORA_RPM_SIGNING_FINGERPRINT repository variable." >&2
+            exit 1
+          fi
+          expected_fingerprint="${LIORA_RPM_SIGNING_FINGERPRINT//[[:space:]]/}"
+          if [[ ! "$expected_fingerprint" =~ ^[[:xdigit:]]{40}$ ]]; then
+            echo "LIORA_RPM_SIGNING_FINGERPRINT must be a complete 40-hex-digit OpenPGP v4 fingerprint." >&2
+            exit 1
+          fi
+          umask 077
+          signing_dir="$(mktemp -d "$RUNNER_TEMP/liora-rpm-signing.XXXXXX")"
+          echo "LIORA_RPM_SIGNING_DIR=$signing_dir" >> "$GITHUB_ENV"
+          printf '%s\n' "$LIORA_RPM_SIGNING_PRIVATE_KEY" > "$signing_dir/private.asc"
+          mkdir "$signing_dir/gnupg" "$signing_dir/rpmdb"
+          gpg --homedir "$signing_dir/gnupg" --batch --import "$signing_dir/private.asc"
+          mkdir -p target/packages
+          public_key="target/packages/RPM-GPG-KEY-liora"
+          fingerprint="$(gpg --homedir "$signing_dir/gnupg" --batch --with-colons --show-keys "$signing_dir/private.asc" \
+            | awk -F: '$1 == "fpr" { print $10; exit }')"
+          if [[ "${fingerprint^^}" != "${expected_fingerprint^^}" ]]; then
+            echo "RPM signing key fingerprint does not match the independently pinned release fingerprint." >&2
+            exit 1
+          fi
+          printf '%s\n' "$fingerprint" > "$public_key.fingerprint"
+          gpg --homedir "$signing_dir/gnupg" --batch --armor --export "$fingerprint" > "$public_key"
+          test -s "$public_key"
+          rpmkeys --dbpath "$signing_dir/rpmdb" --define '_keyring rpmdb' --import "$public_key"
+          echo "LIORA_RPM_SIGNING_KEY=$signing_dir/private.asc" >> "$GITHUB_ENV"
+
       - name: Check release readiness policy
         env:
           LIORA_REQUIRE_SIGNING: ${{ vars.LIORA_REQUIRE_SIGNING == 'true' && 'true' || 'false' }}
@@ -155,7 +197,7 @@ jobs:
           LIORA_WINDOWS_SIGNTOOL_CERT_PATH: ${{ secrets.LIORA_WINDOWS_SIGNTOOL_CERT_PATH }}
           LIORA_WINDOWS_SIGNTOOL_CERT_PASSWORD: ${{ secrets.LIORA_WINDOWS_SIGNTOOL_CERT_PASSWORD }}
           LIORA_WINDOWS_TIMESTAMP_URL: ${{ secrets.LIORA_WINDOWS_TIMESTAMP_URL }}
-        run: cargo run --release -p xtask -- package release-readiness
+        run: cargo run --release -p xtask -- package release-readiness --app ${{ github.event.inputs.app == 'docs' && 'docs' || 'gallery' }} ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}
 
       - name: Test packager domain logic
         run: cargo test -p liora-packager
@@ -270,6 +312,38 @@ jobs:
             fi
             "${args[@]}"
           done
+
+      - name: Verify RPM release signatures
+        if: matrix.platform == 'linux' && (startsWith(github.ref, 'refs/tags/v') || vars.LIORA_REQUIRE_SIGNING == 'true') && github.event.inputs.dry_run != 'true' && github.event.inputs.app != 'docs'
+        shell: bash
+        run: |
+          set -euo pipefail
+          for variant in without-fonts with-fonts; do
+            variant_dir="target/packages/liora-gallery/linux/$variant"
+            mapfile -d '' -t rpms < <(find "$variant_dir" -maxdepth 1 -type f -name '*.rpm' -print0)
+            if [[ ${#rpms[@]} -ne 1 ]]; then
+              echo "Expected exactly one signed RPM for $variant, found ${#rpms[@]} under $variant_dir." >&2
+              exit 1
+            fi
+            rpmkeys --dbpath "$LIORA_RPM_SIGNING_DIR/rpmdb" --define '_keyring rpmdb' \
+              --define '_pkgverify_level all' --checksig "${rpms[0]}"
+          done
+
+      - name: Remove RPM signing material
+        if: always() && matrix.platform == 'linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "${LIORA_RPM_SIGNING_DIR:-}" ]]; then
+            shutdown_status=0
+            remove_status=0
+            gpgconf --homedir "$LIORA_RPM_SIGNING_DIR/gnupg" --kill all || shutdown_status=$?
+            rm -rf -- "$LIORA_RPM_SIGNING_DIR" || remove_status=$?
+            if [[ $shutdown_status -ne 0 || $remove_status -ne 0 ]]; then
+              echo "RPM signing cleanup failed (gpgconf=$shutdown_status, remove=$remove_status)." >&2
+              exit 1
+            fi
+          fi
 
       - name: Smoke Gallery package artifacts
         if: github.event.inputs.dry_run != 'true' && github.event.inputs.app != 'docs'
@@ -426,6 +500,10 @@ jobs:
             variant="$(asset_variant_from_path "$artifact")"
             variant_note="$(font_note "$variant")"
             case "$name" in
+              RPM-GPG-KEY-liora|RPM-GPG-KEY-liora.fingerprint)
+                add_asset "$artifact" "$name" "RPM signing key" "linux" \
+                  "Check this fingerprint through a trusted publisher channel before importing the key."
+                ;;
               *.AppImage)
                 add_asset "$artifact" "liora-gallery-${tag}-linux-x64-${variant}.AppImage" \
                   "Gallery installer" "linux" "Portable AppImage for Linux desktops. ${variant_note}"
@@ -436,7 +514,7 @@ jobs:
                 ;;
               *.rpm)
                 add_asset "$artifact" "liora-gallery-${tag}-linux-x64-${variant}.rpm" \
-                  "Gallery installer" "linux" "RPM package for Fedora/RHEL/openSUSE-family systems. ${variant_note}"
+                  "Gallery installer" "linux" "OpenPGP-signed RPM for Fedora/RHEL/openSUSE-family systems; import the verified publisher key before installing. ${variant_note}"
                 ;;
               *.tar.gz)
                 add_asset "$artifact" "liora-gallery-${tag}-linux-x64-${variant}.tar.gz" \
@@ -638,6 +716,7 @@ jobs:
             echo "- SDK consumers should pin \`liora\` by git \`rev\` and use the matching official Zed GPUI \`rev\`; \`liora-packager\` and \`liora-updater\` remain available through crates.io for utility-focused integrations."
             echo "- Menu migration: rename old navigation/sidebar usages from \`Menu\`, \`MenuMode\`, \`MenuNode\`, \`SubMenu\`, and \`MenuItemGroup\` to \`NavigationMenu\`, \`NavigationMenuMode\`, \`NavigationMenuNode\`, \`NavigationSubMenu\`, and \`NavigationMenuGroup\`. Use the new \`Menu::register(cx, menus)\` API only for GPUI platform menus, and render \`MenuBar\` when a visible in-window fallback is required."
             echo "- \`liora-docs\` is distributed as raw executables; \`liora-gallery\` includes both raw executables and installer bundles. Release assets ending in \`without-fonts\` are the default smaller builds; \`with-fonts\` bundles PingFangSC font resources or embedded fallback where applicable."
+            echo "- RPM packages are OpenPGP-signed. Independently verify the publisher fingerprint before importing the attached \`RPM-GPG-KEY-liora\` with \`sudo rpm --import RPM-GPG-KEY-liora\`; then check the package with \`rpmkeys --define '_pkgverify_level all' --checksig <package.rpm>\`. Use \`sudo dnf --setopt=localpkg_gpgcheck=1 install ./<package.rpm>\` on Fedora/RHEL or \`sudo zypper install ./<package.rpm>\` on openSUSE/SLES. No signature-check bypass is needed."
             echo "- macOS/Windows artifacts are unsigned only because this public release workflow sets \`LIORA_ALLOW_UNSIGNED_RELEASE=true\` when \`LIORA_REQUIRE_SIGNING\` is not enabled; set \`LIORA_REQUIRE_SIGNING=true\` and provide signing/notarization secrets to fail closed for signed releases."
             echo
             echo "## Verification"

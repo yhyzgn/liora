@@ -1,6 +1,6 @@
 [package]
 name = "liora-core"
-version = "0.5.0"
+version = "0.5.1"
 edition = "2024"
 description = "Core Liora app configuration, theme initialization, portals, and shared native GPUI helpers."
 license-file = "../../LICENSE.md"
@@ -10,7 +10,7 @@ publish = true
 
 [dependencies]
 gpui.workspace = true
-liora-theme = { version = "0.5.0", path = "../liora-theme" }
+liora-theme = { version = "0.5.1", path = "../liora-theme" }
 toml.workspace = true
 
 [build-dependencies]

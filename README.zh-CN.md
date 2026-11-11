@@ -141,7 +141,7 @@ liora = { version = "0.4", default-features = false, features = ["updater"] }
 
 以下示例面向 crates.io 已发布的 Liora 0.4.0，使用与该版本兼容的旧 GPUI revision。若通过 path 依赖当前源码，请把两处 GPUI 依赖统一改为上面的工作区 revision。
 
-Liora 0.5.0 使用当前工作区的 GPUI pin。升级到 0.5 时，将下方 Liora 依赖版本改为 `0.5`，并将两处 GPUI revision 统一改为 `f0d896f2c18a543335eb155f729d36b624695591`；macOS 要求 12+，构建使用 macOS 26 SDK。
+Liora 0.5.1 使用当前工作区的 GPUI pin。升级到 0.5 时，将下方 Liora 依赖版本改为 `0.5`，并将两处 GPUI revision 统一改为 `f0d896f2c18a543335eb155f729d36b624695591`；macOS 要求 12+，构建使用 macOS 26 SDK。
 
 Liora **只能使用官方 Zed GPUI**。禁止使用 `open-gpui` 等重命名或社区 fork。
 
@@ -1830,6 +1830,59 @@ cargo run -p xtask -- package install-smoke --app gallery --format platform-defa
 | Linux x64 | `liora-docs`, `liora-gallery` | AppImage、`.deb`、`.rpm`、portable `.tar.gz` |
 | macOS arm64 | `liora-docs`, `liora-gallery` | `.dmg` |
 | Windows x64 | `liora-docs.exe`, `liora-gallery.exe` | NSIS setup `.exe`、MSI |
+
+### RPM 正式发布签名配置
+
+由项目所有者在**可信机器上一次性生成**专用发行者密钥，不要在用户安装机器或每次 CI 运行时重新生成。先安装 GnuPG 2.4+ 和 GitHub CLI（`gh`），并确认账号可以管理目标仓库的 Actions secrets/variables。以下步骤在**同一个专用 Bash 会话**中运行，先把示例邮箱替换为自己控制的发布联系地址。
+
+**1. 生成并导出 RSA-4096 签名密钥（OpenPGP v4，有效期两年）：**
+
+```bash
+set -euo pipefail
+umask 077
+RPM_SIGNING_DIR="$(mktemp -d "$HOME/liora-rpm-signing.XXXXXX")"
+export GNUPGHOME="$RPM_SIGNING_DIR/gnupg"
+mkdir -m 700 "$GNUPGHOME"
+RPM_KEY_UID="Liora RPM Release Signing <releases@your-domain.example>"
+
+gpg --batch --pinentry-mode loopback --passphrase '' \
+  --quick-generate-key "$RPM_KEY_UID" rsa4096 sign 2y
+RPM_FINGERPRINT="$(gpg --batch --with-colons --list-secret-keys "$RPM_KEY_UID" |
+  awk -F: '$1 == "fpr" { print $10; exit }')"
+[[ "$RPM_FINGERPRINT" =~ ^[[:xdigit:]]{40}$ ]]
+gpg --batch --armor --export-secret-keys "$RPM_FINGERPRINT" \
+  > "$RPM_SIGNING_DIR/rpm-signing-key.asc"
+gpg --batch --armor --export "$RPM_FINGERPRINT" \
+  > "$RPM_SIGNING_DIR/RPM-GPG-KEY-liora"
+gpg --show-keys --with-fingerprint "$RPM_SIGNING_DIR/RPM-GPG-KEY-liora"
+printf 'Fingerprint: %s\nSigning directory: %s\n' "$RPM_FINGERPRINT" "$RPM_SIGNING_DIR"
+```
+
+当前原生 RPM 后端不支持输入私钥口令，因此这里生成的是**无口令私钥**。目录位于仓库外；不要提交到 Git、输出私钥到日志、作为 Release 附件上传，也不要使用个人日常 GPG 私钥。40 位指纹检查失败时应停止，不要截断更长的指纹。
+
+**2. 核对上面显示的公钥指纹，然后配置仓库 Actions：**
+
+| GitHub Actions 配置 | 填入内容 |
+| --- | --- |
+| 仓库 **Secret** `LIORA_RPM_SIGNING_PRIVATE_KEY` | `rpm-signing-key.asc` 的完整文本，包含 `BEGIN/END PGP PRIVATE KEY BLOCK`；不是文件路径，也不是公钥 |
+| 仓库 **Variable** `LIORA_RPM_SIGNING_FINGERPRINT` | **主密钥**的完整 40 位十六进制指纹；可以公开，不是短 Key ID，也不是另行随机生成的字符串 |
+
+```bash
+gh auth login
+GH_REPO="yhyzgn/liora" # Change this for your fork.
+gh secret set LIORA_RPM_SIGNING_PRIVATE_KEY --repo "$GH_REPO" \
+  < "$RPM_SIGNING_DIR/rpm-signing-key.asc"
+gh variable set LIORA_RPM_SIGNING_FINGERPRINT --repo "$GH_REPO" \
+  --body "$RPM_FINGERPRINT"
+gh secret list --repo "$GH_REPO"
+gh variable get LIORA_RPM_SIGNING_FINGERPRINT --repo "$GH_REPO"
+```
+
+不用 `gh` 时，在 **Settings → Secrets and variables → Actions → Secrets → New repository secret** 新建私钥 secret，在 **Variables → New repository variable** 新建指纹变量。当前工作流读取仓库级配置；仅配置在某个 Environment 下不会生效，除非将 workflow job 显式绑定到该 Environment。Secret 无法读回明文；`gh secret list` 只列名称，`gh variable get` 可以读回公开指纹供核对。
+
+**3. 发布信任信息并离线备份：**通过凭据独立于 GitHub 的项目所有者渠道（例如独立管理的发布网站）公布完整指纹与公钥。同一 GitHub Release 中的公钥和指纹不能互相建立信任。删除本地工作副本前，将私钥导出文件及 `$GNUPGHOME/openpgp-revocs.d/` 中的撤销证书保存在加密离线备份中；同时保护发布 tag 和 workflow 写入权限。后续版本复用同一身份；到期前续期并重新导出、更新 Secret 和公钥，或有计划地轮换两个配置项并独立公告新指纹。完整的本地构建、续期、轮换及 CI 验证说明见[签名策略](packaging/signing-policy.md#rpm-build-and-release-signing)。
+
+用户安装前应先独立核对指纹，再执行 `sudo rpm --import RPM-GPG-KEY-liora`，并要求 `rpmkeys --define '_pkgverify_level all' --checksig ./package.rpm` 成功后才安装。Fedora/RHEL 使用 `sudo dnf --setopt=localpkg_gpgcheck=1 install ./package.rpm`，openSUSE/SLES 使用 `sudo zypper install ./package.rpm`。更新器不会自动导入信任或重签下载包；Fedora 的 `rpm-setup-autosign` 只配置本地 `rpmbuild`，已发布的 v0.5.0 产物保持原样。
 
 打包规则：
 

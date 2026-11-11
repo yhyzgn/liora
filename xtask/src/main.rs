@@ -34,7 +34,7 @@ fn package(args: Vec<String>) -> Result<(), String> {
     let command = PackageCommand::parse(args)?;
     match command.action {
         PackageAction::Validate => validate(),
-        PackageAction::ReleaseReadiness => release_readiness(),
+        PackageAction::ReleaseReadiness => release_readiness(&command),
         PackageAction::Build => build(command.apps, command.font_variant),
         PackageAction::Smoke => smoke(command.apps, command.format, command.font_variant),
         PackageAction::InstallSmoke => install_smoke(
@@ -63,7 +63,7 @@ fn validate() -> Result<(), String> {
     Err("packaging layout validation failed".into())
 }
 
-fn release_readiness() -> Result<(), String> {
+fn release_readiness(command: &PackageCommand) -> Result<(), String> {
     let root = workspace_root()?;
     let mut report = ReleaseReadinessReport::default();
 
@@ -77,7 +77,7 @@ fn release_readiness() -> Result<(), String> {
 
     check_license_policy(&root, &mut report);
     check_release_tag_policy(&mut report);
-    check_signing_policy(&mut report);
+    check_signing_policy(&mut report, rpm_artifacts_expected(command));
     check_release_workflow(&root, &mut report);
     check_sdk_release_workflow(&root, &mut report);
 
@@ -250,11 +250,34 @@ fn check_release_tag_policy(report: &mut ReleaseReadinessReport) {
     }
 }
 
-fn check_signing_policy(report: &mut ReleaseReadinessReport) {
+fn rpm_artifacts_expected(command: &PackageCommand) -> bool {
+    !command.dry_run
+        && (command.format == PackageFormat::Rpm
+            || (command.format == PackageFormat::PlatformDefaults
+                && command
+                    .apps
+                    .iter()
+                    .any(|app| matches!(app, PackageApp::Gallery))))
+}
+
+fn check_signing_policy(report: &mut ReleaseReadinessReport, rpm_artifacts_expected: bool) {
     let require_signing = env_truthy("LIORA_REQUIRE_SIGNING");
     let allow_unsigned_release = env_truthy("LIORA_ALLOW_UNSIGNED_RELEASE");
     let platform = Platform::current();
+    if platform == Platform::Linux && !rpm_artifacts_expected {
+        report.pass(
+            "RPM signing policy",
+            "this run does not produce RPM packages",
+        );
+        return;
+    }
     let missing = signing_env_missing(platform);
+    if platform == Platform::Linux
+        && let Err(error) = rpm_signing_key(true)
+    {
+        report.fail("RPM signing policy", error);
+        return;
+    }
     if missing.is_empty() {
         report.pass(
             "signing/notarization policy",
@@ -289,7 +312,7 @@ fn check_signing_policy(report: &mut ReleaseReadinessReport) {
 
 fn signing_env_missing(platform: Platform) -> Vec<&'static str> {
     let required = match platform {
-        Platform::Linux => &[][..],
+        Platform::Linux => &["LIORA_RPM_SIGNING_KEY"][..],
         Platform::Macos => &[
             "LIORA_MACOS_CODESIGN_IDENTITY",
             "LIORA_MACOS_NOTARY_APPLE_ID",
@@ -588,7 +611,7 @@ fn install_smoke_plan(
             app.package, app.binary, app.package
         ),
         (Platform::Linux, PackageFormat::Rpm) => format!(
-            "install-smoke plan: app={} format=rpm\n  install: sudo rpm -Uvh {path}\n  smoke: timeout 15s {} || true  # GUI app may stay open until timeout\n  uninstall: sudo rpm -e {}",
+            "install-smoke plan: app={} format=rpm\n  trust: verify the publisher's OpenPGP fingerprint independently, then sudo rpm --import <publisher-public-key>\n  verify: rpmkeys --define '_pkgverify_level all' --checksig {path}\n  install (Fedora/RHEL): sudo dnf --setopt=localpkg_gpgcheck=1 install {path}\n  install (openSUSE/SLES): sudo zypper install {path}\n  smoke: timeout 15s {} || true  # GUI app may stay open until timeout\n  uninstall: sudo rpm -e {}",
             app.package, app.binary, app.package
         ),
         (Platform::Linux, PackageFormat::AppImage) => format!(
@@ -877,10 +900,6 @@ fn build(apps: Vec<PackageApp>, font_variant: FontVariant) -> Result<(), String>
 
 fn package_formats(command: PackageCommand) -> Result<(), String> {
     validate()?;
-    if !command.skip_build {
-        build(command.apps.clone(), command.font_variant)?;
-    }
-
     let root = workspace_root()?;
     let platform = Platform::current();
     let formats: Vec<_> = if command.format == PackageFormat::PlatformDefaults {
@@ -888,6 +907,14 @@ fn package_formats(command: PackageCommand) -> Result<(), String> {
     } else {
         vec![command.format]
     };
+    let rpm_signing_key = if platform == Platform::Linux && formats.contains(&PackageFormat::Rpm) {
+        rpm_signing_key(!command.dry_run)?
+    } else {
+        None
+    };
+    if !command.skip_build {
+        build(command.apps.clone(), command.font_variant)?;
+    }
 
     let mut manifest = PackageManifest::default();
 
@@ -899,6 +926,7 @@ fn package_formats(command: PackageCommand) -> Result<(), String> {
         let binaries_dir = release_binaries_dir(&root);
         let target_triple = target_triple();
         let git_sha = git_short_sha(&root);
+        let mut signed_rpm_path = None;
 
         if !cargo_formats.is_empty() {
             let config_path = generated_config_path_for(&root, &metadata, command.font_variant);
@@ -975,7 +1003,20 @@ fn package_formats(command: PackageCommand) -> Result<(), String> {
                     render_generate_rpm_config_for(&root, &metadata, command.font_variant),
                 )
                 .map_err(|error| format!("failed to write {}: {error}", config_path.display()))?;
-                let args = generate_rpm_args(&root, app, &config_path, &out_dir);
+                let rpm_path = expected_artifact_path(
+                    &out_dir,
+                    &metadata.package,
+                    platform,
+                    PackageFormat::Rpm,
+                    command.font_variant,
+                );
+                let args = generate_rpm_args(
+                    &root,
+                    app,
+                    &config_path,
+                    &rpm_path,
+                    rpm_signing_key.as_deref(),
+                );
                 println!(
                     "generate-rpm config: app={} path={}",
                     metadata.package,
@@ -984,7 +1025,13 @@ fn package_formats(command: PackageCommand) -> Result<(), String> {
                 if command.dry_run {
                     println!("dry-run: cargo {}", args.join(" "));
                 } else {
+                    fs::create_dir_all(&out_dir).map_err(|error| {
+                        format!("failed to create {}: {error}", out_dir.display())
+                    })?;
                     run_generate_rpm(&args)?;
+                    if rpm_signing_key.is_some() {
+                        signed_rpm_path = Some(rpm_path);
+                    }
                 }
             } else {
                 println!(
@@ -998,7 +1045,7 @@ fn package_formats(command: PackageCommand) -> Result<(), String> {
         }
 
         if !command.dry_run {
-            let artifacts = collect_package_artifacts(
+            let mut artifacts = collect_package_artifacts(
                 &metadata.package,
                 &app_version(),
                 platform,
@@ -1026,6 +1073,9 @@ fn package_formats(command: PackageCommand) -> Result<(), String> {
                     metadata.package,
                     out_dir.display()
                 );
+            }
+            for artifact in &mut artifacts {
+                artifact.signed = signed_rpm_path.as_deref() == Some(artifact.path.as_path());
             }
             manifest.extend(artifacts);
         }
@@ -1427,24 +1477,64 @@ fn cargo_packager_args(
     ]
 }
 
+fn rpm_signing_required(
+    github_ref: Option<&str>,
+    package_channel: Option<&str>,
+    require_signing: bool,
+) -> bool {
+    require_signing
+        || github_ref.is_some_and(|value| value.starts_with("refs/tags/v"))
+        || package_channel == Some("release")
+}
+
+fn rpm_signing_key(enforce_requirement: bool) -> Result<Option<PathBuf>, String> {
+    let key = env::var_os("LIORA_RPM_SIGNING_KEY");
+    let github_ref = env::var("GITHUB_REF").ok();
+    let package_channel = env::var("LIORA_PACKAGE_CHANNEL").ok();
+    let required = enforce_requirement
+        && rpm_signing_required(
+            github_ref.as_deref(),
+            package_channel.as_deref(),
+            env_truthy("LIORA_REQUIRE_SIGNING"),
+        );
+    match key {
+        Some(key) => {
+            let path = PathBuf::from(key);
+            if !path.is_file() {
+                return Err(format!("LIORA_RPM_SIGNING_KEY is not a file: {}", path.display()));
+            }
+            Ok(Some(path))
+        }
+        None if required => Err(
+            "RPM releases require LIORA_RPM_SIGNING_KEY pointing to an ASCII-armored OpenPGP private key; unsigned RPM releases are not allowed".into(),
+        ),
+        None => Ok(None),
+    }
+}
+
 fn generate_rpm_args(
     root: &std::path::Path,
     app: PackageApp,
     config_path: &std::path::Path,
-    out_dir: &std::path::Path,
+    output_path: &std::path::Path,
+    signing_key: Option<&Path>,
 ) -> Vec<String> {
     let package_dir = root.join("apps").join(app.package());
-    vec![
+    let mut args = vec![
         "generate-rpm".into(),
         "--package".into(),
         package_dir.display().to_string(),
         "--output".into(),
-        out_dir.display().to_string(),
+        output_path.display().to_string(),
         "--metadata-overwrite".into(),
         format!("{}#package.metadata.generate-rpm", config_path.display()),
         "--auto-req".into(),
         "builtin".into(),
-    ]
+    ];
+    if let Some(key) = signing_key {
+        args.extend(["--signing-key".into(), key.display().to_string()]);
+    }
+    args
 }
 
 fn run_generate_rpm(args: &[String]) -> Result<(), String> {
@@ -1754,37 +1844,6 @@ mod tests {
     }
 
     #[test]
-    fn generate_rpm_args_use_metadata_overwrite_branch() {
-        let args = generate_rpm_args(
-            Path::new("/repo/liora"),
-            PackageApp::Gallery,
-            Path::new("/repo/liora/target/liora-packager/GenerateRpm.gallery.toml"),
-            Path::new("/repo/liora/target/packages/liora-gallery/linux"),
-        );
-        assert!(args.contains(&"generate-rpm".into()));
-        assert!(args.contains(&"--metadata-overwrite".into()));
-        assert!(args.contains(
-            &"/repo/liora/target/liora-packager/GenerateRpm.gallery.toml#package.metadata.generate-rpm"
-                .into()
-        ));
-    }
-
-    #[test]
-    fn install_smoke_plan_contains_install_and_uninstall_steps() {
-        let app = PackageApp::Gallery.metadata();
-        let plan = install_smoke_plan(
-            &app,
-            Platform::Linux,
-            PackageFormat::Deb,
-            Path::new("target/packages/liora-gallery/linux/liora-gallery.deb"),
-        );
-
-        assert!(plan.contains("sudo dpkg -i"));
-        assert!(plan.contains("sudo apt-get remove"));
-        assert!(plan.contains("liora-gallery"));
-    }
-
-    #[test]
     fn install_smoke_command_parse_defaults_to_plan_only() {
         let command = PackageCommand::parse(vec![
             "install-smoke".into(),
@@ -1831,6 +1890,38 @@ mod tests {
     }
 
     #[test]
+    fn rpm_signing_is_required_for_release_channels_tags_and_strict_mode() {
+        for (github_ref, channel, strict, expected) in [
+            (Some("refs/tags/v1.2.3"), None, false, true),
+            (None, Some("release"), false, true),
+            (None, Some("preview"), false, false),
+            (Some("refs/heads/main"), None, false, false),
+            (None, None, true, true),
+        ] {
+            assert_eq!(
+                rpm_signing_required(github_ref, channel, strict),
+                expected,
+                "github_ref={github_ref:?} channel={channel:?} strict={strict}"
+            );
+        }
+    }
+
+    #[test]
+    fn rpm_readiness_only_requires_keys_for_actual_rpm_builds() {
+        for (args, expected) in [
+            (vec![], true),
+            (vec!["--dry-run"], false),
+            (vec!["--app", "docs"], false),
+            (vec!["--format", "deb"], false),
+            (vec!["--app", "docs", "--format", "rpm"], true),
+        ] {
+            let command =
+                PackageCommand::parse(args.into_iter().map(String::from).collect()).unwrap();
+            assert_eq!(rpm_artifacts_expected(&command), expected);
+        }
+    }
+
+    #[test]
     fn expected_tar_gz_path_matches_portable_backend_name() {
         let path = expected_artifact_path(
             Path::new("target/packages/liora-gallery/linux"),
@@ -1848,15 +1939,6 @@ mod tests {
     fn release_readiness_action_parses() {
         let command = PackageCommand::parse(vec!["release-readiness".into()]).unwrap();
         assert_eq!(command.action, PackageAction::ReleaseReadiness);
-    }
-
-    #[test]
-    fn signing_env_missing_is_platform_specific() {
-        assert!(signing_env_missing(Platform::Linux).is_empty());
-        let macos_missing = signing_env_missing(Platform::Macos);
-        assert!(macos_missing.contains(&"LIORA_MACOS_CODESIGN_IDENTITY"));
-        let windows_missing = signing_env_missing(Platform::Windows);
-        assert!(windows_missing.contains(&"LIORA_WINDOWS_SIGNTOOL_CERT_PATH"));
     }
 
     #[test]

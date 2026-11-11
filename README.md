@@ -142,7 +142,7 @@ The workspace pins official Zed `main` at `f0d896f2c18a543335eb155f729d36b624695
 
 The examples below target crates.io Liora 0.4.0 and use its older GPUI pin. For a path dependency on this checkout, use the workspace revision above for both GPUI entries instead.
 
-Liora 0.5.0 uses the current workspace GPUI pin. When adopting 0.5, change the Liora dependency versions below to `0.5` and both GPUI revisions to `f0d896f2c18a543335eb155f729d36b624695591`; macOS requires version 12+ and the macOS 26 SDK.
+Liora 0.5.1 uses the current workspace GPUI pin. When adopting 0.5, change the Liora dependency versions below to `0.5` and both GPUI revisions to `f0d896f2c18a543335eb155f729d36b624695591`; macOS requires version 12+ and the macOS 26 SDK.
 
 Liora uses **official Zed GPUI only** from the official Zed upstream repository. Do not use renamed or community forks such as `open-gpui`.
 
@@ -1841,6 +1841,59 @@ Supported release artifacts include:
 | Linux x64 | `liora-docs`, `liora-gallery` | AppImage, `.deb`, `.rpm`, portable `.tar.gz` |
 | macOS arm64 | `liora-docs`, `liora-gallery` | `.dmg` |
 | Windows x64 | `liora-docs.exe`, `liora-gallery.exe` | NSIS setup `.exe`, MSI |
+
+### RPM release signing setup
+
+Generate a dedicated publisher key **once on a trusted owner machine**, not on an installer's machine or on every CI run. Install GnuPG 2.4+ and GitHub CLI (`gh`); you need permission to manage the target repository's Actions secrets and variables. Run the following steps in the **same dedicated Bash session** and replace the example email with a release contact you control.
+
+**1. Generate/export an RSA-4096 signing key (OpenPGP v4, expires in two years):**
+
+```bash
+set -euo pipefail
+umask 077
+RPM_SIGNING_DIR="$(mktemp -d "$HOME/liora-rpm-signing.XXXXXX")"
+export GNUPGHOME="$RPM_SIGNING_DIR/gnupg"
+mkdir -m 700 "$GNUPGHOME"
+RPM_KEY_UID="Liora RPM Release Signing <releases@your-domain.example>"
+
+gpg --batch --pinentry-mode loopback --passphrase '' \
+  --quick-generate-key "$RPM_KEY_UID" rsa4096 sign 2y
+RPM_FINGERPRINT="$(gpg --batch --with-colons --list-secret-keys "$RPM_KEY_UID" |
+  awk -F: '$1 == "fpr" { print $10; exit }')"
+[[ "$RPM_FINGERPRINT" =~ ^[[:xdigit:]]{40}$ ]]
+gpg --batch --armor --export-secret-keys "$RPM_FINGERPRINT" \
+  > "$RPM_SIGNING_DIR/rpm-signing-key.asc"
+gpg --batch --armor --export "$RPM_FINGERPRINT" \
+  > "$RPM_SIGNING_DIR/RPM-GPG-KEY-liora"
+gpg --show-keys --with-fingerprint "$RPM_SIGNING_DIR/RPM-GPG-KEY-liora"
+printf 'Fingerprint: %s\nSigning directory: %s\n' "$RPM_FINGERPRINT" "$RPM_SIGNING_DIR"
+```
+
+This creates an **unencrypted** private key because the native RPM backend cannot accept a key passphrase. The private directory is outside the checkout; never commit it, print the private key, attach it to a release, or reuse your personal GPG key. Stop if the 40-digit check fails; never truncate a longer fingerprint.
+
+**2. Inspect the displayed public-key fingerprint, then configure repository Actions settings:**
+
+| GitHub Actions setting | Value |
+| --- | --- |
+| Repository **Secret** `LIORA_RPM_SIGNING_PRIVATE_KEY` | Entire contents of `rpm-signing-key.asc`, including `BEGIN/END PGP PRIVATE KEY BLOCK`; not a file path or public key |
+| Repository **Variable** `LIORA_RPM_SIGNING_FINGERPRINT` | Full 40-hex-digit **primary-key** fingerprint; public, not a short key ID or a separately generated random value |
+
+```bash
+gh auth login
+GH_REPO="yhyzgn/liora" # Change this for your fork.
+gh secret set LIORA_RPM_SIGNING_PRIVATE_KEY --repo "$GH_REPO" \
+  < "$RPM_SIGNING_DIR/rpm-signing-key.asc"
+gh variable set LIORA_RPM_SIGNING_FINGERPRINT --repo "$GH_REPO" \
+  --body "$RPM_FINGERPRINT"
+gh secret list --repo "$GH_REPO"
+gh variable get LIORA_RPM_SIGNING_FINGERPRINT --repo "$GH_REPO"
+```
+
+Without `gh`, use **Settings → Secrets and variables → Actions → Secrets → New repository secret**, and the **Variables → New repository variable** tab for the fingerprint. The current workflow reads repository-level settings: environment-only values will not work unless its job is explicitly bound to that environment. Secret values cannot be read back; `gh secret list` shows names, while `gh variable get` lets you compare the stored fingerprint.
+
+**3. Publish trust and keep backups:** publish the complete fingerprint and public key through an owner-controlled channel with credentials independent of GitHub, such as your release website. The key/fingerprint attached to the same GitHub Release are not an independent trust anchor. Store the private export and `$GNUPGHOME/openpgp-revocs.d/` revocation certificate in an encrypted offline backup before removing the working copy. Protect release tags/workflow write access. Reuse this identity between releases; renew before expiry and re-export/update the secret and public key, or deliberately rotate both settings and announce the new fingerprint independently. See the [full signing policy](packaging/signing-policy.md#rpm-build-and-release-signing) for local builds, renewal, rotation, and CI verification.
+
+For installation, independently verify the fingerprint, run `sudo rpm --import RPM-GPG-KEY-liora`, then require `rpmkeys --define '_pkgverify_level all' --checksig ./package.rpm` to succeed. Install/update with `sudo dnf --setopt=localpkg_gpgcheck=1 install ./package.rpm` on Fedora/RHEL or `sudo zypper install ./package.rpm` on openSUSE/SLES. The updater never imports trust or re-signs downloads. Fedora's `rpm-setup-autosign` only configures local `rpmbuild`; v0.5.0 assets remain unchanged.
 
 Packaging rules:
 

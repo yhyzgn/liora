@@ -39,3 +39,13 @@
 - Mitigation: run native Linux headless smoke plus workspace tests, preserve explicit Windows/macOS/real-display validation gaps, and remediate existing lint debt in a separately scoped maintenance task without warning suppressions.
 - Rollback: revert this refresh's pin/lock/API/docs as one bounded change.
 - Status: Open.
+
+## R-005 — RPM signature enforcement and publisher trust
+
+- Severity: High.
+- Evidence: Fedora 45 / RPM 6 require trusted package signatures; existing v0.5.0 RPM assets were released unsigned. `cargo-generate-rpm` signs only when explicitly given a key, not through Fedora's `rpmbuild` autosign configuration.
+- Failure mode: unsigned/untrusted RPM updates are rejected; silently re-signing downloads would erase publisher provenance. A valid RPM signature alone does not prove dependency/ABI compatibility across distributions.
+- Mitigation: `xtask` requires `LIORA_RPM_SIGNING_KEY` for RPM release channels/tags; CI compares `LIORA_RPM_SIGNING_PRIVATE_KEY` against the independently provisioned full v4 `LIORA_RPM_SIGNING_FINGERPRINT` before signing, signs before checksums, verifies both font variants in an isolated RPM keyring, and publishes the public key/fingerprint. Users independently verify the fingerprint before an explicit RPM key import. The updater remains manual and never changes trust or disables verification.
+- Rollback: revert the RPM signing workflow/xtask/updater/docs change together; do not bypass system signature enforcement. Existing v0.5.0 assets remain unchanged.
+- Status: Open for independent fingerprint distribution and real native distro installation smoke. Repository RPM secret/fingerprint were provisioned for v0.5.1 using the owner-requested non-expiring development signing identity; macOS/Windows platform signing remains opt-in and unconfigured.
+- Verification (2026-11-11): focused xtask/updater/packager tests passed (31 tests); packaging validate and local release-readiness passed (missing local signing key remains a warning). Disposable real-backend builds verified both font variants, signed-byte SHA-256, trusted-key acceptance, untrusted-key rejection and no false signed flag on a stale unsigned RPM. Tagged dry-run/Docs-only readiness succeeds without RPM secrets; real release RPM generation still rejects unsigned overrides. Exact CI scripts rejected missing/malformed/mismatched fingerprints, removed temporary private keys on success/failure, and assembled both signed RPM variants plus the public key/fingerprint with matching release SHA256SUMS. Rust/workflow reviews found no remaining actionable issues after the two scoped fixes. No protected release signing or native distro installation was performed.

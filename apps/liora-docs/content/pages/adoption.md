@@ -45,7 +45,7 @@ fn main() {
 
 For a downstream project, use Liora from crates.io and patch Cargo's `gpui` registry fallback to Liora's matching official Zed revision:
 
-Liora 0.5.0 requires the current official Zed revision `f0d896f2c18a543335eb155f729d36b624695591`. To use 0.5, change the Liora dependency below to `0.5` and both GPUI revisions to that pin. The example retains the published 0.4 setup for existing consumers. macOS 0.5 builds require the macOS 26 SDK and run on macOS 12+.
+Liora 0.5.1 requires the current official Zed revision `f0d896f2c18a543335eb155f729d36b624695591`. To use 0.5, change the Liora dependency below to `0.5` and both GPUI revisions to that pin. The example retains the published 0.4 setup for existing consumers. macOS 0.5 builds require the macOS 26 SDK and run on macOS 12+.
 
 ```toml
 [dependencies]

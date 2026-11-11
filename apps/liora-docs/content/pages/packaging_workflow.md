@@ -157,9 +157,60 @@ Generated Gallery package outputs are uploaded as:
 liora-<preview|release>-gallery-packages-<platform>
 ```
 
-The Actions package artifact bundle includes generated backend TOML files and package manifest/checksum/release-note files under `target/packages/`; the public GitHub Release uploads only distributable binaries/installers/archives plus one `SHA256SUMS.txt`. Public asset names include `without-fonts` or `with-fonts`: default `without-fonts` assets are smaller and do not bundle app font files, while `with-fonts` assets include MiSans resources or embedded fallback where applicable. The manifest records `version`, `platform`, `targetTriple`, optional `gitSha`, format, path, checksum, and signing state.
+The Actions package artifact bundle includes generated backend TOML files and package manifest/checksum/release-note files under `target/packages/`; the public GitHub Release uploads distributable binaries/installers/archives, `SHA256SUMS.txt`, and the RPM publisher public key/fingerprint. Public asset names include `without-fonts` or `with-fonts`: default `without-fonts` assets are smaller and do not bundle app font files, while `with-fonts` assets include MiSans resources or embedded fallback where applicable. The manifest records `version`, `platform`, `targetTriple`, optional `gitSha`, format, path, checksum, and expected signing state.
 
 Linux `.deb` and `.rpm` configs include explicit runtime dependency metadata for GTK3, Ayatana/AppIndicator, X11/Wayland, xkbcommon, fontconfig/freetype, Vulkan, ALSA, and xdg desktop integration.
+
+RPM generation uses `cargo-generate-rpm 0.21.0 --signing-key` when `LIORA_RPM_SIGNING_KEY` points to an ASCII-armored, unencrypted private key. Tagged releases require both the protected `LIORA_RPM_SIGNING_PRIVATE_KEY` secret and the separately provisioned `LIORA_RPM_SIGNING_FINGERPRINT` repository variable (the complete 40-digit v4 fingerprint). CI compares the secret key to the pinned fingerprint before signing both variants, then verifies each package in an isolated RPM keyring. Release assets include `RPM-GPG-KEY-liora` and its verified fingerprint; the private key stays in temporary CI storage and is removed even on failure.
+
+**Generate the release signing credentials once.** On a trusted owner machine, install GnuPG 2.4+ and GitHub CLI (`gh`). Use the same dedicated Bash session for both blocks below and replace the example email with your own release contact. These are publisher setup steps, not requirements for users installing Liora.
+
+```bash
+set -euo pipefail
+umask 077
+RPM_SIGNING_DIR="$(mktemp -d "$HOME/liora-rpm-signing.XXXXXX")"
+export GNUPGHOME="$RPM_SIGNING_DIR/gnupg"
+mkdir -m 700 "$GNUPGHOME"
+RPM_KEY_UID="Liora RPM Release Signing <releases@your-domain.example>"
+
+gpg --batch --pinentry-mode loopback --passphrase '' \
+  --quick-generate-key "$RPM_KEY_UID" rsa4096 sign 2y
+RPM_FINGERPRINT="$(gpg --batch --with-colons --list-secret-keys "$RPM_KEY_UID" |
+  awk -F: '$1 == "fpr" { print $10; exit }')"
+[[ "$RPM_FINGERPRINT" =~ ^[[:xdigit:]]{40}$ ]]
+gpg --batch --armor --export-secret-keys "$RPM_FINGERPRINT" \
+  > "$RPM_SIGNING_DIR/rpm-signing-key.asc"
+gpg --batch --armor --export "$RPM_FINGERPRINT" \
+  > "$RPM_SIGNING_DIR/RPM-GPG-KEY-liora"
+gpg --show-keys --with-fingerprint "$RPM_SIGNING_DIR/RPM-GPG-KEY-liora"
+printf 'Fingerprint: %s\nSigning directory: %s\n' "$RPM_FINGERPRINT" "$RPM_SIGNING_DIR"
+```
+
+This creates an unencrypted RSA-4096, signing-only OpenPGP v4 key with a two-year expiry, plus private/public exports outside the checkout. The backend does not accept a private-key passphrase. Stop if the fingerprint is not 40 hex digits; never truncate it. Keep the private directory out of Git, logs, chat, and release assets; never use a personal key.
+
+**Configure repository Actions settings.** Check the displayed public fingerprint, authenticate with an account allowed to manage the repository, and change `GH_REPO` for a fork.
+
+| GitHub Actions setting | Value |
+| --- | --- |
+| Repository **Secret** `LIORA_RPM_SIGNING_PRIVATE_KEY` | Entire contents of `rpm-signing-key.asc`, including `BEGIN/END PGP PRIVATE KEY BLOCK`; not a file path or public key |
+| Repository **Variable** `LIORA_RPM_SIGNING_FINGERPRINT` | Full 40-hex-digit **primary-key** fingerprint; public, not a short key ID or a separately generated random value |
+
+```bash
+gh auth login
+GH_REPO="yhyzgn/liora" # Change this for your fork.
+gh secret set LIORA_RPM_SIGNING_PRIVATE_KEY --repo "$GH_REPO" \
+  < "$RPM_SIGNING_DIR/rpm-signing-key.asc"
+gh variable set LIORA_RPM_SIGNING_FINGERPRINT --repo "$GH_REPO" \
+  --body "$RPM_FINGERPRINT"
+gh secret list --repo "$GH_REPO"
+gh variable get LIORA_RPM_SIGNING_FINGERPRINT --repo "$GH_REPO"
+```
+
+The secret is uploaded from the file over standard input, not placed in a command-line argument. `gh secret list` shows only names; compare the public value from `gh variable get` with the generation output. In the GitHub UI, use **Settings → Secrets and variables → Actions → Secrets → New repository secret** for the private file's text and **Variables → New repository variable** for the fingerprint. The current job reads repository settings, not environment-only values: an Environment must be explicitly bound to the workflow job before its credentials can be used. Protect release tags and workflow write access; repository secrets alone do not add approval gates.
+
+**Publish and preserve the identity.** Distribute the full fingerprint and public key via a separately managed owner-controlled channel independent of GitHub. Back up the private export and the revocation certificate in `$GNUPGHOME/openpgp-revocs.d/` to encrypted offline storage before removing the working copy. Reuse this key across releases. Before its two-year expiry, renew and re-export/update the secret and public key; a deliberate replacement key requires updating both GitHub settings and independently announcing the new fingerprint. See the [full signing setup and renewal guide](https://github.com/yhyzgn/liora/blob/main/packaging/signing-policy.md#rpm-build-and-release-signing).
+
+For first installation, independently confirm the publisher's full fingerprint, import that public key with `sudo rpm --import RPM-GPG-KEY-liora`, and require `rpmkeys --define '_pkgverify_level all' --checksig ./package.rpm` to succeed before installing. Use `sudo dnf --setopt=localpkg_gpgcheck=1 install ./package.rpm` on Fedora/RHEL or `sudo zypper install ./package.rpm` on openSUSE/SLES. Keep the key for subsequent updates. A fingerprint asset beside a public key on the same release is not an independent trust anchor. The updater returns a manual RPM install plan; it never imports trust or re-signs downloads. Fedora's `rpm-setup-autosign` configures `rpmbuild` only, not this backend. See `packaging/signing-policy.md` for local autosign exports and trust boundaries. Signature compatibility does not guarantee matching distro dependency names or ABI.
 
 Portable `.tar.gz` is generated by Liora's supplemental backend, not by mapping to Arch pacman packages. It stages the release binary, PNG/SVG icons, Linux desktop/metainfo files, a top-level launcher script, and a README, then writes:
 
@@ -220,12 +271,12 @@ The release notes include three sections:
 P12 no longer treats signing, notarization, license policy, and real release validation as loose TODO notes. They are represented by explicit repository gates:
 
 - `LICENSE.md` documents the current `LicenseRef-Liora` policy until the owner chooses a formal OSS or commercial license.
-- `packaging/signing-policy.md` documents macOS `codesign`/`notarytool`/`stapler` and Windows `signtool` inputs.
+- `packaging/signing-policy.md` documents Linux RPM OpenPGP signing/trust, macOS `codesign`/`notarytool`/`stapler`, and Windows `signtool` inputs.
 - `cargo run -p xtask -- package release-readiness` checks layout, license policy, release tag/version matching, signing inputs, and package workflow release wiring.
 - `.github/workflows/ci.yml` runs the readiness gate in non-strict mode for ordinary validation.
-- `.github/workflows/package.yml` runs the readiness gate before package generation; tagged `v*` release runs sign only when the release environment sets `LIORA_REQUIRE_SIGNING=true`; otherwise macOS/Windows artifacts are allowed as unsigned first-release builds and the release notes call that out.
+- `.github/workflows/package.yml` requires a stable RPM signing key for every tagged release, independent of `LIORA_REQUIRE_SIGNING`; macOS/Windows retain the existing opt-in signing policy and unsigned-release notes.
 
-For a real signed public release, create a protected `vX.Y.Z` tag that matches `crates/liora-packager/Cargo.toml`, configure the documented signing secrets, set `LIORA_REQUIRE_SIGNING=true`, and let `package.yml` publish the GitHub Release. If signing is not required, the workflow publishes unsigned artifacts and records that status in the release notes.
+For a public release, create a protected `vX.Y.Z` tag matching `crates/liora-packager/Cargo.toml` and configure the RPM signing secret before running `package.yml`. Missing RPM signing credentials or failed verification stop publication, even if `LIORA_ALLOW_UNSIGNED_RELEASE=true`. Configure the other documented secrets and `LIORA_REQUIRE_SIGNING=true` when enforcing macOS/Windows signing. Ordinary preview RPMs may remain unsigned; already published v0.5.0 assets are unchanged.
 
 
 ## Release Candidate Checklist

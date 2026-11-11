@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.1 - 2026-11-11
+
+- Sign tagged RPM releases with the existing native `cargo-generate-rpm` backend before checksums, verify both font variants against an isolated publisher keyring, and publish the public key/fingerprint after matching an independently pinned fingerprint. Missing RPM credentials or failed signatures block publication, including when unsigned releases are otherwise allowed. Strict non-tag builds use the same signing path; dry-run/Docs-only readiness does not require RPM secrets, and stale artifacts are not marked signed.
+- Explain explicit RPM key trust and signature checks in updater/install plans for Fedora/RHEL and openSUSE/SLES; never auto-import keys, re-sign downloaded packages, or disable verification. Fedora's local `rpmbuild` autosign helper is not a release trust mechanism.
+- Document one-time RSA-4096 publisher-key generation/export, repository Actions Secret/Variable setup, independent fingerprint publication, encrypted offline backup, renewal, and rotation in both READMEs, the signing policy, and Docs.
+- Remove an obsolete README word blacklist that rejected valid publisher-trust terminology in the RPM signing documentation.
+
 ## 0.5.0 - 2026-11-10
 
 - Update official Zed GPUI, platform backends, and collections to `f0d896f2c18a543335eb155f729d36b624695591`, including upstream text layout and focus navigation optimizations and a macOS pasteboard fix. GPUI remains at package version `0.2.2`.

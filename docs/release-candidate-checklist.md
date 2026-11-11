@@ -4,7 +4,7 @@ This checklist defines the repository-owned readiness gate for the Liora 0.5.x r
 
 ## Scope
 
-- Target version: `0.5.0`, matching every workspace package manifest and `crates/liora-packager/Cargo.toml`.
+- Target version: `0.5.1`, matching every workspace package manifest and `crates/liora-packager/Cargo.toml`.
 - Runtime boundary: pure Rust + GPUI native apps only. Do not introduce Tauri, WebView, HTML/CSS/DOM, WASM chart runtimes, or browser shells.
 - Canonical apps: `apps/liora-gallery` and `apps/liora-docs`.
 - Removed sample-app boundary: do not re-add `examples/minimal-app`, `examples/dashboard-app`, `liora-minimal-app`, or `liora-dashboard-app`; their useful adoption and dogfooding behavior lives in Gallery and Docs.
@@ -48,7 +48,7 @@ Before a tag release, verify these files agree:
 These items are intentionally outside local developer machines and ordinary CI dry-runs. They must be executed only in owner-controlled protected environments:
 
 1. Create and push a real `vX.Y.Z` tag only after the local RC gates pass and the tag matches `crates/liora-packager/Cargo.toml`.
-2. For signed releases, configure macOS signing/notarization inputs (`codesign`, `notarytool`, `stapler`) and Windows signing inputs (`signtool`, timestamp server, certificate secrets), then set `LIORA_REQUIRE_SIGNING=true`; unsigned first-release builds are allowed when that variable is absent.
+2. Always configure the protected `LIORA_RPM_SIGNING_PRIVATE_KEY` secret and independently provisioned `LIORA_RPM_SIGNING_FINGERPRINT` repository variable (full OpenPGP v4 fingerprint) for RPM releases. The workflow binds both font variants to this fingerprint, verifies signatures against the isolated publisher keyring, and publishes the public key/fingerprint; no unsigned-RPM override is allowed on release tags. Owners must also independently distribute the full fingerprint before users import the key. macOS signing/notarization (`codesign`, `notarytool`, `stapler`) and Windows signing (`signtool`, timestamp server, certificate secrets) retain their opt-in `LIORA_REQUIRE_SIGNING=true` gate.
 3. Run real system-level install/uninstall smoke tests for `.deb`, `.rpm`, AppImage, macOS app/dmg, NSIS, and MSI on dedicated runners or test machines.
 4. Publish GitHub Release app assets only through the protected `package.yml` release path; publish crates.io SDK crates only through `release-sdk.yml` with `CRATES_IO_TOKEN`.
 5. Change license metadata only when the owner formally chooses the replacement license.

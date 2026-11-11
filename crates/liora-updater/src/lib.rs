@@ -746,6 +746,19 @@ fn install_action(
             },
             vec!["Runs the AppImage directly; package installation is not attempted.".to_string()],
         ),
+        (Platform::LinuxX64, AssetKind::Installer) if name.ends_with(".rpm") => (
+            InstallAction::Manual {
+                description: format!(
+                    "{} requires a signed RPM and a trusted publisher key before installation with dnf, zypper, or rpm.",
+                    name
+                ),
+            },
+            vec![
+                "Verify the publisher's OpenPGP fingerprint independently before explicitly importing its public key with sudo rpm --import <key>.".to_string(),
+                "Require a valid signature: rpmkeys --define '_pkgverify_level all' --checksig <package.rpm>. SHA-256 verification alone does not establish publisher trust.".to_string(),
+                "Fedora/RHEL: sudo dnf --setopt=localpkg_gpgcheck=1 install ./<package.rpm>. openSUSE/SLES: sudo zypper install ./<package.rpm>. Installation and key trust remain caller-owned; do not auto-sign downloaded packages or disable signature checks.".to_string(),
+            ],
+        ),
         (Platform::LinuxX64, AssetKind::Installer) => (
             InstallAction::Manual {
                 description: format!(
@@ -1018,13 +1031,19 @@ mod tests {
 
     #[test]
     fn install_plan_does_not_auto_privilege_package_manager_assets() {
-        let asset = asset("sample-app-v0.2.0-linux-x64.deb");
-        let plan = build_install_plan(
-            "sample-app",
-            Platform::LinuxX64,
-            &asset,
-            PathBuf::from("/tmp/sample.deb"),
-        );
-        assert!(matches!(plan.action, InstallAction::Manual { .. }));
+        for extension in ["deb", "rpm"] {
+            let asset = asset(&format!("sample-app-v0.2.0-linux-x64.{extension}"));
+            let plan = build_install_plan(
+                "sample-app",
+                Platform::LinuxX64,
+                &asset,
+                PathBuf::from(format!("/tmp/sample.{extension}")),
+            );
+            assert!(matches!(plan.action, InstallAction::Manual { .. }));
+            assert!(matches!(
+                plan.install(),
+                Err(UpdaterError::ManualInstall(_))
+            ));
+        }
     }
 }
