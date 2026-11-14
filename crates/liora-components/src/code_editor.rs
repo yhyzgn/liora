@@ -33,7 +33,7 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 use serde::Deserialize;
 use std::{
-    collections::{BTreeMap, HashSet},
+    collections::BTreeMap,
     fs,
     ops::Range,
     path::{Path, PathBuf},
@@ -50,6 +50,8 @@ pub type CodeDiagnosticsProvider = dyn Fn(&str) -> Vec<CodeDiagnostic> + 'static
 pub type CodeCompletionProvider = dyn Fn(&str) -> Vec<CodeCompletionItem> + 'static;
 /// Type alias for hover/help provider values used by the code editor API.
 pub type CodeHoverProvider = dyn Fn(&str) -> Option<CodeHover> + 'static;
+
+mod interaction;
 
 actions!(
     code_editor,
@@ -127,7 +129,13 @@ actions!(
         #[doc = "Keyboard action that restores the previous edit transaction."]
         CodeEditorUndo,
         #[doc = "Keyboard action that reapplies the next edit transaction."]
-        CodeEditorRedo
+        CodeEditorRedo,
+        #[doc = "Keyboard action that dismisses completion candidates."]
+        CodeEditorDismissCompletions,
+        #[doc = "Keyboard action that selects the next search match."]
+        CodeEditorFindNext,
+        #[doc = "Keyboard action that selects the previous search match."]
+        CodeEditorFindPrevious
     ]
 );
 
@@ -208,6 +216,47 @@ pub struct CodeCompletionItem {
     pub detail: Option<SharedString>,
 }
 
+/// Explicit host-supplied UTF-8 text edit paired with a display candidate.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CodeCompletionEdit {
+    /// Existing display metadata, unchanged for provider compatibility.
+    pub item: CodeCompletionItem,
+    /// UTF-8 byte range replaced by this edit.
+    pub range: Range<usize>,
+    /// Inserted text, independent of the candidate's display label.
+    pub new_text: SharedString,
+}
+
+impl CodeCompletionEdit {
+    /// Creates a completion edit; the editor validates its range before installation.
+    pub fn new(
+        item: CodeCompletionItem,
+        range: Range<usize>,
+        new_text: impl Into<SharedString>,
+    ) -> Self {
+        Self {
+            item,
+            range,
+            new_text: new_text.into(),
+        }
+    }
+}
+
+/// Version and caret snapshot for rejecting stale asynchronous editor results.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CodeEditorRequestToken {
+    revision: u64,
+    cursor: usize,
+    selection: Range<usize>,
+}
+
+impl CodeEditorRequestToken {
+    /// Text revision captured when the host requested editor data.
+    pub fn revision(&self) -> u64 {
+        self.revision
+    }
+}
+
 impl CodeCompletionItem {
     /// Creates a completion candidate with a required label.
     pub fn new(label: impl Into<SharedString>) -> Self {
@@ -268,21 +317,26 @@ impl CodePoint {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct CodeLine {
-    text: String,
+    text: Arc<str>,
     start_offset: usize,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct CodeBuffer {
     text: String,
-    lines: Vec<CodeLine>,
+    lines: Arc<Vec<CodeLine>>,
+}
+#[derive(Clone, Debug)]
+struct CodeBufferSnapshot {
+    lines: Arc<Vec<CodeLine>>,
+    len: usize,
 }
 
 impl CodeBuffer {
     fn new(value: impl Into<String>) -> Self {
         let mut this = Self {
             text: value.into(),
-            lines: Vec::new(),
+            lines: Arc::new(Vec::new()),
         };
         this.rebuild_lines();
         this
@@ -290,6 +344,12 @@ impl CodeBuffer {
 
     fn as_str(&self) -> &str {
         &self.text
+    }
+    fn snapshot(&self) -> CodeBufferSnapshot {
+        CodeBufferSnapshot {
+            lines: self.lines.clone(),
+            len: self.text.len(),
+        }
     }
 
     fn len(&self) -> usize {
@@ -307,7 +367,7 @@ impl CodeBuffer {
     fn line(&self, row: usize) -> &str {
         self.lines
             .get(row)
-            .map(|line| line.text.as_str())
+            .map(|line| line.text.as_ref())
             .unwrap_or("")
     }
 
@@ -332,9 +392,49 @@ impl CodeBuffer {
 
     fn replace_range(&mut self, range: Range<usize>, replacement: &str) -> usize {
         let range = normalize_replace_range(&self.text, range);
+        let start_row = self.offset_to_point(range.start).row;
+        let end_row = self.offset_to_point(range.end).row;
+        let start_offset = self.line_start(start_row);
+        let old_end_offset = self
+            .lines
+            .get(end_row + 1)
+            .map_or(self.text.len(), |line| line.start_offset);
         self.text.replace_range(range.clone(), replacement);
         let cursor = range.start + replacement.len();
-        self.rebuild_lines();
+        let new_end_offset = self.text[cursor..]
+            .find('\n')
+            .map_or(self.text.len(), |newline| cursor + newline + 1);
+        let old_lines = self.lines.clone();
+        let mut lines = Vec::with_capacity(old_lines.len() + replacement.matches('\n').count());
+        lines.extend(old_lines[..start_row].iter().cloned());
+
+        let changed = &self.text[start_offset..new_end_offset];
+        let mut next_offset = start_offset;
+        for segment in changed.split_inclusive('\n') {
+            lines.push(CodeLine {
+                text: Arc::from(segment.strip_suffix('\n').unwrap_or(segment)),
+                start_offset: next_offset,
+            });
+            next_offset += segment.len();
+        }
+        if changed.is_empty() || (new_end_offset == self.text.len() && changed.ends_with('\n')) {
+            lines.push(CodeLine {
+                text: Arc::from(""),
+                start_offset: new_end_offset,
+            });
+        }
+
+        let delta = new_end_offset as isize - old_end_offset as isize;
+        let suffix = if new_end_offset == self.text.len() {
+            &[][..]
+        } else {
+            &old_lines[end_row + 1..]
+        };
+        lines.extend(suffix.iter().map(|line| CodeLine {
+            text: line.text.clone(),
+            start_offset: apply_signed_delta(line.start_offset, delta),
+        }));
+        self.lines = Arc::new(lines);
         self.clamp_offset(cursor)
     }
 
@@ -422,22 +522,51 @@ impl CodeBuffer {
     }
 
     fn rebuild_lines(&mut self) {
-        self.lines.clear();
+        let mut lines = Vec::new();
         let mut start = 0;
         for segment in self.text.split_inclusive('\n') {
-            let line_text = segment.strip_suffix('\n').unwrap_or(segment).to_string();
-            self.lines.push(CodeLine {
-                text: line_text,
+            lines.push(CodeLine {
+                text: Arc::from(segment.strip_suffix('\n').unwrap_or(segment)),
                 start_offset: start,
             });
             start += segment.len();
         }
         if self.text.is_empty() || self.text.ends_with('\n') {
-            self.lines.push(CodeLine {
-                text: String::new(),
+            lines.push(CodeLine {
+                text: Arc::from(""),
                 start_offset: self.text.len(),
             });
         }
+        self.lines = Arc::new(lines);
+    }
+}
+impl CodeBufferSnapshot {
+    fn line(&self, row: usize) -> &str {
+        self.lines.get(row).map_or("", |line| line.text.as_ref())
+    }
+
+    fn line_start(&self, row: usize) -> usize {
+        self.lines
+            .get(row)
+            .map_or(self.len, |line| line.start_offset)
+    }
+
+    fn line_end(&self, row: usize) -> usize {
+        self.lines
+            .get(row)
+            .map_or(self.len, |line| line.start_offset + line.text.len())
+    }
+
+    fn offset_to_point(&self, offset: usize) -> CodePoint {
+        let offset = offset.min(self.len);
+        let row = match self
+            .lines
+            .binary_search_by(|line| line.start_offset.cmp(&offset))
+        {
+            Ok(row) => row,
+            Err(row) => row.saturating_sub(1),
+        };
+        CodePoint::new(row, offset.saturating_sub(self.line_start(row)))
     }
 }
 
@@ -602,31 +731,46 @@ impl CodeFold {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+struct CodeTextEdit {
+    range: Range<usize>,
+    removed: Arc<str>,
+    inserted: Arc<str>,
+}
+
+impl CodeTextEdit {
+    fn new(text: &str, range: Range<usize>, inserted: &str) -> Self {
+        let range = normalize_replace_range(text, range);
+        Self {
+            removed: Arc::from(&text[range.clone()]),
+            range,
+            inserted: Arc::from(inserted),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 struct CodeTransaction {
-    before_text: String,
-    after_text: String,
+    edits: Vec<CodeTextEdit>,
     before_selection: CodeSelection,
     after_selection: CodeSelection,
 }
 
 impl CodeTransaction {
-    fn new(before_text: String, before_selection: CodeSelection) -> Self {
+    fn new(before_selection: CodeSelection) -> Self {
         Self {
-            before_text,
-            after_text: String::new(),
+            edits: Vec::new(),
             before_selection,
             after_selection: CodeSelection::new(0),
         }
     }
 
-    fn finish(mut self, after_text: String, after_selection: CodeSelection) -> Self {
-        self.after_text = after_text;
+    fn finish(mut self, after_selection: CodeSelection) -> Self {
         self.after_selection = after_selection;
         self
     }
 
     fn changed(&self) -> bool {
-        self.before_text != self.after_text || self.before_selection != self.after_selection
+        !self.edits.is_empty()
     }
 }
 
@@ -2105,10 +2249,15 @@ pub struct CodeEditor {
     diagnostics: Vec<CodeDiagnostic>,
     diagnostics_provider: Option<Arc<CodeDiagnosticsProvider>>,
     completion_items: Vec<CodeCompletionItem>,
+    completion_edits: Vec<CodeCompletionEdit>,
+    completion_selection: Option<usize>,
+    completion_request: Option<CodeEditorRequestToken>,
     completion_provider: Option<Arc<CodeCompletionProvider>>,
     hover: Option<CodeHover>,
     hover_provider: Option<Arc<CodeHoverProvider>>,
     search_query: Option<SharedString>,
+    search_matches_cache: Option<(u64, SharedString, Arc<Vec<Range<usize>>>)>,
+    active_search_match: Option<usize>,
     on_change: Option<Arc<CodeEditorChangeCallback>>,
     row_layouts: Vec<Option<CodeEditorRowLayout>>,
     text_revision: u64,
@@ -2127,7 +2276,8 @@ impl CodeEditor {
             marked_range: None,
             buffer,
             focus_handle: cx.focus_handle(),
-            list_state: ListState::new(row_count, ListAlignment::Top, px(160.0)),
+            list_state: ListState::new(row_count, ListAlignment::Top, px(160.0))
+                .with_uniform_item_height(px(24.0)),
             language: CodeLanguage::PlainText,
             theme: CodeTheme::Auto,
             highlight_theme: None,
@@ -2162,10 +2312,15 @@ impl CodeEditor {
             diagnostics: Vec::new(),
             diagnostics_provider: None,
             completion_items: Vec::new(),
+            completion_edits: Vec::new(),
+            completion_selection: None,
+            completion_request: None,
             completion_provider: None,
             hover: None,
             hover_provider: None,
             search_query: None,
+            search_matches_cache: None,
+            active_search_match: None,
             on_change: None,
             row_layouts: vec![None; row_count],
             text_revision: 0,
@@ -2739,6 +2894,7 @@ impl CodeEditor {
         provider: impl Fn(&str) -> Vec<CodeDiagnostic> + 'static,
     ) -> Self {
         self.diagnostics_provider = Some(Arc::new(provider));
+        self.refresh_providers();
         self
     }
 
@@ -2762,6 +2918,9 @@ impl CodeEditor {
     /// Sets static completion candidates rendered by the editor.
     pub fn completions(mut self, items: impl IntoIterator<Item = CodeCompletionItem>) -> Self {
         self.completion_items = items.into_iter().collect();
+        self.completion_edits.clear();
+        self.completion_selection = (!self.completion_items.is_empty()).then_some(0);
+        self.completion_request = Some(self.request_token());
         self
     }
 
@@ -2771,6 +2930,7 @@ impl CodeEditor {
         provider: impl Fn(&str) -> Vec<CodeCompletionItem> + 'static,
     ) -> Self {
         self.completion_provider = Some(Arc::new(provider));
+        self.refresh_providers();
         self
     }
 
@@ -2786,6 +2946,7 @@ impl CodeEditor {
         provider: impl Fn(&str) -> Option<CodeHover> + 'static,
     ) -> Self {
         self.hover_provider = Some(Arc::new(provider));
+        self.refresh_providers();
         self
     }
 
@@ -2871,6 +3032,9 @@ impl CodeEditor {
     /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([
+            KeyBinding::new("escape", CodeEditorDismissCompletions, Some("CodeEditor")),
+            KeyBinding::new("f3", CodeEditorFindNext, Some("CodeEditor")),
+            KeyBinding::new("shift-f3", CodeEditorFindPrevious, Some("CodeEditor")),
             KeyBinding::new("backspace", CodeEditorBackspace, None),
             KeyBinding::new("delete", CodeEditorDelete, None),
             KeyBinding::new("ctrl-backspace", CodeEditorDeleteWordLeft, None),
@@ -3014,15 +3178,6 @@ impl CodeEditor {
         None
     }
 
-    fn retain_visible_row_layouts(&mut self, visible_rows: &[usize]) {
-        let visible_rows = visible_rows.iter().copied().collect::<HashSet<_>>();
-        for (row, layout) in self.row_layouts.iter_mut().enumerate() {
-            if layout.is_some() && !visible_rows.contains(&row) {
-                *layout = None;
-            }
-        }
-    }
-
     fn bounds_for_offset_range(&self, range: Range<usize>) -> Option<Bounds<Pixels>> {
         let range = normalize_replace_range(self.buffer.as_str(), range);
         let code_point = self.buffer.offset_to_point(range.start);
@@ -3088,7 +3243,14 @@ impl CodeEditor {
 
     fn bump_text_revision(&mut self) {
         self.text_revision = self.text_revision.wrapping_add(1);
-        self.syntax_cache = None;
+        // Retain the last result until syntax_runs observes the revision mismatch.
+        // shortcut: reparse after edits; retain parser/tree when incremental parsing is added.
+        self.completion_items.clear();
+        self.completion_edits.clear();
+        self.completion_selection = None;
+        self.completion_request = None;
+        self.search_matches_cache = None;
+        self.active_search_match = None;
     }
 
     fn syntax_runs(&mut self) -> Arc<Vec<CodeEditorSyntaxRun>> {
@@ -3156,12 +3318,10 @@ impl CodeEditor {
         self.cursor_visible = true;
         if !self.options.cursor_blink {
             self.blink_task = None;
-            cx.notify();
         } else if self.blink_task.is_none() {
             self.start_blink(cx);
-        } else {
-            cx.notify();
         }
+        cx.notify();
     }
 
     fn clear_selection_on_blur(&mut self, cx: &mut Context<Self>) {
@@ -3246,11 +3406,13 @@ impl CodeEditor {
         let line_count = self.buffer.line_count();
         let visible_count = self.visible_rows().len();
         let current_count = self.list_state.item_count();
-        if visible_count > current_count {
+        if visible_count != current_count {
+            let scroll_top = self.list_state.logical_scroll_top();
+            let row_height = self.line_height.unwrap_or_else(|| px(24.0))
+                + self.row_padding_y.unwrap_or_else(|| px(0.0)) * 2.0;
             self.list_state
-                .splice(current_count..current_count, visible_count - current_count);
-        } else if visible_count < current_count {
-            self.list_state.splice(visible_count..current_count, 0);
+                .reset_with_uniform_height(visible_count, row_height);
+            self.list_state.scroll_to(scroll_top);
         }
         if self.row_layouts.len() != line_count {
             self.invalidate_row_layouts();
@@ -3263,7 +3425,16 @@ impl CodeEditor {
             self.diagnostics = provider(value);
         }
         if let Some(provider) = self.completion_provider.clone() {
-            self.completion_items = provider(value);
+            let installed_is_current = self
+                .completion_request
+                .as_ref()
+                .is_some_and(|token| *token == self.request_token());
+            if !installed_is_current {
+                self.completion_items = provider(value);
+                self.completion_edits.clear();
+                self.completion_selection = (!self.completion_items.is_empty()).then_some(0);
+                self.completion_request = Some(self.request_token());
+            }
         }
         if let Some(provider) = self.hover_provider.clone() {
             self.hover = provider(value);
@@ -3274,9 +3445,11 @@ impl CodeEditor {
         self.refresh_automatic_folds();
         self.sync_list_state();
         self.refresh_providers();
+        if self.completion_provider.is_none() && !self.completion_items.is_empty() {
+            self.completion_request = Some(self.request_token());
+        }
         if let Some(callback) = self.on_change.clone() {
-            let value = self.buffer.as_str().to_string();
-            callback(&value, cx);
+            callback(self.buffer.as_str(), cx);
         }
         if self.options.reveal_cursor {
             self.reveal_cursor();
@@ -3305,46 +3478,43 @@ impl CodeEditor {
     }
 
     fn replace_selection(&mut self, replacement: &str, cx: &mut Context<Self>) {
+        self.replace_edit_range(self.selection.range.clone(), replacement, cx);
+    }
+
+    fn replace_edit_range(
+        &mut self,
+        range: Range<usize>,
+        replacement: &str,
+        cx: &mut Context<Self>,
+    ) {
         if self.options.read_only {
             return;
         }
-        let transaction =
-            CodeTransaction::new(self.buffer.as_str().to_string(), self.selection.clone());
-        let range = self.selection.range.clone();
-        let cursor = self.buffer.replace_range(range, replacement);
+        let mut transaction = CodeTransaction::new(self.selection.clone());
+        let cursor = range.start + replacement.len();
+        self.record_edit(&mut transaction, range, replacement);
         self.selection.set_cursor(cursor);
         self.commit_transaction(transaction, cx);
     }
 
     fn commit_transaction(&mut self, transaction: CodeTransaction, cx: &mut Context<Self>) {
-        let transaction =
-            transaction.finish(self.buffer.as_str().to_string(), self.selection.clone());
+        let transaction = transaction.finish(self.selection.clone());
         if !transaction.changed() {
+            if self.options.reveal_cursor {
+                self.reveal_cursor();
+            }
+            self.reset_blink(cx);
             return;
         }
+        transaction.apply(&mut self.buffer, false);
         if self.options.history {
             self.undo_stack.push(transaction);
-            self.redo_stack.clear();
+        } else {
+            self.undo_stack.clear();
         }
+        self.redo_stack.clear();
         self.bump_text_revision();
         self.invalidate_row_layouts();
-        self.sync_list_state();
-        self.handle_buffer_change(cx);
-    }
-
-    fn restore_transaction_snapshot(
-        &mut self,
-        text: String,
-        selection: CodeSelection,
-        cx: &mut Context<Self>,
-    ) {
-        self.buffer.set_text(text);
-        self.bump_text_revision();
-        self.invalidate_row_layouts();
-        self.selection = selection;
-        self.selection.range =
-            normalize_replace_range(self.buffer.as_str(), self.selection.range.clone());
-        self.selection.preferred_column = None;
         self.sync_list_state();
         self.handle_buffer_change(cx);
     }
@@ -3391,6 +3561,10 @@ impl CodeEditor {
     }
 
     fn indent(&mut self, _: &CodeEditorIndent, _: &mut Window, cx: &mut Context<Self>) {
+        if self.completion_active() {
+            self.accept_completion(self.completion_selection.unwrap_or(0), cx);
+            return;
+        }
         if self.options.read_only || !self.options.indentation {
             return;
         }
@@ -3414,65 +3588,52 @@ impl CodeEditor {
     }
 
     fn reindent_selected_lines(&mut self, indent: &str, indenting: bool, cx: &mut Context<Self>) {
-        if self.options.read_only || !self.options.indentation {
+        if self.options.read_only || !self.options.indentation || indent.is_empty() {
             return;
         }
         let selection = self.selection.range.clone();
-        let line_bounds = self.buffer.selected_line_bounds(selection.clone());
-        let source = self.buffer.as_str().to_string();
-        let mut next = String::with_capacity(source.len() + indent.len() * 4);
-        next.push_str(&source[..line_bounds.start]);
-
-        let mut selection_start_delta = 0isize;
-        let mut selection_end_delta = 0isize;
-        let mut cursor = line_bounds.start;
-        let mut changed = false;
-
-        for line in source[line_bounds.clone()].split_inclusive('\n') {
-            let line_abs_start = cursor;
-            let (line_body, line_ending) = line
-                .strip_suffix('\n')
-                .map_or((line, ""), |body| (body, "\n"));
-            if indenting {
-                next.push_str(indent);
-                next.push_str(line_body);
-                next.push_str(line_ending);
-                changed = true;
-                if line_abs_start <= selection.start {
-                    selection_start_delta += indent.len() as isize;
-                }
-                if line_abs_start < selection.end || selection.is_empty() {
-                    selection_end_delta += indent.len() as isize;
-                }
-            } else if let Some(remove_len) = removable_indent_len(line_body, indent) {
-                next.push_str(&line_body[remove_len..]);
-                next.push_str(line_ending);
-                changed = true;
-                if line_abs_start < selection.start {
-                    selection_start_delta -= remove_len as isize;
-                }
-                if line_abs_start < selection.end {
-                    selection_end_delta -= remove_len as isize;
-                }
+        let bounds = self.buffer.selected_line_bounds(selection.clone());
+        let first = self.buffer.offset_to_point(bounds.start).row;
+        let last = self.buffer.offset_to_point(bounds.end).row;
+        let mut edits = Vec::new();
+        for row in first..=last {
+            let start = self.buffer.line_start(row);
+            let removed = if indenting {
+                0
             } else {
-                next.push_str(line_body);
-                next.push_str(line_ending);
+                removable_indent_len(self.buffer.line(row), indent).unwrap_or(0)
+            };
+            let inserted = if indenting { indent } else { "" };
+            if removed == 0 && inserted.is_empty() {
+                continue;
             }
-            cursor += line.len();
+            edits.push(CodeTextEdit::new(
+                self.buffer.as_str(),
+                start..start + removed,
+                inserted,
+            ));
         }
-
-        if !changed {
+        if edits.is_empty() {
             return;
         }
-
-        next.push_str(&source[line_bounds.end..]);
-        let transaction = CodeTransaction::new(source.clone(), self.selection.clone());
-        self.buffer.set_text(next);
-        self.invalidate_row_layouts();
-        let start = apply_signed_delta(selection.start, selection_start_delta);
-        let end = apply_signed_delta(selection.end, selection_end_delta).max(start);
-        self.selection.range = self.buffer.clamp_offset(start)..self.buffer.clamp_offset(end);
-        self.selection.reversed = false;
+        let mut transaction = CodeTransaction::new(self.selection.clone());
+        let map_endpoint = |offset: usize| {
+            edits.iter().fold(offset, |mapped, edit| {
+                let removed_before = offset
+                    .saturating_sub(edit.range.start)
+                    .min(edit.range.len());
+                let inserted_before = if edit.range.start <= offset {
+                    edit.inserted.len()
+                } else {
+                    0
+                };
+                mapped + inserted_before - removed_before
+            })
+        };
+        let start = map_endpoint(selection.start);
+        let end = map_endpoint(selection.end);
+        transaction.edits = edits.into_iter().rev().collect();
+        self.selection.range = start..end;
         self.selection.preferred_column = None;
         self.commit_transaction(transaction, cx);
     }
@@ -3487,7 +3648,8 @@ impl CodeEditor {
             if previous == cursor {
                 return;
             }
-            self.selection.range = previous..cursor;
+            self.replace_edit_range(previous..cursor, "", cx);
+            return;
         }
         self.replace_selection("", cx);
     }
@@ -3502,7 +3664,8 @@ impl CodeEditor {
             if next == cursor {
                 return;
             }
-            self.selection.range = cursor..next;
+            self.replace_edit_range(cursor..next, "", cx);
+            return;
         }
         self.replace_selection("", cx);
     }
@@ -3522,7 +3685,8 @@ impl CodeEditor {
             if previous == cursor {
                 return;
             }
-            self.selection.range = previous..cursor;
+            self.replace_edit_range(previous..cursor, "", cx);
+            return;
         }
         self.replace_selection("", cx);
     }
@@ -3542,7 +3706,8 @@ impl CodeEditor {
             if next == cursor {
                 return;
             }
-            self.selection.range = cursor..next;
+            self.replace_edit_range(cursor..next, "", cx);
+            return;
         }
         self.replace_selection("", cx);
     }
@@ -3669,7 +3834,9 @@ impl CodeEditor {
     }
 
     fn up(&mut self, _: &CodeEditorUp, _: &mut Window, cx: &mut Context<Self>) {
-        self.move_vertical(-1, false, cx);
+        if !self.cycle_completion(-1, cx) {
+            self.move_vertical(-1, false, cx);
+        }
     }
 
     fn select_up(&mut self, _: &CodeEditorSelectUp, _: &mut Window, cx: &mut Context<Self>) {
@@ -3677,7 +3844,9 @@ impl CodeEditor {
     }
 
     fn down(&mut self, _: &CodeEditorDown, _: &mut Window, cx: &mut Context<Self>) {
-        self.move_vertical(1, false, cx);
+        if !self.cycle_completion(1, cx) {
+            self.move_vertical(1, false, cx);
+        }
     }
 
     fn select_down(&mut self, _: &CodeEditorSelectDown, _: &mut Window, cx: &mut Context<Self>) {
@@ -3756,6 +3925,10 @@ impl CodeEditor {
     }
 
     fn enter(&mut self, _: &CodeEditorEnter, _: &mut Window, cx: &mut Context<Self>) {
+        if self.completion_active() {
+            self.accept_completion(self.completion_selection.unwrap_or(0), cx);
+            return;
+        }
         if self.options.read_only {
             return;
         }
@@ -3767,11 +3940,7 @@ impl CodeEditor {
             return;
         }
         if let Some(transaction) = self.undo_stack.pop() {
-            self.restore_transaction_snapshot(
-                transaction.before_text.clone(),
-                transaction.before_selection.clone(),
-                cx,
-            );
+            self.restore_transaction(&transaction, true, cx);
             self.redo_stack.push(transaction);
         }
     }
@@ -3781,11 +3950,7 @@ impl CodeEditor {
             return;
         }
         if let Some(transaction) = self.redo_stack.pop() {
-            self.restore_transaction_snapshot(
-                transaction.after_text.clone(),
-                transaction.after_selection.clone(),
-                cx,
-            );
+            self.restore_transaction(&transaction, false, cx);
             self.undo_stack.push(transaction);
         }
     }
@@ -3883,8 +4048,8 @@ impl EntityInputHandler for CodeEditor {
             let end = replacement_start + selected_end;
             self.selection.range = normalize_replace_range(self.buffer.as_str(), start..end);
             self.selection.reversed = false;
-            self.reset_blink(cx);
         }
+        self.reset_blink(cx);
     }
 
     fn bounds_for_range(
@@ -3946,8 +4111,10 @@ impl Element for CodeEditorInputLayer {
         _bounds: Bounds<Pixels>,
         _: &mut Self::RequestLayoutState,
         _window: &mut Window,
-        _cx: &mut App,
+        cx: &mut App,
     ) -> Self::PrepaintState {
+        self.editor
+            .update(cx, |editor, _| editor.invalidate_row_layouts());
     }
 
     fn paint(
@@ -3999,7 +4166,6 @@ impl Render for CodeEditor {
         })
         .detach();
 
-        self.refresh_providers();
         let focused = self.focus_handle(cx).is_focused(window);
         if focused && self.blink_task.is_none() {
             self.start_blink(cx);
@@ -4031,10 +4197,10 @@ impl Render for CodeEditor {
             .unwrap_or_else(|| self.viewport.height(display_map));
         let focus_handle = self.focus_handle(cx);
         let list_state = self.list_state.clone();
-        let buffer = self.buffer.clone();
-        let visible_rows_for_layout = self.visible_rows();
-        self.retain_visible_row_layouts(&visible_rows_for_layout);
-        let visible_rows = Arc::new(visible_rows_for_layout);
+        let buffer = self.buffer.snapshot();
+        let search_matches = self.search_matches();
+        let search_match_count_for_header = search_matches.len();
+        let visible_rows = Arc::new(self.visible_rows());
         let selection = self.selection.clone();
         let marked_range = self.marked_range.clone();
         let diagnostics = self.diagnostics.clone();
@@ -4077,6 +4243,26 @@ impl Render for CodeEditor {
             .bg(editor_theme.surface)
             .overflow_hidden()
             .track_focus(&focus_handle)
+            .key_context("CodeEditor")
+            .on_action(
+                cx.listener(|this, _: &CodeEditorDismissCompletions, _, cx| {
+                    if this.completion_active() {
+                        this.dismiss_completions(cx);
+                    } else {
+                        cx.propagate();
+                    }
+                }),
+            )
+            .on_action(cx.listener(|this, _: &CodeEditorFindNext, _, cx| {
+                if this.find_next(cx).is_none() {
+                    cx.propagate();
+                }
+            }))
+            .on_action(cx.listener(|this, _: &CodeEditorFindPrevious, _, cx| {
+                if this.find_previous(cx).is_none() {
+                    cx.propagate();
+                }
+            }))
             .on_action(cx.listener(Self::backspace))
             .on_action(cx.listener(Self::delete))
             .on_action(cx.listener(Self::delete_word_left))
@@ -4164,10 +4350,11 @@ impl Render for CodeEditor {
                                 .child(indent_label)
                                 .child(format!("{} lines", line_count))
                                 .child(format!("{}:{}", cursor.row + 1, cursor.column + 1))
-                                .when_some(self.search_query.clone(), |s, query| {
+                                .when_some(self.search_query.clone(), |s, _query| {
                                     s.child(format!(
-                                        "matches:{}",
-                                        search_match_count(self.buffer.as_str(), query.as_ref())
+                                        "matches:{}/{}",
+                                        self.active_search_match.map_or(0, |index| index + 1),
+                                        search_match_count_for_header
                                     ))
                                 }),
                         ),
@@ -4183,6 +4370,10 @@ impl Render for CodeEditor {
                     .on_mouse_move(cx.listener(Self::mouse_move_in_editor))
                     .on_mouse_up(MouseButton::Left, cx.listener(Self::mouse_up_in_editor))
                     .on_mouse_up_out(MouseButton::Left, cx.listener(Self::mouse_up_in_editor))
+                    // Clear once before the virtual list registers this viewport's rows.
+                    .child(CodeEditorInputLayer {
+                        editor: editor_entity,
+                    })
                     .child(
                         list(list_state.clone(), move |row, _window, _cx| {
                             let editor_for_row = editor_entity_for_rows.clone();
@@ -4193,6 +4384,7 @@ impl Render for CodeEditor {
                                 &selection,
                                 marked_range.as_ref(),
                                 &diagnostics,
+                                search_matches.as_ref(),
                                 &self_folds_for_rows,
                                 show_line_numbers,
                                 row_language,
@@ -4215,9 +4407,6 @@ impl Render for CodeEditor {
                         .size_full()
                         .into_any_element(),
                     )
-                    .child(CodeEditorInputLayer {
-                        editor: editor_entity,
-                    })
                     .when(options.rulers, |s| {
                         s.child(render_ruler(
                             display_map,
@@ -4255,20 +4444,19 @@ impl Render for CodeEditor {
                     ))
                 },
             )
-            .when(
-                options.completions_panel && !self.completion_items.is_empty(),
-                |s| {
-                    s.child(render_completions(
-                        &self.completion_items,
-                        options.completion_limit,
-                        &theme,
-                        &editor_theme,
-                        panel_padding_x,
-                        panel_padding_y,
-                        panel_gap,
-                    ))
-                },
-            )
+            .when(self.completion_active(), |s| {
+                s.child(render_completions(
+                    &self.completion_items,
+                    options.completion_limit,
+                    &theme,
+                    &editor_theme,
+                    panel_padding_x,
+                    panel_padding_y,
+                    panel_gap,
+                    self.completion_selection,
+                    cx.entity(),
+                ))
+            })
             .when_some(
                 options.hover_panel.then(|| self.hover.clone()).flatten(),
                 |s, hover| {
@@ -4310,10 +4498,11 @@ impl CodeEditorRowLayout {
 
 fn render_editor_row(
     row: usize,
-    buffer: &CodeBuffer,
+    buffer: &CodeBufferSnapshot,
     selection: &CodeSelection,
     marked_range: Option<&Range<usize>>,
     diagnostics: &[CodeDiagnostic],
+    search_matches: &[Range<usize>],
     folds: &[CodeFold],
     line_numbers: bool,
     language: CodeLanguage,
@@ -4445,6 +4634,11 @@ fn render_editor_row(
                     selection_range,
                     marked_range,
                     cursor_column,
+                    search_ranges: search_matches
+                        .iter()
+                        .filter_map(|range| line_offset_range(buffer, range, row))
+                        .map(|range| display_line.display_range_for_source(range))
+                        .collect(),
                     cursor_visible: cursor_active && cursor_visible && cursor_column.is_some(),
                     font_size: code_font_size,
                     line_height: display_map.text_line_height(),
@@ -4482,6 +4676,7 @@ struct CodeEditorLineElement {
     source_to_display: Vec<usize>,
     display_to_source: Vec<usize>,
     selection_range: Option<Range<usize>>,
+    search_ranges: Vec<Range<usize>>,
     marked_range: Option<Range<usize>>,
     cursor_column: Option<usize>,
     cursor_visible: bool,
@@ -4572,6 +4767,17 @@ impl Element for CodeEditorLineElement {
         });
 
         let mut selection = Vec::new();
+        for range in &self.search_ranges {
+            let x_start = shaped.x_for_index(range.start);
+            let x_end = shaped.x_for_index(range.end);
+            selection.push(fill(
+                Bounds::new(
+                    point(bounds.left() + x_start, bounds.top()),
+                    size((x_end - x_start).max(px(1.0)), self.line_height),
+                ),
+                self.editor_theme.caret.opacity(0.22),
+            ));
+        }
         if let Some(range) = self.selection_range.clone() {
             let range = normalize_replace_range(self.text.as_ref(), range);
             if range.start < range.end {
@@ -4721,7 +4927,7 @@ fn whitespace_quads(
 }
 
 fn line_selection_range(
-    buffer: &CodeBuffer,
+    buffer: &CodeBufferSnapshot,
     selection: &CodeSelection,
     row: usize,
 ) -> Option<Range<usize>> {
@@ -4732,7 +4938,7 @@ fn line_selection_range(
 }
 
 fn line_offset_range(
-    buffer: &CodeBuffer,
+    buffer: &CodeBufferSnapshot,
     range: &Range<usize>,
     row: usize,
 ) -> Option<Range<usize>> {
@@ -4747,6 +4953,7 @@ fn line_offset_range(
     }
 }
 
+#[cfg(test)]
 fn search_match_count(value: &str, query: &str) -> usize {
     if query.is_empty() {
         return 0;
@@ -5051,6 +5258,8 @@ fn render_completions(
     padding_x: Pixels,
     padding_y: Pixels,
     gap: Pixels,
+    selected: Option<usize>,
+    editor: Entity<CodeEditor>,
 ) -> gpui::Div {
     let mut panel = div()
         .flex()
@@ -5068,9 +5277,20 @@ fn render_completions(
                 .text_color(editor_theme.muted_text)
                 .child("Completions"),
         );
-    for item in items.iter().take(limit) {
+    for (index, item) in items.iter().take(limit).enumerate() {
+        let editor = editor.clone();
         panel = panel.child(
             div()
+                .id(element_id(format!("code-editor-completion-{index}")))
+                .cursor_pointer()
+                .when(selected == Some(index), |s| s.bg(editor_theme.selection))
+                .on_mouse_down(MouseButton::Left, move |_, window, cx| {
+                    editor.update(cx, |editor, cx| {
+                        window.focus(&editor.focus_handle, cx);
+                        editor.accept_completion(index, cx);
+                    });
+                    cx.stop_propagation();
+                })
                 .flex()
                 .items_center()
                 .gap_2()
@@ -5146,6 +5366,99 @@ mod tests {
     }
 
     #[test]
+    fn code_render_snapshots_share_unchanged_lines_without_copying_source() {
+        let mut buffer = CodeBuffer::new("one\nγamma\nthree\n");
+        let snapshot = buffer.snapshot();
+        assert!(Arc::ptr_eq(&snapshot.lines, &buffer.lines));
+        buffer.replace_range(4..6, "b");
+        assert_eq!(snapshot.line(1), "γamma");
+        assert_eq!(buffer.line(1), "bamma");
+        assert!(Arc::ptr_eq(&snapshot.lines[0].text, &buffer.lines[0].text));
+        assert!(Arc::ptr_eq(&snapshot.lines[2].text, &buffer.lines[2].text));
+        assert_eq!(buffer.line_start(2), 10);
+        assert_eq!(buffer.line_count(), 4);
+    }
+
+    #[test]
+    fn code_buffer_incremental_lines_match_full_rebuild_at_every_boundary() {
+        for source in ["", "a", "a\n", "a\nb\n", "γ😀\nlast", "\n\n"] {
+            let boundaries: Vec<_> = (0..=source.len())
+                .filter(|offset| source.is_char_boundary(*offset))
+                .collect();
+            for &start in &boundaries {
+                for &end in boundaries.iter().filter(|&&end| end >= start) {
+                    for inserted in ["", "x", "😀", "\n", "a\nb\n"] {
+                        let mut buffer = CodeBuffer::new(source);
+                        buffer.replace_range(start..end, inserted);
+                        let rebuilt = CodeBuffer::new(buffer.as_str());
+                        assert_eq!(
+                            buffer.lines, rebuilt.lines,
+                            "{source:?} {start}..{end} {inserted:?}"
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn code_delta_batch_replays_in_reverse_order_for_undo() {
+        let mut buffer = CodeBuffer::new("γ γ γ");
+        let original = buffer.as_str().to_string();
+        let mut transaction = CodeTransaction::new(CodeSelection::new(0));
+        for range in [6..8, 3..5, 0..2] {
+            let edit = CodeTextEdit::new(buffer.as_str(), range, "世界");
+            buffer.replace_range(edit.range.clone(), &edit.inserted);
+            transaction.edits.push(edit);
+        }
+        let transaction = transaction.finish(CodeSelection::new(6));
+        assert_eq!(buffer.as_str(), "世界 世界 世界");
+        transaction.apply(&mut buffer, true);
+        assert_eq!(buffer.as_str(), original);
+        transaction.apply(&mut buffer, false);
+        assert_eq!(buffer.as_str(), "世界 世界 世界");
+    }
+
+    #[test]
+    fn multiline_batch_publishes_one_shared_snapshot_and_replays_deltas() {
+        let original = "α\nβ\nγ\n".repeat(128);
+        let mut buffer = CodeBuffer::new(original.clone());
+        let snapshot = buffer.snapshot();
+        let mut transaction = CodeTransaction::new(CodeSelection::new(0));
+        let ranges: Vec<_> = original
+            .match_indices('β')
+            .map(|(start, text)| start..start + text.len())
+            .collect();
+        for range in ranges.into_iter().rev() {
+            transaction
+                .edits
+                .push(CodeTextEdit::new(buffer.as_str(), range, "世\n界"));
+        }
+        let transaction = transaction.finish(CodeSelection::new(0));
+        assert!(
+            Arc::ptr_eq(&snapshot.lines, &buffer.lines),
+            "staging does not rebuild the index"
+        );
+        transaction.apply(&mut buffer, false);
+        let expected = original.replace('β', "世\n界");
+        assert_eq!(buffer.as_str(), expected);
+        assert_eq!(buffer.lines, CodeBuffer::new(expected.clone()).lines);
+        assert_eq!(snapshot.line(1), "β", "published snapshots stay immutable");
+        transaction.apply(&mut buffer, true);
+        assert_eq!(buffer.as_str(), original);
+        assert_eq!(buffer.lines, CodeBuffer::new(original).lines);
+        transaction.apply(&mut buffer, false);
+        assert_eq!(buffer.as_str(), expected);
+        assert_eq!(buffer.lines, CodeBuffer::new(expected).lines);
+    }
+
+    #[test]
+    fn selection_only_transaction_is_not_a_text_change() {
+        let transaction = CodeTransaction::new(CodeSelection::new(0)).finish(CodeSelection::new(5));
+        assert!(!transaction.changed());
+    }
+
+    #[test]
     fn code_buffer_replaces_ranges_on_char_boundaries() {
         let mut buffer = CodeBuffer::new("aγc");
         let cursor = buffer.replace_range(1..3, "b");
@@ -5160,30 +5473,6 @@ mod tests {
         assert_eq!(selection.range, 2..5);
         assert!(selection.reversed);
         assert_eq!(selection.cursor(), 2);
-    }
-
-    #[test]
-    fn code_editor_exposes_v2_foundation_api() {
-        let source = include_str!("code_editor.rs");
-        assert!(source.contains("struct CodeBuffer"));
-        assert!(source.contains("struct CodeSelection"));
-        assert!(source.contains("struct CodeViewport"));
-        assert!(source.contains("ListState::new"));
-        assert!(source.contains("VirtualScrollbar::new"));
-        assert!(source.contains("mouse_down_in_editor"));
-        assert!(source.contains("mouse_up_in_editor"));
-        assert!(source.contains("clear_selection_on_blur"));
-        assert!(source.contains("cx.on_blur(&self.focus_handle"));
-        assert!(source.contains("point_for_editor_position"));
-        assert!(source.contains("render_editor_row"));
-        assert!(source.contains("CodeEditorLineElement"));
-        assert!(source.contains("zed_tree_sitter_syntax_runs"));
-        assert!(source.contains("tree_sitter_highlight_query"));
-        assert!(
-            !source
-                .lines()
-                .any(|line| line.trim_start().starts_with("input:"))
-        );
     }
 
     #[test]
@@ -5266,7 +5555,7 @@ gamma",
 
     #[test]
     fn code_line_selection_range_is_column_scoped() {
-        let buffer = CodeBuffer::new("alpha\nbeta\ngamma");
+        let buffer = CodeBuffer::new("alpha\nbeta\ngamma").snapshot();
         let selection = CodeSelection {
             range: 2..8,
             reversed: false,
@@ -5279,64 +5568,21 @@ gamma",
     }
 
     #[test]
-    fn code_editor_renders_column_level_caret_and_selection() {
-        let source = include_str!("code_editor.rs");
-        let production_source = source
-            .split("#[cfg(test)]")
-            .next()
-            .expect("code editor source should have a production section");
-        assert!(production_source.contains("cursor_visible: bool"));
-        assert!(production_source.contains("blink_task: Option<gpui::Task<()>>"));
-        assert!(production_source.contains("fn start_blink"));
-        assert!(production_source.contains("fn line_selection_range"));
-        assert!(production_source.contains("cursor_column"));
-        assert!(production_source.contains("CodeEditorLineElement"));
-        assert!(
-            production_source.contains("text_system") && production_source.contains("shape_line")
-        );
-        assert!(production_source.contains("shaped.x_for_index"));
-        assert!(production_source.contains("shaped.closest_index_for_x"));
-        assert!(production_source.contains("window.paint_quad"));
-        assert!(production_source.contains("prepaint.shaped.paint"));
-        assert!(production_source.contains("on_mouse_up_out(MouseButton::Left"));
-        assert!(production_source.contains("highlight_current_line"));
-        assert!(production_source.contains("current_line_highlight: highlight_current_line"));
-        assert!(production_source.contains("cursor_active"));
-        assert!(production_source.contains("cursor_visible"));
-        assert!(!production_source.contains(
-            "let selected = selection.range.start < row_end && selection.range.end > row_start;"
-        ));
-        assert!(!production_source.contains("fn render_line_segments"));
-        assert!(!production_source.contains("fn cursor_element"));
-        assert!(
-            !production_source
-                .contains(".when(selected, |s| s.bg(theme.primary.base.opacity(0.22)))")
-        );
-    }
-
-    #[test]
-    fn code_transactions_restore_text_and_selection_snapshots() {
-        let before = CodeSelection::new(0);
-        let mut after = CodeSelection::new(5);
-        after.select_to(9);
-        let transaction = CodeTransaction::new("alpha".to_string(), before.clone());
-        let transaction = transaction.finish("alpha beta".to_string(), after.clone());
-
-        assert_eq!(transaction.before_text, "alpha");
-        assert_eq!(transaction.after_text, "alpha beta");
+    fn code_transactions_restore_text_and_selection_deltas() {
+        let mut buffer = CodeBuffer::new("alpha γamma");
+        let before = CodeSelection::new(6);
+        let mut transaction = CodeTransaction::new(before.clone());
+        transaction
+            .edits
+            .push(CodeTextEdit::new(buffer.as_str(), 6..8, "b"));
+        let transaction = transaction.finish(CodeSelection::new(7));
+        transaction.apply(&mut buffer, false);
+        assert_eq!(buffer.as_str(), "alpha bamma");
+        transaction.apply(&mut buffer, true);
+        assert_eq!(buffer.as_str(), "alpha γamma");
         assert_eq!(transaction.before_selection, before);
-        assert_eq!(transaction.after_selection, after);
-    }
-
-    #[test]
-    fn code_editor_exposes_undo_redo_actions_and_bindings() {
-        let source = include_str!("code_editor.rs");
-        assert!(source.contains("CodeEditorUndo"));
-        assert!(source.contains("CodeEditorRedo"));
-        assert!(source.contains("KeyBinding::new(\"cmd-z\""));
-        assert!(source.contains("KeyBinding::new(\"ctrl-z\""));
-        assert!(source.contains("undo_stack"));
-        assert!(source.contains("redo_stack"));
+        assert_eq!(transaction.after_selection.cursor(), 7);
+        assert_eq!(transaction.edits[0].removed.as_ref(), "γ");
     }
 
     #[test]
@@ -5391,67 +5637,7 @@ gamma",
     }
 
     #[test]
-    fn code_editor_defaults_to_parent_width() {
-        let source = include_str!("code_editor.rs");
-        let production_source = source
-            .split("#[cfg(test)]")
-            .next()
-            .expect("code editor source should have a production section");
-
-        assert!(production_source.contains("width: Option<Pixels>"));
-        assert!(production_source.contains("full_width: bool"));
-        assert!(production_source.contains("width: None"));
-        assert!(production_source.contains("full_width: true"));
-        assert!(production_source.contains("pub fn width(mut self"));
-        assert!(production_source.contains("pub fn width_units(self"));
-        assert!(production_source.contains("pub fn full_width(mut self)"));
-        assert!(production_source.contains("pub fn set_full_width"));
-        assert!(production_source.contains(".when(self.full_width, |s|"));
-        assert!(production_source.contains("s.w_full().min_w(px(0.0)).flex_shrink(1.0)"));
-        assert!(production_source.contains(".when_some(self.width, |s, width| s.w(width))"));
-    }
-
-    #[test]
-    fn code_editor_caches_tree_sitter_runs_between_renders() {
-        let source = include_str!("code_editor.rs");
-        let production_source = source
-            .split("#[cfg(test)]")
-            .next()
-            .expect("code editor source should have a production section");
-
-        assert!(production_source.contains("syntax_cache: Option<CodeEditorSyntaxCache>"));
-        assert!(production_source.contains("text_revision: u64"));
-        assert!(production_source.contains("fn syntax_runs(&mut self)"));
-        assert!(production_source.contains("cache.text_revision == self.text_revision"));
-        assert!(production_source.contains("self.bump_text_revision()"));
-        assert!(!production_source.contains(
-            "let syntax_runs = zed_tree_sitter_syntax_runs(self.buffer.as_str(), self.language);"
-        ));
-    }
-
-    #[test]
     fn code_editor_advanced_layout_options_are_real_render_inputs() {
-        let source = include_str!("code_editor.rs");
-        let production_source = source
-            .split("#[cfg(test)]")
-            .next()
-            .expect("code editor source should have a production section");
-
-        assert!(production_source.contains("pub fn line_height_units"));
-        assert!(production_source.contains("pub fn font_size_units"));
-        assert!(production_source.contains("pub fn content_padding_x_units"));
-        assert!(production_source.contains("pub fn row_padding_y_units"));
-        assert!(production_source.contains("pub fn indent_guides"));
-        assert!(production_source.contains("pub fn fold_range"));
-        assert!(production_source.contains("pub fn toggle_fold"));
-        assert!(production_source.contains("pub fn set_fold_collapsed"));
-        assert!(production_source.contains("fn visible_rows_for"));
-        assert!(production_source.contains("fn indent_guide_quads"));
-        assert!(production_source.contains("code-editor-fold-toggle-{row}"));
-        assert!(production_source.contains("let fold_for_gutter = fold.cloned()"));
-        assert!(production_source.contains(".cursor_pointer()"));
-        assert!(production_source.contains("editor.toggle_fold(row, cx)"));
-        assert!(!production_source.contains("folded lines"));
         assert_eq!(
             visible_rows_for(8, &[CodeFold::new(2, 5, "body")], true),
             vec![0, 1, 2, 6, 7]
@@ -5592,26 +5778,6 @@ panel_gap_px = 6
     }
 
     #[test]
-    fn code_editor_runtime_layout_avoids_unconditional_paint_updates() {
-        let source = include_str!("code_editor.rs");
-        let production_source = source
-            .split("#[cfg(test)]")
-            .next()
-            .expect("code editor source should have a production section");
-
-        assert!(
-            production_source.contains("row_layouts")
-                && production_source.contains("get(self.row)")
-                && production_source.contains("is_none_or")
-        );
-        assert!(production_source.contains("retain_visible_row_layouts"));
-        assert!(
-            production_source.contains("editor_bounds")
-                && production_source.contains("!= Some(bounds)")
-        );
-    }
-
-    #[test]
     fn code_editor_config_loads_zed_syntax_theme_json() {
         let theme_json = r##"{
           "themes": [{
@@ -5633,28 +5799,6 @@ panel_gap_px = 6
     }
 
     #[test]
-    fn code_editor_exposes_navigation_and_ime_foundation() {
-        let source = include_str!("code_editor.rs");
-        assert!(source.contains("CodeEditorWordLeft"));
-        assert!(source.contains("CodeEditorDeleteWordLeft"));
-        assert!(source.contains("CodeEditorPageDown"));
-        assert!(source.contains("CodeEditorDocumentStart"));
-        assert!(source.contains(r#"KeyBinding::new("ctrl-left""#));
-        assert!(source.contains(r#"KeyBinding::new("alt-left""#));
-        assert!(source.contains(r#"KeyBinding::new("ctrl-backspace""#));
-        assert!(source.contains(r#"KeyBinding::new("pagedown""#));
-        assert!(source.contains(r#"KeyBinding::new("cmd-down""#));
-        assert!(source.contains("marked_range: Option<Range<usize>>"));
-        assert!(source.contains("fn marked_text_range"));
-        assert!(source.contains("replace_and_mark_text_in_range"));
-        assert!(source.contains("utf16_offset_in_text"));
-        assert!(source.contains("CodeEditorOptions"));
-        assert!(source.contains("fn read_only"));
-        assert!(source.contains("fn completion_limit"));
-        assert!(source.contains("fn render_status_bar"));
-    }
-
-    #[test]
     fn code_editor_input_layer_leaves_virtual_scrollbar_hit_area_interactive() {
         let bounds = Bounds::new(point(px(0.0), px(0.0)), size(px(200.0), px(100.0)));
         let input_bounds = editor_text_input_bounds(bounds);
@@ -5664,21 +5808,5 @@ panel_gap_px = 6
             bounds.right() - input_bounds.right(),
             crate::virtual_scrollbar_hit_width()
         );
-    }
-
-    #[test]
-    fn code_editor_exposes_explicit_config_file_api_without_background_watcher() {
-        let source = include_str!("code_editor.rs");
-        let production_source = source
-            .split("#[cfg(test)]")
-            .next()
-            .expect("code editor source should have a production section");
-
-        assert!(production_source.contains("pub fn config_file(mut self"));
-        assert!(production_source.contains("pub fn set_config"));
-        assert!(!production_source.contains("pub rows: Option<usize>"));
-        assert!(!production_source.contains("watch_config_file"));
-        assert!(!production_source.contains("CodeEditorConfigFileWatcher"));
-        assert!(!production_source.contains("config_watch_task"));
     }
 }

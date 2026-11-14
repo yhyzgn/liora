@@ -1,135 +1,69 @@
 use gpui::{AnyView, App, Context, Render, Window, prelude::*, px};
-use liora_components::layout_helpers::{page, section, showcase_card_wide};
-use liora_components::{DockEdge, DockLayout, DockPanel, DockTab, Space, Tag, Text};
+use liora_components::dock_layout::DockState;
+use liora_components::layout_helpers::{page, section};
+use liora_components::{Button, DockEdge, DockLayout, DockPanel, DockTab, Text};
+use std::{cell::RefCell, rc::Rc};
 
 pub fn render(cx: &mut App) -> AnyView {
-    cx.new(|_| DockLayoutDemo).into()
+    cx.new(|_| DockLayoutDemo {
+        snapshot: Rc::new(RefCell::new(None)),
+        restored: None,
+        generation: 0,
+    })
+    .into()
 }
 
-struct DockLayoutDemo;
+struct DockLayoutDemo {
+    snapshot: Rc<RefCell<Option<String>>>,
+    restored: Option<DockState>,
+    generation: usize,
+}
 
 impl Render for DockLayoutDemo {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let snapshot = self.snapshot.clone();
+        let mut workbench = DockLayout::new()
+            .id(format!("gallery-dock-{}", self.generation))
+            .height_lg().panel_gap(px(6.))
+            .panel(DockPanel::new("explorer", "Explorer", DockEdge::Left, Text::new("src / crates / apps")).size(px(160.)))
+            .panel(DockPanel::new("terminal", "Terminal", DockEdge::Bottom, Text::new("Host-owned terminal area")).size(px(90.)))
+            .panel(DockPanel::new("center-panel", "Center inspector", DockEdge::Center, Text::new("Center panel content is rendered")).size(px(160.)))
+            .tab(DockTab::new("main", "main.rs", Text::new("fn main() {\n    init_liora(cx);\n}")).closable(false))
+            .tab(DockTab::new("readme", "README", Text::new("# Native GPUI SDK")))
+            .tab(DockTab::new("notes", "Notes", Text::new("Drag my tab onto another header to reorder, into a group to move, or onto Split arrows to split.")))
+            .on_layout_change(move |state| {
+                if let Ok(json) = state.to_json() {
+                    *snapshot.borrow_mut() = Some(json);
+                }
+            });
+        if let Some(state) = &self.restored {
+            workbench = workbench.layout_state(state.clone());
+        }
         page(
-            "DockLayout 停靠布局",
-            "面向 IDE、数据工作台和后台工具的原生工作区布局：侧边面板、底部面板和中心文档 tabs。",
-            Space::new()
-                .vertical()
-                .gap_xl()
+            "DockLayout 工作台",
+            "点击选择、关闭；原生拖动 tab 重排、跨组移动或分屏。布局描述不包含业务内容。",
+            gpui::div()
+                .flex()
+                .flex_col()
+                .gap_3()
+                .child(
+                    Button::new("Restore last changed layout").on_click(cx.listener(
+                        |this, _, _, cx| {
+                            if let Some(json) = this.snapshot.borrow().as_ref() {
+                                if let Ok(restored) = DockState::from_json(json) {
+                                    this.restored = Some(restored);
+                                    this.generation += 1;
+                                }
+                            }
+                            cx.notify();
+                        },
+                    )),
+                )
                 .child(section(
-                    "Dock showcase",
-                    "工作台示例统一使用宽卡片，保持面板边界、说明和主体宽度稳定。",
-                    Space::new()
-                        .vertical()
-                        .gap_lg()
-                        .child(showcase_card_wide(
-                            "Workbench 工作台",
-                            "静态 dock 区域适合先搭出稳定信息架构；拖拽重排可后续在此 API 上继续增强。",
-                            workbench_layout(),
-                        ))
-                        .child(showcase_card_wide(
-                            "左右检查器 + 底部日志",
-                            "多个 edge panel 可以组合成常见的 Explorer / Inspector / Terminal 桌面应用结构。",
-                            inspector_layout(),
-                        )),
+                    "Native workbench",
+                    "拖动标签到 Split ← / → / ↑ / ↓；修改布局后可恢复到新实例。",
+                    workbench,
                 )),
         )
     }
-}
-
-fn workbench_layout() -> DockLayout {
-    DockLayout::new()
-        .id("gallery-dock-workbench")
-        .height_lg()
-        .panel_gap(px(6.0))
-        .panel(
-            DockPanel::new(
-                "explorer",
-                "Explorer",
-                DockEdge::Left,
-                panel_list(["src", "crates", "apps", "README.md"]),
-            )
-            .size(px(220.0)),
-        )
-        .panel(
-            DockPanel::new(
-                "terminal",
-                "Terminal",
-                DockEdge::Bottom,
-                Text::new("cargo check --workspace --all-targets"),
-            )
-            .size(px(132.0)),
-        )
-        .tab(DockTab::new(
-            "main",
-            "main.rs",
-            editor_preview("fn main() {\n    init_liora(cx);\n}"),
-        ))
-        .tab(DockTab::new(
-            "readme",
-            "README.md",
-            Text::new("# Liora\nNative GPUI component library.").wrap(),
-        ))
-}
-
-fn inspector_layout() -> DockLayout {
-    DockLayout::new()
-        .id("gallery-dock-inspector")
-        .height(px(460.0))
-        .panel_gap(px(6.0))
-        .panel(
-            DockPanel::new(
-                "outline",
-                "Outline",
-                DockEdge::Left,
-                panel_list(["App", "Shell", "Sidebar", "Content"]),
-            )
-            .size(px(180.0)),
-        )
-        .panel(
-            DockPanel::new(
-                "props",
-                "Properties",
-                DockEdge::Right,
-                panel_list(["theme", "spacing", "state", "events"]),
-            )
-            .size(px(220.0)),
-        )
-        .panel(
-            DockPanel::new(
-                "logs",
-                "Logs",
-                DockEdge::Bottom,
-                Text::new("Ready • 0 errors • 0 warnings"),
-            )
-            .size(px(96.0)),
-        )
-        .tab(DockTab::new(
-            "preview",
-            "Preview",
-            Space::new()
-                .vertical()
-                .gap_sm()
-                .child(Tag::new("Live").success())
-                .child(Text::new("Center content remains flexible.")),
-        ))
-}
-
-fn panel_list(items: impl IntoIterator<Item = &'static str>) -> impl IntoElement {
-    Space::new()
-        .vertical()
-        .gap_xs()
-        .children(items.into_iter().map(Text::new))
-}
-
-fn editor_preview(code: &'static str) -> impl IntoElement {
-    Space::new()
-        .vertical()
-        .gap_sm()
-        .child(Tag::new("Rust").info())
-        .child(
-            Text::new(code)
-                .code_style(&liora_theme::Theme::light())
-                .wrap(),
-        )
 }

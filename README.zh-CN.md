@@ -32,6 +32,7 @@
 
 - [Liora 是什么？](#liora-是什么)
 - [你可以用 Liora 构建什么？](#你可以用-liora-构建什么)
+- [工作台 SDK](#工作台-sdk)
 - [环境要求](#环境要求)
 - [如何选择依赖方式](#如何选择依赖方式)
 - [GPUI 依赖与本地 patch 策略](#gpui-依赖与本地-patch-策略)
@@ -73,6 +74,23 @@ Liora 明确不是 Web 外壳：
 | 系统托盘应用 | `liora-tray` 基于 `tray-icon` 和 `muda` 封装稳定命令模型。 |
 | 原生发布产物 | `liora-packager` + `xtask package` 校验并生成 Linux、macOS、Windows 的打包计划。 |
 | 更新能力 | `liora-updater` 检查 GitHub Releases、选择 asset、校验 SHA-256，并返回明确安装计划。 |
+
+## 工作台 SDK
+
+通过 `liora::components` 或 `liora_components` 导入。把有状态控件以 `Entity<T>` 保存在宿主视图中。
+
+| 组件 | 契约 |
+|---|---|
+| `MarkdownDocument` / `MarkdownView` | 缓存与批量解析的原生 Markdown；富布局按块选择，或显式切换连续纯文本选择。图片默认拒绝，只有宿主批准的本地文件或已解码图像才能显示；SDK 不抓取不可信图片 URL。 |
+| `Transcript` | 稳定 ID 的可变高度虚拟化、原生跟随/脱离、历史前插/重排锚点及可序列化 `TranscriptPosition`。宿主通知行高改变并持有会话存储。 |
+| `Composer` | 复用 Input 的原生选区/IME；结构化引用与附件、候选、粘贴 payload、busy 时可继续编辑的草稿，以及宿主 Send/Stop 事件。 |
+| `Terminal` | 增量 VT/ANSI 状态、光标、Unicode 单元格、选区、历史、原生文本输入与尺寸事件；使用 MIT 许可的 `vt100 = 0.18.1`，PTY/进程 I/O 全由宿主持有。 |
+| `DiffDocument` / `DiffView` | 原生行差异/hunk 审阅、文件行定位和宿主接受/拒绝事件；不会隐式修改文件。 |
+| `Splitter` / `DockLayout` | 持久鼠标/键盘尺寸调整、受控面板尺寸、分组标签/分屏、宿主内容和可序列化布局。 |
+| `CommandPalette` | 稳定命令 ID、可用性、模糊排序、键盘/鼠标执行，以及与菜单共用的 GPUI action。 |
+| `CodeEditor` | 可撤销补全编辑、过期结果 token、字面查找/导航/替换、共享渲染快照和 delta 历史；LSP 连接归宿主。 |
+
+Gallery 与 Docs 使用相同原生实现，示例进入 snippet 编译检查。这些是 SDK 积木，不是 Agent 产品：provider 连接、执行权限、会话数据库、下载和子进程管理仍由应用负责。Linux/Xwayland 已验证九项演示绘制和 Markdown 剪贴板/选择；headless 测试本身不能证明系统粘贴、真实 IME 候选窗口或 Windows/macOS 行为。
 
 ## 环境要求
 
@@ -141,7 +159,7 @@ liora = { version = "0.4", default-features = false, features = ["updater"] }
 
 以下示例面向 crates.io 已发布的 Liora 0.4.0，使用与该版本兼容的旧 GPUI revision。若通过 path 依赖当前源码，请把两处 GPUI 依赖统一改为上面的工作区 revision。
 
-Liora 0.5.1 使用当前工作区的 GPUI pin。升级到 0.5 时，将下方 Liora 依赖版本改为 `0.5`，并将两处 GPUI revision 统一改为 `f0d896f2c18a543335eb155f729d36b624695591`；macOS 要求 12+，构建使用 macOS 26 SDK。
+Liora 0.6.0 使用当前工作区的 GPUI pin。升级到 0.6 时，将下方 Liora 依赖版本改为 `0.6`，并将所有 GPUI revision 统一改为 `f0d896f2c18a543335eb155f729d36b624695591`；macOS 要求 12+，构建使用 macOS 26 SDK。
 
 Liora **只能使用官方 Zed GPUI**。禁止使用 `open-gpui` 等重命名或社区 fork。
 

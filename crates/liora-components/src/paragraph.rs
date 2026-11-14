@@ -274,6 +274,7 @@ impl RenderOnce for Paragraph {
                     key_context: "SelectableText",
                     fill_width: true,
                     font_family: ui_family,
+                    text_align: gpui::TextAlign::Left,
                 },
                 _window,
                 cx,

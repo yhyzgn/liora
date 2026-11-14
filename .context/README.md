@@ -4,8 +4,8 @@
 
 1. `AGENTS.md`
 2. `.context/README.md`
-3. Current plan: `.context/plans/004_gpui_native_replacement_20261013.md`
-4. Current task: `.context/tasks/004_gpui_native_replacement_20261013.md`
+3. Current plan: `.context/plans/005_agent_desktop_sdk_20261112.md`
+4. Current task: `.context/tasks/005_agent_desktop_sdk_20261112.md`
 5. `.context/system/overview.md`
 6. `.context/system/conventions.md`
 7. `.context/system/risks.md`
@@ -25,4 +25,4 @@
 
 ## Current pointers
 
-The authoritative current plan/task pointers live in `AGENTS.md` and currently point to `.context/plans/004_gpui_native_replacement_20261013.md` and `.context/tasks/004_gpui_native_replacement_20261013.md`.
+The authoritative current plan/task pointers live in `AGENTS.md` and currently point to `.context/plans/005_agent_desktop_sdk_20261112.md` and `.context/tasks/005_agent_desktop_sdk_20261112.md`.

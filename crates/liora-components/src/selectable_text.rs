@@ -87,6 +87,8 @@ pub struct SelectableTextOptions {
     pub fill_width: bool,
     /// Optional font family override inherited from Liora app typography.
     pub font_family: Option<SharedString>,
+    /// Horizontal alignment applied to every visual line within the element width.
+    pub text_align: gpui::TextAlign,
 }
 
 impl SelectableTextOptions {
@@ -103,6 +105,7 @@ impl SelectableTextOptions {
             key_context: "SelectableText",
             fill_width: true,
             font_family: None,
+            text_align: gpui::TextAlign::Left,
         }
     }
 }
@@ -283,6 +286,7 @@ struct SelectableTextState {
     key_context: &'static str,
     fill_width: bool,
     font_family: Option<SharedString>,
+    text_align: gpui::TextAlign,
     layout_caches: SelectableTextLayoutCacheStore,
     focus_handle: FocusHandle,
 }
@@ -300,6 +304,7 @@ impl SelectableTextState {
             key_context: options.key_context,
             fill_width: options.fill_width,
             font_family: options.font_family,
+            text_align: options.text_align,
             layout_caches: Rc::new(RefCell::new(Vec::new())),
             focus_handle: cx.focus_handle(),
         }
@@ -316,7 +321,8 @@ impl SelectableTextState {
             || self.wrap != options.wrap
             || self.key_context != options.key_context
             || self.fill_width != options.fill_width
-            || self.font_family != options.font_family;
+            || self.font_family != options.font_family
+            || self.text_align != options.text_align;
         if !changed {
             return;
         }
@@ -332,6 +338,7 @@ impl SelectableTextState {
         self.key_context = options.key_context;
         self.fill_width = options.fill_width;
         self.font_family = options.font_family;
+        self.text_align = options.text_align;
         self.layout_caches.borrow_mut().clear();
 
         if old_id != self.id {
@@ -360,6 +367,7 @@ impl SelectableTextState {
         style.white_space = self.wrap.white_space();
         style.text_overflow = None;
         style.line_clamp = None;
+        style.text_align = self.text_align;
         style
     }
 
@@ -436,12 +444,15 @@ impl SelectableTextState {
             .copied()
             .unwrap_or((bounds.top(), 0));
         let line_size = line.size(self.line_height);
-        let local_x = (pt.x - bounds.left()).max(px(0.0));
         let local_y = (pt.y - y)
             .max(px(0.0))
             .min((line_size.height - px(0.5)).max(px(0.0)));
         let visual_row =
             ((local_y / self.line_height).floor() as usize).min(line.wrap_boundaries().len());
+        let local_x = (pt.x
+            - bounds.left()
+            - visual_row_alignment_offset(line, visual_row, bounds.size.width, self.text_align))
+        .max(px(0.0));
         let position = point(
             local_x,
             self.line_height * visual_row as f32 + self.line_height * 0.5,
@@ -817,6 +828,7 @@ impl Element for SelectableTextElement {
                         y,
                         input.line_height,
                         bounds,
+                        input.text_align,
                         selection_color,
                         &mut selection_quads,
                     );
@@ -1053,6 +1065,7 @@ fn add_wrapped_selection_quads(
     y: Pixels,
     line_height: Pixels,
     bounds: Bounds<Pixels>,
+    align: gpui::TextAlign,
     color: gpui::Hsla,
     quads: &mut Vec<PaintQuad>,
 ) {
@@ -1078,14 +1091,42 @@ fn add_wrapped_selection_quads(
                 .unwrap_or_else(|| line.size(line_height).width)
         };
         let row_y = line_height * row as f32;
+        let alignment = visual_row_alignment_offset(line, row, bounds.size.width, align);
         let width = (end_x - start_x).max(px(1.0));
         quads.push(fill(
             Bounds::new(
-                point(bounds.left() + start_x, y + row_y),
+                point(bounds.left() + alignment + start_x, y + row_y),
                 size(width, line_height),
             ),
             color,
         ));
+    }
+}
+
+fn visual_row_alignment_offset(
+    line: &gpui::WrappedLine,
+    row: usize,
+    width: Pixels,
+    align: gpui::TextAlign,
+) -> Pixels {
+    if align == gpui::TextAlign::Left {
+        return px(0.0);
+    }
+    let boundary_x = |row: usize| {
+        line.wrap_boundaries()
+            .get(row)
+            .map_or(line.unwrapped_layout.width, |boundary| {
+                line.runs()[boundary.run_ix].glyphs[boundary.glyph_ix]
+                    .position
+                    .x
+            })
+    };
+    let start = row.checked_sub(1).map_or(px(0.0), boundary_x);
+    let remaining = width - (boundary_x(row) - start);
+    match align {
+        gpui::TextAlign::Left => px(0.0),
+        gpui::TextAlign::Center => remaining / 2.0,
+        gpui::TextAlign::Right => remaining,
     }
 }
 
@@ -1270,6 +1311,60 @@ mod tests {
         assert_eq!(
             shaped_line_start_offsets("标题\n正文", ["标题", "正文"]),
             vec![0, "标题\n".len()]
+        );
+    }
+
+    #[test]
+    fn aligned_wrapped_rows_share_pointer_and_selection_geometry() {
+        let mut line = gpui::WrappedLine::default();
+        line.text = "abcdefg".into();
+        let layout = Arc::get_mut(&mut *line).unwrap();
+        let unwrapped = Arc::get_mut(&mut layout.unwrapped_layout).unwrap();
+        unwrapped.width = px(70.0);
+        unwrapped.len = 7;
+        unwrapped.runs = vec![gpui::ShapedRun {
+            font_id: gpui::FontId(0),
+            glyphs: (0..7)
+                .map(|index| gpui::ShapedGlyph {
+                    id: gpui::GlyphId(0),
+                    position: point(px(index as f32 * 10.0), px(0.0)),
+                    index,
+                    is_emoji: false,
+                })
+                .collect(),
+        }];
+        layout.wrap_boundaries.push(gpui::WrapBoundary {
+            run_ix: 0,
+            glyph_ix: 4,
+        });
+        assert_eq!(
+            visual_row_alignment_offset(&line, 0, px(100.0), gpui::TextAlign::Center),
+            px(30.0)
+        );
+        assert_eq!(
+            visual_row_alignment_offset(&line, 1, px(100.0), gpui::TextAlign::Center),
+            px(35.0)
+        );
+        assert_eq!(
+            visual_row_alignment_offset(&line, 1, px(20.0), gpui::TextAlign::Right),
+            px(-10.0)
+        );
+        let mut quads = Vec::new();
+        add_wrapped_selection_quads(
+            &line,
+            4,
+            6,
+            px(10.0),
+            px(20.0),
+            Bounds::new(point(px(5.0), px(10.0)), size(px(100.0), px(40.0))),
+            gpui::TextAlign::Right,
+            gpui::black(),
+            &mut quads,
+        );
+        assert_eq!(quads.len(), 1);
+        assert_eq!(
+            quads[0].bounds,
+            Bounds::new(point(px(75.0), px(30.0)), size(px(20.0), px(20.0)))
         );
     }
 }

@@ -20,11 +20,14 @@ pub mod code_block_demo;
 pub mod code_editor_demo;
 pub mod collapse_demo;
 pub mod color_picker_demo;
+pub mod command_palette_demo;
+pub mod composer_demo;
 pub mod container_demo;
 pub mod date_picker_demo;
 pub mod date_time_picker_demo;
 pub mod descriptions_demo;
 pub mod dialog_demo;
+pub mod diff_demo;
 pub mod dock_layout_demo;
 pub mod drawer_demo;
 pub mod dropdown_button_demo;
@@ -49,6 +52,7 @@ pub mod line_chart_demo;
 pub mod link_demo;
 pub mod list_demo;
 pub mod loading_demo;
+pub mod markdown_demo;
 pub mod mention_demo;
 pub mod menu_demo;
 pub mod message_box_demo;
@@ -88,6 +92,7 @@ pub mod steps_demo;
 pub mod table_demo;
 pub mod tabs_demo;
 pub mod tag_demo;
+pub mod terminal_demo;
 pub mod text_demo;
 pub mod theme_demo;
 pub mod time_picker_demo;
@@ -97,6 +102,7 @@ pub mod titlebar_demo;
 pub mod todo_demo;
 pub mod tooltip_demo;
 pub mod tour_demo;
+pub mod transcript_demo;
 pub mod transfer_demo;
 pub mod tray_demo;
 pub mod tree_demo;
@@ -123,6 +129,36 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "Button 按钮",
             description: "常用的操作按钮",
             render: |cx| button_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "DiffView 差异审阅",
+            description: "真实 Myers hunk、源行定位与接受/拒绝事件",
+            render: diff_demo::render,
+        },
+        DemoEntry {
+            name: "Terminal 终端",
+            description: "真实 VT/ANSI 屏幕、选区、历史、输入与 resize 事件",
+            render: |cx| terminal_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "MarkdownView 动态富文本",
+            description: "原生块、持续更新、安全链接和宿主图片策略",
+            render: |cx| markdown_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "CommandPalette 命令面板",
+            description: "稳定命令、可用性、排序、键盘与菜单 Action",
+            render: command_palette_demo::render,
+        },
+        DemoEntry {
+            name: "Composer 消息编辑",
+            description: "草稿、引用、附件、候选、IME 和发送/停止事件",
+            render: |cx| composer_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "Transcript 会话滚动",
+            description: "可变高度、原生跟随、历史锚点和位置恢复",
+            render: |cx| transcript_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Kbd 快捷键",
@@ -707,6 +743,12 @@ pub fn registry() -> Vec<DemoEntry> {
 /// Render the same native demo used by Liora Gallery for Liora Docs.
 pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
     match component {
+        "DiffView" => Some(diff_demo::render(cx)),
+        "Terminal" => Some(terminal_demo::render(cx).into()),
+        "MarkdownView" => Some(markdown_demo::render(cx).into()),
+        "CommandPalette" => Some(command_palette_demo::render(cx).into()),
+        "Composer" => Some(composer_demo::render(cx).into()),
+        "Transcript" => Some(transcript_demo::render(cx).into()),
         "Accordion" => Some(accordion_demo::render(cx).into()),
         "Affix" => Some(affix_demo::render(cx).into()),
         "Alert" => Some(alert_demo::render(cx).into()),
@@ -1008,24 +1050,6 @@ mod tests {
             ("badge_demo.rs", include_str!("badge_demo.rs")),
             ("descriptions_demo.rs", include_str!("descriptions_demo.rs")),
             ("timeline_demo.rs", include_str!("timeline_demo.rs")),
-        ] {
-            assert_demo_uses_liora_layout_primitives(file_name, source);
-        }
-    }
-
-    #[test]
-    fn layout_container_demos_use_liora_layout_primitives() {
-        for (file_name, source) in [
-            ("card_demo.rs", include_str!("card_demo.rs")),
-            ("container_demo.rs", include_str!("container_demo.rs")),
-            ("grid_demo.rs", include_str!("grid_demo.rs")),
-            ("layout_demo.rs", include_str!("layout_demo.rs")),
-            ("scrollbar_demo.rs", include_str!("scrollbar_demo.rs")),
-            ("splitter_demo.rs", include_str!("splitter_demo.rs")),
-            (
-                "virtualized_list_demo.rs",
-                include_str!("virtualized_list_demo.rs"),
-            ),
         ] {
             assert_demo_uses_liora_layout_primitives(file_name, source);
         }

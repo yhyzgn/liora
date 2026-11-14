@@ -244,6 +244,7 @@ impl RenderOnce for SelectableTextGroup {
                     key_context: "SelectableText",
                     fill_width: true,
                     font_family: ui_family,
+                    text_align: gpui::TextAlign::Left,
                 },
                 window,
                 cx,

@@ -167,8 +167,20 @@ mod code_editor_advanced;
 mod code_editor_basic;
 #[path = "../../content/snippets/code_editor/config_file.rs"]
 mod code_editor_config_file;
+#[path = "../../content/snippets/code_editor/configuration.rs"]
+mod code_editor_configuration;
 #[path = "../../content/snippets/code_editor/diagnostics.rs"]
 mod code_editor_diagnostics;
+#[path = "../../content/snippets/code_editor/folding.rs"]
+mod code_editor_folding;
+#[path = "../../content/snippets/code_editor/indent_guides.rs"]
+mod code_editor_indent_guides;
+#[path = "../../content/snippets/code_editor/languages.rs"]
+mod code_editor_languages;
+#[path = "../../content/snippets/code_editor/line_height.rs"]
+mod code_editor_line_height;
+#[path = "../../content/snippets/code_editor/theme.rs"]
+mod code_editor_theme;
 #[path = "../../content/snippets/collapse/accordion.rs"]
 mod collapse_accordion;
 #[path = "../../content/snippets/collapse/basic.rs"]
@@ -227,6 +239,10 @@ mod dialog_basic;
 mod dialog_custom_content;
 #[path = "../../content/snippets/dialog/manual_close.rs"]
 mod dialog_manual_close;
+#[path = "../../content/snippets/dock_layout/inspector.rs"]
+mod dock_layout_inspector;
+#[path = "../../content/snippets/dock_layout/workbench.rs"]
+mod dock_layout_workbench;
 #[path = "../../content/snippets/drawer/manual_close.rs"]
 mod drawer_manual_close;
 #[path = "../../content/snippets/drawer/placements.rs"]
@@ -793,5 +809,22 @@ mod watermark_cover;
 mod watermark_custom;
 #[path = "../../content/snippets/watermark/header.rs"]
 mod watermark_header;
+
+#[path = "../../content/snippets/composer/basic.rs"]
+mod composer_basic;
+#[path = "../../content/snippets/transcript/basic.rs"]
+mod transcript_basic;
+
+#[path = "../../content/snippets/markdown/streaming.rs"]
+mod markdown_streaming;
+
+#[path = "../../content/snippets/terminal/screen.rs"]
+mod terminal_screen;
+
+#[path = "../../content/snippets/diff/basic.rs"]
+mod diff_basic;
+
+#[path = "../../content/snippets/command_palette/basic.rs"]
+mod command_palette_basic;
 
 fn main() {}

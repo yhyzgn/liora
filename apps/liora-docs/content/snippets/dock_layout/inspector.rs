@@ -6,16 +6,31 @@ pub fn dock_layout_inspector() -> impl IntoElement {
         .height(px(460.0))
         .panel_gap(px(6.0))
         .panel(
-            DockPanel::new("outline", "Outline", DockEdge::Left, panel_items(["App", "Shell", "Content"]))
-                .size(px(180.0)),
+            DockPanel::new(
+                "outline",
+                "Outline",
+                DockEdge::Left,
+                panel_items(["App", "Shell", "Content"]),
+            )
+            .size(px(180.0)),
         )
         .panel(
-            DockPanel::new("props", "Properties", DockEdge::Right, panel_items(["theme", "state", "events"]))
-                .size(px(220.0)),
+            DockPanel::new(
+                "props",
+                "Properties",
+                DockEdge::Right,
+                panel_items(["theme", "state", "events"]),
+            )
+            .size(px(220.0)),
         )
         .panel(
-            DockPanel::new("logs", "Logs", DockEdge::Bottom, Text::new("Ready • 0 errors"))
-                .size(px(96.0)),
+            DockPanel::new(
+                "logs",
+                "Logs",
+                DockEdge::Bottom,
+                Text::new("Ready • 0 errors"),
+            )
+            .size(px(96.0)),
         )
         .tab(DockTab::new(
             "preview",

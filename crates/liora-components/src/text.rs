@@ -509,6 +509,7 @@ impl RenderOnce for Text {
                     key_context: "SelectableText",
                     fill_width: text.fill_width_on_wrap,
                     font_family: text.font_family.clone(),
+                    text_align: gpui::TextAlign::Left,
                 },
                 _window,
                 cx,

@@ -33,10 +33,10 @@
 ## R-004 — Upgraded platform rendering and lint validation gaps
 
 - Severity: High for platform runtime coverage; Medium for existing strict Clippy debt.
-- Evidence: GPUI refresh changes layout/text/GPU/input/platform behavior; current shell has no DISPLAY/WAYLAND_DISPLAY. Workspace `clippy -D warnings` reports existing optimizer/packager/tray code debt.
+- Evidence: GPUI refresh changes layout/text/GPU/input/platform behavior. An isolated Linux Xwayland session rendered all nine SDK demos and passed real Markdown cross-block clipboard copy plus aligned pointer selection. The official Linux headless clipboard write/read path is no-op/None; Composer smoke injects payloads and marked composition. Actual IME candidate windows and macOS/Windows remain unverified. Earlier workspace `clippy -D warnings` reports existing optimizer/packager/tray code debt.
 - Trigger: release after dependency refresh or declaring universal touch/headless/cross-platform compatibility based only on compilation.
 - Failure mode: geometry, fonts, IME/selection, real touch, multi-display or native window regressions; strict lint quality gate is not green.
-- Mitigation: run native Linux headless smoke plus workspace tests, preserve explicit Windows/macOS/real-display validation gaps, and remediate existing lint debt in a separately scoped maintenance task without warning suppressions.
+- Mitigation: retain native headless regression and isolated real-display evidence separately; preserve explicit IME, Windows/macOS and hardware coverage gaps. Remediate existing lint debt in a separately scoped maintenance task without warning suppressions.
 - Rollback: revert this refresh's pin/lock/API/docs as one bounded change.
 - Status: Open.
 

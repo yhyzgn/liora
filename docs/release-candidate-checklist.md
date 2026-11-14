@@ -1,10 +1,10 @@
-# Liora 0.5.x Release Candidate Checklist
+# Liora 0.6.x Release Candidate Checklist
 
-This checklist defines the repository-owned readiness gate for the Liora 0.5.x release-candidate path. It is intentionally stricter than a normal feature-phase checklist because RC work must prove that docs, package metadata, workflows, and canonical apps still agree.
+This checklist defines the repository-owned readiness gate for the Liora 0.6.x release-candidate path. It is intentionally stricter than a normal feature-phase checklist because RC work must prove that docs, package metadata, workflows, and canonical apps still agree.
 
 ## Scope
 
-- Target version: `0.5.1`, matching every workspace package manifest and `crates/liora-packager/Cargo.toml`.
+- Target version: `0.6.0`, matching every workspace package manifest and `crates/liora-packager/Cargo.toml`.
 - Runtime boundary: pure Rust + GPUI native apps only. Do not introduce Tauri, WebView, HTML/CSS/DOM, WASM chart runtimes, or browser shells.
 - Canonical apps: `apps/liora-gallery` and `apps/liora-docs`.
 - Removed sample-app boundary: do not re-add `examples/minimal-app`, `examples/dashboard-app`, `liora-minimal-app`, or `liora-dashboard-app`; their useful adoption and dogfooding behavior lives in Gallery and Docs.

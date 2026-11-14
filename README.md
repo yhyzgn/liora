@@ -32,6 +32,7 @@
 
 - [What is Liora?](#what-is-liora)
 - [What you can build](#what-you-can-build)
+- [Workbench SDK](#workbench-sdk)
 - [Requirements](#requirements)
 - [Choose the right dependency setup](#choose-the-right-dependency-setup)
 - [GPUI dependency and local patch policy](#gpui-dependency-and-local-patch-policy)
@@ -74,6 +75,23 @@ Use Liora when you want a Rust desktop app with:
 | System tray apps | `liora-tray` wraps `tray-icon` and `muda` with stable app commands. |
 | Native release artifacts | `liora-packager` + `xtask package` validate and generate package plans for Linux, macOS, and Windows. |
 | Updater integration | `liora-updater` checks GitHub Releases, selects assets, verifies SHA-256, and returns explicit install plans. |
+
+## Workbench SDK
+
+Import these controls through `liora::components` or `liora_components`. Keep stateful controls as `Entity<T>` fields in the host view.
+
+| Component | Contract |
+|---|---|
+| `MarkdownDocument` / `MarkdownView` | Cached, batched native Markdown updates; rich per-block selection or explicit continuous-text selection. Images are denied unless the host supplies an approved local file or decoded image; the SDK does not fetch untrusted image URLs. |
+| `Transcript` | Keyed variable-height virtualization, native tail following/detachment, prepend/reorder anchors, and serializable `TranscriptPosition`. Notify changed row heights and retain session storage in the host. |
+| `Composer` | Existing Input selection/IME, structured references and attachments, candidates, paste payloads, editable busy drafts, and host-owned Send/Stop events. |
+| `Terminal` | Incremental VT/ANSI state with cursor, Unicode cells, selection, scrollback, native text input and size events. Uses MIT-licensed `vt100 = 0.18.1`; the host owns all PTY/process I/O. |
+| `DiffDocument` / `DiffView` | Native line/hunk review, file-line locations and host-owned accept/reject events; no implicit file changes. |
+| `Splitter` / `DockLayout` | Persistent pointer/keyboard resizing, controlled pane sizes, grouped tabs/splits, host-rendered content and serializable layouts. |
+| `CommandPalette` | Stable command IDs, availability, fuzzy ranking, keyboard/pointer execution and shared GPUI actions with menus. |
+| `CodeEditor` | Undoable completion edits, stale-response tokens, literal search/navigation/replacement, shared render snapshots and delta history. The host owns LSP connections. |
+
+Gallery and Docs expose the same native implementations, with compile-checked snippets. These are SDK building blocks, not an Agent product: provider connections, execution permissions, session databases, downloads and subprocess management remain application responsibilities. Linux/Xwayland validation covers all nine demo renders and Markdown clipboard/selection; headless tests alone do not prove system paste, real IME candidate windows or Windows/macOS behavior.
 
 ## Requirements
 
@@ -142,7 +160,7 @@ The workspace pins official Zed `main` at `f0d896f2c18a543335eb155f729d36b624695
 
 The examples below target crates.io Liora 0.4.0 and use its older GPUI pin. For a path dependency on this checkout, use the workspace revision above for both GPUI entries instead.
 
-Liora 0.5.1 uses the current workspace GPUI pin. When adopting 0.5, change the Liora dependency versions below to `0.5` and both GPUI revisions to `f0d896f2c18a543335eb155f729d36b624695591`; macOS requires version 12+ and the macOS 26 SDK.
+Liora 0.6.0 uses the current workspace GPUI pin. When adopting 0.6, change the Liora dependency versions below to `0.6` and all GPUI revisions to `f0d896f2c18a543335eb155f729d36b624695591`; macOS requires version 12+ and the macOS 26 SDK.
 
 Liora uses **official Zed GPUI only** from the official Zed upstream repository. Do not use renamed or community forks such as `open-gpui`.
 

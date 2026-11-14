@@ -345,14 +345,17 @@ impl Input {
         cx.notify();
     }
 
-    /// Updates the stored value value and keeps the existing component identity.
+    /// Replaces the value, cancels composition and moves the caret to the end.
+    /// An identical value is a no-op unless marked composition is active.
     pub fn set_value(&mut self, value: impl Into<SharedString>, cx: &mut Context<Self>) {
         let value = value.into();
-        if self.value == value {
+        if self.value == value && self.marked_range.is_none() {
             return;
         }
         self.value = value;
         self.selected_range = self.value.len()..self.value.len();
+        self.marked_range = None;
+        self.selection_reversed = false;
         cx.notify();
     }
 

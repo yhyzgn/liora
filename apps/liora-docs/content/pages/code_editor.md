@@ -46,6 +46,12 @@
 
 ```rust src="code_editor/advanced.rs"
 ```
+补全不是展示列表：聚焦编辑器后用 `↑/↓` 选择，`Tab/Enter` 或鼠标按下候选接受，`Escape` 取消。旧 `CodeCompletionItem` 与 provider 契约保持不变：label 替换选区，未选择时替换光标所在的完整代码词（包括光标右侧的词后缀）。需要 display label 与插入文本不同或明确替换范围时，用 `CodeCompletionEdit::new(item, utf8_range, new_text)`。
+
+异步宿主先捕获 `request_token()`，再用 `set_completions_for_request` 或 `set_completion_edits_for_request` 送回结果。版本或光标/选区不一致时返回 `false`；显式范围倒置、越界或落在 UTF-8 字符内部时整批拒绝。只读不能接受补全，IME composition 期间不能装入或接受候选。SDK 不启动 LSP 进程或网络。
+
+`set_search_query` 更新区分大小写的字面查询；`search_matches` 返回 UTF-8 非重叠命中并缓存到文本版本。所有可见命中高亮，`find_next` / `find_previous`（`F3` / `Shift+F3`）循环定位、选中并展开所在折叠。`replace_current_match` 只替换当前精确命中并定位下一处；`replace_all_matches` 对已有命中逆序编辑，不重新匹配插入文本，整批可一步撤销。空查询不产生匹配；只读或 IME composition 期间不替换。
+
 
 ## 高级布局：行高自定义
 
@@ -128,12 +134,12 @@
 - 支持基础导航、键盘选择、鼠标点击定位、双击选词、三击选行、列级光标、拖拽选择、选区左右键折叠、词级跳转/选择/删除、智能 Home、PageUp/PageDown、文档首尾跳转/选择、复制、粘贴、剪切、回车换行、缩进/反缩进、`Ctrl/Cmd+Z` undo 与 `Ctrl/Cmd+Shift+Z` redo。
 - 支持 `CodeEditorOptions` 统一配置：`read_only`、`header`、`status_bar`、`line_numbers`、`diagnostics_panel`、`completions_panel`、`hover_panel`、`current_line_highlight`、`indent_guides`、`code_folding`、`rulers`、`ruler_column`、`inline_diagnostics`、`whitespace`、`selection`、`copy`、`clipboard_editing`、`cursor_blink`、`drag_selection`、`word_selection`、`line_selection`、`indentation`、`history`、`reveal_cursor`、`scrollbar`、`completion_limit` 与 `diagnostics_limit`；也可用 builder 快速配置常用单项。
 - 支持 `CodeEditorHighlightTheme` 与 `CodeEditorSyntaxTheme` 自定义编辑器主题：可覆盖 base `CodeTheme`、surface、chrome/gutter、border、text/muted text、caret、selection、current line、ruler、whitespace、diagnostic semantic colors，也可用 Zed-style syntax capture 配置每类 token 的颜色、字重和 italic。
-- 支持搜索命中统计、静态/动态 completion candidates、hover/help provider 扩展点；这些 API 是语言服务接入点，不会把 SDK 绑定到某个 LSP 进程。
+- 支持搜索命中高亮、循环定位、当前/全部替换、可键盘/鼠标接受的 completion candidates，以及 hover/help provider；异步结果通过版本与光标 token 防止过期编辑。
 - 支持 `CodeDiagnostic` 静态注入，也支持 `diagnostics_provider` 根据最新文本动态生成诊断结果，用于展示语法检查、lint、业务规则检查等结果。
 - 语法高亮已经进入编辑行内部，输入变化会驱动同一区域重新渲染；光标、选区和 IME marked text 下划线都在行级 GPUI shaped-line paint 阶段绘制，不参与文本 flex 布局，避免把后续文本挤开；点击定位、IME bounds 和选区矩形使用同一个 glyph layout 反查 offset/坐标并保持 UTF-8 边界安全。
 - 快捷键按 GPUI/Zed 常见习惯注册：Linux/Windows 使用 `Ctrl+←/→` 做词级移动，macOS 可使用 `Alt+←/→`；`Ctrl/Alt+Backspace` 与 `Ctrl/Alt+Delete` 做词级删除；`Shift` 组合扩展选区；`Home` 在缩进首字符和行首之间切换；`Ctrl+Home/End` 与 `Cmd+↑/↓` 跳到文档首尾。
-- 编辑事务栈已经可恢复文本和选区快照，后续增强重点是事务分组合并、软换行后的视觉行模型、横向滚动、增量高亮和 LSP 语义 token。
-- 后续企业级增强应优先补 piece table/rope 后端、事务分组合并、Tree-sitter 可选后端和 LSP bridge traits。
+- 渲染捕获共享不可变行快照，不深复制全文；单次编辑只重建受影响行文本并复用未变行的 `Arc<str>`。多处缩进、全部替换及其 undo/redo 按事务应用 delta，只在批次结束时完整重建一次行索引与行文本，不为每个子编辑重复扫描。历史保存插入/删除 delta 与前后选区，不保存每次按键前后全文。底层连续 `String` 编辑仍会移动后缀，行索引更新仍为 O(行数)。
+- 高亮按语言和文本版本缓存，光标/闪烁 render 复用 capture runs。文本编辑后可靠重新解析；当前不宣称增量 tree-sitter，后续可保留 parser/tree。事务分组合并、rope 后端、软换行与横向滚动仍不在本次范围。
 
 
 ## 配置文件和 Zed JSON 主题

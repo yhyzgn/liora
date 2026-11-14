@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased
+
+## 0.6.0 - 2026-11-13
+
+- Add reusable native `MarkdownDocument` / `MarkdownView` with batched cached parsing, streaming updates, rich and continuous-text selection, safe external links and host-approved image resources; keep Docs-only directives outside the SDK.
+- Add keyed `Transcript` virtualization over official GPUI tail following, with prepend/reorder anchors, row-height invalidation and serializable session positions.
+- Add Input-based `Composer` drafts, references, attachments, candidates, host clipboard payloads and Send/Stop events; preserve native composition and editable busy drafts.
+- Add a real VT/ANSI `Terminal` backed by MIT-licensed `vt100 = 0.18.1`, with native cursor/cell rendering, selection, scrollback, input bytes, composition and resize events; no built-in PTY or process execution.
+- Reduce Terminal rendering from one native element per cell to one fixed-width shaped canvas per row, and anchor its native text-input handler to the viewport so ordinary text and IME input reach the focused terminal.
+- Add native `DiffDocument` / `DiffView` line and hunk review with file locations and host-owned accept/reject events; never modify files implicitly.
+- Extend `Splitter` and `DockLayout` with persistent pointer/keyboard sizing, controlled bounds, grouped tabs/splits, host-owned content, and validated layout restoration.
+- Add `CommandPalette` with stable command IDs, Unicode fuzzy ranking, dynamic availability, virtualized full-width row hit targets, focus restoration, and menu-compatible GPUI action dispatch.
+- Make editor completions undoable and actionable through keyboard/pointer input, reject stale host results, add search navigation/replacement, and use shared render snapshots with delta-based history.
+- Route editor Escape/F3 through context-scoped GPUI actions, keep unhandled searches available to the host, and redraw caret/IME state independently of blink timers. Targetless commands remain unavailable without panicking.
+- Keep editor hit-test/IME geometry viewport-current, invalidate delta history after unrecorded text changes, preserve redo for identical-text operations, batch line-index rebuilds, and fix outdent caret mapping and initial diagnostics.
+- Restore cold Transcript anchors using literal pixel offsets, cancel stale Input composition on draft replacement, make Markdown controls keyboard-operable, and align selection geometry with glyphs. Isolate Splitter/Dock drag owners, refresh measured bounds, retain controlled callbacks after resets, and reject exhausted Dock identities without partial mutation.
+- Add Gallery/Docs examples, compile-checked snippets and assertion-driven native smoke scenarios; separate the public MarkdownView SDK page from the Docs-private renderer. Verify Linux/Xwayland rendering and Markdown clipboard selection without claiming Composer system paste, real IME candidate windows or cross-platform validation.
+- Fill split Dock leaf drop regions so cross-group movement can collapse emptied groups while retaining host-owned content and layout restoration.
+
 ## 0.5.1 - 2026-11-11
 
 - Sign tagged RPM releases with the existing native `cargo-generate-rpm` backend before checksums, verify both font variants against an isolated publisher keyring, and publish the public key/fingerprint after matching an independently pinned fingerprint. Missing RPM credentials or failed signatures block publication, including when unsigned releases are otherwise allowed. Strict non-tag builds use the same signing path; dry-run/Docs-only readiness does not require RPM secrets, and stale artifacts are not marked signed.

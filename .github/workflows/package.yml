@@ -678,11 +678,12 @@ jobs:
             echo
             echo "### Codename: Aurora"
             echo
-            echo "This release ships the git-pinned Liora GPUI SDK facade, crates.io utility crates, cross-platform runnable Docs/Gallery binaries, and Gallery installer packages from the automated release pipeline, with separate without-fonts and with-fonts assets."
+            echo "This release ships the native Liora GPUI SDK crates, cross-platform runnable Docs/Gallery binaries, and Gallery installer packages from the automated release pipeline, with separate without-fonts and with-fonts assets. SDK crates are published through the separate protected crates.io workflow."
             echo
             echo "## Highlights"
             echo
-            echo "- **SDK and utilities** — \`liora\` is the git-only one-stop GPUI facade pinned to the official Zed GPUI rev; \`liora-packager\` and \`liora-updater\` remain crates.io utility crates."
+            echo "- **SDK and utilities** — \`liora\` is the one-stop crates.io SDK facade; downstream apps must patch \`gpui\` to the matching official Zed revision recorded in this tag."
+            echo "- **Agent desktop components** — Native Markdown, Transcript, Composer, DiffView, Terminal, CommandPalette, persistent split/dock layouts, and editor interaction improvements; hosts retain process, I/O, permissions, and filesystem ownership."
             echo "- **Docs app** — Cross-platform raw runnable executables are attached for Linux, macOS, and Windows in both without-fonts and with-fonts variants."
             echo "- **Gallery app** — Cross-platform raw runnable executables plus native Gallery installer bundles are attached from the packaging workflow in both font variants."
             echo "- **Menu migration** — The old navigation/sidebar \`Menu\` API is now \`NavigationMenu\`; \`Menu\` / \`MenuItem\` / \`MenuBar\` now mean GPUI platform menu descriptors plus optional in-window fallback rendering."
@@ -695,13 +696,13 @@ jobs:
             echo
             echo "| Crate | Version | Install |"
             echo "| --- | --- | --- |"
-            echo "| \`liora\` | \`${version}\` | \`liora = { git = \"https://github.com/yhyzgn/liora\", rev = \"${GITHUB_SHA}\" }\` |"
+            echo "| \`liora\` | \`${version}\` | \`cargo add liora@${version}\` plus the matching official GPUI patch |"
             echo "| \`liora-packager\` | \`${version}\` | \`cargo add liora-packager\` |"
             echo "| \`liora-updater\` | \`${version}\` | \`cargo add liora-updater\` |"
             echo
             echo "## Added"
             echo
-            echo "- Git-only \`liora\` GPUI SDK facade pinned to official Zed GPUI, plus crates.io publishing for independent utility crates."
+            echo "- Native \`liora\` SDK facade and reusable component crates published through the protected crates.io workflow, using the matching official Zed GPUI revision for downstream applications."
             echo "- Cross-platform raw executable assets for both Liora Docs and Liora Gallery, split into default \`without-fonts\` and bundled \`with-fonts\` variants."
             echo "- Gallery installer package assets for the platform default installer formats, also split by font variant."
             echo
@@ -713,7 +714,7 @@ jobs:
             else
               echo "- First tagged release in this repository history."
             fi
-            echo "- SDK consumers should pin \`liora\` by git \`rev\` and use the matching official Zed GPUI \`rev\`; \`liora-packager\` and \`liora-updater\` remain available through crates.io for utility-focused integrations."
+            echo "- SDK consumers should use Liora \`${version}\` with a root \`[patch.crates-io]\` entry for the matching official Zed GPUI \`rev\` recorded in this tag; \`liora-packager\` and \`liora-updater\` also support utility-focused integrations."
             echo "- Menu migration: rename old navigation/sidebar usages from \`Menu\`, \`MenuMode\`, \`MenuNode\`, \`SubMenu\`, and \`MenuItemGroup\` to \`NavigationMenu\`, \`NavigationMenuMode\`, \`NavigationMenuNode\`, \`NavigationSubMenu\`, and \`NavigationMenuGroup\`. Use the new \`Menu::register(cx, menus)\` API only for GPUI platform menus, and render \`MenuBar\` when a visible in-window fallback is required."
             echo "- \`liora-docs\` is distributed as raw executables; \`liora-gallery\` includes both raw executables and installer bundles. Release assets ending in \`without-fonts\` are the default smaller builds; \`with-fonts\` bundles PingFangSC font resources or embedded fallback where applicable."
             echo "- RPM packages are OpenPGP-signed. Independently verify the publisher fingerprint before importing the attached \`RPM-GPG-KEY-liora\` with \`sudo rpm --import RPM-GPG-KEY-liora\`; then check the package with \`rpmkeys --define '_pkgverify_level all' --checksig <package.rpm>\`. Use \`sudo dnf --setopt=localpkg_gpgcheck=1 install ./<package.rpm>\` on Fedora/RHEL or \`sudo zypper install ./<package.rpm>\` on openSUSE/SLES. No signature-check bypass is needed."

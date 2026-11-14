@@ -36,7 +36,7 @@ Current workspace pin: official `zed-industries/zed` revision `f0d896f2c18a54333
 
 ## Current work and release boundary
 
-Current completed native replacement plan/task: `004_gpui_native_replacement_20261013`. Workspace package versions remain `0.4.0`; the subsequent dependency refresh does not publish or tag a release.
+Current phase `005_agent_desktop_sdk_20261112` is complete: nine reusable workbench SDK capabilities, Gallery/Docs integration and recorded local acceptance. Native replacement phase `004_gpui_native_replacement_20261013` is also complete. This SDK work does not publish, tag, or manage application-owned Agent execution; platform/IME validation limits remain explicit.
 
 ## GPUI refresh integration
 
@@ -45,6 +45,15 @@ Current completed native replacement plan/task: `004_gpui_native_replacement_202
 - Custom macOS frame setup separates app-owned titlebar dragging from native movability; System resets ownership.
 - New touch/headless/display/profiler APIs are available upstream; no blanket touch/mobile/web support claim is made for custom Liora controls.
 - Upgrade evidence and risk details: `docs/gpui-latest-upgrade.md` and `.context/tasks/004_gpui_native_replacement_20261013.md`.
+
+## Workbench SDK boundaries
+
+- `MarkdownDocument` / `MarkdownView`, `Transcript` and `Composer` own native presentation and interaction; the host owns image approval, session storage and Send/Stop execution.
+- `DiffDocument` / `DiffView` expose line/hunk locations and review events. Binary/not-applicable classification is host-provided; no implicit file mutation or decoding.
+- `Terminal` uses MIT-licensed `vt100 = 0.18.1` for incremental VT/ANSI state; PTY/process I/O stays outside the SDK.
+- `Splitter`, `DockLayout` and `CommandPalette` keep native pointer/keyboard interactions and application-owned content/actions; layout persistence uses validated descriptors.
+- `CodeEditor` accepts host completion responses with revision/selection tokens, performs undoable edits and literal search, and uses shared render snapshots plus delta history. It does not start LSP processes.
+- Canonical acceptance evidence lives in `.context/tasks/005_agent_desktop_sdk_20261112.md`. Linux/Xwayland verification rendered all nine SDK demos and exercised real Markdown clipboard copy and aligned selection; headless smoke does not establish Composer system paste, actual IME candidate-window or cross-platform GPU support.
 
 <!-- ctx-managed-legacy-migration:start -->
 

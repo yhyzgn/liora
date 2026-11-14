@@ -157,6 +157,7 @@ impl Title {
                     key_context: "SelectableText",
                     fill_width: true,
                     font_family: ui_family.clone(),
+                    text_align: gpui::TextAlign::Left,
                 },
                 window,
                 cx,

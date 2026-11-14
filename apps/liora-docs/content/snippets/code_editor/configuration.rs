@@ -1,5 +1,7 @@
 use gpui::{App, AppContext, Entity};
-use liora_components::{CodeCompletionItem, CodeEditor, CodeEditorOptions, CodeLanguage, CodeTheme};
+use liora_components::{
+    CodeCompletionItem, CodeEditor, CodeEditorOptions, CodeLanguage, CodeTheme,
+};
 
 const SOURCE: &str = r#"use liora_components::{CodeEditor, CodeEditorOptions};
 
@@ -22,6 +24,7 @@ pub fn code_editor_configuration(cx: &mut App) -> Entity<CodeEditor> {
                 hover_panel: false,
                 current_line_highlight: true,
                 completion_limit: 3,
+                ..CodeEditorOptions::default()
             })
             .completions([
                 CodeCompletionItem::new("CodeEditorOptions::default")

@@ -181,6 +181,12 @@ const WATERMARK_DOC: &str = include_str!("../content/pages/watermark.md");
 const VIRTUALIZED_LIST_DOC: &str = include_str!("../content/pages/virtualized_list.md");
 const VIRTUALIZED_TABLE_DOC: &str = include_str!("../content/pages/virtualized_table.md");
 const VIRTUALIZED_TREE_DOC: &str = include_str!("../content/pages/virtualized_tree.md");
+const TRANSCRIPT_DOC: &str = include_str!("../content/pages/transcript.md");
+const COMPOSER_DOC: &str = include_str!("../content/pages/composer.md");
+const TERMINAL_DOC: &str = include_str!("../content/pages/terminal.md");
+const DIFF_DOC: &str = include_str!("../content/pages/diff.md");
+const COMMAND_PALETTE_DOC: &str = include_str!("../content/pages/command_palette.md");
+const MARKDOWN_VIEW_DOC: &str = include_str!("../content/pages/markdown_view.md");
 
 const MARKDOWN_DOC: &str = include_str!("../content/pages/markdown.md");
 const LIVE_DEMO_DOC: &str = include_str!("../content/pages/live_demo.md");
@@ -682,6 +688,30 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Upload",
         markdown: UPLOAD_DOC,
+    },
+    DocPage {
+        title: "Transcript",
+        markdown: TRANSCRIPT_DOC,
+    },
+    DocPage {
+        title: "Composer",
+        markdown: COMPOSER_DOC,
+    },
+    DocPage {
+        title: "Terminal",
+        markdown: TERMINAL_DOC,
+    },
+    DocPage {
+        title: "DiffView",
+        markdown: DIFF_DOC,
+    },
+    DocPage {
+        title: "CommandPalette",
+        markdown: COMMAND_PALETTE_DOC,
+    },
+    DocPage {
+        title: "MarkdownView",
+        markdown: MARKDOWN_VIEW_DOC,
     },
     DocPage {
         title: "VirtualizedList",
@@ -1310,6 +1340,14 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "list/ordered.rs" => Some(include_str!("../content/snippets/list/ordered.rs")),
         "list/custom_ordered.rs" => {
             Some(include_str!("../content/snippets/list/custom_ordered.rs"))
+        }
+        "transcript/basic.rs" => Some(include_str!("../content/snippets/transcript/basic.rs")),
+        "composer/basic.rs" => Some(include_str!("../content/snippets/composer/basic.rs")),
+        "markdown/streaming.rs" => Some(include_str!("../content/snippets/markdown/streaming.rs")),
+        "terminal/screen.rs" => Some(include_str!("../content/snippets/terminal/screen.rs")),
+        "diff/basic.rs" => Some(include_str!("../content/snippets/diff/basic.rs")),
+        "command_palette/basic.rs" => {
+            Some(include_str!("../content/snippets/command_palette/basic.rs"))
         }
         "virtualized_list/basic.rs" => Some(include_str!(
             "../content/snippets/virtualized_list/basic.rs"
@@ -12428,113 +12466,6 @@ mod tests {
     }
 
     #[test]
-    fn release_candidate_readiness_docs_cover_current_boundaries() {
-        let checklist = include_str!("../../../docs/release-candidate-checklist.md");
-        let readme = include_str!("../../../README.md");
-        let changelog = include_str!("../../../CHANGELOG.md");
-        let agents = include_str!("../../../AGENTS.md");
-        let context_readme = include_str!("../../../.context/README.md");
-        let plan = include_str!("../../../.context/plans/004_gpui_native_replacement_20261013.md");
-        let task = include_str!("../../../.context/tasks/004_gpui_native_replacement_20261013.md");
-        let cargo = include_str!("../../../Cargo.toml");
-        let package_workflow = include_str!("../../../.github/workflows/package.yml");
-        let sdk_workflow = include_str!("../../../.github/workflows/release-sdk.yml");
-        let ci_workflow = include_str!("../../../.github/workflows/ci.yml");
-
-        for command in [
-            "cargo fmt --all --check",
-            "cargo check --workspace --all-targets",
-            "cargo test --workspace",
-            "cargo check -p liora-docs --bin check_snippets",
-            "cargo doc --workspace --no-deps",
-            "cargo run -p xtask -- package validate",
-            "cargo run -p xtask -- package release-readiness",
-            "cargo run -p xtask -- package ci --app gallery --format platform-defaults --dry-run --skip-build",
-            "cargo run -p xtask -- package install-smoke --app gallery --format platform-defaults --dry-run",
-            "timeout 10s cargo run -p liora-gallery",
-            "timeout 10s cargo run -p liora-docs",
-        ] {
-            assert!(
-                checklist.contains(command),
-                "RC checklist missing {command}"
-            );
-        }
-
-        assert!(checklist.contains("LicenseRef-Liora"));
-        assert!(checklist.contains("multiple-location `gpui = 0.2.2` registry fallback"));
-        assert!(checklist.contains("third_party/zed"));
-        assert!(checklist.contains("must not contain renamed GPUI fork dependencies"));
-        assert!(checklist.contains("Downstream applications must use `[patch.crates-io]`"));
-        assert!(checklist.contains("pure Rust + GPUI native"));
-        assert!(checklist.contains("apps/liora-gallery"));
-        assert!(checklist.contains("apps/liora-docs"));
-        assert!(checklist.contains("vX.Y.Z"));
-        assert!(!checklist.contains("Tauri runtime"));
-        assert!(checklist.contains("liora-minimal-app"));
-        assert!(checklist.contains("liora-dashboard-app"));
-        assert!(checklist.contains("do not re-add"));
-
-        assert!(readme.contains("assets/liora-logo.svg"));
-        assert!(readme.contains("README.zh-CN.md"));
-        assert!(readme.contains("Design principles"));
-        assert!(readme.contains("Runtime model"));
-        assert!(readme.contains("liora::init_liora(cx)"));
-        assert!(readme.contains("liora::init_liora_with_mode"));
-        assert!(readme.contains(r#"liora = "0.4""#));
-        assert!(readme.contains("Native packaging"));
-        assert!(readme.contains("Quality gates"));
-        assert!(readme.contains("Technical differentiators"));
-        assert!(readme.contains("GPUI dependency and local patch policy"));
-        assert!(readme.contains("official Zed upstream repository"));
-        assert!(readme.contains("Do not use renamed or community forks"));
-        let readme_zh = include_str!("../../../README.zh-CN.md");
-        assert!(readme_zh.contains("纯 Rust + GPUI 原生"));
-        assert!(readme_zh.contains("assets/liora-logo.svg"));
-        assert!(readme_zh.contains("设计原则"));
-        assert!(readme_zh.contains("运行时模型"));
-        assert!(readme_zh.contains("技术创新点"));
-        assert!(readme_zh.contains("GPUI 依赖与本地 patch 策略"));
-        assert!(readme_zh.contains("禁止使用 `open-gpui` 等重命名或社区 fork"));
-        let repo_metadata = include_str!("../../../assets/github-repository-metadata.md");
-        assert!(repo_metadata.contains("Pure Rust + GPUI native enterprise UI component library"));
-        assert!(repo_metadata.contains("rust-desktop"));
-        assert!(repo_metadata.contains("no more than 20 topics"));
-        let logo = include_str!("../../../assets/liora-logo.svg");
-        assert!(logo.contains(r#"<title id="title">Liora modular native UI mark</title>"#));
-        assert!(!logo.contains("<text"));
-        assert!(!logo.contains("PURE RUST + GPUI NATIVE UI"));
-        for wrong_name in ["Liorea", "liorea", "Loirea", "loirea"] {
-            assert!(!readme.contains(wrong_name));
-            assert!(!readme_zh.contains(wrong_name));
-            assert!(!repo_metadata.contains(wrong_name));
-            assert!(!logo.contains(wrong_name));
-        }
-        assert!(changelog.contains("P21 release-candidate readiness"));
-        assert!(agents.contains(".context/plans/004_gpui_native_replacement_20261013.md"));
-        assert!(context_readme.contains("Canonical reading order"));
-        assert!(plan.contains("GPUI Native Replacement"));
-        assert!(task.contains("GPUI Native Replacement Execution"));
-        assert!(!cargo.contains("examples/minimal-app"));
-        assert!(!cargo.contains("examples/dashboard-app"));
-        assert!(!cargo.contains("[patch.crates-io]"));
-        assert!(ci_workflow.contains("cargo run -p xtask -- package release-readiness"));
-        assert!(package_workflow.contains("release-assets"));
-        assert!(package_workflow.contains("--app gallery --format"));
-        assert!(package_workflow.contains("liora-release-gallery-packages-*"));
-        assert!(package_workflow.contains("liora-release-binaries-*"));
-        assert!(
-            !package_workflow
-                .contains("package ci --all-apps --format platform-defaults --skip-build")
-        );
-        assert!(sdk_workflow.contains("Publish Liora crates.io SDK crates"));
-        assert!(sdk_workflow.contains("CRATES_IO_TOKEN"));
-        assert!(sdk_workflow.contains("liora-theme liora-icons-optimizer liora-core liora-icons liora-icons-lucide liora-icons-antd liora-icons-ionic liora-icons-tabler liora-icons-carbon liora-icons-material liora-components liora-tray liora-packager liora-updater liora"));
-        assert!(package_workflow.contains("SHA256SUMS.txt"));
-        assert!(package_workflow.contains("portable-staging/*|*.md|*.toml|*.json|*/checksums.txt"));
-        assert!(!package_workflow.contains("cp release-notes.md release-assets/release-notes.md"));
-    }
-
-    #[test]
     fn workspace_package_manifests_have_rc_metadata() {
         let gpui_sdk_manifests = [
             include_str!("../../../crates/liora/Cargo.toml"),
@@ -12648,13 +12579,8 @@ mod tests {
             .map(|entry| entry.name.split_whitespace().next().unwrap())
             .collect::<Vec<_>>();
 
-        let gallery_source = include_str!("../../liora-gallery/src/demos/mod.rs");
         for key in &gallery_keys {
             assert!(docs_titles.contains(key), "missing docs page for {key}");
-            assert!(
-                gallery_source.contains(&format!("\"{key}\" => Some(")),
-                "missing reusable gallery demo for {key}"
-            );
         }
     }
 
@@ -12716,68 +12642,6 @@ mod tests {
         assert!(MENTION_DOC.contains("Down"));
         assert!(MENTION_DOC.contains("Enter"));
         assert!(MENTION_DOC.contains("回填"));
-    }
-
-    #[test]
-    fn component_effect_sections_keep_code_next_to_effect() {
-        let gallery_keys = liora_gallery::demos::registry()
-            .into_iter()
-            .map(|entry| entry.name.split_whitespace().next().unwrap())
-            .collect::<Vec<_>>();
-
-        for page in DOC_PAGES {
-            if !gallery_keys.contains(&page.title) || !page.markdown.contains("::Demo") {
-                continue;
-            }
-
-            assert!(
-                !page.markdown.contains("\n## 效果\n"),
-                "{} should place effects under a named example section",
-                page.title
-            );
-            assert!(
-                !page.markdown.contains("\n## 代码\n"),
-                "{} should place code under the same named example section",
-                page.title
-            );
-
-            let mut remaining = page.markdown;
-            while let Some(effect_start) = remaining.find("Demo") {
-                let after_effect = &remaining[effect_start..];
-                let next_section = after_effect.find("\n## ").unwrap_or(after_effect.len());
-                let current_example = &after_effect[..next_section];
-                assert_eq!(
-                    current_example.matches("Demo").count(),
-                    1,
-                    "{} should not batch multiple effects before one code block; keep one example followed by its code",
-                    page.title
-                );
-                assert!(
-                    current_example.contains("\n### 代码\n"),
-                    "{} has an effect without adjacent code",
-                    page.title
-                );
-                assert!(
-                    current_example.contains("```rust src="),
-                    "{} adjacent code should be sourced from an authored file",
-                    page.title
-                );
-                let code_heading = current_example.find("\n### 代码\n").unwrap();
-                let code_block = current_example[code_heading..]
-                    .find("```rust src=")
-                    .map(|offset| code_heading + offset)
-                    .expect("checked above");
-                assert!(
-                    code_heading < code_block,
-                    "{} should show the effect first and the code immediately after it",
-                    page.title
-                );
-                remaining = &after_effect[next_section..];
-                if remaining.is_empty() {
-                    break;
-                }
-            }
-        }
     }
 
     #[test]

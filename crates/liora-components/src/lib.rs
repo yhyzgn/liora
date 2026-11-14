@@ -66,11 +66,14 @@ pub mod code_editor;
 pub mod col;
 pub mod collapse;
 pub mod color_picker;
+pub mod command_palette;
+pub mod composer;
 pub mod container;
 pub mod date_picker;
 pub mod date_time_picker;
 pub mod descriptions;
 pub mod dialog;
+pub mod diff_view;
 pub mod divider;
 pub mod dock_layout;
 pub mod draggable;
@@ -98,6 +101,7 @@ pub mod line_chart;
 pub mod link;
 pub mod list;
 pub mod loading;
+pub mod markdown;
 pub mod mention;
 pub mod menu;
 pub mod message;
@@ -147,6 +151,7 @@ pub mod switch;
 pub mod table;
 pub mod tabs;
 pub mod tag;
+pub mod terminal;
 pub mod text;
 pub mod textarea;
 pub mod time_picker;
@@ -157,6 +162,7 @@ pub mod titlebar;
 pub mod todo;
 pub mod tooltip;
 pub mod tour;
+pub mod transcript;
 pub mod transfer;
 pub mod tree;
 pub mod tree_select;
@@ -197,11 +203,17 @@ pub use code_editor::*;
 pub use col::*;
 pub use collapse::*;
 pub use color_picker::*;
+pub use command_palette::*;
+pub use composer::{
+    Composer, ComposerAttachment, ComposerCandidate, ComposerDraft, ComposerEvent,
+    ComposerReference,
+};
 pub use container::*;
 pub use date_picker::*;
 pub use date_time_picker::*;
 pub use descriptions::*;
 pub use dialog::*;
+pub use diff_view::*;
 pub use divider::*;
 pub use dock_layout::*;
 pub use draggable::*;
@@ -240,6 +252,9 @@ pub use liora_core::{
 pub use liora_theme::{ButtonSize, ButtonVariant};
 pub use list::*;
 pub use loading::*;
+pub use markdown::{
+    MarkdownChanged, MarkdownDocument, MarkdownImage, MarkdownView, is_safe_markdown_link,
+};
 pub use mention::*;
 pub use menu::*;
 pub use message::*;
@@ -289,6 +304,7 @@ pub use switch::*;
 pub use table::*;
 pub use tabs::*;
 pub use tag::*;
+pub use terminal::{Terminal, TerminalEvent, TerminalSize};
 pub use text::*;
 pub use textarea::*;
 pub use time_picker::*;
@@ -299,6 +315,7 @@ pub use titlebar::*;
 pub use todo::*;
 pub use tooltip::*;
 pub use tour::*;
+pub use transcript::{Transcript, TranscriptError, TranscriptPosition};
 pub use transfer::*;
 pub use tree::*;
 pub use tree_select::*;
@@ -339,9 +356,9 @@ pub fn init_liora_with_options(cx: &mut gpui::App, options: Options) {
 }
 
 fn register_liora_key_bindings(cx: &mut gpui::App) {
+    CommandPalette::register_key_bindings(cx);
     Input::register_key_bindings(cx);
     CodeBlock::register_key_bindings(cx);
-    CodeEditor::register_key_bindings(cx);
     Checkbox::register_key_bindings(cx);
     CheckboxGroup::register_key_bindings(cx);
     Radio::register_key_bindings(cx);
@@ -363,6 +380,7 @@ fn register_liora_key_bindings(cx: &mut gpui::App) {
     Paragraph::register_key_bindings(cx);
     Title::register_key_bindings(cx);
     Tour::register_key_bindings(cx);
+    CodeEditor::register_key_bindings(cx);
 }
 
 #[cfg(test)]

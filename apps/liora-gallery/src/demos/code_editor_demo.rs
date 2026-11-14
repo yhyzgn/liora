@@ -3,8 +3,8 @@ use liora_components::layout_helpers::{page, section, showcase_card_wide, showca
 use liora_components::{
     Button, CodeCompletionItem, CodeDiagnostic, CodeEditor, CodeEditorConfig,
     CodeEditorHighlightTheme, CodeEditorInlineDiagnostics, CodeEditorOptions,
-    CodeEditorWhitespaceMode, CodeHover, CodeLanguage, CodeTheme, Flex, Space, Text, toast_error,
-    toast_info,
+    CodeEditorWhitespaceMode, CodeHover, CodeLanguage, CodeTheme, Flex, Input, Space, Text,
+    toast_error, toast_info,
 };
 use std::{fs, path::PathBuf};
 
@@ -16,6 +16,8 @@ struct CodeEditorDemo {
     basic: Entity<CodeEditor>,
     diagnostics: Entity<CodeEditor>,
     advanced: Entity<CodeEditor>,
+    search: Entity<Input>,
+    replacement: Entity<Input>,
     configurable: Entity<CodeEditor>,
     file_config_source: Entity<CodeEditor>,
     file_config_preview: Entity<CodeEditor>,
@@ -79,6 +81,17 @@ impl CodeEditorDemo {
                     "Creates a flexible native layout container.",
                 ))
         });
+        let search_editor = advanced.clone();
+        let search = cx.new(|cx| {
+            Input::new("Space", cx)
+                .placeholder("查询文字")
+                .on_change(move |value, cx| {
+                    search_editor.update(cx, |editor, cx| {
+                        editor.set_search_query(value.to_string(), cx)
+                    });
+                })
+        });
+        let replacement = cx.new(|cx| Input::new("Flex", cx).placeholder("替换文字"));
 
         let themed = cx.new(|cx| {
             CodeEditor::new(THEME_SAMPLE, cx)
@@ -254,6 +267,8 @@ impl CodeEditorDemo {
             basic,
             diagnostics,
             advanced,
+            search,
+            replacement,
             configurable,
             file_config_source,
             file_config_preview,
@@ -293,9 +308,42 @@ impl Render for CodeEditorDemo {
                     )
                     .into_any_element(),
                     showcase_card_wide(
-                        "高级扩展点：搜索、补全和 hover",
-                        "Provider-ready 的搜索、补全候选和 hover/help 数据模型可接入语言服务。",
-                        self.advanced.clone(),
+                        "真实搜索、补全和 hover",
+                        "修改查询定位命中；F3/Shift+F3 或按钮前后查找。补全用上下键选择，Tab/Enter 或鼠标接受，Escape 取消。替换可 Ctrl/Cmd+Z 撤销。",
+                        Space::new().vertical().gap_md()
+                            .child(self.search.clone())
+                            .child(self.replacement.clone())
+                            .child({
+                                let previous = self.advanced.clone();
+                                let next = self.advanced.clone();
+                                let current = self.advanced.clone();
+                                let all = self.advanced.clone();
+                                let suggestions = self.advanced.clone();
+                                let replacement_current = self.replacement.clone();
+                                let replacement_all = self.replacement.clone();
+                                Flex::new().gap_sm()
+                                    .child(Button::new("上一个").on_click(move |_, _, cx| {
+                                        previous.update(cx, |editor, cx| { editor.find_previous(cx); });
+                                    }))
+                                    .child(Button::new("下一个").on_click(move |_, _, cx| {
+                                        next.update(cx, |editor, cx| { editor.find_next(cx); });
+                                    }))
+                                    .child(Button::new("替换当前").on_click(move |_, _, cx| {
+                                        let value = replacement_current.read(cx).value();
+                                        current.update(cx, |editor, cx| { editor.replace_current_match(value.as_ref(), cx); });
+                                    }))
+                                    .child(Button::new("替换全部").on_click(move |_, _, cx| {
+                                        let value = replacement_all.read(cx).value();
+                                        all.update(cx, |editor, cx| { editor.replace_all_matches(value.as_ref(), cx); });
+                                    }))
+                                    .child(Button::new("请求补全").on_click(move |_, _, cx| {
+                                        suggestions.update(cx, |editor, cx| {
+                                            let token = editor.request_token();
+                                            editor.set_completions_for_request(&token, [CodeCompletionItem::new("Space::new()"), CodeCompletionItem::new("Button::new(\"Run\")")], cx);
+                                        });
+                                    }))
+                            })
+                            .child(self.advanced.clone()),
                     )
                     .into_any_element(),
                     showcase_card_wide(
