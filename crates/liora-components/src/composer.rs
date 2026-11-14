@@ -11,10 +11,13 @@ use std::ops::Range;
 /// Host-owned attachment identity. No file is opened or uploaded by the component.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ComposerAttachment {
+    /// Host-defined identity used to deduplicate attachments added to a draft.
     pub id: SharedString,
+    /// Display label shown in the draft's attachment list.
     pub label: SharedString,
 }
 impl ComposerAttachment {
+    /// Creates attachment metadata without opening or uploading a resource.
     pub fn new(id: impl Into<SharedString>, label: impl Into<SharedString>) -> Self {
         Self {
             id: id.into(),
@@ -25,10 +28,13 @@ impl ComposerAttachment {
 /// Structured reference independent of the draft's editable text.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ComposerReference {
+    /// Host-defined identity used to deduplicate references added to a draft.
     pub id: SharedString,
+    /// Display label, also inserted after `@` when accepted as a candidate.
     pub label: SharedString,
 }
 impl ComposerReference {
+    /// Creates reference metadata independent of the editable draft text.
     pub fn new(id: impl Into<SharedString>, label: impl Into<SharedString>) -> Self {
         Self {
             id: id.into(),
@@ -36,19 +42,28 @@ impl ComposerReference {
         }
     }
 }
+/// Editable text and structured context that the host can save or restore.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct ComposerDraft {
+    /// Current editable message text.
     pub text: SharedString,
+    /// Structured references associated with the message.
     pub references: Vec<ComposerReference>,
+    /// Host-owned attachments associated with the message.
     pub attachments: Vec<ComposerAttachment>,
 }
 /// Candidate insertion is local editing, never command execution.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ComposerCandidate {
+    /// An `@` candidate that inserts its label and adds a structured reference.
     Reference(ComposerReference),
+    /// A `/` candidate that inserts text without executing a command.
     Command {
+        /// Host-defined command identity.
         id: SharedString,
+        /// Display label used for case-insensitive candidate matching.
         label: SharedString,
+        /// Text that replaces the command query when accepted.
         text: SharedString,
     },
 }
@@ -66,16 +81,21 @@ impl ComposerCandidate {
         }
     }
 }
+/// Draft updates and requests for host-owned send, stop and paste handling.
 #[derive(Clone, Debug)]
 pub enum ComposerEvent {
+    /// The editable text or structured draft context changed.
     DraftChanged(ComposerDraft),
+    /// A nonempty draft was submitted and cleared locally; the host performs sending.
     Send(ComposerDraft),
+    /// Stop was requested while busy; the host cancels its work and updates busy state.
     Stop,
     /// Original native clipboard payload, including image bytes and external paths.
     /// Text entries are also inserted into the current selection exactly once.
     Paste(ClipboardItem),
 }
 
+/// Native message editor with structured context, candidates and host-owned execution.
 pub struct Composer {
     id: SharedString,
     input: Entity<Input>,
@@ -95,6 +115,7 @@ impl Focusable for Composer {
     }
 }
 impl Composer {
+    /// Creates an empty, idle composer backed by the native [`Input`] text engine.
     pub fn new(cx: &mut Context<Self>) -> Self {
         let input = cx.new(|cx| {
             Input::new("", cx)
@@ -125,6 +146,7 @@ impl Composer {
             _input_subscription: subscription,
         }
     }
+    /// Allocates an empty composer entity in the application.
     pub fn entity(cx: &mut App) -> Entity<Self> {
         cx.new(Self::new)
     }
@@ -132,6 +154,7 @@ impl Composer {
     pub fn input(&self) -> Entity<Input> {
         self.input.clone()
     }
+    /// Returns a snapshot of editable text, references and attachments.
     pub fn draft(&self, cx: &App) -> ComposerDraft {
         ComposerDraft {
             text: self.input.read(cx).value(),
@@ -151,30 +174,36 @@ impl Composer {
         self.selected_candidate = 0;
         self.changed(cx);
     }
+    /// Returns whether the host has marked a request as in progress.
     pub fn is_busy(&self) -> bool {
         self.busy
     }
+    /// Sets request activity without clearing or disabling editing of the next draft.
     pub fn set_busy(&mut self, busy: bool, cx: &mut Context<Self>) {
         self.busy = busy;
         cx.notify();
     }
+    /// Replaces available `@` and `/` candidates and resets the selected result.
     pub fn set_candidates(&mut self, candidates: Vec<ComposerCandidate>, cx: &mut Context<Self>) {
         self.candidates = candidates;
         self.selected_candidate = 0;
         cx.notify();
     }
+    /// Adds a reference and emits a draft update unless its identity is already present.
     pub fn add_reference(&mut self, reference: ComposerReference, cx: &mut Context<Self>) {
         if !self.references.iter().any(|r| r.id == reference.id) {
             self.references.push(reference);
             self.changed(cx);
         }
     }
+    /// Adds attachment metadata and emits a draft update unless its identity is present.
     pub fn add_attachment(&mut self, attachment: ComposerAttachment, cx: &mut Context<Self>) {
         if !self.attachments.iter().any(|a| a.id == attachment.id) {
             self.attachments.push(attachment);
             self.changed(cx);
         }
     }
+    /// Removes references with this identity, emitting an update only if the draft changes.
     pub fn remove_reference(&mut self, id: &str, cx: &mut Context<Self>) {
         let len = self.references.len();
         self.references.retain(|r| r.id.as_ref() != id);
@@ -182,6 +211,7 @@ impl Composer {
             self.changed(cx);
         }
     }
+    /// Removes attachments with this identity, emitting an update only if the draft changes.
     pub fn remove_attachment(&mut self, id: &str, cx: &mut Context<Self>) {
         let len = self.attachments.len();
         self.attachments.retain(|a| a.id.as_ref() != id);
@@ -210,6 +240,7 @@ impl Composer {
         cx.emit(ComposerEvent::Send(draft));
         true
     }
+    /// Emits a host stop request only while busy; does not change busy state or the draft.
     pub fn stop(&mut self, cx: &mut Context<Self>) {
         if self.busy {
             cx.emit(ComposerEvent::Stop);
@@ -252,6 +283,7 @@ impl Composer {
             (trigger, range, query)
         })
     }
+    /// Returns candidates matching the caret's active `@` or `/` query in supplied order.
     pub fn matching_candidates(&self, cx: &App) -> Vec<ComposerCandidate> {
         let Some((trigger, _, query)) = self.query(cx) else {
             return Vec::new();

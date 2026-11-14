@@ -163,3 +163,11 @@
 - 串行 `cargo check -p liora-docs --bin check_snippets --locked -j 2`、`cargo doc --workspace --no-deps --locked -j 2`、release profile 的 `xtask package validate`、`release-readiness --dry-run`、`ci --app gallery --format platform-defaults --dry-run --skip-build`、`install-smoke --app gallery --format platform-defaults --dry-run`：全部 PASS。本地 dry-run 不替代保护环境 RPM 签名或真实安装/卸载。
 - 当前版本 Gallery/Docs 在独立 Xwayland 各保持运行 10 秒并完成截图；已检查 `/tmp/liora-release-app-smoke/` 两份真实原生界面。临时 Terminal probe 与 OS 输入脚本已删除，永久回归 smoke 保留。
 - 本机 crates.io 查询经 reader 和 curl 均遭 connection reset；不把 registry 可达性或 SDK 发布记为成功，实际受保护 CI 结果为准。
+
+### v0.6.0 远程质量门禁修复（2026-11-14）
+
+- `be2a09b7` 和 `v0.6.0` 已原子推送。GitHub quality run `43561034733` 在 `SDK rustdoc coverage` 失败：`Composer` 32 处、`DiffView` 11 处公开 API 缺少文档。先前本地普通 `cargo doc` 未设置 CI 的 `RUSTDOCFLAGS="-D missing_docs"`，不能作为该严格门禁通过的证据。
+- 仅补充两个模块的公开类型、字段、方法及事件文档；为 enum variant 字段附加文档而展开格式，不改变运行逻辑、公开签名、依赖或 CI 规则，不添加 warning suppression，不移动已推送的 release tag。
+- 修复后 `cargo fmt --all --check` 和携带 `RUSTDOCFLAGS="-D missing_docs"` 的 `cargo doc --locked --no-deps -j 2`（显式列出 CI 的全部 14 个 SDK crates）均退出 0。文档修复不重跑无关 UI 场景或 workspace 全测试；远程修复后的结果待记录。
+- 已确认 v0.6.0 SDK 发布 run `43561034893`、应用 runtime verify run `43562513272` 和 tag 打包/发布 run `43561034887` 均成功；失败的独立 quality run 不应被误记为发布失败。
+- `ComposerDocsReview`（code-reviewer）确认 Composer 新文档准确；`DiffDocsReview`（rust-reviewer）确认字段文档准确，并指出既有 `DiffEvent` 总说明未覆盖 `ActionRejected`，已同步修正为成功及拒绝的 review action 事件。两者未代跑验证命令。

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Complete public `Composer` and `DiffView` API rustdoc so the strict SDK `-D missing_docs` quality gate passes without warning suppressions or runtime changes.
+
 ## 0.6.0 - 2026-11-13
 
 - Add reusable native `MarkdownDocument` / `MarkdownView` with batched cached parsing, streaming updates, rich and continuous-text selection, safe external links and host-approved image resources; keep Docs-only directives outside the SDK.

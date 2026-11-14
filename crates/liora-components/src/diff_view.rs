@@ -57,12 +57,18 @@ impl DiffDocument {
 pub enum DiffError {
     /// One side exceeded the configured line limit.
     TooManyLines {
+        /// Input side that exceeded the limit: `"before"` or `"after"`.
         side: &'static str,
+        /// Number of lines in that input.
         count: usize,
+        /// Maximum accepted line count per input side.
         limit: usize,
     },
     /// Myers' frontier exceeded the deterministic work budget.
-    WorkLimitExceeded { limit: usize },
+    WorkLimitExceeded {
+        /// Maximum allowed cumulative Myers frontier work.
+        limit: usize,
+    },
     /// The process-wide monotonic hunk identifier space was exhausted.
     HunkIdExhausted,
 }
@@ -165,16 +171,24 @@ pub enum DiffDecision {
     Rejected,
 }
 
-/// Event emitted after a pending hunk is accepted or rejected.
+/// Event emitted after a review action succeeds or is rejected.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum DiffEvent {
     /// A hunk was accepted.
-    HunkAccepted { hunk_id: u64 },
+    HunkAccepted {
+        /// Identity of the hunk whose decision became accepted.
+        hunk_id: u64,
+    },
     /// A hunk was rejected.
-    HunkRejected { hunk_id: u64 },
+    HunkRejected {
+        /// Identity of the hunk whose decision became rejected.
+        hunk_id: u64,
+    },
     /// A delayed or repeated review action did not match a pending hunk.
     ActionRejected {
+        /// Hunk identity supplied by the rejected review action.
         hunk_id: u64,
+        /// Reason the review action could not be applied.
         error: DiffActionError,
     },
 }
@@ -183,10 +197,15 @@ pub enum DiffEvent {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum DiffActionError {
     /// The ID does not belong to this current document.
-    UnknownHunk { hunk_id: u64 },
+    UnknownHunk {
+        /// Unknown or expired identity supplied by the caller.
+        hunk_id: u64,
+    },
     /// Review decisions are terminal and cannot be silently overwritten.
     AlreadyDecided {
+        /// Identity of the hunk that already has a terminal decision.
         hunk_id: u64,
+        /// Previously recorded decision, which the rejected action leaves unchanged.
         decision: DiffDecision,
     },
 }
