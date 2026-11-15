@@ -10,7 +10,7 @@
 - Workspace package manifests were prepared for 0.6.1. The published registry still reported 0.6.0 for `liora`, while `liora-webview` was not yet present; release evidence must be rechecked after publication.
 - `release-sdk.yml` already defines protected crate packaging/publication. `ci.yml` already installs the Linux WebKitGTK 4.1 development dependency.
 - The xtask readiness gate initially rejected the valid `CRATES_IO_CRATES` order because it hardcoded an older list. Added a regression test and aligned the check with the workflow, including `liora-webview`.
-- GitHub has a `crates-io` environment with no protection rules. `CRATES_IO_TOKEN` is configured, but no `LIORA_RPM_SIGNING_PRIVATE_KEY` secret is listed. The local readiness command only warns; tagged Gallery packaging requires the RPM key and fails before building without it. Do not push a release tag until the key is configured or release scope is explicitly changed.
+- GitHub's `crates-io` environment has no protection rules (`protection_rules: []`). Repository-level `CRATES_IO_TOKEN` and `LIORA_RPM_SIGNING_PRIVATE_KEY` secrets are present (names checked 2026-11-16) and the workflows reference them through `secrets`. Do not push the release tag until required environment protection rules are configured and all release gates pass.
 
 ## Acceptance
 
@@ -19,9 +19,11 @@
 - [x] Update every affected README and Docs page with accurate 0.6.1 APIs, package boundaries, dependencies, and runtime limits.
 - [x] Make release notes render the versioned changelog section and WebView/platform limits accurately.
 - [x] Pass focused package, documentation, format, and CTX checks; record each command and result.
-- [ ] Commit and push the prepared changes; verify the GitHub Actions CI build.
-- [ ] After CI passes, push the release tag and verify SDK/app release workflows and crate publication.
-- [ ] Verify registry installation and release assets, then comment on issue #2 with findings and request reproduction details.
+- [x] Commit and push the documentation coverage fix to `main`.
+- [ ] Verify GitHub Actions CI for the pushed fix.
+- [ ] After CI passes and `crates-io` protection rules are configured, push the release tag and verify SDK/app workflows and crate publication.
+- [ ] Verify registry installation and release assets.
+- [x] Reply to issue #2 with verified findings and request reproducible details.
 
 ## Verification log
 
@@ -39,3 +41,5 @@
 - 2026-11-16: `cargo test --workspace` completed with 804 passed, 1 ignored across 46 suites. After the readiness fix, `cargo test -p xtask` passed all 14 tests; `sdk_release_readiness_uses_publish_env_not_audit_list` failed against the incorrect fixture before the checker fix.
 - 2026-11-16: Final focused gates passed: `cargo fmt --all --check`, `cargo check -p liora-docs --bin check_snippets --locked`, `cargo doc --workspace --no-deps`, `cargo run --release -p xtask -- package validate`, `cargo run --release -p xtask -- package release-readiness`, and `python scripts/context_bootstrap.py validate --root .`. Readiness passed with the existing signing-policy WARN; release tag remains blocked until signing requirements are satisfied.
 - 2026-11-16: After reviewer corrections, `RUSTDOCFLAGS="-D missing_docs" cargo doc -p liora-components --no-deps` passed.
+- 2026-11-16: Posted the issue #2 follow-up at https://github.com/yhyzgn/liora/issues/2#issuecomment-6900960276, requesting platform, reproduction steps, workload, and the specific stall pattern.
+- 2026-11-16: Live GitHub checks found both required repository secret names, but `crates-io` has zero protection rules; release tagging remains blocked by the protected-environment requirement.
