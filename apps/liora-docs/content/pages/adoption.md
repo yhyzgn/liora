@@ -43,21 +43,25 @@ fn main() {
 
 ## Dependency shape
 
-For a downstream project, use Liora from crates.io and patch Cargo's `gpui` registry fallback to Liora's matching official Zed revision:
+For a downstream project after the v0.6.1 crates.io release, use Liora from crates.io and patch Cargo's `gpui` registry fallback to Liora's matching official Zed revision:
 
-Liora 0.6.0 requires the current official Zed revision `f0d896f2c18a543335eb155f729d36b624695591`. To use 0.6, change the Liora dependency below to `0.6` and both GPUI revisions to that pin. The example retains the published 0.4 setup for existing consumers. macOS 0.6 builds require the macOS 26 SDK and run on macOS 12+.
+This 0.6.1 release targets official Zed GPUI revision `f0d896f2c18a543335eb155f729d36b624695591`. The example below becomes registry-installable after publication completes; until then, use the local workspace paths described below. macOS 0.6 builds require the macOS 26 SDK and run on macOS 12+.
 
 ```toml
 [dependencies]
-liora = "0.4"
+liora = "0.6.1"
 gpui = { version = "0.2.2", default-features = false }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false }
 
 [patch.crates-io]
-gpui = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf" }
+gpui = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591" }
 ```
 
-The example targets the published Liora 0.4.0 SDK. For local monorepo development, use `liora = { path = "../liora/crates/liora" }` and use the exact GPUI revision from that checkout's workspace manifest for both `gpui` and `gpui_platform`.
+For local monorepo development, use `liora = { path = "../liora/crates/liora" }` and use the exact GPUI revision from that checkout's workspace manifest for both `gpui` and `gpui_platform`.
+
+## Opt-in WebView
+
+Applications that intentionally host web content can add `liora-webview = "0.6.1"` after its crates.io publication completes. Before publication, use `liora-webview = { path = "../../crates/liora-webview" }` from an app manifest under `apps/<app>`. The `liora` facade and `liora-components` do not include it; Gallery, Docs, and other native controls do not use it. See the [crate README](https://github.com/yhyzgn/liora/blob/main/crates/liora-webview/README.md) for entity lifetime, navigation, messaging, permissions, and platform limits. Linux requires X11/XWayland, GTK3, and WebKitGTK 4.1; macOS/Windows runtime behavior is not verified, and system-engine compatibility is not browser equivalence.
 
 ## Component adoption checklist
 

@@ -61,7 +61,7 @@ Liora 明确不是 Web 外壳：
 - 不使用 Web 图表运行时或前端 bundler；
 - Gallery 和 Docs 都是真实 GPUI 原生应用，并使用和下游应用相同的公开 SDK 表面。
 
-仅当宿主需要网页内容时，从本仓库显式依赖 `liora-webview`；此新 crate 尚未发布，`liora` facade 不导出它，其他控件不用它渲染。Linux 要求 GPUI X11/XWayland 窗口、GTK3 和 WebKitGTK 4.1；此处未在 macOS/Windows 实机验证。网页兼容性取决于系统引擎，不承诺浏览器等价。参见[独立 WebView 使用说明](crates/liora-webview/README.md)。
+只有宿主需要网页内容时才显式接入独立 opt-in crate。crates.io 的 `liora-webview = "0.6.1"` 依赖需等 v0.6.1 发布流程完成后再用；此前请使用[独立 WebView 使用说明](crates/liora-webview/README.md)中的本地 path 方式。它不由 `liora` facade 导出，也不用于 Gallery、Docs 或其他控件渲染。Linux 要求 GPUI X11/XWayland 窗口、GTK3 和 WebKitGTK 4.1；此处未在 macOS/Windows 实机验证。网页兼容性取决于系统引擎，不承诺浏览器等价。
 
 ## 你可以用 Liora 构建什么？
 
@@ -83,7 +83,7 @@ Liora 明确不是 Web 外壳：
 
 | 组件 | 契约 |
 |---|---|
-| `MarkdownDocument` / `MarkdownView` | 原生 Markdown 缓存与目录/脚注导航；脚注引用支持原生预览及逐引用回链，任务列表为原生 checkbox。表格 API 可做源映射的单元格、行、列增删，尚无表格工具栏/列重排/视觉缩放。数学通过 `latex-rust` 排版，Mermaid flowchart/sequence 通过受限 Rust rasterizer 渲染；元数据 API 返回不执行的源字段。Rich 编辑只覆盖无歧义的段落映射，完整结构化编辑及上下标 baseline 仍未支持。图片默认拒绝，宿主批准本地文件或解码图像后才能显示；SDK 不抓取不可信图片 URL。 |
+| `MarkdownDocument` / `MarkdownView` / `MarkdownEditor` | 原生 Markdown 缓存与标题/目录/脚注导航、任务列表 checkbox、高亮、`latex-rust` 数学和受限原生 Mermaid 图。`MarkdownEditor` 支持有源码范围保护且可撤销/重做的行内及段落/标题/引用/列表/拆分编辑；表格支持源码映射单元格/行/列编辑及视觉重排/缩放，拒绝有歧义的映射。上下标使用原生 baseline offset；不承诺完整 Typora/MarkText 等价。图片需宿主批准本地文件或提供已解码图像；[能力矩阵](docs/markdown-capability-matrix.md)列出剩余差距。 |
 | `Transcript` | 稳定 ID 的可变高度虚拟化、原生跟随/脱离、历史前插/重排锚点及可序列化 `TranscriptPosition`。宿主通知行高改变并持有会话存储。 |
 | `Composer` | 复用 Input 的原生选区/IME；结构化引用与附件、候选、粘贴 payload、busy 时可继续编辑的草稿，以及宿主 Send/Stop 事件。 |
 | `Terminal` | 增量 VT/ANSI 状态、光标、Unicode 单元格、选区、历史、原生文本输入与尺寸事件；使用 MIT 许可的 `vt100 = 0.18.1`，PTY/进程 I/O 全由宿主持有。 |
@@ -92,7 +92,7 @@ Liora 明确不是 Web 外壳：
 | `CommandPalette` | 稳定命令 ID、可用性、模糊排序、键盘/鼠标执行，以及与菜单共用的 GPUI action。 |
 | `CodeEditor` | 可撤销补全编辑、过期结果 token、字面查找/导航/替换、共享渲染快照和 delta 历史；LSP 连接归宿主。 |
 
-Gallery 与 Docs 使用相同原生实现，示例进入 snippet 编译检查。这些是 SDK 积木，不是 Agent 产品：provider 连接、执行权限、会话数据库、下载和子进程管理仍由应用负责。Linux/Xwayland 已验证九项演示绘制和 Markdown 剪贴板/选择；headless 测试本身不能证明系统粘贴、真实 IME 候选窗口或 Windows/macOS 行为。
+Gallery 与 Docs 使用相同原生实现，示例进入 snippet 编译检查。这些是 SDK 积木，不是 Agent 产品：provider 连接、执行权限、会话数据库、下载和子进程管理仍由应用负责。Linux/Xwayland 有针对性的原生渲染与交互 smoke，包括 Markdown 剪贴板/选择和隔离的 IME 组合输入；这不代表 Windows/macOS 原生运行或所有 IME 行为已验证。
 
 ## 环境要求
 
@@ -100,7 +100,7 @@ Gallery 与 Docs 使用相同原生实现，示例进入 snippet 编译检查。
 |---|---|
 | Rust | `rustc 1.95+`，Rust edition 2024。 |
 | UI 后端 | 官方 Zed GPUI git 依赖，并 pin 到 Liora 验证过的 revision。 |
-| Linux 原生依赖 | GTK3、Wayland/X11、xkbcommon、fontconfig/freetype、Vulkan、ALSA、`pkg-config`；Fedora 可参考 `scripts/install-fedora-deps.sh`。 |
+| Linux 原生依赖 | GTK3、Wayland/X11、xkbcommon、fontconfig/freetype、Vulkan、ALSA、`pkg-config`；只有显式使用 `liora-webview` 时才额外需要 WebKitGTK 4.1。Fedora 可参考 `scripts/install-fedora-deps.sh`。 |
 | macOS | 当前源码要求 macOS 12 或更高版本，构建使用 macOS 26 SDK（Xcode 26）。 |
 | Windows | MSVC toolchain；GPUI Windows backend 会通过 `windows-manifest` 提供应用 manifest。 |
 
@@ -108,28 +108,36 @@ Gallery 与 Docs 使用相同原生实现，示例进入 snippet 编译检查。
 
 大多数应用应该直接依赖顶层 facade：
 
+以下 registry 示例面向 v0.6.1；crates.io 发布流程完成后才能安装。此前请参考[采用指南中的本地 path 示例](apps/liora-docs/content/pages/adoption.md#dependency-shape)，并将 GPUI 固定到匹配的官方 Zed revision。
+
 ```toml
 [dependencies]
-liora = "0.4"
+liora = "0.6.1"
 ```
 
 只有当你明确需要更窄依赖面时，才直接依赖底层 focused crates：
 
 ```toml
 [dependencies]
-liora-components = "0.4"
-liora-core = "0.4"
-liora-theme = "0.4"
-liora-icons = "0.4"
-liora-icons-lucide = "0.4"
-liora-icons-antd = "0.4"
-liora-icons-ionic = "0.4"
-liora-icons-tabler = "0.4"
-liora-icons-carbon = "0.4"
-liora-icons-material = "0.4"
-liora-tray = "0.4"
-liora-updater = "0.4"
-liora-packager = "0.4"
+liora-components = "0.6.1"
+liora-core = "0.6.1"
+liora-theme = "0.6.1"
+liora-icons = "0.6.1"
+liora-icons-lucide = "0.6.1"
+liora-icons-antd = "0.6.1"
+liora-icons-ionic = "0.6.1"
+liora-icons-tabler = "0.6.1"
+liora-icons-carbon = "0.6.1"
+liora-icons-material = "0.6.1"
+liora-tray = "0.6.1"
+liora-updater = "0.6.1"
+liora-packager = "0.6.1"
+```
+v0.6.1 发布到 crates.io 后，宿主才应为网页内容单独添加此 crate；发布前请使用 WebView 章节说明的本地 path 方式。facade 不会自动引入它：
+
+```toml
+[dependencies]
+liora-webview = "0.6.1"
 ```
 
 `liora` facade 重新导出了稳定模块名：
@@ -149,19 +157,19 @@ use liora::packager;
 
 ```toml
 [dependencies]
-liora = { version = "0.4", default-features = false }
+liora = { version = "0.6.1", default-features = false }
 
-# 或者只保留 updater：
-liora = { version = "0.4", default-features = false, features = ["updater"] }
+# 或者将上一行替换为仅启用 updater 的配置：
+# liora = { version = "0.6.1", default-features = false, features = ["updater"] }
 ```
 
 ## GPUI 依赖与本地 patch 策略
 
 当前工作区将官方 Zed `main` 固定到 `f0d896f2c18a543335eb155f729d36b624695591`。`MotionSpring::{Gentle, Snappy, Bouncy}.animation_to(target)` 提供可选的原生弹簧动画；重定向目标时应保持 `with_spring` 的 element ID 稳定，原有 duration-based 动效不变。GPUI 动画包装器遵循 `cx.set_reduce_motion(true)`；这是应用级偏好，并不代表自动读取操作系统偏好。完整变更与平台风险见[升级记录](docs/gpui-latest-upgrade.md)。
 
-以下示例面向 crates.io 已发布的 Liora 0.4.0，使用与该版本兼容的旧 GPUI revision。若通过 path 依赖当前源码，请把两处 GPUI 依赖统一改为上面的工作区 revision。
+下方 crates.io 示例面向 v0.6.1 发布版本，仅在 crates.io 发布流程完成后可解析。此前请使用[采用指南中的本地 path 方式](apps/liora-docs/content/pages/adoption.md#dependency-shape)，并把所有 GPUI crates pin 到上方工作区 revision.
 
-Liora 0.6.0 使用当前工作区的 GPUI pin。升级到 0.6 时，将下方 Liora 依赖版本改为 `0.6`，并将所有 GPUI revision 统一改为 `f0d896f2c18a543335eb155f729d36b624695591`；macOS 要求 12+，构建使用 macOS 26 SDK。
+v0.6.1 使用当前工作区 GPUI pin；下方所有 GPUI revision 均必须统一为 `f0d896f2c18a543335eb155f729d36b624695591`。macOS 要求 12+，构建使用 macOS 26 SDK。
 
 Liora **只能使用官方 Zed GPUI**。禁止使用 `open-gpui` 等重命名或社区 fork。
 
@@ -183,7 +191,7 @@ edition = "2024"
 publish = false
 
 [dependencies]
-liora = "0.4"
+liora = "0.6.1"
 
 # 什么时候需要手动添加 gpui？
 # 当你的 crate 直接写到这些内容时：
@@ -194,22 +202,22 @@ gpui = { version = "0.2.2", default-features = false }
 
 # 什么时候需要手动添加 gpui_platform？
 # 最终会打开窗口的 binary crate 使用 gpui_platform::application().run(...) 时需要。
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false }
 
 [target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
 gpui = { version = "0.2.2", default-features = false, features = ["wayland", "x11", "font-kit"] }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false, features = ["wayland", "x11", "font-kit"] }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false, features = ["wayland", "x11", "font-kit"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 gpui = { version = "0.2.2", default-features = false, features = ["font-kit"] }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false, features = ["font-kit"] }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false, features = ["font-kit"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 gpui = { version = "0.2.2", default-features = false }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false }
 
 [patch.crates-io]
-gpui = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf" }
+gpui = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591" }
 ```
 
 什么时候必须手动添加 `gpui`？看这个例子：
@@ -258,24 +266,24 @@ edition = "2024"
 publish = false
 
 [dependencies]
-liora = "0.4"
+liora = "0.6.1"
 gpui = { version = "0.2.2", default-features = false }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false }
 
 [target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
 gpui = { version = "0.2.2", default-features = false, features = ["wayland", "x11", "font-kit"] }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false, features = ["wayland", "x11", "font-kit"] }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false, features = ["wayland", "x11", "font-kit"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 gpui = { version = "0.2.2", default-features = false, features = ["font-kit"] }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false, features = ["font-kit"] }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false, features = ["font-kit"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 gpui = { version = "0.2.2", default-features = false }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false }
 
 [patch.crates-io]
-gpui = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf" }
+gpui = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591" }
 ```
 
 ### 3. 写入 `src/main.rs`
@@ -1919,7 +1927,7 @@ gh variable get LIORA_RPM_SIGNING_FINGERPRINT --repo "$GH_REPO"
 
 ```toml
 [patch.crates-io]
-gpui = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf" }
+gpui = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591" }
 ```
 
 用以下命令确认：
@@ -1936,7 +1944,7 @@ cargo tree -p gpui
 ```toml
 [dependencies]
 gpui = { version = "0.2.2", default-features = false }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false }
 ```
 
 ### Linux 缺 GTK、Wayland、X11、Vulkan、ALSA 或字体包导致构建失败

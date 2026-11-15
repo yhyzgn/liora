@@ -370,6 +370,8 @@ fn check_release_workflow(root: &Path, report: &mut ReleaseReadinessReport) {
     }
 }
 
+const SDK_CRATES_IO_ORDER: &str = "liora-theme liora-icons-optimizer liora-tray liora-packager liora-updater liora-core liora-icons liora-icons-lucide liora-icons-antd liora-icons-ionic liora-icons-tabler liora-icons-carbon liora-icons-material liora-components liora liora-webview";
+
 fn check_sdk_release_workflow(root: &Path, report: &mut ReleaseReadinessReport) {
     let workflow_path = root.join(".github/workflows/release-sdk.yml");
     match fs::read_to_string(&workflow_path) {
@@ -378,16 +380,20 @@ fn check_sdk_release_workflow(root: &Path, report: &mut ReleaseReadinessReport) 
                 && text.contains("cargo package -p")
                 && text.contains("cargo publish -p")
                 && !text.contains(concat!("cargo publish -p \"$crate\" ", "--", "token"))
-                && text.contains("liora-theme liora-icons-optimizer liora-core liora-icons liora-icons-lucide liora-icons-antd liora-icons-ionic liora-icons-tabler liora-icons-carbon liora-icons-material liora-components liora-tray liora-packager liora-updater liora") =>
+                && text.lines().any(|line| {
+                    line.trim()
+                        .strip_prefix("CRATES_IO_CRATES:")
+                        .is_some_and(|order| order.trim().trim_matches('"') == SDK_CRATES_IO_ORDER)
+                }) =>
         {
             report.pass(
                 "SDK release workflow",
-                "release-sdk.yml verifies and publishes SDK crates, including bundled icon libraries, liora-packager, liora-updater, and liora, with CARGO_REGISTRY_TOKEN authentication in dependency order",
+                "release-sdk.yml verifies and publishes SDK crates, including icon libraries, utility crates, the facade, and opt-in liora-webview in dependency order with CARGO_REGISTRY_TOKEN authentication",
             );
         }
         Ok(_) => report.fail(
             "SDK release workflow",
-            "release-sdk.yml is missing SDK package verification, publish commands, environment-token wiring, liora/liora-packager/liora-updater crates, dependency order, or deprecated token-argument guard",
+            "release-sdk.yml is missing SDK package verification, publish commands, environment-token wiring, liora/liora-packager/liora-updater/liora-webview crates, dependency order, or deprecated token-argument guard",
         ),
         Err(_) => report.fail("SDK release workflow", "missing .github/workflows/release-sdk.yml"),
     }
@@ -1939,6 +1945,47 @@ mod tests {
     fn release_readiness_action_parses() {
         let command = PackageCommand::parse(vec!["release-readiness".into()]).unwrap();
         assert_eq!(command.action, PackageAction::ReleaseReadiness);
+    }
+
+    #[test]
+    fn sdk_release_readiness_accepts_current_publish_order() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .expect("xtask crate has workspace root");
+        let mut report = ReleaseReadinessReport::default();
+
+        check_sdk_release_workflow(root, &mut report);
+
+        assert!(
+            !report.has_failures(),
+            "current SDK release workflow failed readiness check: {:?}",
+            report.items
+        );
+    }
+
+    #[test]
+    fn sdk_release_readiness_uses_publish_env_not_audit_list() {
+        let expected = SDK_CRATES_IO_ORDER;
+        let root = env::temp_dir().join(format!("liora-readiness-{}", std::process::id()));
+        let workflow_dir = root.join(".github/workflows");
+        fs::create_dir_all(&workflow_dir).unwrap();
+        fs::write(
+            workflow_dir.join("release-sdk.yml"),
+            format!(
+                "CRATES_IO_TOKEN\ncargo package -p\ncargo publish -p\nCRATES_IO_CRATES: \"wrong order\"\nmetadata audit: {expected}\n"
+            ),
+        )
+        .unwrap();
+        let mut report = ReleaseReadinessReport::default();
+
+        check_sdk_release_workflow(&root, &mut report);
+
+        let rejected_wrong_order = report.has_failures();
+        fs::remove_dir_all(root).unwrap();
+        assert!(
+            rejected_wrong_order,
+            "workflow passed despite wrong CRATES_IO_CRATES order"
+        );
     }
 
     #[test]

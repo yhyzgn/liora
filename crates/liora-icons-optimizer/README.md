@@ -4,7 +4,8 @@ Build-time optimizer for Liora icon bundles.
 
 ## What it provides
 
-Add this crate as a build dependency in applications that use bundled `IconName` enums. It scans Rust/content sources, copies only the used SVG files into the app icon bundle, and produces a report for packaging diagnostics.
+Add this crate as a build dependency in applications that use bundled `IconName` enums. It scans Rust/content sources, copies the referenced SVG files into the app icon bundle, and produces a report for packaging diagnostics.
+An explicit `IconName::all()` request intentionally includes the full icon pack.
 
 ## Quick example
 

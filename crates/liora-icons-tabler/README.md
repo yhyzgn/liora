@@ -12,7 +12,7 @@ This crate exposes a typed `IconName` enum for the Tabler icon pack. Icons rende
 use liora_icons::Icon;
 use liora_icons_tabler::IconName;
 
-let icon_name = IconName::all()[0];
+let icon_name = IconName::HomeFilled;
 let _icon = Icon::new(icon_name);
 ```
 

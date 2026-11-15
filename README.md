@@ -62,7 +62,7 @@ Liora is intentionally not a web application shell:
 - no web chart runtime or frontend bundler;
 - Gallery and Docs are real native GPUI applications that use the same public SDK surface as downstream apps.
 
-For host-owned web content, explicitly add `liora-webview` from this checkout; this new crate has not been released, is not exported by `liora`, and is not used to render any other Liora control. Linux requires an X11/XWayland GPUI window, GTK3 and WebKitGTK 4.1; macOS and Windows native behavior remains unverified here. Compatibility follows the installed system engine, not a browser-equivalence guarantee. See [the opt-in WebView guide](crates/liora-webview/README.md).
+For host-owned web content, explicitly add the standalone opt-in `liora-webview` crate. Its `liora-webview = "0.6.1"` crates.io dependency is usable after the v0.6.1 publication workflow completes; until then, use the local path form documented in the [crate guide](crates/liora-webview/README.md). It is not re-exported by `liora` and is not used by Gallery, Docs, or other controls. Linux requires a GPUI X11/XWayland window, GTK3, and WebKitGTK 4.1; macOS and Windows native behavior remains unverified. Compatibility follows the installed system engine, not browser equivalence.
 
 ## What you can build
 
@@ -84,7 +84,7 @@ Import these controls through `liora::components` or `liora_components`. Keep st
 
 | Component | Contract |
 |---|---|
-| `MarkdownDocument` / `MarkdownView` | Cached native Markdown; unique heading IDs and native TOC emit host navigation events, numbered footnotes expose source-backed references with preview/back navigation, task lists render native checkboxes, and highlight spans preserve source markers. `MarkdownDocument::edit_table` and `MarkdownEditor::edit_table` support source-backed cell/body-row/column edits without an in-view table toolbar. Rich editing rejects ambiguous syntax mappings. Inline/display math uses `latex-rust`; Mermaid flowcharts/sequences use a bounded Rust-to-native raster path. Images require host-approved local files or decoded images. [Capability matrix](docs/markdown-capability-matrix.md) lists remaining Typora/MarkText gaps. |
+| `MarkdownDocument` / `MarkdownView` / `MarkdownEditor` | Cached native Markdown with heading/TOC and footnote navigation, task-list checkboxes, highlighted spans, `latex-rust` math, and restricted native Mermaid diagrams. `MarkdownEditor` supports guarded inline and paragraph/heading/quote/list/split edits with undo/redo, plus source-backed table cell/row/column edits and visual reordering/resizing; ambiguous source mappings are rejected. Superscript/subscript use native baseline offsets. Full Typora/MarkText parity is not claimed. Images require host-approved local files or decoded images. [Capability matrix](docs/markdown-capability-matrix.md) lists remaining gaps. |
 | `Transcript` | Keyed variable-height virtualization, native tail following/detachment, prepend/reorder anchors, and serializable `TranscriptPosition`. Notify changed row heights and retain session storage in the host. |
 | `Composer` | Existing Input selection/IME, structured references and attachments, candidates, paste payloads, editable busy drafts, and host-owned Send/Stop events. |
 | `Terminal` | Incremental VT/ANSI state with cursor, Unicode cells, selection, scrollback, native text input and size events. Uses MIT-licensed `vt100 = 0.18.1`; the host owns all PTY/process I/O. |
@@ -96,7 +96,7 @@ Import these controls through `liora::components` or `liora_components`. Keep st
 | `FindBar` | Native query input and query/previous/next/close events, with host-provided match status. Focused Enter/Shift-Enter/Escape navigate or close without intercepting active IME composition or modified shortcuts; it does not calculate matches. |
 | `CandidateBar` | Host-provided candidates, 1–9 visible slots, paging and selection/literal/cancel events. Explicit focus enables arrows, PageUp/PageDown, number keys, Space, Enter and Escape; no IME engine, dictionaries or automatic host-text mutation. |
 
-Gallery and Docs expose the same native implementations, with compile-checked snippets. These are SDK building blocks, not an Agent product: provider connections, execution permissions, session databases, downloads and subprocess management remain application responsibilities. Linux/Xwayland validation covers all nine demo renders and Markdown clipboard/selection; headless tests alone do not prove system paste, real IME candidate windows or Windows/macOS behavior.
+Gallery and Docs expose shared native controls, with compile-checked snippets. These are SDK building blocks, not an Agent product: provider connections, execution permissions, session databases, downloads, and subprocess management remain application responsibilities. Linux/Xwayland evidence covers selected native rendering and interaction smokes, including Markdown clipboard/selection and isolated IME composition; it does not establish Windows/macOS runtime parity or universal IME behavior.
 
 The PdfReader Gallery/Docs demo loads a bundled PDF and offers a native **Open PDF** dialog. File selection and reading belong to the demo host, not the SDK. PDF tools expose state/events only; selecting Highlight, Pen or another tool does not itself draw or persist annotations. See [PdfReader documentation](apps/liora-docs/content/pages/pdf_reader.md) and its [worker snippet](apps/liora-docs/content/snippets/pdf_reader/basic.rs).
 
@@ -106,7 +106,7 @@ The PdfReader Gallery/Docs demo loads a bundled PDF and offers a native **Open P
 |---|---|
 | Rust | `rustc 1.95+`, Rust edition 2024. |
 | UI backend | Official Zed GPUI git dependency pinned to Liora's verified revision. |
-| Linux native deps | GTK3, Wayland/X11, xkbcommon, fontconfig/freetype, Vulkan, ALSA, `pkg-config`; see `scripts/install-fedora-deps.sh` for a Fedora-oriented baseline. |
+| Linux native deps | GTK3, Wayland/X11, xkbcommon, fontconfig/freetype, Vulkan, ALSA, `pkg-config`; WebKitGTK 4.1 is additionally required only when explicitly using `liora-webview`. See `scripts/install-fedora-deps.sh` for a Fedora-oriented baseline. |
 | macOS | The current checkout requires macOS 12+ and the macOS 26 SDK (Xcode 26). |
 | Windows | MSVC toolchain; GPUI's Windows backend provides the application manifest through `windows-manifest`. |
 
@@ -114,28 +114,36 @@ The PdfReader Gallery/Docs demo loads a bundled PDF and offers a native **Open P
 
 Most applications should depend on the facade crate:
 
+These registry examples target v0.6.1 and become installable after the crates.io release workflow completes. Until then, use the local-path example in the [adoption guide](apps/liora-docs/content/pages/adoption.md#dependency-shape) and keep GPUI pinned to the matching official Zed revision.
+
 ```toml
 [dependencies]
-liora = "0.4"
+liora = "0.6.1"
 ```
 
 Use focused crates only when you deliberately want a narrower surface:
 
 ```toml
 [dependencies]
-liora-components = "0.4"
-liora-core = "0.4"
-liora-theme = "0.4"
-liora-icons = "0.4"
-liora-icons-lucide = "0.4"
-liora-icons-antd = "0.4"
-liora-icons-ionic = "0.4"
-liora-icons-tabler = "0.4"
-liora-icons-carbon = "0.4"
-liora-icons-material = "0.4"
-liora-tray = "0.4"
-liora-updater = "0.4"
-liora-packager = "0.4"
+liora-components = "0.6.1"
+liora-core = "0.6.1"
+liora-theme = "0.6.1"
+liora-icons = "0.6.1"
+liora-icons-lucide = "0.6.1"
+liora-icons-antd = "0.6.1"
+liora-icons-ionic = "0.6.1"
+liora-icons-tabler = "0.6.1"
+liora-icons-carbon = "0.6.1"
+liora-icons-material = "0.6.1"
+liora-tray = "0.6.1"
+liora-updater = "0.6.1"
+liora-packager = "0.6.1"
+```
+After the v0.6.1 crates.io publication completes, add the standalone crate explicitly for host-owned web content; before then, use the local path form in the opt-in WebView guide. The facade does not pull it in:
+
+```toml
+[dependencies]
+liora-webview = "0.6.1"
 ```
 
 The facade re-exports stable module names:
@@ -155,19 +163,18 @@ If you do not need packaging or updater helpers in your app dependency graph, tu
 
 ```toml
 [dependencies]
-liora = { version = "0.4", default-features = false }
+liora = { version = "0.6.1", default-features = false }
 
-# Or keep only updater helpers:
-liora = { version = "0.4", default-features = false, features = ["updater"] }
+# Alternatively, replace the line above with updater-only features:
+# liora = { version = "0.6.1", default-features = false, features = ["updater"] }
 ```
 
 ## GPUI dependency and local patch policy
 
 The workspace pins official Zed `main` at `f0d896f2c18a543335eb155f729d36b624695591`. `MotionSpring::{Gentle, Snappy, Bouncy}.animation_to(target)` exposes opt-in interruptible GPUI springs; keep a stable `with_spring` element ID when retargeting. Existing duration-based effects remain unchanged. GPUI animation wrappers honor `cx.set_reduce_motion(true)`; this is an app-level preference, not automatic OS preference detection. See [upgrade notes and platform risks](docs/gpui-latest-upgrade.md).
 
-The examples below target crates.io Liora 0.4.0 and use its older GPUI pin. For a path dependency on this checkout, use the workspace revision above for both GPUI entries instead.
+The downstream manifest below targets the v0.6.1 release; its crates.io dependency resolves after publication completes. Until then, use the local workspace path example in the [adoption guide](apps/liora-docs/content/pages/adoption.md#dependency-shape) with the official Zed revision `f0d896f2c18a543335eb155f729d36b624695591`. macOS requires version 12+ and the macOS 26 SDK.
 
-Liora 0.6.0 uses the current workspace GPUI pin. When adopting 0.6, change the Liora dependency versions below to `0.6` and all GPUI revisions to `f0d896f2c18a543335eb155f729d36b624695591`; macOS requires version 12+ and the macOS 26 SDK.
 
 Liora uses **official Zed GPUI only** from the official Zed upstream repository. Do not use renamed or community forks such as `open-gpui`.
 
@@ -189,7 +196,7 @@ edition = "2024"
 publish = false
 
 [dependencies]
-liora = "0.4"
+liora = "0.6.1"
 
 # Add gpui manually when your crate mentions gpui types directly:
 # - gpui::App / Window / Context / Render / RenderOnce
@@ -199,22 +206,22 @@ gpui = { version = "0.2.2", default-features = false }
 
 # Add gpui_platform manually in final binary crates that create native windows
 # with gpui_platform::application().run(...).
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false }
 
 [target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
 gpui = { version = "0.2.2", default-features = false, features = ["wayland", "x11", "font-kit"] }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false, features = ["wayland", "x11", "font-kit"] }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false, features = ["wayland", "x11", "font-kit"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 gpui = { version = "0.2.2", default-features = false, features = ["font-kit"] }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false, features = ["font-kit"] }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false, features = ["font-kit"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 gpui = { version = "0.2.2", default-features = false }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false }
 
 [patch.crates-io]
-gpui = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf" }
+gpui = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591" }
 ```
 
 When do you manually add `gpui`?
@@ -263,24 +270,24 @@ edition = "2024"
 publish = false
 
 [dependencies]
-liora = "0.4"
+liora = "0.6.1"
 gpui = { version = "0.2.2", default-features = false }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false }
 
 [target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
 gpui = { version = "0.2.2", default-features = false, features = ["wayland", "x11", "font-kit"] }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false, features = ["wayland", "x11", "font-kit"] }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false, features = ["wayland", "x11", "font-kit"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 gpui = { version = "0.2.2", default-features = false, features = ["font-kit"] }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false, features = ["font-kit"] }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false, features = ["font-kit"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 gpui = { version = "0.2.2", default-features = false }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false }
 
 [patch.crates-io]
-gpui = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf" }
+gpui = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591" }
 ```
 
 ### 3. Write a minimal `src/main.rs`
@@ -1937,7 +1944,7 @@ Your application is missing the root patch:
 
 ```toml
 [patch.crates-io]
-gpui = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf" }
+gpui = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591" }
 ```
 
 Verify with:
@@ -1954,7 +1961,7 @@ Add direct dependencies when your final binary names GPUI types or starts the ap
 ```toml
 [dependencies]
 gpui = { version = "0.2.2", default-features = false }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1de16662ee0d704285c524a7753f0f8858e86abf", default-features = false }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false }
 ```
 
 ### Linux build fails because GTK, Wayland, X11, Vulkan, ALSA, or font packages are missing

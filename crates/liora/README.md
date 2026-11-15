@@ -24,6 +24,7 @@ fn setup(cx: &mut gpui::App) {
 - Prefer the top-level `liora` crate for ordinary applications.
 - Depend on `liora` directly when you need fine-grained dependency control or are building another Liora crate.
 - Keep application UI pure Rust + native GPUI; Liora crates do not require WebView, Tauri, HTML, CSS, or DOM runtime paths.
+- Web content is available only through the separate opt-in `liora-webview` crate; it is not re-exported or included in the facade dependencies.
 
 ## GPUI dependency note
 

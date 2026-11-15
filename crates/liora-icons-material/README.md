@@ -12,7 +12,7 @@ This crate exposes a typed `IconName` enum for the Google Material Design icon p
 use liora_icons::Icon;
 use liora_icons_material::IconName;
 
-let icon_name = IconName::all()[0];
+let icon_name = IconName::SearchOutlined;
 let _icon = Icon::new(icon_name);
 ```
 

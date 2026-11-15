@@ -2,10 +2,13 @@
 
 Standalone, opt-in WRY child webview hosted by a GPUI `Entity<WebView>`. Add `liora-webview` explicitly; neither `liora` nor `liora-components`, Gallery, or Docs depends on it. Other Liora controls remain native GPUI; this is not a Tauri or browser app shell.
 
+The registry dependency below targets v0.6.1 and resolves after its crates.io publication completes; until then, use the local path form below for this repository.
+
 ```toml
 [dependencies]
-liora-webview = { path = "../liora/crates/liora-webview" } # adjust to your checkout; not released yet
+liora-webview = "0.6.1"
 ```
+For local development in this repository, an app under `apps/<app>` can use `liora-webview = { path = "../../crates/liora-webview" }`.
 
 Create the entity with the **live GPUI window**, keep it in the host view and render it as a child. Hold the returned GPUI `Subscription` while handling `Event`; page events are untrusted input. The runnable integration, including two child views, is [`examples/native_smoke.rs`](examples/native_smoke.rs).
 

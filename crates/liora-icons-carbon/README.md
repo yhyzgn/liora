@@ -12,7 +12,7 @@ This crate exposes a typed `IconName` enum for the IBM Carbon icon pack. Icons r
 use liora_icons::Icon;
 use liora_icons_carbon::IconName;
 
-let icon_name = IconName::all()[0];
+let icon_name = IconName::CheckmarkFilled;
 let _icon = Icon::new(icon_name);
 ```
 

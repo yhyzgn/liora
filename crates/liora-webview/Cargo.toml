@@ -1,6 +1,6 @@
 [package]
 name = "liora-webview"
-version = "0.6.0"
+version = "0.6.1"
 edition = "2024"
 description = "Opt-in WRY child webview hosted by a GPUI control for Liora applications."
 license-file = "../../LICENSE.md"

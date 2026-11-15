@@ -4,7 +4,7 @@ Native GPUI component library for desktop Rust applications.
 
 ## What it provides
 
-It provides reusable controls such as Button, Input, Select, Table, Grid, Shell, Sidebar, TitleBar, charts, overlays, menus, text primitives, and virtualized data views. Components are native Rust + GPUI, not WebView/Tauri/HTML runtime widgets.
+It provides reusable native controls such as Button, Input, Select, Table, Grid, Shell, Sidebar, TitleBar, charts, overlays, menus, virtualized data views, and the `MarkdownDocument` / `MarkdownView` / `MarkdownEditor` and PDF/input controls. These are Rust + GPUI components, not WebView/Tauri/HTML runtime widgets.
 
 ## Quick example
 
@@ -32,6 +32,10 @@ fn setup(cx: &mut gpui::App) {
 - `CandidateBar` displays host-supplied candidates (default 8 per page, configurable from 1 to 9). Explicit focus enables arrows, PageUp/PageDown, 1–9, Space for candidate commit, Enter for literal commit, and Escape for cancel. Selection/page events use zero-based indices; the host performs text mutation and clears composition. No input-method engine, dictionary, language model or platform IME integration is bundled.
 
 Create the reader only after a successful decode; surface errors in the host UI and retain the previous document on failure. For integration examples, see the repository documentation linked below.
+
+## Markdown editing
+
+`MarkdownDocument` / `MarkdownView` provide cached native Markdown rendering, headings and footnote navigation, task-list checkboxes, highlighted spans, math, and restricted Mermaid diagrams. `MarkdownEditor` supports guarded inline and paragraph/heading/quote/list/split edits with undo/redo, plus source-backed table cell/row/column edits, reordering, and visual resizing. Ambiguous source mappings are rejected; this is not full Typora/MarkText parity.
 
 ## GPUI dependency note
 

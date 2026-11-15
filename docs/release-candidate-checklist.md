@@ -4,11 +4,11 @@ This checklist defines the repository-owned readiness gate for the Liora 0.6.x r
 
 ## Scope
 
-- Target version: `0.6.0`, matching every workspace package manifest and `crates/liora-packager/Cargo.toml`.
-- Runtime boundary: pure Rust + GPUI native apps only. Do not introduce Tauri, WebView, HTML/CSS/DOM, WASM chart runtimes, or browser shells.
+- Target version: `0.6.1`, matching every workspace package manifest and `crates/liora-packager/Cargo.toml`.
+- Runtime boundary: Gallery/Docs and default SDK components remain pure Rust + native GPUI; the standalone `liora-webview` crate is an explicit opt-in exception, not a default dependency or app runtime. Linux supports only the verified X11/XWayland path; macOS/Windows native behavior is unverified.
 - Canonical apps: `apps/liora-gallery` and `apps/liora-docs`.
 - Removed sample-app boundary: do not re-add `examples/minimal-app`, `examples/dashboard-app`, `liora-minimal-app`, or `liora-dashboard-app`; their useful adoption and dogfooding behavior lives in Gallery and Docs.
-- Package policy: SDK crates (`liora`, `liora-theme`, `liora-core`, `liora-icons`, `liora-icons-lucide`, `liora-icons-antd`, `liora-icons-ionic`, `liora-icons-tabler`, `liora-icons-carbon`, `liora-icons-material`, `liora-components`, `liora-tray`, `liora-packager`, `liora-updater`) use the repository license file and publish to crates.io. App packages and the repository-local `xtask` wrapper remain private workspace packages. `LicenseRef-Liora` remains the explicit package/install metadata until the owner replaces it with formal OSS or commercial terms.
+- Package policy: SDK crates (`liora`, `liora-theme`, `liora-icons-optimizer`, `liora-core`, `liora-icons`, `liora-icons-lucide`, `liora-icons-antd`, `liora-icons-ionic`, `liora-icons-tabler`, `liora-icons-carbon`, `liora-icons-material`, `liora-components`, `liora-tray`, `liora-packager`, `liora-updater`, `liora-webview`) use the repository license file and publish to crates.io. App packages and the repository-local `xtask` wrapper remain private workspace packages. `LicenseRef-Liora` remains the explicit package/install metadata until the owner replaces it with formal OSS or commercial terms.
 - GPUI source policy: public SDK manifests must use official `https://github.com/zed-industries/zed` for local development and Cargo's multiple-location `gpui = 0.2.2` registry fallback for crates.io publishing. Downstream applications must use `[patch.crates-io]` to resolve `gpui` to the matching official Zed revision (use the pin from the SDK version being consumed, not the unreleased workspace pin). Manifests must not contain renamed GPUI fork dependencies, `[patch."https://github.com/zed-industries/zed"]`, `third_party/zed`, or local path GPUI overrides. The `third_party/zed` snapshot is app-root-only historical verification/reference material and is not part of Liora crates.
 
 ## Local RC gates
@@ -23,6 +23,7 @@ cargo check -p liora-docs --bin check_snippets
 cargo doc --workspace --no-deps
 cargo run -p xtask -- package validate
 cargo run -p xtask -- package release-readiness
+cargo package -p liora-webview --no-verify
 cargo run -p xtask -- package ci --app gallery --format platform-defaults --dry-run --skip-build
 cargo run -p xtask -- package install-smoke --app gallery --format platform-defaults --dry-run
 git diff --check -- . ':(exclude).omx'
@@ -36,12 +37,13 @@ The GUI smoke commands are expected to exit with status `124` under `timeout` af
 
 Before a tag release, verify these files agree:
 
-- `Cargo.toml` and every workspace package manifest include repository-owned metadata. SDK crates (`liora`, `liora-theme`, `liora-core`, `liora-icons`, `liora-icons-lucide`, `liora-icons-antd`, `liora-icons-ionic`, `liora-icons-tabler`, `liora-icons-carbon`, `liora-icons-material`, `liora-components`, `liora-tray`, `liora-packager`, `liora-updater`) use `license-file = "../../LICENSE.md"` and `publish = true`; apps and `xtask` keep `license = "LicenseRef-Liora"` and `publish = false`.
-- `README.md`, `CHANGELOG.md`, `AGENTS.md`, `.context/README.md`, `.context/plans/001_ctx_takeover.md`, and `.context/tasks/001_ctx_takeover.md` all describe the same RC boundary.
+- `Cargo.toml` and every workspace package manifest include repository-owned metadata. SDK crates (`liora`, `liora-theme`, `liora-icons-optimizer`, `liora-core`, `liora-icons`, `liora-icons-lucide`, `liora-icons-antd`, `liora-icons-ionic`, `liora-icons-tabler`, `liora-icons-carbon`, `liora-icons-material`, `liora-components`, `liora-tray`, `liora-packager`, `liora-updater`, `liora-webview`) use `license-file = "../../LICENSE.md"` and `publish = true`; apps and `xtask` keep `license = "LicenseRef-Liora"` and `publish = false`.
+- `README.md`, `README.zh-CN.md`, `CHANGELOG.md`, `crates/liora-webview/README.md`, `AGENTS.md`, `.context/README.md`, `.context/plans/010_gallery_performance_webview_release_20261116.md`, and `.context/tasks/010_gallery_performance_webview_release_20261116.md` describe the same release boundary.
 - `docs/packaging-installer-technical-plan.md` and `apps/liora-docs/content/pages/packaging_workflow.md` keep packaging as a pure native installer pipeline.
 - `.github/workflows/ci.yml` remains validation-only and must not publish installers or mutate GitHub Releases.
 - `.github/workflows/package.yml` owns native app preview/release artifacts: cross-platform raw binaries for Docs/Gallery, Gallery installer packages, grouped changelog generation, and `v*` GitHub Release publication.
 - macOS packaging and runtime verification use `macos-26`; packaging selects Xcode 26.0.1 and `MACOSX_DEPLOYMENT_TARGET=12.0`. Compatibility on macOS 12 still requires dedicated runtime verification.
+- `.github/workflows/release-sdk.yml` packages and publishes the SDK crate set, including standalone `liora-webview`, in dependency order through the protected `crates-io` environment.
 
 ## Protected release-only items
 

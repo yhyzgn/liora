@@ -41,6 +41,7 @@ jobs:
             libgdk-pixbuf-2.0-dev \
             libglib2.0-dev \
             libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
             libpango1.0-dev \
             librsvg2-dev \
             libvulkan-dev \
@@ -79,6 +80,7 @@ jobs:
             liora-icons-material
             liora-components
             liora-tray
+            liora-webview
             liora-updater
             liora-packager
           )

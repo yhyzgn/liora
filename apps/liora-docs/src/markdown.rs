@@ -11198,6 +11198,7 @@ impl DocsPageView {
             .map(|component| cx.new(|cx| LiveDemoHost::new(component, cx)))
             .collect();
 
+        let live_demo_indices = live_demo_indices_before(&document.blocks);
         let virtual_blocks = document.blocks.clone();
         let virtual_live_demos = live_demos.clone();
         let virtual_list = cx.new(|cx| {
@@ -11207,7 +11208,7 @@ impl DocsPageView {
                     let Some(block) = virtual_blocks.get(index) else {
                         return div().into_any_element();
                     };
-                    let mut demo_index = live_demo_index_before(&virtual_blocks, index);
+                    let mut demo_index = live_demo_indices[index];
                     let rendered_block = render_persistent_block(
                         block,
                         &theme,
@@ -11232,8 +11233,14 @@ impl Render for DocsPageView {
     }
 }
 
-fn live_demo_index_before(blocks: &[Block], end: usize) -> usize {
-    blocks.iter().take(end).map(count_live_demos_in_block).sum()
+fn live_demo_indices_before(blocks: &[Block]) -> Vec<usize> {
+    let mut indices = Vec::with_capacity(blocks.len());
+    let mut live_demos = 0;
+    for block in blocks {
+        indices.push(live_demos);
+        live_demos += count_live_demos_in_block(block);
+    }
+    indices
 }
 
 fn count_live_demos_in_block(block: &Block) -> usize {
@@ -12037,7 +12044,7 @@ mod tests {
     #[test]
     fn quick_start_documents_automatic_icon_optimizer_setup() {
         assert!(QUICK_START_DOC.contains("## 5. 启用自动图标资源优化"));
-        assert!(QUICK_START_DOC.contains("liora-icons-optimizer = \"0.4\""));
+        assert!(QUICK_START_DOC.contains("liora-icons-optimizer = \"0.6.1\""));
         assert!(QUICK_START_DOC.contains("target/liora/icons/apps/<app>/assets/liora-icons"));
         assert!(QUICK_START_DOC.contains("不需要手动复制 SVG"));
         assert!(QUICK_START_DOC.contains("LIORA_ICON_DEBUG=1"));
@@ -12045,7 +12052,7 @@ mod tests {
         let cargo = load_code_snippet("quick_start/app_cargo.toml")
             .expect("quick start cargo snippet should load");
         assert!(cargo.contains("[build-dependencies]"));
-        assert!(cargo.contains("liora-icons-optimizer = \"0.4\""));
+        assert!(cargo.contains("liora-icons-optimizer = \"0.6.1\""));
     }
 
     #[test]
@@ -12347,7 +12354,7 @@ mod tests {
         assert!(sdk.contains("Audit crates.io SDK metadata"));
         assert!(sdk.contains("Package independently publishable crates"));
         assert!(sdk.contains("Verify patched crates.io consumer"));
-        assert!(sdk.contains("liora-theme liora-icons-optimizer liora-core liora-icons liora-icons-lucide liora-icons-antd liora-icons-ionic liora-icons-tabler liora-icons-carbon liora-icons-material liora-components liora-tray liora-packager liora-updater liora"));
+        assert!(sdk.contains("liora-theme liora-icons-optimizer liora-tray liora-packager liora-updater liora-core liora-icons liora-icons-lucide liora-icons-antd liora-icons-ionic liora-icons-tabler liora-icons-carbon liora-icons-material liora-components liora liora-webview"));
         assert!(sdk.contains("cargo publish -p"));
         assert!(!sdk.contains(concat!("cargo publish -p \"$crate\" ", "--", "token")));
     }
@@ -13050,13 +13057,13 @@ mod tests {
             .find("struct DocsPageView")
             .expect("DocsPageView should exist")
             ..source
-                .find("fn live_demo_index_before")
-                .expect("live_demo_index_before should follow DocsPageView")];
+                .find("fn live_demo_indices_before")
+                .expect("live_demo_indices_before should follow DocsPageView")];
 
         assert!(docs_page_view.contains("VirtualizedList::new(document.blocks.len()"));
         assert!(docs_page_view.contains("list.set_item_spacing(px(20.0))"));
         assert!(!docs_page_view.contains(".set_render_item"));
-        assert!(docs_page_view.contains("live_demo_index_before"));
+        assert!(docs_page_view.contains("live_demo_indices_before"));
     }
 
     #[test]
@@ -13209,6 +13216,28 @@ mod tests {
         assert_eq!(segments[4].text.as_ref(), "Input");
         assert!(segments[4].style.code);
         assert_eq!(segments[5].text.as_ref(), "。");
+    }
+
+    #[test]
+    fn live_demo_indices_count_nested_demos_before_each_top_level_block() {
+        let blocks = vec![
+            Block::Paragraph(Vec::new()),
+            Block::LiveDemo {
+                component: "Input".into(),
+            },
+            Block::BlockQuote(vec![Block::LiveDemo {
+                component: "Button".into(),
+            }]),
+            Block::List {
+                ordered: false,
+                start: 1,
+                items: vec![vec![Block::LiveDemo {
+                    component: "Text".into(),
+                }]],
+            },
+        ];
+
+        assert_eq!(live_demo_indices_before(&blocks), [0, 0, 1, 2]);
     }
 
     #[test]

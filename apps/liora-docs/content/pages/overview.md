@@ -23,7 +23,7 @@ Liora 的目标不是输出网页组件，而是验证一套 GPUI 原生 UI 体�
 3. **反馈闭环**：如果文档排版、滚动、代码选择或弹层不好用，说明组件库也需要修。
 4. **一致运行时**：Gallery 和 Docs 都使用相同的 `liora_components::init_liora`、主题、Portal 和 key binding 初始化方式。
 
-> 项目边界：严禁引入 HTML、CSS、DOM、WebAssembly、WebView 或跨端转译思路。Markdown 只是输入文本格式，最终必须变成 GPUI/Liora 原生元素树。
+> 项目边界：默认 SDK、Gallery、Docs 和通用控件不引入 HTML、CSS、DOM、WebAssembly、WebView 或跨端转译。独立 opt-in `liora-webview` 仅供宿主明确接入，不用于渲染其他控件。Markdown 是输入格式，最终渲染仍须转换为 GPUI/Liora 原生元素树。
 
 ## 文档目前覆盖什么
 

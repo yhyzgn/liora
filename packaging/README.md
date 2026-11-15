@@ -3,9 +3,7 @@
 This directory contains static resources consumed by `cargo xtask package` and
 `crates/liora-packager`.
 
-Liora remains a pure Rust + GPUI native application. These files describe package
-metadata and platform integration; they do not introduce Tauri or a WebView
-runtime.
+The Gallery and Docs packages remain pure Rust + GPUI native applications. These static files describe package metadata and platform integration; they do not add Tauri or WebView to those applications. The separately published `liora-webview` crate is opt-in and is not used by either app.
 
 ## Icon set
 
