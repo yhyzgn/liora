@@ -15,7 +15,13 @@ use gpui::{
 };
 use liora_core::Config;
 
-gpui::actions!(candidate_bar, [CancelCandidates]);
+gpui::actions!(
+    candidate_bar,
+    [
+        /// Keyboard action that closes the candidate panel without selecting a candidate.
+        CancelCandidates
+    ]
+);
 
 /// One host-provided candidate shown in [`CandidateBar`].
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -46,13 +52,24 @@ impl CandidateItem {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CandidateBarEvent {
     /// The host should commit the selected candidate.
-    Selected { index: usize, value: SharedString },
+    Selected {
+        /// Zero-based index in the host-provided candidate list.
+        index: usize,
+        /// Candidate text to commit.
+        value: SharedString,
+    },
     /// The host should commit the current literal composition.
-    CommittedLiteral { composition: SharedString },
+    CommittedLiteral {
+        /// Literal composition to commit.
+        composition: SharedString,
+    },
     /// The host should clear the current composition.
     Cancelled,
     /// The host should load or expose another candidate page.
-    PageChanged { page: usize },
+    PageChanged {
+        /// Zero-based page index.
+        page: usize,
+    },
 }
 
 /// Keyboard-first candidate panel for IME, command completion, and mention flows.

@@ -485,24 +485,33 @@ impl MarkdownDocument {
 /// Leading parsed Markdown frontmatter; fields never change application configuration.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MarkdownMetadata<'a> {
+    /// Syntax used by the detected frontmatter block.
     pub kind: MetadataBlockKind,
+    /// Byte range of the frontmatter in the original Markdown source.
     pub source_range: Range<usize>,
+    /// Flat fields in source order.
     pub fields: Vec<MarkdownMetadataField<'a>>,
+    /// Unsupported or malformed lines in the frontmatter.
     pub diagnostics: Vec<MarkdownMetadataDiagnostic>,
 }
 
 /// One flat, source-backed metadata field; the value is not YAML/TOML evaluated.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MarkdownMetadataField<'a> {
+    /// Field key as written in the source.
     pub key: &'a str,
+    /// Field value as written in the source.
     pub value: &'a str,
+    /// Byte range of this field in the original Markdown source.
     pub source_range: Range<usize>,
 }
 
 /// Unsupported or malformed frontmatter line, with its original source range.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MarkdownMetadataDiagnostic {
+    /// Byte range of the problematic line in the original Markdown source.
     pub source_range: Range<usize>,
+    /// Diagnostic message describing the syntax problem.
     pub message: &'static str,
 }
 
@@ -550,10 +559,14 @@ pub struct MarkdownFootnoteReference {
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 /// Alignment of one Markdown table column.
 pub enum MarkdownTableAlignment {
+    /// No explicit alignment.
     #[default]
     None,
+    /// Left alignment.
     Left,
+    /// Center alignment.
     Center,
+    /// Right alignment.
     Right,
 }
 
@@ -596,30 +609,63 @@ pub enum MarkdownTableEdit {
     /// Replace one existing cell with literal plain text; line breaks become spaces.
     /// Existing inline Markdown markup in that cell is intentionally discarded.
     SetCell {
+        /// Zero-based parsed row index, including the header row when present.
         row: usize,
+        /// Zero-based column index.
         column: usize,
+        /// Literal plain text to write into the cell.
         text: String,
     },
     /// Insert a body row at the given zero-based body-row index.
-    InsertRow { index: usize, cells: Vec<String> },
+    InsertRow {
+        /// Zero-based position among body rows.
+        index: usize,
+        /// One cell value per column.
+        cells: Vec<String>,
+    },
     /// Delete a body row at the given zero-based body-row index.
-    DeleteRow { index: usize },
+    DeleteRow {
+        /// Zero-based index among body rows.
+        index: usize,
+    },
     /// Insert a column at the zero-based index; cells include the header followed by body rows.
-    InsertColumn { index: usize, cells: Vec<String> },
+    InsertColumn {
+        /// Zero-based insertion position among columns.
+        index: usize,
+        /// Cell values in row order, including the header when present.
+        cells: Vec<String>,
+    },
     /// Delete a column; the last remaining column cannot be deleted.
-    DeleteColumn { index: usize },
+    DeleteColumn {
+        /// Zero-based column index.
+        index: usize,
+    },
     /// Move a body row between zero-based body-row positions.
-    MoveRow { from: usize, to: usize },
+    MoveRow {
+        /// Zero-based source index among body rows.
+        from: usize,
+        /// Zero-based destination index among body rows.
+        to: usize,
+    },
     /// Move a column and its alignment delimiter between zero-based positions.
-    MoveColumn { from: usize, to: usize },
+    MoveColumn {
+        /// Zero-based source column index.
+        from: usize,
+        /// Zero-based destination column index.
+        to: usize,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 /// Rejection reason for a table edit.
 pub enum MarkdownTableEditError {
+    /// The table ID is absent or its source rows cannot be mapped contiguously.
     TableNotFound,
+    /// A requested row index is outside the available rows.
     RowOutOfBounds,
+    /// A column index or supplied column values do not fit the table.
     ColumnOutOfBounds,
+    /// The table has no header row, which all table edits require.
     HeaderRowRequired,
     /// The public editor cannot commit a table edit during IME composition.
     CompositionActive,

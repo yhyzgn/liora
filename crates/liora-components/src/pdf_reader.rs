@@ -156,10 +156,14 @@ pub enum PdfZoom {
 /// Rotation applied in clockwise quarter turns.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum PdfRotation {
+    /// No rotation.
     #[default]
     Zero,
+    /// Rotate 90 degrees clockwise.
     Quarter,
+    /// Rotate 180 degrees.
     Half,
+    /// Rotate 270 degrees clockwise.
     ThreeQuarter,
 }
 
@@ -181,17 +185,28 @@ impl PdfRotation {
 /// Tool selection forwarded to a host annotation or selection backend.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum PdfTool {
+    /// Request text selection through the host backend.
     #[default]
     Select,
+    /// Request page panning through the host backend.
     Hand,
+    /// Request highlight-tool handling from the host backend.
     Highlight,
+    /// Request underline-tool handling from the host backend.
     Underline,
+    /// Request strike-through-tool handling from the host backend.
     StrikeThrough,
+    /// Request note-tool handling from the host backend.
     Note,
+    /// Request text-box-tool handling from the host backend.
     TextBox,
+    /// Request freehand-pen-tool handling from the host backend.
     Pen,
+    /// Request rectangle-tool handling from the host backend.
     Rectangle,
+    /// Request ellipse-tool handling from the host backend.
     Ellipse,
+    /// Request arrow-tool handling from the host backend.
     Arrow,
 }
 
@@ -233,17 +248,35 @@ impl PdfTool {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum PdfReaderEvent {
     /// Current page changed to a one-based page number.
-    PageChanged { page: usize },
+    PageChanged {
+        /// Current one-based page number.
+        page: usize,
+    },
     /// Zoom policy changed.
-    ZoomChanged { zoom: PdfZoom },
+    ZoomChanged {
+        /// New zoom policy.
+        zoom: PdfZoom,
+    },
     /// Rotation changed.
-    RotationChanged { rotation: PdfRotation },
+    RotationChanged {
+        /// New clockwise rotation.
+        rotation: PdfRotation,
+    },
     /// Page arrangement changed.
-    LayoutChanged { layout: PdfPageLayout },
+    LayoutChanged {
+        /// New page arrangement.
+        layout: PdfPageLayout,
+    },
     /// Annotation/selection tool changed.
-    ToolChanged { tool: PdfTool },
+    ToolChanged {
+        /// Newly selected host-directed tool.
+        tool: PdfTool,
+    },
     /// Host should search the PDF text index.
-    SearchRequested { query: SharedString },
+    SearchRequested {
+        /// Query to search.
+        query: SharedString,
+    },
     /// Host should reveal the previous search match.
     SearchPrevious,
     /// Host should reveal the next search match.

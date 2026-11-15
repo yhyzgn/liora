@@ -19,13 +19,22 @@ use gpui::{
 use liora_core::Config;
 use liora_icons_lucide::IconName;
 
-gpui::actions!(find_bar, [CloseFind]);
+gpui::actions!(
+    find_bar,
+    [
+        /// Keyboard action that closes the find bar.
+        CloseFind
+    ]
+);
 
 /// Events emitted by [`FindBar`].
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum FindBarEvent {
     /// The host should recompute matches for this query.
-    QueryChanged { query: SharedString },
+    QueryChanged {
+        /// Updated query text.
+        query: SharedString,
+    },
     /// The host should reveal the previous match.
     Previous,
     /// The host should reveal the next match.
