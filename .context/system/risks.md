@@ -49,3 +49,21 @@
 - Rollback: revert the RPM signing workflow/xtask/updater/docs change together; do not bypass system signature enforcement. Existing v0.5.0 assets remain unchanged.
 - Status: Open for independent fingerprint distribution and real native distro installation smoke. Repository RPM secret/fingerprint were provisioned for v0.5.1 using the owner-requested non-expiring development signing identity; macOS/Windows platform signing remains opt-in and unconfigured.
 - Verification (2026-11-11): focused xtask/updater/packager tests passed (31 tests); packaging validate and local release-readiness passed (missing local signing key remains a warning). Disposable real-backend builds verified both font variants, signed-byte SHA-256, trusted-key acceptance, untrusted-key rejection and no false signed flag on a stale unsigned RPM. Tagged dry-run/Docs-only readiness succeeds without RPM secrets; real release RPM generation still rejects unsigned overrides. Exact CI scripts rejected missing/malformed/mismatched fingerprints, removed temporary private keys on success/failure, and assembled both signed RPM variants plus the public key/fingerprint with matching release SHA256SUMS. Rust/workflow reviews found no remaining actionable issues after the two scoped fixes. No protected release signing or native distro installation was performed.
+
+## R-006 — PDF decoding resources and untrusted content
+
+- Severity: Medium for trusted documents; High for hostile, unbounded workloads.
+- Evidence: Hayro 0.9.0 decodes pure Rust PDF bytes in-process. Liora preflights 64 MiB input and 128 MiB retained page/thumbnail rasters, not parser/transient/GPU allocations or execution time; rotation adds cached page copies.
+- Failure mode: malformed or complex PDF content may exhaust worker memory/time; eager rendering is not a large-document cache or security sandbox. Raster zoom can blur above native resolution.
+- Mitigation: decode on a background worker, surface explicit errors and preserve the previous document; applications accepting hostile documents need process-level resource isolation. No scripts, external resource fetches, implicit PDF writes or password UI are added.
+- Rollback: revert the Hayro dependency/lockfile and `from_bytes`/backend/demo loading changes together; host-supplied image APIs remain a separate integration path.
+- Status: Open for adversarial-document isolation, real system IME and Windows/macOS native runtime verification.
+
+## R-007 — Opt-in system WebView behavior and untrusted pages
+
+- Severity: High for applications loading untrusted sites.
+- Evidence: WRY 0.57.2 uses GTK3/WebKitGTK 4.1 on Linux and requires an X11 GDK display for GPUI XCB child XIDs; WKWebView/WebView2 use platform engines. Isolated Linux X11 proof covered two live child surfaces, HTTP navigation, page IPC, geometry, explicit close and parent-close teardown.
+- Failure mode: Wayland or non-X11 GDK embedding fails; page content may issue network/subresource requests and untrusted IPC can induce privileged host actions; engine permission/browser compatibility differs by platform. Loading completion is not HTTP success.
+- Mitigation: keep WRY isolated outside default SDK; reject unsupported handles/GDK displays, constrain top-level navigation, deny permissions/downloads/new windows and clipboard/autoplay, bound incoming events, and require the host to authorize page URLs/messages. Use current patched system engines.
+- Rollback: remove only `liora-webview` and its workspace member/lockfile changes; native components and facade remain untouched.
+- Status: Open for macOS/Windows runtime tests, engine-specific page behavior and hostile-site/network isolation.

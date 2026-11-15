@@ -1,13 +1,13 @@
-//! Cross-block selection with Text and Paragraph.
+//! Cross-block selection without flattening individual Text, Title or Paragraph layouts.
 
-use liora_components::{Paragraph, SelectableTextGroup, Text};
+use liora_components::{Paragraph, SelectableTextGroup, Text, Title};
 use liora_theme::Theme;
 
 fn release_notes(theme: &Theme) -> SelectableTextGroup {
-    // SelectableTextGroup renders all children as one selectable native text flow.
+    // Each child keeps its native layout; one selection range spans the group.
     SelectableTextGroup::new()
         .id("release-notes-selection")
-        .text(Text::new("Release notes").bold().text_color(theme.primary.base))
+        .title(Title::new("Release notes").h2())
         .paragraph(
             Paragraph::new()
                 .child(Text::new("Combine "))

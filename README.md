@@ -5,7 +5,7 @@
   </picture>
 
   <p><strong>Enterprise-grade native UI components for Rust desktop applications.</strong></p>
-  <p>Pure Rust. GPUI native. Element Plus-inspired APIs. No Tauri, no WebView, no browser runtime.</p>
+  <p>Pure Rust. GPUI native by default. Element Plus-inspired APIs. No Tauri or browser app shell; WRY is a separate opt-in crate.</p>
 
   <p>
     <a href="README.zh-CN.md">简体中文</a>
@@ -58,9 +58,11 @@
 Liora is intentionally not a web application shell:
 
 - no Tauri runtime;
-- no WebView, HTML/CSS/DOM, or browser application shell;
+- no WebView, HTML/CSS/DOM, or browser runtime in the default SDK or native controls; a separate optional `liora-webview` crate is available for explicit downstream embedding;
 - no web chart runtime or frontend bundler;
 - Gallery and Docs are real native GPUI applications that use the same public SDK surface as downstream apps.
+
+For host-owned web content, explicitly add `liora-webview` from this checkout; this new crate has not been released, is not exported by `liora`, and is not used to render any other Liora control. Linux requires an X11/XWayland GPUI window, GTK3 and WebKitGTK 4.1; macOS and Windows native behavior remains unverified here. Compatibility follows the installed system engine, not a browser-equivalence guarantee. See [the opt-in WebView guide](crates/liora-webview/README.md).
 
 ## What you can build
 
@@ -82,7 +84,7 @@ Import these controls through `liora::components` or `liora_components`. Keep st
 
 | Component | Contract |
 |---|---|
-| `MarkdownDocument` / `MarkdownView` | Cached, batched native Markdown updates; rich per-block selection or explicit continuous-text selection. Images are denied unless the host supplies an approved local file or decoded image; the SDK does not fetch untrusted image URLs. |
+| `MarkdownDocument` / `MarkdownView` | Cached native Markdown; unique heading IDs and native TOC emit host navigation events, numbered footnotes expose source-backed references with preview/back navigation, task lists render native checkboxes, and highlight spans preserve source markers. `MarkdownDocument::edit_table` and `MarkdownEditor::edit_table` support source-backed cell/body-row/column edits without an in-view table toolbar. Rich editing rejects ambiguous syntax mappings. Inline/display math uses `latex-rust`; Mermaid flowcharts/sequences use a bounded Rust-to-native raster path. Images require host-approved local files or decoded images. [Capability matrix](docs/markdown-capability-matrix.md) lists remaining Typora/MarkText gaps. |
 | `Transcript` | Keyed variable-height virtualization, native tail following/detachment, prepend/reorder anchors, and serializable `TranscriptPosition`. Notify changed row heights and retain session storage in the host. |
 | `Composer` | Existing Input selection/IME, structured references and attachments, candidates, paste payloads, editable busy drafts, and host-owned Send/Stop events. |
 | `Terminal` | Incremental VT/ANSI state with cursor, Unicode cells, selection, scrollback, native text input and size events. Uses MIT-licensed `vt100 = 0.18.1`; the host owns all PTY/process I/O. |
@@ -90,8 +92,13 @@ Import these controls through `liora::components` or `liora_components`. Keep st
 | `Splitter` / `DockLayout` | Persistent pointer/keyboard resizing, controlled pane sizes, grouped tabs/splits, host-rendered content and serializable layouts. |
 | `CommandPalette` | Stable command IDs, availability, fuzzy ranking, keyboard/pointer execution and shared GPUI actions with menus. |
 | `CodeEditor` | Undoable completion edits, stale-response tokens, literal search/navigation/replacement, shared render snapshots and delta history. The host owns LSP connections. |
+| `PdfDocument` / `PdfReader` | `PdfDocument::from_bytes(title, Vec<u8>) -> Result<PdfDocument, PdfDecodeError>` decodes real PDFs with Hayro, a pure-Rust CPU backend. Run it on a worker: 64 MiB input, 128 MiB retained page/thumbnail rasters, 2048-pixel longest page side. Native navigation, zoom, rotation and tool-state events; the host owns file I/O, search indexing, text selection and annotation persistence. |
+| `FindBar` | Native query input and query/previous/next/close events, with host-provided match status. Focused Enter/Shift-Enter/Escape navigate or close without intercepting active IME composition or modified shortcuts; it does not calculate matches. |
+| `CandidateBar` | Host-provided candidates, 1–9 visible slots, paging and selection/literal/cancel events. Explicit focus enables arrows, PageUp/PageDown, number keys, Space, Enter and Escape; no IME engine, dictionaries or automatic host-text mutation. |
 
 Gallery and Docs expose the same native implementations, with compile-checked snippets. These are SDK building blocks, not an Agent product: provider connections, execution permissions, session databases, downloads and subprocess management remain application responsibilities. Linux/Xwayland validation covers all nine demo renders and Markdown clipboard/selection; headless tests alone do not prove system paste, real IME candidate windows or Windows/macOS behavior.
+
+The PdfReader Gallery/Docs demo loads a bundled PDF and offers a native **Open PDF** dialog. File selection and reading belong to the demo host, not the SDK. PDF tools expose state/events only; selecting Highlight, Pen or another tool does not itself draw or persist annotations. See [PdfReader documentation](apps/liora-docs/content/pages/pdf_reader.md) and its [worker snippet](apps/liora-docs/content/snippets/pdf_reader/basic.rs).
 
 ## Requirements
 
@@ -1811,12 +1818,14 @@ impl Translator for AppTranslator {
 | Form controls | `Input`, `InputNumber`, `Textarea`, `Checkbox`, `CheckboxGroup`, `TodoItem`, `TodoList`, `Radio`, `RadioGroup`, `Switch`, `Select`, `Slider`, `Form`, `FormItem`, `Rate`, `DatePicker`, `TimePicker`, `DateTimePicker`, `Upload`, `Cascader`, `Transfer`, `ColorPicker`, `Autocomplete`, `InputTag`, `Mention`, `TreeSelect`, `SearchableList`, `OtpInput` |
 | Feedback and overlays | `Alert`, `Tooltip`, `Popover`, `Popconfirm`, `Dialog`, `Drawer`, `Message`, `Notification`, `MessageBox`, `Loading`, `Dropdown`, `DropdownButton`, `Preview`, `Tour`, `HoverCard`, `FocusTrap` |
 | Navigation | `NavigationMenu`, `Tabs`, `Breadcrumb`, `Steps`, `PageHeader`, `Anchor`, `Accordion` |
-| Data display | `Table`, `List`, `VirtualizedTable`, `VirtualizedTree`, `VirtualizedList`, `Progress`, `Skeleton`, `Empty`, `Result`, `Descriptions`, `Timeline`, `Tree`, `Pagination`, `Statistic`, `Segmented`, `Tag`, `Avatar`, `Badge`, `Calendar`, `Carousel`, `Image`, `Watermark`, `Kbd`, `GroupBox`, `StatusBar`, `SettingsPage`, `SettingsGroup`, `SettingsItem` |
+| Data display | `Table`, `List`, `VirtualizedTable`, `VirtualizedTree`, `VirtualizedList`, `Progress`, `Skeleton`, `Empty`, `Result`, `Descriptions`, `Timeline`, `Tree`, `Pagination`, `Statistic`, `Segmented`, `Tag`, `Avatar`, `Badge`, `Calendar`, `Carousel`, `Image`, `Watermark`, `HighlightedText`, `Kbd`, `GroupBox`, `StatusBar`, `SettingsPage`, `SettingsGroup`, `SettingsItem` |
 | Charts and metrics | `LineChart`, `AreaChart`, `BarChart`, `PieChart`, `RingChart`, `Sparkline`, `SignalMeter`, `HeatBar`, `SegmentRatioBar`, `CandlestickChart` |
-| Editing and utility | `CodeBlock`, `CodeEditor`, `QrCode`, `Timer`, `Label`, `Operation`, `Clipboard`, draggable list helpers |
+| Editing and utility | `CodeBlock`, `CodeEditor`, `CopyButton`, `QrCode`, `Timer`, `Label`, `Operation`, `Clipboard`, draggable list helpers |
 | App shell and platform | `Shell`, `AppWindowFrame`, `TitleBar`, `Sidebar`, `WindowFrameMode`, `StatusBar`, `DockLayout`, `Menu` / `MenuBar`, `liora-tray`, Linux desktop identity helpers, package metadata helpers, updater helpers |
 
 `TodoList` supports display-only filtering and sorting plus contextual header, empty-state, and footer renderers. `TodoItem` toggles on primary press; trailing actions are independent of completion. See the [TodoList guide](apps/liora-docs/content/pages/todo.md) and the [interactive Clipboard example](apps/liora-docs/content/pages/clipboard.md).
+
+`HighlightedText` renders native selectable search results using Unicode character indices supplied by the host; it does not perform search. See the [HighlightedText guide](apps/liora-docs/content/pages/highlighted_text.md).
 
 ### Component consolidation notes
 
@@ -1825,7 +1834,7 @@ Liora avoids duplicate controls for the same job:
 - Use `Drawer` for both full drawers and lightweight sheet-style panels. `Drawer::sheet()` provides the compact defaults that would otherwise become a separate Sheet control.
 - Use `Select` for fixed options and searchable selection. `Select::searchable(...)`, `.multiple()`, item groups, disabled items, and footer slots cover Combobox-style workflows.
 - Use `Switch` for settings booleans and `Segmented` / button-style selections for toolbar or view-mode choices; the former standalone Toggle control was removed to avoid API duplication.
-- Use `Text` for both inline text and lightweight app documents. `Text::document(...)`, `TextBlock`, and `Text::markdown(...)` cover TextView-style About/Help/Release notes content. `Text`, `Title`, and `Paragraph` are mouse-selectable by default; call `.selectable(false)` only for decorative labels or non-copyable chrome. Use `SelectableTextGroup` when selection must continue across multiple `Text` and `Paragraph` blocks, such as release notes, help pages, and documentation articles.
+- Use `Text` for both inline text and lightweight app documents. `Text::document(...)`, `TextBlock`, and `Text::markdown(...)` cover TextView-style About/Help/Release notes content. `Text`, `Title`, and `Paragraph` are mouse-selectable by default; call `.selectable(false)` only for decorative labels or non-copyable chrome. Use `SelectableTextGroup` when selection must continue across multiple `Text`, `Title`, and `Paragraph` blocks without flattening their native typography.
 
 ## Native packaging
 

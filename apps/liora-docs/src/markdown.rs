@@ -103,6 +103,7 @@ const EMPTY_DOC: &str = include_str!("../content/pages/empty.md");
 const FORM_DOC: &str = include_str!("../content/pages/form.md");
 const GRID_DOC: &str = include_str!("../content/pages/grid.md");
 const HEAT_BAR_DOC: &str = include_str!("../content/pages/heat_bar.md");
+const HIGHLIGHTED_TEXT_DOC: &str = include_str!("../content/pages/highlighted_text.md");
 const LABEL_DOC: &str = include_str!("../content/pages/label.md");
 const SPINNER_DOC: &str = include_str!("../content/pages/spinner.md");
 const STATUS_BAR_DOC: &str = include_str!("../content/pages/status_bar.md");
@@ -185,6 +186,7 @@ const TRANSCRIPT_DOC: &str = include_str!("../content/pages/transcript.md");
 const COMPOSER_DOC: &str = include_str!("../content/pages/composer.md");
 const TERMINAL_DOC: &str = include_str!("../content/pages/terminal.md");
 const DIFF_DOC: &str = include_str!("../content/pages/diff.md");
+const PDF_READER_DOC: &str = include_str!("../content/pages/pdf_reader.md");
 const COMMAND_PALETTE_DOC: &str = include_str!("../content/pages/command_palette.md");
 const MARKDOWN_VIEW_DOC: &str = include_str!("../content/pages/markdown_view.md");
 
@@ -428,6 +430,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "Material Icons",
         markdown: ICON_MATERIAL_DOC,
+    },
+    DocPage {
+        title: "HighlightedText",
+        markdown: HIGHLIGHTED_TEXT_DOC,
     },
     DocPage {
         title: "Image",
@@ -704,6 +710,10 @@ const DOC_PAGES: &[DocPage] = &[
     DocPage {
         title: "DiffView",
         markdown: DIFF_DOC,
+    },
+    DocPage {
+        title: "PdfReader",
+        markdown: PDF_READER_DOC,
     },
     DocPage {
         title: "CommandPalette",
@@ -1346,6 +1356,7 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "markdown/streaming.rs" => Some(include_str!("../content/snippets/markdown/streaming.rs")),
         "terminal/screen.rs" => Some(include_str!("../content/snippets/terminal/screen.rs")),
         "diff/basic.rs" => Some(include_str!("../content/snippets/diff/basic.rs")),
+        "pdf_reader/basic.rs" => Some(include_str!("../content/snippets/pdf_reader/basic.rs")),
         "command_palette/basic.rs" => {
             Some(include_str!("../content/snippets/command_palette/basic.rs"))
         }
@@ -1496,6 +1507,9 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         )),
         "bar_chart/stacked.rs" => Some(include_str!("../content/snippets/bar_chart/stacked.rs")),
         "bar_chart/custom.rs" => Some(include_str!("../content/snippets/bar_chart/custom.rs")),
+        "highlighted_text/basic.rs" => Some(include_str!(
+            "../content/snippets/highlighted_text/basic.rs"
+        )),
         "label/basic.rs" => Some(include_str!("../content/snippets/label/basic.rs")),
         "kbd/basic.rs" => Some(include_str!("../content/snippets/kbd/basic.rs")),
         "kbd/composition.rs" => Some(include_str!("../content/snippets/kbd/composition.rs")),
@@ -4546,6 +4560,10 @@ impl Render for LiveDemoContent {
                     ),
                 ])
             }
+            "HighlightedTextBasic" => liora_components::HighlightedText::new("搜索 Liora 🙂 文档")
+                .indices([0, 1, 3, 4, 5, 6, 7])
+                .accent()
+                .into_any_element(),
             "KbdBasic" => demo_row(vec![
                 liora_components::Kbd::new("⌘K").into_any_element(),
                 liora_components::Kbd::new("Ctrl").into_any_element(),
@@ -9056,7 +9074,7 @@ fn docs_selectable_text_group(cx: &mut Context<LiveDemoContent>) -> impl IntoEle
     let theme = cx.global::<Config>().theme.clone();
     SelectableTextGroup::new()
         .id("docs-selectable-text-group-basic")
-        .text(Text::new("Release notes").bold().text_color(theme.primary.base))
+        .title(Title::new("Release notes").h2())
         .paragraph(
             Paragraph::new()
                 .child(Text::new("Combine "))

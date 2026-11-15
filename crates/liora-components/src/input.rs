@@ -374,6 +374,10 @@ impl Input {
     pub fn selected_range(&self) -> Range<usize> {
         self.selected_range.clone()
     }
+    /// Whether an IME marked-text transaction is still in progress.
+    pub fn is_composing(&self) -> bool {
+        self.marked_range.is_some()
+    }
 
     /// Updates the current caret/selection range and keeps it inside valid UTF-8 boundaries.
     pub fn set_selection(&mut self, range: Range<usize>, cx: &mut Context<Self>) {
@@ -1004,8 +1008,11 @@ impl EntityInputHandler for Input {
             .map(|r| self.offset_to_utf16(r.start)..self.offset_to_utf16(r.end))
     }
 
-    fn unmark_text(&mut self, _: &mut Window, _: &mut Context<Self>) {
-        self.marked_range = None;
+    fn unmark_text(&mut self, _: &mut Window, cx: &mut Context<Self>) {
+        if self.marked_range.take().is_some() {
+            cx.notify();
+            self.emit_change(cx);
+        }
     }
 
     fn replace_text_in_range(

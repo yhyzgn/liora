@@ -50,6 +50,7 @@ pub mod breadcrumb;
 pub mod button;
 pub mod button_group;
 pub mod calendar;
+pub mod candidate_bar;
 pub mod candlestick_chart;
 pub mod card;
 pub mod carousel;
@@ -69,6 +70,7 @@ pub mod color_picker;
 pub mod command_palette;
 pub mod composer;
 pub mod container;
+pub mod copy_button;
 pub mod date_picker;
 pub mod date_time_picker;
 pub mod descriptions;
@@ -81,6 +83,7 @@ pub mod drawer;
 pub mod dropdown;
 pub mod dropdown_button;
 pub mod empty;
+pub mod find_bar;
 pub mod flex;
 pub mod focus_trap;
 pub mod form;
@@ -88,6 +91,7 @@ pub(crate) mod gpui_compat;
 pub mod grid;
 pub mod group_box;
 pub mod heat_bar;
+pub mod highlighted_text;
 pub mod horizontal_list;
 pub mod hover_card;
 pub mod image;
@@ -114,6 +118,7 @@ pub mod otp_input;
 pub mod page_header;
 pub mod pagination;
 pub mod paragraph;
+pub mod pdf_reader;
 pub mod pie_chart;
 pub mod popconfirm;
 pub mod popover;
@@ -188,6 +193,7 @@ pub use breadcrumb::*;
 pub use button::*;
 pub use button_group::*;
 pub use calendar::*;
+pub use candidate_bar::*;
 pub use candlestick_chart::*;
 pub use card::*;
 pub use carousel::*;
@@ -209,6 +215,7 @@ pub use composer::{
     ComposerReference,
 };
 pub use container::*;
+pub use copy_button::*;
 pub use date_picker::*;
 pub use date_time_picker::*;
 pub use descriptions::*;
@@ -221,12 +228,14 @@ pub use drawer::*;
 pub use dropdown::*;
 pub use dropdown_button::*;
 pub use empty::*;
+pub use find_bar::*;
 pub use flex::*;
 pub use focus_trap::*;
 pub use form::*;
 pub use grid::*;
 pub use group_box::*;
 pub use heat_bar::*;
+pub use highlighted_text::*;
 pub use horizontal_list::*;
 pub use hover_card::*;
 pub use image::*;
@@ -253,7 +262,11 @@ pub use liora_theme::{ButtonSize, ButtonVariant};
 pub use list::*;
 pub use loading::*;
 pub use markdown::{
-    MarkdownChanged, MarkdownDocument, MarkdownImage, MarkdownView, is_safe_markdown_link,
+    MarkdownChanged, MarkdownDocument, MarkdownEditMode, MarkdownEditor, MarkdownEditorChanged,
+    MarkdownFootnote, MarkdownFootnoteReference, MarkdownHeading, MarkdownImage, MarkdownMetadata,
+    MarkdownMetadataDiagnostic, MarkdownMetadataField, MarkdownNavigationRequested, MarkdownTable,
+    MarkdownTableAlignment, MarkdownTableCell, MarkdownTableEdit, MarkdownTableEditError,
+    MarkdownTableRow, MarkdownTaskToggled, MarkdownView, MetadataBlockKind, is_safe_markdown_link,
 };
 pub use mention::*;
 pub use menu::*;
@@ -267,6 +280,7 @@ pub use otp_input::*;
 pub use page_header::*;
 pub use pagination::*;
 pub use paragraph::*;
+pub use pdf_reader::*;
 pub use pie_chart::*;
 pub use popconfirm::*;
 pub use popover::*;
@@ -381,6 +395,9 @@ fn register_liora_key_bindings(cx: &mut gpui::App) {
     Title::register_key_bindings(cx);
     Tour::register_key_bindings(cx);
     CodeEditor::register_key_bindings(cx);
+    // GPUI gives global bindings deepest-context precedence; add scoped Escape last.
+    FindBar::register_key_bindings(cx);
+    CandidateBar::register_key_bindings(cx);
 }
 
 #[cfg(test)]

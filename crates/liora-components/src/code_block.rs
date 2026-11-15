@@ -20,6 +20,7 @@
 //! crate.
 
 use crate::gpui_compat::element_id;
+use crate::{SelectableText, SelectableTextOptions, SelectableTextWrap};
 use gpui::{
     App, Bounds, ClipboardItem, Context, ElementId, Entity, FocusHandle, Focusable, FontStyle,
     FontWeight, GlobalElementId, Hsla, IntoElement, LayoutId, MouseButton, MouseDownEvent,
@@ -255,6 +256,7 @@ pub struct CodeBlock {
     selectable: bool,
     id: Option<ElementId>,
     on_copy: Option<Arc<CodeCopyCallback>>,
+    selection_scope: Option<(SharedString, usize, SharedString)>,
 }
 
 type CodeCopyCallback = dyn Fn(&str, &mut Window, &mut App) + 'static;
@@ -272,6 +274,7 @@ impl CodeBlock {
             selectable: true,
             id: None,
             on_copy: None,
+            selection_scope: None,
         }
     }
 
@@ -414,6 +417,16 @@ impl CodeBlock {
         self
     }
 
+    pub(crate) fn in_selection_scope(
+        mut self,
+        scope: SharedString,
+        order: usize,
+        separator: SharedString,
+    ) -> Self {
+        self.selection_scope = Some((scope, order, separator));
+        self
+    }
+
     /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([
@@ -496,6 +509,7 @@ impl RenderOnce for CodeBlock {
                 &code_family,
                 code_weight,
                 self.on_copy,
+                self.selection_scope,
                 window,
                 cx,
             ),
@@ -553,6 +567,7 @@ fn render_block_code(
     code_family: &SharedString,
     code_weight: Option<FontWeight>,
     on_copy: Option<Arc<CodeCopyCallback>>,
+    selection_scope: Option<(SharedString, usize, SharedString)>,
     window: &mut Window,
     cx: &mut App,
 ) -> gpui::AnyElement {
@@ -658,6 +673,7 @@ fn render_block_code(
                         theme,
                         code_family,
                         code_weight,
+                        selection_scope,
                         window,
                         cx,
                     )
@@ -812,6 +828,7 @@ fn render_code_content(
     theme: &liora_theme::Theme,
     code_family: &SharedString,
     code_weight: Option<FontWeight>,
+    selection_scope: Option<(SharedString, usize, SharedString)>,
     window: &mut Window,
     cx: &mut App,
 ) -> gpui::AnyElement {
@@ -825,6 +842,29 @@ fn render_code_content(
         code_weight,
         true,
     );
+
+    if let Some((scope, order, separator)) = selection_scope.filter(|_| selectable) {
+        return SelectableText::view_in_scope(
+            SelectableTextOptions {
+                id,
+                text: code,
+                runs: runs.to_vec(),
+                font_size: px(theme.font_size.sm),
+                line_height: px(theme.font_size.md * 1.7),
+                text_color: code_text(code_theme),
+                wrap: SelectableTextWrap::NoWrap,
+                key_context: "SelectableText",
+                fill_width: false,
+                font_family: Some(code_family.clone()),
+                text_align: gpui::TextAlign::Left,
+            },
+            scope,
+            order,
+            separator,
+            window,
+            cx,
+        );
+    }
 
     if selectable {
         let state_key = ElementId::NamedChild(

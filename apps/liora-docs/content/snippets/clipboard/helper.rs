@@ -1,9 +1,10 @@
 use gpui::{AnyView, App, Context, Entity, Render, Window, prelude::*};
-use liora_components::{Button, Input, Space, Text, write_text_to_clipboard};
+use liora_components::{Button, CopyButton, Input, Space, Text, write_text_to_clipboard};
 
 pub fn clipboard_helper(cx: &mut App) -> AnyView {
     cx.new(|cx| ClipboardExample {
         source: cx.new(|cx| Input::new("Liora 原生剪贴板 🦀", cx).clearable(true)),
+        quick_copy: cx.new(|cx| CopyButton::new("clipboard-quick-copy", "Liora 原生剪贴板 🦀", cx)),
         feedback: "编辑文本后复制，再读取验证。".into(),
         read_back: None,
     })
@@ -12,6 +13,7 @@ pub fn clipboard_helper(cx: &mut App) -> AnyView {
 
 struct ClipboardExample {
     source: Entity<Input>,
+    quick_copy: Entity<CopyButton>,
     feedback: String,
     read_back: Option<String>,
 }
@@ -23,6 +25,8 @@ impl Render for ClipboardExample {
             .gap_md()
             .child(Text::new("待复制文本"))
             .child(self.source.clone())
+            .child(Text::new("固定文本快捷复制（Liora 原生剪贴板 🦀）"))
+            .child(self.quick_copy.clone())
             .child(
                 Space::new()
                     .wrap()

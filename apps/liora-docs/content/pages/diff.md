@@ -21,6 +21,12 @@
 - `cx.subscribe(&diff, ...)` 订阅审阅事件。`decide_hunk(id, decision, cx)` 提供同样的程序化入口；非法、跨文档或过期 ID 返回 `DiffActionError::UnknownHunk`，重复决策返回 `AlreadyDecided`，失败不会伪装成成功事件。
 - `set_document(document, cx)` 先完整计算，成功后原子替换快照并重置决策。失败保留原文档；每个新 hunk 都有不复用的进程内 ID。
 
+### 导航、复制与代码主题
+
+- `code_theme(CodeTheme::...)` selects the shared Liora code palette; Diff rows use the configured code font family/weight and `CodeBlock` theme rendering.
+- `previous_hunk` / `next_hunk` cycle through hunks and expose the selected index through `active_hunk()`.
+- `copy_hunk(id, cx)` copies one unified hunk payload; `copy_all(cx)` copies the before/after review payload. Neither action writes files or changes review state.
+
 ## 行映射与边界
 
 `hunks()` 暴露真实 Myers shortest-edit-script 计算的 hunks，含三行上下文；距离过近的上下文自动合并。`DiffHunk::{before_start, after_start}` 为 **零基**索引/插入边界，`*_count` 是源文本行数。`DiffLine::{before_line, after_line}` 和 `DiffLineNumbers` 为 **一基**行号，空侧为 `None`。双栏中替换保留删除/新增独立行，不声称两行具有语义配对关系。

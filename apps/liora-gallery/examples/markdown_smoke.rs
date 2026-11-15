@@ -6,14 +6,26 @@ fn main() {
         AppContext, Keystroke, MouseButton, MouseDownEvent, MouseUpEvent, PlatformInput,
         WindowOptions, point, px,
     };
-    use liora_components::{MarkdownImage, MarkdownView, init_liora};
-    use std::{cell::Cell, rc::Rc};
+    use liora_components::{MarkdownImage, MarkdownNavigationRequested, MarkdownView, init_liora};
+    use std::{
+        cell::{Cell, RefCell},
+        rc::Rc,
+    };
 
     gpui_platform::headless().run(|cx| {
         init_liora(cx);
         let resolutions = Rc::new(Cell::new(0));
-        let view = cx.new(|cx| MarkdownView::new("# Title\n\nFirst **paragraph**.\n\n![first](private-path) ![second](private-path)\n\n| Left | Center | Right |\n| :--- | :---: | ---: |\n| L | C | R |\n\n```rust\nlet value", cx));
+        let view = cx.new(|cx| {
+            let mut view = MarkdownView::new("# Title\n\nFirst **paragraph**.\n\n![first](private-path) ![second](private-path)\n\n| Left | Center | Right |\n| :--- | :---: | ---: |\n| L | C | R |\n\n```rust\nlet value", cx);
+            view.set_show_toc(true, cx);
+            view
+        });
         let ids = view.read(cx).document().block_ids().collect::<Vec<_>>();
+        let navigations = Rc::new(RefCell::new(Vec::<MarkdownNavigationRequested>::new()));
+        let _navigation_subscription = cx.subscribe(&view, {
+            let navigations = navigations.clone();
+            move |_, event: &MarkdownNavigationRequested, _| navigations.borrow_mut().push(event.clone())
+        });
         let window = cx.open_window(WindowOptions { show: false, focus: false, ..Default::default() }, |_, _| view.clone()).unwrap();
         cx.update_window(window.into(), |_, window, cx| window.draw(cx).clear(cx)).unwrap();
         view.update(cx, |view, cx| {
@@ -57,6 +69,8 @@ fn main() {
             assert!(!view.read(cx).continuous_selection(), "Space must activate the focused toggle");
             window.draw(cx).clear(cx);
             window.focus_next(cx);
+            window.dispatch_keystroke(Keystroke::parse("enter").unwrap(), cx);
+            window.focus_next(cx);
             let link_focus = window.focused(cx).expect("safe Open URL control is a native tab stop");
             assert!(!toggle_focus.is_focused(window));
             window.dispatch_keystroke(Keystroke::parse("enter").unwrap(), cx);
@@ -80,6 +94,7 @@ fn main() {
             // Dispatch only: actual cross-block selection/copy payload is covered by the real-display smoke.
             // Official headless clipboard is a no-op; system copy requires a real display backend.
         }).unwrap();
+        assert_eq!(navigations.borrow().last().expect("native TOC navigation event").fragment.as_ref(), "title");
         assert_eq!(resolutions.get(), 1, "revoking policy must not invoke it again");
         println!("PASS: Markdown native render, batched parse, stable IDs, deny-by-default images, keyboard toggle/focus and selection key dispatch (clipboard unverified)");
         let executor = cx.background_executor().clone();

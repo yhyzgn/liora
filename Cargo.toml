@@ -7,6 +7,7 @@ members = [
     "crates/liora-theme",
     "crates/liora-components",
     "crates/liora-tray",
+    "crates/liora-webview",
     "crates/liora-packager",
     "crates/liora-updater",
     "crates/liora-icons-optimizer",

@@ -1,6 +1,6 @@
-use gpui::{AnyView, App, Context, IntoElement, Render, Window, prelude::*};
+use gpui::{AnyView, App, Context, Entity, IntoElement, Render, Window, prelude::*};
 use liora_components::layout_helpers::{page, section, showcase_card, showcase_grid};
-use liora_components::{Button, Grid, GridItem, Space, Tag, Text, toast_success};
+use liora_components::{CopyButton, Grid, GridItem, Space, Tag, Text};
 use liora_core::Config;
 use liora_icons::Icon;
 use liora_icons_antd::IconName as AntdIconName;
@@ -10,11 +10,25 @@ use liora_icons_lucide::IconName;
 use liora_icons_material::IconName as MaterialIconName;
 use liora_icons_tabler::IconName as TablerIconName;
 
+const COPY_PATHS: [&str; 6] = [
+    "liora::icons_lucide::IconName::Settings",
+    "liora::icons_antd::IconName::SaveOutlined",
+    "liora::icons_ionic::IconName::AddCircleOutline",
+    "liora::icons_tabler::IconName::HomeFilled",
+    "liora::icons_carbon::IconName::CheckmarkFilled",
+    "liora::icons_material::IconName::SearchOutlined",
+];
+
 pub fn render(cx: &mut App) -> AnyView {
-    cx.new(|_| IconLibrariesDemo).into()
+    cx.new(|cx| IconLibrariesDemo {
+        copies: COPY_PATHS.map(|path| cx.new(|cx| CopyButton::new(path, path, cx))),
+    })
+    .into()
 }
 
-struct IconLibrariesDemo;
+struct IconLibrariesDemo {
+    copies: [Entity<CopyButton>; 6],
+}
 
 impl Render for IconLibrariesDemo {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
@@ -100,15 +114,14 @@ impl Render for IconLibrariesDemo {
                 .child(section(
                     "Copy-ready imports",
                     "Gallery 展示常用入口；Docs 的 Icon Libraries 页面提供全量 IconName 清单，点击行或 Copy 按钮即可复制完整 Rust 路径。",
-                    Space::new()
-                        .wrap()
-                        .gap_md()
-                        .child(copy_button("liora::icons_lucide::IconName::Settings"))
-                        .child(copy_button("liora::icons_antd::IconName::SaveOutlined"))
-                        .child(copy_button("liora::icons_ionic::IconName::AddCircleOutline"))
-                        .child(copy_button("liora::icons_tabler::IconName::HomeFilled"))
-                        .child(copy_button("liora::icons_carbon::IconName::CheckmarkFilled"))
-                        .child(copy_button("liora::icons_material::IconName::SearchOutlined")),
+                    Space::new().wrap().gap_md().children(
+                        self.copies.iter().enumerate().map(|(index, copy)| {
+                            Space::new()
+                                .gap_xs()
+                                .child(Text::new(COPY_PATHS[index]).xs())
+                                .child(copy.clone())
+                        }),
+                    ),
                 )),
         )
     }
@@ -151,11 +164,4 @@ fn icon_sample(library: &'static str, icon: Icon, label: &'static str) -> impl I
             ),
     )
     .hover_group(group)
-}
-
-fn copy_button(path: &'static str) -> Button {
-    Button::new(path).small().on_click(move |_, _, cx| {
-        cx.write_to_clipboard(gpui::ClipboardItem::new_string(path.to_string()));
-        toast_success!("Copied {}", path);
-    })
 }

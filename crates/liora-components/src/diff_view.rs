@@ -9,6 +9,7 @@ use std::sync::{
     atomic::{AtomicU64, Ordering},
 };
 
+use crate::code_block::CodeTheme;
 use gpui::{
     App, Context, EventEmitter, IntoElement, Render, SharedString, Window, div, prelude::*, px,
 };
@@ -246,6 +247,8 @@ pub struct DiffView {
     hunks: Vec<DiffHunk>,
     status: DiffStatus,
     layout: DiffLayout,
+    code_theme: CodeTheme,
+    active_hunk: Option<usize>,
     on_locate: Option<Arc<dyn Fn(DiffLineNumbers, &mut Window, &mut App) + 'static>>,
 }
 
@@ -265,10 +268,11 @@ impl DiffView {
             hunks,
             status,
             layout: DiffLayout::Inline,
+            code_theme: CodeTheme::Auto,
+            active_hunk: None,
             on_locate: None,
         })
     }
-
     /// Creates a view with host-declared availability; Ready/Empty follow the document.
     /// Binary and not-applicable states contain no hunks or text interpretation.
     pub fn with_status(
@@ -284,11 +288,12 @@ impl DiffView {
                 hunks: Vec::new(),
                 status,
                 layout: DiffLayout::Inline,
+                code_theme: CodeTheme::Auto,
+                active_hunk: None,
                 on_locate: None,
             })
         }
     }
-
     /// Replaces both inputs and invalidates all prior hunk IDs.
     pub fn set_document(
         &mut self,
@@ -304,10 +309,10 @@ impl DiffView {
         self.document = document;
         self.hunks = hunks;
         self.status = status;
+        self.active_hunk = None;
         cx.notify();
         Ok(())
     }
-
     /// Declares a host-owned availability state without changing either text side.
     pub fn set_status(
         &mut self,
@@ -342,6 +347,73 @@ impl DiffView {
             self.layout = layout;
             cx.notify();
         }
+    }
+    /// Selects the syntax palette used by the review surface.
+    pub fn code_theme(mut self, theme: CodeTheme) -> Self {
+        self.code_theme = theme;
+        self
+    }
+
+    /// Changes the syntax palette and refreshes the review surface.
+    pub fn set_code_theme(&mut self, theme: CodeTheme, cx: &mut Context<Self>) {
+        if self.code_theme != theme {
+            self.code_theme = theme;
+            cx.notify();
+        }
+    }
+
+    /// Returns the currently selected hunk index, if any.
+    pub fn active_hunk(&self) -> Option<usize> {
+        self.active_hunk
+    }
+
+    /// Selects the next hunk and returns its stable ID.
+    pub fn next_hunk(&mut self, cx: &mut Context<Self>) -> Option<u64> {
+        self.select_hunk(true, cx)
+    }
+
+    /// Selects the previous hunk and returns its stable ID.
+    pub fn previous_hunk(&mut self, cx: &mut Context<Self>) -> Option<u64> {
+        self.select_hunk(false, cx)
+    }
+
+    fn select_hunk(&mut self, forward: bool, cx: &mut Context<Self>) -> Option<u64> {
+        if self.hunks.is_empty() {
+            self.active_hunk = None;
+            return None;
+        }
+        let next = match self.active_hunk {
+            Some(index) if forward => (index + 1) % self.hunks.len(),
+            Some(index) => index.checked_sub(1).unwrap_or(self.hunks.len() - 1),
+            None if forward => 0,
+            None => self.hunks.len() - 1,
+        };
+        self.active_hunk = Some(next);
+        cx.notify();
+        Some(self.hunks[next].id)
+    }
+
+    /// Copies one hunk's original unified text to the host clipboard.
+    pub fn copy_hunk(&self, hunk_id: u64, cx: &mut App) -> bool {
+        let Some(hunk) = self.hunks.iter().find(|hunk| hunk.id == hunk_id) else {
+            return false;
+        };
+        cx.write_to_clipboard(gpui::ClipboardItem::new_string(hunk_text(hunk)));
+        true
+    }
+
+    /// Copies the complete before/after document pair as a review payload.
+    pub fn copy_all(&self, cx: &mut App) {
+        let text = format!(
+            "--- before\n{}\n+++ after\n{}",
+            self.document.before, self.document.after
+        );
+        cx.write_to_clipboard(gpui::ClipboardItem::new_string(text));
+    }
+
+    /// Selected syntax palette.
+    pub fn code_theme_value(&self) -> CodeTheme {
+        self.code_theme
     }
 
     /// Sets a keyboard-accessible per-hunk location action.
@@ -409,6 +481,11 @@ impl DiffView {
 impl Render for DiffView {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
+        let ui_family = liora_core::ui_font_family(cx);
+        let ui_weight = liora_core::ui_font_weight(cx);
+        let code_family = liora_core::code_font_family(cx);
+        let code_weight = liora_core::code_font_weight(cx);
+        let code_theme = self.code_theme;
         let layout = self.layout;
         let before_label = self
             .document
@@ -420,7 +497,7 @@ impl Render for DiffView {
             .after_path
             .clone()
             .unwrap_or_else(|| "After".into());
-        let toolbar = div()
+        let mut toolbar = div()
             .flex()
             .items_center()
             .gap_2()
@@ -448,9 +525,34 @@ impl Render for DiffView {
                 ReviewAction::Layout(DiffLayout::SideBySide),
                 false,
                 cx,
-            ));
+            ))
+            .child(review_control(
+                crate::Button::new("Previous hunk").tertiary().small(),
+                ReviewAction::Previous,
+                self.hunks.is_empty(),
+                cx,
+            ))
+            .child(review_control(
+                crate::Button::new("Next hunk").tertiary().small(),
+                ReviewAction::Next,
+                self.hunks.is_empty(),
+                cx,
+            ))
+            .child(review_control(
+                crate::Button::new("Copy all").tertiary().small(),
+                ReviewAction::CopyAll,
+                false,
+                cx,
+            ))
+            .child(
+                crate::Text::new(format!("Syntax: {}", code_theme.label()))
+                    .text_color(theme.neutral.text_2),
+            );
+        toolbar = toolbar
+            .when_some(ui_family, |element, family| element.font_family(family))
+            .when_some(ui_weight, |element, weight| element.font_weight(weight));
 
-        let hunks = self.hunks.iter().map(|hunk| {
+        let hunks = self.hunks.iter().enumerate().map(|(index, hunk)| {
             let hunk_id = hunk.id;
             let pending = hunk.decision.is_none();
             let decision_text = match hunk.decision {
@@ -475,11 +577,20 @@ impl Render for DiffView {
                 .px_3()
                 .py_2()
                 .bg(theme.neutral.card)
+                .when(self.active_hunk == Some(index), |element| {
+                    element.bg(theme.primary.light_9)
+                })
                 .border_b_1()
                 .border_color(theme.neutral.border)
                 .child(format!(
                     "Hunk {} · −{} +{} · {}",
                     hunk.id, removed, added, decision_text
+                ))
+                .child(review_control(
+                    crate::Button::new("Copy hunk").tertiary().small(),
+                    ReviewAction::CopyHunk(hunk_id),
+                    false,
+                    cx,
                 ));
             if self.on_locate.is_some() {
                 let location = hunk
@@ -512,8 +623,20 @@ impl Render for DiffView {
                     cx,
                 ));
             let rows = hunk.lines.iter().map(|line| match layout {
-                DiffLayout::Inline => render_inline_line(line, theme.clone()),
-                DiffLayout::SideBySide => render_side_line(line, theme.clone()),
+                DiffLayout::Inline => render_inline_line(
+                    line,
+                    theme.clone(),
+                    code_family.clone(),
+                    code_weight,
+                    code_theme,
+                ),
+                DiffLayout::SideBySide => render_side_line(
+                    line,
+                    theme.clone(),
+                    code_family.clone(),
+                    code_weight,
+                    code_theme,
+                ),
             });
             div()
                 .border_1()
@@ -567,6 +690,10 @@ enum ReviewAction {
     Layout(DiffLayout),
     Locate(u64, DiffLineNumbers),
     Decide(u64, DiffDecision),
+    Previous,
+    Next,
+    CopyHunk(u64),
+    CopyAll,
 }
 
 fn activate_review(
@@ -577,6 +704,16 @@ fn activate_review(
 ) {
     match action {
         ReviewAction::Layout(layout) => this.set_layout(layout, cx),
+        ReviewAction::Previous => {
+            this.previous_hunk(cx);
+        }
+        ReviewAction::Next => {
+            this.next_hunk(cx);
+        }
+        ReviewAction::CopyHunk(id) => {
+            this.copy_hunk(id, cx);
+        }
+        ReviewAction::CopyAll => this.copy_all(cx),
         ReviewAction::Locate(id, location) => {
             if this.hunks.iter().any(|hunk| hunk.id == id) {
                 if let Some(callback) = &this.on_locate {
@@ -630,7 +767,13 @@ fn review_control(
         )
 }
 
-fn render_inline_line(line: &DiffLine, theme: liora_theme::Theme) -> gpui::Div {
+fn render_inline_line(
+    line: &DiffLine,
+    theme: liora_theme::Theme,
+    code_family: SharedString,
+    code_weight: Option<gpui::FontWeight>,
+    code_theme: CodeTheme,
+) -> gpui::Div {
     let (marker, content, background) = match line.kind {
         DiffLineKind::Context => (
             " ",
@@ -663,7 +806,8 @@ fn render_inline_line(line: &DiffLine, theme: liora_theme::Theme) -> gpui::Div {
         .px_2()
         .py_1()
         .bg(background)
-        .font_family("monospace")
+        .font_family(code_family)
+        .when_some(code_weight, |element, weight| element.font_weight(weight))
         .child(
             div()
                 .w(px(36.0))
@@ -685,10 +829,22 @@ fn render_inline_line(line: &DiffLine, theme: liora_theme::Theme) -> gpui::Div {
                 ),
         )
         .child(div().w(px(16.0)).child(marker))
-        .child(div().flex_1().min_w_0().child(format!("{content}{ending}")))
+        .child(
+            div().flex_1().min_w_0().child(
+                crate::CodeBlock::new(format!("{content}{ending}"))
+                    .inline()
+                    .theme(code_theme),
+            ),
+        )
 }
 
-fn render_side_line(line: &DiffLine, theme: liora_theme::Theme) -> gpui::Div {
+fn render_side_line(
+    line: &DiffLine,
+    theme: liora_theme::Theme,
+    code_family: SharedString,
+    code_weight: Option<gpui::FontWeight>,
+    code_theme: CodeTheme,
+) -> gpui::Div {
     let left_bg = if line.kind == DiffLineKind::Removed {
         theme.danger.light_9
     } else {
@@ -710,7 +866,8 @@ fn render_side_line(line: &DiffLine, theme: liora_theme::Theme) -> gpui::Div {
             .px_2()
             .py_1()
             .bg(background)
-            .font_family("monospace")
+            .font_family(code_family.clone())
+            .when_some(code_weight, |element, weight| element.font_weight(weight))
             .child(
                 div()
                     .w(px(40.0))
@@ -719,10 +876,11 @@ fn render_side_line(line: &DiffLine, theme: liora_theme::Theme) -> gpui::Div {
                     .child(number.map_or_else(|| "·".to_owned(), |number| number.to_string())),
             )
             .child(
-                div()
-                    .flex_1()
-                    .min_w_0()
-                    .child(format!("{}{ending}", text.unwrap_or(""))),
+                div().flex_1().min_w_0().child(
+                    crate::CodeBlock::new(format!("{}{ending}", text.unwrap_or("")))
+                        .inline()
+                        .theme(code_theme),
+                ),
             )
     };
     div()
@@ -740,6 +898,44 @@ fn render_side_line(line: &DiffLine, theme: liora_theme::Theme) -> gpui::Div {
             after_ending,
             right_bg,
         ))
+}
+
+fn hunk_text(hunk: &DiffHunk) -> String {
+    let mut text = String::new();
+    for line in &hunk.lines {
+        let (marker, value, terminated, crlf) = match line.kind {
+            DiffLineKind::Context => (
+                " ",
+                line.after
+                    .as_deref()
+                    .or(line.before.as_deref())
+                    .unwrap_or(""),
+                line.after_terminated,
+                line.after_crlf,
+            ),
+            DiffLineKind::Added => (
+                "+",
+                line.after.as_deref().unwrap_or(""),
+                line.after_terminated,
+                line.after_crlf,
+            ),
+            DiffLineKind::Removed => (
+                "-",
+                line.before.as_deref().unwrap_or(""),
+                line.before_terminated,
+                line.before_crlf,
+            ),
+        };
+        text.push_str(marker);
+        text.push_str(value);
+        if terminated.unwrap_or(false) {
+            if crlf.unwrap_or(false) {
+                text.push('\r');
+            }
+            text.push('\n');
+        }
+    }
+    text
 }
 
 fn ending_marker(terminated: Option<bool>, crlf: Option<bool>) -> &'static str {
@@ -1234,5 +1430,47 @@ mod tests {
                 assert_eq!((i, j), (old.len(), new.len()));
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod copy_tests {
+    use super::{DiffHunk, DiffLine, DiffLineKind, hunk_text};
+
+    #[test]
+    fn copied_hunk_preserves_unified_markers_and_line_endings() {
+        let hunk = DiffHunk {
+            id: 1,
+            before_start: 0,
+            before_count: 1,
+            after_start: 0,
+            after_count: 1,
+            lines: vec![
+                DiffLine {
+                    kind: DiffLineKind::Removed,
+                    before: Some("old".into()),
+                    after: None,
+                    before_line: Some(1),
+                    after_line: None,
+                    before_terminated: Some(true),
+                    after_terminated: None,
+                    before_crlf: Some(false),
+                    after_crlf: None,
+                },
+                DiffLine {
+                    kind: DiffLineKind::Added,
+                    before: None,
+                    after: Some("new".into()),
+                    before_line: None,
+                    after_line: Some(1),
+                    before_terminated: None,
+                    after_terminated: Some(true),
+                    before_crlf: None,
+                    after_crlf: Some(true),
+                },
+            ],
+            decision: None,
+        };
+        assert_eq!(hunk_text(&hunk), "-old\n+new\r\n");
     }
 }

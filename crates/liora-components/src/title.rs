@@ -37,6 +37,7 @@ pub struct Title {
     level: u8,
     selectable: bool,
     id: SharedString,
+    selection_scope: Option<(SharedString, usize, SharedString)>,
 }
 
 fn default_title_id(seed: &str, location: &Location<'_>) -> SharedString {
@@ -63,6 +64,7 @@ impl Title {
             level: 1,
             selectable: true,
             id,
+            selection_scope: None,
         }
     }
 
@@ -100,6 +102,16 @@ impl Title {
     /// Toggles whether the rendered text can be selected.
     pub fn selectable(mut self, selectable: bool) -> Self {
         self.selectable = selectable;
+        self
+    }
+
+    pub(crate) fn in_selection_scope(
+        mut self,
+        scope: SharedString,
+        order: usize,
+        separator: SharedString,
+    ) -> Self {
+        self.selection_scope = Some((scope, order, separator));
         self
     }
 
@@ -145,23 +157,26 @@ impl Title {
             if let Some(family) = ui_family.clone() {
                 style.font_family = family;
             }
-            return SelectableText::view(
-                SelectableTextOptions {
-                    id: ElementId::from(self.id.clone()),
-                    text: self.content.resolve(cx),
-                    runs: vec![style.to_run(self.content.resolve(cx).len())],
-                    font_size,
-                    line_height,
-                    text_color,
-                    wrap: SelectableTextWrap::Normal,
-                    key_context: "SelectableText",
-                    fill_width: true,
-                    font_family: ui_family.clone(),
-                    text_align: gpui::TextAlign::Left,
-                },
-                window,
-                cx,
-            );
+            let content = self.content.resolve(cx);
+            let options = SelectableTextOptions {
+                id: ElementId::from(self.id.clone()),
+                runs: vec![style.to_run(content.len())],
+                text: content,
+                font_size,
+                line_height,
+                text_color,
+                wrap: SelectableTextWrap::Normal,
+                key_context: "SelectableText",
+                fill_width: true,
+                font_family: ui_family,
+                text_align: gpui::TextAlign::Left,
+            };
+            return match self.selection_scope {
+                Some((scope, order, separator)) => {
+                    SelectableText::view_in_scope(options, scope, order, separator, window, cx)
+                }
+                None => SelectableText::view(options, window, cx),
+            };
         }
 
         let mut title = gpui::div()

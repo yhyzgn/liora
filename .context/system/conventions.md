@@ -2,7 +2,7 @@
 
 ## Core engineering conventions
 
-- Keep Liora pure Rust + native GPUI. Do not introduce Tauri, WebView, HTML/CSS/DOM runtime paths, or browser shells.
+- Keep the default SDK, Gallery and Docs pure Rust + native GPUI; no Tauri, WebView, HTML/CSS/DOM runtime paths or browser shells there. `liora-webview` is an isolated WRY crate for downstream explicit opt-in only.
 - Prefer official `zed-industries/zed` GPUI sources and the exact pinned revision in `Cargo.lock`/`Cargo.toml` for GPUI behavior.
 - Keep SDK crates business-agnostic. Gallery/Docs examples and app-specific resources must not leak into reusable SDK modules.
 - Components should follow builder-style public APIs and implement GPUI `RenderOnce`/`IntoElement` patterns used across `crates/liora-components`.

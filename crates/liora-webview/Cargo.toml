@@ -1,0 +1,24 @@
+[package]
+name = "liora-webview"
+version = "0.6.0"
+edition = "2024"
+description = "Opt-in WRY child webview hosted by a GPUI control for Liora applications."
+license-file = "../../LICENSE.md"
+repository = "https://github.com/yhyzgn/liora"
+readme = "README.md"
+publish = true
+
+[dependencies]
+gpui.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+url.workspace = true
+wry = "=0.57.2"
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+gpui = { workspace = true, features = ["x11", "font-kit"] }
+gpui_platform = { workspace = true, features = ["x11", "font-kit"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+gdkx11 = "0.18"
+gtk = "0.18"

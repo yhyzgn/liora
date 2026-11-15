@@ -13,6 +13,7 @@ Liora is a Rust edition 2024 Cargo workspace for a pure Rust + GPUI native enter
 - `crates/liora-icons-optimizer`: build-time SVG bundle optimizer.
 - `crates/liora-components`: reusable GPUI components.
 - `crates/liora-tray`, `liora-packager`, `liora-updater`: reusable app-shell/packaging/update SDK crates.
+- `crates/liora-webview`: standalone opt-in WRY child view in a GPUI window; absent from facade, native components, Gallery and Docs. Linux uses X11/XWayland GPUI window handles and GTK3/WebKitGTK 4.1; web compatibility depends on installed system engines.
 - `apps/liora-gallery`: native component gallery.
 - `apps/liora-docs`: native documentation application.
 
@@ -36,7 +37,7 @@ Current workspace pin: official `zed-industries/zed` revision `f0d896f2c18a54333
 
 ## Current work and release boundary
 
-Current phase `005_agent_desktop_sdk_20261112` is complete: nine reusable workbench SDK capabilities, Gallery/Docs integration and recorded local acceptance. Native replacement phase `004_gpui_native_replacement_20261013` is also complete. This SDK work does not publish, tag, or manage application-owned Agent execution; platform/IME validation limits remain explicit.
+The current `008_wry_webview_20261114` phase adds only a standalone opt-in WebView crate; the previously completed `005_agent_desktop_sdk_20261112` native SDK and `004_gpui_native_replacement_20261013` remain unchanged. This SDK work does not publish, tag, or manage application-owned Agent execution; platform/IME validation limits remain explicit.
 
 ## GPUI refresh integration
 
@@ -54,6 +55,14 @@ Current phase `005_agent_desktop_sdk_20261112` is complete: nine reusable workbe
 - `Splitter`, `DockLayout` and `CommandPalette` keep native pointer/keyboard interactions and application-owned content/actions; layout persistence uses validated descriptors.
 - `CodeEditor` accepts host completion responses with revision/selection tokens, performs undoable edits and literal search, and uses shared render snapshots plus delta history. It does not start LSP processes.
 - Canonical acceptance evidence lives in `.context/tasks/005_agent_desktop_sdk_20261112.md`. Linux/Xwayland verification rendered all nine SDK demos and exercised real Markdown clipboard copy and aligned selection; headless smoke does not establish Composer system paste, actual IME candidate-window or cross-platform GPU support.
+
+## Native document and input controls
+
+- `PdfDocument::from_bytes` 使用固定 `hayro = 0.9.0`（Apache-2.0 OR MIT）进行纯 Rust CPU 解码；输入上限 64 MiB，保留页面/缩略图栅格预算 128 MiB，最长边 2048 像素。宿主应放到后台 worker；SDK 不隐式读取文件或写回 PDF。
+- `PdfReader` 接受内置解码结果或宿主图像，负责视口适配、25%–400% 缩放、实际像素旋转、连续滚动/页码同步、缩略图和查找/工具事件。搜索索引、文本选择和批注引擎仍由宿主提供。
+- `FindBar` 复用原生 Input 并处理查询/导航事件；`CandidateBar` 只展示和提交宿主候选，不接管系统 IME。Gallery/Docs 共用真实两页 PDF demo 和宿主原生文件打开路径。
+- `SelectableTextGroup` 通过窗口内 GPUI state 合并 `Text`、`Title`、`Paragraph` 的跨块选区,同时保留各块的原生排版;`Text::document` 和 `MarkdownView` 富布局复用选择范围。`CopyButton` 提供原生剪贴板写入、键盘/指针触发及短暂本地反馈,不证明系统写入成功。`MarkdownDocument` 提供唯一 heading anchors、编号脚注和回链源范围、任务状态、GFM callout/definition、metadata/math fallback、highlight span 与表格 cell/body-row 源范围编辑;可选 `MarkdownView::set_show_toc` 渲染 native Contents,宿主处理实际滚动。完整能力差距见 `docs/markdown-capability-matrix.md`。
+
 
 <!-- ctx-managed-legacy-migration:start -->
 

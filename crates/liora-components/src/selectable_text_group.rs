@@ -1,15 +1,10 @@
-//! Selectable text group module.
+//! Native selection scope for multiple styled text blocks.
 //!
-//! `SelectableTextGroup` composes multiple [`Text`] and [`Paragraph`] values
-//! into one native selectable text flow. Use it for document-like surfaces where
-//! users expect drag selection and copy to continue across several text blocks.
+//! Text, Paragraph and Title retain their own GPUI layout while sharing a
+//! selectable range and plain-text clipboard projection.
 
-use crate::{Paragraph, SelectableText, SelectableTextOptions, SelectableTextWrap, Text};
-use gpui::{
-    App, ElementId, IntoElement, RenderOnce, SharedString, TextRun, TextStyle,
-    ViewElement as Component, Window, prelude::*, px,
-};
-use liora_core::{Config, code_font_family, code_font_weight, ui_font_family, ui_font_weight};
+use crate::{Paragraph, SelectableText, Space, Text, Title};
+use gpui::{App, IntoElement, RenderOnce, SharedString, ViewElement as Component, Window};
 use std::{
     collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},
@@ -22,6 +17,8 @@ pub enum SelectableTextGroupBlock {
     Text(Text),
     /// A composed [`Paragraph`] value.
     Paragraph(Paragraph),
+    /// A native heading at its authored font size.
+    Title(Title),
 }
 
 impl From<Text> for SelectableTextGroupBlock {
@@ -33,6 +30,11 @@ impl From<Text> for SelectableTextGroupBlock {
 impl From<Paragraph> for SelectableTextGroupBlock {
     fn from(value: Paragraph) -> Self {
         Self::Paragraph(value)
+    }
+}
+impl From<Title> for SelectableTextGroupBlock {
+    fn from(value: Title) -> Self {
+        Self::Title(value)
     }
 }
 
@@ -66,6 +68,12 @@ impl SelectableTextGroup {
     pub fn paragraph(mut self, paragraph: Paragraph) -> Self {
         self.blocks
             .push(SelectableTextGroupBlock::Paragraph(paragraph));
+        self
+    }
+
+    /// Adds a heading without flattening its font size or line height.
+    pub fn title(mut self, title: Title) -> Self {
+        self.blocks.push(SelectableTextGroupBlock::Title(title));
         self
     }
 
@@ -113,145 +121,47 @@ impl Default for SelectableTextGroup {
         Self::new()
     }
 }
-
-impl SelectableTextGroup {
-    fn text_parts(
-        self,
-        cx: &impl liora_core::LocalesContext,
-        theme: &liora_theme::Theme,
-        code_family: SharedString,
-        ui_family: Option<SharedString>,
-        code_weight: Option<gpui::FontWeight>,
-        ui_weight: Option<gpui::FontWeight>,
-    ) -> (SharedString, Vec<TextRun>) {
-        let font_size = px(theme.font_size.md);
-        let line_height = font_size * 1.6;
-        let mut default_style = TextStyle::default();
-        default_style.color = theme.neutral.text_2;
-        default_style.font_size = font_size.into();
-        default_style.line_height = line_height.into();
-        default_style.white_space = gpui::WhiteSpace::Normal;
-        if let Some(family) = ui_family.clone() {
-            default_style.font_family = family;
-        }
-        if let Some(weight) = ui_weight {
-            default_style.font_weight = weight;
-        }
-
-        let mut full_text = String::new();
-        let mut runs = Vec::<TextRun>::new();
-
-        for block in self.blocks.into_iter() {
-            let before_block_len = full_text.len();
-            match block {
-                SelectableTextGroupBlock::Text(mut text) => {
-                    if text.content.is_empty() {
-                        continue;
-                    }
-                    if text.weight.is_none() {
-                        text.weight = if text.is_code_style {
-                            code_weight.or(ui_weight)
-                        } else {
-                            ui_weight
-                        };
-                    }
-                    if text.is_code_style && text.font_family.is_none() {
-                        text.font_family = Some(code_family.clone());
-                    } else if text.font_family.is_none() {
-                        text.font_family = ui_family.clone();
-                    }
-                    let content = text.content.inline(cx);
-                    if !content.is_empty() && !full_text.is_empty() && !self.separator.is_empty() {
-                        append_text_run(
-                            &mut full_text,
-                            &mut runs,
-                            self.separator.as_ref(),
-                            default_style.to_run(self.separator.len()),
-                        );
-                    }
-                    let run = text.to_text_run(&default_style, content.len());
-                    append_text_run(&mut full_text, &mut runs, content.as_ref(), run);
+impl RenderOnce for SelectableTextGroup {
+    fn render(self, _window: &mut Window, _cx: &mut App) -> impl IntoElement {
+        let mut content = Space::new().vertical().gap_md();
+        for (order, block) in self.blocks.into_iter().enumerate() {
+            let leaf_id = format!("{}-{order}", self.id);
+            let scope = self.id.clone();
+            let separator = self.separator.clone();
+            let child = match block {
+                SelectableTextGroupBlock::Text(text) => {
+                    let selectable = self.selectable && text.selectable;
+                    text.id(leaf_id)
+                        .in_selection_scope(scope, order, separator)
+                        .selectable(selectable)
+                        .into_any_element()
                 }
                 SelectableTextGroupBlock::Paragraph(paragraph) => {
-                    let (paragraph_text, paragraph_runs) = paragraph.selectable_text_parts(
-                        cx,
-                        theme,
-                        Some(code_family.clone()),
-                        ui_family.clone(),
-                        code_weight,
-                        ui_weight,
-                    );
-                    if paragraph_text.is_empty() {
-                        continue;
-                    }
-                    if !full_text.is_empty() && !self.separator.is_empty() {
-                        append_text_run(
-                            &mut full_text,
-                            &mut runs,
-                            self.separator.as_ref(),
-                            default_style.to_run(self.separator.len()),
-                        );
-                    }
-                    full_text.push_str(paragraph_text.as_ref());
-                    runs.extend(paragraph_runs);
+                    let paragraph = if self.selectable {
+                        paragraph
+                    } else {
+                        paragraph.selectable(false)
+                    };
+                    paragraph
+                        .id(leaf_id)
+                        .in_selection_scope(scope, order, separator)
+                        .into_any_element()
                 }
-            }
-
-            debug_assert!(
-                full_text.len() >= before_block_len,
-                "selectable text group should only append text"
-            );
+                SelectableTextGroupBlock::Title(title) => {
+                    let title = if self.selectable {
+                        title
+                    } else {
+                        title.selectable(false)
+                    };
+                    title
+                        .id(leaf_id)
+                        .in_selection_scope(scope, order, separator)
+                        .into_any_element()
+                }
+            };
+            content = content.child(child);
         }
-
-        (full_text.into(), runs)
-    }
-}
-
-impl RenderOnce for SelectableTextGroup {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let theme = cx.global::<Config>().theme.clone();
-        let ui_family = ui_font_family(cx);
-        let code_family = code_font_family(cx);
-        let ui_weight = ui_font_weight(cx);
-        let code_weight = code_font_weight(cx);
-        let font_size = px(theme.font_size.md);
-        let line_height = font_size * 1.6;
-        let selectable = self.selectable;
-        let id = self.id.clone();
-        let (full_text, runs) = self.text_parts(
-            cx,
-            &theme,
-            code_family,
-            ui_family.clone(),
-            code_weight,
-            ui_weight,
-        );
-
-        if full_text.is_empty() {
-            return gpui::div().into_any_element();
-        }
-
-        if selectable {
-            return SelectableText::view(
-                SelectableTextOptions {
-                    id: ElementId::from(id),
-                    text: full_text,
-                    runs,
-                    font_size,
-                    line_height,
-                    text_color: theme.neutral.text_2,
-                    wrap: SelectableTextWrap::Normal,
-                    key_context: "SelectableText",
-                    fill_width: true,
-                    font_family: ui_family,
-                    text_align: gpui::TextAlign::Left,
-                },
-                window,
-                cx,
-            );
-        }
-
-        gpui::div().child(full_text).into_any_element()
+        content
     }
 }
 
@@ -261,15 +171,6 @@ impl IntoElement for SelectableTextGroup {
     fn into_element(self) -> Self::Element {
         Component::new(self)
     }
-}
-
-fn append_text_run(full_text: &mut String, runs: &mut Vec<TextRun>, text: &str, mut run: TextRun) {
-    if text.is_empty() {
-        return;
-    }
-    full_text.push_str(text);
-    run.len = text.len();
-    runs.push(run);
 }
 
 fn default_group_id(location: &Location<'_>) -> SharedString {
@@ -285,74 +186,4 @@ fn default_group_id(location: &Location<'_>) -> SharedString {
         hasher.finish()
     )
     .into()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn selectable_text_group_accepts_text_and_paragraph_blocks() {
-        let source = include_str!("selectable_text_group.rs");
-
-        assert!(source.contains("pub struct SelectableTextGroup"));
-        assert!(source.contains("SelectableTextGroupBlock::Text"));
-        assert!(source.contains("SelectableTextGroupBlock::Paragraph"));
-        assert!(source.contains("SelectableText::view"));
-        assert!(source.contains(r#"separator: "\n\n".into()"#));
-    }
-
-    #[test]
-    fn text_parts_join_non_empty_blocks_without_edge_separators() {
-        let theme = liora_theme::Theme::light();
-        let locales = liora_core::LocalesConfig::default();
-        let (text, runs) = SelectableTextGroup::new()
-            .separator("\n")
-            .text(Text::new("Alpha"))
-            .text(Text::new(""))
-            .paragraph(Paragraph::with_text("Beta"))
-            .text(Text::new(""))
-            .text(Text::new("Gamma"))
-            .text_parts(
-                &locales,
-                &theme,
-                "Monospace".into(),
-                Some("Inter".into()),
-                None,
-                None,
-            );
-
-        assert_eq!(text.as_ref(), "Alpha\nBeta\nGamma");
-        assert_eq!(runs.iter().map(|run| run.len).sum::<usize>(), text.len());
-    }
-
-    #[test]
-    fn text_parts_preserves_mixed_paragraph_runs() {
-        let theme = liora_theme::Theme::light();
-        let locales = liora_core::LocalesConfig::default();
-        let (text, runs) = SelectableTextGroup::new()
-            .separator("\n\n")
-            .paragraph(
-                Paragraph::new()
-                    .child(Text::new("Plain "))
-                    .child(Text::new("Code").code_style(&theme))
-                    .child(Text::new(" Tail")),
-            )
-            .paragraph(Paragraph::with_text("Next"))
-            .text_parts(
-                &locales,
-                &theme,
-                "Monospace".into(),
-                Some("Inter".into()),
-                None,
-                None,
-            );
-
-        assert_eq!(text.as_ref(), "Plain Code Tail\n\nNext");
-        assert!(
-            runs.len() >= 5,
-            "expected paragraph style runs plus separator run"
-        );
-        assert_eq!(runs.iter().map(|run| run.len).sum::<usize>(), text.len());
-    }
 }

@@ -180,6 +180,7 @@ pub struct Text {
     pub(crate) padding: Pixels,
     pub(crate) document_background: Option<Hsla>,
     pub(crate) id: SharedString,
+    pub(crate) selection_scope: Option<(SharedString, usize, SharedString)>,
 }
 
 impl Text {
@@ -210,6 +211,7 @@ impl Text {
             padding: px(16.0),
             document_background: None,
             id,
+            selection_scope: None,
         }
     }
 
@@ -336,6 +338,16 @@ impl Text {
     /// Toggles whether the rendered text can be selected.
     pub fn selectable(mut self, selectable: bool) -> Self {
         self.selectable = selectable;
+        self
+    }
+
+    pub(crate) fn in_selection_scope(
+        mut self,
+        scope: SharedString,
+        order: usize,
+        separator: SharedString,
+    ) -> Self {
+        self.selection_scope = Some((scope, order, separator));
         self
     }
 
@@ -493,27 +505,29 @@ impl RenderOnce for Text {
             };
             let inline = text.inline_content(cx);
             let run = text.to_text_run(&base_style, inline.len());
-            return SelectableText::view(
-                SelectableTextOptions {
-                    id: ElementId::from(text.id.clone()),
-                    text: inline,
-                    runs: vec![run],
-                    font_size,
-                    line_height,
-                    text_color,
-                    wrap: if text.wrap {
-                        SelectableTextWrap::Normal
-                    } else {
-                        SelectableTextWrap::NoWrap
-                    },
-                    key_context: "SelectableText",
-                    fill_width: text.fill_width_on_wrap,
-                    font_family: text.font_family.clone(),
-                    text_align: gpui::TextAlign::Left,
+            let options = SelectableTextOptions {
+                id: ElementId::from(text.id.clone()),
+                text: inline,
+                runs: vec![run],
+                font_size,
+                line_height,
+                text_color,
+                wrap: if text.wrap {
+                    SelectableTextWrap::Normal
+                } else {
+                    SelectableTextWrap::NoWrap
                 },
-                _window,
-                cx,
-            );
+                key_context: "SelectableText",
+                fill_width: text.fill_width_on_wrap,
+                font_family: text.font_family.clone(),
+                text_align: gpui::TextAlign::Left,
+            };
+            return match text.selection_scope {
+                Some((scope, order, separator)) => {
+                    SelectableText::view_in_scope(options, scope, order, separator, _window, cx)
+                }
+                None => SelectableText::view(options, _window, cx),
+            };
         }
 
         let mut el = div()
@@ -596,6 +610,7 @@ fn render_text_document(
         return Text::new("").into_any_element();
     };
     let background = text.document_background.unwrap_or(theme.neutral.card);
+    let mut order = 0;
     let content = Space::new()
         .vertical()
         .gap(text.gap)
@@ -603,7 +618,14 @@ fn render_text_document(
             if block.is_empty() {
                 None
             } else {
-                Some(render_text_block(block, text.selectable, cx, theme))
+                Some(render_text_block(
+                    block,
+                    text.selectable,
+                    &text.id,
+                    &mut order,
+                    cx,
+                    theme,
+                ))
             }
         }));
 
@@ -628,34 +650,56 @@ fn render_text_document(
 fn render_text_block(
     block: &TextBlock,
     selectable: bool,
+    scope: &SharedString,
+    order: &mut usize,
     cx: &impl liora_core::LocalesContext,
     theme: &liora_theme::Theme,
 ) -> AnyElement {
+    let separator: SharedString = "\n\n".into();
     match block {
-        TextBlock::Heading { level, text } => title_for_level(text.clone(), *level)
-            .selectable(selectable)
-            .into_any_element(),
-        TextBlock::Paragraph(text) => Paragraph::with_text(text.clone())
-            .selectable(selectable)
-            .into_any_element(),
-        TextBlock::Quote(text) => Card::new(
-            div()
-                .border_l_4()
-                .border_color(theme.primary.base)
-                .pl_3()
-                .child(
-                    Paragraph::with_text(text.clone())
-                        .selectable(selectable)
-                        .into_any_element(),
-                ),
-        )
-        .no_shadow()
-        .into_any_element(),
-        TextBlock::Code { code, language } => CodeBlock::new(code.clone())
-            .language(*language)
-            .copyable(true)
-            .selectable(true)
-            .into_any_element(),
+        TextBlock::Heading { level, text } => {
+            let (id, index) = next_document_leaf(scope, order);
+            title_for_level(text.clone(), *level)
+                .id(id)
+                .in_selection_scope(scope.clone(), index, separator)
+                .selectable(selectable)
+                .into_any_element()
+        }
+        TextBlock::Paragraph(text) => {
+            let (id, index) = next_document_leaf(scope, order);
+            Paragraph::with_text(text.clone())
+                .id(id)
+                .in_selection_scope(scope.clone(), index, separator)
+                .selectable(selectable)
+                .into_any_element()
+        }
+        TextBlock::Quote(text) => {
+            let (id, index) = next_document_leaf(scope, order);
+            Card::new(
+                div()
+                    .border_l_4()
+                    .border_color(theme.primary.base)
+                    .pl_3()
+                    .child(
+                        Paragraph::with_text(text.clone())
+                            .id(id)
+                            .in_selection_scope(scope.clone(), index, separator)
+                            .selectable(selectable),
+                    ),
+            )
+            .no_shadow()
+            .into_any_element()
+        }
+        TextBlock::Code { code, language } => {
+            let (id, index) = next_document_leaf(scope, order);
+            CodeBlock::new(code.clone())
+                .id(id)
+                .language(*language)
+                .copyable(true)
+                .selectable(selectable)
+                .in_selection_scope(scope.clone(), index, separator)
+                .into_any_element()
+        }
         TextBlock::List { ordered, items } => Space::new()
             .vertical()
             .gap_xs()
@@ -668,18 +712,30 @@ fn render_text_block(
                 } else {
                     "•".to_string()
                 };
+                let (id, leaf_index) = next_document_leaf(scope, order);
                 Some(
                     Space::new()
                         .gap_sm()
                         .align_start()
                         .child(Text::new(marker).text_color(theme.neutral.text_3).nowrap())
-                        .child(Paragraph::with_text(item.clone()).selectable(selectable))
+                        .child(
+                            Paragraph::with_text(item.clone())
+                                .id(id)
+                                .in_selection_scope(scope.clone(), leaf_index, "\n".into())
+                                .selectable(selectable),
+                        )
                         .into_any_element(),
                 )
             }))
             .into_any_element(),
         TextBlock::Divider => Divider::new().into_any_element(),
     }
+}
+
+fn next_document_leaf(scope: &SharedString, order: &mut usize) -> (SharedString, usize) {
+    let index = *order;
+    *order += 1;
+    (format!("{scope}-{index}").into(), index)
 }
 
 fn title_for_level(text: LocalizedText, level: u8) -> Title {
@@ -866,20 +922,6 @@ mod document_tests {
             TextBlock::quote("Selectable quote"),
         ]);
         assert!(document.selectable);
-    }
-
-    #[test]
-    fn text_document_renderer_forwards_default_selection_to_typography_blocks() {
-        let source = include_str!("text.rs")
-            .split("#[cfg(test)]")
-            .next()
-            .unwrap();
-
-        assert!(source.contains("render_text_block(block, text.selectable, cx, theme)"));
-        assert!(source.contains("title_for_level(text.clone(), *level)"));
-        assert!(source.contains(".selectable(selectable)"));
-        assert!(source.contains("Paragraph::with_text(text.clone())"));
-        assert!(source.contains("Paragraph::with_text(item.clone()).selectable(selectable)"));
     }
 
     #[test]

@@ -1,18 +1,22 @@
-use gpui::{App, Context, Entity, IntoElement, Render, Window, prelude::*};
+use gpui::{App, Context, Entity, IntoElement, Render, ScrollHandle, Window, prelude::*};
 use liora_components::layout_helpers::{page, section, showcase_card_wide};
-use liora_components::{Button, MarkdownImage, MarkdownView, Space, Text};
+use liora_components::{Button, Flex, MarkdownImage, MarkdownView, Space, Text};
 
 const SOURCE: &str = "# Streaming Markdown\n\nNative **bold**, *emphasis*, ~~strike~~ and `inline code`. [GPUI](https://github.com/zed-industries/zed).\n\n> Text remains selectable while streaming.\n\n1. First item\n2. Second item\n\n| Feature | State |\n| --- | --- |\n| Native tables | Ready |\n\n![Host approved image](gallery-image)\n\n```rust\nlet streamed = ";
 
 pub struct MarkdownDemo {
     document: Entity<MarkdownView>,
+    scroll_handle: ScrollHandle,
     chunks: usize,
 }
 
 pub fn render(cx: &mut App) -> Entity<MarkdownDemo> {
     cx.new(|cx| {
+        let scroll_handle = ScrollHandle::new();
         let document = cx.new(|cx| {
             let mut view = MarkdownView::new(SOURCE, cx);
+            view.set_show_toc(true, cx);
+            view.set_navigation_scroll(scroll_handle.clone(), cx);
             view.set_image_resolver(
                 |destination| {
                     (destination == "gallery-image").then(|| {
@@ -28,6 +32,7 @@ pub fn render(cx: &mut App) -> Entity<MarkdownDemo> {
         });
         MarkdownDemo {
             document,
+            scroll_handle,
             chunks: 0,
         }
     })
@@ -56,7 +61,7 @@ impl Render for MarkdownDemo {
                             });
                         })))
                         .child(Text::new(format!("Appended chunks: {}", self.chunks)))
-                        .child(self.document.clone())
+                        .child(Flex::new().height_units(380.0).overflow_y_scroll().track_scroll(&self.scroll_handle).child(self.document.clone()))
                 )
             )
         )

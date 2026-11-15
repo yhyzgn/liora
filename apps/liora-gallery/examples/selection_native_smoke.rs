@@ -68,7 +68,6 @@ fn main() {
     gpui_platform::application().with_assets(liora_icons::IconAssetSource).run(|cx| {
         init_liora(cx);
         let markdown = cx.new(|cx| MarkdownView::new("# Heading\n\nFirst **block**.\n\nLast block.", cx));
-        markdown.update(cx, |view, cx| view.set_continuous_selection(true, cx));
         let markdown_window = cx.open_window(options(), |_, _| markdown.clone()).unwrap();
         let aligned = [TextAlign::Center, TextAlign::Right].map(|align| {
             (cx.open_window(options(), |_, cx| cx.new(|_| AlignedText(align))).unwrap(), align)
@@ -82,6 +81,15 @@ fn main() {
                     cx.update_window(markdown_window.into(), |_, window, cx| {
                         window.draw(cx).clear(cx);
                         let expected = markdown.read(cx).document().plain_text();
+                        drag(window, cx, point(px(12.), px(46.)), point(px(12.), px(46.)));
+                        window.dispatch_keystroke(Keystroke::parse("ctrl-a").unwrap(), cx);
+                        let rich_copied = copied_text(window, cx).expect("rich selection must copy text");
+                        assert!(rich_copied.starts_with("Heading\n") && rich_copied.contains("First block.") && rich_copied.contains("Last block."));
+                        drag(window, cx, point(px(12.), px(46.)), point(px(120.), px(115.)));
+                        let drag_copied = copied_text(window, cx).expect("rich drag must copy text");
+                        assert!(drag_copied.contains("\nFirst block.") && drag_copied.len() > "\nFirst block.".len(), "rich drag must cross heading and paragraph: {drag_copied:?}");
+                        markdown.update(cx, |view, cx| view.set_continuous_selection(true, cx));
+                        window.draw(cx).clear(cx);
                         drag(window, cx, point(px(12.), px(46.)), point(px(12.), px(46.)));
                         window.dispatch_keystroke(Keystroke::parse("ctrl-a").unwrap(), cx);
                         let copied = copied_text(window, cx).expect("continuous selection must copy text");
@@ -103,7 +111,7 @@ fn main() {
                 }));
                 cx.write_to_clipboard(previous.unwrap_or(ClipboardItem { entries: Vec::new() }));
                 if let Err(panic) = result { resume_unwind(panic); }
-                println!("PASS: real-display Markdown cross-block copy and centered/right-aligned pointer selection; prior GPUI clipboard restored");
+                println!("PASS: real-display Markdown rich-layout and continuous cross-block copy plus centered/right-aligned pointer selection; prior GPUI clipboard restored");
                 cx.quit();
             });
         }).detach();

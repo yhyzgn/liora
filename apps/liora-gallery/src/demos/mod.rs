@@ -39,6 +39,7 @@ pub mod form_demo;
 pub mod grid_demo;
 pub mod group_box_demo;
 pub mod heat_bar_demo;
+pub mod highlighted_text_demo;
 pub mod horizontal_list_demo;
 pub mod hover_card_demo;
 pub mod icon_demo;
@@ -64,6 +65,7 @@ pub mod otp_input_demo;
 pub mod page_header_demo;
 pub mod pagination_demo;
 pub mod paragraph_demo;
+pub mod pdf_reader_demo;
 pub mod pie_chart_demo;
 pub mod popconfirm_demo;
 pub mod popover_demo;
@@ -132,8 +134,13 @@ pub fn registry() -> Vec<DemoEntry> {
         },
         DemoEntry {
             name: "DiffView 差异审阅",
-            description: "真实 Myers hunk、源行定位与接受/拒绝事件",
+            description: "原生行与 hunk 审阅、定位和宿主决策事件",
             render: diff_demo::render,
+        },
+        DemoEntry {
+            name: "PdfReader PDF 阅读器",
+            description: "纯 Rust PDF 解码、原生打开文件、缩放、旋转和工具状态",
+            render: pdf_reader_demo::render,
         },
         DemoEntry {
             name: "Terminal 终端",
@@ -159,6 +166,11 @@ pub fn registry() -> Vec<DemoEntry> {
             name: "Transcript 会话滚动",
             description: "可变高度、原生跟随、历史锚点和位置恢复",
             render: |cx| transcript_demo::render(cx).into(),
+        },
+        DemoEntry {
+            name: "HighlightedText 搜索高亮",
+            description: "原生字符匹配强调与整行选择",
+            render: |cx| highlighted_text_demo::render(cx).into(),
         },
         DemoEntry {
             name: "Kbd 快捷键",
@@ -744,6 +756,7 @@ pub fn registry() -> Vec<DemoEntry> {
 pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
     match component {
         "DiffView" => Some(diff_demo::render(cx)),
+        "PdfReader" => Some(pdf_reader_demo::render(cx)),
         "Terminal" => Some(terminal_demo::render(cx).into()),
         "MarkdownView" => Some(markdown_demo::render(cx).into()),
         "CommandPalette" => Some(command_palette_demo::render(cx).into()),
@@ -791,6 +804,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "ScrollableMask" => Some(scrollable_mask_demo::render(cx).into()),
         "Clipboard" => Some(clipboard_demo::render(cx).into()),
         "FocusTrap" => Some(focus_trap_demo::render(cx).into()),
+        "HighlightedText" => Some(highlighted_text_demo::render(cx).into()),
         "Grid" => Some(grid_demo::render(cx).into()),
         "HeatBar" => Some(heat_bar_demo::render(cx).into()),
         "HorizontalList" => Some(horizontal_list_demo::render(cx).into()),
@@ -881,6 +895,8 @@ mod tests {
         let names = entries.iter().map(|entry| entry.name).collect::<Vec<_>>();
 
         assert_eq!(names.first(), Some(&"Button 按钮"));
+        assert!(names.contains(&"DiffView 差异审阅"));
+        assert!(names.contains(&"PdfReader PDF 阅读器"));
         assert!(names.contains(&"AreaChart 面积图"));
         assert!(names.contains(&"RingChart 圆环图"));
         assert!(names.contains(&"StatusBar 状态栏"));

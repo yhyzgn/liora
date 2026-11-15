@@ -3,8 +3,8 @@
 ## Reading order
 1. `AGENTS.md`
 2. `.context/README.md`
-3. Plan file: `.context/plans/005_agent_desktop_sdk_20261112.md`
-4. Task file: `.context/tasks/005_agent_desktop_sdk_20261112.md`
+3. Plan file: `.context/plans/008_wry_webview_20261114.md`
+4. Task file: `.context/tasks/008_wry_webview_20261114.md`
 5. `.context/system/overview.md`
 6. `.context/system/conventions.md`
 7. `.context/system/risks.md`
@@ -22,7 +22,7 @@ Liora is a Rust edition 2024 Cargo workspace for a pure Rust + GPUI native enter
 - Verify before claiming completion.
 - Keep diffs small, reviewable, and reversible.
 - Do not use warning-suppression bypasses.
-- Do not introduce WebView/Tauri/HTML/CSS/DOM runtime paths.
+- Do not introduce WebView/Tauri/HTML/CSS/DOM runtime paths into default SDK components or Gallery/Docs; the standalone opt-in `liora-webview` crate is the only WebView exception.
 
 ## Technical red lines
 - Use official `zed-industries/zed` GPUI sources and the pinned revision in the workspace.
@@ -60,8 +60,8 @@ Liora is a Rust edition 2024 Cargo workspace for a pure Rust + GPUI native enter
 - Future work must use `.context/` pointers only.
 
 ## Current context pointers
-- Current plan: `.context/plans/005_agent_desktop_sdk_20261112.md`
-- Current task: `.context/tasks/005_agent_desktop_sdk_20261112.md`
+- Current plan: `.context/plans/008_wry_webview_20261114.md`
+- Current task: `.context/tasks/008_wry_webview_20261114.md`
 
 
 <claude-mem-context>

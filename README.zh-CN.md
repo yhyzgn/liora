@@ -5,7 +5,7 @@
   </picture>
 
   <p><strong>面向 Rust 桌面应用的企业级 GPUI 原生组件库。</strong></p>
-  <p>纯 Rust。GPUI Native。API 体系参考 Element Plus。无 Tauri、无 WebView、无浏览器运行时。</p>
+  <p>纯 Rust。默认使用 GPUI 原生控件。API 体系参考 Element Plus。无 Tauri 或浏览器应用壳；WRY 仅在独立 crate 中显式接入。</p>
 
   <p>
     <a href="README.md">English</a>
@@ -57,9 +57,11 @@
 Liora 明确不是 Web 外壳：
 
 - 不使用 Tauri runtime；
-- 不引入 WebView、HTML/CSS/DOM 或浏览器应用壳；
+- 默认 SDK 和原生控件不引入 WebView、HTML/CSS/DOM 或浏览器运行时；需要嵌入网页的下游应用可单独依赖 `liora-webview`；
 - 不使用 Web 图表运行时或前端 bundler；
 - Gallery 和 Docs 都是真实 GPUI 原生应用，并使用和下游应用相同的公开 SDK 表面。
+
+仅当宿主需要网页内容时，从本仓库显式依赖 `liora-webview`；此新 crate 尚未发布，`liora` facade 不导出它，其他控件不用它渲染。Linux 要求 GPUI X11/XWayland 窗口、GTK3 和 WebKitGTK 4.1；此处未在 macOS/Windows 实机验证。网页兼容性取决于系统引擎，不承诺浏览器等价。参见[独立 WebView 使用说明](crates/liora-webview/README.md)。
 
 ## 你可以用 Liora 构建什么？
 
@@ -81,7 +83,7 @@ Liora 明确不是 Web 外壳：
 
 | 组件 | 契约 |
 |---|---|
-| `MarkdownDocument` / `MarkdownView` | 缓存与批量解析的原生 Markdown；富布局按块选择，或显式切换连续纯文本选择。图片默认拒绝，只有宿主批准的本地文件或已解码图像才能显示；SDK 不抓取不可信图片 URL。 |
+| `MarkdownDocument` / `MarkdownView` | 原生 Markdown 缓存与目录/脚注导航；脚注引用支持原生预览及逐引用回链，任务列表为原生 checkbox。表格 API 可做源映射的单元格、行、列增删，尚无表格工具栏/列重排/视觉缩放。数学通过 `latex-rust` 排版，Mermaid flowchart/sequence 通过受限 Rust rasterizer 渲染；元数据 API 返回不执行的源字段。Rich 编辑只覆盖无歧义的段落映射，完整结构化编辑及上下标 baseline 仍未支持。图片默认拒绝，宿主批准本地文件或解码图像后才能显示；SDK 不抓取不可信图片 URL。 |
 | `Transcript` | 稳定 ID 的可变高度虚拟化、原生跟随/脱离、历史前插/重排锚点及可序列化 `TranscriptPosition`。宿主通知行高改变并持有会话存储。 |
 | `Composer` | 复用 Input 的原生选区/IME；结构化引用与附件、候选、粘贴 payload、busy 时可继续编辑的草稿，以及宿主 Send/Stop 事件。 |
 | `Terminal` | 增量 VT/ANSI 状态、光标、Unicode 单元格、选区、历史、原生文本输入与尺寸事件；使用 MIT 许可的 `vt100 = 0.18.1`，PTY/进程 I/O 全由宿主持有。 |

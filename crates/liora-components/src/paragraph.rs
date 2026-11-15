@@ -38,6 +38,8 @@ pub struct Paragraph {
     children: Vec<Text>,
     selectable: bool,
     id: SharedString,
+    preserve_segment_styles: bool,
+    selection_scope: Option<(SharedString, usize, SharedString)>,
 }
 
 impl Paragraph {
@@ -48,6 +50,8 @@ impl Paragraph {
             children: Vec::new(),
             selectable: true,
             id: default_paragraph_id("", Location::caller()),
+            preserve_segment_styles: false,
+            selection_scope: None,
         }
     }
 
@@ -60,6 +64,8 @@ impl Paragraph {
             children: vec![Text::new(text)],
             selectable: true,
             id,
+            preserve_segment_styles: false,
+            selection_scope: None,
         }
     }
 
@@ -75,9 +81,24 @@ impl Paragraph {
         self
     }
 
+    pub(crate) fn preserve_segment_styles(mut self) -> Self {
+        self.preserve_segment_styles = true;
+        self
+    }
+
     /// Toggles whether the rendered text can be selected.
     pub fn selectable(mut self, selectable: bool) -> Self {
         self.selectable = selectable;
+        self
+    }
+
+    pub(crate) fn in_selection_scope(
+        mut self,
+        scope: SharedString,
+        order: usize,
+        separator: SharedString,
+    ) -> Self {
+        self.selection_scope = Some((scope, order, separator));
         self
     }
 
@@ -134,7 +155,7 @@ impl Paragraph {
 
             let segment_text = segment.content.inline(cx);
             let text = segment_text.as_ref();
-            let leading_glue_len = if runs.is_empty() {
+            let leading_glue_len = if self.preserve_segment_styles || runs.is_empty() {
                 0
             } else {
                 leading_no_line_start_len(text)
@@ -262,23 +283,25 @@ impl RenderOnce for Paragraph {
         let font_size = px(theme.font_size.md);
 
         if self.selectable {
-            return SelectableText::view(
-                SelectableTextOptions {
-                    id: ElementId::from(self.id.clone()),
-                    text: full_text,
-                    runs,
-                    font_size,
-                    line_height: font_size * 1.6,
-                    text_color: theme.neutral.text_2,
-                    wrap: SelectableTextWrap::Normal,
-                    key_context: "SelectableText",
-                    fill_width: true,
-                    font_family: ui_family,
-                    text_align: gpui::TextAlign::Left,
-                },
-                _window,
-                cx,
-            );
+            let options = SelectableTextOptions {
+                id: ElementId::from(self.id.clone()),
+                text: full_text,
+                runs,
+                font_size,
+                line_height: font_size * 1.6,
+                text_color: theme.neutral.text_2,
+                wrap: SelectableTextWrap::Normal,
+                key_context: "SelectableText",
+                fill_width: true,
+                font_family: ui_family,
+                text_align: gpui::TextAlign::Left,
+            };
+            return match self.selection_scope {
+                Some((scope, order, separator)) => {
+                    SelectableText::view_in_scope(options, scope, order, separator, _window, cx)
+                }
+                None => SelectableText::view(options, _window, cx),
+            };
         }
 
         let mut paragraph = div()
@@ -360,6 +383,23 @@ mod tests {
         assert_eq!(runs[1].len, "世界".len());
         assert_eq!(runs[0].font.weight, FontWeight::BOLD);
         assert_eq!(runs[1].font.style, FontStyle::Italic);
+    }
+
+    #[test]
+    fn highlighted_punctuation_keeps_its_own_style() {
+        let theme = liora_theme::Theme::light();
+        let locales = liora_core::LocalesConfig::default();
+        let (text, runs) = Paragraph::new()
+            .preserve_segment_styles()
+            .child(Text::new("A"))
+            .child(Text::new("。").weight(FontWeight::SEMIBOLD))
+            .selectable_text_parts(&locales, &theme, None, None, None, None);
+
+        assert_eq!(text.as_ref(), "A。");
+        assert_eq!(runs.len(), 2);
+        assert_eq!(runs[0].len, "A".len());
+        assert_eq!(runs[1].len, "。".len());
+        assert_eq!(runs[1].font.weight, FontWeight::SEMIBOLD);
     }
 
     #[test]

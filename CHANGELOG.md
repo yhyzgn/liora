@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-- Complete public `Composer` and `DiffView` API rustdoc so the strict SDK `-D missing_docs` quality gate passes without warning suppressions or runtime changes.
+- Add native GPUI `PdfReader`, `FindBar`, and `CandidateBar`; decode real PDF bytes with pure-Rust Hayro 0.9.0, provide viewport fit, pixel rotation, continuous page navigation and worker-based Gallery/Docs file loading. Search indexing, annotation persistence and input-method engines remain host-owned; these native controls do not use WebView/Tauri.
+- Add standalone opt-in `liora-webview` with GPUI child geometry, navigation, bounded page messaging, default-denied permissions/downloads/new windows, and window-close cleanup. Default SDK and native controls remain WRY-free; Linux X11/XWayland was tested, macOS/Windows native behavior was not.
 
 ## 0.6.0 - 2026-11-13
 

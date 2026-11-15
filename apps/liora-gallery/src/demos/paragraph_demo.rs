@@ -1,6 +1,6 @@
 use gpui::{App, Context, Entity, IntoElement, Render, Window, prelude::*};
 use liora_components::layout_helpers::{page, section, showcase_card_wide, showcase_stack};
-use liora_components::{Divider, Paragraph, SelectableTextGroup, Space, Text};
+use liora_components::{Divider, Paragraph, SelectableTextGroup, Space, Text, Title};
 
 pub fn render(cx: &mut App) -> Entity<ParagraphDemo> {
     cx.new(|_| ParagraphDemo)
@@ -33,13 +33,13 @@ impl Render for ParagraphDemo {
                 .child(Divider::new())
                 .child(section(
                     "跨块选择",
-                    "当正文由多个 Text 和 Paragraph 组成时，使用 SelectableTextGroup 将它们合成为一个连续可选择文本流。",
+                    "当正文由 Text、Title 和 Paragraph 组成时，使用 SelectableTextGroup 保留各块排版并连续选择。",
                     showcase_card_wide(
-                        "Text + Paragraph 连续选择",
-                        "从标题式 Text 开始拖拽到后续 Paragraph，选区应跨越多个块并复制为连续文本。",
+                        "Title + Paragraph 连续选择",
+                        "从标题开始拖拽到后续 Paragraph，选区应跨越多个块并复制为连续文本。",
                         SelectableTextGroup::new()
                             .id("gallery-paragraph-cross-block-selection")
-                            .text(Text::new("Release notes").bold().text_color(theme.primary.base))
+                            .title(Title::new("Release notes").h2())
                             .paragraph(
                                 Paragraph::new()
                                     .child(Text::new("SelectableTextGroup keeps several "))

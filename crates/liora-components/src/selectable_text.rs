@@ -30,7 +30,7 @@ use gpui::{
 use liora_core::Config;
 use std::{
     cell::RefCell,
-    collections::HashMap,
+    collections::{BTreeMap, HashMap},
     ops::Range,
     rc::Rc,
     sync::{Arc, Mutex, MutexGuard, OnceLock},
@@ -134,7 +134,81 @@ impl SelectableText {
             let initial = options.clone();
             move |_, cx| SelectableTextState::new(cx, initial)
         });
-        input.update(cx, |state, cx| state.update_options(options, cx));
+        input.update(cx, |state, cx| {
+            state.update_options(options, cx);
+            state.scope = None;
+        });
+        SelectableTextView { input }.into_any_element()
+    }
+
+    /// Renders a leaf in a window-local selection scope, preserving its own text layout.
+    pub(crate) fn view_in_scope(
+        options: SelectableTextOptions,
+        scope: SharedString,
+        order: usize,
+        separator: SharedString,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> gpui::AnyElement {
+        let shared = window.use_keyed_state(
+            element_id(format!("selectable-scope:{scope}")),
+            cx,
+            |_, _| ScopedSelection::default(),
+        );
+        let input = window.use_keyed_state(options.id.clone(), cx, {
+            let initial = options.clone();
+            move |_, cx| SelectableTextState::new(cx, initial)
+        });
+        input.update(cx, |state, cx| {
+            state.scope = Some((shared.clone(), order));
+            state.update_options(options, cx);
+        });
+        let leaf = input.read(cx);
+        let text = leaf.text.clone();
+        let geometry = leaf.scoped_geometry.clone();
+        shared.update(cx, |state, cx| {
+            state.members.retain(|&member_order, member| {
+                member.input.upgrade().is_some_and(|input| {
+                    input
+                        .read(cx)
+                        .scope
+                        .as_ref()
+                        .is_some_and(|(member_scope, order)| {
+                            member_scope == &shared && *order == member_order
+                        })
+                })
+            });
+            if state
+                .anchor
+                .is_some_and(|pos| !state.members.contains_key(&pos.order))
+                || state
+                    .head
+                    .is_some_and(|pos| !state.members.contains_key(&pos.order))
+            {
+                state.anchor = None;
+                state.head = None;
+                state.selecting = false;
+            }
+            state.members.insert(
+                order,
+                ScopedMember {
+                    input: input.downgrade(),
+                    text,
+                    separator,
+                    geometry,
+                },
+            );
+            for position in [&mut state.anchor, &mut state.head] {
+                if let Some(position) = position.as_mut().filter(|position| position.order == order)
+                {
+                    let text = &state.members[&order].text;
+                    position.offset = position.offset.min(text.len());
+                    while position.offset > 0 && !text.is_char_boundary(position.offset) {
+                        position.offset -= 1;
+                    }
+                }
+            }
+        });
         SelectableTextView { input }.into_any_element()
     }
 }
@@ -155,6 +229,174 @@ impl RenderOnce for SelectableTextView {
     fn render(self, _window: &mut Window, _cx: &mut App) -> impl IntoElement {
         self.input.into_any_element()
     }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct ScopedPosition {
+    order: usize,
+    offset: usize,
+}
+
+struct ScopedMember {
+    input: gpui::WeakEntity<SelectableTextState>,
+    text: SharedString,
+    separator: SharedString,
+    geometry: Rc<RefCell<SelectableTextSelectionState>>,
+}
+
+#[derive(Default)]
+struct ScopedSelection {
+    members: BTreeMap<usize, ScopedMember>,
+    anchor: Option<ScopedPosition>,
+    head: Option<ScopedPosition>,
+    selecting: bool,
+}
+
+impl ScopedSelection {
+    fn endpoints(&self) -> Option<(ScopedPosition, ScopedPosition)> {
+        let (anchor, head) = (self.anchor?, self.head?);
+        self.members.get(&anchor.order)?.input.upgrade()?;
+        self.members.get(&head.order)?.input.upgrade()?;
+        Some((anchor, head))
+    }
+
+    fn range_for(&self, order: usize) -> Range<usize> {
+        let (Some((anchor, head)), Some(member)) = (self.endpoints(), self.members.get(&order))
+        else {
+            return 0..0;
+        };
+        scoped_leaf_range(order, member.text.len(), anchor, head)
+    }
+
+    fn point_at(
+        &self,
+        point: Point<Pixels>,
+        active: ScopedPosition,
+        cx: &App,
+    ) -> Option<ScopedPosition> {
+        let mut nearest = None;
+        for (&order, member) in &self.members {
+            if member.input.upgrade().is_none() {
+                continue;
+            }
+            let geometry = member.geometry.borrow();
+            let Some(bounds) = geometry.bounds else {
+                continue;
+            };
+            let dx =
+                (bounds.left() - point.x).max(px(0.0)) + (point.x - bounds.right()).max(px(0.0));
+            let dy =
+                (bounds.top() - point.y).max(px(0.0)) + (point.y - bounds.bottom()).max(px(0.0));
+            let distance = dx + dy;
+            if nearest.as_ref().is_none_or(|(best, _)| distance < *best) {
+                nearest = Some((distance, order));
+            }
+        }
+        let (_, order) = nearest?;
+        if order == active.order {
+            return Some(active);
+        }
+        let member = self.members.get(&order)?;
+        let input = member.input.upgrade()?;
+        let offset = input
+            .read(cx)
+            .index_for_point_in(&member.geometry.borrow(), point);
+        Some(ScopedPosition { order, offset })
+    }
+
+    fn selected_text(&self) -> String {
+        let Some((anchor, head)) = self.endpoints() else {
+            return String::new();
+        };
+        joined_scoped_text(
+            self.members
+                .iter()
+                .filter(|(_, member)| member.input.upgrade().is_some())
+                .map(|(&order, member)| (order, member.text.as_ref(), member.separator.as_ref())),
+            anchor,
+            head,
+        )
+    }
+
+    fn select_all(&mut self) {
+        let Some((&first, _)) = self
+            .members
+            .iter()
+            .find(|(_, member)| member.input.upgrade().is_some())
+        else {
+            return;
+        };
+        let Some((&last, member)) = self
+            .members
+            .iter()
+            .rev()
+            .find(|(_, member)| member.input.upgrade().is_some())
+        else {
+            return;
+        };
+        self.anchor = Some(ScopedPosition {
+            order: first,
+            offset: 0,
+        });
+        self.head = Some(ScopedPosition {
+            order: last,
+            offset: member.text.len(),
+        });
+        self.selecting = false;
+    }
+}
+
+fn scoped_leaf_range(
+    order: usize,
+    len: usize,
+    anchor: ScopedPosition,
+    head: ScopedPosition,
+) -> Range<usize> {
+    let (start, end) = if anchor <= head {
+        (anchor, head)
+    } else {
+        (head, anchor)
+    };
+    if order < start.order || order > end.order {
+        return 0..0;
+    }
+    (if order == start.order {
+        start.offset.min(len)
+    } else {
+        0
+    })..(if order == end.order {
+        end.offset.min(len)
+    } else {
+        len
+    })
+}
+
+fn joined_scoped_text<'a>(
+    members: impl IntoIterator<Item = (usize, &'a str, &'a str)>,
+    anchor: ScopedPosition,
+    head: ScopedPosition,
+) -> String {
+    if anchor == head {
+        return String::new();
+    }
+    let (start, end) = if anchor <= head {
+        (anchor, head)
+    } else {
+        (head, anchor)
+    };
+    let mut output = String::new();
+    let mut separator = None;
+    for (order, text, next_separator) in members {
+        if order < start.order || order > end.order {
+            continue;
+        }
+        if let Some(separator) = separator {
+            output.push_str(separator);
+        }
+        output.push_str(&text[scoped_leaf_range(order, text.len(), anchor, head)]);
+        separator = Some(next_separator);
+    }
+    output
 }
 
 struct SelectableTextSelectionState {
@@ -289,6 +531,8 @@ struct SelectableTextState {
     text_align: gpui::TextAlign,
     layout_caches: SelectableTextLayoutCacheStore,
     focus_handle: FocusHandle,
+    scope: Option<(Entity<ScopedSelection>, usize)>,
+    scoped_geometry: Rc<RefCell<SelectableTextSelectionState>>,
 }
 
 impl SelectableTextState {
@@ -307,6 +551,8 @@ impl SelectableTextState {
             text_align: options.text_align,
             layout_caches: Rc::new(RefCell::new(Vec::new())),
             focus_handle: cx.focus_handle(),
+            scope: None,
+            scoped_geometry: Rc::new(RefCell::new(SelectableTextSelectionState::default())),
         }
     }
 
@@ -341,18 +587,20 @@ impl SelectableTextState {
         self.text_align = options.text_align;
         self.layout_caches.borrow_mut().clear();
 
-        if old_id != self.id {
-            let old_range = selected_range_snapshot(&old_id);
-            with_selection_state(&self.id, |state| state.selected_range = old_range);
-        }
-        with_selection_state(&self.id, |state| {
-            state.selected_range.start = self.clamp_boundary(state.selected_range.start);
-            state.selected_range.end = self.clamp_boundary(state.selected_range.end);
-            if state.selected_range.end < state.selected_range.start {
-                state.selected_range = state.selected_range.end..state.selected_range.start;
-                state.selection_reversed = !state.selection_reversed;
+        if self.scope.is_none() {
+            if old_id != self.id {
+                let old_range = selected_range_snapshot(&old_id);
+                with_selection_state(&self.id, |state| state.selected_range = old_range);
             }
-        });
+            with_selection_state(&self.id, |state| {
+                state.selected_range.start = self.clamp_boundary(state.selected_range.start);
+                state.selected_range.end = self.clamp_boundary(state.selected_range.end);
+                if state.selected_range.end < state.selected_range.start {
+                    state.selected_range = state.selected_range.end..state.selected_range.start;
+                    state.selection_reversed = !state.selection_reversed;
+                }
+            });
+        }
         cx.notify();
     }
 
@@ -406,10 +654,17 @@ impl SelectableTextState {
     }
 
     fn index_for_point(&self, pt: Point<Pixels>) -> usize {
+        if self.scope.is_some() {
+            return self.index_for_point_in(&self.scoped_geometry.borrow(), pt);
+        }
         let states = lock_selection_state_map();
         let Some(state) = states.get(&selection_key(&self.id)) else {
             return self.text.len();
         };
+        self.index_for_point_in(state, pt)
+    }
+
+    fn index_for_point_in(&self, state: &SelectableTextSelectionState, pt: Point<Pixels>) -> usize {
         let Some(bounds) = state.bounds.as_ref() else {
             return self.text.len();
         };
@@ -469,6 +724,44 @@ impl SelectableTextState {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if let Some((scope, order)) = &self.scope {
+            window.focus(&self.focus_handle, cx);
+            let idx = self.index_for_point(event.position);
+            let position = ScopedPosition {
+                order: *order,
+                offset: idx,
+            };
+            let word = (event.click_count == 2).then(|| self.word_range_at(idx));
+            scope.update(cx, |state, _| {
+                if event.modifiers.shift && state.anchor.is_some() {
+                    state.head = Some(position);
+                } else if event.click_count >= 3 {
+                    state.anchor = Some(ScopedPosition {
+                        order: *order,
+                        offset: 0,
+                    });
+                    state.head = Some(ScopedPosition {
+                        order: *order,
+                        offset: self.text.len(),
+                    });
+                } else if let Some(range) = word {
+                    state.anchor = Some(ScopedPosition {
+                        order: *order,
+                        offset: range.start,
+                    });
+                    state.head = Some(ScopedPosition {
+                        order: *order,
+                        offset: range.end,
+                    });
+                } else {
+                    state.anchor = Some(position);
+                    state.head = Some(position);
+                }
+                state.selecting = true;
+            });
+            window.refresh();
+            return;
+        }
         window.focus(&self.focus_handle, cx);
         let cleared_other_selection = clear_other_selection_states(&self.id);
         let idx = self.index_for_point(event.position);
@@ -503,7 +796,40 @@ impl SelectableTextState {
         }
     }
 
-    fn on_mouse_move(&mut self, event: &MouseMoveEvent, window: &mut Window) {
+    fn on_mouse_move(
+        &mut self,
+        event: &MouseMoveEvent,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if let Some((scope, order)) = &self.scope {
+            if !scope.read(cx).selecting {
+                return;
+            }
+            let active = ScopedPosition {
+                order: *order,
+                offset: self.index_for_point(event.position),
+            };
+            let changed = scope.update(cx, |state, cx| {
+                if !state.selecting || state.anchor.is_none_or(|anchor| anchor.order != *order) {
+                    return false;
+                }
+                if event.pressed_button != Some(MouseButton::Left) {
+                    state.selecting = false;
+                    return false;
+                }
+                let next = state.point_at(event.position, active, cx);
+                let changed = next.is_some() && next != state.head;
+                if changed {
+                    state.head = next;
+                }
+                changed
+            });
+            if changed {
+                window.refresh();
+            }
+            return;
+        }
         let dragging = event.pressed_button == Some(MouseButton::Left);
         let idx = dragging.then(|| self.index_for_point(event.position));
         let changed = with_selection_state(&self.id, |state| {
@@ -525,13 +851,42 @@ impl SelectableTextState {
         }
     }
 
-    fn is_selecting(&self) -> bool {
+    fn is_selecting(&self, cx: &App) -> bool {
+        if let Some((scope, order)) = &self.scope {
+            let state = scope.read(cx);
+            return state.selecting && state.anchor.is_some_and(|anchor| anchor.order == *order);
+        }
         lock_selection_state_map()
             .get(&selection_key(&self.id))
             .is_some_and(|state| state.selecting)
     }
 
-    fn on_mouse_up(&mut self, _: &MouseUpEvent, _: &mut Window, cx: &mut Context<Self>) {
+    fn on_mouse_up(&mut self, event: &MouseUpEvent, window: &mut Window, cx: &mut Context<Self>) {
+        if let Some((scope, order)) = &self.scope {
+            if !scope.read(cx).selecting {
+                return;
+            }
+            let active = ScopedPosition {
+                order: *order,
+                offset: self.index_for_point(event.position),
+            };
+            let changed = scope.update(cx, |state, cx| {
+                if !state.selecting || state.anchor.is_none_or(|anchor| anchor.order != *order) {
+                    return false;
+                }
+                let next = state.point_at(event.position, active, cx);
+                let changed = next.is_some() && next != state.head;
+                if changed {
+                    state.head = next;
+                }
+                state.selecting = false;
+                changed
+            });
+            if changed {
+                window.refresh();
+            }
+            return;
+        }
         let changed = with_selection_state(&self.id, |state| {
             let changed = state.selecting;
             state.selecting = false;
@@ -542,7 +897,24 @@ impl SelectableTextState {
         }
     }
 
-    fn clear_selection(&mut self, cx: &mut Context<Self>) {
+    fn clear_selection(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if let Some((scope, _)) = &self.scope {
+            let current = cx.entity();
+            if scope.read(cx).members.values().any(|member| {
+                member.input.upgrade().is_some_and(|input| {
+                    input != current && input.read(cx).focus_handle.is_focused(window)
+                })
+            }) {
+                return;
+            }
+            scope.update(cx, |state, _| {
+                state.anchor = None;
+                state.head = None;
+                state.selecting = false;
+            });
+            window.refresh();
+            return;
+        }
         let changed = with_selection_state(&self.id, |state| {
             let changed = !state.selected_range.is_empty() || state.selecting;
             state.selected_range = 0..0;
@@ -556,6 +928,11 @@ impl SelectableTextState {
     }
 
     fn set_select_all(&mut self, cx: &mut Context<Self>) {
+        if let Some((scope, _)) = &self.scope {
+            scope.update(cx, |state, _| state.select_all());
+            cx.notify();
+            return;
+        }
         let changed = with_selection_state(&self.id, |state| {
             let changed = state.selected_range != (0..self.text.len())
                 || state.selection_reversed
@@ -587,6 +964,13 @@ impl SelectableTextState {
     }
 
     fn copy(&mut self, _: &SelectableTextCopy, _: &mut Window, cx: &mut Context<Self>) {
+        if let Some((scope, _)) = &self.scope {
+            let text = scope.read(cx).selected_text();
+            if !text.is_empty() {
+                cx.write_to_clipboard(ClipboardItem::new_string(text));
+            }
+            return;
+        }
         let selected_range = selected_range_snapshot(&self.id);
         if !selected_range.is_empty() {
             cx.write_to_clipboard(ClipboardItem::new_string(
@@ -653,8 +1037,8 @@ impl Focusable for SelectableTextState {
 
 impl Render for SelectableTextState {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        cx.on_blur(&self.focus_handle, window, |this, _, cx| {
-            this.clear_selection(cx);
+        cx.on_blur(&self.focus_handle, window, |this, window, cx| {
+            this.clear_selection(window, cx);
         })
         .detach();
 
@@ -810,7 +1194,11 @@ impl Element for SelectableTextElement {
         *layout = actual_layout;
         let input = self.input.read(cx);
         let mut selection_quads = Vec::new();
-        let selected_range = selected_range_snapshot(&input.id);
+        let selected_range = if let Some((scope, order)) = &input.scope {
+            scope.read(cx).range_for(*order)
+        } else {
+            selected_range_snapshot(&input.id)
+        };
         let mut y = bounds.top();
         let mut line_starts = Vec::new();
         let selection_color = cx.global::<Config>().theme.primary.base.opacity(0.28);
@@ -839,7 +1227,14 @@ impl Element for SelectableTextElement {
         }
 
         let hitbox = window.insert_hitbox(bounds, gpui::HitboxBehavior::Normal);
-        set_layout_state(&input.id, layout.clone(), line_starts, bounds);
+        if input.scope.is_some() {
+            let mut geometry = input.scoped_geometry.borrow_mut();
+            geometry.layout = Some(layout.clone());
+            geometry.line_starts = line_starts;
+            geometry.bounds = Some(bounds);
+        } else {
+            set_layout_state(&input.id, layout.clone(), line_starts, bounds);
+        }
 
         SelectableTextPrepaint {
             layout: layout.clone(),
@@ -869,9 +1264,30 @@ impl Element for SelectableTextElement {
                 && event.button == MouseButton::Left
                 && !bounds.contains(&event.position)
             {
-                let input_id = input.read(cx).id.clone();
-                if clear_selection_state_for(&input_id) {
-                    window.refresh();
+                let leaf = input.read(cx);
+                if let Some((scope, _)) = leaf.scope.clone() {
+                    let outside = scope.read(cx).members.values().all(|member| {
+                        member.input.upgrade().is_none_or(|_| {
+                            !member
+                                .geometry
+                                .borrow()
+                                .bounds
+                                .is_some_and(|bounds| bounds.contains(&event.position))
+                        })
+                    });
+                    if outside {
+                        scope.update(cx, |state, _| {
+                            state.anchor = None;
+                            state.head = None;
+                            state.selecting = false;
+                        });
+                        window.refresh();
+                    }
+                } else {
+                    let input_id = leaf.id.clone();
+                    if clear_selection_state_for(&input_id) {
+                        window.refresh();
+                    }
                 }
             }
             if phase.bubble() && event.button == MouseButton::Left && hitbox.is_hovered(window) {
@@ -885,16 +1301,16 @@ impl Element for SelectableTextElement {
         let input = self.input.clone();
         let hitbox = prepaint.hitbox.clone();
         window.on_mouse_event(move |event: &MouseMoveEvent, phase, event_window, cx| {
-            let selecting = input.read(cx).is_selecting();
+            let selecting = input.read(cx).is_selecting(cx);
             if phase.capture() && (hitbox.is_hovered(event_window) || selecting) {
-                input.update(cx, |input, _cx| input.on_mouse_move(event, event_window));
+                input.update(cx, |input, cx| input.on_mouse_move(event, event_window, cx));
             }
         });
 
         let input = self.input.clone();
         let hitbox = prepaint.hitbox.clone();
         window.on_mouse_event(move |event: &MouseUpEvent, phase, window, cx| {
-            let selecting = input.read(cx).is_selecting();
+            let selecting = input.read(cx).is_selecting(cx);
             if phase.capture()
                 && event.button == MouseButton::Left
                 && (hitbox.is_hovered(window) || selecting)
@@ -1243,7 +1659,7 @@ mod tests {
         assert!(source.contains("fn clear_selection_state_for"));
         assert!(source.contains("window.refresh()"));
         assert!(source.contains("hitbox.is_hovered(window) || selecting"));
-        assert!(source.contains("fn is_selecting(&self) -> bool"));
+        assert!(source.contains("fn is_selecting(&self, cx: &App) -> bool"));
         assert!(source.contains("phase.capture()"));
         assert!(source.contains("!bounds.contains(&event.position)"));
         assert!(source.contains("clear_selection_state_for(&input_id)"));
@@ -1366,5 +1782,38 @@ mod tests {
             quads[0].bounds,
             Bounds::new(point(px(75.0), px(30.0)), size(px(20.0), px(20.0)))
         );
+    }
+    #[test]
+    fn scoped_selection_spans_sparse_leaves_in_both_directions() {
+        let a = ScopedPosition {
+            order: 1,
+            offset: 2,
+        };
+        let b = ScopedPosition {
+            order: 5,
+            offset: 3,
+        };
+        for (anchor, head) in [(a, b), (b, a)] {
+            assert_eq!(scoped_leaf_range(1, 6, anchor, head), 2..6);
+            assert_eq!(scoped_leaf_range(3, 4, anchor, head), 0..4);
+            assert_eq!(scoped_leaf_range(5, 8, anchor, head), 0..3);
+            assert_eq!(scoped_leaf_range(6, 8, anchor, head), 0..0);
+        }
+    }
+
+    #[test]
+    fn scoped_copy_joins_only_member_text_in_order_with_separators() {
+        let members = [(0, "前言", "\n\n"), (4, "title", "\n"), (9, "结尾", "\n")];
+        let start = ScopedPosition {
+            order: 0,
+            offset: "前".len(),
+        };
+        let end = ScopedPosition {
+            order: 9,
+            offset: "结".len(),
+        };
+        assert_eq!(joined_scoped_text(members, start, end), "言\n\ntitle\n结");
+        assert_eq!(joined_scoped_text(members, end, start), "言\n\ntitle\n结");
+        assert_eq!(joined_scoped_text(members, start, start), "");
     }
 }

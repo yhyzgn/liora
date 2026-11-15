@@ -91,6 +91,16 @@ impl Anchor {
         self.links.push(link);
         self
     }
+    /// Scrolls to a painted target in this handle's viewport; false if it is absent.
+    pub fn scroll_to_target(&self, id: &str) -> bool {
+        let Some(bounds) = self.targets_bounds.get(id) else {
+            return false;
+        };
+        let jump = self.scroll_handle.offset().y + self.scroll_handle.bounds().top() + self.offset
+            - bounds.top();
+        self.scroll_handle.set_offset(point(px(0.0), jump));
+        true
+    }
 
     fn update_target_bounds(
         &mut self,
@@ -133,8 +143,6 @@ impl Anchor {
     ) -> AnyElement {
         let is_active = self.active_link.as_ref() == Some(&link.href);
         let href = link.href.clone();
-        let scroll_handle = self.scroll_handle.clone();
-        let offset = self.offset;
         let click_anchor_entity = anchor_entity.clone();
 
         div()
@@ -155,14 +163,9 @@ impl Anchor {
                     })
                     .hover(|s| s.text_color(theme.primary.base))
                     .on_click(move |_, _, cx| {
-                        let target_bounds = click_anchor_entity
-                            .update(cx, |this, _| this.targets_bounds.get(&href).copied());
-                        if let Some(bounds) = target_bounds {
-                            let current_offset = scroll_handle.offset();
-                            let viewport_top = scroll_handle.bounds().top();
-                            let jump = current_offset.y + viewport_top + offset - bounds.top();
-                            scroll_handle.set_offset(point(px(0.0), jump));
-                        }
+                        let _ = click_anchor_entity.update(cx, |this, _| {
+                            this.scroll_to_target(&href);
+                        });
                     })
                     .child(div().text_sm().child(link.title.clone())),
             )

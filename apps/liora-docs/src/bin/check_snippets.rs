@@ -287,6 +287,8 @@ mod form_validation;
 mod group_box_basic;
 #[path = "../../content/snippets/heat_bar/events.rs"]
 mod heat_bar_events;
+#[path = "../../content/snippets/highlighted_text/basic.rs"]
+mod highlighted_text_basic;
 #[path = "../../content/snippets/horizontal_list/basic.rs"]
 mod horizontal_list_basic;
 #[path = "../../content/snippets/horizontal_list/divider.rs"]
@@ -431,6 +433,8 @@ mod pagination_advanced;
 mod pagination_background;
 #[path = "../../content/snippets/pagination/basic.rs"]
 mod pagination_basic;
+#[path = "../../content/snippets/pdf_reader/basic.rs"]
+mod pdf_reader_basic;
 #[path = "../../content/snippets/pie_chart/basic.rs"]
 mod pie_chart_basic;
 #[path = "../../content/snippets/pie_chart/custom.rs"]

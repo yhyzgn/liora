@@ -1,0 +1,62 @@
+%PDF-1.4
+% Original Liora sample; authored for this repository.
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 400 300] /Resources << /Font << /F1 5 0 R >> /ExtGState << /Half 8 0 R >> >> /Contents 6 0 R >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 400] /Resources << /Font << /F1 5 0 R >> >> /Contents 7 0 R >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+6 0 obj
+<< /Length 436 >>
+stream
+1 1 1 rg 0 0 400 300 re f
+0 0 0 rg BT /F1 22 Tf 24 260 Td (Liora native PDF - page 1) Tj ET
+BT /F1 12 Tf 24 235 Td (Original vectors, colors and text) Tj ET
+1 0 0 rg 24 150 90 60 re f
+0 0 1 rg 160 150 65 60 re f
+0 1 0 rg 280 150 m 365 150 l 280 215 l h f
+0 0 0 rg BT /F1 12 Tf 24 125 Td (RED) Tj 136 0 Td (BLUE) Tj 120 0 Td (GREEN) Tj ET
+0 0 0 RG 3 w 24 35 m 24 95 l 75 95 l S
+BT /F1 12 Tf 90 65 Td (Asymmetric corner: rotate me) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Length 336 >>
+stream
+1 1 1 rg 0 0 300 400 re f
+0 0 0 rg BT /F1 20 Tf 24 360 Td (Liora native PDF - page 2) Tj ET
+BT /F1 12 Tf 24 335 Td (Portrait page, different geometry) Tj ET
+0 0 1 rg 30 80 55 200 re f
+1 0 0 rg 110 220 m 260 220 l 260 300 l h f
+0 1 0 rg 150 90 110 45 re f
+0 0 0 rg BT /F1 12 Tf 24 35 Td (No external images or downloaded content.) Tj ET
+endstream
+endobj
+8 0 obj
+<< /Type /ExtGState /ca 0.5 /CA 0.5 >>
+endobj
+xref
+0 9
+0000000000 65535 f 
+0000000064 00000 n 
+0000000113 00000 n 
+0000000176 00000 n 
+0000000331 00000 n 
+0000000457 00000 n 
+0000000527 00000 n 
+0000001013 00000 n 
+0000001399 00000 n 
+trailer
+<< /Size 9 /Root 1 0 R >>
+startxref
+1453
+%%EOF
