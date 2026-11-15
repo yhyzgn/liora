@@ -20,8 +20,8 @@
 - [x] Make release notes render the versioned changelog section and WebView/platform limits accurately.
 - [x] Pass focused package, documentation, format, and CTX checks; record each command and result.
 - [x] Commit and push the `liora-components` rustdoc correction to `main`.
-- [ ] Commit and push the `liora-webview` rustdoc correction to `main`.
-- [ ] Verify GitHub Actions CI for the final rustdoc fixes.
+- [x] Commit and push the `liora-webview` rustdoc correction to `main`.
+- [x] Verify GitHub Actions CI for the final rustdoc fixes.
 - [ ] After CI passes and `crates-io` protection rules are configured, push the release tag and verify SDK/app workflows and crate publication.
 - [ ] Verify registry installation and release assets.
 - [x] Reply to issue #2 with verified findings and request reproducible details.
@@ -45,3 +45,4 @@
 - 2026-11-16: Posted the issue #2 follow-up at https://github.com/yhyzgn/liora/issues/2#issuecomment-6900960276, requesting platform, reproduction steps, workload, and the specific stall pattern.
 - 2026-11-16: Live GitHub checks found both required repository secret names, but `crates-io` has zero protection rules; release tagging remains blocked by the protected-environment requirement.
 - 2026-11-16: GitHub Actions run 43759396220 passed formatting, workspace check/tests, Docs snippets, and packaging, then failed strict SDK rustdoc coverage on undocumented `liora-webview::Error` and `Event` variants. Added accurate public docs; `RUSTDOCFLAGS="-D missing_docs" cargo doc -p liora-webview --no-deps` passed locally.
+- 2026-11-16: Commit 33f99f4c5c passed GitHub Actions run 43761445101: formatting, workspace check/tests, Docs snippets, SDK rustdoc coverage, packaging validation, release-readiness dry-run, and install/uninstall dry-run. The release tag remains blocked because `crates-io` has no protection rules.
