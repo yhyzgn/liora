@@ -13,21 +13,29 @@ use wry::{
 const MAX_MESSAGE_BYTES: usize = 64 * 1024;
 const MAX_PENDING_EVENTS: usize = 128;
 
+/// Errors returned while creating or operating the opt-in child webview.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    /// The GPUI window handle is not supported by the current platform backend.
     #[error("unsupported GPUI window handle for a child webview")]
     UnsupportedWindow,
+    /// The native window handle could not be obtained.
     #[error("native window handle: {0}")]
     Window(#[from] wry::raw_window_handle::HandleError),
+    /// GTK initialization failed on Linux.
     #[error("GTK initialization: {0}")]
     #[cfg(target_os = "linux")]
     Gtk(String),
+    /// The requested navigation URL is not a valid HTTP(S) URL.
     #[error("only http and https URLs are allowed")]
     InvalidUrl,
+    /// WRY failed to create or operate the native webview.
     #[error("webview: {0}")]
     Wry(#[from] wry::Error),
+    /// The child webview has already been closed.
     #[error("the child webview has been closed")]
     Closed,
+    /// A host-provided page message could not be encoded as JSON.
     #[error("page message encoding: {0}")]
     Json(#[from] serde_json::Error),
 }
@@ -35,11 +43,17 @@ pub enum Error {
 /// Untrusted page events delivered to subscribers on the GPUI thread.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Event {
+    /// The page started loading this URL.
     LoadStarted(String),
+    /// The page finished loading this URL.
     LoadFinished(String),
+    /// The page sent this IPC message body.
     Message(String),
+    /// The page message exceeded the 64 KiB limit.
     MessageTooLarge,
+    /// The pending event queue filled and newer events were dropped.
     EventsDropped,
+    /// A native error occurred while updating the child webview; this is its text.
     NativeError(String),
 }
 
