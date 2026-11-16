@@ -258,12 +258,12 @@ impl gpui::Element for AnchorTarget {
         &mut self,
         _id: Option<&GlobalElementId>,
         _id2: Option<&InspectorElementId>,
-        bounds: Bounds<Pixels>,
+        _bounds: Bounds<Pixels>,
         _rl: &mut (),
         window: &mut Window,
         cx: &mut App,
     ) -> () {
-        self.child.prepaint_at(bounds.origin, window, cx);
+        self.child.prepaint(window, cx);
     }
 
     fn paint(

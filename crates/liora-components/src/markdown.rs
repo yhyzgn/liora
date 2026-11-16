@@ -10,8 +10,8 @@ mod render;
 mod table_editor;
 
 use gpui::{
-    AppContext, Context, Entity, EventEmitter, InteractiveElement, IntoElement, ParentElement,
-    Render, ScrollHandle, SharedString, StatefulInteractiveElement, Styled, Window,
+    AppContext, Context, Entity, EventEmitter, Focusable, InteractiveElement, IntoElement,
+    ParentElement, Render, ScrollHandle, SharedString, StatefulInteractiveElement, Styled, Window,
 };
 use model::{Block, Kind};
 pub use model::{
@@ -133,7 +133,7 @@ impl MarkdownView {
     /// Replace source. Parsing is deferred until the next render.
     pub fn set_source(&mut self, source: impl Into<String>, cx: &mut Context<Self>) {
         self.document.set_source(source);
-        self.assets.clear();
+        // Raster keys include source and theme; prose edits must not rerender unchanged assets.
         cx.notify();
     }
 
@@ -327,10 +327,12 @@ pub struct MarkdownEditorChanged {
 
 /// Native Markdown editor shell with one durable source and a live rich editing projection.
 ///
-/// Source mode owns the native [`crate::Input`] so IME, selection, clipboard and undo
-/// remain on the existing GPUI input path. Rich mode exposes editable paragraph blocks and
-/// preserves inline Markdown markers when the visible text mapping is unambiguous; complex
-/// structural edits should use Source mode.
+/// Inactive blocks retain rendered typography, inline styles, math and diagrams. Click a
+/// paragraph or heading (or focus it and press Enter) to activate its native text input.
+/// The active input edits visible text, not Markdown source; inline styling is restored
+/// when focus leaves the block. Inputs retain native IME, selection and clipboard,
+/// and soft-wrap at the document width. Edits preserve inline markers only when the
+/// source mapping is unambiguous. Tables have literal-text cell editing; use Source mode for other structure.
 pub struct MarkdownEditor {
     source: SharedString,
     mode: MarkdownEditMode,
@@ -338,6 +340,7 @@ pub struct MarkdownEditor {
     preview: Entity<MarkdownView>,
     block_inputs: HashMap<u64, Entity<crate::Input>>,
     block_input_subscriptions: HashMap<u64, gpui::Subscription>,
+    rich_focus_subscription: Option<gpui::Subscription>,
     table_editors: Vec<(u64, Entity<table_editor::TableEditor>)>,
     _input_subscription: gpui::Subscription,
     undo_stack: Vec<SharedString>,
@@ -371,6 +374,7 @@ impl MarkdownEditor {
             preview,
             block_inputs: HashMap::new(),
             block_input_subscriptions: HashMap::new(),
+            rich_focus_subscription: None,
             _input_subscription: input_subscription,
             table_editors: Vec::new(),
             undo_stack: Vec::new(),
@@ -386,6 +390,17 @@ impl MarkdownEditor {
     /// Returns the canonical Markdown source.
     pub fn source(&self) -> &str {
         self.source.as_ref()
+    }
+
+    /// Uses the same host-approved image policy in the rich projection as [`MarkdownView`].
+    pub fn set_image_resolver(
+        &mut self,
+        resolver: impl Fn(&str) -> Option<MarkdownImage> + 'static,
+        cx: &mut Context<Self>,
+    ) {
+        self.preview
+            .update(cx, |preview, cx| preview.set_image_resolver(resolver, cx));
+        cx.notify();
     }
 
     /// Replaces the canonical source and updates both presentation modes.
@@ -502,6 +517,7 @@ impl MarkdownEditor {
                 crate::Input::new(value.clone(), cx)
                     .id(format!("markdown-rich-{id}"))
                     .min_rows(1)
+                    .soft_wrap(true)
             });
             let subscription = cx.observe(&input, move |editor, input, cx| {
                 cx.notify();
@@ -600,17 +616,73 @@ impl MarkdownEditor {
         cx.update_entity(&self.preview, |preview, _| preview.document.flush());
         self.ensure_rich_inputs(cx);
         self.ensure_table_editors(cx);
+        let active_block = self
+            .block_inputs
+            .iter()
+            .find_map(|(&id, input)| input.focus_handle(cx).is_focused(window).then_some(id));
+        self.rich_focus_subscription = active_block.map(|id| {
+            let focus = self.block_inputs[&id].focus_handle(cx);
+            cx.on_focus_out(&focus, window, |_, _, _, cx| cx.notify())
+        });
+        if let Some(id) = active_block {
+            self.active_block = Some(id);
+        }
+        let owner = cx.weak_entity();
+        let editor_id = self.id.clone();
         let inputs = self.block_inputs.clone();
         let tables = self.table_editors.clone();
+        let activation_owner = owner.clone();
+        let activate: render::EditActivation = Rc::new(move |id, offset, window, cx| {
+            let _ = activation_owner.update(cx, |editor, cx| {
+                let Some(input) = editor.block_inputs.get(&id).cloned() else {
+                    return;
+                };
+                input.update(cx, |input, cx| input.set_selection(offset..offset, cx));
+                editor.active_block = Some(id);
+                window.focus(&input.focus_handle(cx), cx);
+                cx.notify();
+            });
+        });
         cx.update_entity(&self.preview, |preview, preview_cx| {
             let editable = |block: &Block| {
                 if let Some((_, table)) = tables.iter().find(|(id, _)| *id == block.id) {
                     return Some(table.clone().into_any_element());
                 }
+                if Some(block.id) != active_block {
+                    return None;
+                }
                 inputs
                     .get(&block.id)
                     .cloned()
                     .map(|input| input.into_any_element())
+            };
+            let decorate = |block: &Block, rendered: gpui::AnyElement| {
+                let Some(input) = inputs.get(&block.id).cloned() else {
+                    return rendered;
+                };
+                let id = block.id;
+                let keyboard_owner = owner.clone();
+                let keyboard_input = input.clone();
+                gpui::div()
+                    .id(SharedString::from(format!("{editor_id}-edit-{id}")))
+                    .w_full()
+                    .min_w_0()
+                    .focusable()
+                    .tab_index(0)
+                    .aria_label("Markdown block; press Enter to edit")
+                    .cursor_text()
+                    .on_key_down(move |event, window, cx| {
+                        if event.keystroke.key == "enter" {
+                            let _ = keyboard_owner.update(cx, |editor, cx| {
+                                editor.active_block = Some(id);
+                                window.focus(&keyboard_input.focus_handle(cx), cx);
+                                cx.notify();
+                            });
+                            cx.stop_propagation();
+                        }
+                    })
+                    .child(rendered)
+                    .into_any_element()
             };
             render::document_with_editable(
                 &preview.document.blocks,
@@ -619,6 +691,8 @@ impl MarkdownEditor {
                 None,
                 None,
                 &editable,
+                &decorate,
+                activate,
                 &preview.assets,
                 window,
                 preview_cx,
@@ -873,9 +947,11 @@ impl Render for MarkdownEditor {
             .flex()
             .flex_col()
             .gap_2()
+            .items_start()
             .w_full()
             .child(toggle)
             .children(toolbar)
+            .child(crate::Text::new("Click a paragraph or heading to edit; other blocks remain rendered. Use source mode for unsupported structural edits.").sm())
             .child(content)
             .children(self.edit_error.clone().map(crate::Text::new))
     }
@@ -1024,5 +1100,183 @@ mod editor_mapping_tests {
             "next *",
         ));
         assert_eq!(source, "next \\*");
+    }
+}
+
+#[cfg(test)]
+mod editor_asset_tests {
+    use super::*;
+
+    #[test]
+    fn prose_edits_reuse_unchanged_formula_images() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let editor = app.new(|cx| MarkdownEditor::new("Original paragraph.\n\n$x$\n", cx));
+        app.update(|cx| {
+            let cache = editor.read(cx).preview.read(cx).assets.clone();
+            let kind = assets::AssetKind::Math(false, [0, 0, 0, 255]);
+            let before = cache.render(kind, "x").unwrap();
+            editor.update(cx, |editor, cx| {
+                editor.set_source("Edited paragraph.\n\n$x$\n", cx);
+            });
+            let after = cache.render(kind, "x").unwrap();
+            assert!(
+                Arc::ptr_eq(&before, &after),
+                "prose edits must retain cached formula rasters"
+            );
+        });
+        app.quit();
+    }
+}
+
+#[cfg(test)]
+mod rich_pointer_tests {
+    use super::*;
+    use gpui::{
+        FocusHandle, MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, PlatformInput,
+        TestAppContext, div, px, size,
+    };
+
+    struct Surface {
+        editor: Entity<MarkdownEditor>,
+        outside: FocusHandle,
+    }
+    impl Render for Surface {
+        fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+            div()
+                .flex()
+                .flex_col()
+                .w_full()
+                .child(self.editor.clone())
+                .child(
+                    div()
+                        .id("outside-markdown")
+                        .track_focus(&self.outside)
+                        .child("Outside"),
+                )
+        }
+    }
+
+    fn click(window: &mut Window, position: gpui::Point<gpui::Pixels>, cx: &mut gpui::App) {
+        window.dispatch_event(
+            PlatformInput::MouseMove(MouseMoveEvent {
+                position,
+                ..Default::default()
+            }),
+            cx,
+        );
+        window.dispatch_event(
+            PlatformInput::MouseDown(MouseDownEvent {
+                position,
+                button: MouseButton::Left,
+                click_count: 1,
+                ..Default::default()
+            }),
+            cx,
+        );
+        window.dispatch_event(
+            PlatformInput::MouseUp(MouseUpEvent {
+                position,
+                button: MouseButton::Left,
+                click_count: 1,
+                ..Default::default()
+            }),
+            cx,
+        );
+    }
+
+    #[test]
+    fn preview_pointer_places_display_caret_and_blur_restores_rendering() {
+        let source = "Click this paragraph to edit it immediately.\n\nNative **bold猫**, *emphasis*.\n\n| A | B |\n| --- | --- |\n| cell | value |\n";
+        let mut app = TestAppContext::single();
+        app.update(crate::init_liora);
+        let editor = app.new(|cx| MarkdownEditor::new(source, cx));
+        let outside = app.update(|cx| cx.focus_handle());
+        let first = app.update(|cx| {
+            editor.update(cx, |editor, cx| {
+                editor.ensure_rich_inputs(cx);
+                editor.preview.read(cx).document.blocks[0].id
+            })
+        });
+        let handle = app.open_window(size(px(900.), px(800.)), |_, _| Surface {
+            editor: editor.clone(),
+            outside: outside.clone(),
+        });
+        app.update_window(handle.into(), |_, window, cx| {
+            window.draw(cx).clear(cx);
+            let position = crate::selectable_text::test_display_point(
+                &format!("markdown-block-{first}-text"),
+                "Click this paragraph to edit it immediately.".len(),
+                px(cx.global::<liora_core::Config>().theme.font_size.md) * 1.6,
+            );
+            click(window, position, cx);
+            window.draw(cx).clear(cx);
+            let input = editor.read(cx).block_inputs[&first].clone();
+            assert!(input.focus_handle(cx).is_focused(window));
+            input.update(cx, |input, cx| input.insert_text("!", cx));
+        })
+        .unwrap();
+        app.update(|cx| {
+            assert!(
+                editor
+                    .read(cx)
+                    .source()
+                    .starts_with("Click this paragraph to edit it immediately.!")
+            )
+        });
+        app.update_window(handle.into(), |_, window, cx| {
+            window.focus(&outside, cx);
+            window.draw(cx).clear(cx);
+            assert!(editor.read(cx).rich_focus_subscription.is_none());
+            let second = editor.read(cx).preview.read(cx).document.blocks[1].id;
+            let position = crate::selectable_text::test_display_point(
+                &format!("markdown-block-{second}-text"),
+                "Native bo".len(),
+                px(cx.global::<liora_core::Config>().theme.font_size.md) * 1.6,
+            );
+            click(window, position, cx);
+            window.draw(cx).clear(cx);
+            let input = editor.read(cx).block_inputs[&second].clone();
+            input.update(cx, |input, cx| input.insert_text("!", cx));
+        })
+        .unwrap();
+        app.update(|cx| {
+            assert!(
+                editor
+                    .read(cx)
+                    .source()
+                    .contains("Native **bo!ld猫**, *emphasis*.")
+            )
+        });
+        app.update_window(handle.into(), |_, window, cx| {
+            let cell_offset = editor.read(cx).source().find("cell").unwrap();
+            let cell = editor.update(cx, |editor, cx| {
+                editor.rich_input_at(cell_offset, cx).unwrap()
+            });
+            window.focus(&cell.focus_handle(cx), cx);
+            window.draw(cx).clear(cx);
+            assert!(
+                editor.read(cx).rich_focus_subscription.is_none(),
+                "table focus must restore styled paragraph preview"
+            );
+            let second = editor.read(cx).preview.read(cx).document.blocks[1].id;
+            let position = crate::selectable_text::test_display_point(
+                &format!("markdown-block-{second}-text"),
+                "Native b".len(),
+                px(cx.global::<liora_core::Config>().theme.font_size.md) * 1.6,
+            );
+            click(window, position, cx);
+            window.draw(cx).clear(cx);
+            let input = editor.read(cx).block_inputs[&second].clone();
+            input.update(cx, |input, cx| input.insert_text("?", cx));
+        })
+        .unwrap();
+        app.update(|cx| {
+            assert!(
+                editor.read(cx).source().contains("Native **b?o!ld猫**"),
+                "revisited block must use clicked caret, not saved caret"
+            )
+        });
+        app.quit();
     }
 }

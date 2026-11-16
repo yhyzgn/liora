@@ -23,6 +23,7 @@ use std::{
 pub(super) type ImageCache = HashMap<SharedString, Option<MarkdownImage>>;
 pub(super) type TaskToggleHandler = Rc<dyn Fn(u64, Range<usize>, bool, &mut App)>;
 pub(super) type NavigationHandler = Rc<dyn Fn(SharedString, &mut App)>;
+pub(super) type EditActivation = Rc<dyn Fn(u64, usize, &mut Window, &mut App)>;
 
 struct DocumentFonts {
     ui: Option<SharedString>,
@@ -30,6 +31,7 @@ struct DocumentFonts {
     selection_scope: Option<SharedString>,
     order: Cell<usize>,
     assets: super::assets::AssetCache,
+    on_edit: Option<EditActivation>,
 }
 
 #[derive(Default)]
@@ -121,12 +123,12 @@ impl gpui::Element for FocusPreviewBounds {
         &mut self,
         _: Option<&GlobalElementId>,
         _: Option<&InspectorElementId>,
-        bounds: Bounds<Pixels>,
+        _bounds: Bounds<Pixels>,
         _: &mut (),
         window: &mut Window,
         cx: &mut App,
     ) {
-        self.child.prepaint_at(bounds.origin, window, cx);
+        self.child.prepaint(window, cx);
     }
 
     fn paint(
@@ -171,6 +173,7 @@ pub(super) fn document(
         selection_scope: Some(selection_scope),
         order: Cell::new(0),
         assets: assets.clone(),
+        on_edit: None,
     };
     let footnotes = footnote_info(blocks);
     let mut root = div().flex().flex_col().gap_3().w_full().min_w_0();
@@ -187,6 +190,7 @@ pub(super) fn document(
             &footnotes,
             &fonts,
             None,
+            None,
             window,
             cx,
         ));
@@ -201,6 +205,8 @@ pub(super) fn document_with_editable(
     on_task_toggle: Option<&TaskToggleHandler>,
     on_navigate: Option<&NavigationHandler>,
     editable: &dyn Fn(&Block) -> Option<AnyElement>,
+    decorate: &dyn Fn(&Block, AnyElement) -> AnyElement,
+    on_edit: EditActivation,
     assets: &super::assets::AssetCache,
     window: &mut Window,
     cx: &mut App,
@@ -211,6 +217,7 @@ pub(super) fn document_with_editable(
         selection_scope: None,
         order: Cell::new(0),
         assets: assets.clone(),
+        on_edit: Some(on_edit),
     };
     let footnotes = footnote_info(blocks);
     let mut root = div().flex().flex_col().gap_3().w_full().min_w_0();
@@ -228,6 +235,7 @@ pub(super) fn document_with_editable(
                 &footnotes,
                 &fonts,
                 Some(editable),
+                Some(decorate),
                 window,
                 cx,
             )
@@ -249,6 +257,7 @@ fn render_block(
     footnotes: &HashMap<usize, FootnoteInfo>,
     fonts: &DocumentFonts,
     editable: Option<&dyn Fn(&Block) -> Option<AnyElement>>,
+    decorate: Option<&dyn Fn(&Block, AnyElement) -> AnyElement>,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
@@ -507,17 +516,37 @@ fn render_block(
             .collect();
         if let Kind::Math(display) = block.kind {
             let scope = fonts.selection_scope.clone().unwrap_or_else(|| id.clone());
-            return inline::formula(options, display, fonts, &scope, true, window, cx);
+            return inline::formula(options, display, fonts, &scope, true, None, window, cx);
         }
-        if block
+        let text = if block
             .spans
             .iter()
             .any(|span| span.style.math.is_some() || span.style.superscript || span.style.subscript)
         {
-            root = root.child(inline::render(block, options, fonts, window, cx));
+            inline::render(block, options, fonts, window, cx)
         } else {
-            root = root.child(selectable_leaf(options, fonts, window, cx));
-        }
+            if let Some(activate) = fonts.on_edit.as_ref().filter(|_| {
+                matches!(block.kind, Kind::Paragraph | Kind::Heading(_)) && block.images.is_empty()
+            }) {
+                let activate = activate.clone();
+                let id = block.id;
+                SelectableText::view_with_pointer_handler(
+                    options,
+                    Some(Rc::new(move |offset, window, cx| {
+                        activate(id, offset, window, cx);
+                    })),
+                    window,
+                    cx,
+                )
+            } else {
+                selectable_leaf(options, fonts, window, cx)
+            }
+        };
+        root = root.child(if let Some(decorate) = decorate {
+            decorate(block, text)
+        } else {
+            text
+        });
         let mut links = HashSet::new();
         for span in &block.spans {
             if let Some(destination) = &span.style.link {
@@ -771,6 +800,7 @@ fn render_block(
                                     footnotes,
                                     fonts,
                                     editable,
+                                    decorate,
                                     window,
                                     cx,
                                 )
@@ -804,6 +834,7 @@ fn render_block(
                         footnotes,
                         fonts,
                         editable,
+                        decorate,
                         window,
                         cx,
                     )

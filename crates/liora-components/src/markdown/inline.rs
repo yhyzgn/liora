@@ -41,9 +41,23 @@ fn leaf(
     fonts: &DocumentFonts,
     scope: &SharedString,
     last: bool,
+    edit: Option<(u64, usize)>,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
+    if let Some((id, start)) = edit {
+        if let Some(activate) = &fonts.on_edit {
+            let activate = activate.clone();
+            return SelectableText::view_with_pointer_handler(
+                options,
+                Some(Rc::new(move |offset, window, cx| {
+                    activate(id, start + offset, window, cx);
+                })),
+                window,
+                cx,
+            );
+        }
+    }
     let order = fonts.order.get();
     fonts.order.set(order + 1);
     SelectableText::view_in_scope(
@@ -62,6 +76,7 @@ pub(super) fn formula(
     fonts: &DocumentFonts,
     scope: &SharedString,
     last: bool,
+    edit: Option<(u64, usize)>,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
@@ -111,7 +126,7 @@ pub(super) fn formula(
                 options.font_size = options.font_size * (width / measured);
             }
             options.line_height = height / source.split('\n').count() as f32;
-            let selection = leaf(options, fonts, scope, last, window, cx);
+            let selection = leaf(options, fonts, scope, last, edit, window, cx);
             div()
                 .relative()
                 .flex_none()
@@ -128,7 +143,7 @@ pub(super) fn formula(
                 .into_any_element()
         }
         Err(error) => {
-            let source = leaf(options, fonts, scope, last, window, cx);
+            let source = leaf(options, fonts, scope, last, edit, window, cx);
             div()
                 .flex()
                 .flex_col()
@@ -177,6 +192,8 @@ pub(super) fn render(
         _ => flow,
     };
     let runs = std::mem::take(&mut options.runs);
+    let can_edit =
+        matches!(block.kind, Kind::Paragraph | Kind::Heading(_)) && block.images.is_empty();
     let mut previous_newline = true;
     for (span_index, span) in block.spans.iter().enumerate() {
         let source = &block.text[span.range.clone()];
@@ -190,7 +207,16 @@ pub(super) fn render(
             base.text = source.to_owned().into();
             let last = span.range.end == block.text.len();
             previous_newline = false;
-            let child = formula(base, display, fonts, &scope, last, window, cx);
+            let child = formula(
+                base,
+                display,
+                fonts,
+                &scope,
+                last,
+                can_edit.then_some((block.id, span.range.start)),
+                window,
+                cx,
+            );
             if display {
                 flow = flow.child(div().w_full().flex().justify_center().child(child));
             } else {
@@ -211,7 +237,15 @@ pub(super) fn render(
             part.text = text.to_owned().into();
             part.runs[0].len = text.len();
             let last = span.range.start + range.end == block.text.len();
-            let child = leaf(part, fonts, &scope, last, window, cx);
+            let child = leaf(
+                part,
+                fonts,
+                &scope,
+                last,
+                can_edit.then_some((block.id, span.range.start + range.start)),
+                window,
+                cx,
+            );
             if text == "\n" {
                 let height = if previous_newline {
                     options.line_height

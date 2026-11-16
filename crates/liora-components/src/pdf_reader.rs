@@ -6,9 +6,8 @@
 
 mod backend;
 mod page;
-pub use backend::PdfDecodeError;
-
-use crate::{Button, FindBar, FindBarEvent, Flex};
+use crate::{Button, FindBar, FindBarEvent};
+pub use backend::{PdfDecodeError, PdfDecoder};
 use gpui::{
     AnyElement, App, Context, Entity, EventEmitter, FocusHandle, Focusable, IntoElement, ObjectFit,
     Render, RenderImage, ScrollHandle, SharedString, Window, canvas, div, img, prelude::*, px,
@@ -98,6 +97,22 @@ impl PdfDocument {
         bytes: Vec<u8>,
     ) -> Result<Self, PdfDecodeError> {
         backend::decode(title.into(), bytes)
+    }
+
+    /// Synchronously decodes, publishing a first-page preview before completion.
+    ///
+    /// The host must dispatch decoding to a background worker and marshal the
+    /// preview back to its UI thread; `on_preview` runs on the calling thread.
+    /// After all pages pass preflight, calls `on_preview` once with full page
+    /// metadata and only the first page's image and thumbnail populated. Those
+    /// images share their storage with the final document. Continue handling the
+    /// returned result: rendering later pages can still fail after the preview.
+    pub fn from_bytes_with_preview(
+        title: impl Into<SharedString>,
+        bytes: Vec<u8>,
+        on_preview: impl FnOnce(Self),
+    ) -> Result<Self, PdfDecodeError> {
+        backend::decode_with_preview(title.into(), bytes, on_preview)
     }
 
     /// Creates a document from host-provided pages, numbering them in display order.
@@ -247,6 +262,11 @@ impl PdfTool {
 /// Events emitted after a reader interaction changes host-visible state.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum PdfReaderEvent {
+    /// Visible page images needed by a lazy decoding host.
+    PagesRequested {
+        /// One-based visible page numbers.
+        pages: Vec<usize>,
+    },
     /// Current page changed to a one-based page number.
     PageChanged {
         /// Current one-based page number.
@@ -286,6 +306,10 @@ pub enum PdfReaderEvent {
 }
 
 /// Native GPUI PDF reader control with host-rendered page images.
+///
+/// Fills its host's bounded size. The default [`PdfZoom::FitPage`] preserves
+/// aspect ratio inside the remaining viewport after the toolbar and sidebar;
+/// short, wide hosts therefore leave horizontal space around portrait pages.
 pub struct PdfReader {
     id: SharedString,
     document: PdfDocument,
@@ -303,6 +327,7 @@ pub struct PdfReader {
     scroll_handle: ScrollHandle,
     viewport: (f32, f32),
     rotated_images: BTreeMap<usize, Arc<RenderImage>>,
+    requested_pages: Vec<usize>,
 }
 
 impl EventEmitter<PdfReaderEvent> for PdfReader {}
@@ -346,6 +371,7 @@ impl PdfReader {
             scroll_handle: ScrollHandle::new(),
             viewport: (1.0, 1.0),
             rotated_images: BTreeMap::new(),
+            requested_pages: Vec::new(),
             _find_subscription: find_subscription,
         }
     }
@@ -381,6 +407,7 @@ impl PdfReader {
         self.document = document;
         self.rotated_images.clear();
         self.scroll_handle.set_offset(gpui::point(px(0.0), px(0.0)));
+        self.requested_pages.clear();
         self.current_page = self
             .current_page
             .clamp(1, self.document.page_count().max(1));
@@ -411,6 +438,20 @@ impl PdfReader {
         }
         self.rotated_images.remove(&index);
         page.image = Some(image);
+        cx.notify();
+        true
+    }
+
+    /// Installs one decoded page without resetting navigation or zoom.
+    pub fn set_decoded_page(&mut self, page: PdfPage, cx: &mut Context<Self>) -> bool {
+        let Some(index) = page.number.checked_sub(1) else {
+            return false;
+        };
+        let Some(slot) = self.document.pages.get_mut(index) else {
+            return false;
+        };
+        *slot = page;
+        self.rotated_images.remove(&index);
         cx.notify();
         true
     }
@@ -578,6 +619,8 @@ impl PdfReader {
         let layout = self.layout;
         let tool = self.tool;
         div()
+            .debug_selector(|| "pdf-reader-toolbar".into())
+            .flex_none()
             .flex()
             .flex_wrap()
             .items_center()
@@ -754,14 +797,18 @@ impl PdfReader {
                     .into_any_element(),
             );
         }
-        Flex::new()
+        div()
             .id("pdf-thumbnails")
-            .column()
-            .width_px(140.0)
+            .debug_selector(|| "pdf-reader-sidebar".into())
+            .flex()
+            .flex_col()
+            .flex_none()
+            .w(px(140.0))
             .h_full()
+            .min_h(px(0.0))
             .overflow_y_scroll()
-            .gap_sm()
-            .padding_sm()
+            .gap(px(8.0))
+            .p(px(8.0))
             .border_color(cx.global::<Config>().theme.neutral.border)
             .children(thumbnails)
             .into_any_element()
@@ -801,13 +848,18 @@ impl PdfReader {
         };
         div()
             .id(format!("pdf-page-{}", index + 1))
+            .debug_selector(|| format!("pdf-reader-page-row-{}", index + 1))
             .flex()
             .flex_none()
-            .min_w_full()
+            .w_full()
+            .min_w(px(width + 26.0))
+            .justify_center()
             .p_3()
             .child(
                 div()
-                    .mx_auto()
+                    .debug_selector(|| format!("pdf-reader-page-{}", index + 1))
+                    .flex()
+                    .flex_col()
                     .flex_none()
                     .bg(theme.neutral.card)
                     .border_1()
@@ -833,6 +885,7 @@ impl Render for PdfReader {
         let config = cx.global::<Config>();
         let mut root = div()
             .id(self.id.clone())
+            .debug_selector(|| "pdf-reader-root".into())
             .track_focus(&self.focus_handle)
             .tab_index(0)
             .on_key_down(cx.listener(Self::key_down))
@@ -860,7 +913,11 @@ impl Render for PdfReader {
         };
         let pages = div()
             .id("pdf-pages")
-            .size_full()
+            .debug_selector(|| "pdf-reader-pages".into())
+            .flex_1()
+            .w_full()
+            .min_w(px(0.0))
+            .min_h(px(0.0))
             .flex()
             .flex_col()
             .overflow_scroll()
@@ -874,9 +931,13 @@ impl Render for PdfReader {
         let scroll = self.scroll_handle.clone();
         let viewport = div()
             .relative()
+            .debug_selector(|| "pdf-reader-viewport".into())
+            .flex()
+            .flex_col()
             .flex_1()
             .h_full()
             .min_w(px(0.0))
+            .min_h(px(0.0))
             .overflow_hidden()
             .child(pages)
             .child(
@@ -901,13 +962,27 @@ impl Render for PdfReader {
                                         cx.notify();
                                     }
                                 }
+                                let count = reader.document.page_count();
+                                let visible = if count == 0 {
+                                    Vec::new()
+                                } else if reader.layout == PdfPageLayout::SinglePage {
+                                    vec![reader.current_page]
+                                } else {
+                                    let first = reader.scroll_handle.top_item().min(count - 1);
+                                    let last = reader.scroll_handle.bottom_item().min(count - 1);
+                                    (first..=last).map(|index| index + 1).collect()
+                                };
+                                if visible != reader.requested_pages {
+                                    reader.requested_pages = visible.clone();
+                                    cx.emit(PdfReaderEvent::PagesRequested { pages: visible });
+                                }
                             });
                         });
                     },
                     |_, _, _, _| {},
                 )
                 .absolute()
-                .inset_0(),
+                .size_full(),
             );
         let mut body = div().flex().flex_1().min_h(px(0.0)).min_w(px(0.0));
         if self.sidebar_visible {

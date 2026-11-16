@@ -140,7 +140,7 @@ pub fn registry() -> Vec<DemoEntry> {
         DemoEntry {
             name: "PdfReader PDF 阅读器",
             description: "纯 Rust PDF 解码、原生打开文件、缩放、旋转和工具状态",
-            render: pdf_reader_demo::render,
+            render: pdf_reader_demo::render_filling,
         },
         DemoEntry {
             name: "Terminal 终端",

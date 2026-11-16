@@ -38,6 +38,9 @@ liora-icons-material = { path = "../../crates/liora-icons-material" }
 toml.workspace = true
 liora-icons-optimizer = { path = "../../crates/liora-icons-optimizer" }
 
+[dev-dependencies]
+gpui = { workspace = true, features = ["test-support"] }
+
 [target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
 gpui = { workspace = true, features = ["wayland", "x11", "font-kit"] }
 gpui_platform = { workspace = true, features = ["wayland", "x11", "font-kit"] }

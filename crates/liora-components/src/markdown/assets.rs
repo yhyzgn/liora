@@ -45,9 +45,6 @@ impl AssetCache {
         cache.insert(key, result.clone());
         result
     }
-    pub(super) fn clear(&self) {
-        self.0.borrow_mut().clear();
-    }
 }
 
 #[cfg(test)]

@@ -19,6 +19,8 @@
 //! the component, and avoid app-specific host-application resources in this SDK
 //! crate.
 
+mod wrapped;
+
 use gpui::{
     AnyElement, App, Bounds, Context, Element, ElementId, ElementInputHandler, Entity,
     EntityInputHandler, FocusHandle, Focusable, GlobalElementId, InspectorElementId, IntoElement,
@@ -129,6 +131,8 @@ pub struct Input {
     width: Option<Pixels>,
     height: Option<Pixels>,
     text_align: gpui::TextAlign,
+    soft_wrap: bool,
+    wrapped_layout: Option<std::rc::Rc<wrapped::WrappedInputLayout>>,
     /// Minimum number of text rows reserved by a multiline input.
     pub min_rows: usize,
     on_enter: Option<Box<dyn Fn(&mut Self, &str, &mut Window, &mut Context<Self>) + 'static>>,
@@ -168,6 +172,8 @@ impl Input {
             height: None,
             min_rows: 1,
             text_align: gpui::TextAlign::Left,
+            soft_wrap: false,
+            wrapped_layout: None,
             on_enter: None,
             on_change: None,
             on_clear: None,
@@ -178,6 +184,13 @@ impl Input {
         self.id = Some(id.into());
         self
     }
+    /// Soft-wraps native text at the available width, growing to show every visual row.
+    /// Password fields retain the existing masked single-line layout.
+    pub fn soft_wrap(mut self, enabled: bool) -> Self {
+        self.soft_wrap = enabled;
+        self
+    }
+
     /// Uses the supplied placeholder text when the value is empty.
     pub fn placeholder(mut self, p: impl Into<LocalizedText>) -> Self {
         self.placeholder = p.into();
@@ -352,6 +365,7 @@ impl Input {
         if self.value == value && self.marked_range.is_none() {
             return;
         }
+        self.wrapped_layout = None;
         self.value = value;
         self.selected_range = self.value.len()..self.value.len();
         self.marked_range = None;
@@ -442,6 +456,7 @@ impl Input {
     /// Clears the currently stored state or selection.
     pub fn clear(&mut self, cx: &mut Context<Self>) {
         self.value = SharedString::default();
+        self.wrapped_layout = None;
         self.selected_range = 0..0;
         self.emit_change(cx);
         if let Some(on_clear) = self.on_clear.take() {
@@ -602,6 +617,24 @@ impl Input {
     }
 
     fn move_vertical(&mut self, delta: isize, select: bool, cx: &mut Context<Self>) {
+        if self.soft_wrap {
+            if let Some(layout) = &self.wrapped_layout {
+                let position = layout.position(self.cursor_offset());
+                let target = clamp_to_char_boundary(
+                    &self.value,
+                    layout.index(point(
+                        position.x,
+                        position.y + layout.line_height * delta as f32,
+                    )),
+                );
+                if select {
+                    self.select_to(target, cx);
+                } else {
+                    self.move_to(target, cx);
+                }
+                return;
+            }
+        }
         let text = self.value.clone();
         let offset = self.cursor_offset();
         let lines: Vec<&str> = text.split('\n').collect();
@@ -627,7 +660,7 @@ impl Input {
         }
         let target_len = lines[target_line].len();
         let new_col = col.min(target_len);
-        let new_offset = target_start + new_col;
+        let new_offset = clamp_to_char_boundary(&self.value, target_start + new_col);
         if select {
             self.select_to(new_offset, cx);
         } else {
@@ -636,6 +669,9 @@ impl Input {
     }
 
     fn index_for_point(&self, pt: Point<Pixels>, window: &Window) -> usize {
+        if let Some(layout) = self.wrapped_layout.as_ref().filter(|_| self.soft_wrap) {
+            return clamp_to_char_boundary(&self.value, layout.index(pt));
+        }
         if let (Some(bounds), layouts) = (self.last_bounds.as_ref(), &self.last_line_layouts) {
             if layouts.is_empty() {
                 return 0;
@@ -812,6 +848,7 @@ impl Input {
             }
         }
         v.replace_range(range, new_text);
+        self.wrapped_layout = None;
         self.value = SharedString::from(v);
         let pos = self.selected_range.start + new_text.len();
         self.selected_range = pos..pos;
@@ -839,6 +876,7 @@ impl Input {
                 return;
             }
         }
+        self.wrapped_layout = None;
         self.value = SharedString::from(next_value);
         self.selected_range =
             next_selection.start.min(self.value.len())..next_selection.end.min(self.value.len());
@@ -1046,6 +1084,7 @@ impl EntityInputHandler for Input {
         }
         let mut v = self.value.to_string();
         v.replace_range(range.clone(), new_text);
+        self.wrapped_layout = None;
         self.value = SharedString::from(v);
         self.selected_range = range.start + new_text.len()..range.start + new_text.len();
         self.marked_range = None;
@@ -1085,6 +1124,7 @@ impl EntityInputHandler for Input {
         }
         let mut v = self.value.to_string();
         v.replace_range(range.clone(), new_text);
+        self.wrapped_layout = None;
         self.value = SharedString::from(v);
         if !new_text.is_empty() {
             self.marked_range = Some(range.start..range.start + new_text.len());
@@ -1110,6 +1150,11 @@ impl EntityInputHandler for Input {
         window: &mut Window,
         _: &mut Context<Self>,
     ) -> Option<Bounds<Pixels>> {
+        if let Some(layout) = self.wrapped_layout.as_ref().filter(|_| self.soft_wrap) {
+            return Some(layout.range_bounds(
+                self.offset_from_utf16(range_utf16.start)..self.offset_from_utf16(range_utf16.end),
+            ));
+        }
         let layouts = &self.last_line_layouts;
         if layouts.is_empty() {
             return None;
@@ -1539,6 +1584,7 @@ impl Render for Input {
         let mut row = gpui::div()
             .flex()
             .flex_row()
+            .when(self.soft_wrap, |row| row.w_full().min_w_0())
             .when_some(self.width, |s, w| s.w(w))
             .when_some(self.height, |s, h| s.h(h))
             .when(self.height.is_none(), |s| {
@@ -1614,7 +1660,13 @@ impl Render for Input {
             );
         }
 
-        let mut inner = gpui::div().flex_1().flex().flex_row().gap_2().px(px(12.0));
+        let mut inner = gpui::div()
+            .flex_1()
+            .min_w_0()
+            .flex()
+            .flex_row()
+            .gap_2()
+            .px(px(12.0));
         if self.min_rows > 1 {
             inner = inner.items_start().py_2();
         } else {
@@ -1625,9 +1677,14 @@ impl Render for Input {
             inner = inner.child(Icon::new(icon).size(px(icon_sz)).color(theme.neutral.icon));
         }
 
-        inner = inner.child(InputElement {
-            input: cx.entity().clone(),
-            disabled: self.disabled,
+        inner = inner.child(if self.soft_wrap && !self.is_password() {
+            wrapped::WrappedInputElement::new(cx.entity()).into_any_element()
+        } else {
+            InputElement {
+                input: cx.entity().clone(),
+                disabled: self.disabled,
+            }
+            .into_any_element()
         });
 
         if self.clearable && !self.value.is_empty() && !self.disabled {

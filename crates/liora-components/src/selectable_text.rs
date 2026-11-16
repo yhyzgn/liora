@@ -130,6 +130,15 @@ impl SelectableText {
         window: &mut Window,
         cx: &mut App,
     ) -> gpui::AnyElement {
+        Self::view_with_pointer_handler(options, None, window, cx)
+    }
+
+    pub(crate) fn view_with_pointer_handler(
+        options: SelectableTextOptions,
+        pointer_handler: Option<Rc<dyn Fn(usize, &mut Window, &mut App)>>,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> gpui::AnyElement {
         let input = window.use_keyed_state(options.id.clone(), cx, {
             let initial = options.clone();
             move |_, cx| SelectableTextState::new(cx, initial)
@@ -137,6 +146,7 @@ impl SelectableText {
         input.update(cx, |state, cx| {
             state.update_options(options, cx);
             state.scope = None;
+            state.pointer_handler = pointer_handler;
         });
         SelectableTextView { input }.into_any_element()
     }
@@ -533,11 +543,13 @@ struct SelectableTextState {
     focus_handle: FocusHandle,
     scope: Option<(Entity<ScopedSelection>, usize)>,
     scoped_geometry: Rc<RefCell<SelectableTextSelectionState>>,
+    pointer_handler: Option<Rc<dyn Fn(usize, &mut Window, &mut App)>>,
 }
 
 impl SelectableTextState {
     fn new(cx: &mut Context<Self>, options: SelectableTextOptions) -> Self {
         Self {
+            pointer_handler: None,
             id: options.id,
             runs: normalize_runs(options.runs, options.text.len(), options.text_color),
             text: options.text,
@@ -724,6 +736,10 @@ impl SelectableTextState {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if let Some(handler) = &self.pointer_handler {
+            handler(self.index_for_point(event.position), window, cx);
+            return;
+        }
         if let Some((scope, order)) = &self.scope {
             window.focus(&self.focus_handle, cx);
             let idx = self.index_for_point(event.position);
@@ -1816,4 +1832,25 @@ mod tests {
         assert_eq!(joined_scoped_text(members, end, start), "言\n\ntitle\n结");
         assert_eq!(joined_scoped_text(members, start, start), "");
     }
+}
+
+#[cfg(test)]
+pub(crate) fn test_display_point(id: &str, offset: usize, line_height: Pixels) -> Point<Pixels> {
+    let id: ElementId = SharedString::from(id.to_owned()).into();
+    with_selection_state(&id, |state| {
+        let bounds = state.bounds.expect("displayed selectable text bounds");
+        let layout = state
+            .layout
+            .as_ref()
+            .expect("displayed selectable text layout");
+        for (line, (y, start)) in layout.lines.iter().zip(&state.line_starts) {
+            if offset <= start + line.len() {
+                let local = line
+                    .position_for_index(offset - start, line_height)
+                    .unwrap();
+                return point(bounds.left() + local.x, *y + local.y + line_height * 0.5);
+            }
+        }
+        panic!("display offset is outside text");
+    })
 }

@@ -409,10 +409,14 @@ fn gallery_window_options(cx: &App, frame_mode: WindowFrameMode) -> WindowOption
     apply_window_frame_mode(
         WindowOptions {
             show: false,
-            window_bounds: Some(startup_maximized_window_bounds(
-                cx,
-                size(px(1920.0), px(1080.0)),
-            )),
+            window_bounds: Some(if cx.is_test() {
+                gpui::WindowBounds::Windowed(gpui::Bounds::new(
+                    gpui::point(px(0.), px(0.)),
+                    size(px(1920.), px(1080.)),
+                ))
+            } else {
+                startup_maximized_window_bounds(cx, size(px(1920.), px(1080.)))
+            }),
             titlebar: Some(gpui::TitlebarOptions {
                 title: Some(tr(cx, locales::gallery::window_title)),
                 ..Default::default()
@@ -1059,6 +1063,7 @@ impl Render for Gallery {
 
         let selected_entry = self.entries.get(selected).copied();
         let selected_demo = self.selected_demo(selected, cx);
+        let fill_demo = selected_entry.is_some_and(|entry| entry.name == "PdfReader PDF 阅读器");
         let selected_label = selected_entry
             .map(|entry| entry.name.to_string())
             .unwrap_or_else(|| tr(cx, locales::gallery::about_label).to_string());
@@ -1135,19 +1140,58 @@ impl Render for Gallery {
                 .child(Title::new(selected_entry.name).h3())
                 .child(Paragraph::with_text(selected_entry.description));
 
-            let mut panel = Space::new().vertical().gap_lg().child(header);
-            if let Some(selected_demo) = selected_demo {
-                panel = panel.child(selected_demo);
+            if fill_demo {
+                div()
+                    .size_full()
+                    .flex()
+                    .flex_col()
+                    .gap_4()
+                    .min_h_0()
+                    .child(div().flex_none().child(header))
+                    .child(
+                        div().flex_1().min_h_0().child(match selected_demo {
+                            Some(demo) => demo.into_any_element(),
+                            None => self
+                                .render_demo_loading_panel(selected_entry.name, cx)
+                                .into_any_element(),
+                        }),
+                    )
+                    .into_any_element()
             } else {
-                panel = panel.child(self.render_demo_loading_panel(selected_entry.name, cx));
+                let mut panel = Space::new().vertical().gap_lg().child(header);
+                if let Some(selected_demo) = selected_demo {
+                    panel = panel.child(selected_demo);
+                } else {
+                    panel = panel.child(self.render_demo_loading_panel(selected_entry.name, cx));
+                }
+                panel.into_any_element()
             }
-
-            panel.into_any_element()
         } else {
             Paragraph::with_text(locales::gallery::no_entry).into_any_element()
         };
 
-        let content = Card::new(content_body).no_shadow().no_shrink();
+        let content = if fill_demo {
+            let theme = &cx.global::<Config>().theme;
+            div()
+                .id("gallery-filling-demo")
+                .debug_selector(|| "gallery-filling-demo".into())
+                .flex_1()
+                .min_h_0()
+                .w_full()
+                .p_4()
+                .bg(theme.neutral.card)
+                .border_1()
+                .border_color(theme.neutral.border)
+                .rounded(px(theme.radius.md))
+                .overflow_hidden()
+                .child(content_body)
+                .into_any_element()
+        } else {
+            Card::new(content_body)
+                .no_shadow()
+                .no_shrink()
+                .into_any_element()
+        };
 
         liora_components::message::render_messages(cx);
         liora_components::notification::render_notifications(cx);
@@ -1165,7 +1209,7 @@ impl Render for Gallery {
             .child(gallery_fallback_menu_bar(cx))
             .child(header_main);
 
-        let shell = Container::new()
+        let mut shell = Container::new()
             .header(header)
             .header_height(px(112.0))
             .aside(
@@ -1177,12 +1221,14 @@ impl Render for Gallery {
                     .child(nav_menu),
             )
             .aside_passthrough()
-            .main_scroll()
             .main_padding_xl()
             .child(content)
             .footer(self.render_status_bar(selected_label, cx))
             .footer_height(px(38.0))
             .overlay(PortalLayer);
+        if !fill_demo {
+            shell = shell.main_scroll();
+        }
 
         AppWindowFrame::new(tr(cx, locales::gallery::window_title), shell)
             .titlebar(gallery_titlebar())
@@ -2484,4 +2530,103 @@ mod shell_regression_tests {
 
 fn main() {
     run_gallery();
+}
+
+#[cfg(all(test, debug_assertions))]
+mod document_surface_tests {
+    use super::*;
+
+    fn select_document(root: AnyView, cx: &mut App) {
+        let gallery = root.downcast::<Gallery>().expect("Gallery root");
+        gallery.update(cx, |gallery, cx| {
+            let name = std::env::var("LIORA_DOCUMENT_DEMO").unwrap_or_else(|_| "PdfReader".into());
+            let index = gallery
+                .entries
+                .iter()
+                .position(|entry| entry.name.starts_with(&name))
+                .expect("document demo");
+            gallery.selected = index;
+            gallery.active_demo = Some((gallery.entries[index].render)(cx));
+            gallery.active_demo_index = Some(index);
+            cx.notify();
+        });
+    }
+
+    #[test]
+    fn actual_gallery_document_surface() {
+        if std::env::var_os("LIORA_NATIVE_SMOKE").is_some() {
+            gpui_platform::application()
+                .with_assets(GalleryAssetSource)
+                .run(|cx| {
+                    install_gallery_fonts(cx);
+                    init_liora_with_options(cx, gallery_liora_options());
+                    let handle = open_gallery_window(cx).expect("Gallery window");
+                    handle
+                        .update(cx, |root, window, cx| {
+                            window.resize(size(px(3840.), px(2114.)));
+                            window.bounds_changed(cx);
+                            select_document(root, cx);
+                            apply_theme_mode(window, cx, ThemeMode::Dark);
+                        })
+                        .unwrap();
+                    println!("READY: actual Gallery document surface");
+                    let executor = cx.background_executor().clone();
+                    cx.spawn(async move |cx| {
+                        executor.timer(Duration::from_secs(20)).await;
+                        cx.update(|cx| cx.quit());
+                    })
+                    .detach();
+                });
+        } else {
+            let mut app = gpui::TestAppContext::single();
+            app.update(|cx| init_liora_with_options(cx, gallery_liora_options()));
+            let handle = app.update(|cx| open_gallery_window(cx).unwrap());
+            handle
+                .update(&mut app, |root, _, cx| select_document(root, cx))
+                .unwrap();
+            let mut cx = gpui::VisualTestContext::from_window(handle, &app);
+            for (width, height) in [(1568., 863.), (3840., 2114.)] {
+                for _ in 0..4 {
+                    cx.update(|window, cx| {
+                        window.resize(size(px(width), px(height)));
+                        window.bounds_changed(cx);
+                        window.refresh();
+                        window.draw(cx).clear(cx);
+                        assert_eq!(window.viewport_size(), size(px(width), px(height)));
+                    });
+                    cx.run_until_parked();
+                }
+                let card = cx.debug_bounds("gallery-filling-demo").unwrap();
+                let reader = cx.debug_bounds("pdf-reader-root").unwrap();
+                assert!(
+                    card.top() >= px(112.) && card.right() <= px(width),
+                    "card must stay inside Gallery main pane: {card:?}"
+                );
+                assert!(
+                    card.bottom() <= px(height - 38.) && card.bottom() >= px(height - 150.),
+                    "card must fill the viewport above the footer, not overflow it: {card:?}"
+                );
+                assert!(
+                    (card.bottom() - reader.bottom() - px(17.)).abs() < px(2.),
+                    "reader must reach the Gallery card bottom: {card:?} {reader:?}"
+                );
+                assert!(
+                    reader.size.height > px(height * 0.5),
+                    "reader must use the right pane, not a fixed-height strip: {reader:?}"
+                );
+                let viewport = cx.debug_bounds("pdf-reader-viewport").unwrap();
+                let page = cx.debug_bounds("pdf-reader-page-1").unwrap();
+                eprintln!("Gallery {width}x{height}: viewport={viewport:?} page={page:?}");
+                assert!(
+                    page.size.height > viewport.size.height * 0.5,
+                    "FitPage must produce a visible page, not a one-pixel raster: {page:?} {viewport:?}"
+                );
+                assert!(
+                    page.top() >= viewport.top() && page.bottom() <= viewport.bottom(),
+                    "FitPage must remain inside the visible viewport: {page:?} {viewport:?}"
+                );
+            }
+            app.quit();
+        }
+    }
 }

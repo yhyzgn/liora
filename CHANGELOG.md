@@ -2,6 +2,8 @@
 
 ## 0.6.1 - 2026-11-16
 
+- Make the actual Gallery PDF pane fill remaining window height instead of a fixed 640px strip; retain bounded Docs embedding. Add worker-owned `PdfDecoder`, visible-page requests and state-preserving page installation so opening no longer rasterizes every page. Preserve eager decode APIs and resource preflight.
+- Replace the read-only unfinished Markdown demo with the existing native rich editor and complete supported content; preserve inactive block formatting and reuse unchanged formula/diagram rasters during prose edits. Fix doubled native anchor/preview offsets and bounded scrolling.
 - Add native GPUI `PdfReader`, `FindBar`, and `CandidateBar`; decode real PDF bytes with pure-Rust Hayro 0.9.0, provide viewport fit, pixel rotation, continuous page navigation, and worker-based Gallery/Docs file loading. Search indexing, annotation persistence, and input-method engines remain host-owned.
 - Add standalone opt-in `liora-webview` with GPUI child geometry, navigation, bounded page messaging, default-denied permissions/downloads/new windows, and window-close cleanup. Default SDK and native controls remain WRY-free; Linux X11/XWayland was tested, macOS/Windows native behavior was not.
 - Precompute Docs live-demo prefix indices for virtualized blocks, preserving nested quote/list order while avoiding repeated prefix recounts during rendering.

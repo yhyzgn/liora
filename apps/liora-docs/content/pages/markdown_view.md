@@ -10,6 +10,8 @@
 
 ::Demo{component="MarkdownView"}::
 
+共享 Gallery/Docs 示例使用原生 `MarkdownEditor`：非活动块保留标题、行内样式、公式等正常排版，点击文字块进入编辑；修改直接更新 canonical Markdown，支持撤销/重做与源码模式。示例使用完整的列表、表格、代码、公式、Mermaid 和宿主批准的图片，不再以一个永久未闭合的流式围栏充当全部演示。`MarkdownView` 本身仍是只读渲染控件，不因 demo 接入编辑器而改变其职责。
+
 ### 代码
 
 ```rust src="markdown/streaming.rs"

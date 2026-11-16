@@ -8,7 +8,7 @@
 
 ::Demo{component="PdfReader"}::
 
-Gallery/Docs 使用同一个原生 demo：启动时加载随应用捆绑的 PDF，也可通过 **Open PDF** 原生文件对话框选择本地 PDF。文件选择和读取是 demo 宿主行为，不是 SDK 隐式 I/O。
+Gallery/Docs 使用同一个原生 demo：启动时加载随应用捆绑的 PDF，也可通过 **Open PDF** 原生文件对话框选择本地 PDF。后台完成元数据预检和第一页栅格化后即可阅读，不再等待其余页面；后续仅按可见页面请求解码，未请求页保留占位。Gallery 阅读区域随右侧可用高度伸展，Docs 内嵌演示保留有界高度。文件选择和读取是 demo 宿主行为，不是 SDK 隐式 I/O。
 
 ### 代码
 
@@ -21,12 +21,16 @@ Gallery/Docs 使用同一个原生 demo：启动时加载随应用捆绑的 PDF�
 
 公开签名是 `PdfDocument::from_bytes(title: impl Into<SharedString>, bytes: Vec<u8>) -> Result<PdfDocument, PdfDecodeError>`。它消费宿主提供的字节，预检所有页面后一次性生成页面图像及缩略图；它本身是同步 CPU 工作，需由宿主放到后台 worker。
 
+需要提前显示首屏时，使用 `PdfDocument::from_bytes_with_preview(title, bytes, on_preview)`。它同样是同步 CPU 工作：全部页面通过预检且第一页图像/缩略图完成后，在解码线程上调用一次回调，传入完整页元数据、首图和其余页占位。宿主负责把预览发送到 UI 线程；最终 `Result` 仍必须处理，后续页失败不能当作加载成功。首图与最终文档共享图像存储；这不是按需渲染或总解码耗时的保证。
+
+按需加载使用 `PdfDecoder::new(title: SharedString, bytes: Vec<u8>)`：一次解析并预检页面，`document()` 取得未加载页元数据，`render_page(one_based)` 仅栅格化指定页和缩略图。这些操作都应在 worker 上执行。宿主订阅 `PdfReaderEvent::PagesRequested { pages }`，按最新可见页列表安排工作，再在 UI 线程调用 `set_decoded_page(page, cx)` 安装结果；该操作不重置缩放、旋转或阅读位置。`from_bytes` 和 `from_bytes_with_preview` 仍为完整预渲染接口，不能用它们冒充按需加载。
+
 - 输入最多 **64 MiB**；空输入、无页面、无效或无法解密的 PDF 返回显式错误，不支持密码输入。
 - 全部页面和缩略图的保留 RGBA 栅格总预算为 **128 MiB**，超限返回 `RasterBudgetExceeded`，不会返回悄悄截断的文档。该预算不是解析器、临时工作内存或 GPU 内存的总上限。
 - 页面栅格最长边最多 **2048 像素**，小页面不放大；无效页面几何和不可渲染尺寸返回错误。放大阅读不会重新以更高分辨率解码。
 - 不执行 PDF 脚本、不下载外部资源、不写回 PDF。
 
-宿主也可用 `PdfDocument::new(title, pages)` 提供自己的 `PdfPage` / `Arc<gpui::RenderImage>`，或用 `with_page_count` 建立未加载页。内置解码器是有界、预先渲染的路径，不是大文档按需分页缓存。
+宿主也可用 `PdfDocument::new(title, pages)` 提供自己的 `PdfPage` / `Arc<gpui::RenderImage>`，或用 `with_page_count` 建立未加载页。`PdfDecoder` 延迟创建页面栅格，但仍预检整个文档的最终保留预算；它不是带淘汰策略、支持任意大文件的分页缓存。复杂单页仍可能耗费较长 CPU 时间。
 
 ## 阅读器交互
 
