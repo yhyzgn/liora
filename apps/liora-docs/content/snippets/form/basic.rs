@@ -13,7 +13,9 @@ impl BasicFormDemo {
     fn new(cx: &mut Context<Self>) -> Self {
         Self {
             name: cx.new(|cx| Input::new("Liora", cx).placeholder("Name")),
-            role: cx.new(|cx| Select::new(vec!["Admin", "Editor", "Viewer"], Some(0), cx)),
+            role: cx.new(|cx| {
+                Select::new(vec!["Admin", "Editor", "Viewer"], Some(0), cx).disabled(true)
+            }),
             enabled: cx.new(|cx| Switch::new(true, cx).id("docs-form-enabled")),
         }
     }

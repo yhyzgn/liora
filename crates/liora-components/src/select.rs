@@ -432,6 +432,9 @@ impl Select {
     }
 
     fn toggle_open(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.disabled {
+            return;
+        }
         self.is_open = !self.is_open;
         if self.is_open {
             window.focus(&self.focus_handle, cx);
@@ -1006,5 +1009,21 @@ mod searchable_select_tests {
         assert!(source.contains("pub fn searchable"));
         assert!(source.contains("pub fn multiple"));
         assert!(source.contains("SearchableList::new(items.clone())"));
+    }
+    #[test]
+    fn plain_select_toggle_open_guards_disabled_state() {
+        let source = include_str!("select.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        let toggle_open = source
+            .split("fn toggle_open")
+            .nth(1)
+            .unwrap()
+            .split("impl Focusable")
+            .next()
+            .unwrap();
+        assert!(toggle_open.contains("if self.disabled"));
     }
 }

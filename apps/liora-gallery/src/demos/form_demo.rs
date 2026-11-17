@@ -56,6 +56,7 @@ pub struct FormDemo {
     rate_basic: Entity<Rate>,
     rate_custom: Entity<Rate>,
     select_basic: Entity<Select>,
+    select_disabled: Entity<Select>,
 }
 
 impl FormDemo {
@@ -210,6 +211,8 @@ impl FormDemo {
                     cx,
                 )
             }),
+            select_disabled: cx
+                .new(|cx| Select::new(vec!["Locked", "Unavailable"], Some(0), cx).disabled(true)),
         }
     }
 }
@@ -268,7 +271,10 @@ impl Render for FormDemo {
             .child(
                 FormItem::new()
                     .label("Select 下拉选择")
-                    .child(self.select_basic.clone()),
+                    .child(control_row(vec![
+                        self.select_basic.clone().into_any_element(),
+                        self.select_disabled.clone().into_any_element(),
+                    ])),
             )
             .child(
                 FormItem::new()
