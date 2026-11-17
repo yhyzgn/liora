@@ -11,7 +11,7 @@ struct InputBasicDemo {
 impl InputBasicDemo {
     fn new(cx: &mut Context<Self>) -> Self {
         Self {
-            plain: cx.new(|cx| Input::new("", cx)),
+            plain: cx.new(|cx| Input::new("", cx).max_length(32)),
             placeholder: cx.new(|cx| Input::new("", cx).placeholder("Type something...")),
         }
     }

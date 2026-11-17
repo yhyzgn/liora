@@ -140,6 +140,10 @@ pub struct Input {
     on_clear: Option<Box<dyn Fn(&mut Context<Self>) + 'static>>,
 }
 
+fn exceeds_max_length(value: &str, max: Option<usize>) -> bool {
+    max.is_some_and(|max| value.chars().count() > max)
+}
+
 impl Input {
     /// Creates `Input` initialized from the supplied value.
     pub fn new(value: impl Into<SharedString>, cx: &mut Context<Self>) -> Self {
@@ -362,6 +366,9 @@ impl Input {
     /// An identical value is a no-op unless marked composition is active.
     pub fn set_value(&mut self, value: impl Into<SharedString>, cx: &mut Context<Self>) {
         let value = value.into();
+        if exceeds_max_length(value.as_ref(), self.max_length) {
+            return;
+        }
         if self.value == value && self.marked_range.is_none() {
             return;
         }
@@ -1937,5 +1944,21 @@ mod width_tests {
         assert_eq!(super::removable_indent_len("  let x = 1;", "    "), Some(2));
         assert_eq!(super::removable_indent_len("\tlet x = 1;", "\t"), Some(1));
         assert_eq!(super::removable_indent_len("let x = 1;", "    "), None);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn programmatic_values_respect_max_length() {
+        let source = include_str!("input.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(source.contains("if exceeds_max_length(value.as_ref(), self.max_length)"));
+        assert!(super::exceeds_max_length("123456", Some(5)));
+        assert!(!super::exceeds_max_length("12345", Some(5)));
+        assert!(!super::exceeds_max_length("123456", None));
     }
 }
