@@ -21,7 +21,7 @@ use liora_core::{
     FontConfig, FontLoadMode, FontLoadOptions, LinuxDesktopIdentity, LinuxDesktopPngIcon,
     LocalesMap, Options, attach_system_theme_observer, ensure_linux_desktop_identity,
     linux_desktop_entry, linux_desktop_png_icon_path, load_app_fonts,
-    startup_maximized_window_bounds,
+    startup_maximized_window_bounds, tr,
 };
 use liora_tray::{
     MouseButton, MouseButtonState, Tray, TrayCloseAction, TrayCommand, TrayConfig,
@@ -106,13 +106,13 @@ fn register_docs_system_menus(cx: &mut App) {
     Menu::register(
         cx,
         [
-            Menu::new("File")
+            Menu::new(tr(cx, locales::menu::file))
                 .item(MenuItem::open_file())
                 .item(MenuItem::open_folder())
                 .item(MenuItem::separator())
                 .item(MenuItem::save())
                 .item(MenuItem::quit()),
-            Menu::new("Edit")
+            Menu::new(tr(cx, locales::menu::edit))
                 .item(MenuItem::undo())
                 .item(MenuItem::redo())
                 .item(MenuItem::separator())
@@ -121,29 +121,32 @@ fn register_docs_system_menus(cx: &mut App) {
                 .item(MenuItem::paste())
                 .item(MenuItem::separator())
                 .item(MenuItem::select_all()),
-            Menu::new("View")
+            Menu::new(tr(cx, locales::menu::view))
                 .item(MenuItem::command_palette())
                 .item(MenuItem::toggle_sidebar())
                 .item(MenuItem::toggle_statusbar())
                 .item(MenuItem::separator())
                 .item(MenuItem::action(
                     liora_components::MenuAction::ZoomIn,
-                    "Zoom In",
+                    tr(cx, locales::menu::zoom_in),
                 ))
                 .item(MenuItem::action(
                     liora_components::MenuAction::ZoomOut,
-                    "Zoom Out",
+                    tr(cx, locales::menu::zoom_out),
                 ))
                 .item(MenuItem::action(
                     liora_components::MenuAction::ZoomReset,
-                    "Reset Zoom",
+                    tr(cx, locales::menu::reset_zoom),
                 )),
-            Menu::new("Help")
+            Menu::new(tr(cx, locales::menu::help))
                 .item(MenuItem::open_url(
-                    "Liora on GitHub",
+                    tr(cx, locales::menu::github),
                     "https://github.com/yhyzgn/liora",
                 ))
-                .item(MenuItem::new("about-docs", "About Liora Docs")),
+                .item(MenuItem::new(
+                    "about-docs",
+                    tr(cx, locales::menu::about_docs),
+                )),
         ],
     );
 }
@@ -826,6 +829,15 @@ mod shell_tests {
         assert!(source.contains("register_docs_system_menus(cx);"));
         assert!(source.contains("fn register_docs_system_menus(cx: &mut App)"));
         assert!(source.contains("Menu::register("));
+        assert!(source.contains("Menu::new(tr(cx, locales::menu::file))"));
+        assert!(source.contains("Menu::new(tr(cx, locales::menu::edit))"));
+        assert!(source.contains("Menu::new(tr(cx, locales::menu::view))"));
+        assert!(source.contains("Menu::new(tr(cx, locales::menu::help))"));
+        assert!(source.contains("tr(cx, locales::menu::zoom_in)"));
+        assert!(source.contains("tr(cx, locales::menu::zoom_out)"));
+        assert!(source.contains("tr(cx, locales::menu::reset_zoom)"));
+        assert!(source.contains("tr(cx, locales::menu::github)"));
+        assert!(source.contains("tr(cx, locales::menu::about_docs)"));
         assert!(source.contains("MenuItem::open_file()"));
         assert!(source.contains("MenuItem::open_folder()"));
         assert!(source.contains("MenuItem::select_all()"));
