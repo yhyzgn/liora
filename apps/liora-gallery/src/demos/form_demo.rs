@@ -70,7 +70,7 @@ impl FormDemo {
         });
 
         Self {
-            switch_on: cx.new(|cx| Switch::new(true, cx)),
+            switch_on: cx.new(|cx| Switch::new(true, cx).id("gallery-form-switch-on")),
             switch_off: cx.new(|cx| Switch::new(false, cx)),
             switch_disabled: cx.new(|cx| Switch::new(false, cx).disabled(true)),
             switch_disabled_on: cx.new(|cx| Switch::new(true, cx).disabled(true)),

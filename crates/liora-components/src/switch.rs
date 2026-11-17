@@ -180,6 +180,10 @@ impl Render for Switch {
             );
         }
 
+        let id = self
+            .id
+            .clone()
+            .unwrap_or_else(|| format!("liora-switch-{}", cx.entity().entity_id()).into());
         let mut el = gpui::div().p(px(2.0)).child(track);
         if focused && !self.disabled {
             el = el
@@ -202,7 +206,7 @@ impl Render for Switch {
             el = el.cursor_not_allowed();
         }
 
-        el.on_action(cx.listener(Self::toggle))
+        el.id(id).on_action(cx.listener(Self::toggle))
     }
 }
 
@@ -220,5 +224,16 @@ mod tests {
         assert!(source.contains("liora-switch-thumb-motion:{:?}"));
         assert!(!source.contains("thumb_from_checked"));
         assert!(!source.contains("slide_snap("));
+    }
+
+    #[test]
+    fn switch_applies_explicit_root_id() {
+        let source = include_str!("switch.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+
+        assert!(source.contains("let id = self"));
+        assert!(source.contains("el.id(id).on_action(cx.listener(Self::toggle))"));
     }
 }

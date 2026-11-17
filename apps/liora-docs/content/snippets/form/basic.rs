@@ -14,7 +14,7 @@ impl BasicFormDemo {
         Self {
             name: cx.new(|cx| Input::new("Liora", cx).placeholder("Name")),
             role: cx.new(|cx| Select::new(vec!["Admin", "Editor", "Viewer"], Some(0), cx)),
-            enabled: cx.new(|cx| Switch::new(true, cx)),
+            enabled: cx.new(|cx| Switch::new(true, cx).id("docs-form-enabled")),
         }
     }
 }
