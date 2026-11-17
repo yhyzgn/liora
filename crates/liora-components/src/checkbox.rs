@@ -90,6 +90,15 @@ impl Checkbox {
         self
     }
 
+    pub(crate) fn sync(
+        &mut self,
+        checked: bool,
+        on_change: impl Fn(bool, &mut Window, &mut App) + 'static,
+    ) {
+        self.checked = checked;
+        self.on_change = Some(Box::new(on_change));
+    }
+
     /// Updates the stored disabled value and keeps the existing component identity.
     pub fn set_disabled(&mut self, d: bool, cx: &mut Context<Self>) {
         self.disabled = d;

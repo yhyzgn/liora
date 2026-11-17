@@ -1833,24 +1833,3 @@ mod tests {
         assert_eq!(joined_scoped_text(members, start, start), "");
     }
 }
-
-#[cfg(test)]
-pub(crate) fn test_display_point(id: &str, offset: usize, line_height: Pixels) -> Point<Pixels> {
-    let id: ElementId = SharedString::from(id.to_owned()).into();
-    with_selection_state(&id, |state| {
-        let bounds = state.bounds.expect("displayed selectable text bounds");
-        let layout = state
-            .layout
-            .as_ref()
-            .expect("displayed selectable text layout");
-        for (line, (y, start)) in layout.lines.iter().zip(&state.line_starts) {
-            if offset <= start + line.len() {
-                let local = line
-                    .position_for_index(offset - start, line_height)
-                    .unwrap();
-                return point(bounds.left() + local.x, *y + local.y + line_height * 0.5);
-            }
-        }
-        panic!("display offset is outside text");
-    })
-}

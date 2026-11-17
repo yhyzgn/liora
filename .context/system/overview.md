@@ -62,6 +62,7 @@ The current `008_wry_webview_20261114` phase adds only a standalone opt-in WebVi
 - `PdfReader` 接受内置解码结果或宿主图像，负责视口适配、25%–400% 缩放、实际像素旋转、连续滚动/页码同步、缩略图和查找/工具事件。搜索索引、文本选择和批注引擎仍由宿主提供。
 - `FindBar` 复用原生 Input 并处理查询/导航事件；`CandidateBar` 只展示和提交宿主候选，不接管系统 IME。Gallery/Docs 共用真实两页 PDF demo 和宿主原生文件打开路径。
 - `SelectableTextGroup` 通过窗口内 GPUI state 合并 `Text`、`Title`、`Paragraph` 的跨块选区,同时保留各块的原生排版;`Text::document` 和 `MarkdownView` 富布局复用选择范围。`CopyButton` 提供原生剪贴板写入、键盘/指针触发及短暂本地反馈,不证明系统写入成功。`MarkdownDocument` 提供唯一 heading anchors、编号脚注和回链源范围、任务状态、GFM callout/definition、metadata/math fallback、highlight span 与表格 cell/body-row 源范围编辑;可选 `MarkdownView::set_show_toc` 渲染 native Contents,宿主处理实际滚动。完整能力差距见 `docs/markdown-capability-matrix.md`。
+- `MarkdownEditor` uses canonical Markdown transactions and one rich selection/IME owner with styled, variable-height virtual rows. Source offsets are UTF-8 bytes; `focus_source_offset`, `set_selection` and `insert_text` replace paragraph Input accessors. Native table cells retain their Input entities; `input()` remains Source-mode integration. Task 011 records verification and platform limits.
 
 
 <!-- ctx-managed-legacy-migration:start -->

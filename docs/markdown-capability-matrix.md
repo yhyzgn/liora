@@ -1,6 +1,6 @@
 # Markdown capability parity matrix
 
-This is a capability specification, not a claim that Liora currently matches Typora or MarkText. The references are used to define observable behavior; no external source code is copied.
+This is a capability specification, not a claim that Liora currently matches Typora, MarkText or Quiet.md. References define observable behavior; implementation status requires the evidence below.
 
 References:
 
@@ -10,6 +10,7 @@ References:
 - MarkText features: <https://github.com/marktext/marktext#features>
 - MarkText syntax: <https://marktext.me/docs/markdown-syntax>
 - MarkText editing tools: <https://marktext.me/docs/editing>
+- Quiet.md source: <https://github.com/s1dashu/quiet-md/tree/e9cb5408d0ffcad5bf5b31814e10e1b2f275347f> (MIT). Its primary format is DocxXML and its native editor uses patched GPUI/Taffy. Liora retains canonical Markdown and the official workspace GPUI pin.
 
 ## Status vocabulary
 
@@ -17,6 +18,7 @@ References:
 - **Preserved**: source content remains visible, but the semantic behavior is not implemented.
 - **Interactive**: pointer/keyboard actions update state or invoke a host callback.
 - **Rich-editable**: editing the rendered form preserves a defined source mapping and native undo/IME behavior.
+- **Syntax-driven editing**: typing Markdown punctuation through the native committed-input callback preserves canonical syntax and immediately updates the same editable surface, without formatting commands or switching modes. This requires separate acceptance evidence from rich editing.
 
 ## Current matrix
 
@@ -37,13 +39,14 @@ References:
 | Images | Host-approved local file or decoded image only; default denied; alt text retained. | Inline placement, alignment, resize metadata and host-controlled insertion. | Host owns network, redirect, file and decode policy; SDK never downloads URLs. |
 | Video, iframe and other embeds | Raw HTML is literal text. | No default support. If a host needs media, use an explicit native host-owned asset/control API. | No WebView/media HTML execution in Markdown controls. |
 | GitHub alerts/callouts and definition lists | GFM callout kinds and definition-list tags receive semantic native block kinds; callouts get severity labels and definitions get term/body layout. | Dedicated callout severity and definition-term/definition-body layout. | Native containers, source-preserving model kinds. |
-| Rich/source editing | Source mode retains native IME, selection and clipboard; rich mode supports bounded inline toggles plus paragraph/heading/quote/list/split actions and a retained table editor. Canonical Markdown remains source of truth; undo/redo and explicit host undo groups remain available. | Expand structural operations only with source-roundtrip tests; keep ambiguous syntax guarded. | Table-cell replacement is literal plain text; rich mode is not Typora/MarkText parity. Composition, clipboard and focus proof is Linux/Xwayland only. |
+| Rich/source editing | One canonical source selection/input owner, styled virtual rows, split/join/list/format commands, move/fold, literal find/replace and selection-aware history. Direct `# `, `**strong**`, `- ` and code-fence typing renders in the same toolbar-free surface. Source mode and table cells retain native Input integration. | Type syntax through native committed callbacks, render immediately without a format button, external program or mode switch, preserve canonical punctuation and undo/redo, and verify the actual shared consumer. | Task 011 records 144 passing Markdown tests, shared Gallery/Docs regressions and Linux Xwayland/XIM evidence. Public `insert_text` remains literal; table-cell replacement is literal plain text. No full Typora/MarkText/Quiet.md parity claim. |
 | Export | No Markdown control-owned HTML/PDF export contract. | Define explicit host export adapters and fidelity tests if requested. | Export is host-owned; no implicit filesystem writes. |
 
 ## Acceptance rules for future implementation
 
 1. A parser option is not support. Each row must have a renderer test, and interactive rows need a pointer/keyboard test with observable state or host event output.
 2. Rich-editable rows need source round-trip tests for ASCII, Unicode, escaped entities, nested styles, and failed/ambiguous mappings.
+   Rich-editable acceptance does not establish syntax-driven editing: additionally type headings, marks, lists and code fences through native committed-input callbacks, observe in-place rendering, and assert canonical syntax and undo/redo without formatting commands or mode switching.
 3. Security-sensitive rows must prove that HTML, `javascript:`, `file:`, `data:`, relative URLs, unapproved images and implicit downloads stay blocked.
 4. Math and diagram work must name the Rust/native engine and license before dependency changes. A rendered screenshot alone does not establish source fidelity or safe failure behavior.
 5. Docs and Gallery must label unsupported behavior explicitly; they must not call parser-visible fallback text a rendered feature.
@@ -51,4 +54,20 @@ References:
 
 ## Current decision
 
-The implemented native slices are documented above and covered by focused tests; this is not a parity declaration. Visual sub/superscript baseline shifts, table action UI/reorder/resize, arbitrary structural rich editing, rich-mode IME validation, and macOS/Windows native evidence remain incomplete.
+Task 011 implements the clarified Typora-style syntax-driven input contract: direct Markdown typing in one native editable surface. Updated syntax tests, native Xwayland captures and Linux XIM checks passed; full product parity is not claimed.
+
+## Quiet.md migration contract
+
+The user selected canonical Markdown. Paragraph Input switching is replaced by one native editor selection/input owner and styled virtual rows. Committed typing preserves Markdown punctuation and immediately reparses/render updates; programmatic `insert_text` remains literal. The shared demo has no formatting/append/reset controls. Syntax typing, marker deletion, undo/redo, scrolling and Linux XIM evidence are recorded in `.context/tasks/011_quiet_markdown_native_20261117.md`; Windows/macOS and full upstream parity are not established.
+
+| Quiet.md capability | Liora Markdown contract |
+|---|---|
+| Rich selection, styled typing, block identity, virtual page | Adapt the architecture using official pinned GPUI; do not transplant the upstream application or GPUI fork. |
+| Headings, lists/tasks, quotes, inline marks, code | Source-preserving transactions for typing, selection replacement, split/join, formatting and structural commands. |
+| Slash commands, shortcuts, find/replace, block movement/folding | Native controls over the same document transactions; folding is presentation state. |
+| Tables | Preserve Markdown rows, columns and alignment; widths remain visual state. Merged cells and nested rich cell documents have no selected lossless storage representation. |
+| Math, diagrams, images, metadata and footnotes | Retain existing native rendering and source semantics; image/network/file authorization remains host-owned. |
+| Underline/colors, columns, crop/dimensions, buttons, reminders, countdowns and boards | Not persisted as lossless standard Markdown. No silent flattening or DocxXML conversion; an extension format requires an explicit separate contract. |
+| Library, subpages/backlinks, persistence, updates and application actions | Host application responsibilities; no SDK filesystem or application services. |
+
+Untouched source bytes, CRLF, destinations and unknown syntax must survive local edits. Native interaction evidence must cover Unicode, escaped/entity spans, cross-block replacement, selection-aware undo, composition and actual shared Gallery/Docs scrolling. Upstream performance numbers do not establish Liora latency.

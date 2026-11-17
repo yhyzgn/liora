@@ -819,6 +819,8 @@ mod composer_basic;
 #[path = "../../content/snippets/transcript/basic.rs"]
 mod transcript_basic;
 
+#[path = "../../content/snippets/markdown/editing.rs"]
+mod markdown_editing;
 #[path = "../../content/snippets/markdown/streaming.rs"]
 mod markdown_streaming;
 

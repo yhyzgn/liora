@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- Replace Markdown paragraph Input switching with a unified native rich editor, canonical source selection and styled variable-height virtual rows. Add source-preserving structural commands, slash commands, literal find/replace, move/fold and selection-aware history; retain native table inputs and host image authorization.
+- Migrate rich-editor consumers from `rich_input_at()` / `rich_input()` to `focus_source_offset()`, `set_selection()` and `insert_text()`. Source-mode `input()` and table `table_input_at()` remain integration surfaces; Markdown remains the persistence format.
+- Correct the native Markdown interaction contract to Typora-style direct syntax typing in one editable surface: retain `# `, `**strong**`, `- ` and code fences in canonical source while rendering in place. Remove the default formatting toolbar and shared Gallery/Docs append/reset controls and counter; retain the representative document and bounded viewport. Public `insert_text()` remains literal.
+- Verify direct syntax typing through native input callbacks, source preservation, marker deletion and undo/redo, alongside shared-demo wheel scrolling. Focused Markdown tests, actual Linux/Xwayland rendering and real XIM checks passed; full Typora parity and cross-platform runtime remain unclaimed.
+- Fix empty fenced-code pointer placement and Backspace at inline opening marks; preserve styled paragraph-join precedence and source/selection undo.
+- Fix native Markdown blank-area pointer placement, visible-text arrow navigation across hidden delimiters, and find Enter/Escape routing with keyboard focus restoration. Let the actual Gallery Markdown editor fill the remaining pane height while retaining bounded Docs embedding.
+- Retain Markdown task checkbox identity and pointer focus across redraws; preserve table-cell spaces and caret position during consecutive native typing after double-click selection.
+- Restore native Markdown caret blinking and immediate whitespace geometry, including empty nested list/quote content. Preserve visible-row anchors during edits and syntax changes, use final painted pointer geometry after autoscroll, and recover vertical navigation after scrolling away from the caret. Preserve directed Source selections and immediate selection notifications.
+
 ## 0.6.1 - 2026-11-16
 
 - Make the actual Gallery PDF pane fill remaining window height instead of a fixed 640px strip; retain bounded Docs embedding. Add worker-owned `PdfDecoder`, visible-page requests and state-preserving page installation so opening no longer rasterizes every page. Preserve eager decode APIs and resource preflight.

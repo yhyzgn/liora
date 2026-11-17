@@ -10,12 +10,22 @@
 
 ::Demo{component="MarkdownView"}::
 
-共享 Gallery/Docs 示例使用原生 `MarkdownEditor`：非活动块保留标题、行内样式、公式等正常排版，点击文字块进入编辑；修改直接更新 canonical Markdown，支持撤销/重做与源码模式。示例使用完整的列表、表格、代码、公式、Mermaid 和宿主批准的图片，不再以一个永久未闭合的流式围栏充当全部演示。`MarkdownView` 本身仍是只读渲染控件，不因 demo 接入编辑器而改变其职责。
+共享 Gallery/Docs 示例使用一个有界的原生 `MarkdownEditor`：直接在正文输入 `# `、`**粗体**`、`- ` 或代码围栏，目标是在同一编辑面即时呈现 Markdown，不依赖格式按钮、外部程序调用或模式切换。示例移除了追加、重置按钮和计数器，保留标题、列表、表格、代码、数学、Mermaid 与宿主授权图片。编辑器拥有焦点、文档选区与虚拟滚动；宿主提供有界高度，不要再套一层正文滚动容器。canonical Markdown 仍是持久数据，支持撤销/重做；源码集成仍可用，但不是语法输入的必要步骤。
 
 ### 代码
 
 ```rust src="markdown/streaming.rs"
 ```
+
+### 编辑器接入
+
+```rust src="markdown/editing.rs"
+```
+
+`set_selection(range, cx)` 和 `selection()` 使用 canonical Markdown 的 UTF-8 字节偏移；`focus_source_offset(offset, window, cx)` 定位、滚动并聚焦。旧的段落 `rich_input_at() -> Entity<Input>` 已移除；宿主通过统一编辑器操作选区，不再缓存段落 Input。`insert_text` 是程序化的字面文本 API；原生提交输入用于直接输入 Markdown 语法，两者不能混作同一项验证。`input()` 仅用于源码模式；`table_input_at()` 仅用于表格单元格的原生输入集成。订阅 `MarkdownEditorChanged` 接收提交后的完整源码，组合输入期间不发布预编辑文本。
+
+此次修正通过 112 项 Markdown 测试、共享 demo 的直接输入/滚动测试、Docs snippets、实际原生窗口及 Linux XIM 验证。测试逐字符提交标题、列表、行内格式、链接、公式、任务和代码围栏，检查源码语法、标记删除和撤销；详见 task 011。不声称完整 Typora 能力对齐或 Windows/macOS 验证。
+
 
 SDK 支持段落、标题、强调/粗体/删除线、行内和围栏代码、嵌套列表、引用、表格（含左/中/右列对齐）、链接与图片。正文使用可选择的原生文本；代码立即呈现等宽可选文本与复制按钮，不使用异步高亮 skeleton，避免未通知宿主的二次高度增长。未闭合强调、链接和围栏保留可见内容，不等待完整文档才显示。HTML 作为文字显示，绝不执行；SDK 不解释 `src=` snippet、LioraDemo 等 Docs 业务语法。
 

@@ -1,6 +1,6 @@
-use gpui::{App, Context, Entity, IntoElement, Render, ScrollHandle, Window, prelude::*};
+use gpui::{App, Context, Entity, IntoElement, Render, Window, prelude::*};
 use liora_components::layout_helpers::{page, section, showcase_card_wide};
-use liora_components::{Button, Flex, MarkdownEditor, MarkdownImage, Space, Text};
+use liora_components::{Flex, MarkdownEditor, MarkdownImage};
 
 const SOURCE: &str = r#"# Native Markdown
 
@@ -16,7 +16,7 @@ Native **bold**, *emphasis*, ~~strike~~ and `inline code` keep their styles.
 2. Second editable item
 
 - [x] Rendered task marker
-- [ ] Task markers are changed in source mode
+- [ ] Click a task marker to toggle it
 
 ## Tables
 
@@ -49,13 +49,19 @@ A[Markdown] --> B[Native GPUI]
 
 pub struct MarkdownDemo {
     document: Entity<MarkdownEditor>,
-    scroll_handle: ScrollHandle,
-    chunks: usize,
+    fill_height: bool,
 }
 
 pub fn render(cx: &mut App) -> Entity<MarkdownDemo> {
+    new_with_height(cx, false)
+}
+
+pub fn render_filling(cx: &mut App) -> gpui::AnyView {
+    new_with_height(cx, true).into()
+}
+
+fn new_with_height(cx: &mut App, fill_height: bool) -> Entity<MarkdownDemo> {
     cx.new(|cx| {
-        let scroll_handle = ScrollHandle::new();
         let document = cx.new(|cx| {
             let mut editor = MarkdownEditor::new(SOURCE, cx);
             editor.set_image_resolver(
@@ -73,50 +79,48 @@ pub fn render(cx: &mut App) -> Entity<MarkdownDemo> {
         });
         MarkdownDemo {
             document,
-            scroll_handle,
-            chunks: 0,
+            fill_height,
         }
     })
 }
 
+impl MarkdownDemo {
+    #[cfg(debug_assertions)]
+    pub fn document(&self) -> Entity<MarkdownEditor> {
+        self.document.clone()
+    }
+}
+
 impl Render for MarkdownDemo {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let weak = cx.weak_entity();
-        let reset = cx.weak_entity();
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        if self.fill_height {
+            return Flex::new()
+                .id("markdown-demo-scroll")
+                .column()
+                .size_full()
+                .min_h_0()
+                .child(self.document.clone())
+                .into_any_element();
+        }
         page(
             "Markdown",
-            "Native rendered content with immediate paragraph, heading and table-cell editing.",
+            "Type Markdown syntax directly in one native editor; rendering updates as you type.",
             section(
-                "Live rich document",
-                "Click a paragraph or heading (or Tab then Enter) to edit. Formatting actions apply to the active block. Code, formulas, diagrams and images stay rendered; use Edit Markdown source for unsupported structure. Table-cell edits replace inline formatting with literal text.",
+                "Live native Markdown",
+                "Type # headings, **strong**, - list items, and ``` code fences directly. Quotes, tables, tasks, formulas, diagrams, and the host-approved image remain in the same document.",
                 showcase_card_wide(
                     "Editable Markdown",
-                    "Rich mode is a bounded native editing projection, not full Typora parity. Changes are kept in this demo until reset.",
-                    Space::new().vertical().gap_md()
-                        .child(Space::new()
-                            .child(Button::new("Append example").on_click(move |_, _, cx| {
-                                let _ = weak.update(cx, |demo, cx| {
-                                    demo.chunks += 1;
-                                    let chunk = format!("\n\n## Appended example {}\n\nThis **complete** paragraph is editable too.\n", demo.chunks);
-                                    demo.document.update(cx, |editor, cx| {
-                                        let source = format!("{}{chunk}", editor.source());
-                                        editor.set_source(source, cx);
-                                    });
-                                    cx.notify();
-                                });
-                            }))
-                            .child(Button::new("Reset document").on_click(move |_, _, cx| {
-                                let _ = reset.update(cx, |demo, cx| {
-                                    demo.chunks = 0;
-                                    demo.document.update(cx, |editor, cx| editor.set_source(SOURCE, cx));
-                                    cx.notify();
-                                });
-                            })))
-                        .child(Text::new(format!("Appended examples: {}", self.chunks)))
-                        .child(Flex::new().id("markdown-demo-scroll").column().w_full().height_units(380.0).overflow_y_scroll().track_scroll(&self.scroll_handle).child(self.document.clone())),
+                    "The bounded editor owns focus, selection, rendering, and scrolling. No format buttons or mode switch are needed for syntax-driven input.",
+                    Flex::new()
+                        .id("markdown-demo-scroll")
+                        .column()
+                        .w_full()
+                        .height_units(380.0)
+                        .child(self.document.clone()),
                 ),
             ),
         )
+        .into_any_element()
     }
 }
 
@@ -124,8 +128,8 @@ impl Render for MarkdownDemo {
 mod tests {
     use super::*;
     use gpui::{
-        Focusable, PlatformInput, ScrollDelta, ScrollEvent, TestAppContext, TouchPhase, point, px,
-        size,
+        EntityInputHandler, PlatformInput, ScrollDelta, ScrollEvent, TestAppContext, TouchPhase,
+        point, px, size,
     };
 
     #[test]
@@ -134,27 +138,22 @@ mod tests {
         app.update(liora_components::init_liora);
         let demo = app.update(render);
         let scroll = app.update(|cx| {
-            let (document, scroll) = {
-                let demo = demo.read(cx);
-                (demo.document.clone(), demo.scroll_handle.clone())
-            };
+            let document = demo.read(cx).document.clone();
             document.update(cx, |editor, cx| {
                 let source = format!("{}{}", editor.source(), "\n\nMore content.\n".repeat(60));
                 editor.set_source(source, cx);
             });
-            scroll
+            document.read(cx).scroll_handle()
         });
         let handle = app.open_window(size(px(1200.), px(900.)), |_, _| DemoView(demo));
         app.update_window(handle.into(), |_, window, cx| {
             window.draw(cx).clear(cx);
-            assert_eq!(scroll.bounds().size.height, px(380.));
-            assert!(
-                scroll.max_offset().y > px(100.),
-                "document must overflow its bounded viewport"
-            );
+            let before = scroll.logical_scroll_top();
+            let bounds = scroll.viewport_bounds();
+            assert!(bounds.size.height > px(0.) && bounds.size.height <= px(380.));
             window.dispatch_event(
                 PlatformInput::Scroll(ScrollEvent {
-                    position: scroll.bounds().center(),
+                    position: bounds.center(),
                     delta: ScrollDelta::Pixels(point(px(0.), px(-120.))),
                     touch_phase: TouchPhase::Moved,
                     ..Default::default()
@@ -162,9 +161,10 @@ mod tests {
                 cx,
             );
             window.draw(cx).clear(cx);
+            let after = scroll.logical_scroll_top();
             assert!(
-                scroll.offset().y < px(0.),
-                "wheel input must scroll the shared demo document"
+                after.item_ix > before.item_ix || after.offset_in_item > before.offset_in_item,
+                "wheel input must scroll virtual Markdown rows"
             );
         })
         .unwrap();
@@ -172,63 +172,41 @@ mod tests {
     }
 
     #[test]
-    fn shared_demo_edits_rich_content_immediately_and_preserves_other_elements() {
+    fn shared_demo_types_markdown_syntax_in_the_native_surface() {
         let mut app = TestAppContext::single();
         app.update(liora_components::init_liora);
         let demo = app.update(render);
         let document = app.update(|cx| demo.read(cx).document.clone());
-        let input = app.update(|cx| {
-            document.update(cx, |editor, cx| {
-                assert_eq!(editor.mode(), liora_components::MarkdownEditMode::Rich);
-                editor
-                    .rich_input_at(SOURCE.find("Click this paragraph").unwrap(), cx)
-                    .unwrap()
-            })
-        });
         let handle = app.open_window(size(px(1200.), px(900.)), |_, _| DemoView(demo));
         app.update_window(handle.into(), |_, window, cx| {
-            window.focus(&input.focus_handle(cx), cx);
-            window.draw(cx).clear(cx);
-        })
-        .unwrap();
-        app.update(|cx| {
-            input.update(cx, |input, cx| {
-                input.set_selection(0..0, cx);
-                input.insert_text("Edited! ", cx);
-            })
-        });
-        app.update(|cx| input.update(cx, |input, cx| input.insert_text("Now ", cx)));
-        app.update_window(handle.into(), |_, window, cx| {
-            assert!(
-                document
-                    .read(cx)
-                    .source()
-                    .contains("Edited! Now Click this paragraph")
-            );
-            assert!(
-                document
-                    .read(cx)
-                    .source()
-                    .contains("Native **bold**, *emphasis*")
-            );
-            assert!(
-                document
-                    .read(cx)
-                    .source()
-                    .contains("```mermaid\nflowchart LR")
-            );
-            assert!(
-                document
-                    .read(cx)
-                    .source()
-                    .contains("![Local Gallery image](gallery-image)")
-            );
+            document.update(cx, |editor, cx| {
+                editor.focus_source_offset(SOURCE.len(), window, cx);
+            });
             window.draw(cx).clear(cx);
             document.update(cx, |editor, cx| {
+                editor.begin_undo_group();
+                for character in "**typed**".chars() {
+                    EntityInputHandler::replace_text_in_range(
+                        editor,
+                        None,
+                        &character.to_string(),
+                        window,
+                        cx,
+                    );
+                }
+                editor.end_undo_group();
+            });
+            window.draw(cx).clear(cx);
+            let source = document.read(cx).source();
+            assert!(source.ends_with("\n**typed**"));
+            assert!(source.contains("Native **bold**, *emphasis*"));
+            assert!(source.contains("```mermaid\nflowchart LR"));
+            assert!(source.contains("![Local Gallery image](gallery-image)"));
+            document.update(cx, |editor, cx| {
                 assert!(editor.undo(cx));
-                assert!(!editor.source().contains("Edited! Now"));
+                assert_eq!(editor.source(), SOURCE);
                 assert!(editor.redo(cx));
-                assert!(editor.source().contains("Edited! Now"));
+                assert!(editor.source().ends_with("\n**typed**"));
             });
         })
         .unwrap();

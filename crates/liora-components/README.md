@@ -26,7 +26,7 @@ fn setup(cx: &mut gpui::App) {
 
 ## PDF reader and reusable input controls
 
-- `Input::soft_wrap(true)` opts multiline text into native width-dependent wrapping, with shared caret, pointer, visual-row navigation and IME geometry. It is enabled for rich Markdown blocks; ordinary inputs retain their existing unwrapped behavior.
+- `Input::soft_wrap(true)` opts multiline text into native width-dependent wrapping, with shared caret, pointer, visual-row navigation and IME geometry. Ordinary inputs retain their existing unwrapped behavior.
 - `PdfDocument::from_bytes(title, bytes: Vec<u8>) -> Result<PdfDocument, PdfDecodeError>` parses and rasterizes real PDFs through Hayro, a pure-Rust CPU backend. Call it on a background worker, then create `PdfReader` or replace its document on the UI thread. Input is limited to 64 MiB, retained page/thumbnail rasters to 128 MiB, and the longest page raster side to 2048 pixels. This is eager rendering, not a total-process memory cap or an on-demand page cache.
 - `PdfDocument::from_bytes_with_preview(title, bytes, on_preview)` retains the eager decode contract with an early first-page callback on the decoding thread. For demand-driven loading, keep `PdfDecoder::new(title, bytes)` on a worker, obtain unloaded metadata with `document()`, and call `render_page(one_based)` only for needed pages. The same input, geometry and whole-document retained-raster budget preflight applies. Gallery/Docs use this path; `PdfReaderEvent::PagesRequested` drives visible-page requests and `set_decoded_page` installs page/thumbnail images without resetting zoom, rotation or scroll.
 - `PdfReader` provides native page navigation, layouts, zoom, rotation, thumbnails and search/tool events. The host owns file I/O, downloads, search indexing, text selection and annotation persistence. Tools are state/events only, not a drawing or PDF-writeback engine. Hosts may also supply their own `PdfPage` images.
@@ -37,7 +37,11 @@ Create the reader only after a successful decode; surface errors in the host UI 
 
 ## Markdown editing
 
-`MarkdownDocument` / `MarkdownView` provide cached native Markdown rendering, headings and footnote navigation, task-list checkboxes, highlighted spans, math, and restricted Mermaid diagrams. `MarkdownEditor` supports guarded inline and paragraph/heading/quote/list/split edits with undo/redo, plus source-backed table cell/row/column edits, reordering, and visual resizing. Ambiguous source mappings are rejected; this is not full Typora/MarkText parity.
+`MarkdownDocument` / `MarkdownView` provide cached native Markdown rendering, headings and footnote navigation, task-list checkboxes, highlighted spans, math, and restricted Mermaid diagrams. `MarkdownEditor` keeps canonical Markdown while owning a single native rich selection/input handler and virtual scroll viewport. The host supplies a bounded height. The syntax-driven contract is to type `# `, `**strong**`, `- ` and code fences directly and render immediately in the same editable surface without a formatting toolbar, external program call or mode switch. The shared Gallery/Docs demo retains representative content without append/reset controls; table cells retain native inputs and literal-text source edits.
+
+Use `focus_source_offset(offset, window, cx)` and `set_selection(range, cx)` with canonical UTF-8 source offsets. Programmatic `insert_text(text, cx)` remains a literal-text transaction; native committed input accepts Markdown syntax. The former paragraph `rich_input_at() -> Entity<Input>` API has been removed. `input()` remains optional source-mode integration; `table_input_at()` is restricted to table cells. Retain a subscription to `MarkdownEditorChanged` for committed source; IME preedit is not a committed change.
+
+The Quiet.md-informed migration and exact runtime acceptance are tracked in `.context/tasks/011_quiet_markdown_native_20261117.md`. Syntax typing passed 112 focused Markdown tests, shared demo typing/scrolling tests, native Xwayland captures and real Linux XIM checks. This is not a claim of full Typora parity or Windows/macOS validation. Standard Markdown does not persist merged cells, columns, colors or whiteboards without an explicit extension format.
 
 ## GPUI dependency note
 

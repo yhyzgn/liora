@@ -67,12 +67,20 @@ fn main() {
                             editor.set_source(original, cx);
                             editor.set_mode(MarkdownEditMode::Rich, cx);
                         });
-                        let input = editor.update(cx, |editor, cx| {
-                            editor.rich_input_at(original.find("old").unwrap(), cx).unwrap()
-                        });
+                        let offset = original.find("old").unwrap();
+                        let input = (name == "table").then(|| editor.update(cx, |editor, cx| {
+                            editor.table_input_at(offset, cx).unwrap()
+                        }));
                         cx.update_window(handle.into(), |_, window, cx| {
-                            input.update(cx, |input, cx| input.set_selection(0..3, cx));
-                            window.focus(&input.read(cx).focus_handle(cx), cx);
+                            if let Some(input) = &input {
+                                input.update(cx, |input, cx| input.set_selection(0..3, cx));
+                                window.focus(&input.focus_handle(cx), cx);
+                            } else {
+                                editor.update(cx, |editor, cx| {
+                                    editor.focus_source_offset(offset, window, cx);
+                                    editor.set_selection(offset..offset + 3, cx);
+                                });
+                            }
                             window.draw(cx).clear(cx);
                         }).unwrap();
                         input
@@ -85,10 +93,12 @@ fn main() {
                     loop {
                         executor.timer(Duration::from_millis(20)).await;
                         let committed = cx.update(|cx| {
-                            if input.read(cx).is_composing() {
+                            if editor.read(cx).is_composing(cx) {
                                 assert_eq!(editor.read(cx).source(), original,
                                     "{name}: preedit mutated canonical Markdown");
-                                assert!(!input.read(cx).value().is_empty(), "empty preedit");
+                                if let Some(input) = &input {
+                                    assert!(!input.read(cx).value().is_empty(), "empty preedit");
+                                }
                                 if !saw_preedit {
                                     saw_preedit = true;
                                     signal(&format!("PREEDIT: {name}; canonical unchanged"));
@@ -98,7 +108,9 @@ fn main() {
                                 assert!(saw_preedit, "{name}: commit arrived without observed OS preedit");
                                 assert_eq!(editor.read(cx).source(), expected,
                                     "{name}: real IME must commit 你好 and preserve Markdown");
-                                assert_eq!(input.read(cx).value().as_ref(), "你好");
+                                if let Some(input) = &input {
+                                    assert_eq!(input.read(cx).value().as_ref(), "你好");
+                                }
                                 signal(&format!("COMMIT: {name}; 你好; Markdown preserved"));
                                 true
                             } else {

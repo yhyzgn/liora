@@ -388,6 +388,19 @@ impl Input {
     pub fn selected_range(&self) -> Range<usize> {
         self.selected_range.clone()
     }
+    pub(crate) fn directed_selection(&self) -> Range<usize> {
+        if self.selection_reversed {
+            self.selected_range.end..self.selected_range.start
+        } else {
+            self.selected_range.clone()
+        }
+    }
+
+    pub(crate) fn set_directed_selection(&mut self, range: Range<usize>, cx: &mut Context<Self>) {
+        let reversed = range.start > range.end;
+        self.set_selection(range, cx);
+        self.selection_reversed = reversed;
+    }
     /// Whether an IME marked-text transaction is still in progress.
     pub fn is_composing(&self) -> bool {
         self.marked_range.is_some()
@@ -561,6 +574,7 @@ impl Input {
     }
     fn select_all(&mut self, _: &SelectAll, _: &mut Window, cx: &mut Context<Self>) {
         self.selected_range = 0..self.value.len();
+        self.selection_reversed = false;
         self.reset_blink(cx);
     }
 
@@ -824,9 +838,8 @@ impl Input {
         self.cursor_visible = true;
         if self.blink_task.is_none() {
             self.start_blink(cx);
-        } else {
-            cx.notify();
         }
+        cx.notify();
     }
 
     fn internal_replace(&mut self, new_text: &str, cx: &mut Context<Self>) {

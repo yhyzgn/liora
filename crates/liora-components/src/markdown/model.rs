@@ -41,6 +41,13 @@ impl MarkdownDocument {
         }
     }
 
+    /// Commits a literal edit after the editor has updated every affected block and range.
+    /// The caller must rule out syntax, heading-anchor and global-reference changes.
+    pub(super) fn commit_plain_source(&mut self, source: String) {
+        self.source = source;
+        self.dirty = false;
+    }
+
     /// Appends a streaming chunk without parsing or copying the existing source.
     pub fn append(&mut self, chunk: &str) {
         if !chunk.is_empty() {
@@ -735,7 +742,7 @@ pub(super) struct Block {
 }
 
 impl Block {
-    fn new(kind: Kind, start: usize) -> Self {
+    pub(super) fn new(kind: Kind, start: usize) -> Self {
         Self {
             id: 0,
             start,
@@ -811,7 +818,15 @@ fn table_snapshot(block: &Block, alignments: &[Alignment]) -> MarkdownTable {
 
 fn normalize_table_cell(text: &str) -> String {
     let mut escaped = String::with_capacity(text.len());
-    for ch in text.chars() {
+    let padding = |ch| matches!(ch, ' ' | '\t' | '\r' | '\n');
+    let start = text.len() - text.trim_start_matches(padding).len();
+    let end = text.trim_end_matches(padding).len();
+    for (index, ch) in text.char_indices() {
+        // Entities distinguish literal edge whitespace from Markdown table padding.
+        if padding(ch) && (index < start || index >= end) {
+            escaped.push_str(if ch == '\t' { "&#9;" } else { "&#32;" });
+            continue;
+        }
         if ch.is_ascii_punctuation() {
             escaped.push('\\');
         }
@@ -2556,5 +2571,27 @@ mod table_roundtrip_tests {
             );
             assert_eq!(document.source(), source);
         }
+    }
+}
+
+#[test]
+fn literal_table_edge_whitespace_roundtrips_through_markdown() {
+    for text in [" ", "  猫  ", "\tcat\t", "\ncat\r\n", " &#32; | "] {
+        let mut document = MarkdownDocument::new("| A |\n| --- |\n| old |\n");
+        let id = document.tables()[0].id;
+        document
+            .edit_table(
+                id,
+                MarkdownTableEdit::SetCell {
+                    row: 1,
+                    column: 0,
+                    text: text.into(),
+                },
+            )
+            .unwrap();
+        assert_eq!(
+            document.tables()[0].rows[1].cells[0].text.as_ref(),
+            text.replace(['\n', '\r'], " ")
+        );
     }
 }

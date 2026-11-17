@@ -150,7 +150,7 @@ pub fn registry() -> Vec<DemoEntry> {
         DemoEntry {
             name: "MarkdownView 动态富文本",
             description: "原生块、持续更新、安全链接和宿主图片策略",
-            render: |cx| markdown_demo::render(cx).into(),
+            render: markdown_demo::render_filling,
         },
         DemoEntry {
             name: "CommandPalette 命令面板",

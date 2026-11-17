@@ -1063,7 +1063,12 @@ impl Render for Gallery {
 
         let selected_entry = self.entries.get(selected).copied();
         let selected_demo = self.selected_demo(selected, cx);
-        let fill_demo = selected_entry.is_some_and(|entry| entry.name == "PdfReader PDF 阅读器");
+        let fill_demo = selected_entry.is_some_and(|entry| {
+            matches!(
+                entry.name,
+                "PdfReader PDF 阅读器" | "MarkdownView 动态富文本"
+            )
+        });
         let selected_label = selected_entry
             .map(|entry| entry.name.to_string())
             .unwrap_or_else(|| tr(cx, locales::gallery::about_label).to_string());
@@ -2534,16 +2539,17 @@ fn main() {
 
 #[cfg(all(test, debug_assertions))]
 mod document_surface_tests {
+    use gpui::Focusable;
+
     use super::*;
 
-    fn select_document(root: AnyView, cx: &mut App) {
+    fn select_document(root: AnyView, name: &str, cx: &mut App) {
         let gallery = root.downcast::<Gallery>().expect("Gallery root");
         gallery.update(cx, |gallery, cx| {
-            let name = std::env::var("LIORA_DOCUMENT_DEMO").unwrap_or_else(|_| "PdfReader".into());
             let index = gallery
                 .entries
                 .iter()
-                .position(|entry| entry.name.starts_with(&name))
+                .position(|entry| entry.name.starts_with(name))
                 .expect("document demo");
             gallery.selected = index;
             gallery.active_demo = Some((gallery.entries[index].render)(cx));
@@ -2565,7 +2571,9 @@ mod document_surface_tests {
                         .update(cx, |root, window, cx| {
                             window.resize(size(px(3840.), px(2114.)));
                             window.bounds_changed(cx);
-                            select_document(root, cx);
+                            let name = std::env::var("LIORA_DOCUMENT_DEMO")
+                                .unwrap_or_else(|_| "PdfReader".into());
+                            select_document(root, &name, cx);
                             apply_theme_mode(window, cx, ThemeMode::Dark);
                         })
                         .unwrap();
@@ -2581,50 +2589,155 @@ mod document_surface_tests {
             let mut app = gpui::TestAppContext::single();
             app.update(|cx| init_liora_with_options(cx, gallery_liora_options()));
             let handle = app.update(|cx| open_gallery_window(cx).unwrap());
-            handle
-                .update(&mut app, |root, _, cx| select_document(root, cx))
-                .unwrap();
-            let mut cx = gpui::VisualTestContext::from_window(handle, &app);
-            for (width, height) in [(1568., 863.), (3840., 2114.)] {
-                for _ in 0..4 {
-                    cx.update(|window, cx| {
-                        window.resize(size(px(width), px(height)));
-                        window.bounds_changed(cx);
-                        window.refresh();
-                        window.draw(cx).clear(cx);
-                        assert_eq!(window.viewport_size(), size(px(width), px(height)));
-                    });
-                    cx.run_until_parked();
+            for name in ["PdfReader", "MarkdownView"] {
+                let document = handle
+                    .update(&mut app, |root, _, cx| {
+                        select_document(root.clone(), name, cx);
+                        if name != "MarkdownView" {
+                            return None;
+                        }
+                        let gallery = root.downcast::<Gallery>().unwrap();
+                        let demo = gallery
+                            .read(cx)
+                            .active_demo
+                            .clone()
+                            .unwrap()
+                            .downcast::<demos::markdown_demo::MarkdownDemo>()
+                            .unwrap();
+                        let document = demo.read(cx).document();
+                        document.update(cx, |editor, cx| {
+                            let source =
+                                format!("{}{}", editor.source(), "\n\nMore content.\n".repeat(200));
+                            editor.set_source(source, cx);
+                        });
+                        Some(document)
+                    })
+                    .unwrap();
+                let scroll = document
+                    .as_ref()
+                    .map(|document| app.update(|cx| document.read(cx).scroll_handle()));
+                let mut cx = gpui::VisualTestContext::from_window(handle, &app);
+                for (width, height) in [(1568., 863.), (3840., 2114.)] {
+                    if let Some(document) = &document {
+                        cx.update(|_, cx| {
+                            let end = document.read(cx).source().len();
+                            document.update(cx, |editor, cx| editor.set_selection(end..end, cx));
+                        });
+                        scroll
+                            .as_ref()
+                            .unwrap()
+                            .scroll_to(gpui::ListOffset::default());
+                    }
+                    for _ in 0..4 {
+                        cx.update(|window, cx| {
+                            window.resize(size(px(width), px(height)));
+                            window.bounds_changed(cx);
+                            window.refresh();
+                            window.draw(cx).clear(cx);
+                            assert_eq!(window.viewport_size(), size(px(width), px(height)));
+                        });
+                        cx.run_until_parked();
+                    }
+                    let card = cx.debug_bounds("gallery-filling-demo").unwrap();
+                    let reader = if let Some(scroll) = &scroll {
+                        scroll.viewport_bounds()
+                    } else {
+                        cx.debug_bounds("pdf-reader-root").unwrap()
+                    };
+                    assert!(
+                        card.top() >= px(112.) && card.right() <= px(width),
+                        "card must stay inside Gallery main pane: {card:?}"
+                    );
+                    assert!(
+                        card.bottom() <= px(height - 38.) && card.bottom() >= px(height - 150.),
+                        "card must fill the viewport above the footer, not overflow it: {card:?}"
+                    );
+                    assert!(
+                        (card.bottom() - reader.bottom() - px(17.)).abs() < px(2.),
+                        "{name} must reach the Gallery card bottom: {card:?} {reader:?}"
+                    );
+                    assert!(
+                        reader.size.height > px(height * 0.5),
+                        "{name} must use the right pane, not a fixed-height strip: {reader:?}"
+                    );
+                    if let (Some(scroll), Some(document)) = (&scroll, &document) {
+                        cx.update(|window, cx| {
+                            let source = document.read(cx).source().to_string();
+                            let position = reader.origin + gpui::point(px(30.), px(16.));
+                            window.dispatch_event(
+                                gpui::PlatformInput::MouseDown(gpui::MouseDownEvent {
+                                    position,
+                                    button: gpui::MouseButton::Left,
+                                    click_count: 1,
+                                    ..Default::default()
+                                }),
+                                cx,
+                            );
+                            window.dispatch_event(
+                                gpui::PlatformInput::MouseUp(gpui::MouseUpEvent {
+                                    position,
+                                    button: gpui::MouseButton::Left,
+                                    click_count: 1,
+                                    ..Default::default()
+                                }),
+                                cx,
+                            );
+                            assert!(document.focus_handle(cx).is_focused(window));
+                            let caret = document.read(cx).selection();
+                            assert!(
+                                caret.is_empty()
+                                    && (2..source.find('\n').unwrap()).contains(&caret.start)
+                            );
+                            let mut expected = source.clone();
+                            expected.insert(caret.start, 'x');
+                            window.draw(cx).clear(cx);
+                            window.dispatch_keystroke(gpui::Keystroke::parse("x").unwrap(), cx);
+                            assert_eq!(document.read(cx).source(), expected);
+                            window.draw(cx).clear(cx);
+                            assert_eq!(scroll.logical_scroll_top().item_ix, 0);
+                            assert_eq!(scroll.logical_scroll_top().offset_in_item, px(0.));
+                            document.update(cx, |editor, cx| {
+                                assert!(editor.undo(cx));
+                                assert_eq!(editor.source(), source);
+                            });
+                            window.draw(cx).clear(cx);
+                        });
+                        let before = scroll.logical_scroll_top();
+                        cx.update(|window, cx| {
+                            window.dispatch_event(
+                                gpui::PlatformInput::Scroll(gpui::ScrollEvent {
+                                    position: reader.center(),
+                                    delta: gpui::ScrollDelta::Pixels(gpui::point(
+                                        px(0.),
+                                        px(-120.),
+                                    )),
+                                    touch_phase: gpui::TouchPhase::Moved,
+                                    ..Default::default()
+                                }),
+                                cx,
+                            );
+                            window.draw(cx).clear(cx);
+                        });
+                        let after = scroll.logical_scroll_top();
+                        assert!(
+                            after.item_ix > before.item_ix
+                                || after.offset_in_item > before.offset_in_item,
+                            "wheel input must scroll Markdown inside the actual Gallery at {width}x{height}"
+                        );
+                        continue;
+                    }
+                    let viewport = cx.debug_bounds("pdf-reader-viewport").unwrap();
+                    let page = cx.debug_bounds("pdf-reader-page-1").unwrap();
+                    eprintln!("Gallery {width}x{height}: viewport={viewport:?} page={page:?}");
+                    assert!(
+                        page.size.height > viewport.size.height * 0.5,
+                        "FitPage must produce a visible page, not a one-pixel raster: {page:?} {viewport:?}"
+                    );
+                    assert!(
+                        page.top() >= viewport.top() && page.bottom() <= viewport.bottom(),
+                        "FitPage must remain inside the visible viewport: {page:?} {viewport:?}"
+                    );
                 }
-                let card = cx.debug_bounds("gallery-filling-demo").unwrap();
-                let reader = cx.debug_bounds("pdf-reader-root").unwrap();
-                assert!(
-                    card.top() >= px(112.) && card.right() <= px(width),
-                    "card must stay inside Gallery main pane: {card:?}"
-                );
-                assert!(
-                    card.bottom() <= px(height - 38.) && card.bottom() >= px(height - 150.),
-                    "card must fill the viewport above the footer, not overflow it: {card:?}"
-                );
-                assert!(
-                    (card.bottom() - reader.bottom() - px(17.)).abs() < px(2.),
-                    "reader must reach the Gallery card bottom: {card:?} {reader:?}"
-                );
-                assert!(
-                    reader.size.height > px(height * 0.5),
-                    "reader must use the right pane, not a fixed-height strip: {reader:?}"
-                );
-                let viewport = cx.debug_bounds("pdf-reader-viewport").unwrap();
-                let page = cx.debug_bounds("pdf-reader-page-1").unwrap();
-                eprintln!("Gallery {width}x{height}: viewport={viewport:?} page={page:?}");
-                assert!(
-                    page.size.height > viewport.size.height * 0.5,
-                    "FitPage must produce a visible page, not a one-pixel raster: {page:?} {viewport:?}"
-                );
-                assert!(
-                    page.top() >= viewport.top() && page.bottom() <= viewport.bottom(),
-                    "FitPage must remain inside the visible viewport: {page:?} {viewport:?}"
-                );
             }
             app.quit();
         }

@@ -13,11 +13,12 @@ mod pdf_reader_demo;
 
 struct Surface(AnyView);
 impl Render for Surface {
-    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         div()
             .size_full()
             .p_4()
-            .bg(gpui::white())
+            .bg(cx.global::<liora_core::Config>().theme.neutral.body)
+            .text_color(cx.global::<liora_core::Config>().theme.neutral.text_1)
             .child(self.0.clone())
     }
 }

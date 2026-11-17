@@ -35,7 +35,7 @@ struct DocumentFonts {
 }
 
 #[derive(Default)]
-struct FootnoteInfo {
+pub(super) struct FootnoteInfo {
     references: usize,
     preview: Option<SharedString>,
 }
@@ -69,7 +69,7 @@ fn footnote_preview(block: &Block, text: &mut String) {
     }
 }
 
-fn footnote_info(blocks: &[Block]) -> HashMap<usize, FootnoteInfo> {
+pub(super) fn footnote_info(blocks: &[Block]) -> HashMap<usize, FootnoteInfo> {
     fn collect(blocks: &[Block], notes: &mut HashMap<usize, FootnoteInfo>) {
         for block in blocks {
             for span in &block.spans {
@@ -198,8 +198,10 @@ pub(super) fn document(
     root.into_any_element()
 }
 
-pub(super) fn document_with_editable(
+pub(super) fn document_row_with_editable(
     blocks: &[Block],
+    row: usize,
+    footnotes: &HashMap<usize, FootnoteInfo>,
     resolver: Option<&ImageResolver>,
     images: &mut ImageCache,
     on_task_toggle: Option<&TaskToggleHandler>,
@@ -219,30 +221,25 @@ pub(super) fn document_with_editable(
         assets: assets.clone(),
         on_edit: Some(on_edit),
     };
-    let footnotes = footnote_info(blocks);
-    let mut root = div().flex().flex_col().gap_3().w_full().min_w_0();
-    for block in blocks {
-        let element = editable(block).unwrap_or_else(|| {
-            render_block(
-                block,
-                resolver,
-                images,
-                on_task_toggle,
-                on_navigate,
-                None,
-                Alignment::None,
-                &[],
-                &footnotes,
-                &fonts,
-                Some(editable),
-                Some(decorate),
-                window,
-                cx,
-            )
-        });
-        root = root.child(element);
-    }
-    root.into_any_element()
+    let block = &blocks[row];
+    editable(block).unwrap_or_else(|| {
+        render_block(
+            block,
+            resolver,
+            images,
+            on_task_toggle,
+            on_navigate,
+            None,
+            Alignment::None,
+            &[],
+            footnotes,
+            &fonts,
+            Some(editable),
+            Some(decorate),
+            window,
+            cx,
+        )
+    })
 }
 
 fn render_block(
@@ -766,14 +763,22 @@ fn render_block(
                     .unwrap_or_else(|| item.source_range.clone());
                 let toggle = on_task_toggle.cloned();
                 let item_id = item.id;
-                cx.new(|cx| {
-                    crate::Checkbox::new(checked, cx).on_change(move |checked, _, cx| {
+                let checkbox = window.use_keyed_state(
+                    SharedString::from(format!("markdown-task-{item_id}")),
+                    cx,
+                    |_, cx| crate::Checkbox::new(checked, cx),
+                );
+                checkbox.update(cx, |checkbox, _| {
+                    checkbox.sync(checked, move |checked, _, cx| {
                         if let Some(toggle) = &toggle {
                             toggle(item_id, range.clone(), checked, cx);
                         }
-                    })
-                })
-                .into_any_element()
+                    });
+                });
+                div()
+                    .on_mouse_down(gpui::MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                    .child(checkbox)
+                    .into_any_element()
             } else {
                 crate::Text::new(marker).into_any_element()
             };

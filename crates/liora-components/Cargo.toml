@@ -24,6 +24,7 @@ toml.workspace = true
 lyon_tessellation = "1.0"
 ureq = "2"
 pulldown-cmark = "=0.13.3"
+unicode-segmentation.workspace = true
 latex-rust = { version = "=3.0.3", features = ["png"] }
 svgtypes = "=0.16.1"
 mermaid-svg = "=0.7.0"

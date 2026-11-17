@@ -83,7 +83,7 @@ Liora 明确不是 Web 外壳：
 
 | 组件 | 契约 |
 |---|---|
-| `MarkdownDocument` / `MarkdownView` / `MarkdownEditor` | 原生 Markdown 缓存与标题/目录/脚注导航、任务列表 checkbox、高亮、`latex-rust` 数学和受限原生 Mermaid 图。`MarkdownEditor` 支持有源码范围保护且可撤销/重做的行内及段落/标题/引用/列表/拆分编辑；表格支持源码映射单元格/行/列编辑及视觉重排/缩放，拒绝有歧义的映射。上下标使用原生 baseline offset；不承诺完整 Typora/MarkText 等价。图片需宿主批准本地文件或提供已解码图像；[能力矩阵](docs/markdown-capability-matrix.md)列出剩余差距。 |
+| `MarkdownDocument` / `MarkdownView` / `MarkdownEditor` | 原生 Markdown、标题/目录/脚注导航、任务列表、`latex-rust` 数学和受限 Mermaid 图。`MarkdownEditor` 使用统一富文本输入/选区、带样式虚拟行、保留源码的拆分/合并/列表/格式命令、斜杠菜单、查找替换、移动/折叠及选区感知撤销。表格保留原生单元格输入、行列操作与视觉缩放。持久化仍为 canonical Markdown，图片由宿主授权；不承诺完整 Typora/MarkText/Quiet.md 等价。[能力矩阵](docs/markdown-capability-matrix.md)。 |
 | `Transcript` | 稳定 ID 的可变高度虚拟化、原生跟随/脱离、历史前插/重排锚点及可序列化 `TranscriptPosition`。宿主通知行高改变并持有会话存储。 |
 | `Composer` | 复用 Input 的原生选区/IME；结构化引用与附件、候选、粘贴 payload、busy 时可继续编辑的草稿，以及宿主 Send/Stop 事件。 |
 | `Terminal` | 增量 VT/ANSI 状态、光标、Unicode 单元格、选区、历史、原生文本输入与尺寸事件；使用 MIT 许可的 `vt100 = 0.18.1`，PTY/进程 I/O 全由宿主持有。 |
