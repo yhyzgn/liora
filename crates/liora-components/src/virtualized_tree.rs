@@ -185,13 +185,23 @@ impl VirtualizedTree {
 
     fn rebuild_flattened(&mut self) {
         let next = flatten_visible(&self.data, &self.expanded_keys);
-        let count_changed = next.len() != self.flattened.len();
+        let prefix = self
+            .flattened
+            .iter()
+            .zip(&next)
+            .take_while(|(old, new)| old == new)
+            .count();
+        let suffix = self.flattened[prefix..]
+            .iter()
+            .rev()
+            .zip(next[prefix..].iter().rev())
+            .take_while(|(old, new)| old == new)
+            .count();
+        self.list_state.splice(
+            prefix..self.flattened.len() - suffix,
+            next.len() - prefix - suffix,
+        );
         self.flattened = next;
-        if count_changed {
-            self.rebuild_list_state();
-        } else {
-            self.list_state.reset(self.flattened.len());
-        }
     }
 
     fn rebuild_list_state(&mut self) {
@@ -449,14 +459,59 @@ mod tests {
     }
 
     #[test]
-    fn virtualized_tree_uses_list_state_and_visible_metadata() {
-        let source = include_str!("virtualized_tree.rs");
+    fn virtualized_tree_expansion_preserves_scrolled_branch_and_list_handle() {
+        let mut app = gpui::TestAppContext::single();
+        let tree = app.new(|cx| {
+            VirtualizedTree::new(
+                (0..40)
+                    .map(|index| {
+                        TreeNode::new(format!("branch-{index}"), format!("Branch {index}"))
+                            .child(TreeNode::new(format!("leaf-{index}"), "Leaf"))
+                    })
+                    .collect(),
+                cx,
+            )
+        });
+        tree.update(&mut app, |tree, cx| {
+            let handle = tree.list_state();
+            handle.scroll_to(gpui::ListOffset {
+                item_ix: 20,
+                offset_in_item: px(7.0),
+            });
 
-        assert!(source.contains("pub struct VirtualizedTree"));
-        assert!(source.contains("ListState::new"));
-        assert!(source.contains("list(list_state.clone()"));
-        assert!(source.contains("VirtualScrollbar::new"));
-        assert!(source.contains("flatten_visible"));
-        assert!(source.contains("flattened: Vec<VirtualTreeItem>"));
+            tree.toggle_expand("branch-21".into(), cx);
+            assert_eq!(tree.list_state().logical_scroll_top().item_ix, 20);
+            assert_eq!(
+                tree.list_state().logical_scroll_top().offset_in_item,
+                px(7.0)
+            );
+            assert_eq!(handle.item_count(), 41);
+
+            tree.toggle_expand("branch-21".into(), cx);
+            assert_eq!(tree.list_state().logical_scroll_top().item_ix, 20);
+            assert_eq!(
+                tree.list_state().logical_scroll_top().offset_in_item,
+                px(7.0)
+            );
+            assert_eq!(handle.item_count(), 40);
+
+            tree.toggle_expand("branch-0".into(), cx);
+            assert_eq!(tree.list_state().logical_scroll_top().item_ix, 21);
+            assert_eq!(
+                tree.list_state().logical_scroll_top().offset_in_item,
+                px(7.0)
+            );
+            assert_eq!(tree.flattened[21].id.as_ref(), "branch-20");
+            assert_eq!(handle.item_count(), 41);
+
+            tree.toggle_expand("branch-0".into(), cx);
+            assert_eq!(tree.list_state().logical_scroll_top().item_ix, 20);
+            assert_eq!(
+                tree.list_state().logical_scroll_top().offset_in_item,
+                px(7.0)
+            );
+            assert_eq!(handle.item_count(), 40);
+        });
+        app.quit();
     }
 }
