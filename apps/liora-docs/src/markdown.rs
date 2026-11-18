@@ -1803,6 +1803,7 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "layout/divider.rs" => Some(include_str!("../content/snippets/layout/divider.rs")),
         "layout/space.rs" => Some(include_str!("../content/snippets/layout/space.rs")),
         "layout/grid.rs" => Some(include_str!("../content/snippets/layout/grid.rs")),
+        "layout/accessible.rs" => Some(include_str!("../content/snippets/layout/accessible.rs")),
         "container/space.rs" => Some(include_str!("../content/snippets/container/space.rs")),
         "container/divider.rs" => Some(include_str!("../content/snippets/container/divider.rs")),
         "container/layout.rs" => Some(include_str!("../content/snippets/container/layout.rs")),
@@ -12865,6 +12866,23 @@ mod tests {
         assert!(!harness.contains("quick_start/run.sh"));
     }
 
+    #[gpui::test]
+    fn accessible_layout_pair_retains_native_demo(cx: &mut gpui::TestAppContext) {
+        cx.update(|cx| {
+            liora_components::init_liora(cx);
+        });
+        let demo = cx.new(|cx| LiveDemoContent::new("LayoutAccessible".into(), cx));
+        assert!(demo.read_with(cx, |demo, _| demo.gallery_demo.is_some()));
+        let document = MarkdownDocument::parse(LAYOUT_DOC);
+        let mut components = Vec::new();
+        collect_live_demo_components(document.blocks(), &mut components);
+        assert!(components.iter().any(|component| component == "LayoutAccessible"));
+        assert_eq!(
+            load_code_snippet("layout/accessible.rs"),
+            Some(include_str!("../content/snippets/layout/accessible.rs"))
+        );
+    }
+
     #[test]
     fn p13_docs_live_demo_markers_have_precise_renderers() {
         let renderer = include_str!("markdown.rs");
@@ -13717,7 +13735,12 @@ mod tests {
             (
                 include_str!("../content/pages/layout.md"),
                 "LayoutDivider",
-                &["layout/divider.rs", "layout/space.rs", "layout/grid.rs"][..],
+                &[
+                    "layout/divider.rs",
+                    "layout/space.rs",
+                    "layout/grid.rs",
+                    "layout/accessible.rs",
+                ][..],
             ),
             (
                 include_str!("../content/pages/container.md"),

@@ -341,6 +341,8 @@ mod kbd_composition;
 mod kbd_sizes;
 #[path = "../../content/snippets/label/basic.rs"]
 mod label_basic;
+#[path = "../../content/snippets/layout/accessible.rs"]
+mod layout_accessible;
 #[path = "../../content/snippets/layout/divider.rs"]
 mod layout_divider;
 #[path = "../../content/snippets/layout/grid.rs"]

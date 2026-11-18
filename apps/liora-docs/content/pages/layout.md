@@ -40,3 +40,16 @@
 
 ```rust src="layout/grid.rs"
 ```
+
+## Accessible 元数据
+
+`Accessible` 为组合节点附加稳定标识、角色、名称和说明；它不替代子控件的焦点与键盘实现。此例为原生 Input 的外层组设置元数据，输入内容显示在 Project value。组名称不等于给内部文本输入单独设置名称，也不代表已经完成屏幕阅读器验证。
+
+### 效果
+
+::Demo{component="LayoutAccessible"}::
+
+### 代码
+
+```rust src="layout/accessible.rs"
+```

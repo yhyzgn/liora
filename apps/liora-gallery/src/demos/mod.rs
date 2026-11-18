@@ -824,6 +824,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Input" => Some(form_controls_demo::render_input(cx)),
         "InputNumber" => Some(form_controls_demo::render_input_number(cx)),
         "Layout" => Some(layout_demo::render(cx).into()),
+        "LayoutAccessible" => Some(layout_demo::render_accessible(cx).into()),
         "Link" => Some(link_demo::render(cx).into()),
         "List" => Some(list_demo::render(cx).into()),
         "LineChart" => Some(line_chart_demo::render(cx).into()),
