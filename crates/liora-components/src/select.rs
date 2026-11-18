@@ -905,9 +905,12 @@ impl Render for Select {
             .bg(theme.neutral.card)
             .when(!self.border_none, |s| {
                 s.border_1().border_color(border_color)
-            })
-            .cursor_pointer()
-            .hover(|s| {
+            });
+
+        if self.disabled {
+            el = el.cursor_not_allowed();
+        } else {
+            el = el.cursor_pointer().hover(|s| {
                 let s = s.cursor_pointer();
                 if self.border_none {
                     s
@@ -915,6 +918,7 @@ impl Render for Select {
                     s.border_color(theme.primary.base)
                 }
             });
+        }
 
         if !self.radius_none {
             if self.radius_left_none {
@@ -928,7 +932,7 @@ impl Render for Select {
 
         let close_on_click_outside = self.close_on_click_outside;
 
-        let element = el
+        let mut element = el
             .child(
                 gpui::div()
                     .absolute()
@@ -939,13 +943,18 @@ impl Render for Select {
                         select: cx.entity().clone(),
                     }),
             )
-            .child(trigger_content)
-            .on_mouse_down(
+            .child(trigger_content);
+
+        if !self.disabled {
+            element = element.on_mouse_down(
                 MouseButton::Left,
                 cx.listener(|this, _, window, cx| {
                     this.toggle_open(window, cx);
                 }),
-            )
+            );
+        }
+
+        let element = element
             .when(close_on_click_outside, |s| {
                 s.on_mouse_down_out(cx.listener(|this, _, _, cx| {
                     this.is_open = false;
@@ -1010,20 +1019,46 @@ mod searchable_select_tests {
         assert!(source.contains("pub fn multiple"));
         assert!(source.contains("SearchableList::new(items.clone())"));
     }
-    #[test]
-    fn plain_select_toggle_open_guards_disabled_state() {
-        let source = include_str!("select.rs")
-            .split("#[cfg(test)]")
-            .next()
-            .unwrap();
+    struct SelectSurface(Entity<Select>);
 
-        let toggle_open = source
-            .split("fn toggle_open")
-            .nth(1)
-            .unwrap()
-            .split("impl Focusable")
-            .next()
-            .unwrap();
-        assert!(toggle_open.contains("if self.disabled"));
+    impl Render for SelectSurface {
+        fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+            div().w_full().h_full().child(self.0.clone())
+        }
+    }
+
+    #[test]
+    fn disabled_plain_select_click_does_not_open_or_change_selection() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let select = app
+            .new(|cx| Select::new(vec!["Apple", "Banana", "Orange"], Some(1), cx).disabled(true));
+        let window = app.open_window(gpui::size(gpui::px(240.0), gpui::px(100.0)), |_, _| {
+            SelectSurface(select.clone())
+        });
+
+        app.update_window(window.into(), |_, window, cx| {
+            window.draw(cx).clear(cx);
+            let position = select
+                .read(cx)
+                .last_bounds
+                .expect("Select trigger should have bounds")
+                .center();
+            window.dispatch_event(
+                gpui::PlatformInput::MouseDown(gpui::MouseDownEvent {
+                    position,
+                    button: gpui::MouseButton::Left,
+                    click_count: 1,
+                    ..Default::default()
+                }),
+                cx,
+            );
+
+            let select = select.read(cx);
+            assert!(!select.is_open);
+            assert_eq!(select.selected_idx, Some(1));
+        })
+        .unwrap();
+        app.quit();
     }
 }

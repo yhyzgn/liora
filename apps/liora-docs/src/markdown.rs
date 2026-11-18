@@ -3368,8 +3368,9 @@ impl LiveDemoContent {
             }
             "FormBasic" => {
                 form_inputs.push(cx.new(|cx| Input::new("Liora", cx).placeholder("Name")));
-                form_selects
-                    .push(cx.new(|cx| Select::new(vec!["Admin", "Editor", "Viewer"], Some(0), cx)));
+                form_selects.push(cx.new(|cx| {
+                    Select::new(vec!["Admin", "Editor", "Viewer"], Some(0), cx).disabled(true)
+                }));
                 form_switches.push(cx.new(|cx| Switch::new(true, cx)));
             }
             "FormValidation" => {

@@ -4,7 +4,7 @@
 
 ## 基础表单
 
-使用 `FormItem` 包裹每个字段，设置 `label`、`required` 和具体控件。字段控件通常作为 `Entity` 保存，保证输入状态在重绘间持久。
+使用 `FormItem` 包裹每个字段，设置 `label`、`required` 和具体控件。示例中的 Role Select 设为 disabled，禁用时不会打开下拉层或改变当前选项。字段控件通常作为 `Entity` 保存，保证输入状态在重绘间持久。
 
 ### 效果
 
