@@ -473,6 +473,8 @@ impl Input {
         self.value = SharedString::default();
         self.wrapped_layout = None;
         self.selected_range = 0..0;
+        self.selection_reversed = false;
+        self.marked_range = None;
         self.emit_change(cx);
         if let Some(on_clear) = self.on_clear.take() {
             on_clear(cx);
@@ -1944,8 +1946,41 @@ mod width_tests {
 
 #[cfg(test)]
 mod tests {
-    use super::Input;
-    use gpui::{AppContext, TestAppContext};
+    use super::{Input, SelectHome};
+    use gpui::{AppContext, EntityInputHandler, TestAppContext};
+
+    #[test]
+    fn clear_cancels_composition_and_resets_selection() {
+        let mut app = TestAppContext::single();
+        let input = app.new(|cx| Input::new("", cx));
+        app.add_empty_window().update(|window, cx| {
+            input.update(cx, |input, cx| {
+                input.replace_and_mark_text_in_range(None, "候補", None, window, cx);
+                input.select_home(&SelectHome, window, cx);
+                assert_eq!(input.marked_text_range(window, cx), Some(0..2));
+                assert_eq!(
+                    input
+                        .selected_text_range(false, window, cx)
+                        .map(|selection| selection.reversed),
+                    Some(true)
+                );
+
+                input.clear(cx);
+
+                assert!(input.value().is_empty());
+                assert_eq!(input.selected_range(), 0..0);
+                assert_eq!(input.marked_text_range(window, cx), None);
+                assert!(!input.is_composing());
+                assert_eq!(
+                    input
+                        .selected_text_range(false, window, cx)
+                        .map(|selection| selection.reversed),
+                    Some(false)
+                );
+            });
+        });
+        app.quit();
+    }
 
     #[test]
     fn set_value_replaces_host_text_regardless_of_edit_limit() {
