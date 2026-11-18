@@ -24,8 +24,8 @@ use liora_components::{
     toast_info, toast_success, toast_warning,
 };
 use liora_core::{
-    Config, PassivePortal, Placement, Portal, ThemeMode, apply_locale, apply_theme_mode,
-    clear_popover, current_locale, tr,
+    Config, PassivePortal, Placement, Portal, ThemeMode, apply_theme_mode, clear_popover,
+    current_locale, tr,
 };
 use liora_gallery::category;
 use liora_icons::Icon;
@@ -11664,7 +11664,7 @@ impl DocsShell {
         let docs = cx.entity().clone();
         cx.update_entity(&self.locale_segmented, |segmented, _cx| {
             segmented.set_on_change(move |value, window, cx| {
-                if apply_locale(window, cx, value.as_ref()).is_ok() {
+                if crate::apply_docs_locale(window, cx, value.as_ref()).is_ok() {
                     let docs = docs.clone();
                     window.defer(cx, move |_window, cx| {
                         let _ = docs.update(cx, |docs, cx| {

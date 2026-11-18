@@ -10,6 +10,7 @@
 - Fix native Markdown blank-area pointer placement, visible-text arrow navigation across hidden delimiters, and find Enter/Escape routing with keyboard focus restoration. Let the actual Gallery Markdown editor fill the remaining pane height while retaining bounded Docs embedding.
 - Retain Markdown task checkbox identity and pointer focus across redraws; preserve table-cell spaces and caret position during consecutive native typing after double-click selection.
 - Restore native Markdown caret blinking and immediate whitespace geometry, including empty nested list/quote content. Preserve visible-row anchors during edits and syntax changes, use final painted pointer geometry after autoscroll, and recover vertical navigation after scrolling away from the caret. Preserve directed Source selections and immediate selection notifications.
+- Refresh the registered Liora Docs system menu labels when the app language changes.
 
 ## 0.6.1 - 2026-11-16
 

@@ -19,9 +19,9 @@ use liora_components::{
 };
 use liora_core::{
     FontConfig, FontLoadMode, FontLoadOptions, LinuxDesktopIdentity, LinuxDesktopPngIcon,
-    LocalesMap, Options, attach_system_theme_observer, ensure_linux_desktop_identity,
-    linux_desktop_entry, linux_desktop_png_icon_path, load_app_fonts,
-    startup_maximized_window_bounds, tr,
+    LocalesLoadError, LocalesMap, Options, apply_locale, attach_system_theme_observer,
+    ensure_linux_desktop_identity, linux_desktop_entry, linux_desktop_png_icon_path,
+    load_app_fonts, startup_maximized_window_bounds, tr,
 };
 use liora_tray::{
     MouseButton, MouseButtonState, Tray, TrayCloseAction, TrayCommand, TrayConfig,
@@ -149,6 +149,16 @@ fn register_docs_system_menus(cx: &mut App) {
                 )),
         ],
     );
+}
+
+fn apply_docs_locale(
+    window: &mut Window,
+    cx: &mut App,
+    locale: &str,
+) -> Result<(), LocalesLoadError> {
+    apply_locale(window, cx, locale)?;
+    register_docs_system_menus(cx);
+    Ok(())
 }
 
 // This app uses init_liora_with_options instead of init_liora(cx) because it sets app fonts.
@@ -879,6 +889,43 @@ mod shell_tests {
             }
         });
         app.quit();
+    }
+
+    #[test]
+    fn docs_locale_switch_refreshes_registered_system_menus()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use super::{apply_docs_locale, embedded_docs_locales, register_docs_system_menus};
+        use gpui::{AppContext, EmptyView, OwnedMenuItem, TestAppContext};
+        use liora_core::{LocalesConfig, set_locale, set_locales_config};
+
+        let mut app = TestAppContext::single();
+        app.update(|cx| {
+            liora_core::init_liora(cx, liora_theme::Theme::light());
+            set_locales_config(
+                cx,
+                LocalesConfig::default().with_resources(embedded_docs_locales()),
+            );
+            assert!(set_locale(cx, "zh-CN").is_ok());
+            register_docs_system_menus(cx);
+        });
+
+        let handle = app.add_window(|_, _| EmptyView);
+        app.update_window(handle.into(), |_, window, cx| {
+            apply_docs_locale(window, cx, "en-US")
+        })??;
+        let menus = app
+            .read(|cx| cx.get_menus())
+            .ok_or("GPUI test platform did not record menus")?;
+        let [file, _, _, help] = menus.as_slice() else {
+            return Err("expected four Docs system menus".into());
+        };
+        assert_eq!(file.name.as_ref(), "File");
+        let Some(OwnedMenuItem::Action { name, .. }) = help.items.first() else {
+            return Err("expected a localized Docs help action".into());
+        };
+        assert_eq!(name, "Liora on GitHub");
+        app.quit();
+        Ok(())
     }
 
     #[test]
