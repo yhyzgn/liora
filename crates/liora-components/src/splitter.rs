@@ -241,7 +241,12 @@ impl RenderOnce for Splitter {
                     } else {
                         px(10.0)
                     };
-                    let current = controlled_size.unwrap_or(state.read(cx).size);
+                    let current = clamp_size(
+                        controlled_size.unwrap_or(state.read(cx).size),
+                        min_size,
+                        max_size,
+                        state.read(cx).available,
+                    );
                     let requested = match (orientation, key) {
                         (SplitterOrientation::Horizontal, "left")
                         | (SplitterOrientation::Vertical, "up") => {
@@ -438,6 +443,62 @@ impl IntoElement for Splitter {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn keyboard_resize_starts_from_visible_clamped_size() {
+        use std::{cell::Cell, rc::Rc};
+
+        struct Host {
+            orientation: SplitterOrientation,
+            controlled: bool,
+            requested: Rc<Cell<Option<Pixels>>>,
+        }
+
+        impl Render for Host {
+            fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+                let requested = self.requested.clone();
+                div().size(px(300.0)).child(
+                    Splitter::new()
+                        .id("clamped-keyboard-splitter")
+                        .orientation(self.orientation)
+                        .default_size(px(500.0))
+                        .when(self.controlled, |splitter| splitter.size(px(500.0)))
+                        .on_change(move |size| requested.set(Some(size))),
+                )
+            }
+        }
+
+        for orientation in [
+            SplitterOrientation::Horizontal,
+            SplitterOrientation::Vertical,
+        ] {
+            for controlled in [false, true] {
+                let mut app = gpui::TestAppContext::single();
+                app.update(crate::init_liora);
+                let requested = Rc::new(Cell::new(None));
+                let (_, cx) = app.add_window_view(|_, _| Host {
+                    orientation,
+                    controlled,
+                    requested: requested.clone(),
+                });
+                cx.update(|window, cx| window.draw(cx).clear(cx));
+                cx.run_until_parked();
+                cx.update(|window, cx| window.draw(cx).clear(cx));
+                let (position, key) = match orientation {
+                    SplitterOrientation::Horizontal => (gpui::point(px(217.0), px(40.0)), "left"),
+                    SplitterOrientation::Vertical => (gpui::point(px(40.0), px(217.0)), "up"),
+                };
+                cx.simulate_click(position, gpui::Modifiers::none());
+                cx.simulate_keystrokes(key);
+                assert_eq!(
+                    requested.get(),
+                    Some(px(204.0)),
+                    "{orientation:?}, controlled={controlled}: shrink from the visible 214px pane",
+                );
+                app.quit();
+            }
+        }
+    }
 
     #[test]
     fn splitter_defaults_and_limits_are_applied_to_builder_values() {
