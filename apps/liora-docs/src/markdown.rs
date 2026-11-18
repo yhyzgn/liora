@@ -1,7 +1,7 @@
 use crate::locales;
 use gpui::{
     AnyElement, AnyView, App, Context, Entity, FontWeight, Hsla, IntoElement, Render, RenderImage,
-    RenderOnce, ScrollHandle, SharedString, ViewElement as Component, WeakEntity, Window, div, img,
+    RenderOnce, ScrollHandle, SharedString, WeakEntity, Window, div, img,
     prelude::*, px, rgb,
 };
 use liora_components::{
@@ -12,7 +12,8 @@ use liora_components::{
     CodeEditor, CodeEditorConfig, CodeHighlighter, CodeLanguage, CodeTheme, Container, Dropdown,
     DropdownButton, DropdownButtonItem, Flex, Form, FormItem, Grid, GridItem, HorizontalList,
     Image, Input, InputNumber, InputNumberControlsPosition, Link, Loading, NavigationMenu,
-    NavigationMenuMode, NotificationType, Paragraph, Popconfirm, Popover, Preview, Progress,
+    NavigationMenuMode, NotificationType, Paragraph, Popconfirm, Popover, PortalLayer, Preview,
+    Progress,
     ProgressStatus, QrCode, QrEcLevel, QrFinderStyle, QrGradientDirection, QrModuleStyle, Radio,
     RadioGroup, RadioOptionStyle, Rate, Result as DocResult, ResultStatus, Segmented,
     SegmentedOption, Select, SelectableTextGroup, Shell, Sidebar, Skeleton, SkeletonItem,
@@ -24,8 +25,7 @@ use liora_components::{
     toast_info, toast_success, toast_warning,
 };
 use liora_core::{
-    Config, PassivePortal, Placement, Portal, ThemeMode, apply_theme_mode, clear_popover,
-    current_locale, tr,
+    Config, Placement, ThemeMode, apply_theme_mode, clear_popover, current_locale, tr,
 };
 use liora_gallery::category;
 use liora_icons::Icon;
@@ -784,7 +784,7 @@ pub struct DocPage {
 
 #[cfg(test)]
 pub fn render_markdown(md_text: &str) -> AnyElement {
-    Component::new(MarkdownDocument::parse(md_text)).into_any_element()
+ gpui::ViewElement::new(MarkdownDocument::parse(md_text)).into_any_element()
 }
 
 struct MarkdownDocument {
@@ -11097,6 +11097,14 @@ impl Render for DocsShell {
         } else {
             page_view.into_any_element()
         };
+        liora_components::message::render_messages(cx);
+        liora_components::notification::render_notifications(cx);
+        liora_components::image::render_image_preview(_window, cx);
+        liora_core::render_active_tooltip_in_window(_window, cx);
+        liora_core::render_active_popover_in_window(_window, cx);
+        liora_core::render_active_modal_in_window(_window, cx);
+        liora_core::render_active_drawer_in_window(_window, cx);
+
         let theme = cx.global::<Config>().theme.clone();
         let shell = Container::new()
             .header(
@@ -11168,7 +11176,7 @@ impl Render for DocsShell {
             )
             .footer(self.render_status_bar(page.title, cx))
             .footer_height(px(38.0))
-            .overlay(DocsPortalLayer);
+            .overlay(PortalLayer);
 
         AppWindowFrame::new("Liora Docs", shell)
             .subtitle("Native documentation")
@@ -11253,82 +11261,6 @@ fn count_live_demos_in_block(block: &Block) -> usize {
     }
 }
 
-struct DocsPortalLayer;
-
-impl IntoElement for DocsPortalLayer {
-    type Element = Component<Self>;
-
-    fn into_element(self) -> Self::Element {
-        Component::new(self)
-    }
-}
-
-impl RenderOnce for DocsPortalLayer {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        liora_components::message::render_messages(cx);
-        liora_components::notification::render_notifications(cx);
-        liora_components::image::render_image_preview(window, cx);
-        liora_core::render_active_tooltip_in_window(window, cx);
-        liora_core::render_active_popover_in_window(window, cx);
-        liora_core::render_active_modal_in_window(window, cx);
-        liora_core::render_active_drawer_in_window(window, cx);
-
-        let passive_portals = if cx.has_global::<PassivePortal>() {
-            std::mem::take(&mut cx.global_mut::<PassivePortal>().entries)
-        } else {
-            Vec::new()
-        };
-        let portals = if cx.has_global::<Portal>() {
-            std::mem::take(&mut cx.global_mut::<Portal>().entries)
-        } else {
-            Vec::new()
-        };
-
-        let mut container = div().absolute().top_0().left_0().size_full();
-
-        if !passive_portals.is_empty() {
-            let mut passive_container = div()
-                .id("liora-docs-passive-portal-layer")
-                .absolute()
-                .top_0()
-                .left_0()
-                .size_full()
-                .bg(gpui::transparent_black());
-
-            for entry in passive_portals {
-                passive_container = passive_container.child((entry.render)(window, cx));
-            }
-
-            container = container.child(passive_container);
-        }
-
-        if !portals.is_empty() {
-            let mut active_container = div()
-                .id("liora-docs-portal-layer")
-                .absolute()
-                .top_0()
-                .left_0()
-                .size_full()
-                .cursor_default()
-                .occlude()
-                .bg(gpui::transparent_black())
-                .on_hover(|_, _, cx| {
-                    cx.stop_propagation();
-                })
-                .on_mouse_move(|_, _, cx| {
-                    cx.stop_propagation();
-                });
-
-            for entry in portals {
-                active_container = active_container.child((entry.render)(window, cx));
-            }
-
-            container = container.child(active_container);
-        }
-
-        container.into_any_element()
-    }
-}
 
 fn current_platform_label() -> &'static str {
     match Platform::current() {
@@ -13143,7 +13075,7 @@ mod tests {
         assert!(docs_shell_render.contains(".child(nav_menu)"));
         assert!(!docs_shell_render.contains(".aside_scroll()"));
         assert!(!docs_shell_render.contains(".main_scroll()"));
-        assert!(source.contains("DocsPortalLayer"));
+        assert!(docs_shell_render.contains(".overlay(PortalLayer)"));
     }
 
     #[test]

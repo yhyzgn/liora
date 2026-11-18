@@ -2,18 +2,19 @@
 
 use gpui::{
     AnyView, App, AssetSource, Context, FontWeight, Global, Render, RenderImage, SharedString,
-    ViewElement as Component, Window, WindowOptions, div, img, prelude::*, px, size,
+    Window, WindowOptions, div, img, prelude::*, px, size,
 };
 use liora_components::{
     AppWindowFrame, Button, Card, Checkbox, Container, Dialog, Input, Menu, MenuBar, MenuItem,
-    NavigationMenu, NavigationMenuMode, NavigationMenuNode, Paragraph, Segmented, SegmentedOption,
+    NavigationMenu, NavigationMenuMode, NavigationMenuNode, Paragraph, PortalLayer, Segmented,
+    SegmentedOption,
     Sidebar, Space, Spinner, Switch, Tag, Text, Title, TitleBar, WindowFrameMode,
     apply_window_frame_mode, frame_mode_switch_row, init_liora_with_options,
     request_window_frame_mode, toast_info, toast_success,
 };
 use liora_core::{
     Config, FontConfig, FontLoadMode, FontLoadOptions, LinuxDesktopIdentity, LinuxDesktopPngIcon,
-    LocalesMap, Options, PassivePortal, Portal, ThemeMode, apply_locale, apply_theme_mode,
+    LocalesMap, Options, ThemeMode, apply_locale, apply_theme_mode,
     attach_system_theme_observer, current_locale, ensure_linux_desktop_identity,
     linux_desktop_entry, linux_desktop_png_icon_path, load_app_fonts,
     startup_maximized_window_bounds, tr,
@@ -2021,82 +2022,6 @@ fn gallery_nav_menu_items(
     groups
 }
 
-struct PortalLayer;
-
-impl IntoElement for PortalLayer {
-    type Element = Component<Self>;
-    fn into_element(self) -> Self::Element {
-        Component::new(self)
-    }
-}
-
-impl gpui::RenderOnce for PortalLayer {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let passive_portals = if cx.has_global::<PassivePortal>() {
-            std::mem::take(&mut cx.global_mut::<PassivePortal>().entries)
-        } else {
-            Vec::new()
-        };
-        let portals = if cx.has_global::<Portal>() {
-            std::mem::take(&mut cx.global_mut::<Portal>().entries)
-        } else {
-            Vec::new()
-        };
-
-        if passive_portals.is_empty() && portals.is_empty() {
-            return div()
-                .absolute()
-                .top_0()
-                .left_0()
-                .size_full()
-                .into_any_element();
-        }
-
-        let mut container = div().absolute().top_0().left_0().size_full();
-
-        if !passive_portals.is_empty() {
-            let mut passive_container = div()
-                .id("passive-portal-layer")
-                .absolute()
-                .top_0()
-                .left_0()
-                .size_full()
-                .bg(gpui::transparent_black());
-
-            for entry in passive_portals {
-                passive_container = passive_container.child((entry.render)(window, cx));
-            }
-
-            container = container.child(passive_container);
-        }
-
-        if !portals.is_empty() {
-            let mut active_container = div()
-                .id("portal-layer")
-                .absolute()
-                .top_0()
-                .left_0()
-                .size_full()
-                .cursor_default()
-                .occlude()
-                .bg(gpui::transparent_black())
-                .on_hover(|_, _, cx| {
-                    cx.stop_propagation();
-                })
-                .on_mouse_move(|_, _, cx| {
-                    cx.stop_propagation();
-                });
-
-            for entry in portals {
-                active_container = active_container.child((entry.render)(window, cx));
-            }
-
-            container = container.child(active_container);
-        }
-
-        container.into_any_element()
-    }
-}
 
 #[cfg(test)]
 mod shell_regression_tests {
