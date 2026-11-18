@@ -664,7 +664,19 @@ pub fn build_install_plan(
 ) -> InstallPlan {
     let asset_path = asset_path.into();
     let asset_kind = classify_asset_kind(&asset.name);
-    let (action, notes) = install_action(platform, asset_kind, &asset_path, &asset.name);
+    let (action, notes) = if matches!(
+        asset_path.components().next(),
+        Some(std::path::Component::Normal(_))
+    ) {
+        install_action(
+            platform,
+            asset_kind,
+            &Path::new(".").join(&asset_path),
+            &asset.name,
+        )
+    } else {
+        install_action(platform, asset_kind, &asset_path, &asset.name)
+    };
     InstallPlan {
         app_name: app_name.into(),
         platform,
@@ -1205,6 +1217,46 @@ mod tests {
             Some("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad")
         );
         assert!(manifest.expected_sha256("ignored").is_none());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn generated_install_commands_treat_relative_assets_as_paths() {
+        for (platform, name, asset_path, expected_program, expected_args) in [
+            (
+                Platform::LinuxX64,
+                "sample.AppImage",
+                PathBuf::from("sample.AppImage"),
+                "./sample.AppImage",
+                Vec::<&str>::new(),
+            ),
+            (
+                Platform::MacosArm64,
+                "-a.dmg",
+                PathBuf::from("-a.dmg"),
+                "open",
+                vec!["./-a.dmg"],
+            ),
+            (
+                Platform::MacosArm64,
+                "-cache/-a.dmg",
+                PathBuf::from("-cache/-a.dmg"),
+                "open",
+                vec!["./-cache/-a.dmg"],
+            ),
+            (
+                Platform::LinuxX64,
+                "sample.AppImage",
+                PathBuf::from("/opt/sample.AppImage"),
+                "/opt/sample.AppImage",
+                Vec::<&str>::new(),
+            ),
+        ] {
+            let plan = build_install_plan("sample-app", platform, &asset(name), asset_path);
+            let command = plan.action.command().unwrap();
+            assert_eq!(command.get_program(), expected_program);
+            assert_eq!(command.get_args().collect::<Vec<_>>(), expected_args);
+        }
     }
 
     #[test]

@@ -6,6 +6,8 @@ Safe GitHub Release updater planning library.
 
 The updater crate helps applications check GitHub releases, select platform-appropriate assets, verify checksums, and produce install plans. On Unix, a verified Linux AppImage download is marked executable for its owner before its install plan is returned. It does not silently escalate privileges or force app-specific hardcoded behavior.
 
+Generated install commands qualify relative artifact paths beginning with a filename or directory (including names beginning with `-`) with `./`, so they resolve against the current working directory at install time. Absolute paths and paths beginning with `.`, `..`, or a platform prefix are preserved. Commands supplied directly through a caller-owned `InstallAction` are passed through unchanged.
+
 ## Quick example
 
 ```rust
