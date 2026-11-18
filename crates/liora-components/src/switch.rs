@@ -228,12 +228,21 @@ mod tests {
 
     #[test]
     fn switch_applies_explicit_root_id() {
-        let source = include_str!("switch.rs")
-            .split("#[cfg(test)]")
-            .next()
-            .unwrap();
+        use super::Switch;
+        use gpui::{Element, ElementId, IntoElement, Render, TestAppContext, px, size};
 
-        assert!(source.contains("let id = self"));
-        assert!(source.contains("el.id(id).on_action(cx.listener(Self::toggle))"));
+        let mut app = TestAppContext::single();
+        app.update(|cx| liora_core::init_liora(cx, liora_theme::Theme::light()));
+        let window = app.open_window(size(px(160.0), px(80.0)), |_, cx| {
+            Switch::new(false, cx).id("settings-switch")
+        });
+
+        window
+            .update(&mut app, |switch, window, cx| {
+                let root = switch.render(window, cx).into_element();
+                assert_eq!(root.id(), Some(ElementId::from("settings-switch")));
+            })
+            .unwrap();
+        app.quit();
     }
 }
