@@ -428,9 +428,14 @@ impl Tray {
 /// On Linux/FreeBSD `tray-icon` uses GTK/AppIndicator. GPUI's own event loop
 /// does not drive GTK, so tray-enabled GPUI apps should call this periodically
 /// on the same thread that created the tray icon.
+/// Each call processes a bounded batch so continuously ready GTK sources cannot
+/// prevent the host event loop from resuming.
 #[cfg(any(target_os = "linux", target_os = "freebsd"))]
 pub fn pump_platform_events() {
-    while gtk::events_pending() {
+    for _ in 0..64 {
+        if !gtk::events_pending() {
+            break;
+        }
         gtk::main_iteration_do(false);
     }
 }
@@ -635,6 +640,44 @@ fn append_specs_to_submenu(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(any(target_os = "linux", target_os = "freebsd"))]
+    #[test]
+    #[ignore = "requires a GTK display backend"]
+    fn event_pump_yields_while_gtk_work_remains_ready() {
+        use gtk::glib::{ControlFlow, Priority, idle_add_local_full};
+        use std::{cell::Cell, rc::Rc};
+
+        gtk::init().expect("initialize the GTK event loop");
+        let dispatched = Rc::new(Cell::new(0));
+        // Stop the source eventually so an unbounded pump fails instead of hanging the test.
+        let limit = 1024;
+        let source = idle_add_local_full(Priority::DEFAULT, {
+            let dispatched = Rc::clone(&dispatched);
+            move || {
+                let count = dispatched.get() + 1;
+                dispatched.set(count);
+                if count == limit {
+                    ControlFlow::Break
+                } else {
+                    ControlFlow::Continue
+                }
+            }
+        });
+
+        pump_platform_events();
+        let first = dispatched.get();
+        pump_platform_events();
+        let second = dispatched.get();
+        if second < limit {
+            source.remove();
+        }
+        assert!(
+            (1..limit).contains(&first),
+            "the first pump dispatched {first} of {limit} callbacks instead of yielding"
+        );
+        assert!(second > first, "the next pump must resume work");
+    }
 
     #[test]
     fn command_ids_are_stable_for_event_mapping() {
