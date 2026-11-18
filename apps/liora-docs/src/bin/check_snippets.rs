@@ -818,6 +818,8 @@ mod watermark_header;
 
 #[path = "../../content/snippets/composer/basic.rs"]
 mod composer_basic;
+#[path = "../../content/snippets/composer/candidates_find.rs"]
+mod composer_candidates_find;
 #[path = "../../content/snippets/transcript/basic.rs"]
 mod transcript_basic;
 

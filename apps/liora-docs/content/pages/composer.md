@@ -19,7 +19,7 @@
 
 `set_candidates` 提供 `Reference` 和 `Command`。在折叠光标前的空白分隔 token 以 `@` 或 `/` 开头时显示匹配候选。Up/Down 切换，Enter 或点击插入，Escape 关闭。只替换触发符到光标之间的文本，保留光标后的文本；非折叠选区不启动候选。引用同时加入结构化引用区，按稳定 ID 去重。命令只是插入草稿，不执行命令。
 
-引用/附件是独立于文本的结构化上下文。删除 chip 只移除对应上下文，不会隐式删除用户文本。每个 chip 使用原生 Button，可以鼠标点击或键盘激活。
+引用/附件是独立于文本的结构化上下文。删除 chip 只移除对应上下文，不会隐式删除用户文本。每个 chip 使用原生 Button，可通过鼠标点击移除；Button 的键盘激活能力尚未验证，不在此声称支持。
 
 ## 发送与忙碌态
 
@@ -36,3 +36,12 @@ Enter 接受打开的候选，否则发送；Shift-Enter 在选区插入换行�
 只需 `init_liora` 已有的 Input 初始化；Composer 不注册全局按键。原生行为覆盖见 `apps/liora-gallery/examples/composer_smoke.rs`，包括选区、候选、通过公开 `paste` API 注入完整文本/图片/文件 payload 后的插入和事件、发送/停止、busy 草稿和 marked composition。
 
 官方 headless backend 的系统剪贴板写入是 no-op，读取返回 `None`，因此该 smoke 不使用 Ctrl-V 验证系统剪贴板，也不声称验证了操作系统剪贴板。真实 Ctrl-V / Cmd-V 读取与平台图片/文件剪贴板格式须在真实后端验证。headless 的 marked composition 接口断言也不代替真实平台 IME 候选窗口验证。
+
+## CandidateBar 与 FindBar 组合
+
+上方消息编辑示例还包含独立的 `CandidateBar + FindBar` 区域。候选由宿主提供，不接入系统 IME：点击候选提交，Previous page / Next page 翻页；Focus candidates 后可用 PageDown、数字键、Enter 和 Escape，宿主状态显示选择、字面提交与取消事件。
+
+Open find 显示并聚焦原生查询输入。输入更新宿主查询状态；Enter 请求下一项，Shift-Enter 请求上一项，Escape 关闭并将焦点交回 CandidateBar，Open find 可再次打开。此例只展示事件接入，不计算匹配或滚动文档。两类状态独立于现有 Composer 草稿、发送与停止逻辑。
+
+```rust src="composer/candidates_find.rs"
+```
