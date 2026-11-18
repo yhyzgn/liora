@@ -91,6 +91,7 @@ pub struct DateTimePicker {
     view_month: u32,
     draft_date: DateValue,
     draft_time: TimeValue,
+    draft_range: (Option<DateTimeValue>, Option<DateTimeValue>),
     is_open: bool,
     placeholder: SharedString,
     display_format: SharedString,
@@ -162,6 +163,7 @@ impl DateTimePicker {
             view_month: default_date.month,
             draft_date: default_date,
             draft_time: default_time,
+            draft_range: (None, None),
             is_open: false,
             placeholder: "请选择日期时间".into(),
             display_format: "YYYY-MM-DD HH:mm:ss".into(),
@@ -348,7 +350,7 @@ impl DateTimePicker {
         self.value
     }
 
-    /// Performs the range ref operation used by this component.
+    /// Returns the committed range, excluding unconfirmed edits in the popup.
     pub fn range_ref(&self) -> (Option<DateTimeValue>, Option<DateTimeValue>) {
         (self.range_start, self.range_end)
     }
@@ -410,9 +412,11 @@ impl DateTimePicker {
 
     fn sync_draft_from_value(&mut self) {
         let seed = if self.is_range() {
+            self.draft_range = self.range_ref();
+            let (start, end) = self.draft_range;
             match self.editing_endpoint {
-                RangeEndpoint::Start => self.range_start.or(self.range_end),
-                RangeEndpoint::End => self.range_end.or(self.range_start),
+                RangeEndpoint::Start => start.or(end),
+                RangeEndpoint::End => end.or(start),
             }
         } else {
             self.value
@@ -431,16 +435,14 @@ impl DateTimePicker {
         self.view_month = date.month;
         if self.is_range() {
             let next = DateTimeValue::from_parts(date, self.draft_time);
-            match (self.range_start, self.range_end) {
+            match self.draft_range {
                 (None, _) | (Some(_), Some(_)) => {
-                    self.range_start = Some(next);
-                    self.range_end = None;
+                    self.draft_range = (Some(next), None);
                     self.editing_endpoint = RangeEndpoint::Start;
                 }
                 (Some(start), None) => {
                     let (start, end) = ordered_pair(start, next);
-                    self.range_start = Some(start);
-                    self.range_end = Some(end);
+                    self.draft_range = (Some(start), Some(end));
                     self.editing_endpoint = RangeEndpoint::End;
                     self.draft_date = end.date;
                     self.draft_time = end.time;
@@ -455,13 +457,12 @@ impl DateTimePicker {
         if self.is_range() {
             let next = DateTimeValue::from_parts(self.draft_date, time);
             match self.editing_endpoint {
-                RangeEndpoint::Start => self.range_start = Some(next),
-                RangeEndpoint::End => self.range_end = Some(next),
+                RangeEndpoint::Start => self.draft_range.0 = Some(next),
+                RangeEndpoint::End => self.draft_range.1 = Some(next),
             }
-            if let (Some(start), Some(end)) = (self.range_start, self.range_end) {
+            if let (Some(start), Some(end)) = self.draft_range {
                 let (start, end) = ordered_pair(start, end);
-                self.range_start = Some(start);
-                self.range_end = Some(end);
+                self.draft_range = (Some(start), Some(end));
             }
         }
         cx.notify();
@@ -470,8 +471,8 @@ impl DateTimePicker {
     fn edit_endpoint(&mut self, endpoint: RangeEndpoint, cx: &mut Context<Self>) {
         self.editing_endpoint = endpoint;
         if let Some(value) = match endpoint {
-            RangeEndpoint::Start => self.range_start,
-            RangeEndpoint::End => self.range_end,
+            RangeEndpoint::Start => self.draft_range.0,
+            RangeEndpoint::End => self.draft_range.1,
         } {
             self.draft_date = value.date;
             self.draft_time = value.time;
@@ -483,11 +484,7 @@ impl DateTimePicker {
 
     fn confirm(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if self.is_range() {
-            if let (Some(start), Some(end)) = (self.range_start, self.range_end) {
-                let (start, end) = ordered_pair(start, end);
-                self.range_start = Some(start);
-                self.range_end = Some(end);
-            }
+            (self.range_start, self.range_end) = self.draft_range;
         } else {
             self.value = Some(DateTimeValue::from_parts(self.draft_date, self.draft_time));
         }
@@ -765,8 +762,8 @@ fn render_range_summary(
 ) -> impl IntoElement {
     let (start, end, editing, format, separator) = picker.update(cx, |picker, _| {
         (
-            picker.range_start,
-            picker.range_end,
+            picker.draft_range.0,
+            picker.draft_range.1,
             picker.editing_endpoint,
             picker.display_format.clone(),
             picker.range_separator.clone(),
@@ -870,8 +867,8 @@ fn render_calendar_panel(
                 picker.view_year,
                 picker.view_month,
                 picker.value.map(|value| value.date),
-                picker.range_start.map(|value| value.date),
-                picker.range_end.map(|value| value.date),
+                picker.draft_range.0.map(|value| value.date),
+                picker.draft_range.1.map(|value| value.date),
             )
         });
     let days = calendar_cells(view_year, view_month);
@@ -1462,5 +1459,41 @@ mod tests {
     fn date_time_picker_width_helpers_set_demo_widths() {
         assert_eq!(DateTimePicker::new().width_md().width, Some(px(280.0)));
         assert_eq!(DateTimePicker::new().width_lg().width, Some(px(460.0)));
+    }
+
+    #[test]
+    fn date_time_range_commits_edits_only_on_confirm() -> Result<(), &'static str> {
+        let start = DateTimeValue::new(2026, 5, 8, 9, 0, 0).ok_or("invalid test start")?;
+        let end = DateTimeValue::new(2026, 5, 10, 10, 0, 0).ok_or("invalid test end")?;
+        let replacement = DateTimeValue::new(2026, 5, 12, 11, 0, 0).ok_or("invalid test edit")?;
+        let original_range = (Some(start), Some(end));
+        let mut app = gpui::TestAppContext::single();
+        let picker = app.new(|_| DateTimePicker::new().date_time_range().range(start, end));
+
+        app.add_empty_window().update(|window, cx| {
+            picker.update(cx, |picker, cx| {
+                picker.toggle_open(cx);
+                picker.select_date(replacement.date, cx);
+                picker.close(cx);
+                assert_eq!(
+                    picker.range_ref(),
+                    original_range,
+                    "Cancel must keep the old range"
+                );
+
+                picker.toggle_open(cx);
+                picker.edit_endpoint(RangeEndpoint::End, cx);
+                picker.select_time(replacement.time, cx);
+                assert_eq!(picker.range_ref(), original_range);
+                picker.confirm(window, cx);
+                let edited_end = DateTimeValue {
+                    time: replacement.time,
+                    ..end
+                };
+                assert_eq!(picker.range_ref(), (Some(start), Some(edited_end)));
+            });
+        });
+        app.quit();
+        Ok(())
     }
 }
