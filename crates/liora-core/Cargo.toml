@@ -13,5 +13,8 @@ gpui.workspace = true
 liora-theme = { version = "0.6.1", path = "../liora-theme" }
 toml.workspace = true
 
+[dev-dependencies]
+gpui = { workspace = true, features = ["test-support"] }
+
 [build-dependencies]
 toml.workspace = true

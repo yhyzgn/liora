@@ -528,7 +528,14 @@ fn startup_system_appearance(cx: &App) -> WindowAppearance {
     platform_system_appearance().unwrap_or_else(|| cx.window_appearance())
 }
 
+#[cfg(test)]
+static CURRENT_SYSTEM_APPEARANCE_CALLS: std::sync::atomic::AtomicUsize =
+    std::sync::atomic::AtomicUsize::new(0);
+
 fn current_system_appearance(window: &Window, _cx: &App) -> WindowAppearance {
+    #[cfg(test)]
+    CURRENT_SYSTEM_APPEARANCE_CALLS.fetch_add(1, Ordering::Relaxed);
+
     platform_system_appearance().unwrap_or_else(|| window.appearance())
 }
 
@@ -791,13 +798,18 @@ pub fn code_font_weight(cx: &App) -> Option<FontWeight> {
 
 /// Applies a new theme mode and refreshes the active GPUI window.
 pub fn apply_theme_mode(window: &mut Window, cx: &mut App, mode: ThemeMode) {
-    let appearance = current_system_appearance(window, cx);
+    let appearance = (mode == ThemeMode::System)
+        .then(|| current_system_appearance(window, cx))
+        .unwrap_or(WindowAppearance::Light);
     cx.global_mut::<Config>().set_theme_mode(mode, appearance);
     window.refresh();
 }
 
 /// Synchronizes the active theme from the current system/window appearance.
 pub fn sync_system_theme(window: &mut Window, cx: &mut App) {
+    if cx.global::<Config>().theme_mode != ThemeMode::System {
+        return;
+    }
     let appearance = current_system_appearance(window, cx);
     if cx.global_mut::<Config>().sync_system_theme(appearance) {
         window.refresh();
@@ -1003,6 +1015,40 @@ mod tooltip_text_tests {
 #[cfg(test)]
 mod theme_mode_tests {
     use super::*;
+    struct ThemeSurface;
+
+    impl Render for ThemeSurface {
+        fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+            gpui::div()
+        }
+    }
+
+    #[test]
+    fn fixed_theme_modes_skip_system_appearance_lookup() {
+        use gpui::{TestAppContext, size};
+
+        let mut app = TestAppContext::single();
+        app.update(|cx| init_liora_with_mode(cx, ThemeMode::Light));
+        let window = app.open_window(size(px(320.), px(240.)), |_, _| ThemeSurface);
+
+        app.update_window(window.into(), |_, window, cx| {
+            CURRENT_SYSTEM_APPEARANCE_CALLS.store(0, Ordering::Relaxed);
+
+            apply_theme_mode(window, cx, ThemeMode::Dark);
+            assert_eq!(CURRENT_SYSTEM_APPEARANCE_CALLS.load(Ordering::Relaxed), 0);
+            assert_eq!(cx.global::<Config>().theme.name, "dark");
+
+            sync_system_theme(window, cx);
+            assert_eq!(CURRENT_SYSTEM_APPEARANCE_CALLS.load(Ordering::Relaxed), 0);
+
+            apply_theme_mode(window, cx, ThemeMode::System);
+            assert_eq!(CURRENT_SYSTEM_APPEARANCE_CALLS.load(Ordering::Relaxed), 1);
+            sync_system_theme(window, cx);
+            assert_eq!(CURRENT_SYSTEM_APPEARANCE_CALLS.load(Ordering::Relaxed), 2);
+        })
+        .unwrap();
+        app.quit();
+    }
 
     #[cfg(any(target_os = "linux", target_os = "freebsd"))]
     #[test]
