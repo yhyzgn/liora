@@ -145,7 +145,7 @@ impl Pagination {
     }
 
     fn page_count(&self) -> usize {
-        (self.total as f32 / self.page_size as f32).ceil() as usize
+        self.total.div_ceil(self.page_size)
     }
 }
 
@@ -168,7 +168,8 @@ impl Render for Pagination {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
         let page_count = self.page_count();
-        let current_page = self.current_page;
+        let current_page = self.current_page.clamp(1, page_count.max(1));
+        self.current_page = current_page;
         let background = self.background;
         let page_sizes = self.page_sizes.clone();
         let picker_entity = if page_sizes.is_empty() {
@@ -495,5 +496,36 @@ impl Render for Pagination {
         }
 
         container
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn render_clamps_current_page_using_final_page_size() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+
+        for (total, page, expected) in [(20, 8, 4), (20, 3, 3), (0, 8, 1)] {
+            let (pagination, cx) = app.add_window_view(|_, _| {
+                Pagination::new(total)
+                    .current_page(page)
+                    .page_size(5)
+                    .layout("jumper")
+            });
+            cx.update(|window, cx| {
+                window.draw(cx).clear(cx);
+                assert_eq!(pagination.read(cx).current_page, expected);
+            });
+        }
+        app.quit();
+    }
+
+    #[test]
+    fn page_count_keeps_partial_page_for_large_totals() {
+        let pagination = Pagination::new(16_777_217).page_size(8_388_608);
+        assert_eq!(pagination.page_count(), 3);
     }
 }
