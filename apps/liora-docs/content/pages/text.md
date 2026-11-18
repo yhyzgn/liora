@@ -6,6 +6,8 @@
 
 `Text` 支持颜色、背景、字号、字重、斜体、下划线、删除线和 inline code 样式。已选中文字会保留在稳定的组件 id 上，不会因为父组件重渲染而丢失。
 
+父元素通过 `.group("name")` 命名后，文字可用 `.group_hover_primary("name")` 或 `.group_hover_text_color("name", color)` 跟随整组悬停变色；鼠标离开后恢复原色，文字仍支持原生选择和复制。两者同时设置时，主题 primary 的组名和颜色优先。
+
 ### 效果
 
 ::Demo{component="TextBasic"}::
@@ -18,6 +20,8 @@
 ## 轻量文档
 
 `Text::document(...)`、`TextBlock` 和 `Text::markdown(...)` 用于 About、Help、Release notes、设置说明等原生文档场景。它们复用 Liora 的 `Title`、`Paragraph`、`CodeBlock`、`Card`、`Divider`，不引入 WebView/HTML/DOM runtime。
+
+`.selectable(false)` 会同时关闭文档正文和列表标记（项目符号、序号）的选择与选择焦点。
 
 ### 效果
 

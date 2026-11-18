@@ -522,6 +522,20 @@ impl RenderOnce for Text {
                 font_family: text.font_family.clone(),
                 text_align: gpui::TextAlign::Left,
             };
+            let hover = text
+                .group_hover_primary
+                .clone()
+                .map(|group| (group, theme.primary.base))
+                .or(text.group_hover_color.clone());
+            if let Some(hover) = hover {
+                return SelectableText::view_with_group_hover(
+                    options,
+                    text.selection_scope,
+                    hover,
+                    _window,
+                    cx,
+                );
+            }
             return match text.selection_scope {
                 Some((scope, order, separator)) => {
                     SelectableText::view_in_scope(options, scope, order, separator, _window, cx)
@@ -717,7 +731,12 @@ fn render_text_block(
                     Space::new()
                         .gap_sm()
                         .align_start()
-                        .child(Text::new(marker).text_color(theme.neutral.text_3).nowrap())
+                        .child(
+                            Text::new(marker)
+                                .text_color(theme.neutral.text_3)
+                                .nowrap()
+                                .selectable(selectable),
+                        )
                         .child(
                             Paragraph::with_text(item.clone())
                                 .id(id)
@@ -969,13 +988,168 @@ mod document_tests {
 
 #[cfg(test)]
 mod group_hover_tests {
-    #[test]
-    fn text_supports_theme_primary_group_hover() {
-        let source = include_str!("text.rs");
+    use super::*;
+    use gpui::{AppContext, Context, Render, TestAppContext, point, rgb};
 
-        assert!(source.contains("pub fn group_hover_primary"));
-        assert!(source.contains(".id(ElementId::from(text.id.clone()))"));
-        assert!(source.contains("group_hover(group"));
-        assert!(source.contains("theme.primary.base"));
+    struct HoverText {
+        primary: bool,
+        scoped: bool,
+    }
+
+    impl Render for HoverText {
+        fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+            let mut text = Text::new("hover selection")
+                .id("hover-selection-regression")
+                .underline();
+            text = if self.primary {
+                text.group_hover_text_color("ignored-explicit-group", rgb(0xff0000).into())
+                    .group_hover_primary("text-hover")
+            } else {
+                text.group_hover_text_color("text-hover", rgb(0xff0000).into())
+            };
+            if self.scoped {
+                text = text.in_selection_scope("hover-scope".into(), 0, "".into());
+            }
+            div()
+                .size_full()
+                .child(div().group("text-hover").w(px(240.)).h(px(80.)).child(text))
+        }
+    }
+
+    fn painted_colors(window: &Window) -> Vec<Hsla> {
+        window
+            .painted_underlines()
+            .iter()
+            .map(|line| line.color)
+            .collect()
+    }
+
+    #[gpui::test]
+    fn selectable_text_group_hover_changes_paint_and_preserves_copy(cx: &mut TestAppContext) {
+        cx.update(|cx| {
+            crate::init_liora(cx);
+        });
+        for (primary, scoped) in [(false, false), (true, false), (false, true), (true, true)] {
+            let window = cx.add_window(move |_, _| HoverText { primary, scoped });
+            let window = gpui::AnyWindowHandle::from(window);
+            cx.update_window(window, |_, window, cx| {
+                window.draw(cx).clear(cx);
+                let normal = painted_colors(window);
+                assert!(!normal.is_empty());
+                window.simulate_mouse_move(point(px(20.), px(20.)), cx);
+                window.draw(cx).clear(cx);
+                let expected = if primary {
+                    cx.global::<Config>().theme.primary.base
+                } else {
+                    rgb(0xff0000).into()
+                };
+                assert_eq!(painted_colors(window), vec![expected]);
+                window.dispatch_event(
+                    gpui::PlatformInput::MouseDown(gpui::MouseDownEvent {
+                        position: point(px(5.), px(10.)),
+                        button: gpui::MouseButton::Left,
+                        click_count: 1,
+                        ..Default::default()
+                    }),
+                    cx,
+                );
+                window.dispatch_event(
+                    gpui::PlatformInput::MouseMove(gpui::MouseMoveEvent {
+                        position: point(px(45.), px(10.)),
+                        pressed_button: Some(gpui::MouseButton::Left),
+                        ..Default::default()
+                    }),
+                    cx,
+                );
+                window.dispatch_event(
+                    gpui::PlatformInput::MouseUp(gpui::MouseUpEvent {
+                        position: point(px(45.), px(10.)),
+                        button: gpui::MouseButton::Left,
+                        click_count: 1,
+                        ..Default::default()
+                    }),
+                    cx,
+                );
+                assert!(window.focused(cx).is_some());
+                window.dispatch_keystroke(gpui::Keystroke::parse("ctrl-c").unwrap(), cx);
+                let dragged = cx
+                    .read_from_clipboard()
+                    .and_then(|item| item.text())
+                    .unwrap();
+                assert!(
+                    !dragged.is_empty()
+                        && dragged.len() < "hover selection".len()
+                        && "hover selection".contains(&dragged),
+                    "pointer drag must copy a nonempty substring: {dragged:?}",
+                );
+                window.dispatch_keystroke(gpui::Keystroke::parse("ctrl-a").unwrap(), cx);
+                window.draw(cx).clear(cx);
+                assert!(
+                    !window.painted_quads().is_empty(),
+                    "selected text must paint selection"
+                );
+                window.dispatch_keystroke(gpui::Keystroke::parse("ctrl-c").unwrap(), cx);
+                assert_eq!(
+                    cx.read_from_clipboard()
+                        .and_then(|item| item.text())
+                        .as_deref(),
+                    Some("hover selection")
+                );
+                window.simulate_mouse_move(point(px(300.), px(100.)), cx);
+                window.draw(cx).clear(cx);
+                assert_eq!(painted_colors(window), normal);
+                cx.write_to_clipboard(gpui::ClipboardItem::new_string("sentinel".into()));
+                window.dispatch_keystroke(gpui::Keystroke::parse("ctrl-c").unwrap(), cx);
+                assert_eq!(
+                    cx.read_from_clipboard()
+                        .and_then(|item| item.text())
+                        .as_deref(),
+                    Some("hover selection")
+                );
+            })
+            .unwrap();
+        }
+    }
+
+    struct DisabledList;
+
+    impl Render for DisabledList {
+        fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+            Text::document([TextBlock::ordered(["list item"])]).selectable(false)
+        }
+    }
+
+    #[gpui::test]
+    fn document_selection_opt_out_disables_list_marker_focus(cx: &mut TestAppContext) {
+        cx.update(|cx| {
+            crate::init_liora(cx);
+        });
+        let window = gpui::AnyWindowHandle::from(cx.add_window(|_, _| DisabledList));
+        cx.update_window(window, |_, window, cx| {
+            window.draw(cx).clear(cx);
+            window.dispatch_event(
+                gpui::PlatformInput::MouseDown(gpui::MouseDownEvent {
+                    position: point(px(3.), px(10.)),
+                    button: gpui::MouseButton::Left,
+                    click_count: 2,
+                    ..Default::default()
+                }),
+                cx,
+            );
+            assert!(
+                window.focused(cx).is_none(),
+                "disabled marker must not focus selectable text"
+            );
+            cx.write_to_clipboard(gpui::ClipboardItem::new_string("sentinel".into()));
+            window.dispatch_keystroke(gpui::Keystroke::parse("ctrl-a").unwrap(), cx);
+            window.dispatch_keystroke(gpui::Keystroke::parse("ctrl-c").unwrap(), cx);
+            assert_eq!(
+                cx.read_from_clipboard()
+                    .and_then(|item| item.text())
+                    .as_deref(),
+                Some("sentinel")
+            );
+        })
+        .unwrap();
     }
 }

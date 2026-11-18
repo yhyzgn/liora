@@ -24,8 +24,8 @@ use gpui::{
     App, AvailableSpace, Bounds, ClipboardItem, Context, Element, ElementId, Entity, FocusHandle,
     Focusable, GlobalElementId, InspectorElementId, IntoElement, KeyDownEvent, LayoutId,
     MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, PaintQuad, Pixels, Point, Render,
-    RenderOnce, SharedString, Style, TextRun, TextStyle, ViewElement as Component, WhiteSpace,
-    Window, actions, div, fill, point, prelude::*, px, relative, size,
+    SharedString, Style, TextRun, TextStyle, WhiteSpace, Window, actions, div, fill, point,
+    prelude::*, px, relative, size,
 };
 use liora_core::Config;
 use std::{
@@ -139,6 +139,15 @@ impl SelectableText {
         window: &mut Window,
         cx: &mut App,
     ) -> gpui::AnyElement {
+        Self::input(options, pointer_handler, window, cx).into_any_element()
+    }
+
+    fn input(
+        options: SelectableTextOptions,
+        pointer_handler: Option<Rc<dyn Fn(usize, &mut Window, &mut App)>>,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Entity<SelectableTextState> {
         let input = window.use_keyed_state(options.id.clone(), cx, {
             let initial = options.clone();
             move |_, cx| SelectableTextState::new(cx, initial)
@@ -147,8 +156,9 @@ impl SelectableText {
             state.update_options(options, cx);
             state.scope = None;
             state.pointer_handler = pointer_handler;
+            state.group_hover_color = None;
         });
-        SelectableTextView { input }.into_any_element()
+        input
     }
 
     /// Renders a leaf in a window-local selection scope, preserving its own text layout.
@@ -160,6 +170,17 @@ impl SelectableText {
         window: &mut Window,
         cx: &mut App,
     ) -> gpui::AnyElement {
+        Self::scoped_input(options, scope, order, separator, window, cx).into_any_element()
+    }
+
+    fn scoped_input(
+        options: SelectableTextOptions,
+        scope: SharedString,
+        order: usize,
+        separator: SharedString,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Entity<SelectableTextState> {
         let shared = window.use_keyed_state(
             element_id(format!("selectable-scope:{scope}")),
             cx,
@@ -172,6 +193,7 @@ impl SelectableText {
         input.update(cx, |state, cx| {
             state.scope = Some((shared.clone(), order));
             state.update_options(options, cx);
+            state.group_hover_color = None;
         });
         let leaf = input.read(cx);
         let text = leaf.text.clone();
@@ -219,25 +241,24 @@ impl SelectableText {
                 }
             }
         });
-        SelectableTextView { input }.into_any_element()
+        input
     }
-}
 
-struct SelectableTextView {
-    input: Entity<SelectableTextState>,
-}
-
-impl IntoElement for SelectableTextView {
-    type Element = Component<Self>;
-
-    fn into_element(self) -> Self::Element {
-        Component::new(self)
-    }
-}
-
-impl RenderOnce for SelectableTextView {
-    fn render(self, _window: &mut Window, _cx: &mut App) -> impl IntoElement {
-        self.input.into_any_element()
+    pub(crate) fn view_with_group_hover(
+        options: SelectableTextOptions,
+        scope: Option<(SharedString, usize, SharedString)>,
+        hover: (SharedString, gpui::Hsla),
+        window: &mut Window,
+        cx: &mut App,
+    ) -> gpui::AnyElement {
+        let input = match scope {
+            Some((scope, order, separator)) => {
+                Self::scoped_input(options, scope, order, separator, window, cx)
+            }
+            None => Self::input(options, None, window, cx),
+        };
+        input.update(cx, |state, _| state.group_hover_color = Some(hover));
+        input.into_any_element()
     }
 }
 
@@ -544,12 +565,14 @@ struct SelectableTextState {
     scope: Option<(Entity<ScopedSelection>, usize)>,
     scoped_geometry: Rc<RefCell<SelectableTextSelectionState>>,
     pointer_handler: Option<Rc<dyn Fn(usize, &mut Window, &mut App)>>,
+    group_hover_color: Option<(SharedString, gpui::Hsla)>,
 }
 
 impl SelectableTextState {
     fn new(cx: &mut Context<Self>, options: SelectableTextOptions) -> Self {
         Self {
             pointer_handler: None,
+            group_hover_color: None,
             id: options.id,
             runs: normalize_runs(options.runs, options.text.len(), options.text_color),
             text: options.text,
@@ -629,6 +652,17 @@ impl SelectableTextState {
         style.line_clamp = None;
         style.text_align = self.text_align;
         style
+    }
+
+    fn runs_for_paint(&self, window: &Window) -> Vec<TextRun> {
+        let mut runs = self.runs.clone();
+        if self.group_hover_color.is_some() {
+            let color = window.text_style().color;
+            for run in &mut runs {
+                run.color = color;
+            }
+        }
+        runs
     }
 
     fn move_to(&self, state: &mut SelectableTextSelectionState, offset: usize) -> bool {
@@ -1064,6 +1098,12 @@ impl Render for SelectableTextState {
             .track_focus(&self.focus_handle(cx))
             .cursor_text()
             .min_w(px(0.0));
+        if let Some((group, color)) = &self.group_hover_color {
+            let color = *color;
+            wrapper = wrapper
+                .text_color(self.text_color)
+                .group_hover(group.clone(), move |style| style.text_color(color));
+        }
         if self.fill_width {
             wrapper = wrapper.w_full().flex_shrink(1.0);
         }
@@ -1193,7 +1233,7 @@ impl Element for SelectableTextElement {
             let input = self.input.read(cx);
             (
                 input.text.clone(),
-                input.runs.clone(),
+                input.runs_for_paint(window),
                 input.font_size,
                 input.line_height,
             )
@@ -1631,6 +1671,23 @@ fn is_word_char(ch: char) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[gpui::test]
+    fn unhovered_runs_preserve_explicit_styles(cx: &mut gpui::TestAppContext) {
+        let mut options = SelectableTextOptions::new("run-style-regression", "ab");
+        let mut first = TextStyle::default().to_run(1);
+        first.color = gpui::rgb(0x123456).into();
+        first.background_color = Some(gpui::rgb(0x654321).into());
+        let mut second = first.clone();
+        second.color = gpui::rgb(0xabcdef).into();
+        options.runs = vec![first, second];
+        let input = cx.new(|cx| SelectableTextState::new(cx, options));
+        let window = cx.add_empty_window();
+        window.update(|window, cx| {
+            let input = input.read(cx);
+            assert_eq!(input.runs_for_paint(window), input.runs);
+        });
+    }
 
     #[test]
     fn selectable_text_wraps_against_parent_available_width() {

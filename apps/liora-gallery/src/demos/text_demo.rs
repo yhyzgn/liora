@@ -30,6 +30,11 @@ impl Render for TextDemo {
                                 .vertical()
                                 .gap_sm()
                                 .child(Text::new("Drag across this sentence: it should select like native text."))
+                                .child(gpui::div().group("text-demo-hover").child(
+                                    Text::new("Hover for primary color; drag to select and copy.")
+                                        .id("text-demo-hover-selection")
+                                        .group_hover_primary("text-demo-hover"),
+                                ))
                                 .child(Text::new("Primary text").text_color(theme.primary.base).bold())
                                 .child(Text::new("Success text").text_color(theme.success.base))
                                 .child(Text::new("Warning italic text").text_color(theme.warning.base).italic())

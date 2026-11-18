@@ -3773,6 +3773,11 @@ impl Render for LiveDemoContent {
             "TrayNestedMenu" => Card::new(docs_tray_nested_menu()).no_shadow().into_any_element(),
             "TextBasic" => Card::new(demo_stack(vec![
                 Text::new("Drag to select this default Text value.").into_any_element(),
+                div().group("text-example-hover").child(
+                    Text::new("Hover for primary color; drag to select and copy.")
+                        .id("text-example-hover-selection")
+                        .group_hover_primary("text-example-hover"),
+                ).into_any_element(),
                 Text::new("Primary bold text").text_color(_cx.global::<Config>().theme.primary.base).bold().into_any_element(),
                 Text::new("Inline code").code_style(&_cx.global::<Config>().theme).into_any_element(),
                 Text::new("Decorative label").selectable(false).into_any_element(),

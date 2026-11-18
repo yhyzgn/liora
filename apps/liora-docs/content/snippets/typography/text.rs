@@ -1,5 +1,6 @@
 //! Basic selectable Text example.
 
+use gpui::{ParentElement, div, prelude::*};
 use liora_components::{Space, Text};
 use liora_theme::Theme;
 
@@ -8,6 +9,13 @@ fn text_examples(theme: &Theme) -> Space {
         .vertical()
         .gap_sm()
         .child(Text::new("Drag to select this default Text value."))
+        .child(
+            div().group("text-example-hover").child(
+                Text::new("Hover for primary color; drag to select and copy.")
+                    .id("text-example-hover-selection")
+                    .group_hover_primary("text-example-hover"),
+            ),
+        )
         .child(
             Text::new("Primary bold text")
                 .text_color(theme.primary.base)
