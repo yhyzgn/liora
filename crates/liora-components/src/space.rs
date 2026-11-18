@@ -157,7 +157,7 @@ impl RenderOnce for Space {
             div = div.flex_1();
         }
         if self.shrink {
-            div = div.min_w(px(0.0)).flex_shrink(1.0);
+            div = div.min_w(px(0.0)).min_h_0().flex_shrink(1.0);
         }
 
         if self.vertical {
@@ -217,14 +217,37 @@ mod tests {
         assert!(Space::new().grow().grow);
     }
 
-    #[test]
-    fn space_shrink_tracks_flex_shrink() {
-        let source = include_str!("space.rs")
-            .split("#[cfg(test)]")
-            .next()
-            .unwrap();
+    #[gpui::test]
+    fn space_shrink_keeps_footer_inside_height_constrained_column(cx: &mut gpui::TestAppContext) {
+        let footer_bottom = std::rc::Rc::new(std::cell::Cell::new(None));
+        let observed_bottom = footer_bottom.clone();
+        let height = px(80.0);
 
-        assert!(Space::new().shrink().shrink);
-        assert!(source.contains("div.min_w(px(0.0)).flex_shrink(1.0)"));
+        cx.add_empty_window().draw(
+            gpui::point(px(0.0), px(0.0)),
+            gpui::size(height, height),
+            |_, _| {
+                gpui::div()
+                    .flex()
+                    .flex_col()
+                    .h(height)
+                    .child(
+                        Space::new()
+                            .vertical()
+                            .shrink()
+                            .child(gpui::div().h(px(120.0))),
+                    )
+                    .child(
+                        gpui::canvas(
+                            move |bounds, _, _| observed_bottom.set(Some(bounds.bottom())),
+                            |_, _, _, _| {},
+                        )
+                        .h(px(20.0))
+                        .flex_none(),
+                    )
+            },
+        );
+
+        assert_eq!(footer_bottom.get(), Some(height));
     }
 }
