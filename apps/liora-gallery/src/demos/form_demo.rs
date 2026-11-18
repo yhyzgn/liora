@@ -1,4 +1,4 @@
-use gpui::{App, Context, Entity, IntoElement, Render, Window, prelude::*};
+use gpui::{App, Context, Entity, IntoElement, Render, Window, prelude::*, px};
 use liora_components::{
     Checkbox, CheckboxGroup, Form, FormItem, Input, InputNumber, Radio, RadioGroup, Rate, Select,
     Slider, Space, Switch, Textarea,
@@ -220,13 +220,14 @@ impl FormDemo {
 impl Render for FormDemo {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         Form::new()
-            .child(FormItem::new().label("Switch 开关").child(control_row(vec![
+            .label_width(px(176.0))
+            .item(FormItem::new().label("Switch 开关").child(control_row(vec![
                 self.switch_on.clone().into_any_element(),
                 self.switch_off.clone().into_any_element(),
                 self.switch_disabled.clone().into_any_element(),
                 self.switch_disabled_on.clone().into_any_element(),
             ])))
-            .child(
+            .item(
                 FormItem::new()
                     .label("Checkbox 多选")
                     .required(true)
@@ -238,7 +239,7 @@ impl Render for FormDemo {
                         self.cb_disabled_checked.clone().into_any_element(),
                     ])),
             )
-            .child(
+            .item(
                 FormItem::new()
                     .label("CheckboxGroup 多选组")
                     .child(control_stack(vec![
@@ -249,14 +250,14 @@ impl Render for FormDemo {
                         self.cb_group_buttons_stretch.clone().into_any_element(),
                     ])),
             )
-            .child(FormItem::new().label("Radio 单选").child(control_row(vec![
+            .item(FormItem::new().label("Radio 单选").child(control_row(vec![
                 self.radio_checked.clone().into_any_element(),
                 self.radio_unchecked.clone().into_any_element(),
                 self.radio_labeled.clone().into_any_element(),
                 self.radio_disabled.clone().into_any_element(),
                 self.radio_disabled_checked.clone().into_any_element(),
             ])))
-            .child(
+            .item(
                 FormItem::new()
                     .label("RadioGroup 单选组")
                     .child(control_stack(vec![
@@ -268,7 +269,7 @@ impl Render for FormDemo {
                         self.radio_group_disabled.clone().into_any_element(),
                     ])),
             )
-            .child(
+            .item(
                 FormItem::new()
                     .label("Select 下拉选择")
                     .child(control_row(vec![
@@ -276,7 +277,7 @@ impl Render for FormDemo {
                         self.select_disabled.clone().into_any_element(),
                     ])),
             )
-            .child(
+            .item(
                 FormItem::new()
                     .label("Input 输入框")
                     .required(true)
@@ -295,7 +296,7 @@ impl Render for FormDemo {
                         self.input_disabled.clone().into_any_element(),
                     ])),
             )
-            .child(
+            .item(
                 FormItem::new()
                     .label("InputNumber 数字输入")
                     .child(control_stack(vec![
@@ -304,7 +305,7 @@ impl Render for FormDemo {
                         self.input_number_precision.clone().into_any_element(),
                     ])),
             )
-            .child(
+            .item(
                 FormItem::new()
                     .label("Textarea 文本域")
                     .error("This is an error message")
@@ -313,7 +314,7 @@ impl Render for FormDemo {
                         self.textarea_limit.clone().into_any_element(),
                     ])),
             )
-            .child(
+            .item(
                 FormItem::new()
                     .label("Slider 滑块")
                     .child(control_stack(vec![
@@ -321,7 +322,7 @@ impl Render for FormDemo {
                         self.slider_step.clone().into_any_element(),
                     ])),
             )
-            .child(FormItem::new().label("Rate 评分").child(control_stack(vec![
+            .item(FormItem::new().label("Rate 评分").child(control_stack(vec![
                 self.rate_basic.clone().into_any_element(),
                 self.rate_custom.clone().into_any_element(),
             ])))

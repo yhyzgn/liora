@@ -24,14 +24,14 @@ impl BasicFormDemo {
 impl Render for BasicFormDemo {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         Form::new()
-            .child(
+            .item(
                 FormItem::new()
                     .label("Name")
                     .required(true)
                     .child(self.name.clone()),
             )
-            .child(FormItem::new().label("Role").child(self.role.clone()))
-            .child(FormItem::new().label("Enabled").child(self.enabled.clone()))
+            .item(FormItem::new().label("Role").child(self.role.clone()))
+            .item(FormItem::new().label("Enabled").child(self.enabled.clone()))
     }
 }
 

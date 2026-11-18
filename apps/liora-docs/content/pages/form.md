@@ -6,6 +6,8 @@
 
 使用 `FormItem` 包裹每个字段，设置 `label`、`required` 和具体控件。示例中的 Role Select 设为 disabled，禁用时不会打开下拉层或改变当前选项。字段控件通常作为 `Entity` 保存，保证输入状态在重绘间持久。
 
+在示例的 `Form::new()` 后加上 `.label_width(gpui::px(96.0))`，即可为通过 `.item(...)` 添加的字段设置默认标签宽度。单项可用 `FormItem::label_width(...)` 覆盖；通过 `.child(...)` 添加的子元素不继承这个默认值。
+
 ### 效果
 
 ::Demo{component="FormBasic"}::

@@ -26,24 +26,32 @@ use liora_core::Config;
 
 /// Fluent native GPUI component for rendering Liora form.
 pub struct Form {
-    _label_width: Option<Pixels>,
+    label_width: Option<Pixels>,
     inline: bool,
-    children: Vec<AnyElement>,
+    children: Vec<FormChild>,
+}
+
+enum FormChild {
+    Item(FormItem),
+    Element(AnyElement),
 }
 
 impl Form {
     /// Creates `Form` with default theme-driven styling and no optional callbacks attached.
     pub fn new() -> Self {
         Self {
-            _label_width: None,
+            label_width: None,
             inline: false,
             children: Vec::new(),
         }
     }
 
-    /// Sets the reserved label column width.
+    /// Sets the default label width for fields added with [`Self::item`].
+    ///
+    /// An explicit [`FormItem::label_width`] takes precedence. Children added
+    /// with [`Self::child`] do not inherit this width.
     pub fn label_width(mut self, width: impl Into<Pixels>) -> Self {
-        self._label_width = Some(width.into());
+        self.label_width = Some(width.into());
         self
     }
     /// Renders the code block with inline metrics instead of a block frame.
@@ -51,9 +59,16 @@ impl Form {
         self.inline = inline;
         self
     }
-    /// Adds a child element to the component body.
+    /// Adds any child element without applying the form's default label width.
     pub fn child(mut self, child: impl IntoElement) -> Self {
-        self.children.push(child.into_any_element());
+        self.children
+            .push(FormChild::Element(child.into_any_element()));
+        self
+    }
+
+    /// Adds a field that inherits the form's label width unless it sets its own.
+    pub fn item(mut self, item: FormItem) -> Self {
+        self.children.push(FormChild::Item(item));
         self
     }
 }
@@ -71,7 +86,13 @@ impl RenderOnce for Form {
             .flex()
             .when(self.inline, |s| s.flex_row().gap_4().flex_wrap())
             .when(!self.inline, |s| s.flex_col().gap_4())
-            .children(self.children)
+            .children(self.children.into_iter().map(|child| match child {
+                FormChild::Item(mut item) => {
+                    item.label_width = item.label_width.or(self.label_width);
+                    item.into_any_element()
+                }
+                FormChild::Element(element) => element,
+            }))
     }
 }
 
@@ -101,7 +122,7 @@ impl FormItem {
         self.label = Some(label.into());
         self
     }
-    /// Sets the reserved label column width.
+    /// Sets this item's label width, overriding a form default.
     pub fn label_width(mut self, width: impl Into<Pixels>) -> Self {
         self.label_width = Some(width.into());
         self
@@ -170,5 +191,45 @@ impl RenderOnce for FormItem {
                         .child(error),
                 )
             })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use gpui::{Point, TestAppContext, canvas, size};
+    use std::{cell::RefCell, rc::Rc};
+
+    #[test]
+    fn form_label_width_defaults_only_typed_items() {
+        let mut app = TestAppContext::single();
+        app.update(crate::init_liora);
+        let window = app.add_empty_window();
+        let widths = Rc::new(RefCell::new(Vec::new()));
+
+        window.draw(Point::default(), size(px(320.0), px(96.0)), |_, _| {
+            let field = || {
+                let widths = widths.clone();
+                FormItem::new().label("A").child(
+                    canvas(
+                        move |bounds, _, _| widths.borrow_mut().push(bounds.size.width),
+                        |_, _, _, _| {},
+                    )
+                    .min_w(px(24.0))
+                    .h(px(8.0)),
+                )
+            };
+
+            Form::new()
+                .inline(true)
+                .item(field())
+                .child(field())
+                .item(field().label_width(px(48.0)))
+                .label_width(px(120.0))
+                .into_element()
+        });
+
+        assert_eq!(*widths.borrow(), [px(120.0), px(24.0), px(48.0)]);
+        app.quit();
     }
 }
