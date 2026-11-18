@@ -20,8 +20,8 @@
 //! crate.
 
 use gpui::{
-    App, Hsla, IntoElement, RenderOnce, SharedString, ViewElement as Component, Window, div, img,
-    prelude::*, px,
+    App, Hsla, IntoElement, RenderOnce, SharedString, StyledImage, ViewElement as Component, Window,
+    div, img, prelude::*, px,
 };
 use liora_core::Config;
 use liora_icons::Icon;
@@ -152,7 +152,22 @@ impl RenderOnce for Avatar {
             .overflow_hidden();
 
         if let Some(src) = self.src {
-            container = container.child(img(src).size_full());
+            let mut image = img(src).size_full();
+            if let Some(alt) = self.alt {
+                let color = theme.neutral.text_3;
+                image = image.with_fallback(move || {
+                    let fallback = div()
+                        .size_full()
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .text_color(color);
+                    #[cfg(test)]
+                    let fallback = fallback.debug_selector(|| alt.to_string());
+                    fallback.child(alt.clone()).into_any_element()
+                });
+            }
+            container = container.child(image);
         } else if let Some(icon) = self.icon {
             container = container.child(
                 Icon::new(icon)
@@ -182,6 +197,34 @@ impl IntoElement for Avatar {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(debug_assertions)]
+    #[test]
+    fn avatar_displays_alt_when_image_fails_to_load() {
+        struct AvatarProbe;
+
+        impl gpui::Render for AvatarProbe {
+            fn render(&mut self, _: &mut Window, _: &mut gpui::Context<Self>) -> impl IntoElement {
+                Avatar::new().src("https://example.invalid/avatar.png").alt("AB")
+            }
+        }
+
+        // GPUI's test context supplies a fake HTTP client that returns 404.
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let handle = app.add_window(|_, _| AvatarProbe);
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        app.run_until_parked();
+        window.update(|window, cx| window.draw(cx).clear(cx));
+
+        assert_eq!(
+            window.debug_bounds("AB").map(|bounds| bounds.size),
+            Some(gpui::size(px(40.0), px(40.0))),
+            "failed image should lay out its alt fallback in the avatar"
+        );
+        app.quit();
+    }
 
     #[test]
     fn avatar_background_tracks_custom_color() {

@@ -37,12 +37,16 @@ impl Render for AvatarDemo {
                 ))
                 .child(section(
                     "展示类型",
-                    "可以展示默认图标、自定义图标或远程图片。",
+                    "可以展示默认图标、自定义图标或远程图片；图片加载失败时可显示备用文字。",
                     row(vec![
                         Avatar::new().icon(IconName::User).into_any_element(),
                         Avatar::new().icon(IconName::Star).into_any_element(),
                         Avatar::new()
                             .src("https://github.com/zed-industries.png")
+                            .into_any_element(),
+                        Avatar::new()
+                            .src("http://127.0.0.1:0/missing-avatar.png")
+                            .alt("AB")
                             .into_any_element(),
                     ]),
                 )),

@@ -4193,6 +4193,10 @@ impl Render for LiveDemoContent {
                 Avatar::new()
                     .src("https://github.com/zed-industries.png")
                     .into_any_element(),
+                Avatar::new()
+                    .src("http://127.0.0.1:0/missing-avatar.png")
+                    .alt("AB")
+                    .into_any_element(),
             ]),
             "BadgeBasic" => demo_row(vec![
                 Badge::new(Button::new("Messages"))

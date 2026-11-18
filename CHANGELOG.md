@@ -4,6 +4,7 @@
 
 - Fix Affix content alignment in nested layouts before pinning and after scrolling back.
 - Release Autocomplete after its window closes by avoiding a strong reference cycle in the Input change callback.
+- Display Avatar alt text when its image fails to load, with matching Gallery and Docs examples.
 - Compare release tags by SemVer precedence so matching stable releases follow prereleases, numeric prerelease identifiers sort numerically, and build metadata is ignored.
 - Follow event-updated GPUI appearance for live System theme changes without stale startup hints masking notifications; preserve initial startup synchronization and fixed Light/Dark modes.
 - Show the Image fallback after a remote load fails. Use `Image::embedded` for local artwork and previews in standalone Gallery and Docs.
