@@ -19,6 +19,8 @@
 
 ::Demo{component="CheckboxGroup"}::
 
+`on_change` 在启用选项的实际选择集合变化时调用一次，参数为当前选中索引；禁用或未发生变化时不调用。
+
 ### 代码
 
 ```rust src="checkbox/group.rs"

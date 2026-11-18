@@ -19,7 +19,7 @@
 //! the component, and avoid app-specific host-application resources in this SDK
 //! crate.
 
-use crate::{Checkbox, CheckboxChanged};
+use crate::Checkbox;
 use gpui::{
     AnyElement, App, Context, Entity, FocusHandle, Focusable, Hsla, MouseButton, MouseUpEvent,
     Pixels, Render, Rgba, SharedString, Window, prelude::*, px,
@@ -267,19 +267,18 @@ impl CheckboxGroup {
         let options: Vec<SharedString> = options.into_iter().map(|o| o.into()).collect();
         let mut checkboxes = Vec::new();
 
+        let owner = cx.entity().downgrade();
         for (i, label) in options.iter().enumerate() {
-            let is_checked = selected.contains(&i);
-            let checkbox = cx.new(|cx| Checkbox::new(is_checked, cx).label(label.clone()));
-
-            // Subscribe to each checkbox's change
-            cx.subscribe(
-                &checkbox,
-                move |this, _checkbox, event: &CheckboxChanged, cx| {
-                    this.update_selection(i, event.0, cx);
-                },
-            )
-            .detach();
-
+            let checkbox = cx.new(|cx| {
+                let owner = owner.clone();
+                Checkbox::new(selected.contains(&i), cx)
+                    .label(label.clone())
+                    .on_change(move |checked, window, cx| {
+                        let _ = owner.update(cx, |this, cx| {
+                            this.update_selection(i, checked, window, cx);
+                        });
+                    })
+            });
             checkboxes.push(checkbox);
         }
 
@@ -411,24 +410,43 @@ impl CheckboxGroup {
     /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(_cx: &mut App) {}
 
-    fn update_selection(&mut self, idx: usize, checked: bool, cx: &mut Context<Self>) {
-        if checked {
-            if !self.selected.contains(&idx) {
+    fn update_selection(
+        &mut self,
+        idx: usize,
+        checked: bool,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.disabled || idx >= self.options.len() {
+            return;
+        }
+        let changed = if checked {
+            if self.selected.contains(&idx) {
+                false
+            } else {
                 self.selected.push(idx);
-                self.selected.sort();
+                self.selected.sort_unstable();
+                true
             }
         } else {
-            self.selected.retain(|&i| i != idx);
+            let len = self.selected.len();
+            self.selected.retain(|&selected| selected != idx);
+            self.selected.len() != len
+        };
+        if changed {
+            cx.notify();
+            if let Some(on_change) = &self.on_change {
+                on_change(self.selected.clone(), window, cx);
+            }
         }
-        cx.notify();
     }
 
-    fn toggle_idx(&mut self, idx: usize, cx: &mut Context<Self>) {
+    fn toggle_idx(&mut self, idx: usize, window: &mut Window, cx: &mut Context<Self>) {
         if self.disabled || idx >= self.options.len() {
             return;
         }
         let checked = !self.selected.contains(&idx);
-        self.update_selection(idx, checked, cx);
+        self.update_selection(idx, checked, window, cx);
     }
 
     fn render_indicator(
@@ -533,9 +551,9 @@ impl CheckboxGroup {
                 cx.listener(
                     move |this: &mut Self,
                           _: &MouseUpEvent,
-                          _: &mut Window,
+                          window: &mut Window,
                           cx: &mut Context<Self>| {
-                        this.toggle_idx(idx, cx);
+                        this.toggle_idx(idx, window, cx);
                     },
                 ),
             );
@@ -637,9 +655,9 @@ impl CheckboxGroup {
                     cx.listener(
                         move |this: &mut Self,
                               _: &MouseUpEvent,
-                              _: &mut Window,
+                              window: &mut Window,
                               cx: &mut Context<Self>| {
-                            this.toggle_idx(idx, cx);
+                            this.toggle_idx(idx, window, cx);
                         },
                     ),
                 );
@@ -734,5 +752,53 @@ mod tests {
         let source = include_str!("checkbox_group.rs");
         assert!(source.contains("pub struct CheckboxOptionRenderContext"));
         assert!(source.contains("pub fn option_renderer"));
+    }
+
+    #[test]
+    fn pointer_and_keyboard_changes_dispatch_once_and_ignore_noops_and_disabled() {
+        use std::{cell::RefCell, rc::Rc};
+
+        struct Surface(Entity<CheckboxGroup>);
+        impl Render for Surface {
+            fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+                gpui::div().w_full().h_full().child(self.0.clone())
+            }
+        }
+
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let changes = Rc::new(RefCell::new(Vec::new()));
+        let observed = changes.clone();
+        let group = app.new(|cx| {
+            CheckboxGroup::new(vec!["First", "Second"], vec![], cx)
+                .on_change(move |selected, _, _| observed.borrow_mut().push(selected))
+        });
+        let root = group.clone();
+        let handle = app.add_window(move |_, _| Surface(root));
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        window.simulate_click(gpui::point(px(8.0), px(8.0)), gpui::Modifiers::none());
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert_eq!(*changes.borrow(), vec![vec![0]]);
+        window.simulate_keystrokes("space");
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert_eq!(*changes.borrow(), vec![vec![0], vec![]]);
+        window.update(|window, cx| {
+            group.update(cx, |group, cx| {
+                group.update_selection(0, false, window, cx);
+                group.disabled = true;
+                for checkbox in &group.checkboxes {
+                    checkbox.update(cx, |checkbox, cx| checkbox.set_disabled(true, cx));
+                }
+                group.toggle_idx(1, window, cx);
+                cx.notify();
+            });
+            window.draw(cx).clear(cx);
+        });
+        window.simulate_click(gpui::point(px(8.0), px(8.0)), gpui::Modifiers::none());
+        window.simulate_keystrokes("space");
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert_eq!(*changes.borrow(), vec![vec![0], vec![]]);
+        app.quit();
     }
 }
