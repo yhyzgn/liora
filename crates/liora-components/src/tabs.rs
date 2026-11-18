@@ -385,6 +385,7 @@ impl Render for Tabs {
                                                 let name = name.clone();
                                                 move |this, _, window, cx| {
                                                     this.remove_tab(name.clone(), window, cx);
+                                                    cx.stop_propagation();
                                                 }
                                             }))
                                             .child(
@@ -449,5 +450,36 @@ impl Render for Tabs {
                 }
                 _ => div().into_any_element(),
             })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use gpui::{Modifiers, point};
+
+    #[test]
+    fn closing_tab_keeps_a_remaining_pane_active() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let handle = app.add_window(|_, _| {
+            Tabs::new("first")
+                .editable(true)
+                .pane("first", "", |_, _| div())
+                .pane("second", "", |_, _| div())
+        });
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+
+        window.simulate_click(point(px(24.0), px(20.0)), Modifiers::none());
+
+        handle
+            .update(&mut app, |tabs, _, _| {
+                assert_eq!(tabs.panes.len(), 1, "the click must remove the first pane");
+                assert_eq!(tabs.panes[0].name, "second");
+                assert_eq!(tabs.active_name, "second");
+            })
+            .unwrap();
+        app.quit();
     }
 }
