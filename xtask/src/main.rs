@@ -680,49 +680,67 @@ fn execute_portable_install_smoke(
         fs::remove_dir_all(&install_root)
             .map_err(|error| format!("failed to reset {}: {error}", install_root.display()))?;
     }
-    fs::create_dir_all(&install_root)
-        .map_err(|error| format!("failed to create {}: {error}", install_root.display()))?;
 
-    let status = Command::new("tar")
-        .arg("-xzf")
-        .arg(path)
-        .arg("-C")
-        .arg(&install_root)
-        .status()
-        .map_err(|error| format!("failed to spawn tar for install-smoke: {error}"))?;
-    if !status.success() {
-        return Err(format!(
-            "portable install-smoke extraction failed: {}",
-            path.display()
-        ));
-    }
-
-    let mut found_launcher = false;
-    for entry in fs::read_dir(&install_root)
-        .map_err(|error| format!("failed to list {}: {error}", install_root.display()))?
-    {
-        let entry =
-            entry.map_err(|error| format!("failed to read install-smoke entry: {error}"))?;
-        let candidate = entry.path().join(&app.binary);
-        let bin_candidate = entry.path().join("bin").join(&app.binary);
-        if candidate.is_file() && bin_candidate.is_file() {
-            found_launcher = true;
-            break;
+    let result = (|| {
+        fs::create_dir_all(&install_root)
+            .map_err(|error| format!("failed to create {}: {error}", install_root.display()))?;
+        let status = Command::new("tar")
+            .arg("-xzf")
+            .arg(path)
+            .arg("-C")
+            .arg(&install_root)
+            .status()
+            .map_err(|error| format!("failed to spawn tar for install-smoke: {error}"))?;
+        if !status.success() {
+            return Err(format!(
+                "portable install-smoke extraction failed: {}",
+                path.display()
+            ));
         }
-    }
-    if !found_launcher {
-        return Err(format!(
-            "portable install-smoke did not find launcher and bin binary under {}",
-            install_root.display()
-        ));
-    }
 
-    fs::remove_dir_all(&install_root).map_err(|error| {
-        format!(
-            "failed to uninstall portable smoke dir {}: {error}",
-            install_root.display()
-        )
-    })?;
+        let mut found_launcher = false;
+        for entry in fs::read_dir(&install_root)
+            .map_err(|error| format!("failed to list {}: {error}", install_root.display()))?
+        {
+            let entry =
+                entry.map_err(|error| format!("failed to read install-smoke entry: {error}"))?;
+            let package_root = entry.path();
+            let launcher = package_root.join(&app.binary);
+            let bin_dir = package_root.join("bin");
+            let bin_binary = bin_dir.join(&app.binary);
+            if entry.file_type().is_ok_and(|kind| kind.is_dir())
+                && launcher
+                    .symlink_metadata()
+                    .is_ok_and(|metadata| metadata.file_type().is_file())
+                && fs::symlink_metadata(bin_dir).is_ok_and(|metadata| metadata.file_type().is_dir())
+                && bin_binary
+                    .symlink_metadata()
+                    .is_ok_and(|metadata| metadata.file_type().is_file())
+            {
+                found_launcher = true;
+                break;
+            }
+        }
+        if !found_launcher {
+            return Err(format!(
+                "portable install-smoke did not find regular launcher and bin binary under {}",
+                install_root.display()
+            ));
+        }
+        Ok(())
+    })();
+
+    let cleanup = if install_root.exists() {
+        fs::remove_dir_all(&install_root).map_err(|error| {
+            format!(
+                "failed to uninstall portable smoke dir {}: {error}",
+                install_root.display()
+            )
+        })
+    } else {
+        Ok(())
+    };
+    result.and(cleanup)?;
     println!(
         "install-smoke execute OK: app={} format=tar.gz install-root={}",
         app.package,
@@ -1847,6 +1865,114 @@ mod tests {
         ));
         assert!(tar_listing_contains(entries, "liora-gallery/README.md"));
         assert!(!tar_listing_contains(entries, "liora-gallery/missing"));
+    }
+
+    #[test]
+    fn portable_install_smoke_requires_regular_files_and_cleans_extraction() {
+        let app = PackageApp::Gallery.metadata();
+        for (case, invalid_entry) in [
+            ("launcher-dir", Some("liora-gallery")),
+            ("binary-dir", Some("bin/liora-gallery")),
+            ("valid", None),
+        ] {
+            let root =
+                env::temp_dir().join(format!("liora-install-smoke-{case}-{}", std::process::id()));
+            let source = root.join("fixture/liora-gallery");
+            let archive = root.join("fixture.tar.gz");
+            fs::create_dir_all(source.join("bin")).unwrap();
+            fs::create_dir_all(source.join("icons")).unwrap();
+            for name in [
+                "liora-gallery",
+                "bin/liora-gallery",
+                "README.md",
+                "icons/liora-gallery.png",
+                "icons/liora-gallery.svg",
+            ] {
+                if invalid_entry == Some(name) {
+                    fs::create_dir(source.join(name)).unwrap();
+                } else {
+                    fs::write(source.join(name), "fixture").unwrap();
+                }
+            }
+            assert!(
+                Command::new("tar")
+                    .arg("-czf")
+                    .arg(&archive)
+                    .arg("-C")
+                    .arg(root.join("fixture"))
+                    .arg("liora-gallery")
+                    .status()
+                    .unwrap()
+                    .success()
+            );
+
+            let result = execute_portable_install_smoke(&root, &app, Platform::Macos, &archive);
+
+            if invalid_entry.is_some() {
+                assert!(
+                    result
+                        .unwrap_err()
+                        .contains("regular launcher and bin binary")
+                );
+            } else {
+                result.unwrap();
+            }
+            assert!(!root.join("target/install-smoke/liora-gallery").exists());
+            fs::remove_dir_all(root).unwrap();
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn portable_install_smoke_rejects_symlinks_and_cleans_extraction() {
+        let app = PackageApp::Gallery.metadata();
+        for (index, linked_entry) in ["liora-gallery", "bin/liora-gallery", "bin"]
+            .into_iter()
+            .enumerate()
+        {
+            let root = env::temp_dir().join(format!(
+                "liora-install-smoke-symlink-{index}-{}",
+                std::process::id()
+            ));
+            let source = root.join("fixture/liora-gallery");
+            let archive = root.join("fixture.tar.gz");
+            fs::create_dir_all(source.join("bin")).unwrap();
+            fs::create_dir_all(source.join("icons")).unwrap();
+            for name in [
+                "liora-gallery",
+                "bin/liora-gallery",
+                "README.md",
+                "icons/liora-gallery.png",
+                "icons/liora-gallery.svg",
+            ] {
+                fs::write(source.join(name), "fixture").unwrap();
+            }
+            let entry = source.join(linked_entry);
+            fs::rename(&entry, source.join("link-target")).unwrap();
+            let target = if linked_entry == "bin/liora-gallery" {
+                "../link-target"
+            } else {
+                "link-target"
+            };
+            std::os::unix::fs::symlink(target, entry).unwrap();
+            assert!(
+                Command::new("tar")
+                    .arg("-czf")
+                    .arg(&archive)
+                    .arg("-C")
+                    .arg(root.join("fixture"))
+                    .arg("liora-gallery")
+                    .status()
+                    .unwrap()
+                    .success()
+            );
+
+            let result = execute_portable_install_smoke(&root, &app, Platform::Macos, &archive);
+
+            assert!(result.is_err());
+            assert!(!root.join("target/install-smoke/liora-gallery").exists());
+            fs::remove_dir_all(root).unwrap();
+        }
     }
 
     #[test]

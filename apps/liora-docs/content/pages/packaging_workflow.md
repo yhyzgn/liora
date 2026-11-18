@@ -234,7 +234,7 @@ CI then generates a runner-safe install/uninstall smoke plan:
 cargo run -p xtask -- package install-smoke --app gallery --format platform-defaults
 ```
 
-`install-smoke` defaults to plan-only mode: it validates the discovered artifacts, writes `target/packages/install-smoke-plan.md`, and prints the exact install, launch-smoke, and uninstall commands that should be used for each format. It does not mutate the runner or install system packages unless a developer explicitly passes `--execute-install`. The only executable path currently allowed by `--execute-install` is portable `.tar.gz`, which extracts to `target/install-smoke/`, verifies the launcher and binary layout, then deletes the directory.
+`install-smoke` defaults to plan-only mode: it validates the discovered artifacts, writes `target/packages/install-smoke-plan.md`, and prints the exact install, launch-smoke, and uninstall commands that should be used for each format. It does not mutate the runner or install system packages unless a developer explicitly passes `--execute-install`. The only executable path currently allowed by `--execute-install` is portable `.tar.gz`, which extracts to `target/install-smoke/`, requires regular non-symlink launcher and binary files, and removes the extraction tree on success or failure.
 
 ### 8. Preview artifacts
 
