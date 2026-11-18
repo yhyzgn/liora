@@ -1,6 +1,6 @@
 //! Basic Form with labeled native fields.
 
-use gpui::{AppContext, Context, Entity, Render, Window};
+use gpui::{AppContext, Context, Entity, Render, Window, px};
 use liora_components::{Form, FormItem, Input, Select, Space, Switch};
 
 struct BasicFormDemo {
@@ -24,6 +24,7 @@ impl BasicFormDemo {
 impl Render for BasicFormDemo {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         Form::new()
+            .label_width(px(96.0))
             .item(
                 FormItem::new()
                     .label("Name")

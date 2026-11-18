@@ -9853,14 +9853,15 @@ fn docs_form_basic(
     switches: &[Entity<Switch>],
 ) -> AnyElement {
     Form::new()
-        .child(
+        .label_width(px(96.0))
+        .item(
             FormItem::new()
                 .label("Name")
                 .required(true)
                 .child(inputs[0].clone()),
         )
-        .child(FormItem::new().label("Role").child(selects[0].clone()))
-        .child(FormItem::new().label("Enabled").child(switches[0].clone()))
+        .item(FormItem::new().label("Role").child(selects[0].clone()))
+        .item(FormItem::new().label("Enabled").child(switches[0].clone()))
         .into_any_element()
 }
 
