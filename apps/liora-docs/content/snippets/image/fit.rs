@@ -3,9 +3,7 @@
 use gpui::{IntoElement, prelude::*};
 use liora_components::{Card, Image, ImageFit, Space, Text};
 
-pub fn image_fit_modes() -> impl IntoElement {
-    let local = format!("file://{}/assets/local.jpeg", env!("CARGO_MANIFEST_DIR"));
-
+pub fn image_fit_modes(local: &'static [u8]) -> impl IntoElement {
     Space::new().wrap().gap_md().children(
         [
             ("Fill", ImageFit::Fill),
@@ -19,7 +17,7 @@ pub fn image_fit_modes() -> impl IntoElement {
                 Space::new()
                     .vertical()
                     .gap_sm()
-                    .child(Image::new(local.clone()).thumbnail_sm().fit(fit))
+                    .child(Image::embedded(local).thumbnail_sm().fit(fit))
                     .child(Text::new(label).nowrap()),
             )
             .no_shadow()

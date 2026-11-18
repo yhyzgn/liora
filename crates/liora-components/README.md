@@ -24,6 +24,12 @@ fn setup(cx: &mut gpui::App) {
 - Depend on `liora-components` directly when you need fine-grained dependency control or are building another Liora crate.
 - Keep application UI pure Rust + native GPUI; Liora crates do not require WebView, Tauri, HTML, CSS, or DOM runtime paths.
 
+## Images
+
+- Use `Image::embedded(include_bytes!("asset.png"))` for app-bundled artwork. The byte slice must be `'static`; decoded rasters are cached and shared with the preview overlay. Embedded images have no `ImageSource`, so `source()` returns `None` and the public `ImageSource::Url` / `File` variants remain unchanged.
+- Use `Image::local(path)` for files resolved from the runtime filesystem. Remote `Image::new(url)` displays its loading placeholder while fetching, then its fallback if fetching or decoding fails.
+
+
 ## PDF reader and reusable input controls
 
 - `Input::soft_wrap(true)` opts multiline text into native width-dependent wrapping, with shared caret, pointer, visual-row navigation and IME geometry. Ordinary inputs retain their existing unwrapped behavior.

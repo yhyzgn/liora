@@ -6,6 +6,8 @@
 
 远程图片用于验证网络加载效果，本地图片适合稳定的文档和业务资源。
 
+本页通过 `include_bytes!` 将 Docs 自带的 `app-icons/liora-docs.png` 嵌入二进制。示例中的 `local` 是传给 `Image::embedded` 的静态图片字节。若图片位于运行时文件系统中，请将文件路径传给 `Image::local`。
+
 ### 效果
 
 ::Demo{component="ImageBasic"}::
@@ -31,6 +33,8 @@
 ## 形状与状态
 
 图片可以设置圆形裁剪、圆角边界、ring sleeve、阴影、空状态和失败态。
+
+远程图片加载期间显示 `placeholder`，读取或解码失败后显示 `fallback`。下方用无法连接的回环地址演示失败态。`Image::empty()` 没有图片来源，可以用 `fallback` 自定义空态。
 
 ### 效果
 

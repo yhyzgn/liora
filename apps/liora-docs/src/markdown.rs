@@ -5985,7 +5985,7 @@ impl Render for LiveDemoContent {
             "ImageBasic" => image_basic_demo(),
             "ImageFit" => image_fit_demo(),
             "ImageStates" => image_states_demo(),
-            "ImagePreview" => liora_components::Image::new(REMOTE_DEMO_IMAGE)
+            "ImagePreview" => liora_components::Image::embedded(DOCS_IMAGE_BYTES)
                 .thumbnail()
                 .cover()
                 .preview(true)
@@ -7383,9 +7383,7 @@ impl LiveDemoContent {
 const REMOTE_DEMO_IMAGE: &str =
     "https://cube.elemecdn.com/6/94/4d3ea53c084bad6931a56d5158a48jpeg.jpeg";
 
-fn local_demo_image() -> String {
-    format!("file://{}/assets/local.jpeg", env!("CARGO_MANIFEST_DIR"))
-}
+const DOCS_IMAGE_BYTES: &[u8] = include_bytes!("../assets/app-icons/liora-docs.png");
 
 #[derive(Clone)]
 struct IconCatalogEntry {
@@ -7727,17 +7725,16 @@ fn icon_sizes_demo() -> AnyElement {
 }
 
 fn image_basic_demo() -> AnyElement {
-    let local = local_demo_image();
     demo_row(vec![
         liora_components::Image::new(REMOTE_DEMO_IMAGE)
             .thumbnail()
             .cover()
             .into_any_element(),
-        liora_components::Image::new(local.clone())
+        liora_components::Image::embedded(DOCS_IMAGE_BYTES)
             .thumbnail()
             .cover()
             .into_any_element(),
-        liora_components::Image::new(local)
+        liora_components::Image::embedded(DOCS_IMAGE_BYTES)
             .thumbnail()
             .contain()
             .into_any_element(),
@@ -7745,7 +7742,6 @@ fn image_basic_demo() -> AnyElement {
 }
 
 fn image_fit_demo() -> AnyElement {
-    let local = local_demo_image();
     demo_row(
         [
             ("Fill", liora_components::ImageFit::Fill),
@@ -7760,7 +7756,7 @@ fn image_fit_demo() -> AnyElement {
                     .vertical()
                     .gap_sm()
                     .child(
-                        liora_components::Image::new(local.clone())
+                        liora_components::Image::embedded(DOCS_IMAGE_BYTES)
                             .thumbnail_sm()
                             .fit(fit),
                     )
@@ -7774,31 +7770,30 @@ fn image_fit_demo() -> AnyElement {
 }
 
 fn image_states_demo() -> AnyElement {
-    let local = local_demo_image();
     demo_row(vec![
         labeled_image(
-            liora_components::Image::new(local.clone())
+            liora_components::Image::embedded(DOCS_IMAGE_BYTES)
                 .square_lg()
                 .cover()
                 .round(),
             "Circle",
         ),
         labeled_image(
-            liora_components::Image::new(local.clone())
+            liora_components::Image::embedded(DOCS_IMAGE_BYTES)
                 .thumbnail_sm()
                 .cover()
                 .round_options(liora_components::ImageRoundOptions::without_square_crop()),
             "Round bounds",
         ),
         labeled_image(
-            liora_components::Image::new(local.clone())
+            liora_components::Image::embedded(DOCS_IMAGE_BYTES)
                 .square_lg()
                 .cover()
                 .round_sleeve(),
             "Ring sleeve",
         ),
         labeled_image(
-            liora_components::Image::new(local)
+            liora_components::Image::embedded(DOCS_IMAGE_BYTES)
                 .thumbnail()
                 .cover()
                 .radius(liora_components::ImageRadius::Large)
@@ -7806,9 +7801,11 @@ fn image_states_demo() -> AnyElement {
             "Shadow",
         ),
         labeled_image(
-            liora_components::Image::new("liora://missing-image.png")
+            liora_components::Image::new("http://127.0.0.1:0/missing-image.png")
                 .thumbnail()
-                .alt("加载失败"),
+                .alt("加载失败")
+                .placeholder(|| Text::new("Loading image…"))
+                .fallback(|| Text::new("Image unavailable")),
             "Fallback",
         ),
         labeled_image(liora_components::Image::empty().thumbnail(), "Empty"),

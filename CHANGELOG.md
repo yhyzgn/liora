@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Show the Image fallback after a remote load fails. Use `Image::embedded` for local artwork and previews in standalone Gallery and Docs.
 - Replace Markdown paragraph Input switching with a unified native rich editor, canonical source selection and styled variable-height virtual rows. Add source-preserving structural commands, slash commands, literal find/replace, move/fold and selection-aware history; retain native table inputs and host image authorization.
 - Migrate rich-editor consumers from `rich_input_at()` / `rich_input()` to `focus_source_offset()`, `set_selection()` and `insert_text()`. Source-mode `input()` and table `table_input_at()` remain integration surfaces; Markdown remains the persistence format.
 - Correct the native Markdown interaction contract to Typora-style direct syntax typing in one editable surface: retain `# `, `**strong**`, `- ` and code fences in canonical source while rendering in place. Remove the default formatting toolbar and shared Gallery/Docs append/reset controls and counter; retain the representative document and bounded viewport. Public `insert_text()` remains literal.

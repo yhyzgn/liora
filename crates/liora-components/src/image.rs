@@ -173,6 +173,7 @@ impl ImageSource {
 /// Fluent native GPUI component for rendering Liora image.
 pub struct Image {
     src: Option<ImageSource>,
+    embedded: Option<&'static [u8]>,
     alt: Option<SharedString>,
     width: Option<Pixels>,
     height: Option<Pixels>,
@@ -192,6 +193,7 @@ impl Image {
     pub fn new(src: impl Into<SharedString>) -> Self {
         Self {
             src: Some(ImageSource::from_input(src)),
+            embedded: None,
             alt: None,
             width: None,
             height: None,
@@ -207,9 +209,17 @@ impl Image {
         }
     }
 
+    /// Creates an image from bytes embedded in the application binary.
+    pub fn embedded(bytes: &'static [u8]) -> Self {
+        let mut image = Self::empty();
+        image.embedded = Some(bytes);
+        image
+    }
+
     /// Creates or applies an empty-state visual treatment.
     pub fn empty() -> Self {
         Self {
+            embedded: None,
             src: None,
             alt: None,
             width: None,
@@ -229,12 +239,14 @@ impl Image {
     /// Sets the image or preview source.
     pub fn src(mut self, src: impl Into<SharedString>) -> Self {
         self.src = Some(ImageSource::from_input(src));
+        self.embedded = None;
         self
     }
 
-    /// Returns the bundled SVG file name for this Lucide icon.
+    /// Sets the local filesystem path.
     pub fn file(mut self, path: impl Into<PathBuf>) -> Self {
         self.src = Some(ImageSource::File(path.into()));
+        self.embedded = None;
         self
     }
 
@@ -389,7 +401,7 @@ impl Image {
         self
     }
 
-    /// Uses the supplied placeholder text when the value is empty.
+    /// Renders the supplied element while a remote image is loading.
     pub fn placeholder<E>(mut self, placeholder: impl Fn() -> E + 'static) -> Self
     where
         E: IntoElement,
@@ -398,7 +410,7 @@ impl Image {
         self
     }
 
-    /// Sets the fallback value used by the component.
+    /// Renders the supplied element when loading fails or no source is set.
     pub fn fallback<E>(mut self, fallback: impl Fn() -> E + 'static) -> Self
     where
         E: IntoElement,
@@ -474,13 +486,25 @@ impl RenderOnce for Image {
             frame = frame.shadow_md();
         }
 
-        let preview_src = self.src.clone();
-
-        if let Some(src) = self.src {
-            let raster_image = match &src {
-                ImageSource::File(path) => load_local_render_image(path),
-                ImageSource::Url(url) => load_remote_render_image(url.as_ref(), window, cx),
-            };
+        let raster_image = if let Some(bytes) = self.embedded {
+            load_embedded_render_image(bytes)
+                .map(RemoteImageState::Ready)
+                .unwrap_or(RemoteImageState::Failed)
+        } else {
+            match &self.src {
+                Some(ImageSource::File(path)) => load_local_render_image(path)
+                    .map(RemoteImageState::Ready)
+                    .unwrap_or(RemoteImageState::Failed),
+                Some(ImageSource::Url(url)) => load_remote_image_state(url.as_ref(), window, cx),
+                None => RemoteImageState::Failed,
+            }
+        };
+        let preview_image = match &raster_image {
+            RemoteImageState::Ready(image) => Some(image.clone()),
+            RemoteImageState::Loading | RemoteImageState::Failed => None,
+        };
+        let has_source = self.src.is_some() || self.embedded.is_some();
+        if has_source {
             let loading = self.placeholder.unwrap_or_else({
                 let theme = theme.clone();
                 || Arc::new(move || default_loading(&theme))
@@ -489,21 +513,21 @@ impl RenderOnce for Image {
                 let theme = theme.clone();
                 || Arc::new(move || default_fallback(&theme, alt.clone()))
             });
-            if let Some(raster_image) = raster_image {
-                frame = frame.child(div().absolute().top_0().left_0().size_full().child(
-                    RasterImageElement {
-                        image: raster_image,
-                        fit: self.fit.as_object_fit(),
-                        grayscale: self.grayscale,
-                        radius,
-                        round: self.radius == ImageRadius::Round,
-                        round_options: self.round_options,
-                    },
-                ));
-            } else if matches!(src, ImageSource::Url(_)) {
-                frame = frame.child(loading());
-            } else {
-                frame = frame.child(fallback());
+            match raster_image {
+                RemoteImageState::Ready(image) => {
+                    frame = frame.child(div().absolute().top_0().left_0().size_full().child(
+                        RasterImageElement {
+                            image,
+                            fit: self.fit.as_object_fit(),
+                            grayscale: self.grayscale,
+                            radius,
+                            round: self.radius == ImageRadius::Round,
+                            round_options: self.round_options,
+                        },
+                    ));
+                }
+                RemoteImageState::Loading => frame = frame.child(loading()),
+                RemoteImageState::Failed => frame = frame.child(fallback()),
             }
         } else {
             frame = frame.child(
@@ -530,8 +554,7 @@ impl RenderOnce for Image {
             frame = frame
                 .cursor_pointer()
                 .hover(|s| s.border_color(theme.primary.base).shadow_lg());
-            return Preview::empty()
-                .src_from_image_source(preview_src)
+            return Preview::from_render_image(preview_image)
                 .hover_effect(false)
                 .child(frame)
                 .into_any_element();
@@ -789,16 +812,25 @@ fn remote_image_cache() -> &'static Mutex<HashMap<String, RemoteImageState>> {
 pub(crate) fn load_remote_render_image(
     url: &str,
     window: &mut Window,
-    _cx: &mut App,
+    cx: &mut App,
 ) -> Option<Arc<RenderImage>> {
-    if let Some(cached) = remote_image_cache().lock().ok()?.get(url).cloned() {
+    match load_remote_image_state(url, window, cx) {
+        RemoteImageState::Ready(image) => Some(image),
+        RemoteImageState::Loading | RemoteImageState::Failed => None,
+    }
+}
+
+fn load_remote_image_state(url: &str, window: &mut Window, cx: &mut App) -> RemoteImageState {
+    let Ok(cache) = remote_image_cache().lock() else {
+        return RemoteImageState::Failed;
+    };
+    let cached = cache.get(url).cloned();
+    drop(cache);
+    if let Some(cached) = cached {
         if cached.should_request_animation_frame() {
             window.request_animation_frame();
         }
-        return match cached {
-            RemoteImageState::Ready(image) => Some(image),
-            RemoteImageState::Loading | RemoteImageState::Failed => None,
-        };
+        return cached;
     }
 
     if let Ok(mut cache) = remote_image_cache().lock() {
@@ -806,9 +838,9 @@ pub(crate) fn load_remote_render_image(
     }
 
     let url = url.to_string();
-    let async_cx = _cx.to_async();
-    let executor = _cx.background_executor().clone();
-    _cx.foreground_executor()
+    let async_cx = cx.to_async();
+    let executor = cx.background_executor().clone();
+    cx.foreground_executor()
         .spawn(async move {
             let fetch_url = url.clone();
             let image = executor
@@ -825,7 +857,7 @@ pub(crate) fn load_remote_render_image(
         .detach();
     window.request_animation_frame();
 
-    None
+    RemoteImageState::Loading
 }
 
 fn fetch_remote_render_image(url: &str) -> Option<Arc<RenderImage>> {
@@ -836,11 +868,23 @@ fn fetch_remote_render_image(url: &str) -> Option<Arc<RenderImage>> {
     })
 }
 
+pub(crate) fn load_embedded_render_image(bytes: &'static [u8]) -> Option<Arc<RenderImage>> {
+    type EmbeddedCache = HashMap<(usize, usize), Option<Arc<RenderImage>>>;
+    static CACHE: std::sync::LazyLock<Mutex<EmbeddedCache>> =
+        std::sync::LazyLock::new(|| Mutex::new(EmbeddedCache::new()));
+    let key = (bytes.as_ptr() as usize, bytes.len());
+    CACHE
+        .lock()
+        .ok()?
+        .entry(key)
+        .or_insert_with(|| render_image_from_bytes(bytes))
+        .clone()
+}
+
 fn local_image_cache() -> &'static Mutex<HashMap<PathBuf, Arc<RenderImage>>> {
     static CACHE: OnceLock<Mutex<HashMap<PathBuf, Arc<RenderImage>>>> = OnceLock::new();
     CACHE.get_or_init(|| Mutex::new(HashMap::new()))
 }
-
 pub(crate) fn load_local_render_image(path: &Path) -> Option<Arc<RenderImage>> {
     if let Some(cached) = local_image_cache()
         .lock()
@@ -967,23 +1011,130 @@ mod tests {
     }
 
     #[test]
-    fn remote_url_rendering_uses_single_liora_fetch_path() {
-        let source = include_str!("image.rs");
-        let production = source.split("#[cfg(test)]").next().unwrap();
+    fn remote_image_renders_placeholder_only_while_loading() {
+        use gpui::{Context, Render, TestApp};
+        use std::{cell::Cell, rc::Rc};
 
-        assert!(
-            !production.contains("img(src)"),
-            "remote Image rendering should not start GPUI img loading after scheduling the Liora remote cache fetch"
-        );
+        struct ImageProbe {
+            url: SharedString,
+            loading: Rc<Cell<usize>>,
+            failed: Rc<Cell<usize>>,
+        }
+
+        impl Render for ImageProbe {
+            fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+                let loading = self.loading.clone();
+                let failed = self.failed.clone();
+                Image::new(self.url.clone())
+                    .placeholder(move || {
+                        let loading = loading.clone();
+                        div()
+                            .child("Pending image")
+                            .on_children_prepainted(move |_, _, _| {
+                                loading.set(loading.get() + 1);
+                            })
+                    })
+                    .fallback(move || {
+                        let failed = failed.clone();
+                        div()
+                            .child("Unavailable image")
+                            .on_children_prepainted(move |_, _, _| {
+                                failed.set(failed.get() + 1);
+                            })
+                    })
+            }
+        }
+
+        let mut app = TestApp::new();
+        app.update(crate::init_liora);
+        for (url, state, expected) in [
+            (
+                "liora://test-image-loading",
+                RemoteImageState::Loading,
+                (true, false),
+            ),
+            (
+                "liora://test-image-ready",
+                RemoteImageState::Ready(Arc::new(RenderImage::new([image::Frame::new(
+                    image::RgbaImage::new(1, 1),
+                )]))),
+                (false, false),
+            ),
+        ] {
+            remote_image_cache()
+                .lock()
+                .unwrap()
+                .insert(url.into(), state);
+            let loading = Rc::new(Cell::new(0));
+            let failed = Rc::new(Cell::new(0));
+            let mut window = app.open_window(|_, _| ImageProbe {
+                url: url.into(),
+                loading: loading.clone(),
+                failed: failed.clone(),
+            });
+            window.draw();
+            window.update(|_, window, _| window.remove_window());
+            remote_image_cache().lock().unwrap().remove(url);
+            assert_eq!((loading.get() > 0, failed.get() > 0), expected, "{url}");
+        }
+
+        let endpoint = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let url = format!("http://{}/missing.png", endpoint.local_addr().unwrap());
+        drop(endpoint);
+        let loading = Rc::new(Cell::new(0));
+        let failed = Rc::new(Cell::new(0));
+        let mut window = app.open_window(|_, _| ImageProbe {
+            url: url.clone().into(),
+            loading: loading.clone(),
+            failed: failed.clone(),
+        });
+        window.draw();
+        assert!(loading.get() > 0);
+        app.run_until_parked();
+        loading.set(0);
+        window.draw();
+        window.update(|_, window, _| window.remove_window());
+        remote_image_cache().lock().unwrap().remove(&url);
+        assert_eq!(loading.get(), 0);
+        assert!(failed.get() > 0);
     }
 
     #[test]
-    fn local_image_loading_uses_render_image_cache() {
-        let source = include_str!("image.rs");
-        let production = source.split("#[cfg(test)]").next().unwrap();
+    fn local_image_loading_reuses_decoded_raster() {
+        const BYTES: &[u8] =
+            b"qoif\0\0\0\x01\0\0\0\x01\x04\0\xff\x01\x02\x03\xff\0\0\0\0\0\0\0\x01";
+        let path =
+            std::env::temp_dir().join(format!("liora-image-cache-{}.qoi", std::process::id()));
+        std::fs::write(&path, BYTES).unwrap();
 
-        assert!(production.contains("fn local_image_cache()"));
-        assert!(production.contains("cache.get(path).cloned()"));
-        assert!(production.contains("cache.insert(path.to_path_buf(), image.clone())"));
+        let first = load_local_render_image(&path).expect("valid local QOI image");
+        let second = load_local_render_image(&path).expect("cached local QOI image");
+        assert!(Arc::ptr_eq(&first, &second));
+        std::fs::remove_file(path).unwrap();
+    }
+    #[test]
+    fn embedded_image_reuses_raster_without_extending_public_source_enum() {
+        const BYTES: &[u8] =
+            b"qoif\0\0\0\x01\0\0\0\x01\x04\0\xff\x01\x02\x03\xff\0\0\0\0\0\0\0\x01";
+
+        fn exhaustive_source_match(source: &ImageSource) {
+            match source {
+                ImageSource::Url(_) => {}
+                ImageSource::File(_) => {}
+            }
+        }
+
+        let image = Image::embedded(BYTES).fit(ImageFit::Fill).preview(true);
+        assert!(image.source().is_none());
+        assert_eq!(image.fit_kind(), ImageFit::Fill);
+        exhaustive_source_match(&ImageSource::from_input("https://example.com/image.png"));
+
+        let decoded = load_embedded_render_image(BYTES).expect("valid embedded QOI image");
+        assert_eq!(decoded.as_bytes(0).unwrap(), &[3, 2, 1, 255]);
+        assert!(Arc::ptr_eq(
+            &decoded,
+            &load_embedded_render_image(BYTES).expect("cached embedded image")
+        ));
+        assert!(load_embedded_render_image(b"invalid image").is_none());
     }
 }

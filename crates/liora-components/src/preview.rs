@@ -43,6 +43,7 @@ actions!(
 /// Fluent native GPUI component for rendering Liora preview.
 pub struct Preview {
     src: Option<ImageSource>,
+    image: Option<Arc<RenderImage>>,
     trigger: Option<AnyElement>,
     hover_effect: bool,
     close_on_click_outside: bool,
@@ -64,6 +65,7 @@ impl Preview {
     pub fn new(src: impl Into<SharedString>) -> Self {
         Self {
             src: Some(ImageSource::from_input(src)),
+            image: None,
             trigger: None,
             hover_effect: true,
             close_on_click_outside: true,
@@ -75,6 +77,7 @@ impl Preview {
     pub fn empty() -> Self {
         Self {
             src: None,
+            image: None,
             trigger: None,
             hover_effect: true,
             close_on_click_outside: true,
@@ -82,20 +85,24 @@ impl Preview {
         }
     }
 
+    pub(crate) fn from_render_image(image: Option<Arc<RenderImage>>) -> Self {
+        Self {
+            image,
+            ..Self::empty()
+        }
+    }
+
     /// Sets the image or preview source.
     pub fn src(mut self, src: impl Into<SharedString>) -> Self {
         self.src = Some(ImageSource::from_input(src));
+        self.image = None;
         self
     }
 
-    pub(crate) fn src_from_image_source(mut self, src: Option<ImageSource>) -> Self {
-        self.src = src;
-        self
-    }
-
-    /// Returns the bundled SVG file name for this Lucide icon.
+    /// Sets the local filesystem path.
     pub fn file(mut self, path: impl Into<PathBuf>) -> Self {
         self.src = Some(ImageSource::File(path.into()));
+        self.image = None;
         self
     }
 
@@ -333,7 +340,10 @@ fn load_preview_image(
 impl RenderOnce for Preview {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
-        let preview_image = load_preview_image(&self.src, window, cx);
+        let preview_image = self
+            .image
+            .clone()
+            .or_else(|| load_preview_image(&self.src, window, cx));
         let mut trigger = div()
             .relative()
             .cursor_pointer()

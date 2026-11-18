@@ -3,29 +3,27 @@
 use gpui::{IntoElement, prelude::*};
 use liora_components::{Image, ImageRadius, ImageRoundOptions, Space, Text};
 
-pub fn image_states() -> impl IntoElement {
-    let local = format!("file://{}/assets/local.jpeg", env!("CARGO_MANIFEST_DIR"));
-
+pub fn image_states(local: &'static [u8]) -> impl IntoElement {
     Space::new()
         .wrap()
         .gap_md()
         .child(labeled(
-            Image::new(local.clone()).square_lg().cover().round(),
+            Image::embedded(local).square_lg().cover().round(),
             "Circle",
         ))
         .child(labeled(
-            Image::new(local.clone())
+            Image::embedded(local)
                 .thumbnail_sm()
                 .cover()
                 .round_options(ImageRoundOptions::without_square_crop()),
             "Round bounds",
         ))
         .child(labeled(
-            Image::new(local.clone()).square_lg().cover().round_sleeve(),
+            Image::embedded(local).square_lg().cover().round_sleeve(),
             "Ring sleeve",
         ))
         .child(labeled(
-            Image::new(local)
+            Image::embedded(local)
                 .thumbnail()
                 .cover()
                 .radius(ImageRadius::Large)
@@ -33,9 +31,11 @@ pub fn image_states() -> impl IntoElement {
             "Shadow",
         ))
         .child(labeled(
-            Image::new("liora://missing-image.png")
+            Image::new("http://127.0.0.1:0/missing-image.png")
                 .thumbnail()
-                .alt("加载失败"),
+                .alt("加载失败")
+                .placeholder(|| Text::new("Loading image…"))
+                .fallback(|| Text::new("Image unavailable")),
             "Fallback",
         ))
         .child(labeled(Image::empty().thumbnail(), "Empty"))

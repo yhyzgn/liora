@@ -12,7 +12,7 @@ struct ImageDemo;
 impl Render for ImageDemo {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         let remote = "https://cube.elemecdn.com/6/94/4d3ea53c084bad6931a56d5158a48jpeg.jpeg";
-        let local = format!("file://{}/assets/local.jpeg", env!("CARGO_MANIFEST_DIR"));
+        let local = include_bytes!("../../assets/local.jpeg");
 
         page(
             "Image 图片",
@@ -25,8 +25,8 @@ impl Render for ImageDemo {
                     "展示远程、 本地与 contain 填充图片。",
                     row(vec![
                         Image::new(remote).thumbnail().cover().preview(true),
-                        Image::new(local.clone()).thumbnail().cover(),
-                        Image::new(local.clone()).thumbnail().contain(),
+                        Image::embedded(local).thumbnail().cover().preview(true),
+                        Image::embedded(local).thumbnail().contain(),
                     ]),
                 ))
                 .child(section(
@@ -44,7 +44,7 @@ impl Render for ImageDemo {
                             Space::new()
                                 .vertical()
                                 .gap_sm()
-                                .child(Image::new(local.clone()).thumbnail_sm().fit(fit))
+                                .child(Image::embedded(local).thumbnail_sm().fit(fit))
                                 .child(Text::new(label).nowrap()),
                         )
                         .no_shadow()
@@ -55,23 +55,20 @@ impl Render for ImageDemo {
                     "形状与状态",
                     "展示圆形裁剪、圆角边界、ring sleeve、阴影与空/失败状态。",
                     row(vec![
+                        labeled_image(Image::embedded(local).square_lg().cover().round(), "Circle"),
                         labeled_image(
-                            Image::new(local.clone()).square_lg().cover().round(),
-                            "Circle",
-                        ),
-                        labeled_image(
-                            Image::new(local.clone())
+                            Image::embedded(local)
                                 .thumbnail_sm()
                                 .cover()
                                 .round_options(ImageRoundOptions::without_square_crop()),
                             "Round bounds",
                         ),
                         labeled_image(
-                            Image::new(local.clone()).square_lg().cover().round_sleeve(),
+                            Image::embedded(local).square_lg().cover().round_sleeve(),
                             "Ring sleeve",
                         ),
                         labeled_image(
-                            Image::new(local.clone())
+                            Image::embedded(local)
                                 .thumbnail()
                                 .cover()
                                 .radius(ImageRadius::Large)
@@ -79,9 +76,11 @@ impl Render for ImageDemo {
                             "Large shadow",
                         ),
                         labeled_image(
-                            Image::new("liora://missing-image.png")
+                            Image::new("http://127.0.0.1:0/missing-image.png")
                                 .thumbnail()
-                                .alt("加载失败"),
+                                .alt("加载失败")
+                                .placeholder(|| Text::new("Loading image…"))
+                                .fallback(|| Text::new("Image unavailable")),
                             "Fallback",
                         ),
                         labeled_image(Image::empty().thumbnail(), "Empty"),
