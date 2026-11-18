@@ -6,6 +6,8 @@ Safe GitHub Release updater planning library.
 
 The updater crate helps applications check GitHub releases, select platform-appropriate assets, verify checksums, and produce install plans. On Unix, a verified Linux AppImage download is marked executable for its owner before its install plan is returned. It does not silently escalate privileges or force app-specific hardcoded behavior.
 
+Update checks compare release tags by SemVer precedence, with or without a leading `v`. A stable release is newer than a prerelease with the same major, minor, and patch, so `v0.6.2` is offered to an app running `v0.6.2-rc.1`. Build metadata does not make a release newer.
+
 Generated install commands qualify relative artifact paths beginning with a filename or directory (including names beginning with `-`) with `./`, so they resolve against the current working directory at install time. Absolute paths and paths beginning with `.`, `..`, or a platform prefix are preserved. Commands supplied directly through a caller-owned `InstallAction` are passed through unchanged.
 
 Downloads use an exclusively created staging file in the destination directory, verify its checksum and apply executable permissions before replacing a same-name cached asset with `std::fs::rename`. Failed download, verification, permission, or replacement operations remove the staging file (cleanup errors are returned); the updater never deletes the previous destination to make replacement succeed. Existing destination links are replaced as directory entries rather than opened for writing. Repeated downloads to the same cache remain supported.

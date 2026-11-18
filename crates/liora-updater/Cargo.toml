@@ -9,6 +9,7 @@ readme = "README.md"
 publish = true
 
 [dependencies]
+semver = "1"
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 sha2 = "0.10"

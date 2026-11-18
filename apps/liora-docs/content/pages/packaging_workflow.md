@@ -16,6 +16,9 @@ The reusable packaging logic lives in:
 
 - `crates/liora-packager` — generic package metadata, format decisions, generated backend config, manifest/checksum helpers. App identities, publisher/license metadata, icons, and application directories are supplied by the caller or repository-local `xtask`, not hardcoded in the SDK.
 - `crates/liora-updater` — generic GitHub Release checks, caller-defined platform asset selection, cached downloads, checksum verification, and install plans. Gallery/Docs wire their own app-local selectors in their app crates; the SDK does not contain official app presets.
+
+  Release tags are compared by SemVer precedence: a stable release is newer than a prerelease with the same core version (for example, `v0.6.2` follows `v0.6.2-rc.1`), numeric prerelease identifiers compare numerically, and build metadata does not affect ordering. Tags that are not valid SemVer versions sort below valid tags.
+
 - `xtask` — command-line entry point used locally and by CI.
 - `.github/workflows/ci.yml` — ordinary quality gate for every pull request and `main` push.
 - `.github/workflows/package.yml` — GitHub Actions preview/release pipeline for native app binaries and Gallery installers.

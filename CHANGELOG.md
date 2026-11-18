@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Compare release tags by SemVer precedence so matching stable releases follow prereleases, numeric prerelease identifiers sort numerically, and build metadata is ignored.
 - Follow event-updated GPUI appearance for live System theme changes without stale startup hints masking notifications; preserve initial startup synchronization and fixed Light/Dark modes.
 - Show the Image fallback after a remote load fails. Use `Image::embedded` for local artwork and previews in standalone Gallery and Docs.
 - Replace Markdown paragraph Input switching with a unified native rich editor, canonical source selection and styled variable-height virtual rows. Add source-preserving structural commands, slash commands, literal find/replace, move/fold and selection-aware history; retain native table inputs and host image authorization.

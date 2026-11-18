@@ -172,13 +172,19 @@ impl PartialOrd for Version {
     }
 }
 
-/// Compare two release tags. Invalid tags sort before valid tags.
+/// Compare release tags by SemVer precedence, ignoring build metadata.
+/// Tags may have a leading `v`. Invalid tags sort before valid tags and
+/// are compared lexically with each other.
 pub fn compare_release_tags(left: &str, right: &str) -> Ordering {
-    match (Version::parse_tag(left), Version::parse_tag(right)) {
-        (Some(left), Some(right)) => left.cmp(&right),
-        (Some(_), None) => Ordering::Greater,
-        (None, Some(_)) => Ordering::Less,
-        (None, None) => left.cmp(right),
+    fn parse(tag: &str) -> Result<semver::Version, semver::Error> {
+        semver::Version::parse(tag.strip_prefix('v').unwrap_or(tag))
+    }
+
+    match (parse(left), parse(right)) {
+        (Ok(left), Ok(right)) => left.cmp_precedence(&right),
+        (Ok(_), Err(_)) => Ordering::Greater,
+        (Err(_), Ok(_)) => Ordering::Less,
+        (Err(_), Err(_)) => left.cmp(right),
     }
 }
 
@@ -1260,6 +1266,18 @@ mod tests {
         assert_eq!(compare_release_tags("v1.0.0", "v1.0.0"), Ordering::Equal);
         assert_eq!(compare_release_tags("nightly", "v0.1.0"), Ordering::Less);
         assert_eq!(Version::parse_tag("v2.3.4-beta.1").unwrap().patch, 4);
+        assert_eq!(
+            compare_release_tags("v0.6.2-rc.1", "v0.6.2"),
+            Ordering::Less
+        );
+        assert_eq!(
+            compare_release_tags("v0.6.2-rc.2", "v0.6.2-rc.10"),
+            Ordering::Less
+        );
+        assert_eq!(
+            compare_release_tags("v0.6.2+build.1", "v0.6.2+build.2"),
+            Ordering::Equal
+        );
     }
 
     #[test]
