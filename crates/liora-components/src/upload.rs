@@ -343,8 +343,8 @@ impl Upload {
                 if let Some(expected_ext) = token.strip_prefix('.') {
                     return ext.as_deref() == Some(expected_ext);
                 }
-                if token.ends_with("/*") {
-                    return matches_mime_group(ext.as_deref(), token.trim_end_matches("/*"));
+                if let Some(group) = token.strip_suffix("/*") {
+                    return matches_mime_group(ext.as_deref(), group);
                 }
                 lower_name.ends_with(&token)
             })
@@ -888,6 +888,15 @@ fn format_size(size: u64) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn upload_rejects_repeated_mime_wildcards() {
+        assert!(Upload::matches_accept_name("cover.webp", Some("image/*")));
+        assert_eq!(
+            Upload::validate_file_name_size("cover.webp", None, Some("image/*/*"), None),
+            Err(UploadRejectReason::TypeMismatch)
+        );
+    }
 
     #[test]
     fn upload_width_lg_sets_demo_width() {
