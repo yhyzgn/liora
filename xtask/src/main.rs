@@ -881,9 +881,7 @@ fn smoke_portable_tar_gz(
 }
 
 fn tar_listing_contains(entries: &str, required_entry: &str) -> bool {
-    entries
-        .lines()
-        .any(|entry| entry.trim_end_matches('/') == required_entry)
+    entries.lines().any(|entry| entry == required_entry)
 }
 
 fn require_magic(path: &Path, magic: &[u8], label: &str) -> Result<(), String> {
@@ -1858,13 +1856,50 @@ mod tests {
 
     #[test]
     fn portable_tar_listing_checks_required_entries() {
-        let entries = "liora-gallery/\nliora-gallery/bin/liora-gallery\nliora-gallery/assets/fonts/\nliora-gallery/README.md\n";
+        let entries = "liora-gallery/\nliora-gallery/bin/\nliora-gallery/bin/liora-gallery\nliora-gallery/assets/fonts/\nliora-gallery/README.md\n";
         assert!(tar_listing_contains(
             entries,
             "liora-gallery/bin/liora-gallery"
         ));
+        assert!(!tar_listing_contains(entries, "liora-gallery/bin"));
+        assert!(tar_listing_contains("liora-gallery/bin\n", "liora-gallery/bin"));
+        assert!(!tar_listing_contains(
+            "liora-gallery/bin/liora-gallery/\n",
+            "liora-gallery/bin/liora-gallery"
+        ));
         assert!(tar_listing_contains(entries, "liora-gallery/README.md"));
         assert!(!tar_listing_contains(entries, "liora-gallery/missing"));
+
+        let root = env::temp_dir().join(format!("liora-tar-listing-{}", std::process::id()));
+        let source = root.join("fixture/liora-gallery");
+        let archive = root.join("fixture.tar.gz");
+        fs::create_dir_all(source.join("bin")).unwrap();
+        fs::write(source.join("bin/liora-gallery"), "fixture").unwrap();
+        assert!(
+            Command::new("tar")
+                .arg("-czf")
+                .arg(&archive)
+                .arg("-C")
+                .arg(root.join("fixture"))
+                .arg("liora-gallery")
+                .status()
+                .unwrap()
+                .success()
+        );
+        let output = Command::new("tar")
+            .arg("-tzf")
+            .arg(&archive)
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        let listing = String::from_utf8_lossy(&output.stdout);
+        assert!(listing.lines().any(|entry| entry == "liora-gallery/bin/"));
+        assert!(!tar_listing_contains(&listing, "liora-gallery/bin"));
+        assert!(tar_listing_contains(
+            &listing,
+            "liora-gallery/bin/liora-gallery"
+        ));
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]
@@ -1909,10 +1944,10 @@ mod tests {
             let result = execute_portable_install_smoke(&root, &app, Platform::Macos, &archive);
 
             if invalid_entry.is_some() {
+                let error = result.unwrap_err();
                 assert!(
-                    result
-                        .unwrap_err()
-                        .contains("regular launcher and bin binary")
+                    error.contains("missing required entry")
+                        || error.contains("regular launcher and bin binary")
                 );
             } else {
                 result.unwrap();
