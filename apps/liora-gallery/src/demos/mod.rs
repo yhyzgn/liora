@@ -774,6 +774,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Badge" => Some(badge_demo::render(cx).into()),
         "Breadcrumb" => Some(breadcrumb_demo::render(cx).into()),
         "Button" => Some(button_demo::render(cx).into()),
+        "ButtonGroup" => Some(button_demo::render_groups(cx).into()),
         "Calendar" => Some(calendar_demo::render(cx).into()),
         "Carousel" => Some(carousel_demo::render(cx).into()),
         "InputTag" => Some(input_tag_demo::render(cx).into()),

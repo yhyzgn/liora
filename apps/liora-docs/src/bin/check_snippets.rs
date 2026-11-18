@@ -101,6 +101,8 @@ mod breadcrumb_separator_icon;
 mod button_custom_colors;
 #[path = "../../content/snippets/button/gradient.rs"]
 mod button_gradient;
+#[path = "../../content/snippets/button/group.rs"]
+mod button_group;
 #[path = "../../content/snippets/button/rounded.rs"]
 mod button_rounded;
 #[path = "../../content/snippets/button/secondary.rs"]

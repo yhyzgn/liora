@@ -57,6 +57,19 @@
 ```rust src="button/states.rs"
 ```
 
+## 按钮组
+
+`ButtonGroup` 将相关操作相邻排列。下面的前后翻页和编辑操作与 Gallery 的按钮组使用同一渲染器；点击可用按钮更新 Last action，禁用的 Delete 保持上次操作不变。当前组内按钮保留各自的圆角和边框。
+
+### 效果
+
+::Demo{component="ButtonGroup"}::
+
+### 代码
+
+```rust src="button/group.rs"
+```
+
 ## 圆角
 
 ### 效果
