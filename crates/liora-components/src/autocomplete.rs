@@ -25,7 +25,7 @@ use gpui::{
     InspectorElementId, IntoElement, LayoutId, MouseButton, Pixels, Render, SharedString, Style,
     Window, actions, prelude::*, px, relative,
 };
-use liora_core::{Config, push_portal};
+use liora_core::{Config, push_passive_portal};
 use liora_icons_lucide::IconName;
 
 actions!(
@@ -358,7 +358,7 @@ impl Render for Autocomplete {
             let entity = cx.entity().clone();
             let theme_portal = theme.clone();
             let close_on_click_outside = self.close_on_click_outside;
-            push_portal(
+            push_passive_portal(
                 move |_window, _cx| {
                     let (top, left, width) = trigger_bounds
                         .map(|b| (b.bottom() + px(4.0), b.left(), b.size.width))
@@ -487,5 +487,102 @@ mod tests {
 
         assert!(weak.upgrade().is_none(), "Autocomplete retained after window removal");
         app.quit();
+    }
+
+    struct PopupPolicySurface {
+        autocomplete: Entity<Autocomplete>,
+        neighbor_clicks: std::rc::Rc<std::cell::Cell<usize>>,
+    }
+
+    impl Render for PopupPolicySurface {
+        fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+            let clicks = self.neighbor_clicks.clone();
+            gpui::div()
+                .relative()
+                .size_full()
+                .child(self.autocomplete.clone())
+                .child(
+                    gpui::div()
+                        .absolute()
+                        .left(px(320.0))
+                        .top_0()
+                        .w(px(120.0))
+                        .h(px(32.0))
+                        .on_mouse_down(MouseButton::Left, move |_, _, _| {
+                            clicks.set(clicks.get() + 1);
+                        }),
+                )
+                .child(crate::PortalLayer)
+        }
+    }
+
+    #[test]
+    fn popup_policy_keeps_neighbors_clickable_and_suggestions_selectable() {
+        for close_outside in [false, true] {
+            let mut app = gpui::TestAppContext::single();
+            app.update(crate::init_liora);
+            let selections = std::rc::Rc::new(std::cell::Cell::new(0));
+            let selected = selections.clone();
+            let autocomplete = app.new(|cx| {
+                Autocomplete::from_values(vec!["rust", "gpui"], cx)
+                    .trigger_on_focus(false)
+                    .close_on_click_outside(close_outside)
+                    .close_on_escape(false)
+                    .on_select(move |item, _, _| {
+                        assert_eq!(item.value, "rust");
+                        selected.set(selected.get() + 1);
+                    })
+            });
+            let neighbor_clicks = std::rc::Rc::new(std::cell::Cell::new(0));
+            let root = autocomplete.clone();
+            let clicks = neighbor_clicks.clone();
+            let handle = app.add_window(move |_, _| PopupPolicySurface {
+                autocomplete: root,
+                neighbor_clicks: clicks,
+            });
+            let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+            window.update(|window, _| window.activate_window());
+            window.run_until_parked();
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            window.simulate_click(gpui::point(px(12.0), px(12.0)), gpui::Modifiers::none());
+            window.simulate_keystrokes("r");
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            assert!(autocomplete.read_with(&app, |this, _| this.is_open));
+            window.simulate_keystrokes("escape");
+            assert!(autocomplete.read_with(&app, |this, _| this.is_open));
+
+            window.simulate_click(gpui::point(px(340.0), px(16.0)), gpui::Modifiers::none());
+            assert_eq!(
+                neighbor_clicks.get(),
+                1,
+                "open popup blocked a neighboring control"
+            );
+            assert_eq!(
+                autocomplete.read_with(&app, |this, _| this.is_open),
+                !close_outside
+            );
+            window.update(|window, cx| window.draw(cx).clear(cx));
+
+            if close_outside {
+                window.simulate_keystrokes("u");
+                window.update(|window, cx| window.draw(cx).clear(cx));
+            }
+            let bounds = autocomplete.read_with(&app, |this, _| this.last_bounds.unwrap());
+            window.simulate_click(
+                gpui::point(bounds.left() + px(20.0), bounds.bottom() + px(20.0)),
+                gpui::Modifiers::none(),
+            );
+            assert_eq!(
+                autocomplete.read_with(&app, |this, cx| this.value(cx)),
+                "rust"
+            );
+            assert_eq!(
+                selections.get(),
+                1,
+                "suggestion must receive the native click"
+            );
+            assert!(!autocomplete.read_with(&app, |this, _| this.is_open));
+            app.quit();
+        }
     }
 }
