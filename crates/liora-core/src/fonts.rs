@@ -277,17 +277,21 @@ pub fn load_font_files(cx: &mut App, paths: impl IntoIterator<Item = PathBuf>) -
 /// Recursively reads and registers fonts from an external directory.
 pub fn load_fonts_from_dir(cx: &mut App, dir: impl AsRef<Path>) -> FontLoadReport {
     let dir = dir.as_ref();
-    if !dir.exists() {
-        return FontLoadReport {
-            missing_external_dirs: vec![dir.to_path_buf()],
-            ..Default::default()
-        };
-    }
     match discover_font_files(dir) {
         Ok(discovery) => {
             let mut report = load_font_files(cx, discovery.font_files);
             report.skipped_unsupported += discovery.skipped_unsupported;
             report
+        }
+        // A failed lookup of a child is not a missing font root.
+        Err(error)
+            if error.kind() == std::io::ErrorKind::NotFound
+                && matches!(dir.try_exists(), Ok(false)) =>
+        {
+            FontLoadReport {
+                missing_external_dirs: vec![dir.to_path_buf()],
+                ..Default::default()
+            }
         }
         Err(error) => {
             let mut report = FontLoadReport::default();
@@ -435,6 +439,35 @@ mod tests {
         assert_eq!(report.skipped_unsupported, 1);
 
         fs::remove_dir_all(root).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn external_font_loading_distinguishes_missing_and_invalid_directories() -> std::io::Result<()>
+    {
+        let root = temp_dir("liora-font-load");
+        fs::create_dir(&root)?;
+        let missing = root.join("missing");
+        let file = root.join("not-a-directory");
+        fs::write(&file, b"")?;
+        let invalid = file.join("fonts");
+
+        let report = gpui::TestAppContext::single().update(|cx| {
+            load_app_fonts(
+                cx,
+                FontLoadOptions::new(FontLoadMode::External)
+                    .external_dir(&missing)
+                    .external_dir(&invalid),
+            )
+        });
+        fs::remove_dir_all(root)?;
+
+        assert_eq!(report.missing_external_dirs, [missing], "{report:?}");
+        assert!(
+            matches!(report.failures.as_slice(), [failure] if failure.source == invalid.to_string_lossy()),
+            "{report:?}"
+        );
+        Ok(())
     }
 
     #[test]
