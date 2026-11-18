@@ -2907,8 +2907,6 @@ impl LiveDemoContent {
                         Some(1),
                         cx,
                     )
-                    .close_on_click_outside(false)
-                    .close_on_escape(false)
                 }));
             }
             "SliderBasic" => {
@@ -11925,6 +11923,50 @@ impl InlineSegment {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[gpui::test]
+    fn select_basic_live_demo_dismisses_popup_on_escape(cx: &mut gpui::TestAppContext) {
+        struct SelectDemoWindow(Entity<LiveDemoContent>);
+
+        impl Render for SelectDemoWindow {
+            fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+                div()
+                    .relative()
+                    .size_full()
+                    .child(self.0.clone())
+                    .child(PortalLayer)
+            }
+        }
+
+        cx.update(liora_components::init_liora);
+        let demo = cx.new(|cx| LiveDemoContent::new("SelectBasic".into(), cx));
+        let select = demo.read_with(cx, |demo, _| demo.selects[0].clone());
+        let handle = cx.add_window(move |_, _| SelectDemoWindow(demo));
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), cx);
+        let trigger = gpui::point(px(16.0), px(16.0));
+        let apple = gpui::point(px(16.0), px(52.0));
+        let modifiers = gpui::Modifiers::none();
+
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        window.simulate_click(trigger, modifiers);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        window.simulate_keystrokes("escape");
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        window.simulate_click(apple, modifiers);
+        assert_eq!(
+            select.read_with(cx, |select, _| select.selected_index()),
+            Some(1)
+        );
+
+        // The same click must select Apple when the popup is open.
+        window.simulate_click(trigger, modifiers);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        window.simulate_click(apple, modifiers);
+        assert_eq!(
+            select.read_with(cx, |select, _| select.selected_index()),
+            Some(0)
+        );
+    }
 
     fn docs_menu_group<'a>(
         items: &'a [liora_components::NavigationMenuNode],
