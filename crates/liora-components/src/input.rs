@@ -140,10 +140,6 @@ pub struct Input {
     on_clear: Option<Box<dyn Fn(&mut Context<Self>) + 'static>>,
 }
 
-fn exceeds_max_length(value: &str, max: Option<usize>) -> bool {
-    max.is_some_and(|max| value.chars().count() > max)
-}
-
 impl Input {
     /// Creates `Input` initialized from the supplied value.
     pub fn new(value: impl Into<SharedString>, cx: &mut Context<Self>) -> Self {
@@ -241,7 +237,8 @@ impl Input {
         self.filter = Some(Box::new(f));
         self
     }
-    /// Limits the number of characters accepted by the input.
+    /// Limits user edits by Unicode scalar count, not bytes or grapheme clusters.
+    /// Does not limit the initial value or replacements made by [`Self::set_value`].
     pub fn max_length(mut self, max: usize) -> Self {
         self.max_length = Some(max);
         self
@@ -363,12 +360,10 @@ impl Input {
     }
 
     /// Replaces the value, cancels composition and moves the caret to the end.
+    /// The user-edit limit set by [`Self::max_length`] does not apply.
     /// An identical value is a no-op unless marked composition is active.
     pub fn set_value(&mut self, value: impl Into<SharedString>, cx: &mut Context<Self>) {
         let value = value.into();
-        if exceeds_max_length(value.as_ref(), self.max_length) {
-            return;
-        }
         if self.value == value && self.marked_range.is_none() {
             return;
         }
@@ -1949,16 +1944,55 @@ mod width_tests {
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn programmatic_values_respect_max_length() {
-        let source = include_str!("input.rs")
-            .split("#[cfg(test)]")
-            .next()
-            .unwrap();
+    use super::Input;
+    use gpui::{AppContext, TestAppContext};
 
-        assert!(source.contains("if exceeds_max_length(value.as_ref(), self.max_length)"));
-        assert!(super::exceeds_max_length("123456", Some(5)));
-        assert!(!super::exceeds_max_length("12345", Some(5)));
-        assert!(!super::exceeds_max_length("123456", None));
+    #[test]
+    fn set_value_replaces_host_text_regardless_of_edit_limit() {
+        let mut app = TestAppContext::single();
+        for max in [None, Some(2)] {
+            let input = app.new(|cx| {
+                let input = Input::new("old", cx);
+                match max {
+                    Some(max) => input.max_length(max),
+                    None => input,
+                }
+            });
+            input.update(&mut app, |input, cx| {
+                assert_eq!(input.value().as_ref(), "old");
+                input.set_selection(0..3, cx);
+                let replacement = "猫😀é";
+                input.set_value(replacement, cx);
+                assert_eq!(input.value().as_ref(), replacement);
+                assert_eq!(input.selected_range(), replacement.len()..replacement.len());
+                assert_eq!(input.cursor_offset(), replacement.len());
+
+                input.set_selection(0.."猫".len(), cx);
+                input.set_value(replacement, cx);
+                assert_eq!(input.selected_range(), 0.."猫".len());
+
+                input.set_value("", cx);
+                assert_eq!(input.value().as_ref(), "");
+                assert_eq!(input.selected_range(), 0..0);
+            });
+        }
+        app.quit();
+    }
+
+    #[test]
+    fn bounded_user_edits_count_unicode_scalars_and_keep_state_on_rejection() {
+        let mut app = TestAppContext::single();
+        let input = app.new(|cx| Input::new("", cx).max_length(2));
+        input.update(&mut app, |input, cx| {
+            input.insert_text("猫😀", cx);
+            assert_eq!(input.value().as_ref(), "猫😀");
+            assert_eq!(input.cursor_offset(), "猫😀".len());
+
+            input.set_selection(0.."猫".len(), cx);
+            input.insert_text("e\u{301}", cx);
+            assert_eq!(input.value().as_ref(), "猫😀");
+            assert_eq!(input.selected_range(), 0.."猫".len());
+        });
+        app.quit();
     }
 }

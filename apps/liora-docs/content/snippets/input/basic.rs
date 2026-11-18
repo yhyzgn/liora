@@ -11,6 +11,7 @@ struct InputBasicDemo {
 impl InputBasicDemo {
     fn new(cx: &mut Context<Self>) -> Self {
         Self {
+            // The limit applies to user edits, not to the initial value or set_value.
             plain: cx.new(|cx| Input::new("", cx).max_length(32)),
             placeholder: cx.new(|cx| Input::new("", cx).placeholder("Type something...")),
         }
