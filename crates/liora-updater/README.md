@@ -4,7 +4,7 @@ Safe GitHub Release updater planning library.
 
 ## What it provides
 
-The updater crate helps applications check GitHub releases, select platform-appropriate assets, verify checksums, and produce install plans. It does not silently escalate privileges or force app-specific hardcoded behavior.
+The updater crate helps applications check GitHub releases, select platform-appropriate assets, verify checksums, and produce install plans. On Unix, a verified Linux AppImage download is marked executable for its owner before its install plan is returned. It does not silently escalate privileges or force app-specific hardcoded behavior.
 
 ## Quick example
 

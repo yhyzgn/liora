@@ -20,6 +20,9 @@ use std::{
     process::{Command, ExitStatus},
     time::Duration,
 };
+
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
 use thiserror::Error;
 
 /// Default GitHub REST API base URL used when no custom endpoint is configured.
@@ -613,6 +616,13 @@ impl Updater {
                 actual,
             });
         }
+
+        #[cfg(unix)]
+        if asset.name.ends_with(".AppImage") {
+            let mut permissions = fs::metadata(&destination)?.permissions();
+            permissions.set_mode(permissions.mode() | 0o100);
+            fs::set_permissions(&destination, permissions)?;
+        }
         Ok(destination)
     }
 
@@ -907,6 +917,10 @@ impl From<GithubAsset> for ReleaseAsset {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::{
+        net::TcpListener,
+        thread::{self, JoinHandle},
+    };
 
     fn asset(name: &str) -> ReleaseAsset {
         ReleaseAsset {
@@ -924,6 +938,129 @@ mod tests {
             draft: false,
             assets: names.iter().map(|name| asset(name)).collect(),
         }
+    }
+
+    fn test_server(responses: Vec<(&'static str, Vec<u8>)>) -> (String, JoinHandle<()>) {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let base_url = format!("http://{}", listener.local_addr().unwrap());
+        let handle = thread::spawn(move || {
+            for (expected_path, body) in responses {
+                let (mut stream, _) = listener.accept().unwrap();
+                let mut request = Vec::new();
+                let mut buffer = [0_u8; 1024];
+                loop {
+                    let read = stream.read(&mut buffer).unwrap();
+                    if read == 0 {
+                        break;
+                    }
+                    request.extend_from_slice(&buffer[..read]);
+                    if request.windows(4).any(|window| window == b"\r\n\r\n") {
+                        break;
+                    }
+                }
+                let request_line = format!("GET {expected_path} HTTP/1.1");
+                assert!(String::from_utf8_lossy(&request).starts_with(&request_line));
+                write!(
+                    stream,
+                    "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                    body.len()
+                )
+                .unwrap();
+                stream.write_all(&body).unwrap();
+            }
+        });
+        (base_url, handle)
+    }
+
+    fn test_directory(name: &str) -> PathBuf {
+        let path =
+            std::env::temp_dir().join(format!("liora-updater-{name}-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&path);
+        fs::create_dir_all(&path).unwrap();
+        path
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn verified_linux_appimage_download_is_owner_executable() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let content = b"verified AppImage payload".to_vec();
+        let checksum = format!("{:x}  sample.AppImage\n", Sha256::digest(&content));
+        let (base_url, server) = test_server(vec![
+            ("/checksums", checksum.into_bytes()),
+            ("/asset", content),
+        ]);
+        let asset = ReleaseAsset {
+            name: "sample.AppImage".to_string(),
+            download_url: format!("{base_url}/asset"),
+            size: 25,
+        };
+        let release = Release {
+            tag: "v0.2.0".to_string(),
+            name: None,
+            prerelease: false,
+            draft: false,
+            assets: vec![
+                ReleaseAsset {
+                    name: CHECKSUMS_ASSET.to_string(),
+                    download_url: format!("{base_url}/checksums"),
+                    size: 80,
+                },
+                asset.clone(),
+            ],
+        };
+        let destination_dir = test_directory("appimage-executable");
+        let path = Updater::new("owner", "repo")
+            .download_verified_asset(&release, &asset, &destination_dir)
+            .unwrap();
+
+        server.join().unwrap();
+        assert_ne!(fs::metadata(path).unwrap().permissions().mode() & 0o100, 0);
+        let _ = fs::remove_dir_all(destination_dir);
+    }
+
+    #[test]
+    fn checksum_mismatch_removes_downloaded_appimage() {
+        let content = b"tampered AppImage payload".to_vec();
+        let checksum = format!(
+            "{:x}  sample.AppImage\n",
+            Sha256::digest(b"trusted payload")
+        );
+        let (base_url, server) = test_server(vec![
+            ("/checksums", checksum.into_bytes()),
+            ("/asset", content),
+        ]);
+        let asset = ReleaseAsset {
+            name: "sample.AppImage".to_string(),
+            download_url: format!("{base_url}/asset"),
+            size: 25,
+        };
+        let release = Release {
+            tag: "v0.2.0".to_string(),
+            name: None,
+            prerelease: false,
+            draft: false,
+            assets: vec![
+                ReleaseAsset {
+                    name: CHECKSUMS_ASSET.to_string(),
+                    download_url: format!("{base_url}/checksums"),
+                    size: 80,
+                },
+                asset.clone(),
+            ],
+        };
+        let destination_dir = test_directory("checksum-mismatch");
+        let result = Updater::new("owner", "repo").download_verified_asset(
+            &release,
+            &asset,
+            &destination_dir,
+        );
+
+        server.join().unwrap();
+        assert!(matches!(result, Err(UpdaterError::ChecksumMismatch { .. })));
+        assert!(!destination_dir.join(&asset.name).exists());
+        let _ = fs::remove_dir_all(destination_dir);
     }
 
     #[test]
