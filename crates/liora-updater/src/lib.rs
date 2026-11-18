@@ -1020,6 +1020,46 @@ mod tests {
         let _ = fs::remove_dir_all(destination_dir);
     }
 
+    #[cfg(unix)]
+    #[test]
+    fn verified_non_appimage_download_does_not_gain_owner_execute() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let content = b"verified archive payload".to_vec();
+        let checksum = format!("{:x}  sample.tar.gz\n", Sha256::digest(&content));
+        let (base_url, server) = test_server(vec![
+            ("/checksums", checksum.into_bytes()),
+            ("/asset", content),
+        ]);
+        let asset = ReleaseAsset {
+            name: "sample.tar.gz".to_string(),
+            download_url: format!("{base_url}/asset"),
+            size: 24,
+        };
+        let release = Release {
+            tag: "v0.2.0".to_string(),
+            name: None,
+            prerelease: false,
+            draft: false,
+            assets: vec![
+                ReleaseAsset {
+                    name: CHECKSUMS_ASSET.to_string(),
+                    download_url: format!("{base_url}/checksums"),
+                    size: 80,
+                },
+                asset.clone(),
+            ],
+        };
+        let destination_dir = test_directory("non-appimage");
+        let path = Updater::new("owner", "repo")
+            .download_verified_asset(&release, &asset, &destination_dir)
+            .unwrap();
+
+        server.join().unwrap();
+        assert_eq!(fs::metadata(path).unwrap().permissions().mode() & 0o100, 0);
+        let _ = fs::remove_dir_all(destination_dir);
+    }
+
     #[test]
     fn checksum_mismatch_removes_downloaded_appimage() {
         let content = b"tampered AppImage payload".to_vec();
