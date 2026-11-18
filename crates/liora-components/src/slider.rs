@@ -20,9 +20,9 @@
 //! crate.
 
 use gpui::{
-    App, Bounds, Context, Element, ElementId, Entity, FocusHandle, Focusable, GlobalElementId,
-    InspectorElementId, LayoutId, MouseButton, MouseMoveEvent, Pixels, Point, Render, Style,
-    Window, fill, point, prelude::*, px, relative, size,
+    fill, point, prelude::*, px, relative, size, App, Bounds, Context, Element, ElementId, Entity,
+    FocusHandle, Focusable, GlobalElementId, InspectorElementId, LayoutId, MouseButton,
+    MouseMoveEvent, Pixels, Point, Render, Style, Window,
 };
 use liora_core::Config;
 
@@ -43,7 +43,7 @@ impl Slider {
     /// Creates `Slider` initialized from the supplied value.
     pub fn new(value: f64, cx: &mut Context<Self>) -> Self {
         Self {
-            value,
+            value: if value.is_finite() { value } else { 0.0 },
             min: 0.0,
             max: 100.0,
             step: 1.0,
@@ -57,17 +57,23 @@ impl Slider {
 
     /// Sets the lower numeric boundary.
     pub fn min(mut self, min: f64) -> Self {
-        self.min = min;
+        if min.is_finite() {
+            self.min = min;
+        }
         self
     }
     /// Sets the upper numeric boundary.
     pub fn max(mut self, max: f64) -> Self {
-        self.max = max;
+        if max.is_finite() {
+            self.max = max;
+        }
         self
     }
     /// Sets the increment used by numeric or time controls.
     pub fn step(mut self, step: f64) -> Self {
-        self.step = step;
+        if step.is_finite() && step > 0.0 {
+            self.step = step;
+        }
         self
     }
     /// Toggles the disabled state and suppresses user interaction when enabled.
@@ -82,10 +88,47 @@ impl Slider {
         self
     }
 
+    fn normalized_value(&self, value: f64) -> f64 {
+        let min = self.min.min(self.max);
+        let max = self.min.max(self.max);
+        if value.is_nan() || value <= min {
+            return min;
+        }
+        if value >= max {
+            return max;
+        }
+        let distance = value - min;
+        let steps = distance / self.step;
+        if distance.is_finite() && steps.is_finite() {
+            return (min + steps.round() * self.step).clamp(min, max);
+        }
+        // Remainders retain the min-origin grid without overflowing distance or step count.
+        let remainder =
+            (value.rem_euclid(self.step) - min.rem_euclid(self.step)).rem_euclid(self.step);
+        if remainder == 0.0 {
+            value
+        } else if remainder < self.step - remainder {
+            (value - remainder).clamp(min, max)
+        } else {
+            (value + (self.step - remainder)).clamp(min, max)
+        }
+    }
+
+    fn range_fraction(value: f64, min: f64, max: f64) -> f64 {
+        if min == max {
+            return 0.0;
+        }
+        let span = max - min;
+        if span.is_finite() {
+            ((value - min) / span).clamp(0.0, 1.0)
+        } else {
+            ((value / 2.0 - min / 2.0) / (max / 2.0 - min / 2.0)).clamp(0.0, 1.0)
+        }
+    }
+
     fn set_value(&mut self, val: f64, window: &mut Window, cx: &mut Context<Self>) {
-        let val = val.clamp(self.min, self.max);
-        let val = (val / self.step).round() * self.step;
-        if (val - self.value).abs() > f64::EPSILON {
+        let val = self.normalized_value(val);
+        if val != self.value {
             self.value = val;
             if let Some(ref cb) = self.on_change {
                 cb(self.value, window, cx);
@@ -130,11 +173,16 @@ impl Slider {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if let Some(bounds) = self.last_bounds {
+        if let Some(bounds) = self
+            .last_bounds
+            .filter(|bounds| bounds.size.width > px(0.0))
+        {
             let relative_x = pos.x - bounds.left();
             let width = bounds.size.width;
             let percentage = (relative_x / width).clamp(0.0, 1.0);
-            let val = self.min + percentage as f64 * (self.max - self.min);
+            let min = self.min.min(self.max);
+            let max = self.min.max(self.max);
+            let val = min * (1.0 - percentage as f64) + max * percentage as f64;
             self.set_value(val, window, cx);
         }
     }
@@ -200,7 +248,9 @@ impl Element for SliderElement {
     ) {
         let slider = self.slider.read(cx);
         let theme = &cx.global::<Config>().theme;
-        let percentage = (slider.value - slider.min) / (slider.max - slider.min);
+        let min = slider.min.min(slider.max);
+        let max = slider.min.max(slider.max);
+        let percentage = Slider::range_fraction(slider.value, min, max);
 
         let h = 6.0;
         let thumb_sz = 16.0;
@@ -246,6 +296,7 @@ impl Element for SliderElement {
 
 impl Render for Slider {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        self.value = self.normalized_value(self.value);
         let fh = self.focus_handle.clone();
 
         gpui::div()
@@ -262,5 +313,123 @@ impl Render for Slider {
             .child(SliderElement {
                 slider: cx.entity().clone(),
             })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use gpui::TestAppContext;
+
+    #[test]
+    fn snapping_uses_range_origin_and_keeps_endpoints_reachable() {
+        let mut app = TestAppContext::single();
+        let slider = app.new(|cx| Slider::new(3.0, cx).min(3.0).max(10.0).step(4.0));
+        app.update(|cx| {
+            let slider = slider.read(cx);
+            assert_eq!(slider.normalized_value(3.0), 3.0);
+            assert_eq!(slider.normalized_value(6.0), 7.0);
+            assert_eq!(slider.normalized_value(9.5), 10.0);
+            assert_eq!(slider.normalized_value(10.0), 10.0);
+            assert_eq!(slider.normalized_value(-100.0), 3.0);
+        });
+    }
+
+    #[test]
+    fn extreme_finite_ranges_keep_midpoint_and_values_in_range() {
+        let mut app = TestAppContext::single();
+        let slider = app.new(|cx| Slider::new(0.0, cx).min(-f64::MAX).max(f64::MAX));
+        app.update(|cx| {
+            let slider = slider.read(cx);
+            assert_eq!(slider.normalized_value(0.0), 0.0);
+            assert_eq!(Slider::range_fraction(0.0, -f64::MAX, f64::MAX), 0.5);
+            assert_eq!(slider.normalized_value(1e308), 1e308);
+            assert!(
+                (Slider::range_fraction(1e308, -f64::MAX, f64::MAX) - 0.7781342323134002).abs()
+                    < 1e-15
+            );
+            assert_eq!(slider.normalized_value(0.0), 0.0);
+        });
+    }
+
+    #[test]
+    fn overflowing_step_ratio_and_reversed_huge_range_remain_finite() {
+        let mut app = TestAppContext::single();
+        for step in [1.0, f64::from_bits(1)] {
+            let slider = app.new(|cx| Slider::new(0.0, cx).min(f64::MAX).max(-f64::MAX).step(step));
+            app.update(|cx| {
+                let slider = slider.read(cx);
+                assert_eq!(slider.normalized_value(0.0), 0.0);
+                assert_eq!(slider.normalized_value(1e308), 1e308);
+                assert_eq!(slider.normalized_value(f64::MAX), f64::MAX);
+                assert_eq!(slider.normalized_value(-f64::MAX), -f64::MAX);
+            });
+        }
+    }
+
+    #[test]
+    fn subnormal_step_rounds_to_nearest_when_step_count_overflows() {
+        let mut app = TestAppContext::single();
+        let unit = f64::from_bits(1);
+        let slider = app.new(|cx| Slider::new(0.0, cx).min(-1.0).max(1.0).step(unit * 3.0));
+        app.update(|cx| {
+            let slider = slider.read(cx);
+            let origin = (-1.0_f64).rem_euclid(unit * 3.0);
+            for bits in 0..9 {
+                let value = f64::from_bits(bits);
+                let remainder = (value.rem_euclid(unit * 3.0) - origin).rem_euclid(unit * 3.0);
+                let expected = if remainder <= unit {
+                    value - remainder
+                } else {
+                    value + (unit * 3.0 - remainder)
+                };
+                assert_eq!(slider.normalized_value(value), expected);
+            }
+        });
+    }
+
+    #[test]
+    fn tiny_value_change_emits_once_and_repeated_value_is_noop() {
+        use std::{cell::RefCell, rc::Rc};
+        let mut app = TestAppContext::single();
+        app.update(crate::init_liora);
+        let changes = Rc::new(RefCell::new(Vec::new()));
+        let recorded = changes.clone();
+        let slider = app.new(|cx| {
+            Slider::new(0.0, cx)
+                .step(f64::from_bits(1))
+                .on_change(move |value, _, _| recorded.borrow_mut().push(value))
+        });
+        struct Surface(Entity<Slider>);
+        impl Render for Surface {
+            fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+                gpui::div().w_full().child(self.0.clone())
+            }
+        }
+        let handle = app.open_window(size(px(400.), px(100.)), |_, _| Surface(slider.clone()));
+        app.update_window(handle.into(), |_, window, cx| {
+            slider.update(cx, |slider, cx| {
+                slider.set_value(f64::from_bits(1), window, cx);
+                slider.set_value(f64::from_bits(1), window, cx);
+            });
+            assert_eq!(slider.read(cx).value, f64::from_bits(1));
+        })
+        .unwrap();
+        assert_eq!(*changes.borrow(), vec![f64::from_bits(1)]);
+    }
+
+    #[test]
+    fn invalid_configuration_has_finite_bounded_values() {
+        let mut app = TestAppContext::single();
+        for step in [0.0, -1.0, f64::NAN, f64::INFINITY] {
+            let slider = app.new(|cx| Slider::new(f64::NAN, cx).min(10.0).max(3.0).step(step));
+            app.update(|cx| {
+                let slider = slider.read(cx);
+                for value in [f64::NAN, f64::INFINITY, -10.0, 5.0, 100.0] {
+                    let value = slider.normalized_value(value);
+                    assert!(value.is_finite() && (3.0..=10.0).contains(&value));
+                }
+            });
+        }
     }
 }
