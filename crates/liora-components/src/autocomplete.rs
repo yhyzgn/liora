@@ -328,7 +328,7 @@ impl Element for BoundsCapturer {
 impl Render for Autocomplete {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
-        let entity = cx.entity().clone();
+        let entity = cx.weak_entity();
         let disabled = self.disabled;
         let placeholder = self.placeholder.clone();
         let clearable = self.clearable;
@@ -338,7 +338,7 @@ impl Render for Autocomplete {
             input.set_on_change({
                 let entity = entity.clone();
                 move |value, cx| {
-                    entity.update(cx, |this, cx| {
+                    let _ = entity.update(cx, |this, cx| {
                         this.is_open = !value.is_empty();
                         cx.notify();
                     });
@@ -455,5 +455,37 @@ impl Render for Autocomplete {
             .child(self.input.clone());
 
         frame.on_action(cx.listener(Self::close_on_escape_action))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct LifetimeTestSurface(Entity<Autocomplete>);
+
+    impl Render for LifetimeTestSurface {
+        fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+            gpui::div().size_full().child(self.0.clone())
+        }
+    }
+
+    #[test]
+    fn autocomplete_releases_after_window_removal() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let autocomplete = app.new(|cx| Autocomplete::from_values(vec!["rust"], cx));
+        let weak = autocomplete.downgrade();
+        let handle = app.add_window(move |_, _| LifetimeTestSurface(autocomplete));
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert!(weak.read_with(&app, |this, _| this.last_bounds.is_some()).unwrap());
+
+        window.update(|window, _| window.remove_window());
+        drop(window);
+        app.run_until_parked();
+
+        assert!(weak.upgrade().is_none(), "Autocomplete retained after window removal");
+        app.quit();
     }
 }
