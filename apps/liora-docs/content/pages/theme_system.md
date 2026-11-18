@@ -8,8 +8,13 @@ Liora 的主题系统提供 `System`、`Light`、`Dark` 三种模式。默认推
 - `Light`：固定浅色主题，不再跟随后续系统外观变化。
 - `Dark`：固定深色主题，不再跟随后续系统外观变化。
 
-```rust
-src="theme/system_mode.rs"
+## 原生实时预览
+
+下方复用 Gallery 的 Theme 示例。使用应用顶部的 System / Light / Dark 控件切换模式，观察 Theme mode、主题名称、语义色和控件表面同步更新。System 表示跟随当前宿主外观；仅切换到 System 不代表已验证操作系统外观变化事件。
+
+::Demo{component="Theme"}::
+
+```rust src="theme/system_mode.rs"
 ```
 
 ## Token 使用原则

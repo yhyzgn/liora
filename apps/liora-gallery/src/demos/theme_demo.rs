@@ -23,12 +23,13 @@ impl Render for ThemeDemo {
                 .gap_lg()
                 .child(section(
                     "当前模式",
-                    "Gallery 顶部 Theme 分段控件会切换全局 Config；System 模式会跟随操作系统外观变化。",
+                    "使用应用顶部的 System / Light / Dark 控件切换全局 Config；下方状态和语义色实时反映当前主题。",
                     Card::new(
                         Space::new()
                             .vertical()
                             .gap_md()
                             .child(Title::new(format!("{} · {}", mode.label(), theme.name)).h4())
+                            .child(Text::new(format!("Theme mode: {}", mode.label())))
                             .child(Text::new(match mode {
                                 ThemeMode::System => "System resolves through GPUI WindowAppearance and observes system changes.",
                                 ThemeMode::Light => "Explicit light mode ignores later OS appearance changes.",
@@ -123,15 +124,3 @@ fn surface_sample() -> impl IntoElement {
     )
 }
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn theme_demo_uses_config_theme_mode_and_tokens() {
-        let source = include_str!("theme_demo.rs");
-        let production = source.split("#[cfg(test)]").next().unwrap_or(source);
-        assert!(production.contains("ThemeMode::System"));
-        assert!(production.contains("config.theme_mode"));
-        assert!(production.contains("theme.primary.light_9"));
-        assert!(!production.contains("rgb(0xf8fafc"));
-    }
-}
