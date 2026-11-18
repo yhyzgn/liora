@@ -371,6 +371,19 @@ fn main() {
         cx.update_window(window.into(), |_, window, cx| {
             window.draw(cx).clear(cx);
             assert!(center_painted.get(), "Center panels receive real layout bounds");
+            window.focus_next(cx);
+            window.draw(cx).clear(cx);
+            for stroke in ["tab", "tab", "enter"] {
+                key(window, cx, stroke);
+                window.dispatch_event(
+                    PlatformInput::KeyUp(gpui::KeyUpEvent {
+                        keystroke: Keystroke::parse(stroke).unwrap(),
+                    }),
+                    cx,
+                );
+                window.draw(cx).clear(cx);
+            }
+            assert_eq!(changes.borrow().as_ref().unwrap().active_tab(), Some("b"), "native Enter selects the Tab-focused header");
             click(window, cx, 165., 18.);
             assert_eq!(changes.borrow().as_ref().unwrap().active_tab(), Some("b"));
             window.draw(cx).clear(cx);
@@ -390,6 +403,21 @@ fn main() {
             assert_eq!(changes.borrow().as_ref().unwrap().group_count(), 1, "native cross-group move collapses emptied source");
             click(window, cx, 222., 18.);
             assert!(!changes.borrow().as_ref().unwrap().contains_tab("a"), "native close removes the tab");
+            window.draw(cx).clear(cx);
+            window.blur(cx);
+            window.focus_next(cx);
+            window.draw(cx).clear(cx);
+            for stroke in ["enter", "tab", "space"] {
+                key(window, cx, stroke);
+                window.dispatch_event(
+                    PlatformInput::KeyUp(gpui::KeyUpEvent {
+                        keystroke: Keystroke::parse(stroke).unwrap(),
+                    }),
+                    cx,
+                );
+                window.draw(cx).clear(cx);
+            }
+            assert!(!changes.borrow().as_ref().unwrap().contains_tab("b"), "native Space closes the Tab-focused control");
         }).unwrap();
         let restored = saved_layout.borrow().clone().unwrap();
         assert_eq!(restored.group_count(), 2);

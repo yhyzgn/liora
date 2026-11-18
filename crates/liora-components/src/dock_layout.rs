@@ -828,6 +828,11 @@ impl IntoElement for DockLayout {
     }
 }
 
+struct DockFocus {
+    headers: HashMap<String, gpui::FocusHandle>,
+    empty: gpui::FocusHandle,
+}
+
 impl RenderOnce for DockLayout {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
@@ -837,6 +842,32 @@ impl RenderOnce for DockLayout {
         let state = window.use_keyed_state(self.id.clone(), cx, move |_, _| initial);
         state.update(cx, |layout, _| layout.reconcile(&self.tabs, &self.panels));
         let snapshot = state.read(cx).clone();
+        let focus = window.with_element_namespace(self.id.clone(), |window| {
+            window.use_keyed_state("dock-focus", cx, |_, cx| DockFocus {
+                headers: HashMap::new(),
+                empty: cx.focus_handle(),
+            })
+        });
+        focus.update(cx, |focus, cx| {
+            fn collect_live_keys<'a>(node: &'a DockNode, keys: &mut HashSet<&'a str>) {
+                match node {
+                    DockNode::Group { tabs, .. } => keys.extend(tabs.iter().map(String::as_str)),
+                    DockNode::Split { first, second, .. } => {
+                        collect_live_keys(first, keys);
+                        collect_live_keys(second, keys);
+                    }
+                }
+            }
+
+            let mut live_keys = HashSet::new();
+            collect_live_keys(&snapshot.root, &mut live_keys);
+            focus.headers.retain(|key, _| live_keys.contains(key.as_str()));
+            for key in live_keys {
+                if !focus.headers.contains_key(key) {
+                    focus.headers.insert(key.to_owned(), cx.focus_handle().tab_stop(true));
+                }
+            }
+        });
         let callback = self.on_layout_change.clone();
         let mut tab_contents = HashMap::new();
         for tab in self.tabs {
@@ -865,7 +896,15 @@ impl RenderOnce for DockLayout {
                 DockEdge::Center => center_panels.push(rendered),
             }
         }
-        let center = render_node(&snapshot.root, &mut tab_contents, &state, &callback, &theme);
+        let center = render_node(
+            &snapshot.root,
+            &mut tab_contents,
+            &state,
+            &callback,
+            &theme,
+            &focus,
+            cx,
+        );
         let middle = div()
             .flex()
             .flex_row()
@@ -879,6 +918,10 @@ impl RenderOnce for DockLayout {
             .children(right);
         div()
             .id(format!("{}-root", self.id))
+            .when(snapshot.active_tab().is_none(), |root| {
+                root.track_focus(&focus.read(cx).empty)
+                    .on_key_down(dock_control_key_down)
+            })
             .flex()
             .flex_col()
             .w_full()
@@ -985,6 +1028,8 @@ fn render_node(
     state: &Entity<DockState>,
     callback: &Option<Arc<dyn Fn(DockState) + 'static>>,
     theme: &liora_theme::Theme,
+    focus: &Entity<DockFocus>,
+    cx: &App,
 ) -> AnyElement {
     match node {
         DockNode::Group { id, tabs, active } => render_group(
@@ -995,6 +1040,8 @@ fn render_node(
             state,
             callback,
             theme,
+            focus,
+            cx,
         ),
         DockNode::Split {
             axis,
@@ -1003,8 +1050,8 @@ fn render_node(
             second,
         } => {
             let fraction = *ratio_permille as f32 / 1000.0;
-            let first = render_node(first, contents, state, callback, theme);
-            let second = render_node(second, contents, state, callback, theme);
+            let first = render_node(first, contents, state, callback, theme, focus, cx);
+            let second = render_node(second, contents, state, callback, theme, focus, cx);
             let split = match axis {
                 DockSplitAxis::Horizontal => div()
                     .flex()
@@ -1044,6 +1091,26 @@ fn render_node(
     }
 }
 
+fn dock_control_key_down(event: &gpui::KeyDownEvent, window: &mut Window, cx: &mut App) {
+    let modifiers = event.keystroke.modifiers;
+    if event.keystroke.key == "tab"
+        && !modifiers.control
+        && !modifiers.alt
+        && !modifiers.platform
+        && !modifiers.function
+    {
+        if modifiers.shift {
+            window.focus_prev(cx);
+        } else {
+            window.focus_next(cx);
+        }
+        cx.stop_propagation();
+    } else if !modifiers.modified() && matches!(event.keystroke.key.as_str(), "enter" | "space") {
+        // GPUI synthesizes the click on key-up for the focused control.
+        cx.stop_propagation();
+    }
+}
+
 fn render_group(
     group_id: &str,
     tabs: &[String],
@@ -1052,13 +1119,25 @@ fn render_group(
     state: &Entity<DockState>,
     callback: &Option<Arc<dyn Fn(DockState) + 'static>>,
     theme: &liora_theme::Theme,
+    focus: &Entity<DockFocus>,
+    cx: &App,
 ) -> AnyElement {
     let mut headers = div()
+        .tab_group()
         .flex()
         .flex_row()
         .items_center()
         .min_w(px(0.0))
         .gap(px(2.0));
+    let focus_ring = |style: gpui::StyleRefinement| {
+        style.shadow(vec![gpui::BoxShadow {
+            color: theme.primary.base,
+            offset: gpui::point(px(0.0), px(0.0)),
+            blur_radius: px(0.0),
+            spread_radius: px(2.0),
+            inset: true,
+        }])
+    };
     for (index, key) in tabs.iter().enumerate() {
         let Some(tab) = contents.get(key) else {
             continue;
@@ -1068,8 +1147,15 @@ fn render_group(
         let closeable = tab.closable;
         let tab_key = key.clone();
         let group = group_id.to_owned();
+        let header_focus = &focus.read(cx).headers[key];
         let mut header = div()
             .id(format!("dock-tab-{group_id}-{key}"))
+            .track_focus(header_focus)
+            .focus_visible(focus_ring)
+            .role(gpui::Role::Tab)
+            .aria_label(title.clone())
+            .aria_selected(is_active)
+            .on_key_down(dock_control_key_down)
             .flex()
             .flex_row()
             .items_center()
@@ -1101,14 +1187,22 @@ fn render_group(
                 let state = state.clone();
                 let callback = callback.clone();
                 let key = tab_key.clone();
-                move |_, _, cx| {
-                    mutate_layout(&state, cx, &callback, |layout| layout.select_tab(&key))
+                move |event, _, cx| {
+                    if matches!(event, gpui::ClickEvent::Keyboard(_)) {
+                        cx.stop_propagation();
+                    }
+                    mutate_layout(&state, cx, &callback, |layout| layout.select_tab(&key));
                 }
             });
         if closeable {
             header = header.child(
                 div()
                     .id(format!("dock-tab-close-{group_id}-{key}"))
+                    .tab_index(0)
+                    .focus_visible(focus_ring)
+                    .role(gpui::Role::Button)
+                    .aria_label(format!("Close {title}"))
+                    .on_key_down(dock_control_key_down)
                     .px_1()
                     .text_xs()
                     .cursor_pointer()
@@ -1119,9 +1213,30 @@ fn render_group(
                         let state = state.clone();
                         let callback = callback.clone();
                         let key = tab_key.clone();
-                        move |_, _, cx| {
-                            mutate_layout(&state, cx, &callback, |layout| layout.close_tab(&key));
+                        let header_focus = header_focus.clone();
+                        let dock_focus = focus.clone();
+                        let group = group.clone();
+                        move |_, window, cx| {
                             cx.stop_propagation();
+                            mutate_layout(&state, cx, &callback, |layout| layout.close_tab(&key));
+                            if header_focus.contains_focused(window, cx) {
+                                let layout = state.read(cx);
+                                let focus = dock_focus.read(cx);
+                                let target = group_for_id(&layout.root, &group)
+                                    .and_then(|group| group_active(group).as_deref())
+                                    .or_else(|| layout.active_tab())
+                                    .and_then(|key| focus.headers.get(key))
+                                    .cloned();
+                                let empty = focus.empty.clone();
+                                if let Some(target) = target {
+                                    window.focus(&target, cx);
+                                } else {
+                                    window.focus_next(cx);
+                                    if header_focus.contains_focused(window, cx) {
+                                        window.focus(&empty, cx);
+                                    }
+                                }
+                            }
                         }
                     }),
             );
@@ -1284,6 +1399,92 @@ fn render_panel(panel: DockPanel, theme: &liora_theme::Theme) -> AnyElement {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn dock_keyboard_selects_and_closes_without_bubbling() {
+        use std::{cell::RefCell, rc::Rc};
+
+        struct Workbench {
+            changes: Rc<RefCell<Vec<DockState>>>,
+        }
+
+        impl Render for Workbench {
+            fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+                let changes = self.changes.clone();
+                div()
+                    .id("dock-keyboard-test")
+                    .size_full()
+                    .on_key_down(|event, _, _| {
+                        assert!(!matches!(event.keystroke.key.as_str(), "enter" | "space"));
+                    })
+                    .on_click(|_, _, _| panic!("close or keyboard selection bubbled"))
+                    .child(
+                        DockLayout::new()
+                            .tab(
+                                DockTab::new(
+                                    "main",
+                                    "Main",
+                                    div().id("main-body").debug_selector(|| "main-body".into()),
+                                )
+                                .closable(false),
+                            )
+                            .tab(DockTab::new(
+                                "notes",
+                                "Notes",
+                                div()
+                                    .id("notes-body")
+                                    .debug_selector(|| "notes-body".into()),
+                            ))
+                            .tab(DockTab::new("logs", "Logs", div()).closable(false))
+                            .on_layout_change(move |state| changes.borrow_mut().push(state)),
+                    )
+            }
+        }
+
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let changes = Rc::new(RefCell::new(Vec::new()));
+        let handle = app.add_window(|_, _| Workbench {
+            changes: changes.clone(),
+        });
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        window.update(|window, cx| {
+            window.draw(cx).clear(cx);
+            window.focus_next(cx);
+            window.draw(cx).clear(cx);
+        });
+
+        for key in ["tab", "enter", "tab", "space", "shift-tab", "enter"] {
+            window.simulate_keystrokes(key);
+            window.update(|window, cx| {
+                let keystroke = gpui::Keystroke::parse_with_os(key, cx.platform_info().os).unwrap();
+                window.dispatch_event(
+                    gpui::PlatformInput::KeyUp(gpui::KeyUpEvent { keystroke }),
+                    cx,
+                );
+                window.draw(cx).clear(cx);
+            });
+            if key == "space" {
+                window.update(|window, cx| {
+                    assert!(
+                        window.focused(cx).is_some(),
+                        "closing the active tab must retain focus after redraw"
+                    )
+                });
+                assert!(window.debug_bounds("main-body").is_none());
+            }
+        }
+
+        let mut expected = DockState::from_tabs(["main", "notes", "logs"]);
+        assert!(expected.select_tab("notes"));
+        let selected = expected.clone();
+        assert!(expected.close_tab("notes"));
+        let closed = expected.clone();
+        assert!(expected.select_tab("main"));
+        assert_eq!(*changes.borrow(), [selected, closed, expected]);
+        assert!(window.debug_bounds("main-body").is_some());
+        app.quit();
+    }
 
     #[test]
     fn dock_state_reorders_moves_splits_and_closes_tabs() {

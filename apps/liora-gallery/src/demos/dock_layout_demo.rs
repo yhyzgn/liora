@@ -61,7 +61,7 @@ impl Render for DockLayoutDemo {
                 )
                 .child(section(
                     "Native workbench",
-                    "拖动标签到 Split ← / → / ↑ / ↓；修改布局后可恢复到新实例。",
+                    "Tab / Shift+Tab 聚焦标题或 ×，Enter / Space 选择或关闭；拖动标签到 Split ← / → / ↑ / ↓。修改布局后可恢复。",
                     workbench,
                 )),
         )
