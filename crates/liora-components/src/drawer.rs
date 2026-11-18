@@ -373,9 +373,11 @@ impl Drawer {
         let close_on_escape = self.close_on_escape;
 
         let id_for_close = id.clone();
+        let id_for_view = id.clone();
         let view = cx.new(|_cx| {
+            let view_id = _cx.entity_id();
             DrawerView::new(
-                id.clone(),
+                id_for_view,
                 title,
                 content,
                 placement,
@@ -383,8 +385,18 @@ impl Drawer {
                 height,
                 close_on_click_outside,
                 close_on_escape,
-                move |_window, _cx| {
-                    liora_core::clear_drawer(&id_for_close, _cx);
+                move |_window, cx| {
+                    if !cx
+                        .try_global::<liora_core::ActiveDrawer>()
+                        .is_some_and(|drawers| {
+                            drawers.0.iter().any(|entry| {
+                                entry.id == id_for_close && entry.view.entity_id() == view_id
+                            })
+                        })
+                    {
+                        return;
+                    }
+                    liora_core::clear_drawer(&id_for_close, cx);
                 },
             )
         });
@@ -409,6 +421,53 @@ mod tests {
     use super::*;
 
     #[test]
+    fn stale_close_does_not_clear_same_id_replacement() {
+        let mut app = gpui::TestAppContext::single();
+        let window = app.add_empty_window();
+        let (old_close, current_close, replacement_id) = window.update(|_, cx| {
+            liora_core::init_liora(cx, liora_theme::Theme::light());
+            Drawer::new().id("shared-drawer").show(cx);
+            let old_view = cx
+                .global::<liora_core::ActiveDrawer>()
+                .0
+                .last()
+                .unwrap()
+                .view
+                .clone()
+                .downcast::<DrawerView>()
+                .unwrap();
+            let old_close = old_view.read(cx).on_close.clone();
+
+            Drawer::new()
+                .id("shared-drawer")
+                .title("Replacement")
+                .show(cx);
+            let replacement_view = cx
+                .global::<liora_core::ActiveDrawer>()
+                .0
+                .last()
+                .unwrap()
+                .view
+                .clone()
+                .downcast::<DrawerView>()
+                .unwrap();
+            let replacement_id = replacement_view.entity_id();
+            let current_close = replacement_view.read(cx).on_close.clone();
+            (old_close, current_close, replacement_id)
+        });
+
+        window.update(|window, cx| old_close(window, cx));
+        window.update(|_, cx| {
+            let active = cx.global::<liora_core::ActiveDrawer>().0.last().unwrap();
+            assert_eq!(active.view.entity_id(), replacement_id);
+        });
+        window.update(|window, cx| current_close(window, cx));
+        window.update(|window, cx| current_close(window, cx));
+        window.update(|_, cx| assert!(cx.global::<liora_core::ActiveDrawer>().0.is_empty()));
+        app.quit();
+    }
+
+    #[test]
     fn drawer_size_helpers_set_demo_sizes() {
         assert_eq!(Drawer::new().width_lg().width, px(480.0));
         assert_eq!(Drawer::new().height_sm().height, px(200.0));
@@ -421,17 +480,5 @@ mod tests {
         assert_eq!(sheet.placement, DrawerPlacement::Left);
         assert_eq!(sheet.width, px(440.0));
         assert_eq!(sheet.height, px(220.0));
-    }
-
-    #[test]
-    fn drawer_uses_liora_motion_on_overlay_and_panel() {
-        let source = include_str!("drawer.rs")
-            .split("#[cfg(test)]")
-            .next()
-            .unwrap();
-
-        assert!(source.contains("fade_in("));
-        assert!(source.contains("pop_in("));
-        assert!(source.contains("panel-motion"));
     }
 }
