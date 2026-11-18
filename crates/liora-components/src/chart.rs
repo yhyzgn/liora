@@ -582,7 +582,7 @@ pub fn format_value_label(
     let format_value = formatter.unwrap_or(default_y_format);
     let value_text = format_value(value);
     let total_text = format_value(total);
-    let percentage = if total.abs() > f64::EPSILON {
+    let percentage = if total.abs() > 0.0 {
         value / total * 100.0
     } else {
         0.0
@@ -1015,6 +1015,18 @@ mod tests {
         assert_eq!(
             format_value_label(1.0, 4.0, None, &options),
             SharedString::from("1 / 4 (25.00%)")
+        );
+    }
+
+    #[test]
+    fn percentage_labels_use_small_nonzero_totals() {
+        let options = ChartValueLabelOptions {
+            content: ChartValueLabelContent::Percentage,
+            ..ChartValueLabelOptions::default()
+        };
+        assert_eq!(
+            format_value_label(1e-20, 4e-20, None, &options),
+            SharedString::from("25.0%")
         );
     }
 
