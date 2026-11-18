@@ -3543,7 +3543,7 @@ impl CodeEditor {
             .buffer
             .point_to_offset(CodePoint::new(target_row, preferred));
         self.selection.preferred_column = Some(preferred);
-        if select {
+        if select && self.options.selection {
             self.selection.select_to(target);
         } else {
             self.selection.set_cursor(target);
@@ -5473,6 +5473,33 @@ mod tests {
         assert_eq!(selection.range, 2..5);
         assert!(selection.reversed);
         assert_eq!(selection.cursor(), 2);
+    }
+
+    #[test]
+    fn vertical_navigation_respects_disabled_selection() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let (editor, cx) = app.add_window_view(|_, cx| {
+            CodeEditor::new("abc\ndef\nghi", cx)
+                .selection(false)
+                .cursor_blink(false)
+        });
+        cx.update(|window, cx| {
+            editor.update(cx, |editor, cx| editor.set_selection(1..1, cx));
+            window.focus(&editor.focus_handle(cx), cx);
+            window.draw(cx).clear(cx);
+        });
+
+        for (key, caret) in [
+            ("shift-down", 5),
+            ("shift-up", 1),
+            ("shift-pagedown", 9),
+            ("shift-pageup", 1),
+        ] {
+            cx.simulate_keystrokes(key);
+            cx.update(|_, cx| assert_eq!(editor.read(cx).selected_range(), caret..caret, "{key}"));
+        }
+        app.quit();
     }
 
     #[test]
