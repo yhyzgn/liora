@@ -10179,7 +10179,13 @@ fn docs_message_box_basic() -> impl IntoElement {
             liora_components::confirm(
                 "Confirm Title",
                 "Are you sure you want to proceed?",
-                |_, _| toast_success!("Confirmed"),
+                |_, cx| {
+                    liora_components::alert(
+                        "Confirmed",
+                        "The confirmation closed before this follow-up opened.",
+                        cx,
+                    );
+                },
                 cx,
             );
         }))

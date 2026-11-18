@@ -6,6 +6,8 @@
 
 `alert` / `confirm` 是常用快捷入口，适合简单提示与确认流程。
 
+点击 Confirm 时会先关闭当前确认框，再执行回调。下面的 Open Confirm 示例在回调中打开后续提示框，该提示框会保留，直到用户将其关闭。
+
 ### 效果
 
 ::Demo{component="MessageBoxBasic"}::

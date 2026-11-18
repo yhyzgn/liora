@@ -1,7 +1,7 @@
 //! MessageBox helper APIs.
 
 use gpui::IntoElement;
-use liora_components::{Button, Space, alert, confirm, toast_success};
+use liora_components::{Button, Space, alert, confirm};
 
 pub fn message_box_basic() -> impl IntoElement {
     Space::new()
@@ -14,7 +14,13 @@ pub fn message_box_basic() -> impl IntoElement {
             confirm(
                 "Confirm Title",
                 "Are you sure you want to proceed?",
-                |_, _| toast_success!("Confirmed"),
+                |_, cx| {
+                    alert(
+                        "Confirmed",
+                        "The confirmation closed before this follow-up opened.",
+                        cx,
+                    );
+                },
                 cx,
             );
         }))

@@ -22,7 +22,13 @@ impl Render for MessageBoxDemo {
                     confirm(
                         "Confirm Title",
                         "Are you sure you want to proceed?",
-                        |_, _| println!("Confirmed in MB!"),
+                        |_, cx| {
+                            alert(
+                                "Confirmed",
+                                "The confirmation closed before this follow-up opened.",
+                                cx,
+                            );
+                        },
                         cx,
                     );
                 }),

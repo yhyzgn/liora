@@ -92,6 +92,16 @@ impl MessageBox {
             .close_on_escape(self.close_on_escape)
             .content(move |_window, cx| {
                 let on_confirm = on_confirm.clone();
+                let confirm = Button::new(locales::message_box::confirm)
+                    .primary()
+                    .on_click(move |_, window, cx| {
+                        Dialog::close(cx);
+                        on_confirm(window, cx);
+                    });
+                #[cfg(test)]
+                let confirm = div()
+                    .debug_selector(|| "message-box-confirm".into())
+                    .child(confirm);
                 div()
                     .flex()
                     .flex_col()
@@ -107,14 +117,7 @@ impl MessageBox {
                                     Dialog::close(cx);
                                 },
                             ))
-                            .child(
-                                Button::new(locales::message_box::confirm)
-                                    .primary()
-                                    .on_click(move |_, window, cx| {
-                                        on_confirm(window, cx);
-                                        Dialog::close(cx);
-                                    }),
-                            ),
+                            .child(confirm),
                     )
             })
             .show(cx);
@@ -144,4 +147,50 @@ pub fn confirm(
     cx: &mut App,
 ) {
     MessageBox::new(title, content).confirm(on_confirm, cx);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use gpui::{Context, Render, px};
+    use liora_core::ActiveModal;
+
+    struct ModalSurface;
+
+    impl Render for ModalSurface {
+        fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+            liora_core::render_active_modal_in_window(window, cx);
+            div().relative().size_full().child(crate::PortalLayer)
+        }
+    }
+
+    #[test]
+    fn confirm_callback_can_open_follow_up_dialog() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let handle = app.open_window(gpui::size(px(640.0), px(480.0)), |_, _| ModalSurface);
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        window.update(|window, cx| {
+            confirm(
+                "Confirm",
+                "Proceed?",
+                |_, cx| {
+                    assert!(cx.global::<ActiveModal>().0.is_empty());
+                    Dialog::new().id("follow-up").title("Follow-up").show(cx);
+                },
+                cx,
+            );
+            window.draw(cx).clear(cx);
+        });
+        let bounds = window
+            .debug_bounds("message-box-confirm")
+            .expect("confirm button must render");
+        window.simulate_click(bounds.center(), gpui::Modifiers::none());
+        window.update(|_, cx| {
+            let modals = &cx.global::<ActiveModal>().0;
+            assert_eq!(modals.len(), 1);
+            assert_eq!(modals[0].id, "follow-up");
+        });
+        app.quit();
+    }
 }
