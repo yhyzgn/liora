@@ -3644,6 +3644,7 @@ dependencies = [
 name = "liora-packager"
 version = "0.6.1"
 dependencies = [
+ "serde_json",
  "thiserror 2.0.18",
 ]
 

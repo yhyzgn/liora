@@ -111,8 +111,8 @@ impl PackageManifest {
                 json_option_string(artifact.git_sha.as_deref()),
                 artifact.format.as_str(),
                 escape(&artifact.path.display().to_string()),
-                artifact.checksum.algorithm,
-                artifact.checksum.hex,
+                escape(artifact.checksum.algorithm),
+                escape(&artifact.checksum.hex),
                 artifact.signed
             ));
         }
@@ -210,7 +210,27 @@ fn json_option_string(value: Option<&str>) -> String {
 }
 
 fn escape(value: &str) -> String {
-    value.replace('\\', "\\\\").replace('"', "\\\"")
+    let mut escaped = String::with_capacity(value.len());
+    for character in value.chars() {
+        match character {
+            '"' => escaped.push_str("\\\""),
+            '\\' => escaped.push_str("\\\\"),
+            '\u{08}' => escaped.push_str("\\b"),
+            '\u{09}' => escaped.push_str("\\t"),
+            '\u{0a}' => escaped.push_str("\\n"),
+            '\u{0c}' => escaped.push_str("\\f"),
+            '\u{0d}' => escaped.push_str("\\r"),
+            control if control <= '\u{1f}' => {
+                const HEX: &[u8; 16] = b"0123456789abcdef";
+                let byte = control as u8;
+                escaped.push_str("\\u00");
+                escaped.push(HEX[(byte >> 4) as usize] as char);
+                escaped.push(HEX[(byte & 0x0f) as usize] as char);
+            }
+            character => escaped.push(character),
+        }
+    }
+    escaped
 }
 
 #[cfg(test)]
@@ -234,12 +254,19 @@ mod tests {
             },
             signed: false,
         });
+
         let json = manifest.to_json_pretty();
-        assert!(json.contains("\"app\": \"sample-app\""));
-        assert!(json.contains("\"targetTriple\": \"x86_64-unknown-linux-gnu\""));
-        assert!(json.contains("\"gitSha\": \"abc1234\""));
-        assert!(json.contains("\"format\": \"appimage\""));
-        assert!(json.contains("\"signed\": false"));
+        assert_eq!(
+            json,
+            "{\n  \"artifacts\": [\n    {\n      \"app\": \"sample-app\",\n      \"version\": \"0.1.0\",\n      \"platform\": \"linux\",\n      \"targetTriple\": \"x86_64-unknown-linux-gnu\",\n      \"gitSha\": \"abc1234\",\n      \"format\": \"appimage\",\n      \"path\": \"target/packages/sample-app.AppImage\",\n      \"checksum\": { \"algorithm\": \"sha256\", \"hex\": \"abc\" },\n      \"signed\": false\n    }\n  ]\n}\n"
+        );
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+        let artifact = &parsed["artifacts"][0];
+        assert_eq!(artifact["app"], "sample-app");
+        assert_eq!(artifact["targetTriple"], "x86_64-unknown-linux-gnu");
+        assert_eq!(artifact["gitSha"], "abc1234");
+        assert_eq!(artifact["format"], "appimage");
+        assert_eq!(artifact["signed"], false);
         assert!(
             manifest
                 .checksums_txt()
@@ -250,6 +277,40 @@ mod tests {
         assert!(notes.contains("SHA256: `abc`"));
         assert!(notes.contains("Git: `abc1234`"));
         assert!(!notes.contains("\\n  Git"));
+    }
+
+    #[test]
+    fn serializes_control_characters_as_valid_json_strings() {
+        let controls: String = (0..=0x1f).filter_map(char::from_u32).collect();
+        let special = format!("value{controls}\\\"");
+        let algorithm = "sha\n\t\0\u{1f}\\\"";
+        let manifest = PackageManifest {
+            artifacts: vec![PackageArtifact {
+                app: special.clone(),
+                version: special.clone(),
+                platform: Platform::Linux,
+                target_triple: special.clone(),
+                git_sha: Some(special.clone()),
+                format: PackageFormat::AppImage,
+                path: special.clone().into(),
+                checksum: Checksum {
+                    algorithm,
+                    hex: special.clone(),
+                },
+                signed: false,
+            }],
+        };
+
+        let json = manifest.to_json_pretty();
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+        let artifact = &parsed["artifacts"][0];
+        assert_eq!(artifact["app"].as_str(), Some(special.as_str()));
+        assert_eq!(artifact["version"].as_str(), Some(special.as_str()));
+        assert_eq!(artifact["targetTriple"].as_str(), Some(special.as_str()));
+        assert_eq!(artifact["gitSha"].as_str(), Some(special.as_str()));
+        assert_eq!(artifact["path"].as_str(), Some(special.as_str()));
+        assert_eq!(artifact["checksum"]["algorithm"].as_str(), Some(algorithm));
+        assert_eq!(artifact["checksum"]["hex"].as_str(), Some(special.as_str()));
     }
 
     #[test]
