@@ -112,9 +112,9 @@ impl Transfer {
         self
     }
 
-    /// Sets the target keys value used by the component.
+    /// Sets the target keys, keeping only the first occurrence of each key.
     pub fn target_keys(mut self, keys: impl IntoIterator<Item = impl Into<SharedString>>) -> Self {
-        self.target_keys = keys.into_iter().map(Into::into).collect();
+        self.set_target_keys(keys);
         self
     }
 
@@ -198,8 +198,14 @@ impl Transfer {
     }
 
     /// Updates the stored target keys value and keeps the existing component identity.
+    /// Repeated keys are ignored after their first occurrence.
     pub fn set_target_keys(&mut self, keys: impl IntoIterator<Item = impl Into<SharedString>>) {
-        self.target_keys = keys.into_iter().map(Into::into).collect();
+        let mut seen = HashSet::new();
+        self.target_keys = keys
+            .into_iter()
+            .map(Into::<SharedString>::into)
+            .filter(|key| seen.insert(key.clone()))
+            .collect();
     }
 
     /// Performs the filter items operation used by this component.
@@ -691,7 +697,7 @@ fn has_enabled_checked(items: &[TransferItem], checked_keys: &[SharedString]) ->
 }
 
 #[cfg(test)]
-mod demo_width_tests {
+mod tests {
     use super::*;
 
     #[test]
@@ -702,5 +708,19 @@ mod demo_width_tests {
                 .width,
             px(680.0)
         );
+    }
+
+    #[test]
+    fn target_keys_render_each_item_once_in_input_order() {
+        let alpha = TransferItem::new("a", "Alpha");
+        let beta = TransferItem::new("b", "Beta");
+        let mut transfer =
+            Transfer::new(vec![alpha.clone(), beta.clone()]).target_keys(["b", "a", "b"]);
+        assert_eq!(transfer.target_keys, vec!["b", "a"]);
+        assert_eq!(transfer.target_items(), vec![beta.clone(), alpha.clone()]);
+
+        transfer.set_target_keys(["a", "b", "a"]);
+        assert_eq!(transfer.target_keys, vec!["a", "b"]);
+        assert_eq!(transfer.target_items(), vec![alpha, beta]);
     }
 }
