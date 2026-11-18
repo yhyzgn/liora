@@ -8,6 +8,10 @@ The updater crate helps applications check GitHub releases, select platform-appr
 
 Generated install commands qualify relative artifact paths beginning with a filename or directory (including names beginning with `-`) with `./`, so they resolve against the current working directory at install time. Absolute paths and paths beginning with `.`, `..`, or a platform prefix are preserved. Commands supplied directly through a caller-owned `InstallAction` are passed through unchanged.
 
+Downloads use an exclusively created staging file in the destination directory, verify its checksum and apply executable permissions before replacing a same-name cached asset with `std::fs::rename`. Failed download, verification, permission, or replacement operations remove the staging file (cleanup errors are returned); the updater never deletes the previous destination to make replacement succeed. Existing destination links are replaced as directory entries rather than opened for writing. Repeated downloads to the same cache remain supported.
+
+The caller must own the cache directory and its parents and prevent untrusted concurrent modification; this API does not secure a shared writable directory against path replacement races. Same-directory rename is atomic on Unix. Windows replacement follows Rust's OS/filesystem-dependent rename behavior and can fail because of file sharing or permissions; no Windows atomicity or crash-durability guarantee is made. A replacement failure is reported without a delete-and-retry fallback.
+
 ## Quick example
 
 ```rust

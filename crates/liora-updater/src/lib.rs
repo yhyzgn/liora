@@ -14,10 +14,11 @@ use sha2::{Digest, Sha256};
 use std::{
     cmp::Ordering,
     collections::BTreeMap,
-    fs::{self, File},
+    fs::{self, File, OpenOptions},
     io::{self, BufReader, Read, Write},
     path::{Path, PathBuf},
     process::{Command, ExitStatus},
+    sync::atomic::{AtomicU64, Ordering as AtomicOrdering},
     time::Duration,
 };
 
@@ -582,6 +583,10 @@ impl Updater {
     }
 
     /// Downloads the selected asset and verifies it against the release checksum manifest.
+    ///
+    /// The caller must own the cache directory and its parents. A verified
+    /// same-directory staging file replaces a same-name asset using OS rename
+    /// semantics; failures clean staging without deleting the destination.
     pub fn download_verified_asset(
         &self,
         release: &Release,
@@ -600,26 +605,38 @@ impl Updater {
             .to_string();
 
         let destination = destination_dir.join(safe_asset_filename(&asset.name));
-        let mut response = self.get(&asset.download_url)?.into_reader();
-        let mut file = File::create(&destination)?;
-        io::copy(&mut response, &mut file)?;
-        file.flush()?;
+        let (staging, mut file) = create_staging_file(destination_dir)?;
+        let result = (|| {
+            let mut response = self.get(&asset.download_url)?.into_reader();
+            io::copy(&mut response, &mut file)?;
+            file.flush()?;
 
-        let actual = sha256_file(&destination)?;
-        if actual != expected {
-            let _ = fs::remove_file(&destination);
-            return Err(UpdaterError::ChecksumMismatch {
-                asset: asset.name.clone(),
-                expected,
-                actual,
-            });
+            let actual = sha256_file(&staging)?;
+            if actual != expected {
+                return Err(UpdaterError::ChecksumMismatch {
+                    asset: asset.name.clone(),
+                    expected,
+                    actual,
+                });
+            }
+
+            #[cfg(unix)]
+            if asset.name.ends_with(".AppImage") {
+                let mut permissions = file.metadata()?.permissions();
+                permissions.set_mode(permissions.mode() | 0o100);
+                file.set_permissions(permissions)?;
+            }
+            Ok(())
+        })();
+        drop(file);
+
+        if let Err(error) = result {
+            remove_staging_file(&staging)?;
+            return Err(error);
         }
-
-        #[cfg(unix)]
-        if asset.name.ends_with(".AppImage") {
-            let mut permissions = fs::metadata(&destination)?.permissions();
-            permissions.set_mode(permissions.mode() | 0o100);
-            fs::set_permissions(&destination, permissions)?;
+        if let Err(error) = fs::rename(&staging, &destination) {
+            remove_staging_file(&staging)?;
+            return Err(error.into());
         }
         Ok(destination)
     }
@@ -632,6 +649,40 @@ impl Updater {
             .set("Accept", "application/vnd.github+json")
             .set("User-Agent", &self.user_agent)
             .call()?)
+    }
+}
+
+static NEXT_STAGING_ID: AtomicU64 = AtomicU64::new(0);
+
+fn create_staging_file(directory: &Path) -> io::Result<(PathBuf, File)> {
+    const ATTEMPTS: usize = 16;
+    for _ in 0..ATTEMPTS {
+        let id = NEXT_STAGING_ID.fetch_add(1, AtomicOrdering::Relaxed);
+        let path = directory.join(format!(".liora-update-{}-{id}.part", std::process::id()));
+        let mut options = OpenOptions::new();
+        options.write(true).create_new(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            options.mode(0o600);
+        }
+        match options.open(&path) {
+            Ok(file) => return Ok((path, file)),
+            Err(error) if error.kind() == io::ErrorKind::AlreadyExists => continue,
+            Err(error) => return Err(error),
+        }
+    }
+    Err(io::Error::new(
+        io::ErrorKind::AlreadyExists,
+        "could not allocate a unique update staging file",
+    ))
+}
+
+fn remove_staging_file(path: &Path) -> io::Result<()> {
+    match fs::remove_file(path) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(error),
     }
 }
 
@@ -1114,6 +1165,92 @@ mod tests {
         assert!(matches!(result, Err(UpdaterError::ChecksumMismatch { .. })));
         assert!(!destination_dir.join(&asset.name).exists());
         let _ = fs::remove_dir_all(destination_dir);
+    }
+
+    #[test]
+    fn verified_download_replaces_existing_file_and_cleans_staging() {
+        assert_download_replacement("replace", true);
+    }
+
+    #[test]
+    fn checksum_failure_preserves_existing_file_and_cleans_staging() {
+        assert_download_replacement("mismatch", false);
+    }
+
+    #[test]
+    fn replacement_failure_preserves_destination_and_cleans_staging() {
+        assert_download_replacement("rename-error", true);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn verified_download_replaces_link_without_changing_target() {
+        assert_download_replacement("symlink", true);
+        assert_download_replacement("hardlink", true);
+    }
+
+    fn assert_download_replacement(case: &str, valid_checksum: bool) {
+        let destination_dir = test_directory(case);
+        let destination = destination_dir.join("sample.AppImage");
+        let protected = destination_dir.join("existing");
+        fs::write(&protected, b"existing bytes").unwrap();
+        if case == "rename-error" {
+            fs::create_dir(&destination).unwrap();
+            fs::write(destination.join("keep"), b"existing bytes").unwrap();
+        } else {
+            #[cfg(unix)]
+            match case {
+                "symlink" => std::os::unix::fs::symlink(&protected, &destination).unwrap(),
+                "hardlink" => fs::hard_link(&protected, &destination).unwrap(),
+                _ => fs::write(&destination, b"existing bytes").unwrap(),
+            }
+            #[cfg(not(unix))]
+            fs::write(&destination, b"existing bytes").unwrap();
+        }
+
+        let content = b"verified replacement".to_vec();
+        let expected = if valid_checksum {
+            content.as_slice()
+        } else {
+            b"different bytes"
+        };
+        let checksum = format!("{:x}  sample.AppImage\n", Sha256::digest(expected));
+        let (base_url, server) = test_server(vec![
+            ("/checksums", checksum.into_bytes()),
+            ("/asset", content.clone()),
+        ]);
+        let mut release = release_with_assets(&[CHECKSUMS_ASSET, "sample.AppImage"]);
+        release.assets[0].download_url = format!("{base_url}/checksums");
+        release.assets[1].download_url = format!("{base_url}/asset");
+        let result = Updater::new("owner", "repo").download_verified_asset(
+            &release,
+            &release.assets[1],
+            &destination_dir,
+        );
+        server.join().unwrap();
+
+        if case == "rename-error" {
+            assert!(matches!(result, Err(UpdaterError::Io(_))));
+            assert_eq!(
+                fs::read(destination.join("keep")).unwrap(),
+                b"existing bytes"
+            );
+        } else if valid_checksum {
+            assert_eq!(result.unwrap(), destination);
+            assert_eq!(fs::read(&destination).unwrap(), content);
+            assert!(
+                fs::symlink_metadata(&destination)
+                    .unwrap()
+                    .file_type()
+                    .is_file()
+            );
+        } else {
+            assert!(matches!(result, Err(UpdaterError::ChecksumMismatch { .. })));
+            assert_eq!(fs::read(&destination).unwrap(), b"existing bytes");
+        }
+        assert_eq!(fs::read(&protected).unwrap(), b"existing bytes");
+        assert_eq!(fs::read_dir(&destination_dir).unwrap().count(), 2);
+        fs::remove_dir_all(destination_dir).unwrap();
     }
 
     #[test]
