@@ -188,6 +188,18 @@ fn gradient_background(angle: f32, from: Hsla, to: Hsla) -> Background {
     )
 }
 
+#[cfg(test)]
+fn inspect_button_icon(
+    id: &ElementId,
+    name: IconName,
+    icon: impl IntoElement,
+) -> impl IntoElement {
+    gpui::div()
+        .flex()
+        .debug_selector(|| format!("{id}:{name:?}"))
+        .child(icon)
+}
+
 /// Options that control button icon behavior.
 pub enum ButtonIcon {
     /// Stores a Lucide icon name for deferred icon construction.
@@ -591,18 +603,19 @@ impl Button {
         if !c.border.is_transparent() {
             div = div.border_1().border_color(c.border);
         }
+        #[cfg(test)]
+        let div = div.debug_selector(|| id.to_string());
         if self.disabled {
             if let Some(icon) = self.icon_only {
-                let sz = icon_sz * 2.0;
+                let sz = icon_sz;
                 let group = hover_group.clone();
-                return div
-                    .child(
-                        Icon::new(icon)
-                            .size(px(sz))
-                            .color(c.text)
-                            .group_hover_color(group, c.text_hover),
-                    )
-                    .into_any_element();
+                let content = Icon::new(icon)
+                    .size(px(sz))
+                    .color(c.text)
+                    .group_hover_color(group, c.text_hover);
+                #[cfg(test)]
+                let content = inspect_button_icon(&id, icon, content);
+                return div.child(content).into_any_element();
             }
             return div.child(label.clone()).into_any_element();
         }
@@ -610,29 +623,34 @@ impl Button {
         // Build children: icons + label
         let mut children: Vec<AnyElement> = Vec::new();
 
-        if let Some(icon) = self.icon_only {
-            let group = hover_group.clone();
-            children.push(
-                Icon::new(icon)
-                    .size(px(icon_sz))
-                    .color(c.text)
-                    .group_hover_color(group, c.text_hover)
-                    .into_any_element(),
-            );
-        } else if self.loading {
+        if self.loading {
             let sz = icon_sz;
             let group = hover_group.clone();
-            children.push(
-                spin_icon(
-                    element_id(format!("{id}:loading-spinner-motion")),
-                    Icon::new(IconName::LoaderCircle)
-                        .size(px(sz))
-                        .color(c.text)
-                        .group_hover_color(group, c.text_hover),
-                )
-                .into_any_element(),
+            let content = spin_icon(
+                element_id(format!("{id}:loading-spinner-motion")),
+                Icon::new(IconName::LoaderCircle)
+                    .size(px(sz))
+                    .color(c.text)
+                    .group_hover_color(group, c.text_hover),
             );
-            children.push(gpui::div().child(label.clone()).into_any_element());
+            #[cfg(test)]
+            let content = inspect_button_icon(&id, IconName::LoaderCircle, content);
+            children.push(content.into_any_element());
+            if !icon_only {
+                let content = gpui::div().child(label.clone());
+                #[cfg(test)]
+                let content = content.debug_selector(|| format!("{id}:label"));
+                children.push(content.into_any_element());
+            }
+        } else if let Some(icon) = self.icon_only {
+            let group = hover_group.clone();
+            let content = Icon::new(icon)
+                .size(px(icon_sz))
+                .color(c.text)
+                .group_hover_color(group, c.text_hover);
+            #[cfg(test)]
+            let content = inspect_button_icon(&id, icon, content);
+            children.push(content.into_any_element());
         } else {
             let lbl = label.clone();
             // icon_top
@@ -806,6 +824,7 @@ mod tests {
 
     struct ButtonInteractionTest {
         clicks: Rc<RefCell<Vec<&'static str>>>,
+        icon_only: bool,
     }
 
     impl gpui::Render for ButtonInteractionTest {
@@ -820,18 +839,16 @@ mod tests {
                 .into_iter()
                 .map(|(label, disabled, loading)| {
                     let clicks = self.clicks.clone();
-                    gpui::div()
+                    let button = Button::new(label)
                         .id(label)
-                        .debug_selector(move || label.to_string())
-                        .w(px(120.0))
-                        .h(px(48.0))
-                        .child(
-                            Button::new(label)
-                                .id(label)
-                                .disabled(disabled)
-                                .loading(loading)
-                                .on_click(move |_, _, _| clicks.borrow_mut().push(label)),
-                        )
+                        .disabled(disabled)
+                        .loading(loading)
+                        .on_click(move |_, _, _| clicks.borrow_mut().push(label));
+                    gpui::div().w(px(120.0)).h(px(48.0)).child(if self.icon_only {
+                        button.icon_only(IconName::Check)
+                    } else {
+                        button
+                    })
                 }),
             )
         }
@@ -855,7 +872,10 @@ mod tests {
         let clicks = Rc::new(RefCell::new(Vec::new()));
         let handle = app.add_window({
             let clicks = clicks.clone();
-            move |_, _| ButtonInteractionTest { clicks }
+            move |_, _| ButtonInteractionTest {
+                clicks,
+                icon_only: false,
+            }
         });
         let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
         window.update(|window, cx| {
@@ -887,10 +907,14 @@ mod tests {
         let clicks = Rc::new(RefCell::new(Vec::new()));
         let handle = app.add_window({
             let clicks = clicks.clone();
-            move |_, _| ButtonInteractionTest { clicks }
+            move |_, _| ButtonInteractionTest {
+                clicks,
+                icon_only: false,
+            }
         });
         let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
         window.update(|window, cx| window.draw(cx).clear(cx));
+        assert!(window.debug_bounds("Loading:label").is_some());
         for label in ["Enabled", "Disabled", "Loading", "After"] {
             let origin = window.debug_bounds(label).unwrap().origin;
             window.simulate_click(
@@ -910,14 +934,53 @@ mod tests {
     }
 
     #[test]
-    fn button_loading_icon_uses_spin_motion() {
-        let source = include_str!("button.rs")
-            .split("#[cfg(test)]")
-            .next()
-            .unwrap();
+    fn icon_only_states_preserve_bounds_and_replace_the_loading_icon() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let clicks = Rc::new(RefCell::new(Vec::new()));
+        let handle = app.add_window({
+            let clicks = clicks.clone();
+            move |_, _| ButtonInteractionTest {
+                clicks,
+                icon_only: true,
+            }
+        });
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        window.update(|window, cx| window.draw(cx).clear(cx));
 
-        assert!(source.contains("spin_icon("));
-        assert!(source.contains("loading-spinner-motion"));
+        let side = px(ButtonSize::Default.height());
+        for label in ["Enabled", "Disabled", "Loading"] {
+            let bounds = window.debug_bounds(label).unwrap();
+            assert_eq!(bounds.size, gpui::size(side, side), "{label}");
+            window.simulate_click(bounds.center(), gpui::Modifiers::none());
+            window.update(|window, cx| window.draw(cx).clear(cx));
+        }
+        assert_eq!(*clicks.borrow(), ["Enabled"]);
+
+        window.simulate_keystrokes("tab");
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        press(&mut window, "enter");
+        assert_eq!(*clicks.borrow(), ["Enabled", "After"]);
+        window.simulate_keystrokes("shift-tab");
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        press(&mut window, "space");
+        assert_eq!(*clicks.borrow(), ["Enabled", "After", "Enabled"]);
+        assert_eq!(window.debug_bounds("Loading:label"), None);
+
+        let icon_size = Some(gpui::size(px(14.0), px(14.0)));
+        let icon_bounds = |selector| window.debug_bounds(selector).map(|bounds| bounds.size);
+        assert_eq!(
+            [
+                "Enabled:Check",
+                "Disabled:Check",
+                "Loading:Check",
+                "Loading:LoaderCircle",
+            ]
+            .map(icon_bounds),
+            [icon_size, icon_size, None, icon_size],
+            "expected normal and disabled Check icons at 14 px and only LoaderCircle while loading"
+        );
+        app.quit();
     }
 
     #[test]

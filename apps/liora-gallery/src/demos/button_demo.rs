@@ -119,6 +119,30 @@ impl Render for ButtonStatesDemo {
                     }),
                 ),
             )
+            .child(Text::new("Icon only: Enabled / Disabled / Loading"))
+            .child(
+                Space::new().wrap().gap_sm().children(
+                    [
+                        ("Enabled", false, false),
+                        ("Disabled", true, false),
+                        ("Loading", false, true),
+                    ]
+                    .into_iter()
+                    .map(|(label, disabled, loading)| {
+                        Button::new(label)
+                            .id(format!("icon-only-{label}"))
+                            .primary()
+                            .icon_only(IconName::Check)
+                            .disabled(disabled)
+                            .loading(loading)
+                            .on_click(cx.listener(move |this, _, _, cx| {
+                                this.activations += 1;
+                                this.last_action = label;
+                                cx.notify();
+                            }))
+                    }),
+                ),
+            )
             .child(Text::new(format!(
                 "Activations: {}; last: {}",
                 self.activations, self.last_action

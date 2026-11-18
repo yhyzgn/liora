@@ -50,6 +50,8 @@
 
 可用按钮支持 Tab / Shift+Tab 焦点导航和 Enter / Space 激活，并显示键盘焦点边框。禁用与加载按钮跳过焦点且不触发回调。此处与 Gallery 使用同一个有状态示例；点击或按键更新 Activations 和 last，Disabled / Loading 不改变计数。
 
+仅图标按钮在可用、禁用和加载时保持相同的正方形尺寸。禁用时图标大小不变，加载时用旋转指示器替换原图标。
+
 ### 效果
 
 ::Demo{component="ButtonStates"}::

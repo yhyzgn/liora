@@ -7,6 +7,7 @@
 - Display Avatar alt text when its image fails to load, with matching Gallery and Docs examples.
 - Keep Autocomplete suggestions from blocking neighboring controls when outside-click dismissal is disabled.
 - Clear Anchor target measurements and active highlighting when a target is removed.
+- Fix icon-only Buttons to keep the configured icon size and show the loading indicator without changing the button bounds.
 - Compare release tags by SemVer precedence so matching stable releases follow prereleases, numeric prerelease identifiers sort numerically, and build metadata is ignored.
 - Follow event-updated GPUI appearance for live System theme changes without stale startup hints masking notifications; preserve initial startup synchronization and fixed Light/Dark modes.
 - Show the Image fallback after a remote load fails. Use `Image::embedded` for local artwork and previews in standalone Gallery and Docs.
