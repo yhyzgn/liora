@@ -322,7 +322,7 @@ impl Button {
         self.disabled = d;
         self
     }
-    /// Toggles the loading state and associated spinner treatment.
+    /// Shows a spinner and suppresses activation and keyboard focus while loading.
     pub fn loading(mut self, l: bool) -> Self {
         self.loading = l;
         self
@@ -583,7 +583,7 @@ impl Button {
             div = div.size(px(h)).w(px(h)); // square button
         }
 
-        if !self.disabled {
+        if !self.disabled && !self.loading {
             div = div.cursor_pointer();
         } else {
             div = div.cursor_not_allowed();
@@ -713,11 +713,46 @@ impl Button {
             }
         }
 
+        if self.loading {
+            return div.children(children).into_any_element();
+        }
+
         let click_handler = self.on_click;
         let hover_gradient = gradient.clone();
         let active_gradient = gradient.clone();
 
         div.id(id)
+            .tab_index(0)
+            .focus_visible(move |style| {
+                style.shadow(vec![gpui::BoxShadow {
+                    color: theme.primary.base,
+                    offset: gpui::point(px(0.0), px(0.0)),
+                    blur_radius: px(0.0),
+                    spread_radius: px(2.0),
+                    inset: false,
+                }])
+            })
+            .on_key_down(|event, window, cx| {
+                let modifiers = event.keystroke.modifiers;
+                if event.keystroke.key == "tab"
+                    && !modifiers.control
+                    && !modifiers.alt
+                    && !modifiers.platform
+                    && !modifiers.function
+                {
+                    if modifiers.shift {
+                        window.focus_prev(cx);
+                    } else {
+                        window.focus_next(cx);
+                    }
+                    cx.stop_propagation();
+                } else if !modifiers.modified()
+                    && matches!(event.keystroke.key.as_str(), "enter" | "space")
+                {
+                    // GPUI synthesizes the click on key-up; contain parent shortcuts.
+                    cx.stop_propagation();
+                }
+            })
             .group(hover_group)
             .hover(move |style| {
                 let hover_bg: gpui::Fill = hover_gradient
@@ -740,6 +775,9 @@ impl Button {
             .on_click(move |event, window, cx| {
                 if let Some(ref handler) = click_handler {
                     handler(event, window, cx);
+                }
+                if matches!(event, gpui::ClickEvent::Keyboard(_)) {
+                    cx.stop_propagation();
                 }
             })
             .children(children)
@@ -764,6 +802,106 @@ impl IntoElement for Button {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::{cell::RefCell, rc::Rc};
+
+    struct ButtonInteractionTest {
+        clicks: Rc<RefCell<Vec<&'static str>>>,
+    }
+
+    impl gpui::Render for ButtonInteractionTest {
+        fn render(&mut self, _: &mut Window, _: &mut gpui::Context<Self>) -> impl IntoElement {
+            gpui::div().flex().children(
+                [
+                    ("Enabled", false, false),
+                    ("Disabled", true, false),
+                    ("Loading", false, true),
+                    ("After", false, false),
+                ]
+                .into_iter()
+                .map(|(label, disabled, loading)| {
+                    let clicks = self.clicks.clone();
+                    gpui::div()
+                        .id(label)
+                        .debug_selector(move || label.to_string())
+                        .w(px(120.0))
+                        .h(px(48.0))
+                        .child(
+                            Button::new(label)
+                                .id(label)
+                                .disabled(disabled)
+                                .loading(loading)
+                                .on_click(move |_, _, _| clicks.borrow_mut().push(label)),
+                        )
+                }),
+            )
+        }
+    }
+
+    fn press(window: &mut gpui::VisualTestContext, key: &str) {
+        window.simulate_keystrokes(key);
+        window.update(|window, cx| {
+            let keystroke = gpui::Keystroke::parse_with_os(key, cx.platform_info().os).unwrap();
+            window.dispatch_event(
+                gpui::PlatformInput::KeyUp(gpui::KeyUpEvent { keystroke }),
+                cx,
+            );
+        });
+    }
+
+    #[test]
+    fn keyboard_activation_and_tab_skip_disabled_and_loading_buttons() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let clicks = Rc::new(RefCell::new(Vec::new()));
+        let handle = app.add_window({
+            let clicks = clicks.clone();
+            move |_, _| ButtonInteractionTest { clicks }
+        });
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        window.update(|window, cx| {
+            window.draw(cx).clear(cx);
+            window.focus_next(cx);
+        });
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        for key in ["enter", "space", "ctrl-enter"] {
+            press(&mut window, key);
+        }
+        assert_eq!(*clicks.borrow(), ["Enabled", "Enabled"]);
+
+        window.simulate_keystrokes("tab");
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        press(&mut window, "enter");
+        assert_eq!(*clicks.borrow(), ["Enabled", "Enabled", "After"]);
+
+        window.simulate_keystrokes("shift-tab");
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        press(&mut window, "space");
+        assert_eq!(*clicks.borrow(), ["Enabled", "Enabled", "After", "Enabled"]);
+        app.quit();
+    }
+
+    #[test]
+    fn pointer_activation_ignores_disabled_and_loading_buttons() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let clicks = Rc::new(RefCell::new(Vec::new()));
+        let handle = app.add_window({
+            let clicks = clicks.clone();
+            move |_, _| ButtonInteractionTest { clicks }
+        });
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        for label in ["Enabled", "Disabled", "Loading", "After"] {
+            let origin = window.debug_bounds(label).unwrap().origin;
+            window.simulate_click(
+                origin + gpui::point(px(12.0), px(12.0)),
+                gpui::Modifiers::none(),
+            );
+            window.update(|window, cx| window.draw(cx).clear(cx));
+        }
+        assert_eq!(*clicks.borrow(), ["Enabled", "After"]);
+        app.quit();
+    }
 
     #[test]
     fn button_rounded_helpers_set_custom_radius() {

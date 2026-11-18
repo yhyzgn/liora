@@ -3514,20 +3514,6 @@ impl Render for LiveDemoContent {
                 Button::new("Default").primary().into_any_element(),
                 Button::new("Large").primary().large().into_any_element(),
             ]),
-            "ButtonStates" => demo_row(vec![
-                Button::new("Disabled")
-                    .primary()
-                    .disabled(true)
-                    .into_any_element(),
-                Button::new("Loading")
-                    .primary()
-                    .loading(true)
-                    .into_any_element(),
-                Button::new("Saving")
-                    .success()
-                    .loading(true)
-                    .into_any_element(),
-            ]),
             "ButtonRounded" => demo_row(vec![
                 Button::new("4px").primary().rounded_sm().into_any_element(),
                 Button::new("12px")
