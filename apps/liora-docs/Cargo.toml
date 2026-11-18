@@ -41,6 +41,9 @@ liora-icons-carbon = { path = "../../crates/liora-icons-carbon" }
 liora-icons-material = { path = "../../crates/liora-icons-material" }
 pulldown-cmark = "0.13.3"
 
+[dev-dependencies]
+gpui = { workspace = true, features = ["test-support"] }
+
 [build-dependencies]
 toml.workspace = true
 liora-icons-optimizer = { path = "../../crates/liora-icons-optimizer" }

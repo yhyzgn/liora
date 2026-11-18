@@ -820,27 +820,65 @@ mod shell_tests {
     }
 
     #[test]
-    fn docs_registers_gpui_system_menus_on_startup() {
-        let source = include_str!("main.rs")
-            .split("#[cfg(test)]")
-            .next()
-            .expect("docs app should have production source before tests");
+    fn docs_system_menus_register_localized_labels() {
+        use super::{embedded_docs_locales, register_docs_system_menus};
+        use gpui::{OwnedMenuItem, TestAppContext};
+        use liora_core::{LocalesConfig, set_locale, set_locales_config};
 
-        assert!(source.contains("register_docs_system_menus(cx);"));
-        assert!(source.contains("fn register_docs_system_menus(cx: &mut App)"));
-        assert!(source.contains("Menu::register("));
-        assert!(source.contains("Menu::new(tr(cx, locales::menu::file))"));
-        assert!(source.contains("Menu::new(tr(cx, locales::menu::edit))"));
-        assert!(source.contains("Menu::new(tr(cx, locales::menu::view))"));
-        assert!(source.contains("Menu::new(tr(cx, locales::menu::help))"));
-        assert!(source.contains("tr(cx, locales::menu::zoom_in)"));
-        assert!(source.contains("tr(cx, locales::menu::zoom_out)"));
-        assert!(source.contains("tr(cx, locales::menu::reset_zoom)"));
-        assert!(source.contains("tr(cx, locales::menu::github)"));
-        assert!(source.contains("tr(cx, locales::menu::about_docs)"));
-        assert!(source.contains("MenuItem::open_file()"));
-        assert!(source.contains("MenuItem::open_folder()"));
-        assert!(source.contains("MenuItem::select_all()"));
+        let app = TestAppContext::single();
+        app.update(|cx| {
+            liora_core::init_liora(cx, liora_theme::Theme::light());
+            set_locales_config(
+                cx,
+                LocalesConfig::default().with_resources(embedded_docs_locales()),
+            );
+
+            for (locale, titles, view_labels, help_labels) in [
+                (
+                    "zh-CN",
+                    ["文件", "编辑", "视图", "帮助"],
+                    ["放大", "缩小", "重置缩放"],
+                    ["在 GitHub 查看 Liora", "关于 Liora Docs"],
+                ),
+                (
+                    "en-US",
+                    ["File", "Edit", "View", "Help"],
+                    ["Zoom In", "Zoom Out", "Reset Zoom"],
+                    ["Liora on GitHub", "About Liora Docs"],
+                ),
+            ] {
+                set_locale(cx, locale).unwrap();
+                register_docs_system_menus(cx);
+                let menus = cx.get_menus().expect("GPUI test platform records menus");
+                let [file, edit, view, help] = menus.as_slice() else {
+                    panic!("expected four Docs system menus for {locale}");
+                };
+                assert_eq!(
+                    [file, edit, view, help].map(|menu| menu.name.as_ref()),
+                    titles,
+                    "{locale}"
+                );
+
+                let zoom_items = view
+                    .items
+                    .rsplit(|item| matches!(item, OwnedMenuItem::Separator))
+                    .next()
+                    .unwrap();
+                for (items, labels) in [
+                    (zoom_items, &view_labels[..]),
+                    (&help.items, &help_labels[..]),
+                ] {
+                    assert_eq!(items.len(), labels.len(), "{locale}");
+                    for (item, label) in items.iter().zip(labels) {
+                        let OwnedMenuItem::Action { name, .. } = item else {
+                            panic!("expected a command labeled {label} for {locale}");
+                        };
+                        assert_eq!(name, label, "{locale}");
+                    }
+                }
+            }
+        });
+        app.quit();
     }
 
     #[test]
