@@ -77,10 +77,9 @@ pub fn apply_window_frame_mode(mut options: WindowOptions, mode: WindowFrameMode
                 titlebar.appears_transparent = true;
                 titlebar.traffic_light_position = Some(point(px(12.0), px(12.0)));
             }
-            // macOS separates app-owned titlebar dragging from window movability:
-            // keep native tiling actions enabled while Liora owns drag handling.
-            // Other platforms retain the existing custom-frame policy.
-            options.is_movable = cfg!(target_os = "macos");
+            // Keep native movement enabled for custom titlebar drag controls;
+            // macOS separately uses app-owned titlebar dragging.
+            options.is_movable = true;
             options.app_owns_titlebar_drag = true;
             options.window_decorations = Some(WindowDecorations::Client);
         }
@@ -257,7 +256,7 @@ mod tests {
                 .as_ref()
                 .is_some_and(|titlebar| titlebar.appears_transparent)
         );
-        assert_eq!(custom.is_movable, cfg!(target_os = "macos"));
+        assert!(custom.is_movable);
         assert!(custom.app_owns_titlebar_drag);
         assert_eq!(custom.window_decorations, Some(WindowDecorations::Client));
 
