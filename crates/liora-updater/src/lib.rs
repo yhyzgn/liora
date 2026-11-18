@@ -400,11 +400,9 @@ pub struct InstallPlan {
 impl InstallPlan {
     /// Execute installer-style plans with `std::process::Command`.
     ///
-    /// This method is intentionally explicit. It only runs commands for assets
-    /// that are already executable installers (AppImage, DMG open, Windows EXE
-    /// or MSI). Package-manager formats and raw executables are returned as
-    /// manual actions so the caller can request privileges or user consent in
-    /// its own UI.
+    /// This method explicitly dispatches the plan's caller-owned action.
+    /// [`build_install_plan`] creates launch actions only for platform-matched
+    /// AppImage, DMG, setup EXE, and MSI assets. Other assets remain manual.
     pub fn install(&self) -> Result<InstallOutcome, UpdaterError> {
         let mut command = self.action.command()?;
         let status = command.status()?;
@@ -756,7 +754,7 @@ fn install_action(
             },
             vec!["Runs the AppImage directly; package installation is not attempted.".to_string()],
         ),
-        (Platform::LinuxX64, AssetKind::Installer) if name.ends_with(".rpm") => (
+        (_, AssetKind::Installer) if name.ends_with(".rpm") => (
             InstallAction::Manual {
                 description: format!(
                     "{} requires a signed RPM and a trusted publisher key before installation with dnf, zypper, or rpm.",
@@ -769,16 +767,13 @@ fn install_action(
                 "Fedora/RHEL: sudo dnf --setopt=localpkg_gpgcheck=1 install ./<package.rpm>. openSUSE/SLES: sudo zypper install ./<package.rpm>. Installation and key trust remain caller-owned; do not auto-sign downloaded packages or disable signature checks.".to_string(),
             ],
         ),
-        (Platform::LinuxX64, AssetKind::Installer) => (
+        (Platform::LinuxX64, AssetKind::Installer) if name.ends_with(".deb") => (
             InstallAction::Manual {
-                description: format!(
-                    "{} requires a system package manager such as apt, dnf, rpm, or a graphical installer.",
-                    name
-                ),
+                description: format!("{name} requires a package manager such as apt or a graphical installer."),
             },
             vec!["Package-manager installs may require privileges and must be initiated by the caller.".to_string()],
         ),
-        (Platform::MacosArm64, AssetKind::Installer) => (
+        (Platform::MacosArm64, AssetKind::Installer) if name.ends_with(".dmg") => (
             InstallAction::OpenWithSystem {
                 program: "open".to_string(),
                 args: vec![path.display().to_string()],
@@ -792,12 +787,18 @@ fn install_action(
             },
             vec!["Starts Windows Installer; elevation prompts remain under OS/user control.".to_string()],
         ),
-        (Platform::WindowsX64, AssetKind::Installer) => (
+        (Platform::WindowsX64, AssetKind::Installer) if name.ends_with("-setup.exe") => (
             InstallAction::RunExecutable {
                 program: path.to_path_buf(),
                 args: Vec::new(),
             },
             vec!["Starts the installer executable; elevation prompts remain under OS/user control.".to_string()],
+        ),
+        (_, AssetKind::Installer) => (
+            InstallAction::Manual {
+                description: format!("{name} is not a supported installer for {}.", platform.os_name()),
+            },
+            Vec::new(),
         ),
         (_, AssetKind::PortableArchive) => (
             InstallAction::Manual {
@@ -1217,6 +1218,28 @@ mod tests {
                 PathBuf::from(format!("/tmp/sample.{extension}")),
             );
             assert!(matches!(plan.action, InstallAction::Manual { .. }));
+            assert!(matches!(
+                plan.install(),
+                Err(UpdaterError::ManualInstall(_))
+            ));
+        }
+    }
+
+    #[test]
+    fn install_plan_keeps_unsupported_installer_formats_manual() {
+        for (platform, name) in [
+            (Platform::MacosArm64, "sample.rpm"),
+            (Platform::MacosArm64, "sample.AppImage"),
+            (Platform::WindowsX64, "sample.deb"),
+            (Platform::WindowsX64, "sample.dmg"),
+            (Platform::LinuxX64, "sample.msi"),
+        ] {
+            let plan = build_install_plan("sample-app", platform, &asset(name), name);
+            assert!(
+                matches!(plan.action, InstallAction::Manual { .. }),
+                "{platform:?} plan for {name} must be manual, got {:?}",
+                plan.action
+            );
             assert!(matches!(
                 plan.install(),
                 Err(UpdaterError::ManualInstall(_))
