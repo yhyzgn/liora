@@ -749,6 +749,7 @@ impl Select {
 
         div()
             .relative()
+            .track_focus(&self.focus_handle)
             .when_some(self.width, |s, width| s.w(width))
             .when(self.width.is_none(), |s| s.w_full())
             .child(
@@ -906,6 +907,7 @@ impl Render for Select {
 
         let mut el = gpui::div()
             .relative()
+            .track_focus(&self.focus_handle)
             .when_some(self.width, |s, w| s.w(w))
             .when(self.width.is_none(), |s| s.w_full())
             .bg(theme.neutral.card)
@@ -1120,5 +1122,43 @@ mod searchable_select_tests {
         })
         .unwrap();
         app.quit();
+    }
+
+    #[test]
+    fn escape_closes_focused_select_and_respects_close_policy_in_both_modes() {
+        for (mode, close_on_escape, expected_open) in [
+            (SelectMode::Plain, true, false),
+            (SelectMode::Searchable, true, false),
+            (SelectMode::Plain, false, true),
+            (SelectMode::Searchable, false, true),
+        ] {
+            let mut app = gpui::TestAppContext::single();
+            app.update(crate::init_liora);
+            let select = app.new(|cx| match mode {
+                SelectMode::Plain => Select::new(vec!["Apple", "Banana"], Some(0), cx)
+                    .close_on_escape(close_on_escape),
+                SelectMode::Searchable => {
+                    Select::searchable(items(), cx).close_on_escape(close_on_escape)
+                }
+                SelectMode::Multiple => unreachable!(),
+            });
+            let root = select.clone();
+            let handle = app.add_window(move |_, _| SelectSurface(root));
+            let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            window.simulate_click(gpui::point(px(8.0), px(8.0)), gpui::Modifiers::none());
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            assert!(select.read_with(&app, |select, _| select.is_open));
+
+            window.simulate_keystrokes("escape");
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            assert_eq!(
+                select.read_with(&app, |select, _| select.is_open),
+                expected_open,
+                "mode={mode:?}, close_on_escape={close_on_escape}"
+            );
+            app.quit();
+        }
     }
 }
