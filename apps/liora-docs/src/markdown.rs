@@ -3765,6 +3765,7 @@ impl Render for LiveDemoContent {
                 Text::new("Primary bold text").text_color(_cx.global::<Config>().theme.primary.base).bold().into_any_element(),
                 Text::new("Inline code").code_style(&_cx.global::<Config>().theme).into_any_element(),
                 Text::new("Decorative label").selectable(false).into_any_element(),
+                Text::new("Nonselectable oblique text").selectable(false).font_style(gpui::FontStyle::Oblique).into_any_element(),
             ])).no_shadow().into_any_element(),
             "ParagraphWrapped" => Card::new(docs_paragraph_wrapped()).no_shadow().into_any_element(),
             "TypographyParagraph" => Card::new(docs_typography_paragraph(_cx)).no_shadow().into_any_element(),

@@ -578,11 +578,7 @@ impl RenderOnce for Text {
         }
 
         if let Some(style) = text.style {
-            // In some GPUI versions, it's .italic(), in others it's .font_style(style)
-            // If .font_style failed, let's try matching on style
-            if style == FontStyle::Italic {
-                el = el.italic();
-            }
+            el.text_style().font_style = Some(style);
         }
 
         if text.underline {
@@ -984,6 +980,36 @@ mod document_tests {
         ));
         assert_eq!(blocks[5], TextBlock::Divider);
     }
+}
+
+#[cfg(test)]
+#[gpui::test]
+fn nonselectable_text_refines_explicit_font_styles(cx: &mut gpui::TestAppContext) {
+    cx.update(crate::init_liora);
+    let cx = cx.add_empty_window();
+    cx.draw(
+        gpui::Point::default(),
+        gpui::Size::<Pixels>::default(),
+        |window, cx| {
+            for style in [
+                None,
+                Some(FontStyle::Italic),
+                Some(FontStyle::Oblique),
+                Some(FontStyle::Normal),
+            ] {
+                let mut text = Text::new("Font style").selectable(false);
+                if let Some(style) = style {
+                    text = text.font_style(style);
+                }
+                let mut rendered = text.render(window, cx).into_any_element();
+                let element = rendered
+                    .downcast_mut::<gpui::Stateful<gpui::Div>>()
+                    .expect("nonselectable Text renders a stateful Div");
+                assert_eq!(element.text_style().font_style, style);
+            }
+            gpui::Empty
+        },
+    );
 }
 
 #[cfg(test)]

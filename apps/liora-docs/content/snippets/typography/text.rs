@@ -23,6 +23,11 @@ fn text_examples(theme: &Theme) -> Space {
         )
         .child(Text::new("Inline code").code_style(theme))
         .child(Text::new("Decorative label").selectable(false))
+        .child(
+            Text::new("Nonselectable oblique text")
+                .selectable(false)
+                .font_style(gpui::FontStyle::Oblique),
+        )
 }
 
 fn main() {

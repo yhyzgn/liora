@@ -50,6 +50,7 @@ impl Render for TextDemo {
                                 .vertical()
                                 .gap_sm()
                                 .child(Text::new("This is a long selectable Text sample. It wraps inside the available card width while still allowing mouse drag selection across the wrapped lines.").wrap())
+                                .child(Text::new("Nonselectable oblique text").selectable(false).font_style(gpui::FontStyle::Oblique))
                                 .child(
                                     Text::new("Decorative label with selection disabled")
                                         .selectable(false)
