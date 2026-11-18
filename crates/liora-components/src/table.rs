@@ -378,6 +378,7 @@ impl RenderOnce for Table {
                                         .take_cell(&column.key)
                                         .unwrap_or_else(|| div().into_any_element());
                                     table_cell_shell(column, border, index)
+                                        .id(("table-cell", index))
                                         .min_h(px(48.0))
                                         .py_3()
                                         .child(
@@ -567,6 +568,51 @@ fn table_header_cell(
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use crate::Button;
+    use gpui::{Context, Render, TestApp, point};
+    use std::{cell::RefCell, rc::Rc};
+
+    #[test]
+    fn table_cell_buttons_keep_independent_click_state() {
+        struct ActionTable(Rc<RefCell<Vec<&'static str>>>);
+
+        impl Render for ActionTable {
+            fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+                let column = |key| {
+                    TableColumn::new(key, key)
+                        .width_sm()
+                        .align(TableAlign::Center)
+                        .header(div().h(px(16.0)))
+                };
+                let button = |key| {
+                    let clicks = self.0.clone();
+                    Button::new("Open").small().on_click(move |_, _, _| {
+                        clicks.borrow_mut().push(key);
+                    })
+                };
+                Table::new(vec![column("left"), column("right")])
+                    .id("actions-table")
+                    .row(
+                        TableRow::new()
+                            .cell("left", button("left"))
+                            .cell("right", button("right")),
+                    )
+            }
+        }
+
+        let mut app = TestApp::new();
+        app.update(crate::init_liora);
+        let clicks = Rc::new(RefCell::new(Vec::new()));
+        let mut window = app.open_window(|_, _| ActionTable(clicks.clone()));
+        window.draw();
+
+        window.simulate_click(point(px(61.0), px(70.0)), MouseButton::Left);
+        window.simulate_click(point(px(181.0), px(70.0)), MouseButton::Left);
+
+        assert_eq!(*clicks.borrow(), ["left", "right"]);
+    }
+
     #[test]
     fn table_rows_have_stable_hover_identity() {
         let source = include_str!("table.rs");
