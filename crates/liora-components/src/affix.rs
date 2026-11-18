@@ -207,12 +207,12 @@ impl gpui::Element for BoundsTracker {
         &mut self,
         _id: Option<&GlobalElementId>,
         _id2: Option<&InspectorElementId>,
-        bounds: Bounds<Pixels>,
+        _bounds: Bounds<Pixels>,
         _rl: &mut (),
         window: &mut Window,
         cx: &mut App,
     ) -> () {
-        self.child.prepaint_at(bounds.origin, window, cx);
+        self.child.prepaint(window, cx);
     }
 
     fn paint(
@@ -227,5 +227,93 @@ impl gpui::Element for BoundsTracker {
     ) {
         (self.on_bounds_change)(bounds, window, cx);
         self.child.paint(window, cx);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use gpui::{Entity, ScrollHandle, point, size};
+    use std::{cell::RefCell, rc::Rc};
+
+    #[test]
+    fn affix_nested_geometry_tracks_scroll_and_fixed_transition() {
+        struct Workbench {
+            affix: Entity<Affix>,
+            scroll: ScrollHandle,
+        }
+
+        impl Render for Workbench {
+            fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+                div().size_full().pl(px(23.0)).pt(px(17.0)).child(
+                    div()
+                        .id("affix-scroll")
+                        .w(px(240.0))
+                        .h(px(200.0))
+                        .overflow_y_scroll()
+                        .track_scroll(&self.scroll)
+                        .child(div().h(px(100.0)))
+                        .child(
+                            div()
+                                .id("affix-slot")
+                                .debug_selector(|| "affix-slot".into())
+                                .child(self.affix.clone()),
+                        )
+                        .child(div().h(px(500.0))),
+                )
+            }
+        }
+
+        let mut app = gpui::TestAppContext::single();
+        let changes = Rc::new(RefCell::new(Vec::new()));
+        let scroll = ScrollHandle::new();
+        let handle = app.add_window(|_, cx| Workbench {
+            affix: cx.new(|_| {
+                Affix::new()
+                    .offset(px(70.0))
+                    .content(|_, _| {
+                        div()
+                            .id("affix-child")
+                            .debug_selector(|| "affix-child".into())
+                            .w(px(120.0))
+                            .h(px(30.0))
+                            .into_any_element()
+                    })
+                    .on_change({
+                        let changes = changes.clone();
+                        move |fixed, _, _| changes.borrow_mut().push(fixed)
+                    })
+            }),
+            scroll: scroll.clone(),
+        });
+        let affix = handle.update(&mut app, |view, _, _| view.affix.clone()).unwrap();
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        let expected = Bounds::new(point(px(23.0), px(117.0)), size(px(120.0), px(30.0)));
+        assert_eq!(window.debug_bounds("affix-child"), Some(expected));
+        assert_eq!(affix.read_with(&app, |affix, _| affix.last_bounds), Some(expected));
+        assert!(!affix.read_with(&app, |affix, _| affix.is_fixed));
+
+        scroll.set_offset(point(px(0.0), px(-20.0)));
+        window.update(|window, cx| { window.refresh(); window.draw(cx).clear(cx); });
+        let scrolled = Bounds::new(point(px(23.0), px(97.0)), expected.size);
+        assert_eq!(window.debug_bounds("affix-child"), Some(scrolled));
+        assert_eq!(affix.read_with(&app, |affix, _| affix.last_bounds), Some(scrolled));
+
+        scroll.set_offset(point(px(0.0), px(-60.0)));
+        window.update(|window, cx| { window.refresh(); window.draw(cx).clear(cx); });
+        assert!(affix.read_with(&app, |affix, _| affix.is_fixed));
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        let slot = window.debug_bounds("affix-slot").unwrap();
+        let tracked = affix.read_with(&app, |affix, _| affix.last_bounds).unwrap();
+        assert_eq!(tracked.origin, slot.origin);
+        assert_eq!(tracked.size, expected.size);
+
+        scroll.set_offset(point(px(0.0), px(0.0)));
+        window.update(|window, cx| { window.refresh(); window.draw(cx).clear(cx); });
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert_eq!(window.debug_bounds("affix-child"), Some(expected));
+        assert_eq!(*changes.borrow(), [true, false]);
+        app.quit();
     }
 }
