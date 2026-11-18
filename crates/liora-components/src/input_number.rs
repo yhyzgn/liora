@@ -21,7 +21,7 @@
 
 use crate::Input;
 use gpui::{
-    App, Context, Entity, FocusHandle, Focusable, MouseButton, Render, Window, prelude::*, px,
+    prelude::*, px, App, Context, Entity, FocusHandle, Focusable, MouseButton, Render, Window,
 };
 use liora_core::Config;
 use liora_icons::Icon;
@@ -46,7 +46,7 @@ pub struct InputNumber {
     disabled: bool,
     controls_position: InputNumberControlsPosition,
     input: Entity<Input>,
-    focus_handle: FocusHandle,
+    initialized: bool,
     on_change: Option<Box<dyn Fn(f64, &mut Window, &mut App) + 'static>>,
 }
 
@@ -75,8 +75,6 @@ impl InputNumber {
             })
         });
 
-        let focus_handle = cx.focus_handle();
-
         Self {
             value,
             min: f64::MIN,
@@ -86,7 +84,7 @@ impl InputNumber {
             disabled: false,
             controls_position: InputNumberControlsPosition::Horizontal,
             input,
-            focus_handle,
+            initialized: false,
             on_change: None,
         }
     }
@@ -131,28 +129,65 @@ impl InputNumber {
         self
     }
 
-    fn set_value(&mut self, val: f64, window: &mut Window, cx: &mut Context<Self>) {
-        let val = val.clamp(self.min, self.max);
-        if (val - self.value).abs() > f64::EPSILON || self.value == 0.0 {
+    fn set_numeric_value(&mut self, val: f64, window: &mut Window, cx: &mut Context<Self>) {
+        let scale = 10_f64.powi(self.precision.min(308) as i32);
+        // Use decimal values inside the bounds; when none exist retain exact bounds and display.
+        let min = (self.min * scale).ceil() / scale;
+        let min = if min.is_finite() { min } else { self.min };
+        let max = (self.max * scale).floor() / scale;
+        let max = if max.is_finite() { max } else { self.max };
+        let val = if min.is_finite() && max.is_finite() && min <= max {
+            let rounded = format!("{:.*}", self.precision, val.clamp(min, max))
+                .parse::<f64>()
+                .unwrap_or(self.value);
+            rounded.clamp(min, max)
+        } else {
+            val.clamp(self.min, self.max)
+        };
+        if val != self.value {
             self.value = val;
-            let formatted = format!("{:.*}", self.precision, self.value);
-            self.input.update(cx, |input, cx| {
-                input.set_value(formatted, cx);
-            });
-            if let Some(ref cb) = self.on_change {
-                cb(self.value, window, cx);
+            if let Some(cb) = &self.on_change {
+                cb(val, window, cx);
             }
             cx.notify();
         }
     }
 
+    fn set_value(&mut self, val: f64, window: &mut Window, cx: &mut Context<Self>) {
+        self.set_numeric_value(val, window, cx);
+        let rounded = format!("{:.*}", self.precision, self.value);
+        let formatted = if rounded.parse::<f64>().ok() == Some(self.value) {
+            rounded
+        } else {
+            self.value.to_string()
+        };
+        self.input
+            .update(cx, |input, cx| input.set_value(formatted, cx));
+    }
+
+    fn reconcile_input(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let value = self.input.read(cx).value().parse::<f64>();
+        if let Ok(value) = value {
+            if !value.is_finite() {
+                return;
+            }
+            self.set_numeric_value(value, window, cx);
+        }
+    }
+
     fn increment(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if !self.disabled {
+            self.reconcile_input(window, cx);
+        }
         if !self.disabled && self.value < self.max {
             self.set_value(self.value + self.step, window, cx);
         }
     }
 
     fn decrement(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if !self.disabled {
+            self.reconcile_input(window, cx);
+        }
         if !self.disabled && self.value > self.min {
             self.set_value(self.value - self.step, window, cx);
         }
@@ -160,14 +195,50 @@ impl InputNumber {
 }
 
 impl Focusable for InputNumber {
-    fn focus_handle(&self, _cx: &App) -> FocusHandle {
-        self.focus_handle.clone()
+    fn focus_handle(&self, cx: &App) -> FocusHandle {
+        self.input.read(cx).focus_handle(cx)
     }
 }
 
 impl Render for InputNumber {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
+        if !self.initialized {
+            self.set_value(self.value, window, cx);
+            let owner = cx.weak_entity();
+            let handle = window.window_handle();
+            self.input.update(cx, |input, _| {
+                input.set_on_change(move |text, cx| {
+                    let Ok(value) = text.parse::<f64>() else {
+                        return;
+                    };
+                    if !value.is_finite() {
+                        return;
+                    }
+                    let owner = owner.clone();
+                    let text = text.to_owned();
+                    // Defer until the Input change callback returns, before mutating its owner.
+                    cx.defer(move |cx| {
+                        let _ = handle.update(cx, |_, window, cx| {
+                            let _ = owner.update(cx, |number, cx| {
+                                if !number.disabled
+                                    && number.input.read(cx).value().as_ref() == text
+                                {
+                                    number.set_numeric_value(value, window, cx);
+                                }
+                            });
+                        });
+                    });
+                });
+            });
+            let focus = self.input.read(cx).focus_handle(cx);
+            cx.on_blur(&focus, window, |number, window, cx| {
+                number.reconcile_input(window, cx);
+                number.set_value(number.value, window, cx);
+            })
+            .detach();
+            self.initialized = true;
+        }
 
         match self.controls_position {
             InputNumberControlsPosition::Horizontal => {
@@ -370,5 +441,117 @@ impl InputNumber {
         row = row.child(controls);
 
         row
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use gpui::{size, EntityInputHandler, TestAppContext};
+    use std::{cell::RefCell, rc::Rc};
+
+    struct Surface(Entity<InputNumber>);
+    impl Render for Surface {
+        fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+            gpui::div().w_full().child(self.0.clone())
+        }
+    }
+
+    #[test]
+    fn manual_drafts_update_numeric_steps_without_rewriting_text_or_duplicate_zero() {
+        let mut app = TestAppContext::single();
+        app.update(crate::init_liora);
+        let changes = Rc::new(RefCell::new(Vec::new()));
+        let recorded = changes.clone();
+        let number = app.new(|cx| {
+            InputNumber::new(1.23, cx)
+                .precision(2)
+                .step(0.01)
+                .min(-10.0)
+                .max(10.0)
+                .on_change(move |value, _, _| recorded.borrow_mut().push(value))
+        });
+        let handle = app.open_window(size(px(400.), px(200.)), |_, _| Surface(number.clone()));
+        app.update_window(handle.into(), |_, window, cx| {
+            window.draw(cx).clear(cx);
+        })
+        .unwrap();
+        for text in ["-", ".", "2.", "2.345", "0", "0"] {
+            app.update_window(handle.into(), |_, window, cx| {
+                let input = number.read(cx).input.clone();
+                input.update(cx, |input, cx| {
+                    let len = input.value().encode_utf16().count();
+                    input.replace_text_in_range(Some(0..len), text, window, cx);
+                });
+            })
+            .unwrap();
+            app.update_window(handle.into(), |_, _, cx| {
+                assert_eq!(number.read(cx).input.read(cx).value().as_ref(), text);
+            })
+            .unwrap();
+        }
+        assert_eq!(*changes.borrow(), vec![2.0, 2.35, 0.0]);
+        app.update_window(handle.into(), |_, window, cx| {
+            number.update(cx, |number, cx| number.increment(window, cx));
+            assert_eq!(number.read(cx).value, 0.01);
+            assert_eq!(number.read(cx).input.read(cx).value().as_ref(), "0.01");
+        })
+        .unwrap();
+    }
+
+    #[test]
+    fn newer_replacement_wins_over_deferred_edit_and_bounds_match_display() {
+        let mut app = TestAppContext::single();
+        app.update(crate::init_liora);
+        let number = app.new(|cx| {
+            InputNumber::new(0.01, cx)
+                .precision(2)
+                .step(0.01)
+                .min(0.005)
+                .max(0.025)
+        });
+        let handle = app.open_window(size(px(400.), px(200.)), |_, _| Surface(number.clone()));
+        app.update_window(handle.into(), |_, window, cx| {
+            window.draw(cx).clear(cx);
+            let input = number.read(cx).input.clone();
+            input.update(cx, |input, cx| {
+                let len = input.value().encode_utf16().count();
+                input.replace_text_in_range(Some(0..len), "0.015", window, cx);
+            });
+            number.update(cx, |number, cx| number.increment(window, cx));
+            assert_eq!(number.read(cx).value, 0.02);
+            number.update(cx, |number, cx| number.set_value(0.01, window, cx));
+            input.update(cx, |input, cx| {
+                let len = input.value().encode_utf16().count();
+                input.replace_text_in_range(Some(0..len), "0.005", window, cx);
+            });
+            number.update(cx, |number, cx| number.set_value(0.02, window, cx));
+        })
+        .unwrap();
+        app.update_window(handle.into(), |_, window, cx| {
+            assert_eq!(number.read(cx).value, 0.02);
+            assert_eq!(number.read(cx).input.read(cx).value().as_ref(), "0.02");
+            number.update(cx, |number, cx| number.decrement(window, cx));
+            assert_eq!(number.read(cx).value, 0.01);
+            number.update(cx, |number, cx| number.decrement(window, cx));
+            assert_eq!(number.read(cx).value, 0.01);
+            assert_eq!(number.read(cx).input.read(cx).value().as_ref(), "0.01");
+            number.update(cx, |number, cx| {
+                number.min = 0.005;
+                number.max = 0.006;
+                number.set_value(0.005, window, cx);
+            });
+            assert_eq!(
+                number
+                    .read(cx)
+                    .input
+                    .read(cx)
+                    .value()
+                    .parse::<f64>()
+                    .unwrap(),
+                number.read(cx).value
+            );
+        })
+        .unwrap();
     }
 }
