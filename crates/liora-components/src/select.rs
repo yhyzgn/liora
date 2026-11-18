@@ -87,11 +87,13 @@ pub struct Select {
 
 impl Select {
     /// Creates `Select` with default theme-driven styling and no optional callbacks attached.
+    /// An out-of-range initial index is treated as no selection.
     pub fn new(
         options: Vec<impl Into<SharedString>>,
         selected_idx: Option<usize>,
         cx: &mut Context<Self>,
     ) -> Self {
+        let selected_idx = selected_idx.filter(|&idx| idx < options.len());
         Self {
             id: None,
             options: options.into_iter().map(|o| o.into()).collect(),
@@ -378,8 +380,9 @@ impl Select {
         cx.notify();
     }
 
-    /// Updates the stored selected idx value and keeps the existing component identity.
+    /// Sets the plain option index, clearing selection for `None` or an out-of-range index.
     pub fn set_selected_idx(&mut self, idx: Option<usize>, cx: &mut Context<Self>) {
+        let idx = idx.filter(|&idx| idx < self.options.len());
         if self.selected_idx == idx {
             return;
         }
@@ -443,6 +446,9 @@ impl Select {
     }
 
     fn select_option(&mut self, idx: usize, window: &mut Window, cx: &mut Context<Self>) {
+        if idx >= self.options.len() {
+            return;
+        }
         self.selected_idx = Some(idx);
         self.is_open = false;
         if let Some(ref cb) = self.on_change {
@@ -1019,6 +1025,60 @@ mod searchable_select_tests {
         assert!(source.contains("pub fn multiple"));
         assert!(source.contains("SearchableList::new(items.clone())"));
     }
+
+    #[test]
+    fn plain_select_does_not_keep_an_out_of_range_selected_index() {
+        let mut app = gpui::TestAppContext::single();
+        let select = app.new(|cx| Select::new(vec!["Apple"], Some(1), cx));
+
+        select.update(&mut app, |select, cx| {
+            assert_eq!(select.selected_index(), None);
+
+            select.set_selected_idx(Some(0), cx);
+            assert_eq!(select.selected_index(), Some(0));
+
+            select.set_selected_idx(Some(1), cx);
+            assert_eq!(select.selected_index(), None);
+
+            select.set_options(vec!["Apple".into(), "Banana".into()], cx);
+            assert_eq!(select.selected_index(), None);
+
+            select.set_selected_idx(Some(1), cx);
+            assert_eq!(select.selected_index(), Some(1));
+        });
+        app.quit();
+    }
+
+    #[test]
+    fn plain_select_ignores_invalid_option_selection_callbacks() {
+        use std::cell::Cell;
+        use std::rc::Rc;
+
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let callback_idx = Rc::new(Cell::new(None));
+        let callback_idx_for_select = callback_idx.clone();
+        let select = app.new(|cx| {
+            Select::new(vec!["Apple", "Banana"], Some(0), cx)
+                .on_change(move |idx, _, _| callback_idx_for_select.set(Some(idx)))
+        });
+        let window = app.open_window(gpui::size(gpui::px(240.0), gpui::px(100.0)), |_, _| {
+            SelectSurface(select.clone())
+        });
+
+        app.update_window(window.into(), |_, window, cx| {
+            select.update(cx, |select, cx| {
+                select.set_options(vec!["Apple".into()], cx);
+                // An option from the previous frame can still be clicked.
+                select.select_option(1, window, cx);
+            });
+            assert_eq!(callback_idx.get(), None);
+            assert_eq!(select.read(cx).selected_index(), Some(0));
+        })
+        .unwrap();
+        app.quit();
+    }
+
     struct SelectSurface(Entity<Select>);
 
     impl Render for SelectSurface {
