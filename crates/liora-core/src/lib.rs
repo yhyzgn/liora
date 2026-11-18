@@ -816,6 +816,22 @@ pub fn sync_system_theme(window: &mut Window, cx: &mut App) {
     }
 }
 
+fn sync_observed_system_theme(window: &mut Window, cx: &mut App) {
+    sync_observed_system_appearance(window, cx, window.appearance());
+}
+
+fn sync_observed_system_appearance(
+    window: &mut Window,
+    cx: &mut App,
+    appearance: WindowAppearance,
+) -> bool {
+    let changed = cx.global_mut::<Config>().sync_system_theme(appearance);
+    if changed {
+        window.refresh();
+    }
+    changed
+}
+
 /// Attach System theme tracking to a concrete GPUI window.
 ///
 /// `init_liora_with_mode(cx, ThemeMode::System)` runs before a window exists and
@@ -824,8 +840,18 @@ pub fn sync_system_theme(window: &mut Window, cx: &mut App) {
 /// at the start of the `open_window` callback before constructing the root view,
 /// then activate the returned window handle after `open_window` completes.
 pub fn attach_system_theme_observer(window: &mut Window, cx: &mut App) {
-    sync_system_theme(window, cx);
-    window.observe_window_appearance(sync_system_theme).detach();
+    attach_system_theme_observer_with(window, cx, sync_system_theme);
+}
+
+fn attach_system_theme_observer_with(
+    window: &mut Window,
+    cx: &mut App,
+    initial_sync: impl FnOnce(&mut Window, &mut App),
+) {
+    initial_sync(window, cx);
+    window
+        .observe_window_appearance(sync_observed_system_theme)
+        .detach();
 }
 
 /// Renders the render active popover in window layer into native GPUI elements.
@@ -1117,6 +1143,56 @@ mod theme_mode_tests {
     }
 
     #[test]
+    fn observed_theme_transition_overrides_startup_and_preserves_fixed_modes() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(|cx| init_liora(cx, Theme::dark()));
+        let handle = app.add_window(|_, _| ThemeSurface);
+        app.update_window(handle.into(), |_, window, cx| {
+            assert_eq!(window.appearance(), WindowAppearance::Light);
+            let config = cx.global_mut::<Config>();
+            config.set_theme_mode(ThemeMode::System, WindowAppearance::Light);
+            // Exercise production setup with a supplied startup hint, not OS probes.
+            attach_system_theme_observer_with(window, cx, |window, cx| {
+                assert!(sync_observed_system_appearance(window, cx, WindowAppearance::Dark));
+            });
+            assert_eq!(cx.global::<Config>().theme.name, "dark");
+            // Invoke the production callback directly; GPUI event delivery is not simulated.
+            sync_observed_system_theme(window, cx);
+            assert_eq!(cx.global::<Config>().theme.name, "light");
+            cx.global_mut::<Config>()
+                .set_theme_mode(ThemeMode::System, WindowAppearance::Dark);
+            assert!(sync_observed_system_appearance(
+                window,
+                cx,
+                WindowAppearance::Light
+            ));
+            // A later Dark notification overrides the preceding Light state/hint.
+            assert!(sync_observed_system_appearance(
+                window,
+                cx,
+                WindowAppearance::Dark
+            ));
+            assert_eq!(cx.global::<Config>().theme.name, "dark");
+            assert!(!sync_observed_system_appearance(
+                window,
+                cx,
+                WindowAppearance::Dark
+            ));
+            for (mode, observed, expected) in [
+                (ThemeMode::Light, WindowAppearance::Dark, "light"),
+                (ThemeMode::Dark, WindowAppearance::Light, "dark"),
+            ] {
+                cx.global_mut::<Config>()
+                    .set_theme_mode(mode, WindowAppearance::Light);
+                assert!(!sync_observed_system_appearance(window, cx, observed));
+                assert_eq!(cx.global::<Config>().theme.name, expected);
+            }
+        })
+        .unwrap();
+        app.quit();
+    }
+
+    #[test]
     fn font_config_defaults_to_system_fonts_and_keeps_custom_families_explicit() {
         let default = FontConfig::default();
         assert!(default.ui_families.is_empty());
@@ -1198,30 +1274,6 @@ mod theme_mode_tests {
                 .as_deref(),
             Some("Monospace")
         );
-    }
-
-    #[test]
-    fn system_theme_observer_syncs_immediately_and_stays_attached() {
-        let source = include_str!("lib.rs");
-        let start = source
-            .find("pub fn attach_system_theme_observer")
-            .expect("system theme observer helper should exist");
-        let body = &source[start
-            ..source[start..]
-                .find("pub fn render_active_popover_in_window")
-                .expect("next function should follow observer helper")
-                + start];
-
-        let sync_call = "sync_system_theme(window, cx);".to_string();
-        let observe_call = "observe_window_appearance".to_string();
-        let sync_index = body
-            .find(&sync_call)
-            .expect("observer helper should sync the current window appearance immediately");
-        let observe_index = body
-            .find(&observe_call)
-            .expect("observer helper should observe later appearance changes");
-        assert!(sync_index < observe_index);
-        assert!(body.contains(".detach();"));
     }
 }
 

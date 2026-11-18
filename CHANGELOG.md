@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Follow event-updated GPUI appearance for live System theme changes without stale startup hints masking notifications; preserve initial startup synchronization and fixed Light/Dark modes.
 - Show the Image fallback after a remote load fails. Use `Image::embedded` for local artwork and previews in standalone Gallery and Docs.
 - Replace Markdown paragraph Input switching with a unified native rich editor, canonical source selection and styled variable-height virtual rows. Add source-preserving structural commands, slash commands, literal find/replace, move/fold and selection-aware history; retain native table inputs and host image authorization.
 - Migrate rich-editor consumers from `rich_input_at()` / `rich_input()` to `focus_source_offset()`, `set_selection()` and `insert_text()`. Source-mode `input()` and table `table_input_at()` remain integration surfaces; Markdown remains the persistence format.

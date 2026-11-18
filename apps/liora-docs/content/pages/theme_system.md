@@ -4,7 +4,7 @@ Liora 的主题系统提供 `System`、`Light`、`Dark` 三种模式。默认推
 
 ## 三种模式
 
-- `System`：启动时读取当前窗口外观，并通过 `observe_window_appearance` 响应系统浅色 / 深色变化。
+- `System`：启动时优先采用可同步获取的系统外观偏好，未取得时回退到 GPUI 外观；后续通过 `observe_window_appearance` 采用 GPUI 更新后的窗口外观。
 - `Light`：固定浅色主题，不再跟随后续系统外观变化。
 - `Dark`：固定深色主题，不再跟随后续系统外观变化。
 
@@ -45,6 +45,6 @@ Gallery 和 Docs 都使用同一套接入方式：
 8. 在 `open_window` 回调一开始、创建 root view 之前调用 `attach_system_theme_observer(window, cx)`；它会先同步一次，再保活 `observe_window_appearance` 以跟随后续系统变化。
 9. Linux / FreeBSD 启动时，`System` 会优先读取同步可用的桌面偏好（`GTK_THEME`、GTK settings、`gsettings org.gnome.desktop.interface color-scheme`），避免 GPUI Linux 后端默认 `Light` 等待 xdg-desktop-portal 异步回传时造成首帧浅色。
 10. 用户切换分段控件时调用 `apply_theme_mode(window, cx, mode)`。
-11. 处于 `System` 模式时，系统外观变化由 `sync_system_theme(window, cx)` 自动刷新。
+11. 初次挂载观察器仍使用上述同步偏好，避免尚未更新的 GPUI 窗口外观覆盖启动主题；手动切回 `System` 也保留同步偏好查询。后续 `observe_window_appearance` 通知直接采用 GPUI 已更新的 `window.appearance()`，不再让旧 GTK / gsettings 值遮蔽实时变化；仅主题实际改变时刷新窗口，固定 `Light` / `Dark` 不受通知影响。
 
 这套能力仍然是纯 Rust + GPUI 原生应用能力，不依赖 Tauri、WebView、HTML、CSS 或 DOM runtime。
