@@ -21,6 +21,7 @@ fn setup(cx: &mut gpui::App) {
 - Prefer the top-level `liora` crate for ordinary applications.
 - Depend on `liora-core` directly when you need fine-grained dependency control or are building another Liora crate.
 - Keep application UI pure Rust + native GPUI; Liora crates do not require WebView, Tauri, HTML, CSS, or DOM runtime paths.
+- `apply_theme_mode` schedules all open GPUI windows to redraw; System appearance synchronization does the same when the shared theme changes.
 
 ## GPUI dependency note
 

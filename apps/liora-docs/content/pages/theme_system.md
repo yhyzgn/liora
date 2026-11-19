@@ -45,7 +45,7 @@ Gallery 和 Docs 都使用同一套接入方式：
 7. 窗口选项保留 `show: false` 并在 `open_window` 返回 handle 后调用 `window.activate_window()`，与 Zed 主窗口显示时机保持一致；但 Linux 尺寸首帧正确性最终取决于应用选择的 GPUI backend 是否在平台窗口创建阶段处理初始 `Maximized` / `Fullscreen` 状态。
 8. 在 `open_window` 回调一开始、创建 root view 之前调用 `attach_system_theme_observer(window, cx)`；它会先同步一次，再保活 `observe_window_appearance` 以跟随后续系统变化。
 9. Linux / FreeBSD 启动时，`System` 会优先读取同步可用的桌面偏好（`GTK_THEME`、GTK settings、`gsettings org.gnome.desktop.interface color-scheme`），避免 GPUI Linux 后端默认 `Light` 等待 xdg-desktop-portal 异步回传时造成首帧浅色。
-10. 用户切换分段控件时调用 `apply_theme_mode(window, cx, mode)`。
-11. 初次挂载观察器仍使用上述同步偏好，避免尚未更新的 GPUI 窗口外观覆盖启动主题；手动切回 `System` 也保留同步偏好查询。后续 `observe_window_appearance` 通知直接采用 GPUI 已更新的 `window.appearance()`，不再让旧 GTK / gsettings 值遮蔽实时变化；仅主题实际改变时刷新窗口，固定 `Light` / `Dark` 不受通知影响。
+10. 用户切换分段控件时调用 `apply_theme_mode(window, cx, mode)`，通过 GPUI 原生 `App::refresh_windows()` 为所有已打开窗口安排重绘。
+11. 初次挂载观察器仍使用上述同步偏好，避免尚未更新的 GPUI 窗口外观覆盖启动主题；手动切回 `System` 也保留同步偏好查询。后续 `observe_window_appearance` 通知直接采用 GPUI 已更新的 `window.appearance()`，不再让旧 GTK / gsettings 值遮蔽实时变化；仅主题实际改变时刷新所有已打开窗口，固定 `Light` / `Dark` 不受通知影响。
 
 这套能力仍然是纯 Rust + GPUI 原生应用能力，不依赖 Tauri、WebView、HTML、CSS 或 DOM runtime。

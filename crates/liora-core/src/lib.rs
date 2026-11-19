@@ -807,13 +807,13 @@ pub fn code_font_weight(cx: &App) -> Option<FontWeight> {
     cx.global::<Config>().fonts.code_weight
 }
 
-/// Applies a new theme mode and refreshes the active GPUI window.
+/// Applies a new theme mode and schedules all open GPUI windows to redraw.
 pub fn apply_theme_mode(window: &mut Window, cx: &mut App, mode: ThemeMode) {
     let appearance = (mode == ThemeMode::System)
         .then(|| current_system_appearance(window, cx))
         .unwrap_or(WindowAppearance::Light);
     cx.global_mut::<Config>().set_theme_mode(mode, appearance);
-    window.refresh();
+    cx.refresh_windows();
 }
 
 /// Synchronizes the active theme from the current system/window appearance.
@@ -823,7 +823,7 @@ pub fn sync_system_theme(window: &mut Window, cx: &mut App) {
     }
     let appearance = current_system_appearance(window, cx);
     if cx.global_mut::<Config>().sync_system_theme(appearance) {
-        window.refresh();
+        cx.refresh_windows();
     }
 }
 
@@ -832,13 +832,13 @@ fn sync_observed_system_theme(window: &mut Window, cx: &mut App) {
 }
 
 fn sync_observed_system_appearance(
-    window: &mut Window,
+    _window: &mut Window,
     cx: &mut App,
     appearance: WindowAppearance,
 ) -> bool {
     let changed = cx.global_mut::<Config>().sync_system_theme(appearance);
     if changed {
-        window.refresh();
+        cx.refresh_windows();
     }
     changed
 }
@@ -1058,6 +1058,62 @@ mod theme_mode_tests {
         fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
             gpui::div()
         }
+    }
+
+    #[test]
+    fn theme_changes_repaint_all_open_windows() {
+        use std::{cell::Cell, rc::Rc};
+
+        struct RenderCounter(Rc<Cell<usize>>);
+
+        impl Render for RenderCounter {
+            fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+                self.0.set(self.0.get() + 1);
+                gpui::div().bg(cx.global::<Config>().theme.neutral.body)
+            }
+        }
+
+        let mut app = gpui::TestAppContext::single();
+        app.update(|cx| init_liora_with_mode(cx, ThemeMode::Light));
+        let renders = [Rc::new(Cell::new(0)), Rc::new(Cell::new(0))];
+        let first = app.add_window(|_, _| RenderCounter(renders[0].clone()));
+        let _second = app.add_window(|_, _| RenderCounter(renders[1].clone()));
+        app.update(|_| {});
+        app.run_until_parked();
+        assert!(renders.iter().all(|count| count.get() > 0));
+
+        let before_mode_change = renders.each_ref().map(|count| count.get());
+        app.update_window(first.into(), |_, window, cx| {
+            apply_theme_mode(window, cx, ThemeMode::Dark);
+        })
+        .unwrap();
+        app.run_until_parked();
+        for (index, count) in renders.iter().enumerate() {
+            assert!(
+                count.get() > before_mode_change[index],
+                "window {index} did not repaint after a mode change"
+            );
+        }
+
+        app.update(|cx| {
+            cx.global_mut::<Config>()
+                .set_theme_mode(ThemeMode::System, WindowAppearance::Dark);
+        });
+        let before_system_change = renders.each_ref().map(|count| count.get());
+        app.update_window(first.into(), |_, window, cx| {
+            assert_eq!(window.appearance(), WindowAppearance::Light);
+            // Invoke the production observer callback; no OS event is simulated.
+            sync_observed_system_theme(window, cx);
+        })
+        .unwrap();
+        app.run_until_parked();
+        for (index, count) in renders.iter().enumerate() {
+            assert!(
+                count.get() > before_system_change[index],
+                "window {index} did not repaint after an observed System change"
+            );
+        }
+        app.quit();
     }
 
     #[test]
