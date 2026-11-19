@@ -21,6 +21,8 @@ mod affix_bottom;
 mod affix_container;
 #[path = "../../content/snippets/affix/top.rs"]
 mod affix_top;
+#[path = "../../content/snippets/alert/closable.rs"]
+mod alert_closable;
 #[path = "../../content/snippets/alert/description.rs"]
 mod alert_description;
 #[path = "../../content/snippets/alert/types.rs"]

@@ -765,6 +765,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Accordion" => Some(accordion_demo::render(cx).into()),
         "Affix" => Some(affix_demo::render(cx).into()),
         "Alert" => Some(alert_demo::render(cx).into()),
+        "AlertClosable" => Some(alert_demo::render_closable(cx)),
         "AreaChart" => Some(area_chart_demo::render(cx).into()),
         "Anchor" => Some(anchor_demo::render(cx).into()),
         "Autocomplete" => Some(autocomplete_demo::render(cx).into()),

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Give Alert close controls native button semantics and a visible keyboard focus ring; preserve Tab/Shift+Tab and key-up activation, with stable sibling IDs and parent-owned dismissal/restoration examples.
+- Restore unhandled Tab/Shift+Tab traversal through system/custom window frames and enabled Input controls; reserve the Docs virtual scrollbar hit area so it cannot intercept live Alert close clicks.
 - Fix Affix content alignment in nested layouts before pinning and after scrolling back.
 - Release Autocomplete after its window closes by avoiding a strong reference cycle in the Input change callback.
 - Display Avatar alt text when its image fails to load, with matching Gallery and Docs examples.

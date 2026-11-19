@@ -1452,6 +1452,7 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "button/gradient.rs" => Some(include_str!("../content/snippets/button/gradient.rs")),
         "alert/types.rs" => Some(include_str!("../content/snippets/alert/types.rs")),
         "alert/description.rs" => Some(include_str!("../content/snippets/alert/description.rs")),
+        "alert/closable.rs" => Some(include_str!("../content/snippets/alert/closable.rs")),
         "tag/types.rs" => Some(include_str!("../content/snippets/tag/types.rs")),
         "tag/closable.rs" => Some(include_str!("../content/snippets/tag/closable.rs")),
         "tag/themes.rs" => Some(include_str!("../content/snippets/tag/themes.rs")),
@@ -11224,7 +11225,11 @@ impl DocsPageView {
                         &mut demo_index,
                         &format!("block-{index}"),
                     );
-                    div().w_full().child(rendered_block).into_any_element()
+                    div()
+                        .w_full()
+                        .pr(liora_components::scrollbar::virtual_scrollbar_hit_width())
+                        .child(rendered_block)
+                        .into_any_element()
                 });
             list.set_item_spacing(px(20.0));
             list.measure_all_items_for_scrollbar();
@@ -11932,6 +11937,84 @@ impl InlineSegment {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[gpui::test]
+    fn closable_alert_dismissal_preserves_docs_virtual_row(cx: &mut gpui::TestAppContext) {
+        struct PageWindow(Entity<DocsPageView>);
+        impl Render for PageWindow {
+            fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+                div().size_full().child(self.0.clone())
+            }
+        }
+        cx.update(liora_components::init_liora);
+        let document = MarkdownDocument::parse(ALERT_DOC);
+        let demo_row = document
+            .blocks
+            .iter()
+            .position(|block| {
+                matches!(block, Block::LiveDemo { component } if component.as_ref() == "AlertClosable")
+            })
+            .expect("closable Alert live row");
+        let page = cx.new(|cx| DocsPageView::new(ALERT_DOC, cx));
+        let list = page.read_with(cx, |page, _| page.virtual_list.clone());
+        let state = list.read_with(cx, |list, _| list.list_state());
+        let page_id = page.entity_id();
+        let list_id = list.entity_id();
+        let retained_page = page.clone();
+        let handle = cx.add_window(move |_, _| PageWindow(page));
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), cx);
+        window.simulate_resize(gpui::size(px(1200.0), px(650.0)));
+        window.update(|window, cx| {
+            window.draw(cx).clear(cx);
+            state.scroll_to(gpui::ListOffset {
+                item_ix: demo_row,
+                offset_in_item: px(0.0),
+            });
+            window.refresh();
+        });
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        let before = state.logical_scroll_top();
+        let before_bounds = state.bounds_for_item(demo_row).expect("live row bounds");
+        let close = window
+            .debug_bounds("alert-close")
+            .expect("live native close button");
+        assert!(state.viewport_bounds().intersects(&close));
+        let track_left = state.viewport_bounds().right()
+            - liora_components::scrollbar::virtual_scrollbar_hit_width();
+        assert!(
+            close.right() <= track_left,
+            "the complete close button must be clear of the overlay scrollbar track"
+        );
+        window.simulate_click(close.center(), gpui::Modifiers::none());
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        let after = state.logical_scroll_top();
+        let after_bounds = state
+            .bounds_for_item(demo_row)
+            .expect("retained live row bounds");
+        assert_eq!(
+            after.item_ix, before.item_ix,
+            "dismissal must retain the live row anchor"
+        );
+        assert_eq!(after.offset_in_item, before.offset_in_item);
+        assert!(state.viewport_bounds().intersects(&after_bounds));
+        assert!(
+            (after_bounds.origin.y - before_bounds.origin.y).abs() < px(2.0),
+            "live row must not jump"
+        );
+        assert!(
+            after_bounds.size.height < before_bounds.size.height,
+            "the native callback must replace the second Alert with its shorter Restore button"
+        );
+        let remaining_close = window
+            .debug_bounds("alert-close")
+            .expect("the first sibling Alert must remain visible");
+        assert!(remaining_close.top() < close.top());
+        window.read(|cx| assert_eq!(handle.read(cx).unwrap().0.entity_id(), page_id));
+        assert_eq!(
+            retained_page.read_with(cx, |page, _| page.virtual_list.entity_id()),
+            list_id
+        );
+    }
 
     #[gpui::test]
     fn select_basic_live_demo_dismisses_popup_on_escape(cx: &mut gpui::TestAppContext) {

@@ -29,6 +29,11 @@ fn setup(cx: &mut gpui::App) {
 - Use `Image::embedded(include_bytes!("asset.png"))` for app-bundled artwork. The byte slice must be `'static`; decoded rasters are cached and shared with the preview overlay. Embedded images have no `ImageSource`, so `source()` returns `None` and the public `ImageSource::Url` / `File` variants remain unchanged.
 - Use `Image::local(path)` for files resolved from the runtime filesystem. Remote `Image::new(url)` displays its loading placeholder while fetching, then its fallback if fetching or decoding fails.
 
+## Alerts
+
+- Give sibling `Alert`s distinct stable `.id(...)` values when they share an ancestor scope, especially when they are closable; the ID scopes their close controls. The parent owns dismissal and restoration through `on_close`.
+- `AppWindowFrame` provides unhandled Tab / Shift+Tab traversal in both system and custom frame modes; enabled `Input` controls participate, disabled inputs are skipped, and child-consumed or modified Tab shortcuts remain with the child.
+
 
 ## PDF reader and reusable input controls
 
