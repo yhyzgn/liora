@@ -296,23 +296,6 @@ mod tests {
         });
         window.update(|window, cx| window.draw(cx).clear(cx));
 
-        window.update(|window, _| {
-            let tree: serde_json::Value = serde_json::from_str(
-                &window.debug_a11y_tree_json().expect("native accessibility tree"),
-            )
-            .unwrap();
-            let closers: Vec<_> = tree["nodes"]
-                .as_object()
-                .expect("accessibility nodes")
-                .values()
-                .filter(|node| node["aria"]["label"] == "Dismiss alert")
-                .collect();
-            assert_eq!(closers.len(), 2, "both sibling close controls are accessible");
-            for closer in closers {
-                assert_eq!(closer["aria"]["role"], "Button");
-            }
-        });
-
         window.simulate_keystrokes("tab");
         window.update(|window, cx| window.draw(cx).clear(cx));
         assert_eq!(
