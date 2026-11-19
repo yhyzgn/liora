@@ -1,3 +1,7 @@
+[demo_todo]
+edit_task = "编辑任务"
+delete_task = "删除任务"
+
 [common]
 ok = "确定"
 cancel = "取消"

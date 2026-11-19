@@ -617,6 +617,8 @@ let antd_save = Icon::new(liora::icons_antd::IconName::SaveOutlined);
 let tabler_home = Icon::new(liora::icons_tabler::IconName::HomeFilled);
 ```
 
+Buttons use their constructor label as the native accessible name, including icon-only and unavailable controls. Use `Button::new("+").aria_label(liora::core::locales::common::add)` to override only that name without changing the visible glyph or geometry. Names resolve in the current locale; native platform state reporting and screen-reader speech require separate runtime verification.
+
 
 Icon bundle auto optimization keeps application code unchanged while reducing packaged SVG resources. Add the optimizer as a build dependency and call the builder from the host application's existing Cargo build script:
 

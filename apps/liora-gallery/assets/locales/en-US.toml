@@ -1,3 +1,7 @@
+[demo_todo]
+edit_task = "Edit task"
+delete_task = "Delete task"
+
 [common]
 ok = "OK"
 cancel = "Cancel"

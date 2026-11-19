@@ -57,7 +57,12 @@ impl Render for SidebarDemo {
                             .brand("Liora Workspace")
                             .brand_subtitle("Native GPUI shell")
                             .logo(liora_logo_tile(&theme))
-                            .brand_action(Button::new("+").small().primary())
+                            .brand_action(
+                                Button::new("+")
+                                    .small()
+                                    .primary()
+                                    .aria_label(liora_core::locales::common::add),
+                            )
                             .scrollable()
                             .child(self.menu.clone())
                             .footer(

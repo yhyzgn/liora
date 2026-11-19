@@ -231,6 +231,7 @@ impl From<Icon> for ButtonIcon {
 /// Fluent native GPUI component for rendering Liora button.
 pub struct Button {
     label: LocalizedText,
+    aria_label: Option<LocalizedText>,
     variant: ButtonVariant,
     size: ButtonSize,
     disabled: bool,
@@ -251,10 +252,11 @@ pub struct Button {
 }
 
 impl Button {
-    /// Creates `Button` initialized from the supplied label.
+    /// Creates a button whose label also supplies its native accessible name.
     pub fn new(label: impl Into<LocalizedText>) -> Self {
         Self {
             label: label.into(),
+            aria_label: None,
             variant: ButtonVariant::Default,
             size: ButtonSize::Default,
             disabled: false,
@@ -274,6 +276,13 @@ impl Button {
             on_click: None,
         }
     }
+
+    /// Overrides the native accessible name without changing the displayed label.
+    pub fn aria_label(mut self, label: impl Into<LocalizedText>) -> Self {
+        self.aria_label = Some(label.into());
+        self
+    }
+
     /// Selects the visual variant used for styling.
     pub fn variant(mut self, v: ButtonVariant) -> Self {
         self.variant = v;
@@ -404,7 +413,7 @@ impl Button {
         self.icon_bottom = Some(icon);
         self
     }
-    /// Renders the button as an icon-only control.
+    /// Shows only the icon. Supply the action name to `new` or `aria_label`.
     pub fn icon_only(mut self, icon: IconName) -> Self {
         self.icon_only = Some(icon);
         self
@@ -558,7 +567,19 @@ impl Button {
         let icon_only = self.icon_only.is_some();
         let vertical = self.icon_top.is_some() || self.icon_bottom.is_some() || icon_only;
 
-        let label = self.label.resolve(cx);
+        let name_source = self.aria_label.as_ref().unwrap_or(&self.label);
+        let (label, name) = if icon_only {
+            (SharedString::default(), name_source.resolve(cx))
+        } else {
+            let label = self.label.resolve(cx);
+            let name = if name_source == &self.label {
+                label.clone()
+            } else {
+                let name = name_source.resolve(cx);
+                if name == label { label.clone() } else { name }
+            };
+            (label, name)
+        };
         let hover_group = SharedString::from(format!("{}:hover", id));
 
         let gradient = self.gradient.clone();
@@ -602,6 +623,17 @@ impl Button {
         }
         if !c.border.is_transparent() {
             div = div.border_1().border_color(c.border);
+        }
+        let busy = self.loading && !self.disabled;
+        let mut div = div.id(id.clone()).role(gpui::Role::Button).aria_label(name);
+        if self.disabled || busy {
+            div = div.a11y_synthetic_children(move |builder| {
+                let node = builder.parent_node();
+                node.set_disabled();
+                if busy {
+                    node.set_busy();
+                }
+            });
         }
         #[cfg(test)]
         let div = div.debug_selector(|| id.to_string());
@@ -739,8 +771,7 @@ impl Button {
         let hover_gradient = gradient.clone();
         let active_gradient = gradient.clone();
 
-        div.id(id)
-            .tab_index(0)
+        div.tab_index(0)
             .focus_visible(move |style| {
                 style.shadow(vec![gpui::BoxShadow {
                     color: theme.primary.base,
@@ -865,6 +896,120 @@ mod tests {
         });
     }
 
+    struct RepeatedLabelTest;
+
+    impl gpui::Render for RepeatedLabelTest {
+        fn render(&mut self, _: &mut Window, _: &mut gpui::Context<Self>) -> impl IntoElement {
+            gpui::div().flex().gap_2()
+                .child(Button::new("Disabled").id("button-custom-color-disabled")
+                    .custom_color(gpui::blue(), gpui::white()).disabled(true))
+                .child(Button::new("Disabled").id("button-gradient-disabled")
+                    .gradient(gpui::blue(), gpui::green()).disabled(true))
+                .child(Button::new("Primary").primary().id("button-type-primary"))
+                .child(Button::new("Primary").text().primary().id("button-text-primary"))
+        }
+    }
+
+    #[test]
+    fn repeated_labels_with_explicit_ids_keep_independent_roots_across_frames() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let handle = app.add_window(|_, _| RepeatedLabelTest);
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        let first = window.debug_bounds("button-custom-color-disabled").unwrap();
+        let second = window.debug_bounds("button-gradient-disabled").unwrap();
+        assert!(first.right() <= second.left());
+        let primary = window.debug_bounds("button-type-primary").unwrap();
+        let text_primary = window.debug_bounds("button-text-primary").unwrap();
+        assert!(primary.right() <= text_primary.left());
+        handle.update(&mut app, |_, _, cx| cx.notify()).unwrap();
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert_eq!(window.debug_bounds("button-custom-color-disabled"), Some(first));
+        assert_eq!(window.debug_bounds("button-gradient-disabled"), Some(second));
+        assert_eq!(window.debug_bounds("button-type-primary"), Some(primary));
+        assert_eq!(window.debug_bounds("button-text-primary"), Some(text_primary));
+        // TestWindow has no native adapter; the live Gallery/Docs run checks native identities.
+        app.quit();
+    }
+
+
+    struct ChangingButtonTest {
+        disabled: bool,
+        loading: bool,
+        override_name: bool,
+        clicks: Rc<RefCell<Vec<&'static str>>>,
+    }
+
+    impl gpui::Render for ChangingButtonTest {
+        fn render(&mut self, _: &mut Window, _: &mut gpui::Context<Self>) -> impl IntoElement {
+            let clicks = self.clicks.clone();
+            let mut button = Button::new("+")
+                .id("changing-button")
+                .disabled(self.disabled)
+                .loading(self.loading)
+                .on_click(move |_, _, _| clicks.borrow_mut().push("changing"));
+            if self.override_name {
+                button = button.aria_label("Add a considerably longer accessible name");
+            }
+            let clicks = self.clicks.clone();
+            gpui::div().flex().gap_2().child(button).child(
+                Button::new("After").id("after-changing")
+                    .on_click(move |_, _, _| clicks.borrow_mut().push("after")),
+            )
+        }
+    }
+
+    #[test]
+    fn focused_button_becomes_inert_across_frames_and_returns_with_same_geometry() {
+        for loading in [false, true] {
+            let mut app = gpui::TestAppContext::single();
+            app.update(crate::init_liora);
+            let clicks = Rc::new(RefCell::new(Vec::new()));
+            let handle = app.add_window({
+                let clicks = clicks.clone();
+                move |_, _| ChangingButtonTest { disabled: false, loading: false, override_name: false, clicks }
+            });
+            let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+            window.update(|window, cx| {
+                window.draw(cx).clear(cx);
+                window.focus_next(cx);
+            });
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            let original = window.debug_bounds("changing-button").unwrap();
+            press(&mut window, "enter");
+            assert_eq!(*clicks.borrow(), ["changing"]);
+            handle.update(&mut app, |view, _, cx| {
+                view.disabled = !loading;
+                view.loading = loading;
+                cx.notify();
+            }).unwrap();
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            press(&mut window, "enter");
+            press(&mut window, "space");
+            let center = window.debug_bounds("changing-button").unwrap().center();
+            window.simulate_click(center, gpui::Modifiers::none());
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            assert_eq!(*clicks.borrow(), ["changing"], "previously focused inert button activated");
+            window.update(|window, cx| window.focus_next(cx));
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            press(&mut window, "enter");
+            assert_eq!(*clicks.borrow(), ["changing", "after"], "inert button remained in Tab order");
+            handle.update(&mut app, |view, _, cx| {
+                view.disabled = false;
+                view.loading = false;
+                view.override_name = true;
+                cx.notify();
+            }).unwrap();
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            assert_eq!(window.debug_bounds("changing-button").unwrap(), original, "native name override changed visible + geometry");
+            window.simulate_keystrokes("shift-tab");
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            press(&mut window, "space");
+            assert_eq!(*clicks.borrow(), ["changing", "after", "changing"]);
+            app.quit();
+        }
+    }
     #[test]
     fn keyboard_activation_and_tab_skip_disabled_and_loading_buttons() {
         let mut app = gpui::TestAppContext::single();

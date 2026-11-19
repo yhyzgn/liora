@@ -1,4 +1,6 @@
 [common]
+add = "Add"
+search = "Search"
 ok = "OK"
 cancel = "Cancel"
 close = "Close"
@@ -17,3 +19,11 @@ description = "No data"
 
 [image]
 loading = "Loading"
+
+[titlebar]
+minimize_window = "Minimize window"
+maximize_window = "Maximize window"
+restore_window = "Restore window"
+
+[dropdown_button]
+more_actions_for = "More actions for {label}"

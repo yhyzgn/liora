@@ -529,7 +529,8 @@ fn todo_item_actions(
     Space::new()
         .gap_xs()
         .child(
-            Button::new("")
+            Button::new(liora_core::Locales::new("demo_todo.edit_task"))
+                .id(SharedString::from(format!("todo-demo-edit:{edit_id}")))
                 .small()
                 .icon_only(IconName::Pencil)
                 .on_click(move |_, window, cx| {
@@ -538,7 +539,8 @@ fn todo_item_actions(
                 }),
         )
         .child(
-            Button::new("")
+            Button::new(liora_core::Locales::new("demo_todo.delete_task"))
+                .id(SharedString::from(format!("todo-demo-delete:{delete_id}")))
                 .small()
                 .danger()
                 .icon_only(IconName::Trash2)

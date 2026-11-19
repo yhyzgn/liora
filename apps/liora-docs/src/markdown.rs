@@ -3503,12 +3503,12 @@ impl Render for LiveDemoContent {
                     .into_any_element(),
             ]),
             "ButtonText" => demo_row(vec![
-                Button::new("Default").text().into_any_element(),
-                Button::new("Primary").primary().text().into_any_element(),
-                Button::new("Info").info().text().into_any_element(),
-                Button::new("Success").success().text().into_any_element(),
-                Button::new("Warning").warning().text().into_any_element(),
-                Button::new("Danger").danger().text().into_any_element(),
+                Button::new("Default").id("button-text-default").text().into_any_element(),
+                Button::new("Primary").id("button-text-primary").primary().text().into_any_element(),
+                Button::new("Info").id("button-text-info").info().text().into_any_element(),
+                Button::new("Success").id("button-text-success").success().text().into_any_element(),
+                Button::new("Warning").id("button-text-warning").warning().text().into_any_element(),
+                Button::new("Danger").id("button-text-danger").danger().text().into_any_element(),
             ]),
             "ButtonSizes" => demo_row(vec![
                 Button::new("Small").primary().small().into_any_element(),
@@ -7151,7 +7151,12 @@ impl LiveDemoContent {
                                 .size_units(20.0)
                                 .color(theme.primary.base),
                         )
-                        .brand_action(Button::new("+").small().primary())
+                        .brand_action(
+                            Button::new("+")
+                                .small()
+                                .primary()
+                                .aria_label(liora_core::locales::common::add),
+                        )
                         .scrollable()
                         .child(self.menus.first().cloned().unwrap_or_else(|| {
                             cx.new(|_| docs_workspace_menu("docs-sidebar-brand-menu-fallback"))

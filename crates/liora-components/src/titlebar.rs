@@ -445,10 +445,18 @@ fn window_controls(
     window: &mut Window,
     theme: liora_theme::Theme,
 ) -> impl IntoElement {
+    use liora_core::locales::{common, titlebar};
+
+    let (zoom_icon, zoom_label) = if window.is_maximized() {
+        (IconName::Minimize2, titlebar::restore_window())
+    } else {
+        (IconName::Maximize2, titlebar::maximize_window())
+    };
     Space::new()
         .gap_xs()
         .child(frame_control_button(
             "liora-window-frame-minimize",
+            titlebar::minimize_window(),
             IconName::Minus,
             WindowControlArea::Min,
             false,
@@ -457,11 +465,8 @@ fn window_controls(
         ))
         .child(frame_control_button(
             "liora-window-frame-maximize",
-            if window.is_maximized() {
-                IconName::Minimize2
-            } else {
-                IconName::Maximize2
-            },
+            zoom_label,
+            zoom_icon,
             WindowControlArea::Max,
             false,
             theme.clone(),
@@ -469,6 +474,7 @@ fn window_controls(
         ))
         .child(frame_control_button(
             "liora-window-frame-close",
+            common::close(),
             IconName::X,
             WindowControlArea::Close,
             true,
@@ -486,13 +492,14 @@ fn window_controls(
 
 fn frame_control_button(
     id: &'static str,
+    label: liora_core::Locales,
     icon: IconName,
     control_area: WindowControlArea,
     danger: bool,
     theme: liora_theme::Theme,
     on_click: impl Fn(&mut Window, &mut App) + 'static,
 ) -> impl IntoElement {
-    Button::new("")
+    Button::new(label)
         .id(id)
         .text()
         .small()

@@ -1,4 +1,6 @@
 [common]
+add = "添加"
+search = "搜索"
 ok = "确定"
 cancel = "取消"
 close = "关闭"
@@ -17,3 +19,11 @@ description = "暂无数据"
 
 [image]
 loading = "加载中"
+
+[titlebar]
+minimize_window = "最小化窗口"
+maximize_window = "最大化窗口"
+restore_window = "还原窗口"
+
+[dropdown_button]
+more_actions_for = "{label}的更多操作"

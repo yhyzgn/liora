@@ -23,7 +23,7 @@ use gpui::{
     AnyElement, App, Hsla, IntoElement, MouseButton, RenderOnce, SharedString,
     ViewElement as Component, Window, div, prelude::*, px,
 };
-use liora_core::{Config, LocalizedText, Placement, clear_popover, stable_unique_id};
+use liora_core::{Config, LocalizedText, Placement, clear_popover, locales, stable_unique_id, tr};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 use liora_theme::{ButtonSize, ButtonVariant};
@@ -258,9 +258,9 @@ impl DropdownButton {
         button
     }
 
-    fn menu_trigger(&self, id: &SharedString) -> AnyElement {
+    fn menu_trigger(&self, id: &SharedString, cx: &App) -> AnyElement {
         if self.split {
-            split_trigger(self, id)
+            split_trigger(self, id, cx)
         } else {
             let mut button = self
                 .resolved_button(self.label.clone())
@@ -295,7 +295,7 @@ impl RenderOnce for DropdownButton {
                 cx,
             )
         });
-        let trigger = self.menu_trigger(&dropdown_id);
+        let trigger = self.menu_trigger(&dropdown_id, cx);
         if self.disabled {
             return trigger;
         }
@@ -325,7 +325,7 @@ impl IntoElement for DropdownButton {
     }
 }
 
-fn split_trigger(button: &DropdownButton, id: &SharedString) -> AnyElement {
+fn split_trigger(button: &DropdownButton, id: &SharedString, cx: &App) -> AnyElement {
     let main_id = element_id(format!("{id}-main-action"));
     let toggle_id = element_id(format!("{id}-toggle"));
     let mut primary = button.resolved_button(button.label.clone()).id(main_id);
@@ -341,8 +341,10 @@ fn split_trigger(button: &DropdownButton, id: &SharedString) -> AnyElement {
         });
     }
 
+    let name = tr(cx, locales::dropdown_button::more_actions_for)
+        .replace("{label}", button.label.as_ref());
     let toggle = button
-        .resolved_button("")
+        .resolved_button(name)
         .id(toggle_id)
         .icon_only(IconName::ChevronDown);
 

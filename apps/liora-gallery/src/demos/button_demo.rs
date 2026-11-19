@@ -209,12 +209,12 @@ fn types() -> Vec<impl IntoElement> {
 
 fn text_buttons() -> Vec<impl IntoElement> {
     vec![
-        Button::new("Default").text(),
-        Button::new("Primary").text().primary(),
-        Button::new("Info").text().info(),
-        Button::new("Success").text().success(),
-        Button::new("Warning").text().warning(),
-        Button::new("Danger").text().danger(),
+        Button::new("Default").id("button-text-default").text(),
+        Button::new("Primary").id("button-text-primary").text().primary(),
+        Button::new("Info").id("button-text-info").text().info(),
+        Button::new("Success").id("button-text-success").text().success(),
+        Button::new("Warning").id("button-text-warning").text().warning(),
+        Button::new("Danger").id("button-text-danger").text().danger(),
     ]
 }
 
@@ -266,9 +266,9 @@ fn icons() -> Vec<impl IntoElement> {
         Button::new("Download")
             .info()
             .icon_bottom(IconName::ArrowDown),
-        Button::new("").primary().icon_only(IconName::Search),
-        Button::new("").danger().icon_only(IconName::X),
-        Button::new("").success().icon_only(IconName::Check),
+        Button::new(liora_core::locales::common::search).primary().icon_only(IconName::Search),
+        Button::new(liora_core::locales::common::cancel).danger().icon_only(IconName::X),
+        Button::new(liora_core::locales::common::confirm).success().icon_only(IconName::Check),
     ]
 }
 
@@ -339,6 +339,7 @@ fn custom_colors() -> Vec<impl IntoElement> {
             ))
             .rounded_md(),
         Button::new("Disabled")
+            .id("button-custom-color-disabled")
             .custom_color(rgb(0xdb2777).into(), gpui::white())
             .disabled(true),
     ]
@@ -357,6 +358,7 @@ fn gradients() -> Vec<impl IntoElement> {
             .gradient(rgb(0x22c55e).into(), rgb(0x14b8a6).into())
             .loading(true),
         Button::new("Disabled")
+            .id("button-gradient-disabled")
             .gradient(rgb(0x8b5cf6).into(), rgb(0x3b82f6).into())
             .disabled(true),
     ]
