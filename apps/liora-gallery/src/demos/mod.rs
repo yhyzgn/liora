@@ -858,6 +858,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Segmented" => Some(segmented_demo::render(cx).into()),
         "Settings" => Some(settings_demo::render(cx).into()),
         "Select" => Some(form_controls_demo::render_select(cx)),
+        "SelectClear" => Some(select_advanced_demo::render(cx)),
         "Skeleton" => Some(skeleton_demo::render(cx).into()),
         "Sparkline" => Some(sparkline_demo::render(cx).into()),
         "Slider" => Some(form_controls_demo::render_slider(cx)),

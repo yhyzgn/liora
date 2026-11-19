@@ -55,6 +55,17 @@
 ```rust src="select/multiple.rs"
 ```
 
+## 清空与应用状态
+
+单选和多选的 × 清空按钮仅在原先有选中值时，调用一次 `on_values_change` 并传入空 `Vec`。输入或删除搜索词只更新过滤条件，不触发选择变更；没有选中值时清空搜索词也不会发送空选择事件。
+
+下面复用 Gallery 示例；单选卡片显示父视图保存的 `Single selected: [...]`，多选卡片显示应用保存的 selected values 和回调次数。点击 × 后，单选应显示 `Single selected: []`；多选应显示 `Selected: []`，次数仅增加一次。
+
+::Demo{component="SelectClear"}::
+
+```rust src="select/clear.rs"
+```
+
 ## Footer 扩展
 
 需要创建入口或高级操作时，可以在搜索下拉面板底部添加 footer。

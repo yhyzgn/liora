@@ -555,6 +555,8 @@ mod segmented_block;
 mod segmented_disabled;
 #[path = "../../content/snippets/select/basic.rs"]
 mod select_basic;
+#[path = "../../content/snippets/select/clear.rs"]
+mod select_clear;
 #[path = "../../content/snippets/select/footer.rs"]
 mod select_footer;
 #[path = "../../content/snippets/select/grouped.rs"]

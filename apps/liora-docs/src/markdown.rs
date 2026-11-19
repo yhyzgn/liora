@@ -1593,6 +1593,7 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "select/searchable.rs" => Some(include_str!("../content/snippets/select/searchable.rs")),
         "select/grouped.rs" => Some(include_str!("../content/snippets/select/grouped.rs")),
         "select/multiple.rs" => Some(include_str!("../content/snippets/select/multiple.rs")),
+        "select/clear.rs" => Some(include_str!("../content/snippets/select/clear.rs")),
         "select/footer.rs" => Some(include_str!("../content/snippets/select/footer.rs")),
         "slider/basic.rs" => Some(include_str!("../content/snippets/slider/basic.rs")),
         "slider/step.rs" => Some(include_str!("../content/snippets/slider/step.rs")),

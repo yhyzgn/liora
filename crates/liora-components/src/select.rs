@@ -72,7 +72,6 @@ pub struct Select {
     max_items: usize,
     disabled: bool,
     suppress_next_input_change: bool,
-    suppress_next_open: bool,
     border_none: bool,
     radius_none: bool,
     radius_left_none: bool,
@@ -113,7 +112,6 @@ impl Select {
             max_items: 8,
             disabled: false,
             suppress_next_input_change: false,
-            suppress_next_open: false,
             border_none: false,
             radius_none: false,
             radius_left_none: false,
@@ -503,11 +501,21 @@ impl Select {
         self.restore_selected_display_value(cx);
     }
 
-    fn clear_selected_values_from_input_clear(&mut self, cx: &mut Context<Self>) {
-        self.suppress_next_open = true;
+    fn clear_selected_values_from_input_clear(
+        &mut self,
+        window: gpui::AnyWindowHandle,
+        cx: &mut Context<Self>,
+    ) {
         self.is_open = false;
         if !self.selected_values.is_empty() {
             self.selected_values.clear();
+            if let Some(callback) = self.on_values_change.clone() {
+                let values = Vec::new();
+                // Input owns the current update; deliver this event's snapshot after it returns.
+                cx.defer(move |cx| {
+                    let _ = window.update(cx, |_, window, cx| callback(values, window, cx));
+                });
+            }
         }
         cx.notify();
     }
@@ -550,11 +558,6 @@ impl Select {
 
     fn open(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if self.disabled {
-            return;
-        }
-        if self.suppress_next_open {
-            self.suppress_next_open = false;
-            cx.notify();
             return;
         }
         self.is_open = true;
@@ -631,6 +634,7 @@ impl Select {
         let entity = cx.entity().clone();
         let disabled = self.disabled;
         let placeholder = self.placeholder.clone();
+        let window = _window.window_handle();
         let suffix_icon = if self.is_open {
             IconName::ChevronUp
         } else {
@@ -648,16 +652,12 @@ impl Select {
                 input.set_clearable(!disabled, cx);
                 input.set_icon_suffix(Some(suffix_icon), cx);
                 input.set_on_change({
-                    let entity = entity.clone();
-                    move |value, cx| {
-                        entity.update(cx, |this, cx| {
+                    let entity = entity.downgrade();
+                    move |_, cx| {
+                        let _ = entity.update(cx, |this, cx| {
                             if this.suppress_next_input_change {
                                 this.suppress_next_input_change = false;
                                 cx.notify();
-                                return;
-                            }
-                            if value.is_empty() {
-                                this.clear_selected_values_from_input_clear(cx);
                                 return;
                             }
                             this.is_open = true;
@@ -666,10 +666,10 @@ impl Select {
                     }
                 });
                 input.set_on_clear({
-                    let entity = entity.clone();
+                    let entity = entity.downgrade();
                     move |cx| {
-                        entity.update(cx, |this, cx| {
-                            this.clear_selected_values_from_input_clear(cx);
+                        let _ = entity.update(cx, |this, cx| {
+                            this.clear_selected_values_from_input_clear(window, cx);
                         });
                     }
                 });
@@ -995,29 +995,6 @@ mod searchable_select_tests {
         assert_eq!(matches[0].value, "gpui");
     }
 
-    #[test]
-    fn searchable_select_clears_input_query_after_selection_so_reopen_shows_all_options() {
-        let source = include_str!("select.rs")
-            .split("#[cfg(test)]")
-            .next()
-            .unwrap();
-
-        assert!(source.contains("fn clear_search_query"));
-        assert!(source.contains("fn restore_selected_display_value"));
-        assert!(source.contains("fn clear_selected_values_from_input_clear"));
-        assert!(source.contains("suppress_next_open"));
-        assert!(source.contains("input.set_on_clear"));
-        assert!(source.contains("if input.read(cx).value() == value"));
-        assert!(source.contains("self.set_input_value_silently(SharedString::default(), cx)"));
-        assert!(source.contains("self.set_input_value_silently(self.summary(), cx)"));
-        assert!(source.contains("let placeholder = self.placeholder.clone()"));
-        assert!(source.contains("if value.is_empty()"));
-        assert!(source.contains("this.clear_selected_values_from_input_clear(cx)"));
-        assert!(source.contains("SelectMode::Multiple"));
-        assert!(source.contains("self.clear_search_query(cx)"));
-        assert!(!source.contains("input.set_value(label, cx)"));
-        assert!(!source.contains("input.set_value(summary, cx)"));
-    }
 
     #[test]
     fn select_exposes_searchable_and_multiple_modes() {
@@ -1090,6 +1067,42 @@ mod searchable_select_tests {
     }
 
     #[test]
+    fn searchable_select_releases_after_window_removal_with_retained_input() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let select = app.new(|cx| Select::searchable(items(), cx).selected("rust"));
+        let weak = select.downgrade();
+        let handle = app.add_window(move |_, _| SelectSurface(select));
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        let input = weak
+            .read_with(&app, |select, _| {
+                assert!(
+                    select.last_bounds.is_some(),
+                    "Select must render and install callbacks"
+                );
+                select.input.clone().expect("searchable Input")
+            })
+            .unwrap();
+
+        window.update(|window, _| window.remove_window());
+        drop(window);
+        app.run_until_parked();
+
+        assert!(
+            weak.upgrade().is_none(),
+            "Input callbacks must not retain Select after window removal"
+        );
+        input.update(&mut app, |input, cx| {
+            input.set_value("gpui", cx);
+            input.clear(cx);
+        });
+        assert!(weak.upgrade().is_none());
+        drop(input);
+        app.quit();
+    }
+
+    #[test]
     fn disabled_plain_select_click_does_not_open_or_change_selection() {
         let mut app = gpui::TestAppContext::single();
         app.update(crate::init_liora);
@@ -1122,6 +1135,107 @@ mod searchable_select_tests {
         })
         .unwrap();
         app.quit();
+    }
+
+    #[test]
+    fn searchable_clear_click_notifies_once_without_query_selection_changes() {
+        use std::{cell::RefCell, rc::Rc};
+
+        for multiple in [false, true] {
+            let mut app = gpui::TestAppContext::single();
+            app.update(crate::init_liora);
+            let events = Rc::new(RefCell::new(Vec::<Vec<SharedString>>::new()));
+            let observed = events.clone();
+            let select = app.new(|cx| {
+                let select = Select::searchable(items(), cx).width(px(300.0));
+                let select = if multiple {
+                    select.multiple().selected_values(vec!["rust", "gpui"])
+                } else {
+                    select.selected("rust")
+                };
+                select.on_values_change(move |values, _, _| observed.borrow_mut().push(values))
+            });
+            let root = select.clone();
+            let handle = app.add_window(move |_, _| SelectSurface(root));
+            let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            assert!(events.borrow().is_empty());
+            let input = select.read_with(&app, |select, _| select.input.clone().unwrap());
+            let selected = select.read_with(&app, |select, _| select.selected_values.clone());
+            window.update(|window, cx| window.focus(&input.read(cx).focus_handle(cx), cx));
+            window.simulate_keystrokes("ctrl-a");
+            window.simulate_input("g");
+            window.simulate_keystrokes("backspace");
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            assert_eq!(
+                select.read_with(&app, |select, _| select.selected_values.clone()),
+                selected
+            );
+            assert!(
+                events.borrow().is_empty(),
+                "editing/deleting a query must preserve selection"
+            );
+            window.simulate_keystrokes("escape");
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            // Input's trailing X precedes its 16px suffix icon and 12px padding.
+            let clear_position = gpui::point(px(264.0), px(17.0));
+            window.simulate_click(clear_position, gpui::Modifiers::none());
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            assert!(select.read_with(&app, |select, _| select.selected_values.is_empty()));
+            assert_eq!(
+                *events.borrow(),
+                vec![Vec::<SharedString>::new()],
+                "multiple={multiple}"
+            );
+
+            window.simulate_click(gpui::point(px(12.0), px(17.0)), gpui::Modifiers::none());
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            assert!(select.read_with(&app, |select, _| select.is_open));
+            window.update(|window, cx| window.focus(&input.read(cx).focus_handle(cx), cx));
+            window.simulate_input("rust");
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            assert_eq!(
+                input.read_with(&app, |input, _| input.value()).as_ref(),
+                "rust"
+            );
+            assert_eq!(
+                events.borrow().len(),
+                1,
+                "typing a query must not change selection"
+            );
+            window.simulate_click(clear_position, gpui::Modifiers::none());
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            assert!(input.read_with(&app, |input, _| input.value().is_empty()));
+            assert_eq!(
+                events.borrow().len(),
+                1,
+                "clearing only a query must not emit"
+            );
+            window.update(|_, cx| input.update(cx, |input, cx| input.clear(cx)));
+            assert_eq!(events.borrow().len(), 1, "empty clear must not emit");
+
+            window.update(|_, cx| {
+                select.update(cx, |select, cx| {
+                    select.selected_values = vec!["rust".into()];
+                    select.restore_selected_display_value(cx);
+                });
+            });
+            assert_eq!(
+                events.borrow().len(),
+                1,
+                "programmatic display sync must not emit"
+            );
+            window.update(|_, cx| {
+                input.update(cx, |input, cx| input.clear(cx));
+                // A later mutation in the same effect cycle must not rewrite the queued event.
+                select.update(cx, |select, _| select.selected_values = vec!["gpui".into()]);
+            });
+            assert_eq!(
+                *events.borrow(),
+                vec![Vec::<SharedString>::new(), Vec::new()]
+            );
+            app.quit();
+        }
     }
 
     #[test]
