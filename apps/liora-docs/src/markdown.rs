@@ -11003,6 +11003,10 @@ enum UpdatePanelStatus {
 }
 
 impl UpdatePanelStatus {
+    fn is_busy(&self) -> bool {
+        matches!(self, Self::Checking | Self::Downloading(_))
+    }
+
     fn label(&self) -> String {
         match self {
             Self::Idle => "未检查更新 / Not checked".into(),
@@ -11302,6 +11306,9 @@ fn update_cache_dir(app: &str) -> Result<std::path::PathBuf, liora_updater::Upda
 }
 
 fn check_docs_update(docs: Entity<DocsShell>, cx: &mut App) {
+    if docs.read(cx).update_status.is_busy() {
+        return;
+    }
     let _ = docs.update(cx, |docs, cx| {
         docs.update_status = UpdatePanelStatus::Checking;
         docs.install_plan = None;
@@ -11332,8 +11339,12 @@ fn check_docs_update(docs: Entity<DocsShell>, cx: &mut App) {
 }
 
 fn download_docs_update(docs: Entity<DocsShell>, cx: &mut App) {
+    if docs.read(cx).update_status.is_busy() {
+        return;
+    }
     let _ = docs.update(cx, |docs, cx| {
         docs.update_status = UpdatePanelStatus::Downloading("latest".into());
+        docs.install_plan = None;
         cx.notify();
     });
     let async_cx = cx.to_async();
@@ -11384,6 +11395,9 @@ fn download_docs_update_sync(updater: &Updater)
 }
 
 fn install_docs_update(docs: Entity<DocsShell>, cx: &mut App) {
+    if docs.read(cx).update_status.is_busy() {
+        return;
+    }
     let _ = docs.update(cx, |docs, cx| {
         let Some(plan) = &docs.install_plan else {
             docs.update_status = UpdatePanelStatus::Error("请先下载并校验更新".into());
@@ -11503,7 +11517,8 @@ impl DocsShell {
     ) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
         let docs = cx.entity().clone();
-        let can_install = self.install_plan.is_some();
+        let busy = self.update_status.is_busy();
+        let can_install = !busy && self.install_plan.is_some();
 
         Space::new()
             .vertical()
@@ -11539,11 +11554,11 @@ impl DocsShell {
                             Space::new()
                                 .gap_sm()
                                 .wrap()
-                                .child(Button::new("检查更新 / Check").primary().on_click({
+                                .child(Button::new("检查更新 / Check").primary().disabled(busy).on_click({
                                     let docs = docs.clone();
                                     move |_, _window, cx| check_docs_update(docs.clone(), cx)
                                 }))
-                                .child(Button::new("下载更新 / Download").on_click({
+                                .child(Button::new("下载更新 / Download").disabled(busy).on_click({
                                     let docs = docs.clone();
                                     move |_, _window, cx| download_docs_update(docs.clone(), cx)
                                 }))
@@ -11934,6 +11949,118 @@ impl InlineSegment {
 
 #[cfg(test)]
 mod tests {
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn updater_failed_download_cannot_install_a_previous_plan() {
+        const CHILD: &str = "LIORA_UPDATE_STATE_FAILURE_CHILD";
+        if std::env::var_os(CHILD).is_some() {
+            let mut cx = gpui::TestAppContext::single();
+            let view = updater_test_docs(&mut cx);
+            let plan = liora_updater::build_install_plan(
+                "sample", liora_updater::Platform::LinuxX64,
+                &liora_updater::ReleaseAsset {
+                    name: "sample-linux-x64.tar.gz".into(), download_url: String::new(), size: 0,
+                },
+                "old-verified-package.tar.gz",
+            );
+            cx.update(|cx| {
+                view.update(cx, |view, _| {
+                    view.install_plan = Some(plan);
+                    view.update_status = super::UpdatePanelStatus::Downloaded("old".into());
+                });
+                super::download_docs_update(view.clone(), cx);
+            });
+            cx.run_until_parked();
+            cx.update(|cx| {
+                assert!(matches!(view.read(cx).update_status, super::UpdatePanelStatus::Error(_)),
+                    "actual rejected cache must finish the asynchronous download with an error");
+                assert!(view.read(cx).install_plan.is_none(), "a failed download must not resurrect the old plan");
+                super::install_docs_update(view.clone(), cx);
+                assert!(matches!(view.read(cx).update_status, super::UpdatePanelStatus::Error(_)),
+                    "install cannot execute the previous plan after failure");
+            });
+            cx.quit();
+            return;
+        }
+        use std::os::unix::fs::{DirBuilderExt, PermissionsExt};
+        let root = liora_updater::private_update_cache_dir(
+            "liora-docs-state-tests", env!("CARGO_PKG_VERSION"), None,
+        ).unwrap();
+        let base = root.join(format!("failure-{}", std::process::id()));
+        std::fs::DirBuilder::new().mode(0o700).create(&base).unwrap();
+        std::fs::set_permissions(&base, std::fs::Permissions::from_mode(0o777)).unwrap();
+        let result = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", "markdown::tests::updater_failed_download_cannot_install_a_previous_plan", "--nocapture"])
+            .env(CHILD, "1").env("LIORA_UPDATE_CACHE", &base).output().unwrap();
+        std::fs::remove_dir(&base).unwrap();
+        assert!(result.status.success(), "{}{}",
+            String::from_utf8_lossy(&result.stdout), String::from_utf8_lossy(&result.stderr));
+    }
+
+    fn updater_test_docs(cx: &mut gpui::TestAppContext) -> Entity<DocsShell> {
+        cx.update(liora_components::init_liora);
+        cx.new(|cx| DocsShell {
+            selected: 0,
+            nav_filter: cx.new(|cx| Input::new("", cx)),
+            nav_menu: None,
+            nav_query: String::new(),
+            page_views: vec![None; DOC_PAGES.len()],
+            update_status: UpdatePanelStatus::Idle,
+            install_plan: None,
+            theme_mode: ThemeMode::System,
+            theme_mode_segmented: cx.new(|_| theme_mode_segmented(ThemeMode::System)),
+            locale_segmented: cx.new(|cx| locale_segmented(cx)),
+            frame_mode: WindowFrameMode::Custom,
+            frame_mode_switch: cx.new(|cx| Switch::new(true, cx)),
+            on_frame_mode_change: |_, _, _| {},
+            on_close: |_, _| {},
+        })
+    }
+
+    #[gpui::test]
+    fn updater_download_invalidates_previous_install_plan(cx: &mut gpui::TestAppContext) {
+        let view = updater_test_docs(cx);
+        let plan = liora_updater::build_install_plan(
+            "sample", liora_updater::Platform::LinuxX64,
+            &liora_updater::ReleaseAsset {
+                name: "sample-linux-x64.tar.gz".into(), download_url: String::new(), size: 0,
+            },
+            "old-verified-package.tar.gz",
+        );
+        cx.update(|cx| {
+            view.update(cx, |view, _| {
+                view.install_plan = Some(plan);
+                view.update_status = super::UpdatePanelStatus::Downloaded("old".into());
+            });
+            super::download_docs_update(view.clone(), cx);
+            assert!(view.read(cx).install_plan.is_none(), "starting a new download must revoke the old plan");
+            super::install_docs_update(view.clone(), cx);
+            assert!(matches!(view.read(cx).update_status, super::UpdatePanelStatus::Downloading(_)),
+                "install must not replace an in-flight download status");
+        });
+    }
+
+    #[gpui::test]
+    fn updater_in_flight_actions_cannot_replace_each_other(cx: &mut gpui::TestAppContext) {
+        let view = updater_test_docs(cx);
+        cx.update(|cx| {
+            super::check_docs_update(view.clone(), cx);
+            super::download_docs_update(view.clone(), cx);
+            assert!(matches!(view.read(cx).update_status, super::UpdatePanelStatus::Checking),
+                "a download must not overlap the active check");
+        });
+        cx.update(|cx| {
+            view.update(cx, |view, _| view.update_status = super::UpdatePanelStatus::Downloading("active".into()));
+            super::check_docs_update(view.clone(), cx);
+            assert!(matches!(view.read(cx).update_status, super::UpdatePanelStatus::Downloading(_)),
+                "a check must not overlap the active download");
+            super::download_docs_update(view.clone(), cx);
+            assert!(matches!(&view.read(cx).update_status, super::UpdatePanelStatus::Downloading(tag) if tag == "active"),
+                "a second download must not replace the active request");
+        });
+    }
+
 
     #[cfg(any(target_os = "linux", target_os = "macos"))]
     #[test]

@@ -18,6 +18,8 @@ The caller must own the cache directory and its parents and prevent untrusted co
 
 The helper validates resolved ancestors and restricts the app/version directories using Unix owner/permissions (including extended ACL checks on macOS) or Windows owner/DACL checks on a local ACL-enforcing volume. A trusted base may resolve through OS aliases; app/version directories may not. It protects against modification by other local users, not administrators, other processes running as the same user, or hostile remote filesystems. Always keep the returned resolved path for both download and the later install action. Raw `UpdateRequest::new` and `download_verified_asset` still accept caller-controlled directories with the ownership and concurrent-modification precondition above; they do not independently make an arbitrary shared directory race-safe.
 
+Gallery and Docs allow only one update check or download at a time. Their update controls and action handlers reject conflicting checks, downloads and installs while that request is running. Starting either request revokes the previous install plan; a failed download or an up-to-date result therefore leaves no older plan available to install. A later request can be started after completion. This is app-owned UI coordination, not cancellation or serialization of independent SDK callers.
+
 ## Quick example
 
 ```rust

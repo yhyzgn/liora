@@ -21,6 +21,8 @@ The reusable packaging logic lives in:
 
   Gallery/Docs resolve update storage with `private_update_cache_dir(app, current_package_version, override_base)`. By default it uses the OS cache directory plus `liora-updates/app/version`; `LIORA_UPDATE_CACHE` supplies an absolute base, not an unvalidated temporary destination. Unsafe directory ownership, writable ancestors or app/version aliases fail through the existing update error panel with no shared-temp fallback. The returned resolved path is retained for the download and install plan. This protection excludes administrators and same-user processes; raw SDK download APIs still require a caller-controlled directory chain and do not secure arbitrary shared paths. See the updater README for Unix/macOS ACL and Windows local ACL-volume boundaries.
 
+  Gallery/Docs serialize their Check and Download actions: while one request is running, both controls and Install Plan are disabled, and their handlers also reject conflicting invocations. Starting a check or download clears the previous install plan. Only a successful, verified download supplies a new plan; failures and up-to-date results cannot keep an earlier plan enabled. Once the request finishes, another check/download is allowed. Independent SDK callers retain responsibility for their own request coordination.
+
 - `xtask` — command-line entry point used locally and by CI.
 - `.github/workflows/ci.yml` — ordinary quality gate for every pull request and `main` push.
 - `.github/workflows/package.yml` — GitHub Actions preview/release pipeline for native app binaries and Gallery installers.

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Serialize Gallery and Docs update checks/downloads, disable conflicting update actions while busy, and revoke the previous install plan before a new download so failures cannot leave an old plan installable.
 - Store Gallery and Docs updates in validated per-user caches, reject unsafe directory ownership/permissions and leaf aliases, and propagate cache errors without falling back to shared temporary paths.
 - Make Dialog title close controls keyboard-reachable native buttons with a visible focus ring and opaque per-view accessibility IDs; preserve built-in versus business close callbacks and clarify Gallery/Docs examples.
 - Prevent Dialog overlay clicks from reaching lower dialogs: disabled outside dismissal preserves both layers, while enabled outside dismissal closes only the top dialog.

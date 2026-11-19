@@ -86,6 +86,10 @@ enum UpdatePanelStatus {
 }
 
 impl UpdatePanelStatus {
+    fn is_busy(&self) -> bool {
+        matches!(self, Self::Checking | Self::Downloading(_))
+    }
+
     fn label(&self, cx: &impl liora_core::LocalesContext) -> String {
         match self {
             Self::Idle => tr(cx, locales::update_status::idle).to_string(),
@@ -1438,7 +1442,8 @@ impl Gallery {
     fn render_about_panel(&self, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
         let gallery = cx.entity().clone();
-        let can_install = self.install_plan.is_some();
+        let busy = self.updater_status.is_busy();
+        let can_install = !busy && self.install_plan.is_some();
 
         Space::new()
             .vertical()
@@ -1529,6 +1534,7 @@ impl Gallery {
                                 .child(
                                     Button::new(locales::gallery::check_updates)
                                         .primary()
+                                        .disabled(busy)
                                         .on_click({
                                             let gallery = gallery.clone();
                                             move |_, _window, cx| {
@@ -1536,7 +1542,7 @@ impl Gallery {
                                             }
                                         }),
                                 )
-                                .child(Button::new(locales::gallery::download_update).on_click({
+                                .child(Button::new(locales::gallery::download_update).disabled(busy).on_click({
                                     let gallery = gallery.clone();
                                     move |_, _window, cx| {
                                         download_gallery_update(gallery.clone(), cx)
@@ -1651,6 +1657,9 @@ impl Gallery {
 }
 
 fn check_gallery_update(gallery: gpui::Entity<Gallery>, cx: &mut App) {
+    if gallery.read(cx).updater_status.is_busy() {
+        return;
+    }
     let _ = gallery.update(cx, |gallery, cx| {
         gallery.updater_status = UpdatePanelStatus::Checking;
         gallery.install_plan = None;
@@ -1681,8 +1690,12 @@ fn check_gallery_update(gallery: gpui::Entity<Gallery>, cx: &mut App) {
 }
 
 fn download_gallery_update(gallery: gpui::Entity<Gallery>, cx: &mut App) {
+    if gallery.read(cx).updater_status.is_busy() {
+        return;
+    }
     let _ = gallery.update(cx, |gallery, cx| {
         gallery.updater_status = UpdatePanelStatus::Downloading("latest".into());
+        gallery.install_plan = None;
         cx.notify();
     });
     let async_cx = cx.to_async();
@@ -1715,6 +1728,9 @@ fn download_gallery_update(gallery: gpui::Entity<Gallery>, cx: &mut App) {
 }
 
 fn install_gallery_update(gallery: gpui::Entity<Gallery>, cx: &mut App) {
+    if gallery.read(cx).updater_status.is_busy() {
+        return;
+    }
     let _ = gallery.update(cx, |gallery, cx| {
         let Some(plan) = &gallery.install_plan else {
             gallery.updater_status = UpdatePanelStatus::Error(
@@ -2022,6 +2038,104 @@ fn gallery_nav_menu_items(
 
 #[cfg(test)]
 mod shell_regression_tests {
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn updater_failed_download_cannot_install_a_previous_plan() {
+        const CHILD: &str = "LIORA_UPDATE_STATE_FAILURE_CHILD";
+        if std::env::var_os(CHILD).is_some() {
+            let mut cx = gpui::TestAppContext::single();
+            let view = updater_test_gallery(&mut cx);
+            let plan = liora_updater::build_install_plan(
+                "sample", liora_updater::Platform::LinuxX64,
+                &liora_updater::ReleaseAsset {
+                    name: "sample-linux-x64.tar.gz".into(), download_url: String::new(), size: 0,
+                },
+                "old-verified-package.tar.gz",
+            );
+            cx.update(|cx| {
+                view.update(cx, |view, _| {
+                    view.install_plan = Some(plan);
+                    view.updater_status = super::UpdatePanelStatus::Downloaded("old".into());
+                });
+                super::download_gallery_update(view.clone(), cx);
+            });
+            cx.run_until_parked();
+            cx.update(|cx| {
+                assert!(matches!(view.read(cx).updater_status, super::UpdatePanelStatus::Error(_)),
+                    "actual rejected cache must finish the asynchronous download with an error");
+                assert!(view.read(cx).install_plan.is_none(), "a failed download must not resurrect the old plan");
+                super::install_gallery_update(view.clone(), cx);
+                assert!(matches!(view.read(cx).updater_status, super::UpdatePanelStatus::Error(_)),
+                    "install cannot execute the previous plan after failure");
+            });
+            cx.quit();
+            return;
+        }
+        use std::os::unix::fs::{DirBuilderExt, PermissionsExt};
+        let root = liora_updater::private_update_cache_dir(
+            "liora-gallery-state-tests", env!("CARGO_PKG_VERSION"), None,
+        ).unwrap();
+        let base = root.join(format!("failure-{}", std::process::id()));
+        std::fs::DirBuilder::new().mode(0o700).create(&base).unwrap();
+        std::fs::set_permissions(&base, std::fs::Permissions::from_mode(0o777)).unwrap();
+        let result = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", "shell_regression_tests::updater_failed_download_cannot_install_a_previous_plan", "--nocapture"])
+            .env(CHILD, "1").env("LIORA_UPDATE_CACHE", &base).output().unwrap();
+        std::fs::remove_dir(&base).unwrap();
+        assert!(result.status.success(), "{}{}",
+            String::from_utf8_lossy(&result.stdout), String::from_utf8_lossy(&result.stderr));
+    }
+
+    fn updater_test_gallery(cx: &mut gpui::TestAppContext) -> gpui::Entity<super::Gallery> {
+        cx.update(|cx| super::init_liora_with_options(cx, super::gallery_liora_options()));
+        let handle = cx.update(|cx| super::open_gallery_window(cx).unwrap());
+        handle.update(cx, |root, _, _| root.downcast::<super::Gallery>().unwrap()).unwrap()
+    }
+
+    #[gpui::test]
+    fn updater_download_invalidates_previous_install_plan(cx: &mut gpui::TestAppContext) {
+        let view = updater_test_gallery(cx);
+        let plan = liora_updater::build_install_plan(
+            "sample", liora_updater::Platform::LinuxX64,
+            &liora_updater::ReleaseAsset {
+                name: "sample-linux-x64.tar.gz".into(), download_url: String::new(), size: 0,
+            },
+            "old-verified-package.tar.gz",
+        );
+        cx.update(|cx| {
+            view.update(cx, |view, _| {
+                view.install_plan = Some(plan);
+                view.updater_status = super::UpdatePanelStatus::Downloaded("old".into());
+            });
+            super::download_gallery_update(view.clone(), cx);
+            assert!(view.read(cx).install_plan.is_none(), "starting a new download must revoke the old plan");
+            super::install_gallery_update(view.clone(), cx);
+            assert!(matches!(view.read(cx).updater_status, super::UpdatePanelStatus::Downloading(_)),
+                "install must not replace an in-flight download status");
+        });
+    }
+
+    #[gpui::test]
+    fn updater_in_flight_actions_cannot_replace_each_other(cx: &mut gpui::TestAppContext) {
+        let view = updater_test_gallery(cx);
+        cx.update(|cx| {
+            super::check_gallery_update(view.clone(), cx);
+            super::download_gallery_update(view.clone(), cx);
+            assert!(matches!(view.read(cx).updater_status, super::UpdatePanelStatus::Checking),
+                "a download must not overlap the active check");
+        });
+        cx.update(|cx| {
+            view.update(cx, |view, _| view.updater_status = super::UpdatePanelStatus::Downloading("active".into()));
+            super::check_gallery_update(view.clone(), cx);
+            assert!(matches!(view.read(cx).updater_status, super::UpdatePanelStatus::Downloading(_)),
+                "a check must not overlap the active download");
+            super::download_gallery_update(view.clone(), cx);
+            assert!(matches!(&view.read(cx).updater_status, super::UpdatePanelStatus::Downloading(tag) if tag == "active"),
+                "a second download must not replace the active request");
+        });
+    }
+
 
     #[cfg(any(target_os = "linux", target_os = "macos"))]
     #[test]
