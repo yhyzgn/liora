@@ -23,6 +23,8 @@ The reusable packaging logic lives in:
 
   Gallery/Docs serialize their Check and Download actions: while one request is running, both controls and Install Plan are disabled, and their handlers also reject conflicting invocations. Starting a check or download clears the previous install plan. Only a successful, verified download supplies a new plan; failures and up-to-date results cannot keep an earlier plan enabled. Once the request finishes, another check/download is allowed. Independent SDK callers retain responsibility for their own request coordination.
 
+  SHA-256 entries match the complete asset name, not its first whitespace-separated word. Unescaped text/binary checksum rows retain filename spaces and literal leading `*`; a manifest row for `sample.AppImage debug` cannot authorize downloading `sample.AppImage`. Escaped-filename records are not supported. A matching checksum is integrity evidence against that manifest, not an independent publisher signature.
+
 - `xtask` — command-line entry point used locally and by CI.
 - `.github/workflows/ci.yml` — ordinary quality gate for every pull request and `main` push.
 - `.github/workflows/package.yml` — GitHub Actions preview/release pipeline for native app binaries and Gallery installers.

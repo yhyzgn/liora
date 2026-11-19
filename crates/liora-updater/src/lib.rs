@@ -198,24 +198,23 @@ pub struct ChecksumManifest {
 }
 
 impl ChecksumManifest {
-    /// Parses a checksum manifest into asset-name to digest mappings.
+    /// Parses SHA-256 rows without splitting or trimming their asset filenames.
     pub fn parse(input: &str) -> Self {
         let mut entries = BTreeMap::new();
         for line in input.lines() {
-            let line = line.trim();
+            let line = line.trim_start();
             if line.is_empty() || line.starts_with('#') {
                 continue;
             }
-            let mut fields = line.split_whitespace();
-            let Some(hex) = fields.next() else { continue };
+            let Some((hex, name)) = line.split_once(char::is_whitespace) else { continue };
             if hex.len() != 64 || !hex.bytes().all(|b| b.is_ascii_hexdigit()) {
                 continue;
             }
-            let Some(name) = fields.next() else { continue };
-            entries.insert(
-                name.trim_start_matches('*').to_string(),
-                hex.to_ascii_lowercase(),
-            );
+            let name = name.strip_prefix(' ').or_else(|| name.strip_prefix('*')).unwrap_or(name);
+            if name.is_empty() {
+                continue;
+            }
+            entries.insert(name.to_string(), hex.to_ascii_lowercase());
         }
         Self { entries }
     }
@@ -997,6 +996,56 @@ mod tests {
         net::TcpListener,
         thread::{self, JoinHandle},
     };
+
+    #[test]
+    fn checksum_exact_names_preserve_spaces_and_asterisks() {
+        let hash = "ab".repeat(32);
+        let manifest = ChecksumManifest::parse(&format!(
+            "{hash}  sample.AppImage debug\n{hash}  *leading-star\n{hash} **binary-leading-star\n{hash}   leading-space \n"
+        ));
+        assert_eq!(manifest.expected_sha256("sample.AppImage"), None);
+        for name in ["sample.AppImage debug", "*leading-star", "*binary-leading-star", " leading-space "] {
+            assert_eq!(manifest.expected_sha256(name), Some(hash.as_str()), "exact name: {name:?}");
+        }
+        assert_eq!(manifest.expected_sha256("leading-star"), None);
+        assert_eq!(manifest.expected_sha256("binary-leading-star"), None);
+    }
+
+    #[test]
+    fn checksum_exact_names_cannot_authorize_a_truncated_asset() {
+        let (base, server) = test_server(vec![("/checksums", format!(
+            "{}  sample.AppImage debug\n", "ab".repeat(32)
+        ).into_bytes())]);
+        let mut release = release_with_assets(&[CHECKSUMS_ASSET, "sample.AppImage"]);
+        release.assets[0].download_url = format!("{base}/checksums");
+        release.assets[1].download_url = format!("{base}/must-not-download");
+        let destination = test_directory("exact-checksum-name");
+        let result = Updater::new("owner", "repo").download_verified_asset(&release, &release.assets[1], &destination);
+        server.join().unwrap();
+        assert!(matches!(result, Err(UpdaterError::MissingChecksumEntry(name)) if name == "sample.AppImage"));
+        assert_eq!(fs::read_dir(&destination).unwrap().count(), 0);
+        fs::remove_dir(destination).unwrap();
+    }
+
+    #[test]
+    fn checksum_exact_names_allow_verified_downloads_with_spaces() {
+        let content = b"verified artifact with spaces".to_vec();
+        let checksum = format!("{:x}  sample release.AppImage\n", Sha256::digest(&content));
+        let (base, server) = test_server(vec![
+            ("/checksums", checksum.into_bytes()), ("/artifact", content.clone()),
+        ]);
+        let mut release = release_with_assets(&[CHECKSUMS_ASSET, "sample release.AppImage"]);
+        release.assets[0].download_url = format!("{base}/checksums");
+        release.assets[1].download_url = format!("{base}/artifact");
+        let directory = test_directory("checksum-spaces");
+        let path = Updater::new("owner", "repo").download_verified_asset(&release, &release.assets[1], &directory).unwrap();
+        server.join().unwrap();
+        assert_eq!(path, directory.join("sample release.AppImage"));
+        assert_eq!(fs::read(&path).unwrap(), content);
+        assert_eq!(fs::read_dir(&directory).unwrap().count(), 1);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
 
     fn asset(name: &str) -> ReleaseAsset {
         ReleaseAsset {

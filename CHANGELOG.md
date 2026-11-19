@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Preserve complete checksum-manifest asset names, including spaces and literal leading asterisks, so a row for a longer filename cannot authorize a truncated asset name; retain text/binary marker support.
 - Serialize Gallery and Docs update checks/downloads, disable conflicting update actions while busy, and revoke the previous install plan before a new download so failures cannot leave an old plan installable.
 - Store Gallery and Docs updates in validated per-user caches, reject unsafe directory ownership/permissions and leaf aliases, and propagate cache errors without falling back to shared temporary paths.
 - Give Buttons names and roles on their existing native root, with localized icon-action labels and a name-only `aria_label` override preserving visible `+` glyphs; retain unavailable interaction guards and report component disabled/busy flags separately from platform AT states.
