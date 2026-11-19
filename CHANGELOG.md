@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Make Dialog title close controls keyboard-reachable native buttons with a visible focus ring and opaque per-view accessibility IDs; preserve built-in versus business close callbacks and clarify Gallery/Docs examples.
+- Prevent Dialog overlay clicks from reaching lower dialogs: disabled outside dismissal preserves both layers, while enabled outside dismissal closes only the top dialog.
 - Fix Dialog and MessageBox manual close to dismiss only the topmost modal while preserving underlying dialogs.
 - Notify searchable Select selection clears exactly once without treating search edits as selection changes; release Select when its window closes even if its Input remains retained.
 

@@ -106,6 +106,7 @@ pub struct Dialog {
 /// Fluent native GPUI component for rendering Liora dialog view.
 pub struct DialogView {
     id: SharedString,
+    close_id: SharedString,
     title: SharedString,
     content: Arc<dyn Fn(&mut Window, &mut Context<Self>) -> AnyElement + 'static>,
     close_on_click_outside: bool,
@@ -130,6 +131,7 @@ impl DialogView {
     ) -> Self {
         Self {
             id,
+            close_id: liora_core::unique_id("dialog-close"),
             title,
             content,
             close_on_click_outside,
@@ -205,15 +207,45 @@ impl Render for DialogView {
                     )
                     .child(
                         div()
-                            .id(element_id(format!("{id}-close-btn")))
+                            .id(element_id(self.close_id.clone()))
+                            .accessibility_id(self.close_id.clone())
+                            .debug_selector(|| "dialog-title-close".to_string())
+                            .tab_index(0)
+                            .role(gpui::Role::Button)
+                            .aria_label("Dismiss dialog")
+                            .border_2()
+                            .border_color(theme.primary.base.opacity(0.0))
+                            .focus_visible(move |style| style.border_color(theme.primary.base))
                             .cursor_pointer()
                             .child(
                                 Icon::new(IconName::X)
                                     .size(px(16.0))
                                     .color(theme.neutral.icon),
                             )
-                            .on_mouse_down(MouseButton::Left, move |_, window, cx| {
+                            .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                            .on_key_down(|event, window, cx| {
+                                let modifiers = event.keystroke.modifiers;
+                                if event.keystroke.key == "tab"
+                                    && !modifiers.control
+                                    && !modifiers.alt
+                                    && !modifiers.platform
+                                    && !modifiers.function
+                                {
+                                    if modifiers.shift {
+                                        window.focus_prev(cx);
+                                    } else {
+                                        window.focus_next(cx);
+                                    }
+                                    cx.stop_propagation();
+                                } else if !modifiers.modified()
+                                    && matches!(event.keystroke.key.as_str(), "enter" | "space")
+                                {
+                                    cx.stop_propagation();
+                                }
+                            })
+                            .on_click(move |_, window, cx| {
                                 on_close_for_close_button(window, cx);
+                                cx.stop_propagation();
                             }),
                     ),
             )
@@ -239,13 +271,11 @@ impl Render for DialogView {
             .on_mouse_move(|_, _, cx| {
                 cx.stop_propagation();
             })
-            .when(close_on_click_outside, |s| {
-                s.on_mouse_down(MouseButton::Left, {
-                    let on_close = on_close_for_outside_click.clone();
-                    move |_, window, cx| {
-                        on_close(window, cx);
-                    }
-                })
+            .on_mouse_down(MouseButton::Left, move |_, window, cx| {
+                cx.stop_propagation();
+                if close_on_click_outside {
+                    on_close_for_outside_click(window, cx);
+                }
             })
             .when(close_on_escape, |s| {
                 s.on_action(cx.listener({
@@ -485,6 +515,180 @@ mod runtime_tests {
         });
         assert_eq!(close_callback_count.get(), 0);
         app.quit();
+    }
+
+    struct KeyboardModalSurface(std::rc::Rc<std::cell::Cell<usize>>);
+
+    impl Render for KeyboardModalSurface {
+        fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+            liora_core::render_active_modal_in_window(window, cx);
+            let key_actions = self.0.clone();
+            let clicks = self.0.clone();
+            crate::AppWindowFrame::new(
+                "Dialog keyboard test",
+                div()
+                    .id("dialog-keyboard-parent")
+                    .size_full()
+                    .on_key_down(move |event, _, _| {
+                        if matches!(event.keystroke.key.as_str(), "enter" | "space") {
+                            key_actions.set(key_actions.get() + 1);
+                        }
+                    })
+                    .on_click(move |_, _, _| clicks.set(clicks.get() + 1))
+                    .child(crate::PortalLayer),
+            )
+        }
+    }
+
+    #[test]
+    fn title_close_is_tab_reachable_and_activates_once_without_bubbling() {
+        use std::{cell::Cell, rc::Rc};
+
+        for key in ["enter", "space", "pointer"] {
+            let mut app = gpui::TestAppContext::single();
+            app.update(crate::init_liora);
+            let parent_actions = Rc::new(Cell::new(0));
+            let root_actions = parent_actions.clone();
+            let handle = app.open_window(gpui::size(px(640.0), px(480.0)), |_, _| {
+                KeyboardModalSurface(root_actions)
+            });
+            let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+            let calls = Rc::new(Cell::new(0));
+            window.update(|window, cx| {
+                Dialog::new()
+                    .id("parent")
+                    .animated(false)
+                    .show_in_window(window, cx);
+                Dialog::new()
+                    .id("keyboard-child")
+                    .animated(false)
+                    .close_on_escape(false)
+                    .close_on_click_outside(false)
+                    .on_close({
+                        let calls = calls.clone();
+                        move |_, _| calls.set(calls.get() + 1)
+                    })
+                    .content(|_, _| crate::Button::new("Other action"))
+                    .show_in_window(window, cx);
+                window.draw(cx).clear(cx);
+            });
+            let bounds = window
+                .debug_bounds("dialog-title-close")
+                .expect("title close bounds");
+            window.simulate_keystrokes("escape");
+            window.simulate_click(gpui::point(px(4.0), px(4.0)), gpui::Modifiers::none());
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            assert_eq!(calls.get(), 0, "disabled Escape/outside must not close");
+            window.update(|_, cx| {
+                let modals = &cx.global::<ActiveModal>().0;
+                assert_eq!(
+                    modals.len(),
+                    2,
+                    "disabled outside must preserve both dialogs"
+                );
+                assert_eq!(modals[0].id, "parent");
+                assert_eq!(modals[1].id, "keyboard-child");
+            });
+            window.simulate_keystrokes("tab");
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            assert_eq!(window.debug_bounds("dialog-title-close"), Some(bounds));
+            let close_focus = window
+                .update(|window, cx| window.focused(cx))
+                .expect("Tab must focus the close control");
+            window.simulate_keystrokes("tab");
+            window.update(|window, cx| {
+                window.draw(cx).clear(cx);
+                assert!(window.focused(cx).is_some());
+                assert!(
+                    window.focused(cx) != Some(close_focus.clone()),
+                    "Tab must leave close"
+                );
+            });
+            window.simulate_keystrokes("shift-tab");
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            assert_eq!(window.debug_bounds("dialog-title-close"), Some(bounds));
+            window.update(|window, cx| {
+                assert!(
+                    window.focused(cx) == Some(close_focus.clone()),
+                    "Shift+Tab must return to close"
+                );
+            });
+            if key == "pointer" {
+                window.simulate_click(bounds.center(), gpui::Modifiers::none());
+            } else {
+                window.simulate_keystrokes(key);
+                assert_eq!(calls.get(), 0, "{key}: key-down must not close");
+                window.update(|window, cx| {
+                    let keystroke =
+                        gpui::Keystroke::parse_with_os(key, cx.platform_info().os).unwrap();
+                    window.dispatch_event(
+                        gpui::PlatformInput::KeyUp(gpui::KeyUpEvent { keystroke }),
+                        cx,
+                    );
+                    window.draw(cx).clear(cx);
+                });
+            }
+            assert_eq!(
+                calls.get(),
+                1,
+                "{key}: Tab must reach the title close control"
+            );
+            assert_eq!(parent_actions.get(), 0, "activation must not bubble");
+            window.update(|_, cx| {
+                let modals = &cx.global::<ActiveModal>().0;
+                assert_eq!(modals.len(), 1);
+                assert_eq!(modals[0].id, "parent");
+            });
+            app.quit();
+        }
+    }
+
+    #[test]
+    fn outside_click_is_consumed_by_only_the_top_dialog() {
+        use std::{cell::Cell, rc::Rc};
+
+        for child_closes_on_outside in [false, true] {
+            let mut app = gpui::TestAppContext::single();
+            app.update(crate::init_liora);
+            let handle = app.open_window(gpui::size(px(640.0), px(480.0)), |_, _| {
+                KeyboardModalSurface(Rc::new(Cell::new(0)))
+            });
+            let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+            let parent_calls = Rc::new(Cell::new(0));
+            let child_calls = Rc::new(Cell::new(0));
+            window.update(|window, cx| {
+                Dialog::new()
+                    .id("outside-parent")
+                    .animated(false)
+                    .on_close({
+                        let calls = parent_calls.clone();
+                        move |_, _| calls.set(calls.get() + 1)
+                    })
+                    .show_in_window(window, cx);
+                Dialog::new()
+                    .id("outside-child")
+                    .animated(false)
+                    .close_on_click_outside(child_closes_on_outside)
+                    .on_close({
+                        let calls = child_calls.clone();
+                        move |_, _| calls.set(calls.get() + 1)
+                    })
+                    .show_in_window(window, cx);
+                window.draw(cx).clear(cx);
+            });
+            window.simulate_click(gpui::point(px(4.0), px(4.0)), gpui::Modifiers::none());
+            assert_eq!(parent_calls.get(), 0, "outside must never reach the parent");
+            assert_eq!(child_calls.get(), usize::from(child_closes_on_outside));
+            window.update(|_, cx| {
+                let modals = &cx.global::<ActiveModal>().0;
+                assert_eq!(modals.len(), if child_closes_on_outside { 1 } else { 2 });
+                assert_eq!(modals[0].id, "outside-parent");
+                if !child_closes_on_outside {
+                    assert_eq!(modals[1].id, "outside-child");
+                }
+            });
+            app.quit();
+        }
     }
 }
 

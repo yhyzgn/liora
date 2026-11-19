@@ -1,4 +1,4 @@
-//! Disable overlay and ESC close when business flow must decide dismissal.
+//! Disable overlay and ESC dismissal; the title close control remains available.
 
 use liora_components::{Button, Dialog, Row, RowJustify, Space, Text};
 
@@ -15,7 +15,7 @@ pub fn manual_close_dialog_button() -> Button {
                         .vertical()
                         .gap_lg()
                         .child(Text::new(
-                            "点击遮罩和按 ESC 都不会关闭，只能点击按钮手动关闭。",
+                            "遮罩和 ESC 不会关闭；标题关闭按钮或业务按钮仍可关闭。",
                         ))
                         .child(
                             Row::new().justify(RowJustify::End).child(
