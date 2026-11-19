@@ -21,7 +21,7 @@
 
 use crate::Checkbox;
 use gpui::{
-    AnyElement, App, Context, Entity, FocusHandle, Focusable, Hsla, MouseButton, MouseUpEvent,
+    AnyElement, App, ClickEvent, Context, Entity, FocusHandle, Focusable, Hsla, MouseButton,
     Pixels, Render, Rgba, SharedString, Window, prelude::*, px,
 };
 use liora_core::Config;
@@ -525,6 +525,7 @@ impl CheckboxGroup {
         let show_selected_icon = style.show_selected_icon.unwrap_or(true);
 
         let mut item = gpui::div()
+            .id(("checkbox-group-styled-option", idx))
             .flex()
             .flex_row()
             .items_center()
@@ -546,17 +547,11 @@ impl CheckboxGroup {
                     s.cursor_pointer().bg(hover_bg)
                 }
             });
-            item = item.on_mouse_up(
-                MouseButton::Left,
-                cx.listener(
-                    move |this: &mut Self,
-                          _: &MouseUpEvent,
-                          window: &mut Window,
-                          cx: &mut Context<Self>| {
-                        this.toggle_idx(idx, window, cx);
-                    },
-                ),
-            );
+            item = item.on_click(cx.listener(move |this, event, window, cx| {
+                if matches!(event, ClickEvent::Mouse(click) if click.up.button == MouseButton::Left) {
+                    this.toggle_idx(idx, window, cx);
+                }
+            }));
         } else {
             item = item.cursor_not_allowed();
         }
@@ -620,6 +615,7 @@ impl CheckboxGroup {
                 style.text_color.unwrap_or(theme.neutral.text_1)
             };
             let mut item = gpui::div()
+                .id(("checkbox-group-button-option", idx))
                 .h(height)
                 .px(style.padding_x.unwrap_or(padding_x))
                 .flex()
@@ -650,17 +646,11 @@ impl CheckboxGroup {
                         s.cursor_pointer().bg(hover_bg)
                     }
                 });
-                item = item.on_mouse_up(
-                    MouseButton::Left,
-                    cx.listener(
-                        move |this: &mut Self,
-                              _: &MouseUpEvent,
-                              window: &mut Window,
-                              cx: &mut Context<Self>| {
-                            this.toggle_idx(idx, window, cx);
-                        },
-                    ),
-                );
+                item = item.on_click(cx.listener(move |this, event, window, cx| {
+                    if matches!(event, ClickEvent::Mouse(click) if click.up.button == MouseButton::Left) {
+                        this.toggle_idx(idx, window, cx);
+                    }
+                }));
             } else {
                 item = item.cursor_not_allowed();
             }
@@ -732,6 +722,123 @@ impl Render for CheckboxGroup {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn assert_option_pointer_contract(variant: u8, disabled: bool) {
+        use gpui::{AppContext, Modifiers, VisualTestContext, point};
+        use std::{cell::RefCell, rc::Rc};
+
+        struct Surface(Entity<CheckboxGroup>);
+        impl Render for Surface {
+            fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+                gpui::div().w_full().h_full().p_4().child(self.0.clone())
+            }
+        }
+        fn draw(window: &mut VisualTestContext) {
+            window.update(|window, cx| window.draw(cx).clear(cx));
+        }
+
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let changes = Rc::new(RefCell::new(Vec::new()));
+        let observed = changes.clone();
+        let group = app.new(|cx| {
+            let mut group = CheckboxGroup::new(vec!["First", "Second"], vec![1], cx)
+                .on_change(move |selected, _, _| observed.borrow_mut().push(selected));
+            if variant == 0 || variant == 4 {
+                group = group.horizontal().option_style(CheckboxOptionStyle::new());
+            }
+            if variant == 2 || variant == 3 {
+                group = group.button();
+            }
+            if variant == 1 || variant == 3 || variant == 4 {
+                group = group.option_renderer(|option| {
+                    let selector = if option.index == 0 { "group-first-content" } else { "group-second-content" };
+                    gpui::div().debug_selector(move || selector.into())
+                        .w(px(72.0)).h(px(22.0)).child(option.label).into_any_element()
+                });
+            }
+            group.disabled(disabled, cx)
+        });
+        let root = group.clone();
+        let handle = app.add_window(move |_, _| Surface(root));
+        let mut window = VisualTestContext::from_window(handle.into(), &app);
+        draw(&mut window);
+        let first = if matches!(variant, 1 | 3 | 4) {
+            window.debug_bounds("group-first-content").unwrap().center()
+        } else { point(px(24.0), px(24.0)) };
+        let second = if matches!(variant, 1 | 3 | 4) {
+            window.debug_bounds("group-second-content").unwrap().center()
+        } else { point(px(120.0), px(24.0)) };
+        let outside = point(px(700.0), px(240.0));
+
+        // Prove the fixture really hits the option before testing canceled gestures.
+        window.simulate_click(first, Modifiers::none());
+        draw(&mut window);
+        window.simulate_click(first, Modifiers::none());
+        draw(&mut window);
+        let expected = if disabled { vec![] } else { vec![vec![0, 1], vec![1]] };
+        assert_eq!(*changes.borrow(), expected, "variant {variant}: normal click exact-once");
+        group.read_with(&app, |group, _| assert_eq!(group.selected, [1]));
+        changes.borrow_mut().clear();
+
+        window.simulate_mouse_down(outside, MouseButton::Left, Modifiers::none());
+        window.simulate_mouse_move(first, Some(MouseButton::Left), Modifiers::none());
+        draw(&mut window);
+        window.simulate_mouse_up(first, MouseButton::Left, Modifiers::none());
+        draw(&mut window);
+        assert!(changes.borrow().is_empty(), "variant {variant}: outside press activated an option");
+
+        window.simulate_mouse_down(first, MouseButton::Left, Modifiers::none());
+        draw(&mut window);
+        window.simulate_mouse_move(outside, Some(MouseButton::Left), Modifiers::none());
+        window.simulate_mouse_up(outside, MouseButton::Left, Modifiers::none());
+        draw(&mut window);
+        assert!(changes.borrow().is_empty(), "variant {variant}: outside release activated an option");
+
+        window.simulate_mouse_down(first, MouseButton::Left, Modifiers::none());
+        draw(&mut window);
+        window.simulate_mouse_move(second, Some(MouseButton::Left), Modifiers::none());
+        window.simulate_mouse_up(second, MouseButton::Left, Modifiers::none());
+        draw(&mut window);
+        assert!(changes.borrow().is_empty(), "variant {variant}: press and release crossed options");
+        group.read_with(&app, |group, _| assert_eq!(group.selected, [1]));
+
+        window.simulate_mouse_down(first, MouseButton::Left, Modifiers::none());
+        draw(&mut window);
+        window.simulate_mouse_up(first, MouseButton::Right, Modifiers::none());
+        assert!(
+            changes.borrow().is_empty(),
+            "variant {variant}: non-primary release activated an option"
+        );
+
+        window.simulate_mouse_down(first, MouseButton::Left, Modifiers::none());
+        draw(&mut window);
+        window.simulate_mouse_up(first, MouseButton::Left, Modifiers::none());
+        draw(&mut window);
+        let expected = if disabled { vec![] } else { vec![vec![0, 1]] };
+        assert_eq!(*changes.borrow(), expected, "variant {variant}: click across redraw must dispatch once");
+        app.quit();
+    }
+
+    #[test]
+    fn styled_options_require_a_matching_pointer_press() { assert_option_pointer_contract(0, false); }
+
+    #[test]
+    fn default_custom_options_require_a_matching_pointer_press() { assert_option_pointer_contract(1, false); }
+
+    #[test]
+    fn button_options_require_a_matching_pointer_press() { assert_option_pointer_contract(2, false); }
+
+    #[test]
+    fn custom_button_options_require_a_matching_pointer_press() { assert_option_pointer_contract(3, false); }
+
+    #[test]
+    fn styled_custom_options_require_a_matching_pointer_press() { assert_option_pointer_contract(4, false); }
+
+    #[test]
+    fn disabled_styled_custom_and_button_options_ignore_pointer_gestures() {
+        for variant in 0..5 { assert_option_pointer_contract(variant, true); }
+    }
 
     #[test]
     fn checkbox_option_style_supports_layout_and_selected_style() {
