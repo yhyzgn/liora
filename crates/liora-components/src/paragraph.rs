@@ -139,7 +139,7 @@ impl Paragraph {
         &self,
         cx: &impl liora_core::LocalesContext,
         theme: &liora_theme::Theme,
-        code_family: Option<SharedString>,
+        code_family: SharedString,
         ui_family: Option<SharedString>,
         code_weight: Option<gpui::FontWeight>,
         ui_weight: Option<gpui::FontWeight>,
@@ -180,8 +180,7 @@ impl Paragraph {
                     };
                 }
                 if segment.is_code_style && segment.font_family.is_none() {
-                    segment.font_family =
-                        Some(code_family.clone().unwrap_or_else(|| "Monospace".into()));
+                    segment.font_family = Some(code_family.clone());
                 } else if !segment.is_code_style && segment.font_family.is_none() {
                     segment.font_family = ui_family.clone();
                 }
@@ -275,7 +274,7 @@ impl RenderOnce for Paragraph {
         let (full_text, runs) = self.selectable_text_parts(
             cx,
             theme,
-            Some(code_family),
+            code_family,
             ui_family.clone(),
             code_weight,
             ui_weight,
@@ -375,7 +374,14 @@ mod tests {
         let (text, runs) = Paragraph::new()
             .child(Text::new("Hello ").bold())
             .child(Text::new("世界").italic())
-            .selectable_text_parts(&locales, &theme, Some("Monospace".into()), None, None, None);
+            .selectable_text_parts(
+                &locales,
+                &theme,
+                "DejaVu Sans Mono".into(),
+                None,
+                None,
+                None,
+            );
 
         assert_eq!(text.as_ref(), "Hello 世界");
         assert_eq!(runs.len(), 2);
@@ -393,7 +399,14 @@ mod tests {
             .preserve_segment_styles()
             .child(Text::new("A"))
             .child(Text::new("。").weight(FontWeight::SEMIBOLD))
-            .selectable_text_parts(&locales, &theme, None, None, None, None);
+            .selectable_text_parts(
+                &locales,
+                &theme,
+                "DejaVu Sans Mono".into(),
+                None,
+                None,
+                None,
+            );
 
         assert_eq!(text.as_ref(), "A。");
         assert_eq!(runs.len(), 2);
@@ -413,7 +426,14 @@ mod tests {
             .child(Text::new("、"))
             .child(Text::new("Input").code_style(&theme))
             .child(Text::new("。"))
-            .selectable_text_parts(&locales, &theme, Some("Monospace".into()), None, None, None);
+            .selectable_text_parts(
+                &locales,
+                &theme,
+                "DejaVu Sans Mono".into(),
+                None,
+                None,
+                None,
+            );
 
         assert_eq!(
             text.as_ref(),
@@ -422,6 +442,9 @@ mod tests {
         assert_eq!(runs[0].len, "crates/liora-components：".len());
         assert_eq!(runs[2].len, "Button、".len());
         assert_eq!(runs[3].len, "Input。".len());
+        for index in [0, 2, 3] {
+            assert_eq!(runs[index].font.family, "DejaVu Sans Mono");
+        }
     }
 
     #[test]

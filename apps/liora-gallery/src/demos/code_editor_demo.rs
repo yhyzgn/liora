@@ -534,7 +534,6 @@ fn gallery_code_editor_config_path() -> PathBuf {
 
 const CONFIG_FILE_TOML: &str = r##"language = "rust"
 theme = "one-dark"
-font_family = "Monospace"
 font_size_px = 16
 font_weight = 500
 line_height_px = 26

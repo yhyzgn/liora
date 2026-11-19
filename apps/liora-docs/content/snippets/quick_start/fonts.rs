@@ -60,8 +60,7 @@ pub fn init_with_packaged_fonts(cx: &mut App) {
         Options::system().with_fonts(
             FontConfig::system()
                 .with_ui_families(["MiSans", "Segoe UI", "Arial"])
-                .with_ui_weight(FontWeight::MEDIUM)
-                .with_code_families(["Consolas", "JetBrains Mono", "SF Mono", "Monospace"]),
+                .with_ui_weight(FontWeight::MEDIUM),
         ),
     );
 }
@@ -71,7 +70,6 @@ pub fn switch_to_system_fallbacks(cx: &mut App) {
         cx,
         FontConfig::system()
             .with_ui_families(["Segoe UI", "MiSans", "Arial"])
-            .with_ui_weight(FontWeight::NORMAL)
-            .with_code_families(["Consolas", "JetBrains Mono", "SF Mono", "Monospace"]),
+            .with_ui_weight(FontWeight::NORMAL),
     );
 }

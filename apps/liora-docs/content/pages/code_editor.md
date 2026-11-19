@@ -150,7 +150,6 @@ CodeEditor 支持用 `CodeEditorConfig` 从 TOML/JSON 文件加载配置。基�
 language = "rust"
 theme_file = "themes/one.json"
 theme_name = "One Dark"
-font_family = "Monospace"
 font_size_px = 16
 font_weight = 500
 line_height_px = 26

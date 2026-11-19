@@ -19,6 +19,46 @@ use std::{
     path::{Path, PathBuf},
 };
 
+const DEFAULT_CODE_FAMILIES: &[&str] = &[
+    "Consolas",
+    "JetBrains Mono",
+    "SF Mono",
+    "Menlo",
+    "Monaco",
+    "Lilex",
+    "DejaVu Sans Mono",
+    "Liberation Mono",
+    "Noto Sans Mono",
+    "Ubuntu Mono",
+    "Courier New",
+];
+
+struct DefaultCodeFont(SharedString);
+impl gpui::Global for DefaultCodeFont {}
+
+fn default_code_font_from_available(available: &[String]) -> &'static str {
+    DEFAULT_CODE_FAMILIES
+        .iter()
+        .copied()
+        .find(|candidate| available.iter().any(|family| family.as_str() == *candidate))
+        .unwrap_or("DejaVu Sans Mono")
+}
+
+pub(crate) fn refresh_default_code_font(cx: &mut App) {
+    if cx.has_global::<crate::Config>() {
+        let family = default_code_font_from_available(&cx.text_system().all_font_names());
+        cx.set_global(DefaultCodeFont(family.into()));
+    }
+}
+
+pub(crate) fn default_code_font_family(cx: &App) -> SharedString {
+    match cx.try_global::<DefaultCodeFont>() {
+        Some(cached) => cached.0.clone(),
+        // Hosts that install Config directly have no SDK-initialized cache.
+        None => default_code_font_from_available(&cx.text_system().all_font_names()).into(),
+    }
+}
+
 /// Font file extensions that Liora will try to register with GPUI.
 ///
 /// GPUI accepts raw font bytes and delegates parsing to its platform text
@@ -252,6 +292,9 @@ pub fn load_embedded_fonts(
             Err(error) => report.failure(font.name.to_string(), error),
         }
     }
+    if report.loaded_any() {
+        refresh_default_code_font(cx);
+    }
     report
 }
 
@@ -270,6 +313,9 @@ pub fn load_font_files(cx: &mut App, paths: impl IntoIterator<Item = PathBuf>) -
             },
             Err(error) => report.failure(path.display().to_string(), error),
         }
+    }
+    if report.loaded_any() {
+        refresh_default_code_font(cx);
     }
     report
 }
@@ -321,6 +367,9 @@ pub fn load_font_assets(
             Ok(None) => report.failure(path.to_string(), "asset not found"),
             Err(error) => report.failure(path.to_string(), error),
         }
+    }
+    if report.loaded_any() {
+        refresh_default_code_font(cx);
     }
     report
 }
@@ -399,6 +448,53 @@ mod tests {
         fs,
         time::{SystemTime, UNIX_EPOCH},
     };
+
+    #[test]
+    fn default_code_font_uses_concrete_available_families_in_order() {
+        for family in [
+            "DejaVu Sans Mono",
+            "Liberation Mono",
+            "Noto Sans Mono",
+            "Ubuntu Mono",
+        ] {
+            assert_eq!(
+                default_code_font_from_available(&["Arial".into(), family.into()]),
+                family
+            );
+        }
+        assert_eq!(
+            default_code_font_from_available(&[
+                "DejaVu Sans Mono".into(),
+                "SF Mono".into(),
+                "JetBrains Mono".into(),
+                "Consolas".into(),
+            ]),
+            "Consolas"
+        );
+        // No font is supplied by a family name; the last resort may be unavailable.
+        assert_eq!(default_code_font_from_available(&[]), "DejaVu Sans Mono");
+    }
+
+    #[test]
+    fn manually_installed_config_can_resolve_code_fonts_without_a_cache() {
+        use crate::{Config, FontConfig, LocalesConfig, Theme, ThemeMode, code_font_family};
+
+        let mut app = gpui::TestAppContext::single();
+        app.update(|cx| {
+            cx.set_global(Config {
+                theme: Theme::light(),
+                theme_mode: ThemeMode::Light,
+                fonts: FontConfig::system(),
+                locales: LocalesConfig::default(),
+                z_index_base: 1000,
+            });
+            assert_eq!(code_font_family(cx), "DejaVu Sans Mono");
+            cx.global_mut::<Config>().set_font_config(
+                FontConfig::system().with_code_families(["explicit unavailable family"]),
+            );
+            assert_eq!(code_font_family(cx), "explicit unavailable family");
+        });
+    }
 
     #[test]
     fn supported_font_extensions_cover_native_and_web_font_files() {

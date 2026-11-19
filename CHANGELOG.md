@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Resolve default code fonts from an available concrete family stack, including Linux monospace families, and cache the initialized SDK default until font registration or explicit refresh. Gallery/Docs inherit this policy without changing MiSans UI typography or explicit host font overrides; no font files are bundled by this fix.
 - Add the sole application-root source-policy exception for official `accesskit_atspi_common 0.19.1` with upstream Busy/Disabled backports, preserving the exact official GPUI pin and SDK publication boundaries. Share executable metadata/source audit and negative controls between ordinary CI and release preflight, and explicitly test the excluded leaf. Downstream hosts must opt into their own root override; published SDK crates do not transmit the fix.
 
 - Preserve complete checksum-manifest asset names, including spaces and literal leading asterisks, so a row for a longer filename cannot authorize a truncated asset name; retain text/binary marker support.

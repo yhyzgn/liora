@@ -32,11 +32,11 @@ static NEXT_UNIQUE_ID: AtomicU64 = AtomicU64::new(1);
 ///
 /// The default value intentionally leaves the UI list and weights empty, so GPUI
 /// keeps using its platform/system default (`.SystemUIFont`) and normal text
-/// weight. The code list is also optional; when it is empty, Liora asks GPUI for
-/// the generic `Monospace` family for code-oriented surfaces. Applications that
-/// want branded typography can load font bytes with [`load_custom_fonts`] and
-/// then provide ordered fallback lists and default weights through
-/// [`FontConfig`].
+/// weight. The code list is also optional; when it is empty, Liora selects an
+/// installed concrete family from its built-in code-font stack. No font bytes
+/// are bundled by the SDK. Applications that want branded typography can load
+/// font bytes with [`load_custom_fonts`] and then provide ordered fallback lists
+/// and default weights through [`FontConfig`].
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct FontConfig {
     /// Ordered UI font candidates. The first currently available family wins;
@@ -45,7 +45,7 @@ pub struct FontConfig {
     pub ui_families: Vec<SharedString>,
     /// Ordered code font candidates. The first currently available family wins;
     /// if none are visible to GPUI, the final candidate is used as the declared
-    /// fallback. Empty lists resolve to GPUI's generic `Monospace`.
+    /// fallback. Empty lists use Liora's built-in concrete code-font stack.
     pub code_families: Vec<SharedString>,
     /// Optional default UI text weight. `None` keeps GPUI's normal/platform
     /// default weight; explicit per-component weights such as bold headings
@@ -196,7 +196,9 @@ pub fn load_custom_fonts(
     cx: &mut App,
     fonts: impl IntoIterator<Item = Cow<'static, [u8]>>,
 ) -> gpui::Result<()> {
-    cx.text_system().add_fonts(fonts.into_iter().collect())
+    cx.text_system().add_fonts(fonts.into_iter().collect())?;
+    fonts::refresh_default_code_font(cx);
+    Ok(())
 }
 
 /// Generate a process-wide unique, monotonically increasing numeric id.
@@ -713,6 +715,7 @@ pub fn init_liora(cx: &mut App, theme: Theme) {
 
 fn set_core_config(cx: &mut App, config: Config) {
     cx.set_global(config);
+    fonts::refresh_default_code_font(cx);
     cx.set_global(crate::popper::ZIndexStack::default());
     cx.set_global(crate::popper::ActiveTooltip(Vec::new()));
     cx.set_global(crate::popper::ActivePopover(Vec::new()));
@@ -741,8 +744,14 @@ pub fn init_liora_with_options(cx: &mut App, options: Options) {
 }
 
 /// Replaces Liora font-family overrides for subsequent renders.
+///
+/// Returning to an empty code list also refreshes the cached default after font
+/// bytes registered directly through GPUI. SDK font loaders refresh it themselves.
 pub fn set_font_config(cx: &mut App, fonts: FontConfig) {
     cx.global_mut::<Config>().set_font_config(fonts);
+    if cx.global::<Config>().fonts.code_families.is_empty() {
+        fonts::refresh_default_code_font(cx);
+    }
 }
 
 /// Resolves an ordered fallback list against families currently visible to GPUI.
@@ -779,16 +788,18 @@ pub fn ui_font_weight(cx: &App) -> Option<FontWeight> {
     cx.global::<Config>().fonts.ui_weight
 }
 
-/// Returns the resolved code font family or GPUI's generic monospace family.
+/// Returns the resolved code font family, using a cached concrete default when unset.
+///
+/// The default stack requires an installed or registered font; it does not supply
+/// fonts or guarantee monospace/CJK/emoji coverage when no candidate is available.
 pub fn code_font_family(cx: &App) -> SharedString {
     let config = cx.global::<Config>();
+    if config.fonts.code_families.is_empty() {
+        return fonts::default_code_font_family(cx);
+    }
     let available = cx.text_system().all_font_names();
-    resolve_font_family_from_available(
-        &config.fonts.code_families,
-        &available,
-        Some("Monospace".into()),
-    )
-    .unwrap_or_else(|| "Monospace".into())
+    resolve_font_family_from_available(&config.fonts.code_families, &available, None)
+        .expect("nonempty code font candidates")
 }
 
 /// Returns the configured default code text weight, if the app overrides it.
@@ -1153,7 +1164,11 @@ mod theme_mode_tests {
             config.set_theme_mode(ThemeMode::System, WindowAppearance::Light);
             // Exercise production setup with a supplied startup hint, not OS probes.
             attach_system_theme_observer_with(window, cx, |window, cx| {
-                assert!(sync_observed_system_appearance(window, cx, WindowAppearance::Dark));
+                assert!(sync_observed_system_appearance(
+                    window,
+                    cx,
+                    WindowAppearance::Dark
+                ));
             });
             assert_eq!(cx.global::<Config>().theme.name, "dark");
             // Invoke the production callback directly; GPUI event delivery is not simulated.
@@ -1202,7 +1217,7 @@ mod theme_mode_tests {
 
         let custom = FontConfig::system()
             .with_ui_families(["Inter", "Segoe UI"])
-            .with_code_families(["JetBrains Mono", "Monospace"])
+            .with_code_families(["JetBrains Mono", "DejaVu Sans Mono"])
             .with_ui_weight(FontWeight::MEDIUM)
             .with_code_weight(FontWeight::NORMAL);
         assert_eq!(
@@ -1213,7 +1228,7 @@ mod theme_mode_tests {
             custom.code_families(),
             &[
                 SharedString::from("JetBrains Mono"),
-                SharedString::from("Monospace")
+                SharedString::from("DejaVu Sans Mono")
             ]
         );
         assert_eq!(custom.ui_weight(), Some(FontWeight::MEDIUM));
@@ -1230,7 +1245,7 @@ mod theme_mode_tests {
     fn font_config_accepts_ordered_fallback_family_lists() {
         let custom = FontConfig::system()
             .with_ui_families(["MiSans", "Segoe UI", "Arial"])
-            .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"])
+            .with_code_families(["JetBrains Mono", "SF Mono", "DejaVu Sans Mono"])
             .with_ui_weight(FontWeight::MEDIUM);
 
         assert_eq!(
@@ -1246,7 +1261,7 @@ mod theme_mode_tests {
             &[
                 SharedString::from("JetBrains Mono"),
                 SharedString::from("SF Mono"),
-                SharedString::from("Monospace")
+                SharedString::from("DejaVu Sans Mono")
             ]
         );
         assert_eq!(custom.ui_weight(), Some(FontWeight::MEDIUM));
@@ -1270,9 +1285,9 @@ mod theme_mode_tests {
             Some("Arial")
         );
         assert_eq!(
-            resolve_font_family_from_available(&[], &available, Some("Monospace".into()))
+            resolve_font_family_from_available(&[], &available, Some("DejaVu Sans Mono".into()))
                 .as_deref(),
-            Some("Monospace")
+            Some("DejaVu Sans Mono")
         );
     }
 }

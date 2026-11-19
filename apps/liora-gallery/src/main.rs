@@ -279,8 +279,7 @@ fn gallery_liora_options() -> Options {
         .with_fonts(
             FontConfig::system()
                 .with_ui_families(["MiSans", "Segoe UI", "Arial"])
-                .with_ui_weight(FontWeight::MEDIUM)
-                .with_code_families(["Consolas", "JetBrains Mono", "SF Mono", "Monospace"]),
+                .with_ui_weight(FontWeight::MEDIUM),
         );
 
     match options.clone().try_with_locales_dir(app_locales_dir()) {

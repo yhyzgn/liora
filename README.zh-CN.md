@@ -379,7 +379,7 @@ fn init_with_system_font_names(cx: &mut App) {
     let fonts = FontConfig::system()
         .with_ui_families(["Segoe UI", "MiSans", "Arial"])
         .with_ui_weight(FontWeight::MEDIUM)
-        .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"]);
+        .with_code_families(["JetBrains Mono", "SF Mono", "DejaVu Sans Mono"]);
 
     init_liora_with_options(cx, Options::system().with_fonts(fonts));
 }
@@ -1201,7 +1201,6 @@ let editor = CodeEditor::new(source, cx)
 language = "rust"
 theme_file = "themes/one.json"
 theme_name = "One Dark"
-font_family = "Monospace"
 font_size_px = 16
 font_weight = 500
 line_height_px = 26
@@ -1348,6 +1347,10 @@ Liora 把 **字体资源加载** 和 **字体族 / 字重选择** 拆成两步�
 2. 如果应用自带私有字体，先用 `load_app_fonts`、`load_fonts_from_dir`、`load_font_assets`、`load_embedded_fonts`，或底层兼容函数 `load_custom_fonts` 注册字体字节。
 3. 然后在启动时通过 `Options::with_fonts(...)`，或运行时通过 `set_font_config(...)` 选择 UI/code 字体族和可选默认字重。`with_ui_families(["MiSans", ...])` 只选择 family；如果想让该 family 以 Medium 字重渲染，需要再配置 `with_ui_weight(FontWeight::MEDIUM)`。
 
+代码字体列表为空时使用 SDK 的具体候选栈：Consolas、JetBrains Mono、SF Mono、Menlo、Monaco、Lilex、DejaVu Sans Mono、Liberation Mono、Noto Sans Mono、Ubuntu Mono、Courier New。Gallery/Docs 继承此默认值，保留 MiSans UI 配置。SDK 初始化后按应用缓存默认选择，不在每次 render 枚举；SDK 成功注册字体后会刷新。运行时直接调用 GPUI `add_fonts` 后，请重用原 `FontConfig`、代码列表保持空，再调用 `set_font_config` 刷新默认值，保留原 UI family 和字重配置。显式非空列表仍优先选择首个可用 family，均不可用时保留最后候选；明确的比例字体覆盖不变。
+
+family 名称不会提供字体文件。如果默认候选均不可用，Liora 最后请求 DejaVu Sans Mono，GPUI 仍可能替代为比例字体；需要固定拉丁字符 advance 的宿主应安装或注册真实代码字体。`Monospace` 和 `.ZedMono` 均不会自动供应字体。CJK/emoji 覆盖依赖已安装/注册字体与平台排版。
+
 支持的文件扩展名包括 `ttf`、`otf`、`ttc`、`otc`、`woff`、`woff2`，但真正解析能力由各平台官方 GPUI 后端决定。原生桌面应用优先使用 `ttf` / `otf` / `ttc` / `otc`。在 Linux/WGPU 上，当前 GPUI 的 `fontdb` 路径可能会忽略 WOFF/WOFF2 字节且不返回错误，所以只要某个 family 必须生效，就应该使用 `FontLoadOptions::require_family(...)` 并检查 `FontLoadReport::missing_required_families`。
 
 #### 只使用系统已安装字体
@@ -1362,7 +1365,7 @@ fn init_with_system_fonts(cx: &mut gpui::App) {
             FontConfig::system()
                 .with_ui_families(["Segoe UI", "MiSans", "Arial"]) // 按顺序自动降级。
                 .with_ui_weight(FontWeight::MEDIUM)
-                .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"]),
+                .with_code_families(["JetBrains Mono", "SF Mono", "DejaVu Sans Mono"]),
         ),
     );
 }
@@ -1373,7 +1376,7 @@ fn switch_to_system_ui_and_monospace_code(cx: &mut gpui::App) {
         FontConfig::system()
             .with_ui_families(["MiSans", "Segoe UI", "Arial"])
             .with_ui_weight(FontWeight::MEDIUM)
-            .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"]),
+            .with_code_families(["JetBrains Mono", "SF Mono", "DejaVu Sans Mono"]),
     );
 }
 ```
@@ -1459,8 +1462,7 @@ fn init_with_external_then_embedded(cx: &mut gpui::App) {
         Options::system().with_fonts(
             FontConfig::system()
                 .with_ui_families(["MiSans", "Segoe UI", "Arial"])
-                .with_ui_weight(FontWeight::MEDIUM)
-                .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"]),
+                .with_ui_weight(FontWeight::MEDIUM),
         ),
     );
 }

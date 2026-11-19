@@ -143,6 +143,10 @@ Liora 把字体分成两个步骤：**加载资源** 和 **选择 family / weigh
 
 Gallery 和 Docs 当前采用同一策略：源码运行时扫描 `apps/<app>/assets/fonts`，并通过 `with_ui_weight(FontWeight::MEDIUM)` 指定默认 UI 字重；发布产物拆成 `without-fonts` 和 `with-fonts` 两种。默认 `without-fonts` 不携带应用字体文件、体积更小；`with-fonts` 安装包 / portable archive 会带上外部 `assets/fonts`，裸可执行程序则通过 `embedded-fonts` feature 内嵌一个较小的 `MiSans-Medium.ttf` fallback。这样既能保证源码运行时可直接看到 MiSans，也能让正式发布产物在体积和字体一致性之间明确选择。
 
+两应用的代码字体列表留空，继承 SDK 的具体候选栈：Consolas、JetBrains Mono、SF Mono、Menlo、Monaco、Lilex、DejaVu Sans Mono、Liberation Mono、Noto Sans Mono、Ubuntu Mono、Courier New。默认选择在 SDK 初始化后缓存，SDK 成功注册字体后刷新，不逐 render 枚举。直接使用 GPUI `add_fonts` 后，重新调用 `set_font_config` 并保留空代码列表可刷新默认选择。显式代码列表仍按原顺序选首个可用 family，均不可用时保留最后候选；也允许宿主明确选择比例字体。
+
+这些 family 名不供应字体文件；没有任何候选时最后请求 DejaVu Sans Mono，平台仍可能替代为比例字体。需要确定等宽效果时请安装或注册具体字体；不能把 `Monospace` 或 `.ZedMono` 当作自动可用的等宽字体，CJK/emoji 覆盖也不作通用保证。
+
 ```rust src="quick_start/fonts.rs"
 ```
 

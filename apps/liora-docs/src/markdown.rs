@@ -8200,7 +8200,6 @@ let options = CodeEditorOptions {
 "#;
 const DOCS_CODE_EDITOR_CONFIG_FILE_TOML: &str = r##"language = "rust"
 theme = "one-dark"
-font_family = "Monospace"
 font_size_px = 16
 font_weight = 500
 line_height_px = 26
@@ -12306,9 +12305,6 @@ mod tests {
             assert!(source.contains(r#"require_family("MiSans")"#));
             assert!(source.contains(r#"with_ui_families(["MiSans", "Segoe UI", "Arial"])"#));
             assert!(source.contains(".with_ui_weight(FontWeight::MEDIUM)"));
-            assert!(source.contains(
-                r#"with_code_families(["Consolas", "JetBrains Mono", "SF Mono", "Monospace"])"#
-            ));
         }
     }
 

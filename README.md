@@ -384,7 +384,7 @@ fn init_with_system_font_names(cx: &mut App) {
     let fonts = FontConfig::system()
         .with_ui_families(["Segoe UI", "MiSans", "Arial"])
         .with_ui_weight(FontWeight::MEDIUM)
-        .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"]);
+        .with_code_families(["JetBrains Mono", "SF Mono", "DejaVu Sans Mono"]);
 
     init_liora_with_options(cx, Options::system().with_fonts(fonts));
 }
@@ -1206,7 +1206,6 @@ File-driven configuration can load behavior plus a Zed JSON theme family:
 language = "rust"
 theme_file = "themes/one.json"
 theme_name = "One Dark"
-font_family = "Monospace"
 font_size_px = 16
 font_weight = 500
 line_height_px = 26
@@ -1353,6 +1352,10 @@ Liora separates **font resource loading** from **font family / weight selection*
 2. If the app ships private fonts, register bytes first with `load_app_fonts`, `load_fonts_from_dir`, `load_font_assets`, `load_embedded_fonts`, or the low-level `load_custom_fonts` compatibility helper.
 3. Then choose the ordered UI/code fallback lists and optional default weights with `Options::with_fonts(...)` at startup or `set_font_config(...)` at runtime. `with_ui_families(["MiSans", ...])` selects a family; use `with_ui_weight(FontWeight::MEDIUM)` when the desired face should render at Medium weight.
 
+An empty code-family list uses the SDK's concrete candidate stack: Consolas, JetBrains Mono, SF Mono, Menlo, Monaco, Lilex, DejaVu Sans Mono, Liberation Mono, Noto Sans Mono, Ubuntu Mono, then Courier New. Gallery and Docs inherit this default and keep their MiSans UI policy. The selected default is cached per initialized app, not enumerated every render; successful SDK font registration refreshes it. After calling raw GPUI `add_fonts` at runtime, reuse your original `FontConfig` with its code list kept empty and reapply it through `set_font_config` to refresh the default without losing UI family or weight settings. Explicit nonempty lists still select the first available family, or their final candidate if none is available, including deliberate proportional overrides.
+
+These names do not supply font files. If no default candidate is available, Liora requests DejaVu Sans Mono as a last resort and GPUI may substitute a proportional font; install/register a concrete code font when fixed Latin advances are required. Neither `Monospace` nor `.ZedMono` provides a font automatically. CJK and emoji coverage remains dependent on installed/registered fonts and platform shaping.
+
 Supported file extensions are `ttf`, `otf`, `ttc`, `otc`, `woff`, and `woff2`, but actual parsing is delegated to the official GPUI backend for each platform. Prefer `ttf`/`otf`/`ttc`/`otc` for native desktop apps. On Linux/WGPU, the current GPUI `fontdb` path can ignore WOFF/WOFF2 bytes without returning an error, so use `FontLoadOptions::require_family(...)` and check `FontLoadReport::missing_required_families` whenever a specific family must be active.
 
 #### Use only system-installed fonts
@@ -1367,7 +1370,7 @@ fn init_with_system_fonts(cx: &mut gpui::App) {
             FontConfig::system()
                 .with_ui_families(["Segoe UI", "MiSans", "Arial"]) // Ordered fallback list.
                 .with_ui_weight(FontWeight::MEDIUM)
-                .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"]),
+                .with_code_families(["JetBrains Mono", "SF Mono", "DejaVu Sans Mono"]),
         ),
     );
 }
@@ -1378,7 +1381,7 @@ fn switch_to_system_ui_and_monospace_code(cx: &mut gpui::App) {
         FontConfig::system()
             .with_ui_families(["MiSans", "Segoe UI", "Arial"])
             .with_ui_weight(FontWeight::MEDIUM)
-            .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"]),
+            .with_code_families(["JetBrains Mono", "SF Mono", "DejaVu Sans Mono"]),
     );
 }
 ```
@@ -1464,8 +1467,7 @@ fn init_with_external_then_embedded(cx: &mut gpui::App) {
         Options::system().with_fonts(
             FontConfig::system()
                 .with_ui_families(["MiSans", "Segoe UI", "Arial"])
-                .with_ui_weight(FontWeight::MEDIUM)
-                .with_code_families(["JetBrains Mono", "SF Mono", "Monospace"]),
+                .with_ui_weight(FontWeight::MEDIUM),
         ),
     );
 }
