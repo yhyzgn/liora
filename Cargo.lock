@@ -3915,12 +3915,15 @@ dependencies = [
 name = "liora-updater"
 version = "0.6.1"
 dependencies = [
+ "dirs 6.0.0",
+ "libc",
  "semver",
  "serde",
  "serde_json",
  "sha2",
  "thiserror 2.0.18",
  "ureq",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

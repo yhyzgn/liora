@@ -14,19 +14,22 @@ Downloads use an exclusively created staging file in the destination directory, 
 
 The caller must own the cache directory and its parents and prevent untrusted concurrent modification; this API does not secure a shared writable directory against path replacement races. Same-directory rename is atomic on Unix. Windows replacement follows Rust's OS/filesystem-dependent rename behavior and can fail because of file sharing or permissions; no Windows atomicity or crash-durability guarantee is made. A replacement failure is reported without a delete-and-retry fallback.
 
+`private_update_cache_dir(app, version, override_base)` creates or reuses a protected app/version cache. Without an override it uses the OS cache root (`$XDG_CACHE_HOME` or `~/.cache` on Linux, `~/Library/Caches` on macOS, LocalAppData on Windows), followed by `liora-updates/app/version`. An override is a base directory, must be absolute without `..`, and is resolved before use. Unsafe ownership, writable ancestors, app/version aliases, or unsupported filesystem protection return an error; there is no shared-temp fallback and existing permissions are not silently repaired. Gallery and Docs use this helper with their app identity, current package version and optional `LIORA_UPDATE_CACHE` base, and display failures through their existing update error state.
+
+The helper validates resolved ancestors and restricts the app/version directories using Unix owner/permissions (including extended ACL checks on macOS) or Windows owner/DACL checks on a local ACL-enforcing volume. A trusted base may resolve through OS aliases; app/version directories may not. It protects against modification by other local users, not administrators, other processes running as the same user, or hostile remote filesystems. Always keep the returned resolved path for both download and the later install action. Raw `UpdateRequest::new` and `download_verified_asset` still accept caller-controlled directories with the ownership and concurrent-modification precondition above; they do not independently make an arbitrary shared directory race-safe.
+
 ## Quick example
 
 ```rust
-use liora_updater::{AssetSelector, Platform, UpdateRequest};
+use liora_updater::{AssetSelector, Platform, UpdateRequest, private_update_cache_dir};
 
-let platform = Platform::current().unwrap_or(Platform::LinuxX64);
-let _request = UpdateRequest::new(
-    "my-native-app",
-    "v0.2.3",
-    platform,
-    std::env::temp_dir().join("liora-update-cache"),
-);
-let _selector = AssetSelector::for_platform(platform).matching_prefix("my-native-app");
+fn main() -> Result<(), liora_updater::UpdaterError> {
+    let platform = Platform::current().unwrap_or(Platform::LinuxX64);
+    let cache = private_update_cache_dir("my-native-app", "0.2.3", None)?;
+    let _request = UpdateRequest::new("my-native-app", "v0.2.3", platform, cache);
+    let _selector = AssetSelector::for_platform(platform).matching_prefix("my-native-app");
+    Ok(())
+}
 ```
 
 ## Recommended usage

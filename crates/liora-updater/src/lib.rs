@@ -5,9 +5,12 @@
 //! own GitHub repository, cache directory, and asset naming convention.
 //!
 //! The crate checks GitHub Releases, selects a platform asset, downloads it into
-//! caller-controlled cache/temp storage, verifies it against `SHA256SUMS.txt`,
+//! caller-controlled storage, verifies it against `SHA256SUMS.txt`,
 //! and returns an explicit install plan. It never performs privileged or
 //! system-wide installation as part of update checks or downloads.
+
+mod cache;
+pub use cache::private_update_cache_dir;
 
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
@@ -590,9 +593,12 @@ impl Updater {
 
     /// Downloads the selected asset and verifies it against the release checksum manifest.
     ///
-    /// The caller must own the cache directory and its parents. A verified
-    /// same-directory staging file replaces a same-name asset using OS rename
-    /// semantics; failures clean staging without deleting the destination.
+    /// The caller must control the cache directory and its resolved ancestors,
+    /// preventing untrusted concurrent modification through download and launch.
+    /// Use `private_update_cache_dir` to establish a protected per-user cache.
+    /// This raw-path API does not make an arbitrary shared directory race-safe.
+    /// A verified same-directory staging file replaces a same-name asset using
+    /// OS rename semantics; failures clean staging without deleting the destination.
     pub fn download_verified_asset(
         &self,
         release: &Release,
@@ -1048,6 +1054,30 @@ mod tests {
         let _ = fs::remove_dir_all(&path);
         fs::create_dir_all(&path).unwrap();
         path
+    }
+
+    #[cfg(all(unix, any(target_os = "linux", target_os = "macos")))]
+    #[test]
+    fn protected_cache_download_retains_the_resolved_path_in_its_plan() {
+        let fixture = cache::tests::Fixture::new("protected-download");
+        let cache = cache::private_update_cache_dir("sample", "1.2.3", Some(&fixture.0)).unwrap();
+        let content = b"verified private AppImage".to_vec();
+        let checksum = format!("{:x}  sample.AppImage\n", Sha256::digest(&content));
+        let (base_url, server) = test_server(vec![
+            ("/checksums", checksum.into_bytes()),
+            ("/asset", content.clone()),
+        ]);
+        let mut release = release_with_assets(&[CHECKSUMS_ASSET, "sample.AppImage"]);
+        release.assets[0].download_url = format!("{base_url}/checksums");
+        release.assets[1].download_url = format!("{base_url}/asset");
+        let path = Updater::new("owner", "repo")
+            .download_verified_asset(&release, &release.assets[1], &cache).unwrap();
+        server.join().unwrap();
+        assert_eq!(path.parent(), Some(cache.as_path()));
+        assert_eq!(fs::read(&path).unwrap(), content);
+        let plan = build_install_plan("sample", Platform::LinuxX64, &release.assets[1], path.clone());
+        assert!(matches!(plan.action, InstallAction::RunExecutable { program, .. } if program == path));
+        assert_eq!(fs::read_dir(&cache).unwrap().count(), 1);
     }
 
     #[cfg(unix)]

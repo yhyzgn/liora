@@ -1690,7 +1690,7 @@ fn download_gallery_update(gallery: gpui::Entity<Gallery>, cx: &mut App) {
     cx.foreground_executor()
         .spawn(async move {
             let result = executor
-                .spawn(async move { download_gallery_update_sync() })
+                .spawn(async move { download_gallery_update_sync(&liora_updater()) })
                 .await;
             let _ = async_cx.update(move |cx| {
                 let _ = gallery.update(cx, |gallery, cx| {
@@ -1775,15 +1775,12 @@ fn gallery_asset_selector(platform: Platform) -> AssetSelector {
         .kind_priority(priority)
 }
 
-fn update_cache_dir(app: &str) -> std::path::PathBuf {
-    std::env::var_os("LIORA_UPDATE_CACHE")
-        .map(std::path::PathBuf::from)
-        .unwrap_or_else(|| std::env::temp_dir().join("liora-updates"))
-        .join(app)
-        .join(env!("CARGO_PKG_VERSION"))
+fn update_cache_dir(app: &str) -> Result<std::path::PathBuf, liora_updater::UpdaterError> {
+    let base = std::env::var_os("LIORA_UPDATE_CACHE").map(std::path::PathBuf::from);
+    liora_updater::private_update_cache_dir(app, env!("CARGO_PKG_VERSION"), base.as_deref())
 }
 
-fn download_gallery_update_sync()
+fn download_gallery_update_sync(updater: &Updater)
 -> Result<Option<(String, InstallPlan)>, liora_updater::UpdaterError> {
     let Some(platform) = Platform::current() else {
         return Ok(None);
@@ -1792,10 +1789,10 @@ fn download_gallery_update_sync()
         GALLERY_UPDATE_APP,
         format!("v{}", env!("CARGO_PKG_VERSION")),
         platform,
-        update_cache_dir(GALLERY_UPDATE_APP),
+        update_cache_dir(GALLERY_UPDATE_APP)?,
     )
     .selector(gallery_asset_selector(platform));
-    let Some(update) = liora_updater().prepare_update(&request)? else {
+    let Some(update) = updater.prepare_update(&request)? else {
         return Ok(None);
     };
     Ok(Some((update.release.tag, update.install_plan)))
@@ -2025,6 +2022,49 @@ fn gallery_nav_menu_items(
 
 #[cfg(test)]
 mod shell_regression_tests {
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn unsafe_update_cache_is_rejected_before_network() {
+        const CHILD: &str = "LIORA_CACHE_REGRESSION_CHILD";
+        if std::env::var_os(CHILD).is_some() {
+            let updater = super::liora_updater().with_api_base("http://127.0.0.1:9");
+            let result = super::download_gallery_update_sync(&updater);
+            assert!(matches!(
+                result,
+                Err(liora_updater::UpdaterError::Io(error))
+                    if error.kind() == std::io::ErrorKind::PermissionDenied
+            ));
+            return;
+        }
+        use std::os::unix::fs::{DirBuilderExt, PermissionsExt};
+        let root = liora_updater::private_update_cache_dir(
+            "liora-gallery-cache-tests", env!("CARGO_PKG_VERSION"), None,
+        ).unwrap();
+        let mut sequence = 0;
+        let base = loop {
+            let path = root.join(format!("rejection-{}-{sequence}", std::process::id()));
+            match std::fs::DirBuilder::new().mode(0o700).create(&path) {
+                Ok(()) => break path,
+                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => sequence += 1,
+                Err(error) => panic!("cannot create owned cache fixture: {error}"),
+            }
+        };
+        std::fs::set_permissions(&base, std::fs::Permissions::from_mode(0o777)).unwrap();
+        let result = std::process::Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "shell_regression_tests::unsafe_update_cache_is_rejected_before_network",
+                "--nocapture",
+            ])
+            .env(CHILD, "1")
+            .env("LIORA_UPDATE_CACHE", &base)
+            .output().unwrap();
+        std::fs::remove_dir_all(&base).unwrap();
+        assert!(result.status.success(), "{}{}",
+            String::from_utf8_lossy(&result.stdout), String::from_utf8_lossy(&result.stderr));
+        assert!(String::from_utf8_lossy(&result.stdout).contains("1 passed; 0 failed"));
+    }
     use super::{
         GalleryNavEntry, gallery_nav_index_from_id, gallery_nav_item_id, gallery_nav_menu_items,
         gallery_nav_visible_indices,

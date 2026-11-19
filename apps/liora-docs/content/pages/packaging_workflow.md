@@ -19,6 +19,8 @@ The reusable packaging logic lives in:
 
   Release tags are compared by SemVer precedence: a stable release is newer than a prerelease with the same core version (for example, `v0.6.2` follows `v0.6.2-rc.1`), numeric prerelease identifiers compare numerically, and build metadata does not affect ordering. Tags that are not valid SemVer versions sort below valid tags.
 
+  Gallery/Docs resolve update storage with `private_update_cache_dir(app, current_package_version, override_base)`. By default it uses the OS cache directory plus `liora-updates/app/version`; `LIORA_UPDATE_CACHE` supplies an absolute base, not an unvalidated temporary destination. Unsafe directory ownership, writable ancestors or app/version aliases fail through the existing update error panel with no shared-temp fallback. The returned resolved path is retained for the download and install plan. This protection excludes administrators and same-user processes; raw SDK download APIs still require a caller-controlled directory chain and do not secure arbitrary shared paths. See the updater README for Unix/macOS ACL and Windows local ACL-volume boundaries.
+
 - `xtask` — command-line entry point used locally and by CI.
 - `.github/workflows/ci.yml` — ordinary quality gate for every pull request and `main` push.
 - `.github/workflows/package.yml` — GitHub Actions preview/release pipeline for native app binaries and Gallery installers.
