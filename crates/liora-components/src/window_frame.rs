@@ -21,8 +21,8 @@
 
 use crate::{Space, Text, TitleBar};
 use gpui::{
-    AnyElement, App, IntoElement, ParentElement, RenderOnce, SharedString, Styled,
-    ViewElement as Component, Window, WindowDecorations, WindowOptions, div, point, px,
+    AnyElement, App, InteractiveElement, IntoElement, ParentElement, RenderOnce, SharedString,
+    Styled, ViewElement as Component, Window, WindowDecorations, WindowOptions, div, point, px,
 };
 use liora_core::Config;
 
@@ -190,16 +190,30 @@ impl AppWindowFrame {
 
 impl RenderOnce for AppWindowFrame {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let root = div().size_full().on_key_down(|event, window, cx| {
+            let modifiers = event.keystroke.modifiers;
+            if event.keystroke.key == "tab"
+                && !modifiers.control
+                && !modifiers.alt
+                && !modifiers.platform
+                && !modifiers.function
+            {
+                if modifiers.shift {
+                    window.focus_prev(cx);
+                } else {
+                    window.focus_next(cx);
+                }
+                cx.stop_propagation();
+            }
+        });
         if !self.mode.is_custom() {
-            return self.content;
+            return root.child(self.content).into_any_element();
         }
 
         let theme = cx.global::<Config>().theme.clone();
         let titlebar = self.titlebar.render(window, cx);
 
-        div()
-            .size_full()
-            .flex()
+        root.flex()
             .flex_col()
             .bg(theme.neutral.body)
             .child(titlebar)
@@ -219,6 +233,107 @@ impl IntoElement for AppWindowFrame {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use gpui::{AppContext, Entity, FocusHandle, Focusable, InteractiveElement, Render};
+
+    struct FrameKeyboardSurface {
+        mode: WindowFrameMode,
+        first: Entity<crate::Input>,
+        disabled: Entity<crate::Input>,
+        next: Entity<crate::Input>,
+        consuming: FocusHandle,
+    }
+
+    impl Render for FrameKeyboardSurface {
+        fn render(&mut self, _: &mut Window, _: &mut gpui::Context<Self>) -> impl IntoElement {
+            AppWindowFrame::new(
+                "Keyboard traversal",
+                div()
+                    .flex()
+                    .flex_col()
+                    .child(self.first.clone())
+                    .child(self.disabled.clone())
+                    .child(self.next.clone())
+                    .child(
+                        div()
+                            .id("tab-consuming-child")
+                            .track_focus(&self.consuming)
+                            .on_key_down(|event, _, cx| {
+                                if event.keystroke.key == "tab" {
+                                    cx.stop_propagation();
+                                }
+                            })
+                            .child("Child-owned Tab"),
+                    ),
+            )
+            .mode(self.mode)
+        }
+    }
+
+    #[test]
+    fn frame_tab_traversal_from_input_respects_disabled_children_and_modifiers() {
+        for mode in [WindowFrameMode::System, WindowFrameMode::Custom] {
+            let mut app = gpui::TestAppContext::single();
+            app.update(crate::init_liora);
+            let (first, disabled, next, first_focus, next_focus, consuming) = app.update(|cx| {
+                let first = cx.new(|cx| crate::Input::new("Search", cx));
+                let disabled = cx.new(|cx| crate::Input::new("Disabled", cx).disabled(true));
+                let next = cx.new(|cx| crate::Input::new("Next", cx));
+                let first_focus = first.read(cx).focus_handle(cx);
+                let next_focus = next.read(cx).focus_handle(cx);
+                let consuming = cx.focus_handle().tab_stop(true);
+                (first, disabled, next, first_focus, next_focus, consuming)
+            });
+            let child_focus = consuming.clone();
+            let handle = app.add_window(move |_, _| FrameKeyboardSurface {
+                mode,
+                first,
+                disabled,
+                next,
+                consuming,
+            });
+            let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+            window.update(|window, cx| {
+                window.draw(cx).clear(cx);
+                window.focus(&first_focus, cx);
+            });
+            for modified in ["ctrl-tab", "alt-tab", "cmd-tab", "fn-tab"] {
+                window.simulate_keystrokes(modified);
+                window.update(|window, cx| {
+                    window.draw(cx).clear(cx);
+                    assert!(
+                        first_focus.is_focused(window),
+                        "{mode:?}: {modified} moved focus"
+                    );
+                });
+            }
+            window.simulate_keystrokes("tab");
+            window.update(|window, cx| {
+                window.draw(cx).clear(cx);
+                assert!(
+                    next_focus.is_focused(window),
+                    "{mode:?}: Tab must leave search and skip disabled Input"
+                );
+            });
+            window.simulate_keystrokes("shift-tab");
+            window.update(|window, cx| {
+                window.draw(cx).clear(cx);
+                assert!(
+                    first_focus.is_focused(window),
+                    "{mode:?}: Shift+Tab must return to search"
+                );
+                window.focus(&child_focus, cx);
+            });
+            window.simulate_keystrokes("tab");
+            window.update(|window, cx| {
+                window.draw(cx).clear(cx);
+                assert!(
+                    child_focus.is_focused(window),
+                    "{mode:?}: child-consumed Tab reached root fallback"
+                );
+            });
+            app.quit();
+        }
+    }
 
     #[test]
     fn frame_modes_preserve_caller_frame_pacing_and_window_constraints() {

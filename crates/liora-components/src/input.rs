@@ -151,7 +151,7 @@ impl Input {
             clearable: false,
             icon_prefix: None,
             icon_suffix: None,
-            focus_handle: cx.focus_handle(),
+            focus_handle: cx.focus_handle().tab_stop(true),
             selected_range: 0..0,
             selection_reversed: false,
             marked_range: None,
@@ -199,6 +199,7 @@ impl Input {
     /// Toggles the disabled state and suppresses user interaction when enabled.
     pub fn disabled(mut self, d: bool) -> Self {
         self.disabled = d;
+        self.focus_handle = self.focus_handle.tab_stop(!d);
         self
     }
     /// Toggles whether the component renders a clear affordance.
@@ -356,6 +357,7 @@ impl Input {
             return;
         }
         self.disabled = d;
+        self.focus_handle = self.focus_handle.clone().tab_stop(!d);
         cx.notify();
     }
 
