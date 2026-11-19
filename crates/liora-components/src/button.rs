@@ -238,6 +238,7 @@ pub struct Button {
     label: LocalizedText,
     aria_label: Option<LocalizedText>,
     variant: ButtonVariant,
+    text_semantic: ButtonVariant,
     size: ButtonSize,
     disabled: bool,
     loading: bool,
@@ -263,6 +264,7 @@ impl Button {
             label: label.into(),
             aria_label: None,
             variant: ButtonVariant::Default,
+            text_semantic: ButtonVariant::Default,
             size: ButtonSize::Default,
             disabled: false,
             loading: false,
@@ -288,45 +290,50 @@ impl Button {
         self
     }
 
-    /// Selects the visual variant used for styling.
+    /// Selects a semantic variant while keeping text appearance, if enabled.
+    /// `ButtonVariant::Text` is equivalent to [`Self::text`].
     pub fn variant(mut self, v: ButtonVariant) -> Self {
-        self.variant = v;
+        if v == ButtonVariant::Text {
+            return self.text();
+        }
+        if self.variant == ButtonVariant::Text {
+            self.text_semantic = v;
+        } else {
+            self.variant = v;
+        }
         self
     }
     /// Applies the primary semantic visual variant.
-    pub fn primary(mut self) -> Self {
-        self.variant = ButtonVariant::Primary;
-        self
+    pub fn primary(self) -> Self {
+        self.variant(ButtonVariant::Primary)
     }
     /// Applies the tertiary low-emphasis visual variant.
-    pub fn tertiary(mut self) -> Self {
-        self.variant = ButtonVariant::Tertiary;
-        self
+    pub fn tertiary(self) -> Self {
+        self.variant(ButtonVariant::Tertiary)
     }
-    /// Applies the text-only visual variant.
+    /// Uses text appearance without discarding the semantic foreground.
     pub fn text(mut self) -> Self {
-        self.variant = ButtonVariant::Text;
+        if self.variant != ButtonVariant::Text {
+            self.text_semantic = self.variant;
+            self.variant = ButtonVariant::Text;
+        }
         self
     }
     /// Applies the informational semantic visual variant.
-    pub fn info(mut self) -> Self {
-        self.variant = ButtonVariant::Info;
-        self
+    pub fn info(self) -> Self {
+        self.variant(ButtonVariant::Info)
     }
     /// Applies the success semantic visual variant.
-    pub fn success(mut self) -> Self {
-        self.variant = ButtonVariant::Success;
-        self
+    pub fn success(self) -> Self {
+        self.variant(ButtonVariant::Success)
     }
     /// Applies the warning semantic visual variant.
-    pub fn warning(mut self) -> Self {
-        self.variant = ButtonVariant::Warning;
-        self
+    pub fn warning(self) -> Self {
+        self.variant(ButtonVariant::Warning)
     }
     /// Applies the danger semantic visual variant.
-    pub fn danger(mut self) -> Self {
-        self.variant = ButtonVariant::Danger;
-        self
+    pub fn danger(self) -> Self {
+        self.variant(ButtonVariant::Danger)
     }
     /// Sets an explicit icon size while preserving the default color behavior.
     pub fn size(mut self, s: ButtonSize) -> Self {
@@ -521,6 +528,14 @@ impl Button {
                 text_hover: theme.neutral.text_disabled,
                 border_hover: theme.neutral.border,
             }
+        } else if self.variant == ButtonVariant::Text {
+            let mut colors = theme.color_by_variant(ButtonVariant::Text, false, false, false);
+            if !matches!(self.text_semantic, ButtonVariant::Default | ButtonVariant::Tertiary) {
+                let semantic = theme.color_by_variant(self.text_semantic, true, false, false);
+                colors.text = semantic.text;
+                colors.text_hover = semantic.text_hover;
+            }
+            colors
         } else {
             theme.color_by_variant(self.variant, self.secondary, self.background, self.border)
         }
@@ -550,17 +565,21 @@ impl Button {
         };
         let r = self.rounded.unwrap_or_else(|| px(theme.radius.md).into());
         let id = self.id.clone().unwrap_or_else(|| {
-            stable_unique_id(
+            let seed = if self.text_semantic == ButtonVariant::Default {
                 format!(
                     "liora-button:{}:{:?}:{:?}:secondary={}:background={}:border={}:rounded={:?}",
-                    self.label.stable_seed(),
-                    self.variant,
-                    self.size,
-                    self.secondary,
-                    self.background,
-                    self.border,
-                    self.rounded
-                ),
+                    self.label.stable_seed(), self.variant, self.size,
+                    self.secondary, self.background, self.border, self.rounded,
+                )
+            } else {
+                format!(
+                    "liora-button:{}:{:?}:{:?}:secondary={}:background={}:border={}:rounded={:?}:text_semantic={:?}",
+                    self.label.stable_seed(), self.variant, self.size,
+                    self.secondary, self.background, self.border, self.rounded, self.text_semantic,
+                )
+            };
+            stable_unique_id(
+                seed,
                 "liora-button",
                 window,
                 cx,
@@ -1009,6 +1028,35 @@ mod tests {
         app.quit();
     }
 
+    struct SemanticTextIdentityTest;
+
+    impl gpui::Render for SemanticTextIdentityTest {
+        fn render(&mut self, _: &mut Window, _: &mut gpui::Context<Self>) -> impl IntoElement {
+            gpui::div().flex().gap_2()
+                .child(Button::new("Same").text().primary())
+                .child(Button::new("Same").danger().text())
+        }
+    }
+
+    #[test]
+    fn same_label_text_semantics_keep_distinct_implicit_ids_across_frames() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let handle = app.add_window(|_, _| SemanticTextIdentityTest);
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        let draw = |window: &mut gpui::VisualTestContext| {
+            FOCUS_OUTLINES.with_borrow_mut(Vec::clear);
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            FOCUS_OUTLINES.with_borrow(|records| records.clone())
+        };
+        let first = draw(&mut window);
+        assert_eq!(first.len(), 2);
+        assert_ne!(first[0].0, first[1].0);
+        handle.update(&mut app, |_, _, cx| cx.notify()).unwrap();
+        assert_eq!(draw(&mut window), first);
+        app.quit();
+    }
+
 
     struct ChangingButtonTest {
         disabled: bool,
@@ -1224,5 +1272,37 @@ mod tests {
         assert_eq!(gradient.angle, 90.0);
         assert_ne!(gradient.from, gradient.hover_from);
         assert_ne!(gradient.to, gradient.active_to);
+    }
+
+    #[test]
+    fn text_button_appearance_preserves_semantic_color_in_both_orders() {
+        for theme in [Theme::light(), Theme::dark()] {
+            for (semantic, family) in [
+                (Button::primary as fn(Button) -> Button, &theme.primary),
+                (Button::info, &theme.info),
+                (Button::success, &theme.success),
+                (Button::warning, &theme.warning),
+                (Button::danger, &theme.danger),
+            ] {
+                for button in [semantic(Button::new("Action").text()), semantic(Button::new("Action")).text()] {
+                    let colors = button.resolved_colors(&theme);
+                    assert_eq!((colors.bg.a, colors.border.a, colors.border_hover.a, colors.text, colors.text_hover),
+                        (0.0, 0.0, 0.0, family.base, family.hover));
+                    assert_eq!(colors.hover_bg, theme.secondary.hover);
+                    assert_eq!(colors.active_bg, theme.secondary.pressed);
+                }
+                let filled = semantic(Button::new("Action")).resolved_colors(&theme);
+                assert_eq!((filled.bg, filled.border), (family.base, family.base));
+            }
+            for button in [Button::new("Action").text(), Button::new("Action").variant(ButtonVariant::Text)] {
+                let colors = button.resolved_colors(&theme);
+                assert_eq!((colors.bg.a, colors.border.a, colors.text), (0.0, 0.0, theme.neutral.text_2));
+            }
+            let neutral = Button::new("Action").resolved_colors(&theme);
+            assert_eq!((neutral.bg.a, neutral.border, neutral.text), (0.0, theme.neutral.border, theme.neutral.text_2));
+            let plain = Button::new("Action").primary().secondary().background(false).border(false).resolved_colors(&theme);
+            assert_eq!((plain.bg.a, plain.border.a, plain.text, plain.hover_bg),
+                (0.0, 0.0, theme.primary.base, theme.primary.light_8));
+        }
     }
 }

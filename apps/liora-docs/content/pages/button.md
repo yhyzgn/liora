@@ -26,6 +26,8 @@
 
 ## 文字按钮
 
+`.primary().text()` 与 `.text().primary()` 等价：默认状态下背景透明、无边框，文字保留主色。`info`、`success`、`warning` 和 `danger` 同样不受调用顺序影响。
+
 ### 效果
 
 ::Demo{component="ButtonText"}::
