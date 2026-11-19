@@ -626,6 +626,8 @@ Standard opaque semantic filled Buttons choose black or white label text for the
 
 Use `.text().primary()` or `.primary().text()` for the same borderless text button: its resting background is transparent and its label uses the primary color. The same ordering rule applies to `info`, `success`, `warning`, and `danger`.
 
+`Tabs` uses manual keyboard activation: arrow keys and Home/End move focus, while Enter/Space selects. Editable Close and Add are separate controls. See the [Tabs guide](apps/liora-docs/content/pages/tabs.md) for business keys, focus fallback, and the native tab-to-panel relationship limitation.
+
 Icon bundle auto optimization keeps application code unchanged while reducing packaged SVG resources. Add the optimizer as a build dependency and call the builder from the host application's existing Cargo build script:
 
 ```toml

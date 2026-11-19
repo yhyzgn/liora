@@ -620,6 +620,8 @@ Button 默认以构造标签作为原生可访问名称，包括 icon-only 和�
 标准不透明语义填色按钮在默认、悬停和按下时分别选用黑色或白色标签文字，不改变填色或边框。不涵盖文字按钮、次要按钮、渐变、自定义色、半透明宿主主题或显式着色的图标及子元素。
 
 
+`Tabs` 用方向键和 Home / End 移动焦点，用 Enter / Space 激活；可编辑模式的关闭和新增是独立控件。业务键、焦点回退和原生标签至面板关联限制见 [Tabs 指南](apps/liora-docs/content/pages/tabs.md)。
+
 图标资源打包自动优化可以在不改业务代码的前提下降低 SVG 资源体积。应用只需要把 optimizer 加为 build dependency，并在已有 Cargo build script 中调用 builder：
 
 ```toml
