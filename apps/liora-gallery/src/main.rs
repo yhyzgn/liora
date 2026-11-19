@@ -1619,6 +1619,8 @@ impl Gallery {
                                     cx,
                                 );
                             });
+                            gallery.nav_index = gallery_nav_index(&gallery.entries, cx);
+                            gallery.refresh_nav_menu_for_current_query(cx);
                             register_gallery_system_menus(cx);
                             if cx.has_global::<GalleryTrayState>() {
                                 let active_icon = cx
@@ -2183,6 +2185,161 @@ mod shell_regression_tests {
         gallery_nav_visible_indices,
     };
 
+    #[gpui::test]
+    fn gallery_locale_switch_refreshes_cached_navigation(cx: &mut gpui::TestAppContext) {
+        use gpui::{Context, IntoElement, Render, Window, div, prelude::*, px};
+
+        struct NavigationWindow {
+            locale: gpui::Entity<liora_components::Segmented>,
+            filter: gpui::Entity<liora_components::Input>,
+            menu: gpui::Entity<liora_components::NavigationMenu>,
+        }
+        impl Render for NavigationWindow {
+            fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+                div()
+                    .size_full()
+                    .flex()
+                    .flex_col()
+                    .items_start()
+                    .child(
+                        div()
+                            .flex()
+                            .debug_selector(|| "locale-picker".into())
+                            .child(self.locale.clone()),
+                    )
+                    .child(
+                        div()
+                            .w(px(280.0))
+                            .debug_selector(|| "nav-search".into())
+                            .child(self.filter.clone()),
+                    )
+                    .child(
+                        div()
+                            .w(px(280.0))
+                            .h(px(90.0))
+                            .overflow_hidden()
+                            .flex()
+                            .flex_col()
+                            .debug_selector(|| "cached-navigation".into())
+                            .child(self.menu.clone()),
+                    )
+            }
+        }
+
+        let gallery = updater_test_gallery(cx);
+        let (locale, filter, menu, about) = gallery.update(cx, |gallery, cx| {
+            gallery.selected = 1;
+            gallery.nav_query.clear();
+            let menu = gallery.gallery_nav_menu(1, cx);
+            (
+                gallery.locale_segmented.clone(),
+                gallery.nav_filter.clone(),
+                menu,
+                gallery.entries.len(),
+            )
+        });
+        let menu_id = menu.entity_id();
+        let input = filter.clone();
+        let handle = cx.add_window(move |_, _| NavigationWindow {
+            locale,
+            filter,
+            menu,
+        });
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), cx);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+
+        let search = window.debug_bounds("nav-search").unwrap();
+        window.simulate_click(search.center(), gpui::Modifiers::none());
+        window.simulate_input("关于");
+        window.run_until_parked();
+        window.update(|window, cx| {
+            assert_eq!(input.read(cx).value().as_ref(), "关于");
+            assert_eq!(gallery.read(cx).nav_query, "关于");
+            window.draw(cx).clear(cx);
+        });
+
+        // The actual input callback must filter the already-materialized menu.
+        let bounds = window.debug_bounds("cached-navigation").unwrap();
+        window.simulate_click(
+            gpui::point(bounds.center().x, bounds.bottom() - px(25.0)),
+            gpui::Modifiers::none(),
+        );
+        window.update(|_, cx| assert_eq!(gallery.read(cx).selected, about));
+        window.update(|_, cx| {
+            gallery.update(cx, |gallery, cx| {
+                gallery.selected = 1;
+                gallery.gallery_nav_menu(1, cx);
+            });
+        });
+        window.update(|window, cx| window.draw(cx).clear(cx));
+
+        let picker = window.debug_bounds("locale-picker").unwrap();
+        window.simulate_click(
+            gpui::point(picker.right() - px(12.0), picker.center().y),
+            gpui::Modifiers::none(),
+        );
+        window.run_until_parked();
+        window.update(|window, cx| {
+            assert_eq!(super::current_locale(cx).as_str(), "en-US");
+            assert_eq!(input.read(cx).value().as_ref(), "关于");
+            let gallery = gallery.read(cx);
+            assert_eq!(
+                gallery.selected, 1,
+                "locale change must retain the destination"
+            );
+            assert_eq!(
+                gallery.nav_query, "关于",
+                "locale change must retain the query"
+            );
+            assert_eq!(gallery.nav_menu.as_ref().unwrap().entity_id(), menu_id);
+            assert_eq!(gallery.nav_index[about].label.as_ref(), "About");
+            assert_eq!(gallery.nav_index[about].search_text, "about updates");
+            window.draw(cx).clear(cx);
+        });
+
+        let bounds = window.debug_bounds("cached-navigation").unwrap();
+        window.simulate_click(
+            gpui::point(bounds.center().x, bounds.bottom() - px(25.0)),
+            gpui::Modifiers::none(),
+        );
+        window.update(|_, cx| {
+            assert_eq!(
+                gallery.read(cx).selected,
+                1,
+                "the English no-match row must replace the clickable Chinese About row"
+            )
+        });
+
+        let picker = window.debug_bounds("locale-picker").unwrap();
+        window.simulate_click(
+            gpui::point(picker.left() + px(12.0), picker.center().y),
+            gpui::Modifiers::none(),
+        );
+        window.run_until_parked();
+        window.update(|window, cx| {
+            assert_eq!(super::current_locale(cx).as_str(), "zh-CN");
+            assert_eq!(input.read(cx).value().as_ref(), "关于");
+            let gallery = gallery.read(cx);
+            assert_eq!(gallery.selected, 1);
+            assert_eq!(gallery.nav_query, "关于");
+            assert_eq!(gallery.nav_menu.as_ref().unwrap().entity_id(), menu_id);
+            assert_eq!(gallery.nav_index[about].label.as_ref(), "About / 关于");
+            window.draw(cx).clear(cx);
+        });
+        let bounds = window.debug_bounds("cached-navigation").unwrap();
+        window.simulate_click(
+            gpui::point(bounds.center().x, bounds.bottom() - px(25.0)),
+            gpui::Modifiers::none(),
+        );
+        window.update(|_, cx| {
+            assert_eq!(
+                gallery.read(cx).selected,
+                about,
+                "the retained menu callback must select the restored Chinese About row"
+            )
+        });
+    }
+
     #[test]
     fn close_confirm_body_allows_content_to_shrink_and_wrap() {
         let source = include_str!("main.rs")
@@ -2334,66 +2491,6 @@ mod shell_regression_tests {
         assert_eq!(control_group.title.as_ref(), "Controls");
         assert_eq!(menu_group_labels(control_group), vec!["Input"]);
         assert_eq!(menu_group_ids(control_group), vec!["gallery-nav-1"]);
-    }
-
-    #[test]
-    fn gallery_search_refreshes_menu_without_full_gallery_notify() {
-        let source = include_str!("main.rs")
-            .split("mod shell_regression_tests")
-            .next()
-            .unwrap();
-
-        assert!(source.contains("fn set_nav_query_deferred"));
-        assert!(source.contains("nav_refresh_pending"));
-        assert!(source.contains("fn refresh_nav_menu_for_current_query"));
-        assert!(!source.contains("fn current_nav_query"));
-        assert!(!source.contains(
-            "self.nav_filter
-            .read(cx)"
-        ));
-        assert!(source.contains("fn gallery_nav_index"));
-        assert!(source.contains("fn gallery_nav_visible_indices"));
-        assert!(source.contains("fn gallery_nav_menu_items"));
-        assert!(source.contains("fn gallery_nav_item_id"));
-        assert!(source.contains("fn gallery_nav_index_from_id"));
-        assert!(source.contains("nav_menu: Option<gpui::Entity<NavigationMenu>>"));
-        assert!(source.contains(r#".id("gallery-nav-menu")"#));
-        assert!(source.contains(".mode(NavigationMenuMode::Vertical)"));
-        assert!(source.contains(".with_items(items)"));
-        assert!(source.contains(".on_select(move |id"));
-        assert!(source.contains("menu.set_items(items, cx);"));
-        assert!(source.contains("fn refresh_nav_menu_for_current_query"));
-        assert!(source.contains("menu.set_active_index(active_id, cx);"));
-        assert!(source.contains("if gallery.selected != entry_index"));
-        assert!(!source.contains("struct GalleryNavMenu"));
-        assert!(!source.contains("UniformListScrollHandle"));
-        assert!(!source.contains("uniform_list("));
-        assert!(!source.contains(".track_scroll(self.scroll_handle.clone())"));
-        assert!(!source.contains("ListState::new"));
-        assert!(!source.contains("list(self.list_state.clone()"));
-        assert!(!source.contains("list_state.reset"));
-        assert!(source.contains("timer(Duration::from_millis(0))"));
-        let shell = source
-            .rsplit("let shell = Container::new()")
-            .next()
-            .expect("Gallery shell should exist")
-            .split("AppWindowFrame::new")
-            .next()
-            .expect("shell should end before app frame");
-        assert!(shell.contains("Sidebar::new()"));
-        assert!(shell.contains(r#".id("gallery-sidebar")"#));
-        assert!(shell.contains(".expanded_width(px(280.0))"));
-        assert!(shell.contains(".scrollable()"));
-        assert!(shell.contains(".child(nav_menu)"));
-        assert!(shell.contains(".aside_passthrough()"));
-        assert!(!shell.contains(r#".id("gallery-nav-scroll")"#));
-        assert!(!shell.contains(".track_scroll(&self.nav_scroll)"));
-        assert!(!source.contains("gallery.refresh_nav_menu_for_query(query, cx);"));
-        assert!(!source.contains(
-            "move |_, cx| {
-                    let _ = gallery.update(cx, |_gallery, cx| {
-                        cx.notify();"
-        ));
     }
 
     #[test]

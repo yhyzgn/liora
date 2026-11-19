@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Refresh Gallery's cached About label/search index and sidebar menu after locale changes while preserving the search query, active destination, and menu entity.
 - Add manual keyboard activation and native role, name, orientation, and selection metadata to Tabs. Keep the first pane per business key, fall back to the first pane for an invalid initial key, and give editable Close and Add separate keyboard controls with focus recovery after removal.
 - Preserve live Linux/FreeBSD window appearance when reselecting System or initializing another window, including notifications received in fixed modes; retain synchronous startup hints until the SDK observes an appearance notification.
 - Resolve default code fonts from an available concrete family stack, including Linux monospace families, and cache the initialized SDK default until font registration or explicit refresh. Gallery/Docs inherit this policy without changing MiSans UI typography or explicit host font overrides; no font files are bundled by this fix.

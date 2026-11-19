@@ -260,6 +260,8 @@ fn switch_to_english(window: &mut gpui::Window, cx: &mut gpui::App) {
 
 切换语言时需要注意避免 GPUI entity 重入更新：不要在某个控件自己的 update 闭包里同步 update 同一个控件。Gallery/Docs 的做法是先更新全局 locale，再刷新需要重建 label/options 的实体，必要时通过 `window.defer(...)` 延后。
 
+Gallery 的侧栏导航会在语言切换后重建已解析的 About 标签、搜索索引和菜单项，立即更新分类标题与无匹配提示；保留当前搜索内容、活动页面和原有菜单实体，不需要重新输入搜索或重开窗口。
+
 ## Fallback 行为
 
 查询顺序如下：
