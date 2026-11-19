@@ -42,6 +42,25 @@ fn lighten(base: Hsla, factor: f32) -> Hsla {
     base.blend(gpui::white().opacity(factor))
 }
 
+fn filled_foreground(background: Hsla) -> Hsla {
+    let color: Rgba = background.into();
+    let linearize = |channel: f32| {
+        if channel <= 0.04045 {
+            channel / 12.92
+        } else {
+            ((channel + 0.055) / 1.055).powf(2.4)
+        }
+    };
+    let luminance = 0.2126 * linearize(color.r)
+        + 0.7152 * linearize(color.g)
+        + 0.0722 * linearize(color.b);
+    if (luminance + 0.05) / 0.05 >= 1.05 / (luminance + 0.05) {
+        gpui::black()
+    } else {
+        gpui::white()
+    }
+}
+
 #[allow(dead_code)]
 fn darken(base: Hsla, factor: f32) -> Hsla {
     base.blend(gpui::black().opacity(factor))
@@ -598,9 +617,9 @@ impl Theme {
             bg: family.base,
             hover_bg: hover,
             active_bg: active,
-            text: rgb(255, 255, 255),
+            text: filled_foreground(family.base),
             border: family.base,
-            text_hover: rgb(255, 255, 255),
+            text_hover: filled_foreground(hover),
             border_hover: hover,
         }
     }
@@ -687,6 +706,49 @@ mod tests {
 
     fn rgba_color(color: Hsla) -> Rgba {
         color.into()
+    }
+
+    #[test]
+    fn filled_button_normal_and_hover_text_meet_wcag_for_semantic_families() {
+        fn luminance(color: Hsla) -> f64 {
+            let color: Rgba = color.into();
+            [color.r, color.g, color.b]
+                .into_iter()
+                .zip([0.2126, 0.7152, 0.0722])
+                .map(|(channel, weight)| {
+                    let channel = f64::from(channel);
+                    weight * if channel <= 0.04045 {
+                        channel / 12.92
+                    } else {
+                        ((channel + 0.055) / 1.055).powf(2.4)
+                    }
+                })
+                .sum()
+        }
+
+        for (name, theme) in [("light", Theme::light()), ("dark", Theme::dark())] {
+            for variant in [
+                ButtonVariant::Primary,
+                ButtonVariant::Info,
+                ButtonVariant::Success,
+                ButtonVariant::Warning,
+                ButtonVariant::Danger,
+            ] {
+                let colors = theme.color_by_variant(variant, false, true, true);
+                for (state, text, background) in [
+                    ("normal", colors.text, colors.bg),
+                    ("hover", colors.text_hover, colors.hover_bg),
+                ] {
+                    assert_eq!(text.a, 1.0);
+                    assert_eq!(background.a, 1.0);
+                    let text = luminance(text);
+                    let background = luminance(background);
+                    let contrast = (text.max(background) + 0.05)
+                        / (text.min(background) + 0.05);
+                    assert!(contrast >= 4.5, "{name} {variant:?} {state}: {contrast}");
+                }
+            }
+        }
     }
 
     #[test]

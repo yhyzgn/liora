@@ -617,6 +617,8 @@ let tabler_home = Icon::new(liora::icons_tabler::IconName::HomeFilled);
 
 Button 默认以构造标签作为原生可访问名称，包括 icon-only 和不可用状态。`Button::new("+").aria_label(liora::core::locales::common::add)` 仅覆盖名称，不改变可见字形和布局。名称随当前语言解析；平台原生状态与读屏语音仍需分别进行运行时验证。
 
+标准不透明语义填色按钮在默认、悬停和按下时分别选用黑色或白色标签文字，不改变填色或边框。不涵盖文字按钮、次要按钮、渐变、自定义色、半透明宿主主题或显式着色的图标及子元素。
+
 
 图标资源打包自动优化可以在不改业务代码的前提下降低 SVG 资源体积。应用只需要把 optimizer 加为 build dependency，并在已有 Cargo build script 中调用 builder：
 

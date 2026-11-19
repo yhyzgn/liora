@@ -41,6 +41,25 @@ fn rgba(r: u8, g: u8, b: u8, a: f32) -> Hsla {
     .into()
 }
 
+fn filled_foreground(background: Hsla) -> Hsla {
+    let color: Rgba = background.into();
+    let linearize = |channel: f32| {
+        if channel <= 0.04045 {
+            channel / 12.92
+        } else {
+            ((channel + 0.055) / 1.055).powf(2.4)
+        }
+    };
+    let luminance = 0.2126 * linearize(color.r)
+        + 0.7152 * linearize(color.g)
+        + 0.0722 * linearize(color.b);
+    if (luminance + 0.05) / 0.05 >= 1.05 / (luminance + 0.05) {
+        gpui::black()
+    } else {
+        gpui::white()
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 /// Fluent native GPUI component for rendering Liora button colors.
 pub struct ButtonColors {
@@ -541,6 +560,26 @@ impl Button {
         }
     }
 
+    fn active_text_color(&self, colors: &ButtonVariantColors) -> Option<Hsla> {
+        if !self.disabled
+            && !self.secondary
+            && self.custom_colors.is_none()
+            && self.gradient.is_none()
+            && matches!(
+                self.variant,
+                ButtonVariant::Primary
+                    | ButtonVariant::Info
+                    | ButtonVariant::Success
+                    | ButtonVariant::Warning
+                    | ButtonVariant::Danger
+            )
+        {
+            Some(filled_foreground(colors.active_bg))
+        } else {
+            None
+        }
+    }
+
     fn icon_size(&self) -> f32 {
         match self.size {
             ButtonSize::Small => 12.0,
@@ -556,6 +595,7 @@ impl Button {
         cx: &mut App,
     ) -> impl IntoElement {
         let c = self.resolved_colors(&theme);
+        let active_text = self.active_text_color(&c);
         let h = self.size.height();
         let px_h = self.size.padding_x();
         let fs = match self.size {
@@ -857,7 +897,12 @@ impl Button {
                     .as_ref()
                     .map(ButtonGradient::active_background)
                     .map_or_else(|| c.active_bg.into(), Into::into);
-                style.bg(active_bg)
+                let style = style.bg(active_bg);
+                if let Some(active_text) = active_text {
+                    style.text_color(active_text)
+                } else {
+                    style
+                }
             })
             .on_click(move |event, window, cx| {
                 if let Some(ref handler) = click_handler {
@@ -1262,6 +1307,62 @@ mod tests {
         assert_eq!(colors.disabled_bg.h, colors.bg.h);
         assert!(colors.disabled_bg.s < colors.bg.s);
         assert!(colors.disabled_bg.a < colors.bg.a);
+    }
+
+    #[test]
+    fn filled_button_pressed_text_meets_wcag_for_semantic_families() {
+        fn luminance(color: Hsla) -> f64 {
+            let color: Rgba = color.into();
+            [color.r, color.g, color.b]
+                .into_iter()
+                .zip([0.2126, 0.7152, 0.0722])
+                .map(|(channel, weight)| {
+                    let channel = f64::from(channel);
+                    weight * if channel <= 0.04045 {
+                        channel / 12.92
+                    } else {
+                        ((channel + 0.055) / 1.055).powf(2.4)
+                    }
+                })
+                .sum()
+        }
+
+        for (name, theme) in [("light", Theme::light()), ("dark", Theme::dark())] {
+            for variant in [
+                ButtonVariant::Primary,
+                ButtonVariant::Info,
+                ButtonVariant::Success,
+                ButtonVariant::Warning,
+                ButtonVariant::Danger,
+            ] {
+                let button = Button::new("contrast").variant(variant);
+                let colors = button.resolved_colors(&theme);
+                let text = button.active_text_color(&colors).unwrap();
+                assert_eq!(text.a, 1.0);
+                assert_eq!(colors.active_bg.a, 1.0);
+                let text = luminance(text);
+                let background = luminance(colors.active_bg);
+                let contrast = (text.max(background) + 0.05)
+                    / (text.min(background) + 0.05);
+                assert!(contrast >= 4.5, "{name} {variant:?} pressed: {contrast}");
+            }
+
+            for button in [
+                Button::new("default"),
+                Button::new("tertiary").variant(ButtonVariant::Tertiary),
+                Button::new("text").variant(ButtonVariant::Text),
+                Button::new("secondary").primary().secondary(),
+                Button::new("custom").primary().custom_color(gpui::red(), gpui::white()),
+                Button::new("gradient").primary().gradient(gpui::blue(), gpui::green()),
+                Button::new("disabled").primary().disabled(true),
+            ] {
+                assert!(
+                    button
+                        .active_text_color(&button.resolved_colors(&theme))
+                        .is_none()
+                );
+            }
+        }
     }
 
     #[test]

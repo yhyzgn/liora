@@ -622,6 +622,8 @@ let tabler_home = Icon::new(liora::icons_tabler::IconName::HomeFilled);
 
 Buttons use their constructor label as the native accessible name, including icon-only and unavailable controls. Use `Button::new("+").aria_label(liora::core::locales::common::add)` to override only that name without changing the visible glyph or geometry. Names resolve in the current locale; native platform state reporting and screen-reader speech require separate runtime verification.
 
+Standard opaque semantic filled Buttons choose black or white label text for the resting, hovered, and pressed backgrounds without changing fills or borders. This does not cover Text, secondary, gradients, custom colors, translucent host themes, or explicit icon and child colors.
+
 Use `.text().primary()` or `.primary().text()` for the same borderless text button: its resting background is transparent and its label uses the primary color. The same ordering rule applies to `info`, `success`, `warning`, and `danger`.
 
 Icon bundle auto optimization keeps application code unchanged while reducing packaged SVG resources. Add the optimizer as a build dependency and call the builder from the host application's existing Cargo build script:
