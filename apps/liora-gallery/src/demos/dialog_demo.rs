@@ -77,6 +77,25 @@ impl Render for DialogDemo {
                                 .show(cx);
                         },
                     )),
+                ))
+                .child(section(
+                    "Nested 嵌套对话框",
+                    "手动关闭子对话框后，父对话框保持打开。",
+                    Button::new("Open Parent Dialog").on_click(|_, window, cx| {
+                        Dialog::new()
+                            .title("Parent dialog")
+                            .content(|_, _| {
+                                Button::new("Open Child Dialog").on_click(|_, window, cx| {
+                                    Dialog::new()
+                                        .title("Child dialog")
+                                        .content(|_, _| {
+                                            dialog_body("Close returns to the parent dialog.")
+                                        })
+                                        .show_in_window(window, cx);
+                                })
+                            })
+                            .show_in_window(window, cx);
+                    }),
                 )),
         )
     }

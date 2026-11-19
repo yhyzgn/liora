@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fix Dialog and MessageBox manual close to dismiss only the topmost modal while preserving underlying dialogs.
 - Notify searchable Select selection clears exactly once without treating search edits as selection changes; release Select when its window closes even if its Input remains retained.
 
 - Give Alert close controls native button semantics and a visible keyboard focus ring; preserve Tab/Shift+Tab and key-up activation, with stable sibling IDs and parent-owned dismissal/restoration examples.

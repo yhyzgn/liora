@@ -356,6 +356,7 @@ mod motion_tests {
 #[cfg(test)]
 mod runtime_tests {
     use super::*;
+    use gpui::{Context, Render, px};
 
     #[test]
     fn escape_respects_the_top_dialog_close_policy() {
@@ -419,6 +420,71 @@ mod runtime_tests {
         assert!(source.contains("!cx.has_global::<DialogEscapeInterceptorInstalled>()"));
         assert!(source.contains("cx.set_global(DialogEscapeInterceptorInstalled)"));
         assert!(source.contains(".detach();"));
+    }
+
+    struct ModalSurface;
+
+    impl Render for ModalSurface {
+        fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+            liora_core::render_active_modal_in_window(window, cx);
+            div().relative().size_full().child(crate::PortalLayer)
+        }
+    }
+
+    #[test]
+    fn manual_close_removes_only_top_dialog() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let handle = app.open_window(gpui::size(px(640.0), px(480.0)), |_, _| ModalSurface);
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        let close_callback_count = std::rc::Rc::new(std::cell::Cell::new(0));
+
+        window.update(|window, cx| {
+            Dialog::close(cx);
+            assert!(cx.global::<ActiveModal>().0.is_empty());
+
+            Dialog::new().id("parent").show(cx);
+            Dialog::new()
+                .id("child")
+                .on_close({
+                    let close_callback_count = close_callback_count.clone();
+                    move |_, _| close_callback_count.set(close_callback_count.get() + 1)
+                })
+                .content(|_, _| {
+                    div()
+                        .debug_selector(|| "dialog-manual-close".into())
+                        .child(crate::Button::new("Close").on_click(|_, _, cx| Dialog::close(cx)))
+                })
+                .show(cx);
+            let modals = &cx.global::<ActiveModal>().0;
+            assert_eq!(modals.len(), 2);
+            assert_eq!(modals[0].id, "parent");
+            assert_eq!(modals[1].id, "child");
+            window.draw(cx).clear(cx);
+        });
+
+        let close_bounds = window
+            .debug_bounds("dialog-manual-close")
+            .expect("manual close button must render");
+        window.simulate_click(close_bounds.center(), gpui::Modifiers::none());
+
+        window.update(|_, cx| {
+            let modals = &cx.global::<ActiveModal>().0;
+            assert_eq!(modals.len(), 1);
+            assert_eq!(modals[0].id, "parent");
+        });
+
+        assert_eq!(close_callback_count.get(), 0);
+
+        window.update(|_, cx| {
+            crate::MessageBox::new("Message box", "Dismiss me").alert(cx);
+            crate::MessageBox::close(cx);
+            let modals = &cx.global::<ActiveModal>().0;
+            assert_eq!(modals.len(), 1);
+            assert_eq!(modals[0].id, "parent");
+        });
+        assert_eq!(close_callback_count.get(), 0);
+        app.quit();
     }
 }
 
@@ -557,9 +623,9 @@ impl Dialog {
         cx.refresh_windows();
     }
 
-    /// Performs the close operation used by this component.
+    /// Closes only the topmost active modal without invoking its built-in `on_close` callback.
     pub fn close(cx: &mut App) {
-        liora_core::clear_active_modal(cx);
+        cx.global_mut::<ActiveModal>().0.pop();
         cx.refresh_windows();
     }
 
