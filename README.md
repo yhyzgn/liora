@@ -2000,6 +2000,8 @@ WindowOptions {
 
 Create windows with `show: false`, call `attach_system_theme_observer(window, cx)` at the beginning of the `open_window` callback, and activate the window after `open_window` returns.
 
+On Linux/FreeBSD, synchronous startup hints remain in use until the SDK receives a window-appearance notification. After that, System reselection, synchronization, and new-window setup use the current window appearance, including notifications received in fixed modes or without a theme-color change. This does not resolve the cold-start race where the portal's initial value arrives before observer attachment and no later notification occurs.
+
 ### Input text or focus state resets during render
 
 Store stateful controls in `gpui::Entity<T>` fields rather than constructing them inside every render pass.

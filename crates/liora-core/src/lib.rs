@@ -530,13 +530,25 @@ fn startup_system_appearance(cx: &App) -> WindowAppearance {
     platform_system_appearance().unwrap_or_else(|| cx.window_appearance())
 }
 
+#[derive(Default)]
+struct LiveSystemAppearanceObserved(bool);
+
+impl Global for LiveSystemAppearanceObserved {}
+
 #[cfg(test)]
 static CURRENT_SYSTEM_APPEARANCE_CALLS: std::sync::atomic::AtomicUsize =
     std::sync::atomic::AtomicUsize::new(0);
 
-fn current_system_appearance(window: &Window, _cx: &App) -> WindowAppearance {
+fn current_system_appearance(window: &Window, cx: &App) -> WindowAppearance {
     #[cfg(test)]
     CURRENT_SYSTEM_APPEARANCE_CALLS.fetch_add(1, Ordering::Relaxed);
+
+    if cx
+        .try_global::<LiveSystemAppearanceObserved>()
+        .is_some_and(|observed| observed.0)
+    {
+        return window.appearance();
+    }
 
     platform_system_appearance().unwrap_or_else(|| window.appearance())
 }
@@ -715,6 +727,7 @@ pub fn init_liora(cx: &mut App, theme: Theme) {
 
 fn set_core_config(cx: &mut App, config: Config) {
     cx.set_global(config);
+    cx.set_global(LiveSystemAppearanceObserved(false));
     fonts::refresh_default_code_font(cx);
     cx.set_global(crate::popper::ZIndexStack::default());
     cx.set_global(crate::popper::ActiveTooltip(Vec::new()));
@@ -836,6 +849,7 @@ fn sync_observed_system_appearance(
     cx: &mut App,
     appearance: WindowAppearance,
 ) -> bool {
+    cx.default_global::<LiveSystemAppearanceObserved>().0 = true;
     let changed = cx.global_mut::<Config>().sync_system_theme(appearance);
     if changed {
         cx.refresh_windows();

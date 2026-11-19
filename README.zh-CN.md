@@ -1982,6 +1982,8 @@ WindowOptions {
 
 窗口使用 `show: false` 创建，在 `open_window` 回调一开始调用 `attach_system_theme_observer(window, cx)`，并在 `open_window` 返回 handle 后调用 `window.activate_window()`。
 
+Linux/FreeBSD 在 SDK 收到窗口外观通知前仍使用同步启动提示；收到后，System 重选、同步和新窗口初始化均采用当前窗口外观，包括固定模式或主题颜色不变时收到的通知。这不解决 portal 初值早于观察器挂载且此后没有通知的冷启动 ready 竞争。
+
 ### Input 文本或焦点每次 render 后重置
 
 把有状态控件放在 `gpui::Entity<T>` 字段中，不要在每次 render 中重新构造：
