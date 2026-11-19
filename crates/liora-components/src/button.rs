@@ -200,6 +200,11 @@ fn inspect_button_icon(
         .child(icon)
 }
 
+#[cfg(test)]
+thread_local! {
+    static FOCUS_OUTLINES: std::cell::RefCell<Vec<(ElementId, gpui::Bounds<gpui::Pixels>, bool)>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
 /// Options that control button icon behavior.
 pub enum ButtonIcon {
     /// Stores a Lucide icon name for deferred icon construction.
@@ -771,16 +776,30 @@ impl Button {
         let hover_gradient = gradient.clone();
         let active_gradient = gradient.clone();
 
-        div.tab_index(0)
-            .focus_visible(move |style| {
-                style.shadow(vec![gpui::BoxShadow {
-                    color: theme.primary.base,
-                    offset: gpui::point(px(0.0), px(0.0)),
-                    blur_radius: px(0.0),
-                    spread_radius: px(2.0),
-                    inset: false,
-                }])
+        // Track the root's single retained native owner instead of Div's anonymous handle.
+        let focus_handle = window.with_global_id(id.clone(), |global_id, window| {
+            window.with_element_state::<gpui::FocusHandle, _>(global_id, |previous, _| {
+                let handle = previous.unwrap_or_else(|| cx.focus_handle().tab_stop(true).tab_index(0));
+                (handle.clone(), handle)
             })
+        });
+        let paint_focus = focus_handle.clone();
+        let border = if c.border.is_transparent() { px(0.0) } else { px(1.0) };
+        #[cfg(test)]
+        let outline_id = id.clone();
+        let outline = gpui::canvas(|_, _, _| (), move |bounds, (), window, _| {
+            let visible = paint_focus.is_focused(window) && window.last_input_was_keyboard();
+            #[cfg(test)]
+            eprintln!("BUTTON FOCUS PAINT {outline_id:?} owner={paint_focus:?} focused={} keyboard={}", paint_focus.is_focused(window), window.last_input_was_keyboard());
+            #[cfg(test)]
+            FOCUS_OUTLINES.with_borrow_mut(|records| records.push((outline_id, bounds, visible)));
+            if visible {
+                window.paint_quad(gpui::outline(bounds.dilate(px(2.0)), theme.primary.base, gpui::BorderStyle::default())
+                    .border_widths(px(2.0)).corner_radii(r.to_pixels(window.rem_size()) + px(2.0)));
+            }
+        }).absolute().inset(-border);
+
+        div.track_focus(&focus_handle).tab_index(0)
             .on_key_down(|event, window, cx| {
                 let modifiers = event.keystroke.modifiers;
                 if event.keystroke.key == "tab"
@@ -830,6 +849,7 @@ impl Button {
                 }
             })
             .children(children)
+            .child(outline)
             .into_any_element()
     }
 }
@@ -897,6 +917,62 @@ mod tests {
     }
 
     struct RepeatedLabelTest;
+
+    struct FocusOutlineTest;
+
+    impl gpui::Render for FocusOutlineTest {
+        fn render(&mut self, _: &mut Window, _: &mut gpui::Context<Self>) -> impl IntoElement {
+            gpui::div().flex().gap_4()
+                .child(Button::new("Same").id("outline-opaque").primary())
+                .child(Button::new("Same").id("outline-transparent").primary().text())
+                .child(Button::new("Same").id("outline-icon").primary().icon_only(IconName::Check))
+                .child(Button::new("Same").id("outline-disabled").disabled(true))
+                .child(Button::new("Same").id("outline-loading").loading(true))
+        }
+    }
+
+    #[test]
+    fn hollow_focus_uses_exact_root_border_box_and_one_retained_owner() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let handle = app.add_window(|_, _| FocusOutlineTest);
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        FOCUS_OUTLINES.with_borrow_mut(Vec::clear);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        let ids = ["outline-opaque", "outline-transparent", "outline-icon"];
+        let roots = ids.map(|id| window.debug_bounds(id).unwrap());
+        FOCUS_OUTLINES.with_borrow(|records| {
+            assert_eq!(records.len(), 3, "disabled/loading must not retain or draw focus");
+            for (id, root) in ids.into_iter().zip(roots) {
+                let (_, canvas, visible) = records.iter().find(|(key, _, _)| *key == element_id(id)).unwrap();
+                assert_eq!(*canvas, root, "canvas must cover the root border box, including an existing border");
+                assert!(!visible);
+            }
+        });
+        // With no focused node there is no Button listener to handle the first Tab.
+        window.update(|window, cx| window.focus_next(cx));
+        for (index, focused) in ids.into_iter().enumerate() {
+            press(&mut window, if index == 0 { "right" } else { "tab" });
+            eprintln!("BEFORE FORCED PARENT RERENDER {focused}");
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            handle.update(&mut app, |_, _, cx| cx.notify()).unwrap();
+            eprintln!("AFTER FORCED PARENT RERENDER {focused}");
+            FOCUS_OUTLINES.with_borrow_mut(Vec::clear);
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            FOCUS_OUTLINES.with_borrow(|records| {
+                let focused_ids: Vec<_> = records.iter().filter(|(_, _, visible)| *visible).map(|(id, _, _)| id.clone()).collect();
+                assert_eq!(focused_ids, vec![element_id(focused)], "one retained root owner must survive rerender and each Tab");
+            });
+            for (id, root) in ids.into_iter().zip(roots) {
+                assert_eq!(window.debug_bounds(id), Some(root));
+            }
+        }
+        window.simulate_click(roots[2].center(), gpui::Modifiers::none());
+        FOCUS_OUTLINES.with_borrow_mut(Vec::clear);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        FOCUS_OUTLINES.with_borrow(|records| assert!(records.iter().all(|(_, _, visible)| !visible), "pointer focus must not paint a keyboard outline"));
+        app.quit();
+    }
 
     impl gpui::Render for RepeatedLabelTest {
         fn render(&mut self, _: &mut Window, _: &mut gpui::Context<Self>) -> impl IntoElement {
