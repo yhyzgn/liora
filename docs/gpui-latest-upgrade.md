@@ -170,5 +170,6 @@ a local policy check, not a signed release.
 
 Keep changes on `chore/gpui-latest-upgrade-20261013`. Revert this upgrade's pin,
 lock, spring/demo/frame changes and documentation together to the previous SHA.
-Do not change dependency source to a fork or add a local runtime patch. Do not use
-broad resets that erase unrelated subsequent work.
+Do not change GPUI dependency source to a fork or add a local GPUI runtime patch.
+The later, explicitly bounded [AccessKit leaf exception](accesskit-atspi-backport.md)
+does not change that GPUI rule. Do not use broad resets that erase unrelated subsequent work.

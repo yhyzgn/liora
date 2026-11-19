@@ -245,6 +245,9 @@ fn needs_gpui_app_type(_cx: &mut App) {}
 
 本仓库保留 `third_party/zed` 仅作为早期 Linux 启动窗口 patch 工作和 upstream PR 对照的未发布源码材料。当前开发应使用上面的官方 `zed-industries/zed` git 依赖。如确需临时本地 patch 做 app-only 验证，必须保持在可发布 SDK manifest 之外，并明确记录边界。
 
+此前禁止 workspace `[patch.crates-io]` 的合同现作出明确、唯一的应用根例外：`third_party/accesskit_atspi_common` 中官方 `accesskit_atspi_common 0.19.1`，仅回移上游 Busy/Disabled 两处修复，以修正 Linux AT-SPI 状态映射，不改变官方 GPUI pin 或 AccessKit 版本。其他 crate/source override、本地或 fork GPUI 仍被禁止。该 patch **不会被下游 SDK 宿主继承**，也不随 SDK crate 发布；[来源、固定源码获取、最终应用配置与验证边界](docs/accesskit-atspi-backport.md)说明了所需的显式 root override。仅升级 SDK 不能宣称任意宿主已修复。
+
+
 ## 快速开始：创建一个 Liora 应用
 
 ### 1. 创建应用

@@ -41,6 +41,7 @@ Gallery 和 Docs 都使用同一套接入方式：
 4. Liora SDK 不耦合、不嵌入本仓库 `third_party/zed` 下的 GPUI patch；当前依赖面使用 Zed 官方 `zed-industries/zed` git revision `f0d896f2c18a543335eb155f729d36b624695591`，并让 `gpui` 与 `gpui_platform` 保持同一 revision。
 5. Gallery / Docs 也按同一官方 git revision 构建，并只在最终 app crate 中启用平台 feature。不要把本地 path GPUI、`[patch]` override 或非官方 fork 写入可发布 SDK manifest。
 6. 注意：`third_party/zed` 是未发布的上游源码对照材料，不是 SDK 依赖；如需临时验证本地 patch，只能放在 app-only 临时分支。
+   工作区旧有的全面 patch 禁令现仅对 `third_party/accesskit_atspi_common` 中官方 `0.19.1` 的 Busy/Disabled 上游回移作出显式应用根例外；不是 GPUI patch，不进入可发布 SDK manifest，也不会被 SDK 宿主继承。其他 crate/source override 仍禁止；具体来源、固定源码获取及宿主 root override 见仓库 `docs/accesskit-atspi-backport.md`。
 7. 窗口选项保留 `show: false` 并在 `open_window` 返回 handle 后调用 `window.activate_window()`，与 Zed 主窗口显示时机保持一致；但 Linux 尺寸首帧正确性最终取决于应用选择的 GPUI backend 是否在平台窗口创建阶段处理初始 `Maximized` / `Fullscreen` 状态。
 8. 在 `open_window` 回调一开始、创建 root view 之前调用 `attach_system_theme_observer(window, cx)`；它会先同步一次，再保活 `observe_window_appearance` 以跟随后续系统变化。
 9. Linux / FreeBSD 启动时，`System` 会优先读取同步可用的桌面偏好（`GTK_THEME`、GTK settings、`gsettings org.gnome.desktop.interface color-scheme`），避免 GPUI Linux 后端默认 `Light` 等待 xdg-desktop-portal 异步回传时造成首帧浅色。

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add the sole application-root source-policy exception for official `accesskit_atspi_common 0.19.1` with upstream Busy/Disabled backports, preserving the exact official GPUI pin and SDK publication boundaries. Share executable metadata/source audit and negative controls between ordinary CI and release preflight, and explicitly test the excluded leaf. Downstream hosts must opt into their own root override; published SDK crates do not transmit the fix.
+
 - Preserve complete checksum-manifest asset names, including spaces and literal leading asterisks, so a row for a longer filename cannot authorize a truncated asset name; retain text/binary marker support.
 - Serialize Gallery and Docs update checks/downloads, disable conflicting update actions while busy, and revoke the previous install plan before a new download so failures cannot leave an old plan installable.
 - Store Gallery and Docs updates in validated per-user caches, reject unsafe directory ownership/permissions and leaf aliases, and propagate cache errors without falling back to shared temporary paths.

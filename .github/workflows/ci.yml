@@ -20,6 +20,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Audit SDK metadata and source policy
+        run: |
+          python scripts/audit_sdk_policy.py
+          python scripts/test_audit_sdk_policy.py -v
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
@@ -59,6 +64,16 @@ jobs:
 
       - name: Workspace tests
         run: cargo test --workspace
+
+      - name: Test excluded AccessKit backport with workspace-resolved dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+          cp -R third_party/accesskit_atspi_common "$tmp/leaf"
+          cp Cargo.lock "$tmp/leaf/Cargo.lock"
+          cargo test --offline --manifest-path "$tmp/leaf/Cargo.toml" --all-features --lib
 
       - name: Docs snippet check
         run: cargo check -p liora-docs --bin check_snippets

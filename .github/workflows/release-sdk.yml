@@ -58,38 +58,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
-          from pathlib import Path
-          import tomllib
-
-          root_manifest = Path("Cargo.toml").read_text()
-          assert "[patch.crates-io]" not in root_manifest, "workspace must not force crates.io patches"
-          assert "[patch.\"https://github.com/zed-industries/zed\"]" not in root_manifest, "workspace must not force local Zed GPUI patches"
-          root = tomllib.loads(root_manifest)
-          gpui_dep = root["workspace"]["dependencies"]["gpui"]
-          assert gpui_dep["version"] == "0.2.2", "published packages need Cargo's registry fallback for gpui"
-          assert gpui_dep["git"] == "https://github.com/zed-industries/zed"
-          assert gpui_dep["rev"], "gpui must be pinned by official Zed rev for local development"
-          assert gpui_dep["default-features"] is False
-
-          gpui_platform_dep = root["workspace"]["dependencies"]["gpui_platform"]
-          assert gpui_platform_dep["git"] == "https://github.com/zed-industries/zed"
-          assert "version" not in gpui_platform_dep, "gpui_platform is app-only and not published on crates.io"
-          assert gpui_platform_dep["rev"] == gpui_dep["rev"]
-          assert gpui_platform_dep["default-features"] is False
-
-          crates = "liora-theme liora-icons-optimizer liora-tray liora-packager liora-updater liora-core liora-icons liora-icons-lucide liora-icons-antd liora-icons-ionic liora-icons-tabler liora-icons-carbon liora-icons-material liora-components liora liora-webview".split()
-          for crate in crates:
-              path = Path("crates") / crate / "Cargo.toml"
-              package = tomllib.loads(path.read_text())["package"]
-              assert package["publish"] is True, f"{crate} should be publishable to crates.io"
-              assert package["license-file"] == "../../LICENSE.md"
-              assert package["repository"] == "https://github.com/yhyzgn/liora"
-              assert package.get("readme") == "README.md", f"{crate} should publish its crate-local README.md"
-              assert package.get("description")
-              assert (path.parent / "README.md").read_text(encoding="utf-8").strip(), f"{crate} README.md should not be empty"
-          print("crates.io SDK metadata OK")
-          PY
+          python scripts/audit_sdk_policy.py
+          python scripts/test_audit_sdk_policy.py -v
 
       - name: Package independently publishable crates
         shell: bash

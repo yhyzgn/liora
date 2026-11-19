@@ -26,6 +26,7 @@ exclude = [
     "third_party/zed",
     "third_party/zed/crates/gpui",
     "third_party/zed/crates/gpui_linux",
+    "third_party/accesskit_atspi_common",
 ]
 
 [workspace.dependencies]
@@ -90,3 +91,7 @@ url = "2.2"
 uuid = { version = "1.1.2", features = ["v4", "v5", "v7", "serde"] }
 wasm-bindgen = "0.2.113"
 web-time = "1.1.0"
+
+# Application-root exception; never inherited by downstream SDK consumers.
+[patch.crates-io]
+accesskit_atspi_common = { path = "third_party/accesskit_atspi_common", version = "=0.19.1" }

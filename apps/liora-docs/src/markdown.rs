@@ -12674,26 +12674,11 @@ mod tests {
     }
 
     #[test]
-    fn gpui_patch_boundary_is_documented_and_not_published() {
-        let root_cargo = include_str!("../../../Cargo.toml");
+    fn gpui_source_boundary_is_documented() {
         let readme = include_str!("../../../README.md");
         let readme_zh = include_str!("../../../README.zh-CN.md");
         let patch_readme = include_str!("../../../third_party/zed/README.md");
         let core_source = include_str!("../../../crates/liora-core/src/lib.rs");
-        let liora_package = include_str!("../../../crates/liora-core/Cargo.toml");
-
-        assert!(root_cargo.contains(
-            r#"gpui = { version = "0.2.2", git = "https://github.com/zed-industries/zed""#
-        ));
-        assert!(
-            root_cargo
-                .contains(r#"gpui_platform = { git = "https://github.com/zed-industries/zed""#)
-        );
-        assert!(!root_cargo.contains(concat!("package = \"open-", "gpui\"")));
-        assert!(root_cargo.contains(concat!("gpui", "_platform")));
-        assert!(!root_cargo.contains("[patch.crates-io]"));
-        assert!(!liora_package.contains("third_party/zed"));
-        assert!(!liora_package.contains("[patch"));
 
         for doc in [
             readme,

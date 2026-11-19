@@ -14,7 +14,7 @@ Why this exists:
 Dependency boundary:
 
 - Published Liora crates use only the official `zed-industries/zed` git dependency pinned in the workspace and must not depend on this directory.
-- Liora's root `Cargo.toml` must not contain `[patch.crates-io]` or path GPUI overrides for SDK publication.
+- The former blanket ban on root `[patch.crates-io]` is explicitly amended only for the licensed official `accesskit_atspi_common 0.19.1` Busy/Disabled backport at `third_party/accesskit_atspi_common`; see [the exception and downstream boundary](../../docs/accesskit-atspi-backport.md). This is not a GPUI patch. All local/fork GPUI overrides remain forbidden, and publishable SDK manifests still must not contain patches.
 - Cargo patches are root-application decisions; a library crate cannot safely force downstream applications to use a patched backend.
 
 How Gallery / Docs can test this patch locally:

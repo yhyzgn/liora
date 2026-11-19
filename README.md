@@ -249,6 +249,9 @@ When can you avoid direct `gpui` usage? Very small helper crates that only build
 
 The repository keeps `third_party/zed` only as non-published upstream-source reference material for prior Linux startup-window patch work and PR comparison. Current development should use the official `zed-industries/zed` git dependency above. If a temporary local patch is needed for app-only verification, keep it outside publishable SDK manifests and document the boundary.
 
+The previous blanket ban on workspace `[patch.crates-io]` is explicitly amended for one application-root exception: official `accesskit_atspi_common 0.19.1` with only the upstream Busy/Disabled backports at `third_party/accesskit_atspi_common`. This fixes Linux AT-SPI state mapping without changing the official GPUI pin or AccessKit versions. All other source overrides and local/fork GPUI remain forbidden. This patch is **not inherited by downstream SDK hosts** and is not included in SDK crate packages; see [provenance, exact consumer setup, verification and removal boundary](docs/accesskit-atspi-backport.md). Merely updating the SDK does not fix an arbitrary host's native accessibility state.
+
+
 ## Quick start: create a Liora app
 
 ### 1. Create the app

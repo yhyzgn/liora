@@ -106,6 +106,9 @@ Workspace 中的 `gpui` 设置为 `default-features = false`。原因是：
 
 这也是外部项目接入 Liora 时应遵守的策略：平台 feature 与 GPUI patch 都由最终应用显式选择，Liora SDK 只提供兼容官方 GPUI 的组件与初始化 API。
 
+工作区禁止 `[patch.crates-io]` 的旧合同明确修订为唯一例外：`third_party/accesskit_atspi_common` 下官方 `0.19.1` 的 Busy/Disabled 上游回移；不修改 GPUI、本地或发布 SDK 的依赖 manifest。普通 CI 与 release audit 共同运行 `scripts/audit_sdk_policy.py` 和真实负控，其他 crate/source override 仍失败。此应用根 patch 不会被下游 SDK 宿主继承，且 vendored leaf 被排除在 SDK workspace/发布目标之外；最终应用须显式取得固定源码并在自己的根 manifest 配置 override。来源、操作与移除条件见仓库 `docs/accesskit-atspi-backport.md`。
+
+
 ## 测试与验证层级
 
 常用验证命令：
