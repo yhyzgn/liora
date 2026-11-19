@@ -570,7 +570,7 @@ impl SettingsView {
     fn new(cx: &mut Context<Self>) -> Self {
         Self {
             search: cx.new(|cx| Input::new("", cx).placeholder("Search settings")),
-            notifications: cx.new(|cx| Switch::new(true, cx)),
+            notifications: cx.new(|cx| Switch::new(true, cx).aria_label("Notifications")),
         }
     }
 }
@@ -894,7 +894,7 @@ impl LoginForm {
     fn new(cx: &mut Context<Self>) -> Self {
         Self {
             email: cx.new(|cx| Input::new("", cx).placeholder("name@example.com").clearable(true)),
-            remember: cx.new(|cx| Checkbox::new(true, cx)),
+            remember: cx.new(|cx| Checkbox::new(true, cx).aria_label("Remember me")),
         }
     }
 }
@@ -1843,6 +1843,7 @@ Liora avoids duplicate controls for the same job:
 - Use `Drawer` for both full drawers and lightweight sheet-style panels. `Drawer::sheet()` provides the compact defaults that would otherwise become a separate Sheet control.
 - Use `Select` for fixed options and searchable selection. `Select::searchable(...)`, `.multiple()`, item groups, disabled items, and footer slots cover Combobox-style workflows.
 - Use `Switch` for settings booleans and `Segmented` / button-style selections for toolbar or view-mode choices; the former standalone Toggle control was removed to avoid API duplication.
+- `Checkbox` and `Switch` retain their native root identity, expose checked/disabled semantics, and support Tab/Shift+Tab plus Enter/Space. Give every `Switch` and textless `Checkbox` a meaningful `aria_label`; a Checkbox's visible `label` is its default name. `set_disabled` preserves the entity while removing disabled controls from the Tab order. Native assistive-technology state mapping remains platform-adapter-dependent.
 - Use `Text` for both inline text and lightweight app documents. `Text::document(...)`, `TextBlock`, and `Text::markdown(...)` cover TextView-style About/Help/Release notes content. `Text`, `Title`, and `Paragraph` are mouse-selectable by default; call `.selectable(false)` only for decorative labels or non-copyable chrome. Use `SelectableTextGroup` when selection must continue across multiple `Text`, `Title`, and `Paragraph` blocks without flattening their native typography.
 
 ## Native packaging

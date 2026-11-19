@@ -2,6 +2,10 @@
 
 `Checkbox` 用于独立多选和多选组。每个示例都把效果与代码放在一起。
 
+启用的单个控件可用 `Tab` / `Shift+Tab` 进入和离开，`Space` 或 `Enter` 切换一次；指针必须在同一控件内按下并释放。禁用控件不参与 Tab 顺序，也不响应激活。使用 `set_disabled` 动态更新时保留原 Entity 和焦点 identity。
+
+原生根节点暴露 `CheckBox`、checked 和 disabled 状态。可见 `label` 默认提供无障碍名称；无文本示例用 `aria_label` 命名，覆盖名称不会改变可见标签。外层 `FormItem` 文本不会自动成为控件名称。`aria_label` 同样接受随当前语言解析的 `LocalizedText`。
+
 ## 基础状态
 
 ### 效果

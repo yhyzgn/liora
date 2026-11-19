@@ -19,8 +19,8 @@ struct SettingsDemo {
 impl SettingsDemo {
     fn new(cx: &mut Context<Self>) -> Self {
         Self {
-            auto_save: cx.new(|cx| Switch::new(true, cx)),
-            telemetry: cx.new(|cx| Switch::new(false, cx)),
+            auto_save: cx.new(|cx| Switch::new(true, cx).aria_label("Auto save")),
+            telemetry: cx.new(|cx| Switch::new(false, cx).aria_label("Telemetry")),
             theme: cx.new(|cx| Select::new(vec!["System", "Light", "Dark"], Some(0), cx)),
             font_size: cx.new(|cx| Input::new("14", cx).width(px(88.0))),
         }

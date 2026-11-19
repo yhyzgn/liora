@@ -385,7 +385,7 @@ fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
                 theme_mode_segmented: cx.new(move |cx| theme_mode_segmented(theme_mode, cx)),
                 locale_segmented: cx.new(|cx| locale_segmented(cx)),
                 frame_mode,
-                frame_mode_switch: cx.new(|cx| Switch::new(frame_mode.is_custom(), cx)),
+                frame_mode_switch: cx.new(|cx| Switch::new(frame_mode.is_custom(), cx).aria_label("Custom window frame")),
                 refresh_revision: 0,
                 updater_status: UpdatePanelStatus::Idle,
                 install_plan: None,

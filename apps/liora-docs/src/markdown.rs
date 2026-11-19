@@ -2502,13 +2502,13 @@ impl LiveDemoContent {
                 }));
             }
             "SettingsPageBasic" => {
-                settings_auto_save = Some(cx.new(|cx| Switch::new(true, cx)));
+                settings_auto_save = Some(cx.new(|cx| Switch::new(true, cx).aria_label("Auto save")));
                 settings_theme =
                     Some(cx.new(|cx| Select::new(vec!["System", "Light", "Dark"], Some(0), cx)));
                 settings_font_size = Some(cx.new(|cx| Input::new("14", cx).width(px(88.0))));
             }
             "SettingsSensitive" => {
-                settings_telemetry = Some(cx.new(|cx| Switch::new(false, cx)));
+                settings_telemetry = Some(cx.new(|cx| Switch::new(false, cx).aria_label("Telemetry")));
             }
             "InputBasic" => {
                 inputs.push(cx.new(|cx| Input::new("", cx)));
@@ -2855,11 +2855,11 @@ impl LiveDemoContent {
                     .push(cx.new(|cx| Textarea::new("Limited content", cx).max_length(50).rows(2)));
             }
             "CheckboxBasic" => {
-                checkboxes.push(cx.new(|cx| Checkbox::new(true, cx)));
-                checkboxes.push(cx.new(|cx| Checkbox::new(false, cx)));
+                checkboxes.push(cx.new(|cx| Checkbox::new(true, cx).aria_label("Receive updates")));
+                checkboxes.push(cx.new(|cx| Checkbox::new(false, cx).aria_label("Enable reminders")));
                 checkboxes.push(cx.new(|cx| Checkbox::new(false, cx).label("Label")));
-                checkboxes.push(cx.new(|cx| Checkbox::new(false, cx).disabled(true)));
-                checkboxes.push(cx.new(|cx| Checkbox::new(true, cx).disabled(true)));
+                checkboxes.push(cx.new(|cx| Checkbox::new(false, cx).aria_label("Managed reminders").disabled(true)));
+                checkboxes.push(cx.new(|cx| Checkbox::new(true, cx).aria_label("Managed updates").disabled(true)));
             }
             "CheckboxGroup" => {
                 checkbox_groups.push(cx.new(|cx| {
@@ -2925,16 +2925,16 @@ impl LiveDemoContent {
                 rates.push(cx.new(|cx| Rate::new(4.0, cx).max(10)));
             }
             "SwitchBasic" => {
-                switches.push(cx.new(|cx| Switch::new(true, cx)));
-                switches.push(cx.new(|cx| Switch::new(false, cx)));
+                switches.push(cx.new(|cx| Switch::new(true, cx).aria_label("Notifications")));
+                switches.push(cx.new(|cx| Switch::new(false, cx).aria_label("Auto sync")));
             }
             "SwitchDisabled" => {
-                switches.push(cx.new(|cx| Switch::new(false, cx).disabled(true)));
-                switches.push(cx.new(|cx| Switch::new(true, cx).disabled(true)));
+                switches.push(cx.new(|cx| Switch::new(false, cx).aria_label("Managed auto sync").disabled(true)));
+                switches.push(cx.new(|cx| Switch::new(true, cx).aria_label("Managed notifications").disabled(true)));
             }
             "SwitchCallback" => {
                 switches.push(cx.new(|cx| {
-                    Switch::new(false, cx).on_change(|checked, _window, _cx| {
+                    Switch::new(false, cx).aria_label("Show notifications").on_change(|checked, _window, _cx| {
                         if checked {
                             toast_success!("Switch is on");
                         } else {
@@ -3372,7 +3372,7 @@ impl LiveDemoContent {
                 form_selects.push(cx.new(|cx| {
                     Select::new(vec!["Admin", "Editor", "Viewer"], Some(0), cx).disabled(true)
                 }));
-                form_switches.push(cx.new(|cx| Switch::new(true, cx)));
+                form_switches.push(cx.new(|cx| Switch::new(true, cx).aria_label("Enabled")));
             }
             "FormValidation" => {
                 form_inputs.push(cx.new(|cx| Input::new("", cx).placeholder("请输入标题")));
@@ -10983,7 +10983,7 @@ pub fn render_docs_shell(
             theme_mode_segmented: cx.new(move |_| theme_mode_segmented(theme_mode)),
             locale_segmented: cx.new(|cx| locale_segmented(cx)),
             frame_mode,
-            frame_mode_switch: cx.new(|cx| Switch::new(frame_mode.is_custom(), cx)),
+            frame_mode_switch: cx.new(|cx| Switch::new(frame_mode.is_custom(), cx).aria_label("Custom window frame")),
             on_frame_mode_change,
             on_close,
         };

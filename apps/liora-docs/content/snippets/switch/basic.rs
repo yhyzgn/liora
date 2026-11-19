@@ -11,8 +11,8 @@ struct SwitchBasicDemo {
 impl SwitchBasicDemo {
     fn new(cx: &mut Context<Self>) -> Self {
         Self {
-            on: cx.new(|cx| Switch::new(true, cx)),
-            off: cx.new(|cx| Switch::new(false, cx)),
+            on: cx.new(|cx| Switch::new(true, cx).aria_label("Notifications")),
+            off: cx.new(|cx| Switch::new(false, cx).aria_label("Auto sync")),
         }
     }
 }

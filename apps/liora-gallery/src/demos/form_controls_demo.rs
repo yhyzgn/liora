@@ -125,11 +125,11 @@ struct CheckboxUsage {
 impl CheckboxUsage {
     fn new(cx: &mut Context<Self>) -> Self {
         Self {
-            checked: cx.new(|cx| Checkbox::new(true, cx)),
-            unchecked: cx.new(|cx| Checkbox::new(false, cx)),
+            checked: cx.new(|cx| Checkbox::new(true, cx).aria_label("Receive updates")),
+            unchecked: cx.new(|cx| Checkbox::new(false, cx).aria_label("Enable reminders")),
             labeled: cx.new(|cx| Checkbox::new(false, cx).label("Label")),
-            disabled: cx.new(|cx| Checkbox::new(false, cx).disabled(true)),
-            disabled_checked: cx.new(|cx| Checkbox::new(true, cx).disabled(true)),
+            disabled: cx.new(|cx| Checkbox::new(false, cx).aria_label("Managed reminders").disabled(true)),
+            disabled_checked: cx.new(|cx| Checkbox::new(true, cx).aria_label("Managed updates").disabled(true)),
             group: cx.new(|cx| {
                 CheckboxGroup::new(vec!["Option 1", "Option 2", "Option 3"], vec![0, 2], cx)
             }),
@@ -388,10 +388,10 @@ impl Render for RadioUsage {
 
 pub fn render_switch(cx: &mut App) -> AnyView {
     cx.new(|cx| SwitchUsage {
-        on: cx.new(|cx| Switch::new(true, cx)),
-        off: cx.new(|cx| Switch::new(false, cx)),
-        disabled: cx.new(|cx| Switch::new(false, cx).disabled(true)),
-        disabled_on: cx.new(|cx| Switch::new(true, cx).disabled(true)),
+        on: cx.new(|cx| Switch::new(true, cx).aria_label("Notifications")),
+        off: cx.new(|cx| Switch::new(false, cx).aria_label("Auto sync")),
+        disabled: cx.new(|cx| Switch::new(false, cx).aria_label("Managed auto sync").disabled(true)),
+        disabled_on: cx.new(|cx| Switch::new(true, cx).aria_label("Managed notifications").disabled(true)),
     })
     .into()
 }

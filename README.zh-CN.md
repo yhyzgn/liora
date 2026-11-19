@@ -565,7 +565,7 @@ impl SettingsView {
     fn new(cx: &mut Context<Self>) -> Self {
         Self {
             search: cx.new(|cx| Input::new("", cx).placeholder("Search settings")),
-            notifications: cx.new(|cx| Switch::new(true, cx)),
+            notifications: cx.new(|cx| Switch::new(true, cx).aria_label("Notifications")),
         }
     }
 }
@@ -889,7 +889,7 @@ impl LoginForm {
     fn new(cx: &mut Context<Self>) -> Self {
         Self {
             email: cx.new(|cx| Input::new("", cx).placeholder("name@example.com").clearable(true)),
-            remember: cx.new(|cx| Checkbox::new(true, cx)),
+            remember: cx.new(|cx| Checkbox::new(true, cx).aria_label("Remember me")),
         }
     }
 }
@@ -1836,6 +1836,7 @@ Liora 避免为同一类功能提供重复控件：
 - `Drawer` 同时覆盖完整抽屉和轻量面板场景。`Drawer::sheet()` 提供轻量默认尺寸，不再单独暴露 Sheet 控件。
 - `Select` 同时覆盖固定选项和可搜索选择。`Select::searchable(...)`、`.multiple()`、分组、禁用项和 footer slot 覆盖原 Combobox 类工作流。
 - 布尔设置使用 `Switch`，工具栏或视图模式选择使用 `Segmented` / button-style 选择；原独立 Toggle 控件已移除以避免 API 重复。
+- `Checkbox` / `Switch` 保留原生根节点 identity，提供 checked/disabled 语义，支持 Tab/Shift+Tab 与 Enter/Space。每个 `Switch` 及无文本 `Checkbox` 应有明确的 `aria_label`；Checkbox 默认用可见 `label` 作为名称。`set_disabled` 保留实体并将禁用控件移出 Tab 顺序；实际辅助技术状态仍取决于平台 adapter 的映射。
 - `Text` 同时覆盖内联文本和轻量应用文档。`Text::document(...)`、`TextBlock`、`Text::markdown(...)` 覆盖 About/Help/Release notes 等原 TextView 类内容。`Text`、`Title`、`Paragraph` 默认可用鼠标自由选中文字；只有装饰性标签或不希望复制的界面文案才调用 `.selectable(false)` 关闭。如果需要跨多个 `Text` 与 `Paragraph` 块连续选择，例如 Release notes、帮助页和文档正文，请使用 `SelectableTextGroup`。
 
 ## 原生打包

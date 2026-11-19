@@ -10,7 +10,7 @@ pub struct PrivacyState {
 
 pub fn privacy_state(cx: &mut Context<PrivacyState>) -> PrivacyState {
     PrivacyState {
-        telemetry: cx.new(|cx| Switch::new(false, cx)),
+        telemetry: cx.new(|cx| Switch::new(false, cx).aria_label("Telemetry")),
     }
 }
 

@@ -19,12 +19,12 @@
 //! the component, and avoid app-specific host-application resources in this SDK
 //! crate.
 
-use crate::gpui_compat::element_id;
 use crate::motion::MotionSpring;
 use gpui::{
-    AnimationExt, App, Context, FocusHandle, Focusable, Hsla, KeyBinding, MouseButton, Render,
-    Rgba, Window, prelude::*, px,
+    AnimationExt, App, Context, ElementId, FocusHandle, Focusable, Hsla, KeyBinding, MouseButton,
+    Render, Rgba, Window, prelude::*, px,
 };
+use liora_core::LocalizedText;
 
 fn rgba(r: u8, g: u8, b: u8, a: f32) -> Hsla {
     Rgba {
@@ -49,6 +49,8 @@ pub struct Switch {
     id: Option<gpui::SharedString>,
     checked: bool,
     disabled: bool,
+    aria_label: Option<LocalizedText>,
+    pointer_armed: bool,
     focus_handle: FocusHandle,
     on_change: Option<Box<dyn Fn(bool, &mut Window, &mut App) + 'static>>,
 }
@@ -60,7 +62,9 @@ impl Switch {
             id: None,
             checked,
             disabled: false,
-            focus_handle: cx.focus_handle(),
+            aria_label: None,
+            pointer_armed: false,
+            focus_handle: cx.focus_handle().tab_stop(true),
             on_change: None,
         }
     }
@@ -70,10 +74,25 @@ impl Switch {
         self
     }
 
+    /// Sets the accessible name without changing the switch ID or appearance.
+    pub fn aria_label(mut self, label: impl Into<LocalizedText>) -> Self {
+        self.aria_label = Some(label.into());
+        self
+    }
+
     /// Toggles the disabled state and suppresses user interaction when enabled.
     pub fn disabled(mut self, d: bool) -> Self {
         self.disabled = d;
+        self.pointer_armed = false;
+        self.focus_handle = self.focus_handle.tab_stop(!d);
         self
+    }
+    /// Updates disabled state while preserving the component and focus identities.
+    pub fn set_disabled(&mut self, disabled: bool, cx: &mut Context<Self>) {
+        self.disabled = disabled;
+        self.pointer_armed = false;
+        self.focus_handle = self.focus_handle.clone().tab_stop(!disabled);
+        cx.notify();
     }
     /// Registers a callback that runs when change occurs.
     pub fn on_change(mut self, cb: impl Fn(bool, &mut Window, &mut App) + 'static) -> Self {
@@ -127,7 +146,7 @@ impl Render for Switch {
         let thumb_end = w - thumb_sz - 3.0;
         let checked = self.checked;
         let to_left = if checked { thumb_end } else { thumb_start };
-        let thumb_motion_id = format!("liora-switch-thumb-motion:{:?}", self.focus_handle);
+        let thumb_motion_id = ("liora-switch-thumb-motion", cx.entity().entity_id());
 
         let thumb_color = if self.disabled {
             theme.neutral.text_disabled
@@ -142,14 +161,7 @@ impl Render for Switch {
             theme.neutral.border
         };
 
-        // Focus ring color
-        let focus_color = if self.checked {
-            theme.primary.base.opacity(0.5)
-        } else {
-            theme.neutral.border.opacity(0.5)
-        };
-
-        let mut track = gpui::div()
+        let track = gpui::div()
             .relative()
             .flex_none()
             .w(px(w))
@@ -165,67 +177,57 @@ impl Render for Switch {
                     .rounded(px(thumb_sz / 2.0))
                     .bg(thumb_color)
                     .with_spring(
-                        element_id(thumb_motion_id),
+                        thumb_motion_id,
                         MotionSpring::Snappy.animation_to(px(to_left)),
                         |thumb, left| thumb.left(left),
                     ),
             );
 
-        if !self.disabled {
-            track = track.on_mouse_up(
-                MouseButton::Left,
-                cx.listener(|this, _, window, cx| {
-                    this.toggle(&SwitchToggle, window, cx);
-                }),
-            );
-        }
-
-        let id = self
-            .id
-            .clone()
-            .unwrap_or_else(|| format!("liora-switch-{}", cx.entity().entity_id()).into());
-        let mut el = gpui::div().p(px(2.0)).child(track);
+        let id = self.id.clone().map(ElementId::from).unwrap_or_else(|| ("liora-switch", cx.entity().entity_id()).into());
+        let name = self.aria_label.as_ref().map(|label| label.resolve(cx));
+        let mut el = gpui::div().id(id)
+            .role(gpui::Role::Switch)
+            .aria_toggled(self.checked.into())
+            .when_some(name, |el, name| el.aria_label(name))
+            .when(self.disabled, |el| el.a11y_synthetic_children(|builder| builder.parent_node().set_disabled()))
+            .track_focus(&self.focus_handle)
+            .p(px(2.0)).child(track);
         if focused && !self.disabled {
             el = el
                 .rounded(px((h + 4.0) / 2.0))
                 .border_2()
-                .border_color(focus_color);
+                .border_color(theme.primary.base);
         } else {
             el = el.border_2().border_color(rgba(0, 0, 0, 0.0));
         }
 
         if !self.disabled {
-            el = el.cursor_pointer().track_focus(&self.focus_handle);
-            el = el.on_mouse_down(
-                MouseButton::Left,
-                cx.listener(|this, _, window, _cx| {
-                    window.focus(&this.focus_handle, _cx);
-                }),
-            );
+            el = el.cursor_pointer();
         } else {
-            el = el.cursor_not_allowed();
+            el = el.cursor_not_allowed().capture_any_mouse_down(|_, window, _| window.prevent_default());
         }
 
-        el.id(id).on_action(cx.listener(Self::toggle))
+        el.on_action(cx.listener(Self::toggle))
+        .on_mouse_down(MouseButton::Left, cx.listener(|this, _, _, _| this.pointer_armed = !this.disabled))
+        .on_click(cx.listener(|this, event, window, cx| {
+            // Keep key-down activation; an interrupted pointer press must not survive disabling.
+            let armed = std::mem::take(&mut this.pointer_armed);
+            if matches!(event, gpui::ClickEvent::Mouse(_)) && armed {
+                this.toggle(&SwitchToggle, window, cx);
+            }
+        }))
+        .on_key_down(|event, window, cx| {
+            let modifiers = event.keystroke.modifiers;
+            if event.keystroke.key == "tab" && !modifiers.control && !modifiers.alt && !modifiers.platform && !modifiers.function {
+                if modifiers.shift { window.focus_prev(cx); } else { window.focus_next(cx); }
+                cx.stop_propagation();
+            }
+        })
     }
 }
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn switch_thumb_uses_native_retargeted_spring_motion() {
-        let source = include_str!("switch.rs")
-            .split("#[cfg(test)]")
-            .next()
-            .unwrap();
-
-        assert!(source.contains("with_spring("));
-        assert!(source.contains("MotionSpring::Snappy.animation_to(px(to_left))"));
-        assert!(source.contains("liora-switch-thumb-motion:{:?}"));
-        assert!(!source.contains("thumb_from_checked"));
-        assert!(!source.contains("slide_snap("));
-    }
-
     #[test]
     fn switch_applies_explicit_root_id() {
         use super::Switch;

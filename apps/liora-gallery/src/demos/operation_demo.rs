@@ -5,8 +5,8 @@ use liora_icons_lucide::IconName;
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|cx| OperationDemo {
-        tray_switch: cx.new(|cx| Switch::new(false, cx)),
-        sync_switch: cx.new(|cx| Switch::new(true, cx)),
+        tray_switch: cx.new(|cx| Switch::new(false, cx).aria_label("开启状态栏驻留")),
+        sync_switch: cx.new(|cx| Switch::new(true, cx).aria_label("后台同步")),
     })
     .into()
 }

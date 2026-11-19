@@ -13,7 +13,7 @@ impl AppView {
         Self {
             // Keep stateful controls as Entity fields so focus/value survive re-rendering.
             name: cx.new(|cx| Input::new("Liora", cx).placeholder("Project name")),
-            enabled: cx.new(|cx| Switch::new(true, cx)),
+            enabled: cx.new(|cx| Switch::new(true, cx).aria_label("Project enabled")),
         }
     }
 }

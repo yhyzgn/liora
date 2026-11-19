@@ -11,8 +11,8 @@ struct SwitchDisabledDemo {
 impl SwitchDisabledDemo {
     fn new(cx: &mut Context<Self>) -> Self {
         Self {
-            off: cx.new(|cx| Switch::new(false, cx).disabled(true)),
-            on: cx.new(|cx| Switch::new(true, cx).disabled(true)),
+            off: cx.new(|cx| Switch::new(false, cx).aria_label("Managed auto sync").disabled(true)),
+            on: cx.new(|cx| Switch::new(true, cx).aria_label("Managed notifications").disabled(true)),
         }
     }
 }

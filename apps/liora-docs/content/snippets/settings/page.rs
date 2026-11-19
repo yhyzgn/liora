@@ -12,7 +12,7 @@ pub struct SettingsState {
 
 pub fn settings_state(cx: &mut Context<SettingsState>) -> SettingsState {
     SettingsState {
-        auto_save: cx.new(|cx| Switch::new(true, cx)),
+        auto_save: cx.new(|cx| Switch::new(true, cx).aria_label("Auto save")),
         theme: cx.new(|cx| Select::new(vec!["System", "Light", "Dark"], Some(0), cx)),
         font_size: cx.new(|cx| Input::new("14", cx).width(px(88.0))),
     }
