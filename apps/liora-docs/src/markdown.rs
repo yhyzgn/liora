@@ -9943,7 +9943,9 @@ fn docs_popover_basic() -> Popover {
                 .gap_sm()
                 .child(Text::new("Title").bold())
                 .child(Text::new("This is native GPUI popover content."))
-                .child(Button::new("Confirm").primary().small())
+                .child(Button::new("Confirm").primary().small().on_click(|_, _, cx| {
+                    clear_popover(&"docs-popover-basic".into(), cx);
+                }))
         })
 }
 
@@ -10138,6 +10140,10 @@ fn docs_dropdown_button_split() -> impl IntoElement {
             .on_click(|_, _| toast_success!("Saved"))
             .item("Save as draft", |_, _| toast_info!("Save as draft"))
             .disabled_item("Locked by reviewer"),
+        DropdownButton::new("Menu only")
+            .id("docs-dropdown-button-split-menu-only")
+            .split(true)
+            .item("Preview deployment", |_, _| toast_info!("Preview deployment")),
     ])
 }
 

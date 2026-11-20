@@ -1,7 +1,7 @@
 //! Basic Popover with card content.
 
 use liora_components::{Button, Popover, Space, Text};
-use liora_core::Placement;
+use liora_core::{Placement, clear_popover};
 
 pub fn basic_popover() -> Popover {
     Popover::new(Button::new("Bottom Center").primary())
@@ -13,7 +13,9 @@ pub fn basic_popover() -> Popover {
                 .gap_sm()
                 .child(Text::new("Title").bold())
                 .child(Text::new("This is native GPUI popover content."))
-                .child(Button::new("Confirm").primary().small())
+                .child(Button::new("Confirm").primary().small().on_click(|_, _, cx| {
+                    clear_popover(&"docs-popover-basic".into(), cx);
+                }))
         })
 }
 

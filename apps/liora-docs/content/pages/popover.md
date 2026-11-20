@@ -6,6 +6,8 @@
 
 用于在按钮附近展示标题、说明和操作按钮。推荐为每个 Popover 指定稳定 `id`，便于手动关闭和测试定位。
 
+使用 Liora `Button` 作为触发器时，Tab 聚焦后按 Enter/Space 打开，ESC 可从触发按钮或卡片内的交互控件关闭。内容中的 Confirm 通过 `clear_popover` 关闭，并将焦点返回原触发按钮；如果焦点已移到其他控件，关闭不会抢回焦点。Popover 包装层不添加额外 Tab 停靠点，也不拦截可编辑触发器的文字输入。
+
 ### 效果
 
 ::Demo{component="PopoverBasic"}::

@@ -31,6 +31,12 @@ use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 use liora_theme::{ButtonSize, ButtonVariant, ButtonVariantColors, Theme};
 
+#[derive(Clone, PartialEq, gpui::Action)]
+#[action(no_json, no_register)]
+pub(crate) struct ButtonKeyboardActivate {
+    pub(crate) origin: gpui::FocusHandle,
+}
+
 fn rgba(r: u8, g: u8, b: u8, a: f32) -> Hsla {
     Rgba {
         r: r as f32 / 255.0,
@@ -944,6 +950,16 @@ impl Button {
                 }
             })
             .on_click(move |event, window, cx| {
+                if matches!(event, gpui::ClickEvent::Keyboard(_)) {
+                    // Deliver component actions on the current focus path before user callbacks.
+                    focus_handle.dispatch_action(
+                        &ButtonKeyboardActivate {
+                            origin: focus_handle.clone(),
+                        },
+                        window,
+                        cx,
+                    );
+                }
                 if let Some(ref handler) = click_handler {
                     handler(event, window, cx);
                 }

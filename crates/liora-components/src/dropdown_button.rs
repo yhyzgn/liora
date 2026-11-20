@@ -332,11 +332,12 @@ fn split_trigger(button: &DropdownButton, id: &SharedString, cx: &App) -> AnyEle
     if let Some(icon) = button.leading_icon {
         primary = primary.icon_start(icon);
     }
-    if !button.disabled
-        && let Some(on_click) = button.on_click.clone()
-    {
+    if !button.disabled {
+        let on_click = button.on_click.clone();
         primary = primary.on_click(move |_, window, cx| {
-            on_click(window, cx);
+            if let Some(on_click) = on_click.as_ref() {
+                on_click(window, cx);
+            }
             cx.stop_propagation();
         });
     }
@@ -354,7 +355,17 @@ fn split_trigger(button: &DropdownButton, id: &SharedString, cx: &App) -> AnyEle
         .flex_row()
         .items_center()
         .gap_1()
-        .child(primary)
+        .child(
+            div()
+                .id(element_id(format!("{id}-primary-scope")))
+                .when(!button.disabled, |s| {
+                    s.on_action(|_: &crate::button::ButtonKeyboardActivate, _, cx| {
+                        // Keep the split primary action from also opening the menu.
+                        cx.stop_propagation();
+                    })
+                })
+                .child(primary),
+        )
         .child(toggle)
         .into_any_element()
 }

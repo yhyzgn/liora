@@ -256,18 +256,27 @@ pub fn set_active_popover(id: SharedString, view: gpui::AnyView, cx: &mut App) {
     } else {
         popovers.push(ActiveOverlayEntry { id, view });
     }
+    cx.refresh_windows();
 }
 
 /// Clears the current popover state.
 pub fn clear_popover(id: &SharedString, cx: &mut App) {
+    if !is_popover_active(id, cx) {
+        return;
+    }
     cx.global_mut::<ActivePopover>()
         .0
         .retain(|entry| &entry.id != id);
+    cx.refresh_windows();
 }
 
 /// Clears the current active popover state.
 pub fn clear_active_popover(cx: &mut App) {
+    if cx.global::<ActivePopover>().0.is_empty() {
+        return;
+    }
     cx.global_mut::<ActivePopover>().0.clear();
+    cx.refresh_windows();
 }
 
 /// Runtime state used by Liora active modal behavior.

@@ -20,7 +20,7 @@ impl Render for PopoverDemo {
                 .gap_lg()
                 .child(section(
                     "Basic 基础用法",
-                    "点击触发元素显示卡片内容。",
+                    "Tab 聚焦按钮后用 Enter/Space 打开，ESC 关闭；点击卡片内 Confirm 后焦点返回触发按钮。",
                     Space::new()
                         .gap_lg()
                         .wrap()
@@ -75,7 +75,7 @@ impl Render for PopoverDemo {
                 ))
                 .child(section(
                     "Close strategy 关闭策略",
-                    "支持禁用点击空白处关闭，只能通过内容按钮手动关闭。",
+                    "禁用点击空白处和 ESC 关闭；点击内容按钮手动关闭并返回触发按钮。",
                     Space::new()
                         .gap_lg()
                         .wrap()
@@ -84,12 +84,13 @@ impl Render for PopoverDemo {
                                 .id("popover-demo-manual-close")
                                 .placement(Placement::Bottom)
                                 .close_on_click_outside(false)
+                                .close_on_escape(false)
                                 .content(|_, _| {
                                     Space::new()
                                         .vertical()
                                         .gap_md()
                                         .child(Text::new("Manual close").bold())
-                                        .child(Text::new("点击空白处不会关闭；点击按钮手动关闭。"))
+                                        .child(Text::new("点击空白处和 ESC 不会关闭；点击按钮手动关闭。"))
                                         .child(
                                             Button::new("Close Popover")
                                                 .primary()
@@ -123,15 +124,19 @@ fn simple_popover(label: &'static str, placement: Placement) -> Popover {
 }
 
 fn card_popover(label: &'static str, placement: Placement) -> Popover {
+    let id: gpui::SharedString = format!("popover-demo-card-{}", label).into();
     Popover::new(Button::new(label).primary())
-        .id(format!("popover-demo-card-{}", label))
+        .id(id.clone())
         .placement(placement)
-        .content(|_, _| {
+        .content(move |_, _| {
+            let id = id.clone();
             Space::new()
                 .vertical()
                 .gap_sm()
                 .child(Text::new("Title").bold())
                 .child(Text::new("This is the popover content."))
-                .child(Button::new("Confirm").primary().small())
+                .child(Button::new("Confirm").primary().small().on_click(move |_, _, cx| {
+                    liora_core::clear_popover(&id, cx);
+                }))
         })
 }

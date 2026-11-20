@@ -19,16 +19,16 @@
 //! the component, and avoid app-specific host-application resources in this SDK
 //! crate.
 
-use crate::{gpui_compat::element_id, motion::pop_in};
+use crate::{button::ButtonKeyboardActivate, gpui_compat::element_id, motion::pop_in};
 use gpui::{
     AnyElement, App, Bounds, Context, ElementId, GlobalElementId, InspectorElementId, IntoElement,
-    KeyBinding, LayoutId, MouseButton, Pixels, Render, RenderOnce, SharedString,
-    ViewElement as Component, Window, actions, div, point, prelude::*, px,
+    FocusHandle, KeyBinding, LayoutId, MouseButton, Pixels, Render, RenderOnce, SharedString,
+    ViewElement as Component, WeakFocusHandle, Window, actions, div, point, prelude::*, px,
 };
 use liora_core::{
     Config, Placement, clear_popover, is_popover_active, set_active_popover, stable_unique_id,
 };
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -66,6 +66,7 @@ pub struct PopoverView {
     close_on_hover_outside: bool,
     content_bounds: Rc<Cell<Option<Bounds<Pixels>>>>,
     on_close: Arc<dyn Fn(&mut Window, &mut App) + 'static>,
+    focus_scope: Option<FocusHandle>,
 }
 
 impl PopoverView {
@@ -119,6 +120,7 @@ impl PopoverView {
             close_on_hover_outside,
             content_bounds: Rc::new(Cell::new(None)),
             on_close: Arc::new(on_close),
+            focus_scope: None,
         }
     }
 }
@@ -197,6 +199,7 @@ impl Render for PopoverView {
                             element_id(format!("{}-motion", id)),
                             div()
                                 .id(element_id(format!("{}-content", id)))
+                                .when_some(self.focus_scope.as_ref(), |s, scope| s.track_focus(scope))
                                 .flex()
                                 .flex_col()
                                 .flex_none()
@@ -387,6 +390,19 @@ impl RenderOnce for Popover {
         let hover_content = content.clone();
         let hover_popover_id = popover_id.clone();
         let click_popover_id = popover_id.clone();
+        let keyboard_bounds_cell = bounds_cell.clone();
+        let keyboard_content = content.clone();
+        let keyboard_popover_id = popover_id.clone();
+        let escape_popover_id = popover_id.clone();
+        let restore_subscription = _window.with_global_id(trigger_id.clone(), |global_id, window| {
+            window.with_element_state::<Rc<RefCell<Option<(gpui::EntityId, gpui::Subscription)>>>, _>(global_id, |previous, _| {
+                let state = previous.unwrap_or_else(|| Rc::new(RefCell::new(None)));
+                (state.clone(), state)
+            })
+        });
+        let hover_restore_subscription = restore_subscription.clone();
+        let click_restore_subscription = restore_subscription.clone();
+        let keyboard_restore_subscription = restore_subscription.clone();
 
         div()
             .id(trigger_id)
@@ -407,7 +423,10 @@ impl RenderOnce for Popover {
                             close_on_escape,
                             content_padding,
                             close_on_hover_outside: true,
+                            return_focus: None,
                             cx,
+                            window: _window,
+                            restore_subscription: hover_restore_subscription.clone(),
                         });
                     }
                 })
@@ -428,8 +447,46 @@ impl RenderOnce for Popover {
                     close_on_escape,
                     content_padding,
                     close_on_hover_outside: false,
+                    return_focus: _window.focused(cx).map(|handle| handle.downgrade()),
+                    restore_subscription: click_restore_subscription.clone(),
+                    window: _window,
                     cx,
                 });
+            })
+            .on_action(move |activation: &ButtonKeyboardActivate, window, cx| {
+                if is_popover_active(&keyboard_popover_id, cx) {
+                    clear_popover(&keyboard_popover_id, cx);
+                    return;
+                }
+                open_popover_view(OpenPopoverRequest {
+                    id: keyboard_popover_id.clone(),
+                    anchor_bounds: keyboard_bounds_cell.get(),
+                    content: keyboard_content.clone(),
+                    placement,
+                    offset,
+                    close_on_click_outside,
+                    close_on_escape,
+                    content_padding,
+                    close_on_hover_outside: false,
+                    return_focus: Some(activation.origin.downgrade()),
+                    restore_subscription: keyboard_restore_subscription.clone(),
+                    window,
+                    cx,
+                });
+            })
+            .on_action(move |_: &PopoverClose, window, cx| {
+                let view = cx.global::<liora_core::ActivePopover>().0.iter()
+                    .find(|entry| entry.id == escape_popover_id)
+                    .and_then(|entry| entry.view.clone().downcast::<PopoverView>().ok());
+                let Some(view) = view else {
+                    cx.propagate();
+                    return;
+                };
+                let view = view.read(cx);
+                if view.close_on_escape {
+                    let on_close = view.on_close.clone();
+                    on_close(window, cx);
+                }
             })
     }
 }
@@ -444,6 +501,9 @@ struct OpenPopoverRequest<'a> {
     close_on_escape: bool,
     content_padding: Option<Pixels>,
     close_on_hover_outside: bool,
+    window: &'a mut Window,
+    return_focus: Option<WeakFocusHandle>,
+    restore_subscription: Rc<RefCell<Option<(gpui::EntityId, gpui::Subscription)>>>,
     cx: &'a mut App,
 }
 
@@ -455,8 +515,13 @@ fn open_popover_view(request: OpenPopoverRequest<'_>) {
     let content = request.content;
     let popover_id_for_close = request.id.clone();
     let popover_id_for_view = request.id.clone();
-    let view = request.cx.new(|_cx| {
-        PopoverView::with_hover_close(
+    let id = request.id.clone();
+    let window_handle = request.window.window_handle();
+    let target = request.return_focus;
+    let restore_subscription = request.restore_subscription.clone();
+    let view = request.cx.new(|cx| {
+        let view_id = cx.entity_id();
+        let mut view = PopoverView::with_hover_close(
             content,
             anchor_bounds,
             request.placement,
@@ -466,11 +531,44 @@ fn open_popover_view(request: OpenPopoverRequest<'_>) {
             popover_id_for_view,
             request.content_padding,
             request.close_on_hover_outside,
-            move |_window, _cx| {
-                clear_popover(&popover_id_for_close, _cx);
+            move |_window, cx| {
+                if cx.global::<liora_core::ActivePopover>().0.iter().any(|entry| {
+                    entry.id == popover_id_for_close && entry.view.entity_id() == view_id
+                }) {
+                    clear_popover(&popover_id_for_close, cx);
+                }
             },
-        )
+        );
+        view.focus_scope = Some(cx.focus_handle());
+        view
     });
+    let view_id = view.entity_id();
+    let focus_scope = view.read(request.cx).focus_scope.clone().expect("opened popover has a focus scope");
+    if let Some(target) = target {
+        let slot = Rc::downgrade(&restore_subscription);
+        let subscription = request.cx.observe_global::<liora_core::ActivePopover>(move |cx| {
+            if let Some(entry) = cx.global::<liora_core::ActivePopover>().0.iter().find(|entry| entry.id == id) {
+                if entry.view.entity_id() == view_id {
+                    return;
+                }
+            } else if let Some(target) = target.upgrade() {
+                let _ = window_handle.update(cx, |_, window, cx| {
+                    if focus_scope.contains_focused(window, cx) {
+                        target.focus(window, cx);
+                    }
+                });
+            }
+            if let Some(slot) = slot.upgrade() {
+                cx.defer(move |_| {
+                    let mut slot = slot.borrow_mut();
+                    if slot.as_ref().is_some_and(|(id, _)| *id == view_id) {
+                        slot.take();
+                    }
+                });
+            }
+        });
+        *restore_subscription.borrow_mut() = Some((view_id, subscription));
+    }
     set_active_popover(request.id, view.into(), request.cx);
 }
 
@@ -650,6 +748,110 @@ mod tests {
         assert!(source.contains("pop_in("));
         assert!(source.contains("-motion"));
     }
+
+    struct PopoverSurface;
+
+    impl Render for PopoverSurface {
+        fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+            liora_core::render_active_popover_in_window(window, cx);
+            div().relative().size_full().child(crate::PortalLayer)
+        }
+    }
+
+    #[test]
+    fn stale_dispatched_close_does_not_clear_same_id_replacement() {
+        use crate::Button;
+
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let handle = app.open_window(gpui::size(px(400.0), px(300.0)), |_, _| PopoverSurface);
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        let stale_close = std::rc::Rc::new(std::cell::RefCell::new(None));
+        let old_content: Arc<dyn Fn(&mut Window, &mut Context<PopoverView>) -> AnyElement> =
+            Arc::new(|_, _| div().into_any_element());
+
+        window.update(|window, cx| {
+            let anchor_bounds = Some(Bounds {
+                origin: point(px(10.0), px(10.0)),
+                size: gpui::size(px(80.0), px(24.0)),
+            });
+            open_popover_view(OpenPopoverRequest {
+                id: "shared-popover".into(),
+                anchor_bounds,
+                content: old_content,
+                placement: Placement::Bottom,
+                offset: px(8.0),
+                close_on_click_outside: true,
+                close_on_escape: true,
+                content_padding: None,
+                close_on_hover_outside: false,
+                return_focus: None,
+                restore_subscription: Rc::new(RefCell::new(None)),
+                window,
+                cx,
+            });
+            let old_view = cx.global::<liora_core::ActivePopover>().0[0]
+                .view
+                .clone()
+                .downcast::<PopoverView>()
+                .unwrap();
+            *stale_close.borrow_mut() = Some(old_view.read(cx).on_close.clone());
+        });
+
+        let stale_close_for_content = stale_close.clone();
+        let clicked = std::rc::Rc::new(std::cell::Cell::new(false));
+        let clicked_for_content = clicked.clone();
+        let replacement_content: Arc<dyn Fn(&mut Window, &mut Context<PopoverView>) -> AnyElement> =
+            Arc::new(move |_, _| {
+                let stale_close_for_button = stale_close_for_content.clone();
+                let clicked_for_button = clicked_for_content.clone();
+                div()
+                    .debug_selector(|| "replacement-popover-content".into())
+                    .child(
+                        Button::new("Invoke stale close").on_click(move |_, window, cx| {
+                            clicked_for_button.set(true);
+                            if let Some(close) = stale_close_for_button.borrow().as_ref() {
+                                close(window, cx);
+                            }
+                        }),
+                    )
+                    .into_any_element()
+            });
+        let replacement_id = window.update(|window, cx| {
+            open_popover_view(OpenPopoverRequest {
+                id: "shared-popover".into(),
+                anchor_bounds: Some(Bounds {
+                    origin: point(px(10.0), px(10.0)),
+                    size: gpui::size(px(80.0), px(24.0)),
+                }),
+                content: replacement_content,
+                placement: Placement::Bottom,
+                offset: px(8.0),
+                close_on_click_outside: true,
+                close_on_escape: true,
+                content_padding: None,
+                close_on_hover_outside: false,
+                return_focus: None,
+                restore_subscription: Rc::new(RefCell::new(None)),
+                window,
+                cx,
+            });
+            cx.global::<liora_core::ActivePopover>().0[0].view.entity_id()
+        });
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        let close_button = window.debug_bounds("replacement-popover-content")
+            .expect("replacement action must render");
+        window.simulate_click(close_button.center(), gpui::Modifiers::none());
+        assert!(clicked.get(), "replacement Button callback did not receive the native click");
+        window.update(|window, cx| {
+            let active = &cx.global::<liora_core::ActivePopover>().0;
+            assert_eq!(active.len(), 1, "stale dispatched close cleared replacement");
+            assert_eq!(active[0].view.entity_id(), replacement_id);
+            window.draw(cx).clear(cx);
+        });
+        assert!(window.debug_bounds("replacement-popover-content").is_some());
+        app.quit();
+    }
 }
 
 #[cfg(test)]
@@ -671,3 +873,7 @@ mod spacing_regression_tests {
         );
     }
 }
+
+#[cfg(test)]
+#[path = "popover_interaction_tests.rs"]
+mod interaction_tests;

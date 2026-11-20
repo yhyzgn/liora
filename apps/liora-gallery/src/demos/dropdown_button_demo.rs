@@ -31,7 +31,7 @@ impl Render for DropdownButtonDemo {
                         close_policy_card(),
                     ]),
                 ))
-                .child(Text::new("提示：split 模式下点击左侧主按钮不会打开菜单，只执行 on_click；点击右侧箭头才展开菜单。")),
+                .child(Text::new("提示：split 主按钮只执行 on_click，未设置回调也不打开菜单；只有箭头展开。点击与 Tab 聚焦后的 Enter/Space 分工一致。")),
         )
     }
 }
@@ -65,8 +65,8 @@ fn basic_menu_card() -> AnyElement {
 fn split_button_card() -> AnyElement {
     showcase_card(
         "Split button",
-        "左侧执行主操作，右侧 Chevron 单独展开更多操作。",
-        button_pair(
+        "左侧有主操作时执行主操作；Menu only 没有主操作，仅箭头展开菜单。",
+        Space::new().wrap().gap_md().children([
             DropdownButton::new("Deploy")
                 .id("dropdown-button-demo-split-deploy")
                 .primary()
@@ -92,7 +92,11 @@ fn split_button_card() -> AnyElement {
                 .item("Save as draft", |_, _| toast_info!("Save as draft"))
                 .item("Save template", |_, _| toast_info!("Save template"))
                 .disabled_item("Locked by reviewer"),
-        ),
+            DropdownButton::new("Menu only")
+                .id("dropdown-button-demo-split-menu-only")
+                .split(true)
+                .item("Preview deployment", |_, _| toast_info!("Preview deployment")),
+        ]),
     )
     .into_any_element()
 }
