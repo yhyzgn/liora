@@ -1560,6 +1560,8 @@ fn render_root(window: &mut Window, cx: &mut App) -> impl IntoElement {
 
 `Menu::register(...)` 只调用 GPUI 官方 `App::set_menus`；窗口里可见的菜单行来自 `MenuBar::new(...)`。
 
+Gallery 与 Docs 目前只将平台菜单的 **放大 / 缩小 / 重置缩放** 接到应用自己的 GPUI action；Gallery 顶部可见 fallback 也执行这三个命令。行为复用 `MenuAction`：只修改当前窗口的 `rem_size`，每次增减 1 px，最小 8 px，重置为 16 px；共享执行器现会请求该窗口的下一帧，使所有 SDK caller 不依赖无关输入即可看到变化。这不代表全局字体缩放或固定像素界面的等比例缩放。其它 app-owned shell 命令仍待接线；Docs 页面内预览保持无副作用，不新增 Docs 窗口内 fallback。
+
 ### 浮层与 portal 渲染
 
 大多数应用只需要 `liora::init_liora(cx)`。如果你自己实现根 shell 并手动管理 overlay layer，应在窗口根部渲染 portal：

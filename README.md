@@ -1566,6 +1566,8 @@ fn render_root(window: &mut Window, cx: &mut App) -> impl IntoElement {
 
 `Menu::register(...)` only calls GPUI's official `App::set_menus`; the visible in-window row comes from `MenuBar::new(...)`.
 
+Gallery and Docs wire only **Zoom In / Zoom Out / Reset Zoom** from their platform menu descriptors to application-owned GPUI actions; Gallery's visible header fallback also executes these three commands. They use `MenuAction` to change only the current window's `rem_size` by 1 px, with an 8 px minimum and a 16 px reset; the shared executor now requests that window's next frame so every SDK caller sees the change without unrelated input. This is not global font scaling or proportional scaling of fixed-pixel UI. Other app-owned shell commands remain pending; Docs page previews stay side-effect-free, and Docs does not add an in-window fallback.
+
 ### Overlay and portal rendering
 
 Most apps only need `liora::init_liora(cx)`. If you build a custom root shell that manually manages overlay layers, keep portal rendering near the window root:

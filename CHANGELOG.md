@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Wire Gallery/Docs platform-menu Zoom In, Zoom Out, and Reset Zoom, plus Gallery's visible fallback, to current-window rem-size behavior; request the next frame in the shared Zoom executor for all SDK callers. Leave other app-owned shell commands pending and documentation previews side-effect-free.
 - Refresh Gallery's cached About label/search index and sidebar menu after locale changes while preserving the search query, active destination, and menu entity.
 - Add manual keyboard activation and native role, name, orientation, and selection metadata to Tabs. Keep the first pane per business key, fall back to the first pane for an invalid initial key, and give editable Close and Add separate keyboard controls with focus recovery after removal.
 - Preserve live Linux/FreeBSD window appearance when reselecting System or initializing another window, including notifications received in fixed modes; retain synchronous startup hints until the SDK observes an appearance notification.

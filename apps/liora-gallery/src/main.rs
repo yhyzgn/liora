@@ -218,9 +218,30 @@ fn run_gallery() {
         });
 }
 
+gpui::actions!(menu_zoom, [MenuZoomIn, MenuZoomOut, MenuZoomReset]);
+
+struct MenuZoomHandlers;
+impl Global for MenuZoomHandlers {}
+
+fn perform_menu_zoom(action: liora_components::MenuAction, cx: &mut App) {
+    if let Some(window) = cx.active_window() {
+        cx.defer(move |cx| {
+            if let Err(error) = window.update(cx, |_, window, cx| action.perform(window, cx)) {
+                eprintln!("failed to zoom the active window: {error}");
+            }
+        });
+    }
+}
+
 /// Registers the gallery example menu through GPUI's official application menu API.
 fn register_gallery_system_menus(cx: &mut App) {
-    Menu::register(
+    if !cx.has_global::<MenuZoomHandlers>() {
+        cx.on_action(|_: &MenuZoomIn, cx| perform_menu_zoom(liora_components::MenuAction::ZoomIn, cx));
+        cx.on_action(|_: &MenuZoomOut, cx| perform_menu_zoom(liora_components::MenuAction::ZoomOut, cx));
+        cx.on_action(|_: &MenuZoomReset, cx| perform_menu_zoom(liora_components::MenuAction::ZoomReset, cx));
+        cx.set_global(MenuZoomHandlers);
+    }
+    Menu::register_with_action_mapper(
         cx,
         [
             Menu::new(locales::menu::file)
@@ -266,6 +287,12 @@ fn register_gallery_system_menus(cx: &mut App) {
                     tr(cx, locales::menu::about_gallery),
                 )),
         ],
+        |item| match &item.action {
+            Some(liora_components::MenuAction::ZoomIn) => Box::new(MenuZoomIn),
+            Some(liora_components::MenuAction::ZoomOut) => Box::new(MenuZoomOut),
+            Some(liora_components::MenuAction::ZoomReset) => Box::new(MenuZoomReset),
+            _ => Box::new(gpui::NoAction),
+        },
     );
 }
 
@@ -1940,6 +1967,12 @@ fn gallery_fallback_menu_bar(cx: &impl liora_core::LocalesContext) -> MenuBar {
                 tr(cx, locales::menu::about_gallery),
             )),
     ])
+    .perform_builtin_actions(false)
+    .on_select(|action, _, window, cx| {
+        if matches!(action, liora_components::MenuAction::ZoomIn | liora_components::MenuAction::ZoomOut | liora_components::MenuAction::ZoomReset) {
+            action.perform(window, cx);
+        }
+    })
 }
 
 fn default_gallery_selection(entries: &[demos::DemoEntry]) -> usize {
@@ -2039,6 +2072,147 @@ fn gallery_nav_menu_items(
 
 #[cfg(test)]
 mod shell_regression_tests {
+
+    #[gpui::test]
+    fn fallback_menu_zoom_preserves_navigation_and_input(cx: &mut gpui::TestAppContext) {
+        use gpui::{Context, IntoElement, Render, VisualTestContext, Window, div, point, prelude::*, px};
+
+        struct MenuWindow {
+            input: gpui::Entity<liora_components::Input>,
+        }
+        impl Render for MenuWindow {
+            fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+                liora_core::render_active_popover_in_window(window, cx);
+                div().size_full().flex().flex_col().items_start()
+                    .child(div().flex().debug_selector(|| "zoom-menu-bar".into())
+                        .child(super::gallery_fallback_menu_bar(cx)))
+                    .child(self.input.clone())
+                    .child(liora_components::PortalLayer)
+            }
+        }
+
+        let gallery = updater_test_gallery(cx);
+        let input = gallery.update(cx, |gallery, cx| {
+            gallery.selected = 1;
+            gallery.nav_query = "Input".into();
+            gallery.nav_filter.update(cx, |input, cx| input.set_value("Input", cx));
+            gallery.nav_filter.clone()
+        });
+        cx.update(|cx| liora_core::set_locale(cx, "en-US").unwrap());
+        let target = cx.add_window(move |_, _| MenuWindow { input });
+        let mut target_window = VisualTestContext::from_window(target.into(), cx);
+        target_window.update(|window, cx| {
+            window.set_rem_size(px(16.0));
+            window.activate_window();
+            window.draw(cx).clear(cx);
+        });
+
+        for (row, before, expected) in [(0, 16.0, 17.0), (1, 17.0, 16.0), (2, 21.0, 16.0)] {
+            target_window.update(|window, cx| {
+                window.set_rem_size(px(before));
+                window.draw(cx).clear(cx);
+            });
+            let bar = target_window.debug_bounds("zoom-menu-bar").unwrap();
+            // English File/Edit/View/Help have four compact triggers; View is the third.
+            target_window.simulate_click(
+                point(bar.left() + bar.size.width * 0.625, bar.center().y),
+                gpui::Modifiers::none(),
+            );
+            target_window.update(|window, cx| {
+                assert_eq!(cx.global::<liora_core::ActivePopover>().0.len(), 1);
+                window.draw(cx).clear(cx);
+            });
+            // Three 32px commands and a 9px separator precede the zoom rows.
+            target_window.simulate_click(
+                point(bar.left() + bar.size.width * 0.625, bar.bottom() + px(129.0 + row as f32 * 32.0)),
+                gpui::Modifiers::none(),
+            );
+            target_window.run_until_parked();
+            target_window.update(|window, cx| {
+                assert_eq!(window.rem_size(), px(expected));
+                let gallery = gallery.read(cx);
+                assert_eq!(gallery.selected, 1);
+                assert_eq!(gallery.nav_query, "Input");
+                assert_eq!(gallery.nav_filter.read(cx).value().as_ref(), "Input");
+            });
+            target_window.simulate_click(point(px(600.0), px(500.0)), gpui::Modifiers::none());
+            target_window.update(|window, cx| window.draw(cx).clear(cx));
+        }
+    }
+
+    #[gpui::test]
+    fn system_menu_zoom_changes_only_the_active_window(cx: &mut gpui::TestAppContext) {
+        use gpui::{Context, EmptyView, Focusable, IntoElement, OwnedMenuItem, Render, VisualTestContext, Window, div, prelude::*, px, rems};
+
+        struct ZoomWindow {
+            input: gpui::Entity<liora_components::Input>,
+        }
+        impl Render for ZoomWindow {
+            fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+                div().size_full().flex().flex_col()
+                    .child(div().debug_selector(|| "zoom-rem-probe".into()).w(rems(2.0)).h(px(1.0)))
+                    .child(self.input.clone())
+            }
+        }
+
+        cx.update(|cx| super::init_liora_with_options(cx, super::gallery_liora_options()));
+        let other = cx.add_window(|_, _| EmptyView);
+        other.update(cx, |_, window, _| window.set_rem_size(px(23.0))).unwrap();
+        let target = cx.add_window(|_, cx| ZoomWindow {
+            input: cx.new(|cx| liora_components::Input::new("zoom query α", cx)),
+        });
+        let input = target.update(cx, |view, _, _| view.input.clone()).unwrap();
+        let mut target_window = VisualTestContext::from_window(target.into(), cx);
+        target_window.update(|window, cx| {
+            window.set_rem_size(px(16.0));
+            window.activate_window();
+            window.focus(&input.read(cx).focus_handle(cx), cx);
+            window.draw(cx).clear(cx);
+        });
+
+        for (locale, labels) in [
+            ("en-US", ["Zoom In", "Zoom Out", "Reset Zoom"]),
+            ("zh-CN", ["放大", "缩小", "重置缩放"]),
+        ] {
+            cx.update(|cx| {
+                liora_core::set_locale(cx, locale).unwrap();
+                // Locale refresh replaces descriptors, not action listeners.
+                super::register_gallery_system_menus(cx);
+                super::register_gallery_system_menus(cx);
+            });
+            for (label, before, expected) in [
+                (labels[0], 16.0, 17.0),
+                (labels[1], 17.0, 16.0),
+                (labels[2], 21.0, 16.0),
+                (labels[1], 8.0, 8.0),
+            ] {
+                target_window.update(|window, cx| {
+                    window.set_rem_size(px(before));
+                    window.draw(cx).clear(cx);
+                });
+                assert_eq!(target_window.debug_bounds("zoom-rem-probe").unwrap().size.width, px(before * 2.0));
+                let action = cx.read(|cx| {
+                    cx.get_menus().unwrap().into_iter()
+                        .flat_map(|menu| menu.items)
+                        .find_map(|item| match item {
+                            OwnedMenuItem::Action { name, action, .. } if name == label => Some(action),
+                            _ => None,
+                        })
+                        .expect("registered zoom command")
+                });
+                cx.update(|cx| cx.dispatch_action(action.as_ref()));
+                cx.run_until_parked();
+                // The test effect-cycle redraws only dirty windows; no refresh/draw/input follows the action.
+                assert_eq!(target_window.debug_bounds("zoom-rem-probe").unwrap().size.width, px(expected * 2.0));
+                target_window.update(|window, cx| {
+                    assert_eq!(window.rem_size(), px(expected), "{locale}: {label}");
+                    assert_eq!(input.read(cx).value().as_ref(), "zoom query α");
+                    assert!(input.read(cx).focus_handle(cx).is_focused(window));
+                });
+                other.update(cx, |_, window, _| assert_eq!(window.rem_size(), px(23.0))).unwrap();
+            }
+        }
+    }
 
     #[cfg(any(target_os = "linux", target_os = "macos"))]
     #[test]
@@ -2672,20 +2846,6 @@ mod shell_regression_tests {
         assert!(!source.contains(".leading(gallery_window_menu_bar())"));
     }
 
-    #[test]
-    fn gallery_registers_gpui_system_menus_on_startup() {
-        let source = include_str!("main.rs")
-            .split("mod shell_regression_tests")
-            .next()
-            .unwrap();
-
-        assert!(source.contains("register_gallery_system_menus(cx);"));
-        assert!(source.contains("fn register_gallery_system_menus(cx: &mut App)"));
-        assert!(source.contains("Menu::register("));
-        assert!(source.contains("MenuItem::open_file()"));
-        assert!(source.contains("MenuItem::open_folder()"));
-        assert!(source.contains("MenuItem::select_all()"));
-    }
 
     #[test]
     fn gallery_startup_does_not_auto_download_updates_on_ui_thread() {

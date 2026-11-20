@@ -134,3 +134,5 @@ fn visible_fallback_menu_bar() -> MenuBar {
 4. 在设置页或关于页中展示当前快捷键。
 
 其中 `Open` / `OpenFile` / `OpenFiles` / `OpenFolder` / `OpenFolders` 会通过 GPUI 官方 `prompt_for_paths` 打开系统文件/目录选择窗口，`Save` / `SaveAs` 会通过 `prompt_for_new_path` 打开系统保存路径窗口，并用 `on_paths_selected` 回传 `Option<Vec<PathBuf>>`。`Close`、`Quit`、`OpenUrl`、`CopyText`、`ZoomIn`、`ZoomOut`、`ZoomReset` 也是 Liora 可以直接执行的通用平台效果；NewWindow、CommandPalette、ToggleSidebar、ToggleStatusBar、Custom 只表达标准命令语义，应用应在 `on_select` 中根据自己的窗口、文件、布局、缩放或命令面板状态完成处理。Gallery/Docs 预览面板通常使用 `.perform_builtin_actions(false)`，避免点击示例时真正退出程序、打开浏览器或写入剪贴板；真实应用菜单可保持默认开启。
+
+Gallery 与 Docs 当前只通过 `register_with_action_mapper` 接通系统菜单的 **Zoom In / Zoom Out / Reset Zoom**；Gallery 顶部可见 fallback 也只执行这三项，其余 app-owned shell 命令仍待接线。它们复用 `MenuAction::perform`，仅修改当前窗口的 `rem_size`（每次增减 1 px、最小 8 px、重置为 16 px），共享 Zoom 执行分支会请求该窗口的下一帧，其他 SDK caller 也不必等待无关输入才能看到变化。它们不会改变其他窗口、导航或输入值，也不承诺全局字体或固定 px 控件等比例缩放。locale 重注册只刷新菜单，不重复安装 handlers。Docs 页面内的 Menu/MenuBar 仍是无副作用预览，不新增 Docs shell fallback。

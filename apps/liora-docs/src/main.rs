@@ -101,9 +101,30 @@ fn run_docs() {
         });
 }
 
+gpui::actions!(menu_zoom, [MenuZoomIn, MenuZoomOut, MenuZoomReset]);
+
+struct MenuZoomHandlers;
+impl Global for MenuZoomHandlers {}
+
+fn perform_menu_zoom(action: liora_components::MenuAction, cx: &mut App) {
+    if let Some(window) = cx.active_window() {
+        cx.defer(move |cx| {
+            if let Err(error) = window.update(cx, |_, window, cx| action.perform(window, cx)) {
+                eprintln!("failed to zoom the active window: {error}");
+            }
+        });
+    }
+}
+
 /// Registers the docs example menu through GPUI's official application menu API.
 fn register_docs_system_menus(cx: &mut App) {
-    Menu::register(
+    if !cx.has_global::<MenuZoomHandlers>() {
+        cx.on_action(|_: &MenuZoomIn, cx| perform_menu_zoom(liora_components::MenuAction::ZoomIn, cx));
+        cx.on_action(|_: &MenuZoomOut, cx| perform_menu_zoom(liora_components::MenuAction::ZoomOut, cx));
+        cx.on_action(|_: &MenuZoomReset, cx| perform_menu_zoom(liora_components::MenuAction::ZoomReset, cx));
+        cx.set_global(MenuZoomHandlers);
+    }
+    Menu::register_with_action_mapper(
         cx,
         [
             Menu::new(tr(cx, locales::menu::file))
@@ -148,6 +169,12 @@ fn register_docs_system_menus(cx: &mut App) {
                     tr(cx, locales::menu::about_docs),
                 )),
         ],
+        |item| match &item.action {
+            Some(liora_components::MenuAction::ZoomIn) => Box::new(MenuZoomIn),
+            Some(liora_components::MenuAction::ZoomOut) => Box::new(MenuZoomOut),
+            Some(liora_components::MenuAction::ZoomReset) => Box::new(MenuZoomReset),
+            _ => Box::new(gpui::NoAction),
+        },
     );
 }
 
@@ -804,6 +831,80 @@ fn main() {
 
 #[cfg(test)]
 mod shell_tests {
+    #[gpui::test]
+    fn system_menu_zoom_changes_only_the_active_window(cx: &mut gpui::TestAppContext) {
+        use gpui::{Context, EmptyView, Focusable, IntoElement, OwnedMenuItem, Render, VisualTestContext, Window, div, prelude::*, px, rems};
+
+        struct ZoomWindow {
+            input: gpui::Entity<liora_components::Input>,
+        }
+        impl Render for ZoomWindow {
+            fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+                div().size_full().flex().flex_col()
+                    .child(div().debug_selector(|| "zoom-rem-probe".into()).w(rems(2.0)).h(px(1.0)))
+                    .child(self.input.clone())
+            }
+        }
+
+        cx.update(|cx| super::init_liora_with_options(cx, super::docs_liora_options()));
+        let other = cx.add_window(|_, _| EmptyView);
+        other.update(cx, |_, window, _| window.set_rem_size(px(23.0))).unwrap();
+        let target = cx.add_window(|_, cx| ZoomWindow {
+            input: cx.new(|cx| liora_components::Input::new("zoom query α", cx)),
+        });
+        let input = target.update(cx, |view, _, _| view.input.clone()).unwrap();
+        let mut target_window = VisualTestContext::from_window(target.into(), cx);
+        target_window.update(|window, cx| {
+            window.set_rem_size(px(16.0));
+            window.activate_window();
+            window.focus(&input.read(cx).focus_handle(cx), cx);
+            window.draw(cx).clear(cx);
+        });
+
+        for (locale, labels) in [
+            ("en-US", ["Zoom In", "Zoom Out", "Reset Zoom"]),
+            ("zh-CN", ["放大", "缩小", "重置缩放"]),
+        ] {
+            cx.update(|cx| {
+                liora_core::set_locale(cx, locale).unwrap();
+                // Locale refresh replaces descriptors, not action listeners.
+                super::register_docs_system_menus(cx);
+                super::register_docs_system_menus(cx);
+            });
+            for (label, before, expected) in [
+                (labels[0], 16.0, 17.0),
+                (labels[1], 17.0, 16.0),
+                (labels[2], 21.0, 16.0),
+                (labels[1], 8.0, 8.0),
+            ] {
+                target_window.update(|window, cx| {
+                    window.set_rem_size(px(before));
+                    window.draw(cx).clear(cx);
+                });
+                assert_eq!(target_window.debug_bounds("zoom-rem-probe").unwrap().size.width, px(before * 2.0));
+                let action = cx.read(|cx| {
+                    cx.get_menus().unwrap().into_iter()
+                        .flat_map(|menu| menu.items)
+                        .find_map(|item| match item {
+                            OwnedMenuItem::Action { name, action, .. } if name == label => Some(action),
+                            _ => None,
+                        })
+                        .expect("registered zoom command")
+                });
+                cx.update(|cx| cx.dispatch_action(action.as_ref()));
+                cx.run_until_parked();
+                // The test effect-cycle redraws only dirty windows; no refresh/draw/input follows the action.
+                assert_eq!(target_window.debug_bounds("zoom-rem-probe").unwrap().size.width, px(expected * 2.0));
+                target_window.update(|window, cx| {
+                    assert_eq!(window.rem_size(), px(expected), "{locale}: {label}");
+                    assert_eq!(input.read(cx).value().as_ref(), "zoom query α");
+                    assert!(input.read(cx).focus_handle(cx).is_focused(window));
+                });
+                other.update(cx, |_, window, _| assert_eq!(window.rem_size(), px(23.0))).unwrap();
+            }
+        }
+    }
+
     #[test]
     fn docs_shell_registers_wayland_desktop_identity() {
         let source = include_str!("main.rs");

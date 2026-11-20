@@ -311,9 +311,18 @@ impl MenuAction {
             }
             Self::Close => window.remove_window(),
             Self::Quit => cx.quit(),
-            Self::ZoomIn => window.set_rem_size(window.rem_size() + px(1.0)),
-            Self::ZoomOut => window.set_rem_size((window.rem_size() - px(1.0)).max(px(8.0))),
-            Self::ZoomReset => window.set_rem_size(px(16.0)),
+            Self::ZoomIn => {
+                window.set_rem_size(window.rem_size() + px(1.0));
+                window.refresh();
+            }
+            Self::ZoomOut => {
+                window.set_rem_size((window.rem_size() - px(1.0)).max(px(8.0)));
+                window.refresh();
+            }
+            Self::ZoomReset => {
+                window.set_rem_size(px(16.0));
+                window.refresh();
+            }
             Self::OpenUrl(url) => cx.open_url(url),
             Self::CopyText(text) => {
                 cx.write_to_clipboard(gpui::ClipboardItem::new_string(text.to_string()))
