@@ -41,8 +41,8 @@ fn rgba(r: u8, g: u8, b: u8, a: f32) -> Hsla {
     .into()
 }
 
-fn filled_foreground(background: Hsla) -> Hsla {
-    let color: Rgba = background.into();
+fn linear_rgb(color: Hsla) -> [f32; 3] {
+    let color: Rgba = color.into();
     let linearize = |channel: f32| {
         if channel <= 0.04045 {
             channel / 12.92
@@ -50,9 +50,36 @@ fn filled_foreground(background: Hsla) -> Hsla {
             ((channel + 0.055) / 1.055).powf(2.4)
         }
     };
-    let luminance = 0.2126 * linearize(color.r)
-        + 0.7152 * linearize(color.g)
-        + 0.0722 * linearize(color.b);
+    [linearize(color.r), linearize(color.g), linearize(color.b)]
+}
+
+fn luminance([r, g, b]: [f32; 3]) -> f32 {
+    0.2126 * r + 0.7152 * g + 0.0722 * b
+}
+
+fn readable_text(color: Hsla, maximum_luminance: f32, target_luminance: f32) -> Hsla {
+    if maximum_luminance < 0.0 || color.a != 1.0 {
+        return color;
+    }
+    let channels = linear_rgb(color);
+    let current = luminance(channels);
+    if current <= maximum_luminance {
+        return color;
+    }
+    let scale = target_luminance / current;
+    let encode = |channel: f32| {
+        let channel = channel * scale;
+        if channel <= 0.0031308 {
+            channel * 12.92
+        } else {
+            1.055 * channel.powf(1.0 / 2.4) - 0.055
+        }
+    };
+    Rgba { r: encode(channels[0]), g: encode(channels[1]), b: encode(channels[2]), a: 1.0 }.into()
+}
+
+fn filled_foreground(background: Hsla) -> Hsla {
+    let luminance = luminance(linear_rgb(background));
     if (luminance + 0.05) / 0.05 >= 1.05 / (luminance + 0.05) {
         gpui::black()
     } else {
@@ -553,6 +580,18 @@ impl Button {
                 let semantic = theme.color_by_variant(self.text_semantic, true, false, false);
                 colors.text = semantic.text;
                 colors.text_hover = semantic.text_hover;
+                if theme.neutral.body.a == 1.0 {
+                    let body = theme.neutral.body;
+                    let darkest_background = luminance(linear_rgb(body.blend(colors.bg)))
+                        .min(luminance(linear_rgb(body.blend(colors.hover_bg))))
+                        .min(luminance(linear_rgb(body.blend(colors.active_bg))));
+                    // Both foregrounds can remain active while pressed without a public active-text token.
+                    let maximum_luminance = (darkest_background + 0.05) / 4.5 - 0.05;
+                    // Leave headroom for the sRGB/HSL round trip and 8-bit native rendering.
+                    let target_luminance = ((darkest_background + 0.05) / 4.55 - 0.05).max(0.0);
+                    colors.text = readable_text(colors.text, maximum_luminance, target_luminance);
+                    colors.text_hover = readable_text(colors.text_hover, maximum_luminance, target_luminance);
+                }
             }
             colors
         } else {
@@ -1376,6 +1415,48 @@ mod tests {
     }
 
     #[test]
+    fn semantic_text_buttons_meet_body_contrast_in_every_state() {
+        fn luminance(color: Hsla) -> f64 {
+            let color: Rgba = color.into();
+            [color.r, color.g, color.b]
+                .into_iter()
+                .zip([0.2126, 0.7152, 0.0722])
+                .map(|(channel, weight)| {
+                    let channel = f64::from(channel);
+                    weight * if channel <= 0.04045 {
+                        channel / 12.92
+                    } else {
+                        ((channel + 0.055) / 1.055).powf(2.4)
+                    }
+                })
+                .sum()
+        }
+
+        let theme = Theme::light();
+        for semantic in [Button::primary as fn(Button) -> Button, Button::info,
+            Button::success, Button::warning, Button::danger] {
+            for button in [semantic(Button::new("Action").text()), semantic(Button::new("Action")).text()] {
+                let colors = button.resolved_colors(&theme);
+                for surface in [theme.neutral.body, theme.neutral.card] {
+                    for (state, foreground, background) in [
+                        ("normal", colors.text, colors.bg),
+                        ("hover", colors.text_hover, colors.hover_bg),
+                        ("pressed-hover", colors.text_hover, colors.active_bg),
+                        ("pressed-without-hover", colors.text, colors.active_bg),
+                    ] {
+                        assert_eq!(foreground.a, 1.0);
+                        let foreground = luminance(foreground);
+                        let background = luminance(surface.blend(background));
+                        let contrast = (foreground.max(background) + 0.05)
+                            / (foreground.min(background) + 0.05);
+                        assert!(contrast >= 4.5, "{:?} {state}: {contrast}", button.text_semantic);
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
     fn text_button_appearance_preserves_semantic_color_in_both_orders() {
         for theme in [Theme::light(), Theme::dark()] {
             for (semantic, family) in [
@@ -1385,15 +1466,28 @@ mod tests {
                 (Button::warning, &theme.warning),
                 (Button::danger, &theme.danger),
             ] {
+                let expected = semantic(Button::new("Action")).text().resolved_colors(&theme);
                 for button in [semantic(Button::new("Action").text()), semantic(Button::new("Action")).text()] {
                     let colors = button.resolved_colors(&theme);
-                    assert_eq!((colors.bg.a, colors.border.a, colors.border_hover.a, colors.text, colors.text_hover),
-                        (0.0, 0.0, 0.0, family.base, family.hover));
+                    assert_eq!((colors.bg.a, colors.border.a, colors.border_hover.a), (0.0, 0.0, 0.0));
+                    assert_eq!((colors.text, colors.text_hover), (expected.text, expected.text_hover));
+                    if theme.name == "dark" {
+                        assert_eq!((colors.text, colors.text_hover), (family.base, family.hover));
+                    }
                     assert_eq!(colors.hover_bg, theme.secondary.hover);
                     assert_eq!(colors.active_bg, theme.secondary.pressed);
                 }
                 let filled = semantic(Button::new("Action")).resolved_colors(&theme);
                 assert_eq!((filled.bg, filled.border), (family.base, family.base));
+            }
+            let distinct = [ButtonVariant::Primary, ButtonVariant::Info,
+                ButtonVariant::Warning, ButtonVariant::Danger]
+                .map(|variant| Button::new("Action").text().variant(variant).resolved_colors(&theme));
+            for (index, first) in distinct.iter().enumerate() {
+                for second in &distinct[index + 1..] {
+                    assert_ne!(first.text, second.text, "semantic normal foregrounds collapsed");
+                    assert_ne!(first.text_hover, second.text_hover, "semantic hover/pressed foregrounds collapsed");
+                }
             }
             for button in [Button::new("Action").text(), Button::new("Action").variant(ButtonVariant::Text)] {
                 let colors = button.resolved_colors(&theme);
@@ -1405,5 +1499,27 @@ mod tests {
             assert_eq!((plain.bg.a, plain.border.a, plain.text, plain.hover_bg),
                 (0.0, 0.0, theme.primary.base, theme.primary.light_8));
         }
+    }
+
+    #[test]
+    fn semantic_text_contrast_preserves_explicit_and_inactive_colors() {
+        for theme in [Theme::light(), Theme::dark()] {
+            for semantic in [Button::primary as fn(Button) -> Button, Button::info,
+                Button::success, Button::warning, Button::danger] {
+                let custom = semantic(Button::new("Action").text())
+                    .custom_color(gpui::white(), gpui::white()).resolved_colors(&theme);
+                assert_eq!((custom.text, custom.text_hover), (gpui::white(), gpui::white()));
+                let disabled = semantic(Button::new("Action").text()).disabled(true).resolved_colors(&theme);
+                assert_eq!((disabled.text, disabled.text_hover), (theme.neutral.text_disabled, theme.neutral.text_disabled));
+                let gradient = semantic(Button::new("Action").text())
+                    .gradient(gpui::white(), gpui::red()).resolved_colors(&theme);
+                assert_eq!((gradient.text, gradient.text_hover), (theme.neutral.inverted, theme.neutral.inverted));
+                let button = semantic(Button::new("Action").text());
+                assert!(button.active_text_color(&button.resolved_colors(&theme)).is_none());
+            }
+        }
+        let foreground = rgba(240, 160, 32, 0.5);
+        assert_eq!(readable_text(foreground, 0.1, 0.09), foreground);
+        assert_eq!(readable_text(gpui::black(), 0.1, 0.09), gpui::black());
     }
 }
