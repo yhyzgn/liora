@@ -1608,6 +1608,8 @@ let roomy_popup = Popover::new(Button::new("Details"))
 
 `Dropdown`, `DropdownButton`, `Menu` submenus, and `Popconfirm` already use this flush mode internally, so their menus and confirmation panels keep consistent dimensions across placements.
 
+Dropdown rows use native Menu/MenuItem semantics: `Dropdown::disabled_item(label)` creates a non-executable disabled row, and enabled rows support focus-aware Arrow/Home/End navigation and complete pointer or Enter/Space activation. Tab/Shift+Tab closes the menu and moves focus through the host’s normal tab order. Long-menu scrolling/revealing is not implied.
+
 ### Keep app state in app views
 
 Do not put product data models in `liora-components`. Store app state in your GPUI view/entity and pass only display values/callbacks to components:

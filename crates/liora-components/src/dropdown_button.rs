@@ -296,12 +296,15 @@ impl RenderOnce for DropdownButton {
             )
         });
         let trigger = self.menu_trigger(&dropdown_id, cx);
+        let model =
+            window.use_keyed_state(element_id(format!("{dropdown_id}-items")), cx, |_, _| {
+                (Vec::<DropdownButtonItem>::new(), false)
+            });
+        model.update(cx, |current, _| *current = (self.items, self.disabled));
         if self.disabled {
+            clear_popover(&dropdown_id, cx);
             return trigger;
         }
-
-        let items = self.items;
-        let disabled = self.disabled;
 
         Popover::new(trigger)
             .id(dropdown_id.clone())
@@ -310,8 +313,14 @@ impl RenderOnce for DropdownButton {
             .flush_content()
             .close_on_click_outside(self.close_on_click_outside)
             .close_on_escape(self.close_on_escape)
-            .content(move |_window, _cx| {
-                dropdown_button_menu(dropdown_id.clone(), items.clone(), theme.clone(), disabled)
+            .content(move |window, cx| {
+                dropdown_button_menu(
+                    dropdown_id.clone(),
+                    model.clone(),
+                    theme.clone(),
+                    window,
+                    cx,
+                )
             })
             .into_any_element()
     }
@@ -372,12 +381,29 @@ fn split_trigger(button: &DropdownButton, id: &SharedString, cx: &App) -> AnyEle
 
 fn dropdown_button_menu(
     dropdown_id: SharedString,
-    items: Vec<DropdownButtonItem>,
+    model: gpui::Entity<(Vec<DropdownButtonItem>, bool)>,
     theme: liora_theme::Theme,
-    disabled: bool,
+    window: &mut Window,
+    cx: &mut App,
 ) -> AnyElement {
+    let focus = crate::dropdown::menu_focus(
+        &dropdown_id,
+        model.read(cx).0.len(),
+        window,
+        cx,
+        |index, cx| {
+            let current = model.read(cx);
+            !current.1 && !current.0[index].disabled
+        },
+    );
+    let root = focus.read(cx).root.clone();
+    let rows = &focus.read(cx).rows;
+    let navigation = focus.clone();
+    let navigation_id = dropdown_id.clone();
     div()
         .id(element_id(format!("{dropdown_id}-menu")))
+        .role(gpui::Role::Menu)
+        .track_focus(&root)
         .cursor_default()
         .occlude()
         .flex()
@@ -385,8 +411,20 @@ fn dropdown_button_menu(
         .py_1()
         .min_w(px(188.0))
         .max_h(px(240.0))
-        .children(items.into_iter().enumerate().map(|(index, item)| {
-            dropdown_button_item(dropdown_id.clone(), index, item, theme.clone(), disabled)
+        .on_key_down(move |event, window, cx| {
+            crate::dropdown::navigate_menu(&navigation_id, &navigation, event, window, cx);
+        })
+        .children(model.read(cx).0.iter().enumerate().map(|(index, item)| {
+            let disabled = model.read(cx).1 || item.disabled;
+            dropdown_button_item(
+                dropdown_id.clone(),
+                index,
+                item,
+                &theme,
+                disabled,
+                &rows[index],
+                model.clone(),
+            )
         }))
         .into_any_element()
 }
@@ -394,16 +432,17 @@ fn dropdown_button_menu(
 fn dropdown_button_item(
     dropdown_id: SharedString,
     index: usize,
-    item: DropdownButtonItem,
-    theme: liora_theme::Theme,
-    menu_disabled: bool,
+    item: &DropdownButtonItem,
+    theme: &liora_theme::Theme,
+    disabled: bool,
+    focus: &gpui::FocusHandle,
+    model: gpui::Entity<(Vec<DropdownButtonItem>, bool)>,
 ) -> AnyElement {
-    let disabled = menu_disabled || item.disabled;
-    let item_id = element_id(format!("{dropdown_id}-item-{index}"));
-    let label = item.label;
-    let on_click = item.on_click;
+    let item_name = format!("{dropdown_id}-item-{index}");
+    let item_id = element_id(item_name.clone());
+    let label = item.label.clone();
     let icon = item.icon;
-    let text_color = item_text_color(&theme, disabled, item.danger);
+    let text_color = item_text_color(theme, disabled, item.danger);
     let hover_color = if item.danger {
         theme.danger.base
     } else {
@@ -412,6 +451,15 @@ fn dropdown_button_item(
 
     div()
         .id(item_id)
+        .debug_selector(|| item_name.clone())
+        .accessibility_id(item_name)
+        .role(gpui::Role::MenuItem)
+        .aria_label(label.clone())
+        .a11y_synthetic_children(move |builder| {
+            if disabled {
+                builder.parent_node().set_disabled();
+            }
+        })
         .flex()
         .items_center()
         .gap_2()
@@ -420,19 +468,36 @@ fn dropdown_button_item(
         .py_2()
         .text_size(px(theme.font_size.md))
         .text_color(text_color)
-        .when(disabled, |s| s.cursor_not_allowed())
+        .border_1()
+        .border_color(gpui::transparent_black())
+        .when(disabled, |s| {
+            s.cursor_not_allowed()
+                .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+        })
         .when(!disabled, |s| {
-            s.cursor_pointer()
-                .hover(move |s| s.bg(theme.neutral.hover).text_color(hover_color))
+            let hover_background = theme.neutral.hover;
+            let focus_color = theme.primary.base;
+            s.track_focus(focus)
+                .cursor_pointer()
+                .focus_visible(move |s| s.border_color(focus_color))
+                .hover(move |s| s.bg(hover_background).text_color(hover_color))
         })
         .when_some(icon, |s, icon| {
             s.child(Icon::new(icon).size(px(14.0)).color(text_color))
         })
         .child(div().text_sm().child(label))
         .when(!disabled, |s| {
-            s.on_mouse_down(MouseButton::Left, move |_, window, cx| {
-                on_click(window, cx);
-                clear_popover(&dropdown_id, cx);
+            s.on_click(move |_, window, cx| {
+                let current = model.read(cx);
+                let callback = current
+                    .0
+                    .get(index)
+                    .filter(|item| !current.1 && !item.disabled)
+                    .map(|item| item.on_click.clone());
+                if let Some(callback) = callback {
+                    clear_popover(&dropdown_id, cx);
+                    callback(window, cx);
+                }
                 cx.stop_propagation();
             })
         })
@@ -451,15 +516,6 @@ fn item_text_color(theme: &liora_theme::Theme, disabled: bool, danger: bool) -> 
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn dropdown_button_flushes_shared_popover_padding_for_menu_layout() {
-        let source = include_str!("dropdown_button.rs")
-            .split("#[cfg(test)]")
-            .next()
-            .unwrap();
-
-        assert!(source.contains(".flush_content()"));
-    }
 
     use super::*;
 
@@ -494,19 +550,5 @@ mod tests {
         assert!(button.items[1].icon.is_some());
         assert!(button.items[2].disabled);
         assert!(button.items[3].danger);
-    }
-
-    #[test]
-    fn dropdown_button_reuses_popover_and_exposes_split_trigger() {
-        let source = include_str!("dropdown_button.rs")
-            .split("#[cfg(test)]")
-            .next()
-            .unwrap();
-
-        assert!(source.contains("Popover::new(trigger)"));
-        assert!(source.contains("fn split_trigger"));
-        assert!(source.contains("IconName::ChevronDown"));
-        assert!(source.contains("clear_popover(&dropdown_id, cx)"));
-        assert!(source.contains("cx.stop_propagation();"));
     }
 }

@@ -10069,6 +10069,7 @@ fn docs_dropdown_basic() -> Dropdown {
         .item("Create", |_, _| toast_info!("Create clicked"))
         .item("Duplicate", |_, _| toast_info!("Duplicate clicked"))
         .item("Archive", |_, _| toast_info!("Archive clicked"))
+        .disabled_item("No permission")
 }
 
 fn docs_dropdown_placements() -> impl IntoElement {

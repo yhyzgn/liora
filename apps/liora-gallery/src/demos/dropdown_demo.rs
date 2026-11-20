@@ -40,7 +40,7 @@ impl Render for DropdownDemo {
             ))
             .child(section(
                 "Close policy 关闭策略",
-                "可禁用点击外部或 ESC 关闭；菜单项点击仍会执行回调并关闭菜单。",
+                "可禁用点击外部或 ESC 关闭；激活菜单项时先关闭原菜单，再执行回调。",
                 row(vec![
                     Dropdown::new(Button::new("Manual close menu"))
                         .id("dropdown-demo-manual-close")
@@ -60,5 +60,5 @@ fn menu(id: &'static str, label: &'static str, placement: Placement) -> Dropdown
         .placement(placement)
         .item("Action 1", |_, _| println!("Action 1"))
         .item("Action 2", |_, _| println!("Action 2"))
-        .item("Disabled-looking item", |_, _| println!("Action 3"))
+        .disabled_item("Disabled item")
 }

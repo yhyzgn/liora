@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add `Dropdown::disabled_item(label)` and native keyboard navigation for Dropdown and DropdownButton. Focus the first enabled row on the next frame; navigation skips disabled rows and clicking one leaves focus unchanged. Tab/Shift+Tab closes the menu and moves focus through the host’s tab order. Activation closes the originating menu before invoking its callback, preserving any same-ID replacement it opens.
 - Dismiss only the originating MenuBar popup after an enabled leaf command, before the selection callback; keep disabled rows, submenu parents, standalone Menu previews, and unrelated or callback-reopened popups intact. Use native Button entries for Tab focus and Enter/Space toggling; reuse shared Popover Escape and focus recovery.
 - Open Button-triggered Popovers with Enter/Space, route Escape from trigger and interactive portal content according to the close policy, and restore originating focus on dismissal without adding wrapper tab stops or intercepting editable trigger input; retain split DropdownButton primary actions. Repaint shared Popover insertion, replacement, and dismissal immediately without dirtying windows for no-op clears.
 - Wire Gallery/Docs platform-menu Zoom In, Zoom Out, and Reset Zoom, plus Gallery's visible fallback, to current-window rem-size behavior; request the next frame in the shared Zoom executor for all SDK callers. Leave other app-owned shell commands pending and documentation previews side-effect-free.

@@ -1602,6 +1602,8 @@ let roomy_popup = Popover::new(Button::new("Details"))
 
 `Dropdown`、`DropdownButton`、`Menu` 子菜单和 `Popconfirm` 已经在内部使用 flush 模式，因此菜单和确认面板在不同 placement 下会保持一致的尺寸和布局节奏。
 
+Dropdown 行使用原生 Menu/MenuItem 语义：`Dropdown::disabled_item(label)` 创建不可执行的禁用项，启用项支持带焦点的上下方向键及 Home/End 导航，也可通过完整的指针点击或 Enter/Space 激活。Tab/Shift+Tab 关闭菜单，并按宿主的正常焦点顺序移动焦点。此行为不涵盖长菜单的滚动或条目自动显现。
+
 ### 应用状态留在应用层
 
 不要把产品数据模型放进 `liora-components`。应用状态应存在自己的 GPUI view/entity 中，只把展示值和回调传给组件：
