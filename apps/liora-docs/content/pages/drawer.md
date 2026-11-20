@@ -33,6 +33,8 @@
 
 关闭遮罩点击和 ESC 关闭，改由内容区按钮手动关闭。
 
+先打开父抽屉，再点击 “Open Child Drawer”。“Close Child Drawer” 调用 `Drawer::close(cx)`，只关闭栈顶子抽屉，父抽屉仍可操作。需要关闭指定抽屉时，使用 `Drawer::close_id(id, cx)`。
+
 ### 效果
 
 ::Demo{component="DrawerManualClose"}::
@@ -58,7 +60,7 @@
 
 ## 受控轻量面板
 
-关闭遮罩点击和 ESC 关闭，改由内容区按钮显式关闭。
+关闭遮罩点击和 ESC 关闭。Cancel 和 Apply 都通过 `Drawer::close_id(id, cx)` 关闭当前面板，不影响其他抽屉；示例不保存数据。
 
 ### 效果
 

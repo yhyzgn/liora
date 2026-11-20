@@ -114,16 +114,32 @@ impl Render for DrawerDemo {
                             Button::new("Blocking review")
                                 .icon_start(IconName::ShieldCheck)
                                 .on_click(|_, _, cx| {
+                                    const REVIEW_ID: &str = "gallery-blocking-review";
                                     Drawer::sheet()
+                                        .id(REVIEW_ID)
                                         .title("Blocking review")
                                         .width_lg()
                                         .close_on_click_outside(false)
                                         .close_on_escape(false)
                                         .content_view(|_| {
-                                            sheet_body(
-                                                "Explicit close only",
-                                                "This panel stays open until an action closes it.",
-                                            )
+                                            Space::new()
+                                                .vertical()
+                                                .gap_lg()
+                                                .child(Text::new("Explicit close only").bold())
+                                                .child(Text::new("Cancel or apply to close this panel."))
+                                                .child(
+                                                    Space::new()
+                                                        .gap_sm()
+                                                        .child(
+                                                            Button::new("Cancel")
+                                                                .on_click(|_, _, cx| Drawer::close_id(REVIEW_ID, cx)),
+                                                        )
+                                                        .child(
+                                                            Button::new("Apply")
+                                                                .primary()
+                                                                .on_click(|_, _, cx| Drawer::close_id(REVIEW_ID, cx)),
+                                                        ),
+                                                )
                                         })
                                         .show(cx);
                                 }),
@@ -145,6 +161,18 @@ impl Render for DrawerDemo {
                                             .vertical()
                                             .gap_lg()
                                             .child(Text::new("点击遮罩和按 ESC 都不会关闭。"))
+                                            .child(Button::new("Open Child Drawer").on_click(|_, _, cx| {
+                                                Drawer::new()
+                                                    .title("Child drawer")
+                                                    .left()
+                                                    .close_on_click_outside(false)
+                                                    .close_on_escape(false)
+                                                    .content(|_, _| {
+                                                        Button::new("Close Child Drawer")
+                                                            .on_click(|_, _, cx| Drawer::close(cx))
+                                                    })
+                                                    .show(cx);
+                                            }))
                                             .child(
                                                 Button::new("Close Drawer")
                                                     .primary()

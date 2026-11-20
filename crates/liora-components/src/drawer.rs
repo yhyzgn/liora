@@ -404,12 +404,12 @@ impl Drawer {
         liora_core::set_active_drawer(id, view.into(), cx);
     }
 
-    /// Performs the close operation used by this component.
+    /// Closes only the topmost drawer, leaving any underlying drawers open.
     pub fn close(cx: &mut App) {
-        liora_core::clear_active_drawer(cx);
+        cx.global_mut::<liora_core::ActiveDrawer>().0.pop();
     }
 
-    /// Performs the close id operation used by this component.
+    /// Closes the drawer with the given ID, regardless of its stack position.
     pub fn close_id(id: impl Into<SharedString>, cx: &mut App) {
         let id = id.into();
         liora_core::clear_drawer(&id, cx);
@@ -419,6 +419,36 @@ impl Drawer {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn manual_close_only_removes_topmost_drawer() {
+        let mut app = gpui::TestAppContext::single();
+        let window = app.add_empty_window();
+        window.update(|_, cx| {
+            liora_core::init_liora(cx, liora_theme::Theme::light());
+            Drawer::new().id("parent").show(cx);
+            let parent = cx.global::<liora_core::ActiveDrawer>().0[0].view.entity_id();
+            Drawer::new().id("child").show(cx);
+
+            Drawer::close(cx);
+            let drawers = &cx.global::<liora_core::ActiveDrawer>().0;
+            assert_eq!(drawers.len(), 1);
+            assert_eq!(drawers[0].view.entity_id(), parent);
+
+            Drawer::close(cx);
+            assert!(cx.global::<liora_core::ActiveDrawer>().0.is_empty());
+            Drawer::close(cx);
+            assert!(cx.global::<liora_core::ActiveDrawer>().0.is_empty());
+
+            Drawer::new().id("parent").show(cx);
+            Drawer::new().id("child").show(cx);
+            Drawer::close_id("parent", cx);
+            let drawers = &cx.global::<liora_core::ActiveDrawer>().0;
+            assert_eq!(drawers.len(), 1);
+            assert_eq!(drawers[0].id.as_ref(), "child");
+        });
+        app.quit();
+    }
 
     #[test]
     fn stale_close_does_not_clear_same_id_replacement() {
