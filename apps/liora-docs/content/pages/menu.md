@@ -87,6 +87,8 @@ fn visible_fallback_menu_bar() -> MenuBar {
 
 `MenuBar` 是窗口内 fallback / preview：适合自定义 `TitleBar`、`Shell` 顶部区域、Linux/Windows 下需要稳定可见的应用菜单入口，或设置页中的菜单预览。它不是 GPUI 平台菜单本体；真正的系统级平台菜单仍然应通过上面的 `Menu::register(cx, menus)` 注册。
 
+选择可用的叶子命令会关闭该 `MenuBar` 入口自己的弹层，再调用 `on_select`；回调可重新打开相同 ID 的弹层。禁用项与子菜单父项不会因此关闭菜单，单独渲染的 `Menu` 预览与其他弹层不受影响。顶部入口是可通过 Tab 聚焦的 `Button`，Enter/Space 用于开关菜单。Escape 与焦点恢复沿用共享 `Popover` 行为。
+
 ### 效果
 
 ::Demo{component="MenuBar"}::

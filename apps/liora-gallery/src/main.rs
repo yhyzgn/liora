@@ -2130,13 +2130,12 @@ mod shell_regression_tests {
             target_window.run_until_parked();
             target_window.update(|window, cx| {
                 assert_eq!(window.rem_size(), px(expected));
+                assert!(cx.global::<liora_core::ActivePopover>().0.is_empty());
                 let gallery = gallery.read(cx);
                 assert_eq!(gallery.selected, 1);
                 assert_eq!(gallery.nav_query, "Input");
                 assert_eq!(gallery.nav_filter.read(cx).value().as_ref(), "Input");
             });
-            target_window.simulate_click(point(px(600.0), px(500.0)), gpui::Modifiers::none());
-            target_window.update(|window, cx| window.draw(cx).clear(cx));
         }
     }
 

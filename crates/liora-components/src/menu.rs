@@ -20,7 +20,7 @@
 //! the component, and avoid app-specific host-application resources in this SDK
 //! crate.
 
-use crate::{Popover, Text};
+use crate::{Button, Popover, Text};
 use gpui::{
     AnyElement, App, IntoElement, Menu as GpuiPlatformMenu, MenuItem as GpuiPlatformMenuItem,
     MouseButton, OsAction, PathPromptOptions, RenderOnce, SharedString, ViewElement as Component,
@@ -815,6 +815,7 @@ impl MenuBar {
     }
 
     /// Registers a callback that receives built-in and custom actions.
+    /// Enabled leaf selections close their own popup before invoking this callback.
     pub fn on_select(
         mut self,
         callback: impl Fn(MenuAction, &MenuItem, &mut Window, &mut App) + 'static,
@@ -851,21 +852,23 @@ impl RenderOnce for MenuBar {
                         let items = menu.items.clone();
                         let trigger_id =
                             menu_bar_trigger_id(index, title.stable_seed(), window, cx);
-                        let trigger = div()
-                            .px_3()
-                            .py_1()
-                            .rounded(px(theme.radius.sm))
-                            .cursor_pointer()
-                            .bg(gpui::transparent_black())
-                            .hover(|s| s.cursor_pointer().bg(theme.neutral.hover))
-                            .child(
-                                Text::new(title_text.clone())
-                                    .sm()
-                                    .selectable(false)
-                                    .text_color(theme.neutral.text_1),
-                            );
+                        let trigger = Button::new(title_text)
+                            .id(trigger_id.clone())
+                            .text()
+                            .rounded(px(theme.radius.sm));
                         let theme = theme.clone();
                         let on_select = on_select.clone();
+                        let popover_id = trigger_id.clone();
+                        let on_select: Arc<MenuSelectCallback> =
+                            Arc::new(move |action, item, window, cx| {
+                                if !item.has_children() {
+                                    // Close first so the callback can reopen the same menu ID.
+                                    liora_core::clear_popover(&popover_id, cx);
+                                }
+                                if let Some(callback) = &on_select {
+                                    callback(action, item, window, cx);
+                                }
+                            });
                         let on_paths_selected = on_paths_selected.clone();
                         Popover::new(trigger)
                             .id(trigger_id)
@@ -879,7 +882,7 @@ impl RenderOnce for MenuBar {
                                             item,
                                             0,
                                             &theme,
-                                            on_select.clone(),
+                                            Some(on_select.clone()),
                                             on_paths_selected.clone(),
                                             perform_builtin_actions,
                                         )
@@ -1120,6 +1123,234 @@ fn render_menu_item(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn menu_bar_focuses_its_trigger_for_escape_and_keyboard_activation() {
+        use gpui::{Context, Focusable, Render, VisualTestContext, point};
+        use std::{
+            cell::{Cell, RefCell},
+            rc::Rc,
+        };
+
+        struct FocusWindow {
+            input: gpui::Entity<crate::Input>,
+            bar: MenuBar,
+        }
+        impl Render for FocusWindow {
+            fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+                liora_core::render_active_popover_in_window(window, cx);
+                div()
+                    .size_full()
+                    .flex()
+                    .flex_col()
+                    .items_start()
+                    .child(
+                        div()
+                            .w(px(200.0))
+                            .debug_selector(|| "menu-focus-input".into())
+                            .child(self.input.clone()),
+                    )
+                    .child(
+                        div()
+                            .flex()
+                            .debug_selector(|| "menu-focus-bar".into())
+                            .child(self.bar.clone()),
+                    )
+                    .child(crate::PortalLayer)
+            }
+        }
+        fn press(window: &mut VisualTestContext, key: &str) {
+            window.simulate_keystrokes(key);
+            window.update(|window, cx| {
+                let keystroke = gpui::Keystroke::parse_with_os(key, cx.platform_info().os).unwrap();
+                window.dispatch_event(
+                    gpui::PlatformInput::KeyUp(gpui::KeyUpEvent { keystroke }),
+                    cx,
+                );
+            });
+        }
+
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let input = app.new(|cx| crate::Input::new("icon", cx));
+        let origin = Rc::new(RefCell::new(None::<SharedString>));
+        let selected = Rc::new(Cell::new(0));
+        let replacement = app.new(|_| gpui::EmptyView);
+        let replacement_id = replacement.entity_id();
+        let callback_origin = origin.clone();
+        let callback_selected = selected.clone();
+        let bar = MenuBar::new([Menu::new("File").item(MenuItem::new("leaf", "Leaf"))]).on_select(
+            move |_, _, _, cx| {
+                let id = callback_origin.borrow().as_ref().unwrap().clone();
+                assert!(!liora_core::is_popover_active(&id, cx));
+                liora_core::set_active_popover(id, replacement.clone().into(), cx);
+                callback_selected.set(callback_selected.get() + 1);
+            },
+        );
+        let view_input = input.clone();
+        let handle = app.add_window(move |_, _| FocusWindow {
+            input: view_input,
+            bar,
+        });
+        let mut window = VisualTestContext::from_window(handle.into(), &app);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        let input_bounds = window.debug_bounds("menu-focus-input").unwrap();
+        window.simulate_click(input_bounds.center(), gpui::Modifiers::none());
+        window.update(|window, cx| assert!(input.read(cx).focus_handle(cx).is_focused(window)));
+        let bar = window.debug_bounds("menu-focus-bar").unwrap();
+        window.simulate_click(bar.center(), gpui::Modifiers::none());
+        window.update(|window, cx| {
+            let entries = &cx.global::<liora_core::ActivePopover>().0;
+            assert_eq!(entries.len(), 1);
+            *origin.borrow_mut() = Some(entries[0].id.clone());
+            window.draw(cx).clear(cx);
+        });
+        press(&mut window, "escape");
+        window.update(|_, cx| {
+            assert!(cx.global::<liora_core::ActivePopover>().0.is_empty());
+            assert_eq!(input.read(cx).value().as_ref(), "icon");
+        });
+        for key in ["enter", "space"] {
+            press(&mut window, key);
+            window.update(|window, cx| {
+                assert!(liora_core::is_popover_active(
+                    origin.borrow().as_ref().unwrap(),
+                    cx
+                ));
+                window.draw(cx).clear(cx);
+            });
+            press(&mut window, "escape");
+            window.update(|_, cx| assert!(cx.global::<liora_core::ActivePopover>().0.is_empty()));
+            assert_eq!(selected.get(), 0);
+        }
+        window.simulate_click(bar.center(), gpui::Modifiers::none());
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        window.simulate_click(
+            point(bar.center().x, bar.bottom() + px(24.0)),
+            gpui::Modifiers::none(),
+        );
+        window.update(|_, cx| {
+            let entries = &cx.global::<liora_core::ActivePopover>().0;
+            assert_eq!(entries.len(), 1);
+            assert_eq!(&entries[0].id, origin.borrow().as_ref().unwrap());
+            assert_eq!(entries[0].view.entity_id(), replacement_id);
+            assert_eq!(input.read(cx).value().as_ref(), "icon");
+        });
+        assert_eq!(selected.get(), 1);
+        app.quit();
+    }
+
+    #[test]
+    fn menu_bar_dismisses_only_its_leaf_before_reopening_callback() {
+        use gpui::{Context, Render, VisualTestContext, point};
+        use std::{
+            cell::{Cell, RefCell},
+            rc::Rc,
+        };
+
+        struct SelectionWindow {
+            bar: MenuBar,
+            preview: Menu,
+        }
+        impl Render for SelectionWindow {
+            fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+                liora_core::render_active_popover_in_window(window, cx);
+                div()
+                    .size_full()
+                    .flex()
+                    .flex_col()
+                    .items_start()
+                    .child(
+                        div()
+                            .flex()
+                            .debug_selector(|| "menu-test-bar".into())
+                            .child(self.bar.clone()),
+                    )
+                    .child(
+                        div()
+                            .flex()
+                            .debug_selector(|| "menu-test-preview".into())
+                            .child(self.preview.clone()),
+                    )
+                    .child(crate::PortalLayer)
+            }
+        }
+
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let selected = Rc::new(Cell::new(0));
+        let origin = Rc::new(RefCell::new(None::<SharedString>));
+        let replacement = app.new(|_| gpui::EmptyView);
+        let unrelated = app.new(|_| gpui::EmptyView);
+        let bar_selected = selected.clone();
+        let callback_origin = origin.clone();
+        let bar = MenuBar::new([Menu::new("File")
+            .item(MenuItem::new("disabled", "Disabled").disabled(true))
+            .item(MenuItem::new("parent", "Parent").child(MenuItem::new("leaf", "Leaf")))])
+        .on_select(move |_, item, _, cx| {
+            let id = callback_origin.borrow().as_ref().unwrap().clone();
+            assert_eq!(liora_core::is_popover_active(&id, cx), item.has_children());
+            if !item.has_children() {
+                liora_core::set_active_popover(id, replacement.clone().into(), cx);
+            }
+            bar_selected.set(bar_selected.get() + 1);
+        });
+        let preview_selected = selected.clone();
+        let preview = Menu::new("Preview")
+            .perform_builtin_actions(false)
+            .item(MenuItem::new("preview", "Preview leaf"))
+            .on_select(move |_, _, _, _| preview_selected.set(preview_selected.get() + 1));
+        let handle = app.add_window(move |_, _| SelectionWindow { bar, preview });
+        let mut window = VisualTestContext::from_window(handle.into(), &app);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+
+        let preview = window.debug_bounds("menu-test-preview").unwrap();
+        window.simulate_click(
+            point(preview.center().x, preview.bottom() - px(16.0)),
+            gpui::Modifiers::none(),
+        );
+        assert_eq!(selected.get(), 1);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+
+        let bar = window.debug_bounds("menu-test-bar").unwrap();
+        window.simulate_click(bar.center(), gpui::Modifiers::none());
+        window.update(|window, cx| {
+            let id = cx
+                .global::<liora_core::ActivePopover>()
+                .0
+                .iter()
+                .find(|entry| entry.id.as_ref() != "unrelated-menu-test")
+                .expect("the real menu trigger opens its own popup")
+                .id
+                .clone();
+            *origin.borrow_mut() = Some(id);
+            liora_core::set_active_popover("unrelated-menu-test".into(), unrelated.into(), cx);
+            assert!(liora_core::is_popover_active(
+                &"unrelated-menu-test".into(),
+                cx
+            ));
+            window.draw(cx).clear(cx);
+        });
+        for (row, expected_selections) in [(0, 1), (1, 2), (2, 3)] {
+            window.simulate_click(
+                point(bar.center().x, bar.bottom() + px(24.0 + row as f32 * 32.0)),
+                gpui::Modifiers::none(),
+            );
+            assert_eq!(selected.get(), expected_selections);
+            window.update(|window, cx| {
+                assert!(liora_core::is_popover_active(
+                    &"unrelated-menu-test".into(),
+                    cx
+                ));
+                assert!(liora_core::is_popover_active(
+                    origin.borrow().as_ref().unwrap(),
+                    cx
+                ));
+                window.draw(cx).clear(cx);
+            });
+        }
+        app.quit();
+    }
 
     #[test]
     fn menu_tracks_items_and_submenus() {
