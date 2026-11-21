@@ -1647,6 +1647,8 @@ Docs 中现在有单独的 `Locales` 页面，完整说明应用级国际化、c
 
 Liora 的国际化系统保持低耦合：语言资源放在外部 TOML 文件中，Rust 调用处使用 `locales::empty::description` 这样的类型化 key，运行时翻译后端也可以由应用完全替换。
 
+`Config::set_locales_config` 方法与独立的 `set_locales_config` 函数都会将当前已存储的 locale 版本递增，并在 `u64::MAX` 饱和；传入配置中的版本值会被忽略。
+
 适合以下需求：
 
 - 语言包放在 `assets/locales/<locale>.toml`，而不是写死在 Rust 源码里；

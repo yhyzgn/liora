@@ -1653,6 +1653,8 @@ Docs has a dedicated `Locales` page with the full application-level guide, inclu
 
 Liora's locale system is deliberately low-coupling: language resources live in external TOML files, Rust code uses typed keys such as `locales::empty::description`, and the runtime translator can be replaced by the application.
 
+Both `Config::set_locales_config` and the free `set_locales_config` function advance the currently stored locale version with saturation at `u64::MAX`; the replacement config's version is ignored.
+
 Use this feature when you need:
 
 - `assets/locales/<locale>.toml` files outside Rust source code;

@@ -697,7 +697,9 @@ impl Config {
     }
 
     /// Replaces the app locales policy while preserving the active theme.
-    pub fn set_locales_config(&mut self, locales: LocalesConfig) {
+    /// Advances the stored locale version with saturation, ignoring the incoming version.
+    pub fn set_locales_config(&mut self, mut locales: LocalesConfig) {
+        locales.version = self.locales.version.saturating_add(1);
         self.locales = locales;
     }
 

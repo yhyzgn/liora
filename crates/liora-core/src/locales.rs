@@ -811,6 +811,34 @@ mod tests {
     }
 
     #[test]
+    fn config_set_locales_config_advances_current_version() {
+        for (current, incoming) in [(17, 0), (17, 99), (u64::MAX, 0)] {
+            let mut config = crate::Config {
+                theme: crate::Theme::light(),
+                theme_mode: crate::ThemeMode::Light,
+                fonts: crate::FontConfig::system(),
+                locales: LocalesConfig {
+                    version: current,
+                    ..LocalesConfig::default()
+                },
+                z_index_base: 1000,
+            };
+            let replacement = LocalesConfig {
+                version: incoming,
+                ..LocalesConfig::default()
+                    .with_locale("zh-CN")
+                    .with_resources(LocalesMap::new())
+            };
+            let mut expected = replacement.clone();
+            expected.version = current.saturating_add(1);
+
+            config.set_locales_config(replacement);
+
+            assert_eq!(config.locales, expected);
+        }
+    }
+
+    #[test]
     fn typed_locales_preserve_dot_paths() {
         assert_eq!(empty::description().as_str(), "empty.description");
         assert_eq!(message_box::confirm().as_str(), "message_box.confirm");
