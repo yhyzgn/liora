@@ -107,6 +107,7 @@ pub struct Input {
     id: Option<SharedString>,
     value: SharedString,
     placeholder: LocalizedText,
+    aria_label: Option<LocalizedText>,
     disabled: bool,
     clearable: bool,
     icon_prefix: Option<IconName>,
@@ -147,6 +148,7 @@ impl Input {
             id: None,
             value: value.into(),
             placeholder: LocalizedText::literal(""),
+            aria_label: None,
             disabled: false,
             clearable: false,
             icon_prefix: None,
@@ -194,6 +196,12 @@ impl Input {
     /// Uses the supplied placeholder text when the value is empty.
     pub fn placeholder(mut self, p: impl Into<LocalizedText>) -> Self {
         self.placeholder = p.into();
+        self
+    }
+    /// Names the input for assistive technology without changing its placeholder.
+    /// Defaults to the localized placeholder when no explicit name is supplied.
+    pub fn aria_label(mut self, label: impl Into<LocalizedText>) -> Self {
+        self.aria_label = Some(label.into());
         self
     }
     /// Toggles the disabled state and suppresses user interaction when enabled.
@@ -965,6 +973,59 @@ impl Input {
         self.input_type == InputType::Password && !self.password_visible
     }
 
+    fn write_disabled_state(node: &mut gpui::accesskit::Node, disabled: bool) {
+        if disabled {
+            node.set_disabled();
+        }
+    }
+
+    fn accessible_text_runs(&self) -> Vec<gpui::accesskit::Node> {
+        if self.input_type == InputType::Password {
+            return Vec::new();
+        }
+        let make_run = |text: &str, lengths: Vec<u8>, words: Vec<u8>| {
+            let mut run = gpui::accesskit::Node::new(gpui::Role::TextRun);
+            run.set_value(text.to_owned());
+            run.set_character_lengths(lengths);
+            run.set_word_starts(words);
+            run
+        };
+        let mut runs = Vec::new();
+        let mut lengths = Vec::new();
+        let mut words = Vec::new();
+        let mut chars = self.value.char_indices().peekable();
+        let mut previous_word = false;
+        let mut start = 0;
+        while let Some((offset, ch)) = chars.next() {
+            let word = ch.is_alphanumeric() || ch == '_';
+            if word && !previous_word {
+                words.push(lengths.len() as u8);
+            }
+            let length = if ch == '\r' && chars.peek().is_some_and(|(_, ch)| *ch == '\n') {
+                chars.next();
+                2
+            } else {
+                ch.len_utf8() as u8
+            };
+            lengths.push(length);
+            previous_word = word;
+            let end = offset + usize::from(length);
+            // AccessKit word offsets are u8, so keep chunks within that range.
+            if lengths.len() == 255 || self.value.as_bytes()[end - 1] == b'\n' {
+                runs.push(make_run(
+                    &self.value[start..end],
+                    std::mem::take(&mut lengths),
+                    std::mem::take(&mut words),
+                ));
+                start = end;
+            }
+        }
+        if start < self.value.len() || self.value.is_empty() || self.value.ends_with('\n') {
+            runs.push(make_run(&self.value[start..], lengths, words));
+        }
+        runs
+    }
+
     /// Performs the prepend operation used by this component.
     pub fn prepend(
         mut self,
@@ -1599,8 +1660,62 @@ impl Render for Input {
         };
         let fh = self.focus_handle(cx);
         let line_height = window.line_height();
+        let id = self
+            .id
+            .clone()
+            .map(ElementId::from)
+            .unwrap_or_else(|| ("liora-input", cx.entity().entity_id()).into());
+        let placeholder = self.placeholder.resolve(cx);
+        let name = self
+            .aria_label
+            .as_ref()
+            .map(|label| label.resolve(cx))
+            .unwrap_or_else(|| placeholder.clone());
+        let role = if self.input_type == InputType::Password {
+            gpui::Role::PasswordInput
+        } else if self.min_rows > 1 || self.soft_wrap {
+            gpui::Role::MultilineTextInput
+        } else {
+            gpui::Role::TextInput
+        };
+        let disabled = self.disabled;
+        let text_runs = if window.is_a11y_active() {
+            self.accessible_text_runs()
+        } else {
+            Vec::new()
+        };
+        let run_count = text_runs.len();
 
         let mut row = gpui::div()
+            .id(id)
+            .role(role)
+            .aria_label(name)
+            .aria_placeholder(placeholder)
+            .when(self.input_type != InputType::Password, |row| {
+                row.aria_value(self.value.clone())
+            })
+            .when(disabled || !text_runs.is_empty(), |row| {
+                row.a11y_synthetic_children(move |builder| {
+                    Self::write_disabled_state(builder.parent_node(), disabled);
+                    let mut previous = None;
+                    for (index, mut run) in text_runs.into_iter().enumerate() {
+                        let id = builder.synthetic_node_id(index as u64);
+                        if let Some(previous) = previous {
+                            run.set_previous_on_line(previous);
+                        }
+                        previous = if run.value().is_some_and(|value| value.ends_with('\n')) {
+                            None
+                        } else {
+                            let next = builder.synthetic_node_id(index as u64 + 1);
+                            if index + 1 < run_count {
+                                run.set_next_on_line(next);
+                            }
+                            Some(id)
+                        };
+                        builder.push_child(id, run);
+                    }
+                })
+            })
             .flex()
             .flex_row()
             .when(self.soft_wrap, |row| row.w_full().min_w_0())
@@ -1783,7 +1898,7 @@ impl Render for Input {
             );
         }
 
-        row.into_any_element()
+        row
     }
 }
 
@@ -1949,7 +2064,287 @@ mod width_tests {
 #[cfg(test)]
 mod tests {
     use super::{Input, SelectHome};
-    use gpui::{AppContext, EntityInputHandler, TestAppContext};
+    use gpui::{
+        AppContext, Element, EntityInputHandler, IntoElement, Render, TestAppContext,
+        accesskit::Node,
+    };
+
+    #[test]
+    fn native_text_run_exposes_empty_unicode_and_edited_text_without_placeholder() {
+        let mut app = TestAppContext::single();
+        let input = app.new(|cx| Input::new("", cx).placeholder("Search docs"));
+        input.update(&mut app, |input, cx| {
+            for value in ["", "猫😀e\u{301}", "first\nsecond", "edited", ""] {
+                input.set_value(value, cx);
+                let runs = input.accessible_text_runs();
+                let run = runs
+                    .first()
+                    .expect("plain input needs a text run even when empty");
+                assert_eq!(run.role(), gpui::Role::TextRun);
+                assert_eq!(
+                    runs.iter()
+                        .map(|run| run.value().unwrap())
+                        .collect::<String>(),
+                    value
+                );
+                assert_eq!(
+                    runs.iter()
+                        .flat_map(|run| run.character_lengths().iter().copied())
+                        .collect::<Vec<_>>(),
+                    value
+                        .chars()
+                        .map(|ch| ch.len_utf8() as u8)
+                        .collect::<Vec<_>>()
+                );
+                assert_eq!(
+                    runs.iter()
+                        .flat_map(|run| run.character_lengths().iter())
+                        .map(|length| usize::from(*length))
+                        .sum::<usize>(),
+                    value.len()
+                );
+            }
+            input.set_disabled(true, cx);
+            assert_eq!(input.accessible_text_runs()[0].value(), Some(""));
+        });
+        app.quit();
+    }
+
+    #[test]
+    fn native_text_runs_preserve_hard_lines_words_and_crlf_characters() {
+        let mut app = TestAppContext::single();
+        let input = app.new(|cx| Input::new("first second\r\n猫😀\n", cx));
+        input.update(&mut app, |input, _| {
+            let runs = input.accessible_text_runs();
+            assert_eq!(
+                runs.iter()
+                    .map(|run| run.value().unwrap())
+                    .collect::<Vec<_>>(),
+                ["first second\r\n", "猫😀\n", ""]
+            );
+            assert_eq!(
+                runs[0].character_lengths(),
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2]
+            );
+            assert_eq!(runs[0].word_starts(), [0, 6]);
+            assert_eq!(runs[1].character_lengths(), [3, 4, 1]);
+            assert_eq!(runs[1].word_starts(), [0]);
+        });
+        app.quit();
+    }
+
+    #[test]
+    fn native_text_runs_keep_long_word_boundaries_within_u8_offsets() {
+        let mut app = TestAppContext::single();
+        let value = format!("{} second", "a".repeat(255));
+        let input = app.new(|cx| Input::new(value.clone(), cx));
+        input.update(&mut app, |input, _| {
+            let runs = input.accessible_text_runs();
+            assert_eq!(runs.len(), 2);
+            assert_eq!(runs[0].character_lengths().len(), 255);
+            assert_eq!(runs[0].word_starts(), [0]);
+            assert_eq!(runs[1].word_starts(), [1]);
+            assert_eq!(
+                runs.iter()
+                    .map(|run| run.value().unwrap())
+                    .collect::<String>(),
+                value
+            );
+        });
+        app.quit();
+    }
+
+    #[test]
+    fn native_password_has_no_accessible_text_run_even_when_revealed() {
+        let mut app = TestAppContext::single();
+        let input = app.new(|cx| Input::new("secret猫", cx).password());
+        input.update(&mut app, |input, _| {
+            for revealed in [false, true] {
+                input.password_visible = revealed;
+                assert!(input.accessible_text_runs().is_empty());
+            }
+        });
+        app.quit();
+    }
+
+    #[test]
+    fn native_root_has_stable_distinct_and_explicit_identity() {
+        let mut app = TestAppContext::single();
+        app.update(crate::init_liora);
+        let first = app.new(|cx| Input::new("", cx));
+        let second = app.new(|cx| Input::new("", cx));
+        let explicit = app.new(|cx| Input::new("", cx).id("search-input"));
+        app.add_empty_window().update(|window, cx| {
+            let first_id =
+                first.update(cx, |input, cx| input.render(window, cx).into_element().id());
+            let second_id =
+                second.update(cx, |input, cx| input.render(window, cx).into_element().id());
+            assert!(first_id.is_some());
+            assert_ne!(first_id, second_id);
+            first.update(cx, |input, cx| {
+                input.set_value("changed", cx);
+                assert_eq!(input.render(window, cx).into_element().id(), first_id);
+            });
+            explicit.update(cx, |input, cx| {
+                assert_eq!(
+                    input.render(window, cx).into_element().id(),
+                    Some("search-input".into())
+                );
+            });
+        });
+        app.quit();
+    }
+
+    #[test]
+    fn native_root_exposes_text_role_name_value_and_placeholder() {
+        let mut app = TestAppContext::single();
+        app.update(crate::init_liora);
+        let input = app.new(|cx| Input::new("", cx).placeholder("Search docs"));
+        app.add_empty_window().update(|window, cx| {
+            input.update(cx, |input, cx| {
+                for value in ["", "猫😀é", ""] {
+                    input.set_value(value, cx);
+                    let element = input.render(window, cx).into_element();
+                    assert_eq!(element.a11y_role(), Some(gpui::Role::TextInput));
+                    let mut node = Node::new(element.a11y_role().unwrap());
+                    element.write_a11y_info(&mut node);
+                    assert_eq!(node.label(), Some("Search docs"));
+                    assert_eq!(node.placeholder(), Some("Search docs"));
+                    assert_eq!(node.value(), Some(value));
+                    assert!(node.supports_action(gpui::AccessibleAction::Focus));
+                }
+                input.min_rows = 2;
+                assert_eq!(
+                    input.render(window, cx).into_element().a11y_role(),
+                    Some(gpui::Role::MultilineTextInput)
+                );
+                input.min_rows = 1;
+                input.soft_wrap = true;
+                assert_eq!(
+                    input.render(window, cx).into_element().a11y_role(),
+                    Some(gpui::Role::MultilineTextInput)
+                );
+            });
+        });
+        app.quit();
+    }
+
+    #[test]
+    fn native_password_root_never_exposes_cleartext_even_when_revealed() {
+        let mut app = TestAppContext::single();
+        app.update(crate::init_liora);
+        let input = app.new(|cx| {
+            Input::new("secret猫", cx)
+                .password()
+                .placeholder("Password")
+        });
+        app.add_empty_window().update(|window, cx| {
+            input.update(cx, |input, cx| {
+                for visible in [false, true] {
+                    input.password_visible = visible;
+                    let element = input.render(window, cx).into_element();
+                    assert_eq!(element.a11y_role(), Some(gpui::Role::PasswordInput));
+                    let mut node = Node::new(element.a11y_role().unwrap());
+                    element.write_a11y_info(&mut node);
+                    assert_eq!(node.value(), None);
+                    assert_eq!(node.label(), Some("Password"));
+                    assert_eq!(node.placeholder(), Some("Password"));
+                }
+            });
+        });
+        app.quit();
+    }
+
+    #[test]
+    fn native_root_keeps_explicit_name_separate_from_placeholder() {
+        let mut app = TestAppContext::single();
+        app.update(crate::init_liora);
+        let input = app.new(|cx| {
+            Input::new("query", cx)
+                .placeholder("Type here")
+                .aria_label("Search docs")
+        });
+        app.add_empty_window().update(|window, cx| {
+            input.update(cx, |input, cx| {
+                let element = input.render(window, cx).into_element();
+                let mut node = Node::new(element.a11y_role().unwrap());
+                element.write_a11y_info(&mut node);
+                assert_eq!(node.label(), Some("Search docs"));
+                assert_eq!(node.placeholder(), Some("Type here"));
+                assert_eq!(node.value(), Some("query"));
+            });
+        });
+        app.quit();
+    }
+
+    #[test]
+    fn native_disabled_root_has_no_focus_action_and_preserves_value() {
+        let mut app = TestAppContext::single();
+        app.update(crate::init_liora);
+        let input = app.new(|cx| Input::new("retained", cx).disabled(true));
+        app.add_empty_window().update(|window, cx| {
+            input.update(cx, |input, cx| {
+                let initial = input.render(window, cx).into_element().id();
+                for disabled in [true, false, true] {
+                    input.set_disabled(disabled, cx);
+                    let element = input.render(window, cx).into_element();
+                    let mut node = Node::new(element.a11y_role().unwrap());
+                    element.write_a11y_info(&mut node);
+                    // The synthetic-child hook writes this flag after prepaint.
+                    Input::write_disabled_state(&mut node, disabled);
+                    assert_eq!(node.is_disabled(), disabled);
+                    assert_eq!(
+                        node.supports_action(gpui::AccessibleAction::Focus),
+                        !disabled
+                    );
+                    assert_eq!(node.value(), Some("retained"));
+                    assert_eq!(element.id(), initial);
+                }
+            });
+        });
+        app.quit();
+    }
+
+    #[test]
+    fn native_root_preserves_input_focus_typing_and_disabled_tab_order() {
+        use gpui::{Context, Entity, Focusable, ParentElement, Styled, VisualTestContext};
+        struct Surface([Entity<Input>; 3]);
+        impl Render for Surface {
+            fn render(&mut self, _: &mut gpui::Window, _: &mut Context<Self>) -> impl IntoElement {
+                crate::AppWindowFrame::new(
+                    "Input focus",
+                    gpui::div()
+                        .flex()
+                        .flex_col()
+                        .children(self.0.iter().cloned()),
+                )
+            }
+        }
+        let mut app = TestAppContext::single();
+        app.update(crate::init_liora);
+        let first = app.new(|cx| Input::new("", cx));
+        let disabled = app.new(|cx| Input::new("unchanged", cx).disabled(true));
+        let last = app.new(|cx| Input::new("", cx));
+        let handle =
+            app.add_window(|_, _| Surface([first.clone(), disabled.clone(), last.clone()]));
+        let mut window = VisualTestContext::from_window(handle.into(), &mut app);
+        window.update(|window, cx| {
+            window.focus(&first.focus_handle(cx), cx);
+            window.draw(cx).clear(cx);
+        });
+        window.simulate_input("猫");
+        window.simulate_keystrokes("tab");
+        window.update(|window, cx| {
+            assert!(last.focus_handle(cx).is_focused(window));
+            assert_eq!(first.read(cx).value().as_ref(), "猫");
+            assert_eq!(disabled.read(cx).value().as_ref(), "unchanged");
+        });
+        window.simulate_keystrokes("shift-tab");
+        window.update(|window, cx| {
+            assert!(first.focus_handle(cx).is_focused(window));
+        });
+        app.quit();
+    }
 
     #[test]
     fn clear_cancels_composition_and_resets_selection() {
