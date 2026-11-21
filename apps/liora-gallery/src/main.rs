@@ -758,8 +758,10 @@ fn prepare_gallery_hide_to_tray(cx: &mut App) {
         return;
     }
 
-    cx.set_quit_mode(gpui::QuitMode::Explicit);
-    set_gallery_tray_visible(cx, true);
+    if cx.global::<GalleryTrayState>().resident_enabled {
+        cx.set_quit_mode(gpui::QuitMode::Explicit);
+        set_gallery_tray_visible(cx, true);
+    }
 
     let state = cx.global_mut::<GalleryTrayState>();
     state.window_visible = false;
@@ -2877,6 +2879,50 @@ mod shell_regression_tests {
         assert_eq!(control_group.title.as_ref(), "Controls");
         assert_eq!(menu_group_labels(control_group), vec!["Input"]);
         assert_eq!(menu_group_ids(control_group), vec!["gallery-nav-1"]);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    #[ignore = "requires a GTK display for the native tray"]
+    fn remembered_hide_respects_disabled_residency() {
+        use super::*;
+        use gpui::{EmptyView, TestAppContext};
+
+        let mut app = TestAppContext::single();
+        app.update(|cx| init_liora_with_options(cx, gallery_liora_options()));
+        app.update(install_gallery_tray);
+        app.update(|cx| {
+            cx.global_mut::<TrayControlCenter>()
+                .set_remembered_close_action(TrayCloseAction::HideToTray);
+        });
+
+        for disable_residency in [false, true] {
+            let window = app.add_window(|_, _| EmptyView);
+            app.update(|cx| {
+                let state = cx.global_mut::<GalleryTrayState>();
+                state.window = Some(window.into());
+                state.window_visible = true;
+                if disable_residency {
+                    handle_gallery_tray_command(TrayCommand::Custom("resident-enabled".into()), cx);
+                }
+                assert_eq!(cx.windows().len(), 1);
+            });
+            app.update_window(window.into(), |_, window, cx| {
+                if disable_residency {
+                    request_gallery_window_close(window, cx);
+                } else {
+                    assert!(!handle_gallery_window_should_close(window, cx));
+                }
+            })
+            .unwrap();
+            app.read(|cx| {
+                assert!(cx.windows().is_empty());
+                let state = cx.global::<GalleryTrayState>();
+                assert_eq!(state.resident_enabled, !disable_residency);
+                assert_eq!(state.tray_visible, !disable_residency);
+                assert!(state.window.is_none());
+            });
+        }
     }
 
     #[test]
