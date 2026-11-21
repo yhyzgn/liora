@@ -583,6 +583,10 @@ fn handle_docs_tray_command(command: TrayCommand, cx: &mut App) {
                     cx.global_mut::<TrayControlCenter>()
                         .set_resident_enabled(resident_enabled);
                 }
+                // GPUI checks LastWindowClosed on removal, not on mode changes.
+                if !resident_enabled && cx.windows().is_empty() {
+                    cx.quit();
+                }
             }
         }
         TrayCommand::Custom(name) if name == "tray-visible" => {
