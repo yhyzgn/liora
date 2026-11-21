@@ -1353,6 +1353,9 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         }
         "transcript/basic.rs" => Some(include_str!("../content/snippets/transcript/basic.rs")),
         "composer/basic.rs" => Some(include_str!("../content/snippets/composer/basic.rs")),
+        "composer/candidates_find.rs" => Some(include_str!(
+            "../content/snippets/composer/candidates_find.rs"
+        )),
         "markdown/streaming.rs" => Some(include_str!("../content/snippets/markdown/streaming.rs")),
         "terminal/screen.rs" => Some(include_str!("../content/snippets/terminal/screen.rs")),
         "diff/basic.rs" => Some(include_str!("../content/snippets/diff/basic.rs")),
@@ -1453,6 +1456,7 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
             Some(include_str!("../content/snippets/button/custom_colors.rs"))
         }
         "button/gradient.rs" => Some(include_str!("../content/snippets/button/gradient.rs")),
+        "button/group.rs" => Some(include_str!("../content/snippets/button/group.rs")),
         "alert/types.rs" => Some(include_str!("../content/snippets/alert/types.rs")),
         "alert/description.rs" => Some(include_str!("../content/snippets/alert/description.rs")),
         "alert/closable.rs" => Some(include_str!("../content/snippets/alert/closable.rs")),

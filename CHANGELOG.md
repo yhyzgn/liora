@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Render and copy the authored CandidateBar/FindBar and ButtonGroup Rust examples in Docs.
 - Retain Gallery/Docs root and child entities, navigation/search/demo state and current window geometry/display/rem-size zoom across creation-time frame changes. Open the replacement before removing the original and restore the frame selection on failure; keep Linux/FreeBSD live decoration switching. Add callback-free `Switch::set_checked` for retained-toggle synchronization.
 - Make `Drawer::close` dismiss only the topmost drawer, preserving underlying drawers. Wire controlled sheet Cancel and Apply in Gallery and Docs to dismiss only their own sheet by ID.
 - Add `Dropdown::disabled_item(label)` and native keyboard navigation for Dropdown and DropdownButton. Focus the first enabled row on the next frame; navigation skips disabled rows and clicking one leaves focus unchanged. Tab/Shift+Tab closes the menu and moves focus through the host’s tab order. Activation closes the originating menu before invoking its callback, preserving any same-ID replacement it opens.
