@@ -57,3 +57,16 @@ Split 模式下，左侧执行主操作，右侧箭头展开更多操作；即�
 
 ```rust src="dropdown_button/sizes.rs"
 ```
+
+## 长菜单滚动
+
+长菜单保持行高并提供滚轮滚动。方向键与 Home/End 会自动滚动到当前可用项；末项仍可正常执行，禁用项仍被跳过。
+
+### 效果
+
+::Demo{component="DropdownButtonScrollable"}::
+
+### 代码
+
+```rust src="dropdown_button/scrollable.rs"
+```

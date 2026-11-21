@@ -263,6 +263,8 @@ mod dropdown_basic;
 mod dropdown_button_basic;
 #[path = "../../content/snippets/dropdown_button/item_states.rs"]
 mod dropdown_button_item_states;
+#[path = "../../content/snippets/dropdown_button/scrollable.rs"]
+mod dropdown_button_scrollable;
 #[path = "../../content/snippets/dropdown_button/sizes.rs"]
 mod dropdown_button_sizes;
 #[path = "../../content/snippets/dropdown_button/split.rs"]
@@ -271,6 +273,8 @@ mod dropdown_button_split;
 mod dropdown_close_strategy;
 #[path = "../../content/snippets/dropdown/placements.rs"]
 mod dropdown_placements;
+#[path = "../../content/snippets/dropdown/scrollable.rs"]
+mod dropdown_scrollable;
 #[path = "../../content/snippets/empty/basic.rs"]
 mod empty_basic;
 #[path = "../../content/snippets/empty/description.rs"]

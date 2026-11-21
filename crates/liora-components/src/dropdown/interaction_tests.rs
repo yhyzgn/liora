@@ -25,6 +25,7 @@ enum Availability {
     Empty,
     Replacement,
     DisabledMiddle,
+    Long,
 }
 
 #[derive(Default)]
@@ -59,6 +60,15 @@ struct Surface {
 impl Render for Surface {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         render_active_popover_in_window(window, cx);
+        let labels: &[&str] = if matches!(self.availability, Availability::Long) {
+            &[
+                "First", "Item 02", "Item 03", "Item 04", "Item 05", "Item 06", "Item 07",
+                "Item 08", "Item 09", "Item 10", "Item 11", "Item 12", "Item 13", "Item 14",
+                "Item 15", "Item 16", "Item 17", "Item 18", "Item 19", "Last",
+            ]
+        } else {
+            &["First", "Middle", "Last"]
+        };
         let menu = match self.menu {
             Menu::Dropdown => {
                 let trigger = div()
@@ -71,7 +81,7 @@ impl Render for Surface {
                     .close_on_escape(self.close_on_escape)
                     .close_on_click_outside(false);
                 if !matches!(self.availability, Availability::Empty) {
-                    for (index, label) in ["First", "Middle", "Last"].into_iter().enumerate() {
+                    for (index, &label) in labels.iter().enumerate() {
                         if index == 1 && matches!(self.availability, Availability::DisabledMiddle) {
                             dropdown = dropdown.disabled_item(label);
                             continue;
@@ -94,7 +104,7 @@ impl Render for Surface {
                     .close_on_escape(self.close_on_escape)
                     .close_on_click_outside(false)
                     .disabled(matches!(self.availability, Availability::TriggerDisabled));
-                for (index, label) in ["First", "Middle", "Last"].into_iter().enumerate() {
+                for (index, &label) in labels.iter().enumerate() {
                     let disabled = index == 1
                         || (index == 0 && matches!(self.availability, Availability::FirstDisabled))
                         || matches!(self.availability, Availability::AllDisabled);
@@ -225,6 +235,41 @@ fn fixture(
         assert!(active(cx), "precondition: the production trigger must open by its supported activation; failure here is not a row RED");
     }).unwrap();
     (app, window, commands)
+}
+
+#[test]
+fn long_menus_reveal_keyboard_targets_and_activate_the_last_item() {
+    for menu in [Menu::Dropdown, Menu::Button] {
+        let (mut app, window, commands) = fixture(menu, Availability::Long, true);
+        let mut visual = gpui::VisualTestContext::from_window(window.into(), &app);
+        let viewport = visual.debug_bounds("dropdown-menu-viewport").unwrap();
+        let first = "dropdown-interaction-test-item-0";
+        let last = "dropdown-interaction-test-item-19";
+        for (stroke, selector) in [
+            ("up", last),
+            ("down", first),
+            ("end", last),
+            ("home", first),
+            ("up", last),
+        ] {
+            app.update_window(window.into(), |_, window, cx| {
+                press(window, cx, stroke);
+                draw(window, cx);
+            })
+            .unwrap();
+            let row = visual.debug_bounds(selector).unwrap();
+            assert!(
+                row.top() >= viewport.top() && row.bottom() <= viewport.bottom(),
+                "{stroke} must reveal all of {selector}: {row:?}"
+            );
+        }
+        app.update_window(window.into(), |_, window, cx| {
+            press(window, cx, "enter");
+            assert_eq!(*commands.0.borrow(), [19]);
+            assert!(!active(cx));
+        })
+        .unwrap();
+    }
 }
 
 #[test]
@@ -573,7 +618,7 @@ fn dropdown_empty_and_all_disabled_keep_escape_path_without_commands() {
     ] {
         let (mut app, window, commands) = fixture(menu, availability, true);
         app.update_window(window.into(), |_, window, cx| {
-            for stroke in ["up", "end", "enter", "space"] {
+            for stroke in ["up", "down", "end", "enter", "space"] {
                 press(window, cx, stroke);
             }
             assert!(active(cx));

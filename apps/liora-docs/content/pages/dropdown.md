@@ -42,3 +42,16 @@
 
 ```rust src="dropdown/close_strategy.rs"
 ```
+
+## 长菜单滚动
+
+菜单保持有界高度，不压缩菜单行。可用滚轮访问末项；上下方向键与 Home/End 自动滚动到当前可用项，Enter/Space 仍只执行一次并关闭菜单。
+
+### 效果
+
+::Demo{component="DropdownScrollable"}::
+
+### 代码
+
+```rust src="dropdown/scrollable.rs"
+```

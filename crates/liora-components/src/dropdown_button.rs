@@ -397,11 +397,13 @@ fn dropdown_button_menu(
         },
     );
     let root = focus.read(cx).root.clone();
+    let scroll = focus.read(cx).scroll.clone();
     let rows = &focus.read(cx).rows;
     let navigation = focus.clone();
     let navigation_id = dropdown_id.clone();
     div()
         .id(element_id(format!("{dropdown_id}-menu")))
+        .debug_selector(|| "dropdown-menu-viewport".to_string())
         .role(gpui::Role::Menu)
         .track_focus(&root)
         .cursor_default()
@@ -411,6 +413,8 @@ fn dropdown_button_menu(
         .py_1()
         .min_w(px(188.0))
         .max_h(px(240.0))
+        .overflow_y_scroll()
+        .track_scroll(&scroll)
         .on_key_down(move |event, window, cx| {
             crate::dropdown::navigate_menu(&navigation_id, &navigation, event, window, cx);
         })
@@ -464,6 +468,7 @@ fn dropdown_button_item(
         .items_center()
         .gap_2()
         .min_h(px(34.0))
+        .flex_shrink_0()
         .px_3()
         .py_2()
         .text_size(px(theme.font_size.md))

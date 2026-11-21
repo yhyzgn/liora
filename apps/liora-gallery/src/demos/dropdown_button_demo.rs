@@ -31,6 +31,11 @@ impl Render for DropdownButtonDemo {
                         close_policy_card(),
                     ]),
                 ))
+                .child(section(
+                    "Scrollable menu 长菜单",
+                    "滚轮访问末项；Home/End 和上下方向键保持当前菜单项可见。",
+                    scrollable_menu(),
+                ))
                 .child(Text::new("提示：split 主按钮只执行 on_click，未设置回调也不打开菜单；只有箭头展开。点击与 Tab 聚焦后的 Enter/Space 分工一致。")),
         )
     }
@@ -189,6 +194,26 @@ fn close_policy_card() -> AnyElement {
         ),
     )
     .into_any_element()
+}
+
+fn scrollable_menu() -> DropdownButton {
+    let mut menu = DropdownButton::new("Long button menu").id("dropdown-button-demo-scrollable");
+    for label in super::dropdown_demo::LONG_MENU_LABELS {
+        menu = menu.item(label, move |_, _| toast_info!("{label}"));
+    }
+    menu
+}
+
+pub(super) fn render_scrollable(cx: &mut App) -> AnyView {
+    cx.new(|_| ScrollableMenuDemo).into()
+}
+
+struct ScrollableMenuDemo;
+
+impl Render for ScrollableMenuDemo {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        scrollable_menu()
+    }
 }
 
 #[cfg(test)]

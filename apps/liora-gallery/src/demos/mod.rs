@@ -800,6 +800,8 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Drawer" => Some(drawer_demo::render(cx).into()),
         "Dropdown" => Some(dropdown_demo::render(cx).into()),
         "DropdownButton" => Some(dropdown_button_demo::render(cx).into()),
+        "DropdownScrollable" => Some(dropdown_demo::render_scrollable(cx)),
+        "DropdownButtonScrollable" => Some(dropdown_button_demo::render_scrollable(cx)),
         "Empty" => Some(empty_demo::render(cx).into()),
         "Form" => Some(form_demo::render(cx).into()),
         "GroupBox" => Some(group_box_demo::render(cx).into()),

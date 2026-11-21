@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Keep Dropdown and DropdownButton long menus scrollable and reveal keyboard-selected items, with matching Gallery and Docs examples.
 - Render and copy the authored CandidateBar/FindBar and ButtonGroup Rust examples in Docs.
 - Retain Gallery/Docs root and child entities, navigation/search/demo state and current window geometry/display/rem-size zoom across creation-time frame changes. Open the replacement before removing the original and restore the frame selection on failure; keep Linux/FreeBSD live decoration switching. Add callback-free `Switch::set_checked` for retained-toggle synchronization.
 - Make `Drawer::close` dismiss only the topmost drawer, preserving underlying drawers. Wire controlled sheet Cancel and Apply in Gallery and Docs to dismiss only their own sheet by ID.

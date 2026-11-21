@@ -1749,6 +1749,9 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
             "../content/snippets/popconfirm/custom_text.rs"
         )),
         "dropdown/basic.rs" => Some(include_str!("../content/snippets/dropdown/basic.rs")),
+        "dropdown/scrollable.rs" => {
+            Some(include_str!("../content/snippets/dropdown/scrollable.rs"))
+        }
         "dropdown/close_strategy.rs" => Some(include_str!(
             "../content/snippets/dropdown/close_strategy.rs"
         )),
@@ -1758,6 +1761,9 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "dropdown_button/basic.rs" => {
             Some(include_str!("../content/snippets/dropdown_button/basic.rs"))
         }
+        "dropdown_button/scrollable.rs" => Some(include_str!(
+            "../content/snippets/dropdown_button/scrollable.rs"
+        )),
         "dropdown_button/split.rs" => {
             Some(include_str!("../content/snippets/dropdown_button/split.rs"))
         }

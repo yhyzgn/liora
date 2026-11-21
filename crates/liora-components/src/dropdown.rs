@@ -22,8 +22,8 @@
 use crate::Popover;
 use crate::gpui_compat::element_id;
 use gpui::{
-    AnyElement, App, Entity, FocusHandle, IntoElement, MouseButton, RenderOnce, Role, SharedString,
-    ViewElement as Component, Window, div, prelude::*, px,
+    AnyElement, App, Entity, FocusHandle, IntoElement, MouseButton, RenderOnce, Role, ScrollHandle,
+    SharedString, ViewElement as Component, Window, div, prelude::*, px,
 };
 use liora_core::{Config, Placement, clear_popover, stable_unique_id};
 use std::sync::Arc;
@@ -149,12 +149,14 @@ impl RenderOnce for Dropdown {
                     |index, cx| matches!(model.read(cx)[index], DropdownEntry::Enabled(_)),
                 );
                 let root_focus = focus.read(cx).root.clone();
+                let scroll = focus.read(cx).scroll.clone();
                 let rows = &focus.read(cx).rows;
                 let navigation = focus.clone();
                 let navigation_id = dropdown_id.clone();
                 let enabled = &focus.read(cx).enabled;
                 div()
                     .id(element_id(format!("{dropdown_id}-menu")))
+                    .debug_selector(|| "dropdown-menu-viewport".to_string())
                     .role(Role::Menu)
                     .track_focus(&root_focus)
                     .cursor_default()
@@ -164,6 +166,8 @@ impl RenderOnce for Dropdown {
                     .py_1()
                     .min_w(px(168.0))
                     .max_h(px(200.0))
+                    .overflow_y_scroll()
+                    .track_scroll(&scroll)
                     .on_key_down(move |event, window, cx| {
                         navigate_menu(&navigation_id, &navigation, event, window, cx);
                     })
@@ -188,6 +192,7 @@ impl RenderOnce for Dropdown {
                             .flex()
                             .items_center()
                             .min_h(px(34.0))
+                            .flex_shrink_0()
                             .px_3()
                             .py_2()
                             .text_size(px(theme.font_size.md))
@@ -242,6 +247,7 @@ impl IntoElement for Dropdown {
 pub(super) struct MenuFocus {
     pub(super) root: FocusHandle,
     pub(super) rows: Vec<FocusHandle>,
+    pub(super) scroll: ScrollHandle,
     initialized: bool,
     enabled: Vec<bool>,
 }
@@ -257,6 +263,7 @@ pub(super) fn menu_focus(
         MenuFocus {
             root: cx.focus_handle(),
             rows: Vec::new(),
+            scroll: ScrollHandle::new(),
             enabled: Vec::new(),
             initialized: false,
         }
@@ -294,10 +301,11 @@ pub(super) fn menu_focus(
                 }
                 if let Some(pending) = pending.upgrade() {
                     let state = pending.read(cx);
-                    let target = state
-                        .enabled
-                        .iter()
-                        .position(|enabled| *enabled)
+                    let index = state.enabled.iter().position(|enabled| *enabled);
+                    if let Some(index) = index {
+                        state.scroll.scroll_to_item(index);
+                    }
+                    let target = index
                         .map(|index| state.rows[index].clone())
                         .unwrap_or_else(|| state.root.clone());
                     window.focus(&target, cx);
@@ -357,9 +365,11 @@ pub(super) fn navigate_menu(
         }
         _ => return,
     };
-    let target = target.map(|index| state.rows[index].clone());
-    if let Some(target) = target {
+    if let Some(index) = target {
+        state.scroll.scroll_to_item(index);
+        let target = state.rows[index].clone();
         window.focus(&target, cx);
+        window.refresh();
     }
     window.prevent_default();
     cx.stop_propagation();
