@@ -27,6 +27,13 @@ Gallery 展示 File 菜单和 palette 共享 `document.save` 身份并派发相�
 
 `set_query(query, cx)` 同步输入文本和候选，重新选择排名最高的可执行结果；无结果或所有结果禁用时没有活动项。`set_commands(commands, cx)` 替换命令集并重算选择。每个 palette 内的命令 ID 应唯一且不随标签/本地化变化。↑ / ↓ 循环移动、Enter 执行、Escape 或遮罩点击关闭。
 
+### 挂载 SDK PortalLayer
+
+把 `palette_window_root(cx)` 返回的实体用作下游窗口根视图。先在启动时初始化 Liora；每个窗口根只挂载一个 SDK `PortalLayer`，并放在普通内容和 `CommandPalette` 实体之后。示例中的 **Show status** 命令执行后，根视图会显示 **Command executed**；按 Escape 只关闭面板，不执行命令。
+
+```rust src="command_palette/portal_host.rs"
+```
+
 ## 验证入口
 
 - `cargo test -p liora-components command_palette::tests --locked`：fuzzy 排序、多词匹配、菜单身份映射。

@@ -842,5 +842,7 @@ mod diff_basic;
 
 #[path = "../../content/snippets/command_palette/basic.rs"]
 mod command_palette_basic;
+#[path = "../../content/snippets/command_palette/portal_host.rs"]
+mod command_palette_portal_host;
 
 fn main() {}

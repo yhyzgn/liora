@@ -1360,6 +1360,9 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "command_palette/basic.rs" => {
             Some(include_str!("../content/snippets/command_palette/basic.rs"))
         }
+        "command_palette/portal_host.rs" => Some(include_str!(
+            "../content/snippets/command_palette/portal_host.rs"
+        )),
         "virtualized_list/basic.rs" => Some(include_str!(
             "../content/snippets/virtualized_list/basic.rs"
         )),
