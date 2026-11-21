@@ -1,4 +1,5 @@
 use gpui::{AnyElement, App, Bounds, Global, Pixels, Point, SharedString, Window};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Options that control placement behavior.
@@ -200,7 +201,7 @@ pub fn set_active_tooltip(data: TooltipData, cx: &mut App) {
 /// `mouse_move` event. Chart/data tooltips can still call [`set_active_tooltip`]
 /// directly when they intentionally manage multiple data-driven entries.
 pub fn set_exclusive_active_tooltip(data: TooltipData, cx: &mut App) -> bool {
-    let active = &mut cx.global_mut::<ActiveTooltip>().0;
+    let active = &cx.global::<ActiveTooltip>().0;
     let changed = active.len() != 1
         || active.first().is_none_or(|current| {
             current.id != data.id
@@ -210,7 +211,9 @@ pub fn set_exclusive_active_tooltip(data: TooltipData, cx: &mut App) -> bool {
                 || current.offset != data.offset
         });
     if changed {
-        *active = vec![data];
+        let active = &mut cx.global_mut::<ActiveTooltip>().0;
+        active.clear();
+        active.push(data);
     }
     changed
 }
@@ -283,14 +286,72 @@ pub fn clear_active_popover(cx: &mut App) {
 pub struct ActiveModal(pub Vec<ActiveOverlayEntry>);
 impl Global for ActiveModal {}
 
-/// Updates the stored active modal value and keeps the existing component identity.
+struct OwnedModal {
+    window: gpui::AnyWindowHandle,
+    _closed: gpui::Subscription,
+}
+
+struct ActiveModalOwners(HashMap<SharedString, OwnedModal>);
+impl Global for ActiveModalOwners {}
+
+/// Updates an app-wide modal, preserving the legacy ownerless rendering contract.
 pub fn set_active_modal(id: SharedString, view: gpui::AnyView, cx: &mut App) {
+    set_active_modal_in_window(id, view, None, cx);
+}
+
+/// Updates a modal scoped to one host window; `None` retains app-wide rendering.
+pub fn set_active_modal_in_window(
+    id: SharedString,
+    view: gpui::AnyView,
+    owner_window: Option<gpui::AnyWindowHandle>,
+    cx: &mut App,
+) {
     let modals = &mut cx.global_mut::<ActiveModal>().0;
     if let Some(existing) = modals.iter_mut().find(|entry| entry.id == id) {
         existing.view = view;
     } else {
-        modals.push(ActiveOverlayEntry { id, view });
+        modals.push(ActiveOverlayEntry {
+            id: id.clone(),
+            view,
+        });
     }
+
+    if !cx.has_global::<ActiveModalOwners>() {
+        cx.set_global(ActiveModalOwners(HashMap::new()));
+    }
+    if let Some(owner_window) = owner_window {
+        let id_for_close = id.clone();
+        let closed = cx.on_window_closed(move |cx, window_id| {
+            if owner_window.window_id() == window_id
+                && cx.try_global::<ActiveModalOwners>().is_some_and(|owners| {
+                    owners
+                        .0
+                        .get(&id_for_close)
+                        .is_some_and(|owner| owner.window == owner_window)
+                })
+            {
+                clear_modal(&id_for_close, cx);
+                cx.refresh_windows();
+            }
+        });
+        cx.global_mut::<ActiveModalOwners>().0.insert(
+            id,
+            OwnedModal {
+                window: owner_window,
+                _closed: closed,
+            },
+        );
+    } else {
+        cx.global_mut::<ActiveModalOwners>().0.remove(&id);
+    }
+}
+
+/// Returns a modal's host window, if it is window-scoped.
+pub fn active_modal_owner(id: &SharedString, cx: &App) -> Option<gpui::AnyWindowHandle> {
+    cx.try_global::<ActiveModalOwners>()?
+        .0
+        .get(id)
+        .map(|owner| owner.window)
 }
 
 /// Clears the current modal state.
@@ -298,11 +359,17 @@ pub fn clear_modal(id: &SharedString, cx: &mut App) {
     cx.global_mut::<ActiveModal>()
         .0
         .retain(|entry| &entry.id != id);
+    if cx.has_global::<ActiveModalOwners>() {
+        cx.global_mut::<ActiveModalOwners>().0.remove(id);
+    }
 }
 
 /// Clears the current active modal state.
 pub fn clear_active_modal(cx: &mut App) {
     cx.global_mut::<ActiveModal>().0.clear();
+    if cx.has_global::<ActiveModalOwners>() {
+        cx.global_mut::<ActiveModalOwners>().0.clear();
+    }
 }
 
 /// Runtime state used by Liora active drawer behavior.

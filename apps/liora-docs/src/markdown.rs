@@ -44,6 +44,9 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
+#[path = "../content/snippets/tooltip/basic.rs"]
+mod tooltip_basic_example;
+
 const INTRO_DOC: &str = include_str!("../content/pages/overview.md");
 const QUICK_START_DOC: &str = include_str!("../content/pages/quick_start.md");
 const ARCHITECTURE_DOC: &str = include_str!("../content/pages/architecture.md");
@@ -5897,24 +5900,7 @@ impl Render for LiveDemoContent {
                 .cloned()
                 .map(Entity::into_any_element)
                 .unwrap_or_else(|| Paragraph::with_text("Missing Segmented demo").into_any_element()),
-            "TooltipBasic" => demo_row(vec![
-                liora_components::Tooltip::new(Button::new("Top"))
-                    .content("Prompt info")
-                    .placement(liora_core::Placement::Top)
-                    .into_any_element(),
-                liora_components::Tooltip::new(Button::new("Bottom"))
-                    .content("Prompt info")
-                    .placement(liora_core::Placement::Bottom)
-                    .into_any_element(),
-                liora_components::Tooltip::new(Button::new("Left"))
-                    .content("Prompt info")
-                    .placement(liora_core::Placement::Left)
-                    .into_any_element(),
-                liora_components::Tooltip::new(Button::new("Right"))
-                    .content("Prompt info")
-                    .placement(liora_core::Placement::Right)
-                    .into_any_element(),
-            ]),
+            "TooltipBasic" => tooltip_basic_example::basic_tooltips().into_any_element(),
             "TooltipMore" => demo_row(vec![
                 liora_components::Tooltip::new(Button::new("Top Start"))
                     .content("Top Start")

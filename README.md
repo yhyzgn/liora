@@ -1577,14 +1577,18 @@ Most apps only need `liora::init_liora(cx)`. If you build a custom root shell th
 ```rust
 use liora::core::{
     render_active_drawer_in_window, render_active_modal_in_window, render_active_popover_in_window,
+    render_active_tooltip_in_window,
 };
 
 fn render_overlays(window: &mut gpui::Window, cx: &mut gpui::App) {
     render_active_popover_in_window(window, cx);
     render_active_modal_in_window(window, cx);
     render_active_drawer_in_window(window, cx);
+    render_active_tooltip_in_window(window, cx);
 }
 ```
+
+`Tooltip` shows on hover or focus within the original control, without adding a Tab stop or changing Button/Input actions. Escape dismisses only a visible help tooltip in its owning window and preserves focus; it stays dismissed until both focus and hover leave. The pointer can cross the placement gap into the tooltip. Existing immediate display and GPUI reduced-motion-aware fade are retained. Custom roots must call `render_active_tooltip_in_window` and host `PortalLayer`. Help follows rendered anchor bounds and retires when its trigger unmounts. The native tooltip role/name does not imply an unsupported trigger-to-tip accessibility relationship.
 
 With a Liora `Button` trigger, Tab to the button and press Enter/Space to open `Popover`; Escape closes it from the trigger or interactive popup content unless `.close_on_escape(false)` is set. Dismissal, including `clear_popover`, returns focus to the originating handle when focus is still inside the popup, but does not steal focus already moved elsewhere. The wrapper adds no extra Tab stop and does not give editable triggers button keyboard semantics. Use a stable `.id(...)` for manual dismissal.
 

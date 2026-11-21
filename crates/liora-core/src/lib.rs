@@ -7,8 +7,8 @@
 //! directly when building lower-level integrations or custom component crates.
 
 use gpui::{
-    Animation, AnimationExt, App, Bounds, Context, Global, Hsla, Pixels, SharedString, TextRun,
-    Window, WindowAppearance, WindowBounds, prelude::*, px,
+    App, Bounds, Context, Global, Hsla, Pixels, SharedString, Window, WindowAppearance,
+    WindowBounds, prelude::*,
 };
 
 pub use gpui::FontWeight;
@@ -17,10 +17,13 @@ use std::borrow::Cow;
 use std::path::Path;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::time::Duration;
 
 pub mod fonts;
 pub mod locales;
+mod tooltip;
+
+#[doc(hidden)]
+pub use tooltip::render_trigger as render_tooltip_trigger;
 
 pub use fonts::*;
 pub use locales::*;
@@ -890,12 +893,18 @@ pub fn render_active_popover_in_window(_window: &mut gpui::Window, cx: &mut App)
 }
 
 /// Renders the render active modal in window layer into native GPUI elements.
-pub fn render_active_modal_in_window(_window: &mut gpui::Window, cx: &mut App) {
+/// Renders active modals owned by this window plus legacy app-wide modal entries.
+pub fn render_active_modal_in_window(window: &mut gpui::Window, cx: &mut App) {
+    let window_handle = window.window_handle();
     for entry in cx.global::<crate::popper::ActiveModal>().0.clone() {
-        push_portal(
-            move |_window, _cx| entry.view.clone().into_any_element(),
-            cx,
-        );
+        if crate::popper::active_modal_owner(&entry.id, cx)
+            .is_none_or(|owner| owner == window_handle)
+        {
+            push_portal(
+                move |_window, _cx| entry.view.clone().into_any_element(),
+                cx,
+            );
+        }
     }
 }
 
@@ -931,98 +940,7 @@ pub fn tooltip_content_lines(content: &SharedString) -> Vec<SharedString> {
 
 /// Renders the render active tooltip in window layer into native GPUI elements.
 pub fn render_active_tooltip_in_window(window: &mut gpui::Window, cx: &mut App) {
-    let mouse_pos = window.mouse_position();
-    cx.global_mut::<crate::popper::ActiveTooltip>()
-        .0
-        .retain(|data| data.anchor_bounds.contains(&mouse_pos));
-
-    let active = cx.global::<crate::popper::ActiveTooltip>().0.clone();
-    for (tooltip_index, data) in active.into_iter().enumerate() {
-        let theme = cx.global::<Config>().theme.clone();
-
-        // Measure each visual line independently. GPUI shape_line is
-        // intentionally single-line only and will panic on newline input.
-        let font_size = px(theme.font_size.sm);
-        let text_style = window.text_style();
-        let lines = tooltip_content_lines(&data.content);
-        let max_line_width = lines
-            .iter()
-            .map(|line| {
-                let run = TextRun {
-                    len: line.len(),
-                    font: text_style.font(),
-                    color: theme.neutral.card,
-                    background_color: None,
-                    underline: None,
-                    strikethrough: None,
-                };
-                window
-                    .text_system()
-                    .shape_line(line.clone(), font_size, &[run], None)
-                    .width
-            })
-            .fold(px(0.0), |max_width, width| max_width.max(width));
-
-        let padding_h = px(12.0);
-        let padding_v = px(6.0);
-        let line_height = window.line_height();
-        let content_size = gpui::Size {
-            width: max_line_width + padding_h * 2.0,
-            height: line_height * lines.len() + padding_v * 2.0,
-        };
-
-        push_passive_portal(
-            move |window, _cx| {
-                let viewport = Bounds {
-                    origin: gpui::Point::default(),
-                    size: window.viewport_size(),
-                };
-
-                let popper = Popper {
-                    anchor_bounds: data.anchor_bounds,
-                    placement: data.placement,
-                    offset: data.offset,
-                };
-
-                let (pos, _final_placement) =
-                    popper.calculate_position_with_flip(content_size, viewport);
-
-                gpui::div()
-                    .absolute()
-                    .cursor_default()
-                    .top(pos.y)
-                    .left(pos.x)
-                    .w(content_size.width)
-                    .h(content_size.height)
-                    .bg(theme.neutral.text_1)
-                    .text_color(theme.neutral.card)
-                    .px(padding_h)
-                    .py(padding_v)
-                    .flex()
-                    .flex_col()
-                    .items_start()
-                    .justify_center()
-                    .gap(px(2.0))
-                    .rounded(px(theme.radius.sm))
-                    .shadow_lg()
-                    .text_size(font_size)
-                    .children(lines.iter().cloned().map(|line| {
-                        gpui::div()
-                            .whitespace_nowrap()
-                            .child(line)
-                            .into_any_element()
-                    }))
-                    .with_animation(
-                        ("liora-tooltip-motion", tooltip_index),
-                        Animation::new(Duration::from_millis(220))
-                            .with_easing(gpui::ease_out_quint()),
-                        |tooltip, delta| tooltip.opacity(delta),
-                    )
-                    .into_any_element()
-            },
-            cx,
-        );
-    }
+    tooltip::render_active(window, cx);
 }
 
 #[cfg(test)]
@@ -1132,7 +1050,7 @@ mod theme_mode_tests {
 
     #[test]
     fn fixed_theme_modes_skip_system_appearance_lookup() {
-        use gpui::{TestAppContext, size};
+        use gpui::{TestAppContext, px, size};
 
         let mut app = TestAppContext::single();
         app.update(|cx| init_liora_with_mode(cx, ThemeMode::Light));

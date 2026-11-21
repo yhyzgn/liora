@@ -22,57 +22,67 @@
 use crate::gpui_compat::element_id;
 use crate::motion::{fade_in, pop_in};
 use gpui::{
-    AnyElement, App, Context, Entity, FocusHandle, Focusable, IntoElement, KeyBinding, MouseButton,
-    Render, SharedString, Window, actions, div, prelude::*, px,
+    AnyElement, App, Context, FocusHandle, Focusable, IntoElement, KeyBinding, MouseButton, Render,
+    SharedString, Window, actions, div, prelude::*, px,
 };
 use liora_core::{ActiveModal, Config};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 use std::sync::Arc;
 
-struct DialogEscapeInterceptorInstalled;
-impl gpui::Global for DialogEscapeInterceptorInstalled {}
+struct DialogKeyBindingsInstalled;
+impl gpui::Global for DialogKeyBindingsInstalled {}
 
-fn ensure_dialog_escape_interceptor(cx: &mut App) {
-    if !cx.has_global::<DialogEscapeInterceptorInstalled>() {
-        cx.intercept_keystrokes(|event, window, cx| {
-            if event.keystroke.key == "escape" {
-                close_top_dialog_from_window(window, cx);
-            }
-        })
-        .detach();
-        cx.set_global(DialogEscapeInterceptorInstalled);
+fn ensure_dialog_key_bindings(cx: &mut App) {
+    if !cx.has_global::<DialogKeyBindingsInstalled>() {
+        cx.bind_keys([
+            KeyBinding::new("escape", DialogClose, Some("Dialog")),
+            KeyBinding::new("escape", DialogClose, None),
+        ]);
+        cx.on_action(|_: &DialogClose, cx| close_top_dialog_if_escape_enabled(cx));
+        cx.set_global(DialogKeyBindingsInstalled);
     }
 }
 
-fn active_dialog(cx: &App) -> Option<Entity<DialogView>> {
-    // A modal ID can be reused by another overlay; only the current view owns its policy.
+fn active_modal_for_window(cx: &App, window: gpui::AnyWindowHandle) -> Option<gpui::AnyView> {
     cx.try_global::<ActiveModal>()?
         .0
-        .last()?
-        .view
-        .clone()
-        .downcast::<DialogView>()
-        .ok()
+        .iter()
+        .rev()
+        .find(|entry| {
+            liora_core::active_modal_owner(&entry.id, cx).is_none_or(|owner| owner == window)
+        })
+        .map(|entry| entry.view.clone())
 }
 
 fn close_top_dialog_from_window(window: &mut Window, cx: &mut App) {
-    if let Some(dialog) = active_dialog(cx) {
-        let dialog = dialog.read(cx);
-        if dialog.close_on_escape {
-            let on_close = dialog.on_close.clone();
-            on_close(window, cx);
-        }
-        cx.stop_propagation();
-    }
-}
-
-fn close_top_dialog_if_escape_enabled(cx: &mut App) {
-    let Some(dialog) = active_dialog(cx) else {
+    let Some(modal) = active_modal_for_window(cx, window.window_handle()) else {
         cx.propagate();
         return;
     };
+    let Ok(dialog) = modal.downcast::<DialogView>() else {
+        cx.propagate();
+        return;
+    };
+    let dialog = dialog.read(cx);
+    if dialog.close_on_escape {
+        let on_close = dialog.on_close.clone();
+        on_close(window, cx);
+    }
+    cx.stop_propagation();
+}
+
+fn close_top_dialog_if_escape_enabled(cx: &mut App) {
     let Some(window) = cx.active_window() else {
+        cx.propagate();
+        return;
+    };
+    let Some(modal) = active_modal_for_window(cx, window) else {
+        cx.propagate();
+        return;
+    };
+    let Ok(dialog) = modal.downcast::<DialogView>() else {
+        cx.propagate();
         return;
     };
     let dialog = dialog.read(cx);
@@ -82,6 +92,7 @@ fn close_top_dialog_if_escape_enabled(cx: &mut App) {
             let _ = window.update(cx, |_, window, cx| on_close(window, cx));
         });
     }
+    cx.stop_propagation();
 }
 
 actions!(
@@ -156,12 +167,9 @@ impl Render for DialogView {
         let id = self.id.clone();
         let title = self.title.clone();
         let content_fn = self.content.clone();
-        let on_close = self.on_close.clone();
-        let on_close_for_close_button = on_close.clone();
-        let on_close_for_outside_click = on_close.clone();
-        let on_close_for_escape = on_close;
+        let on_close_for_close_button = self.on_close.clone();
+        let on_close_for_outside_click = self.on_close.clone();
         let close_on_click_outside = self.close_on_click_outside;
-        let close_on_escape = self.close_on_escape;
         let animated = self.animated;
         let focus_handle = self.focus_handle(cx);
         if !self.focus_requested && animated {
@@ -261,6 +269,7 @@ impl Render for DialogView {
         let overlay = div()
             .id(id.clone())
             .track_focus(&focus_handle)
+            .key_context("Dialog")
             .absolute()
             .size_full()
             .cursor_default()
@@ -277,13 +286,8 @@ impl Render for DialogView {
                     on_close_for_outside_click(window, cx);
                 }
             })
-            .when(close_on_escape, |s| {
-                s.on_action(cx.listener({
-                    let on_close = on_close_for_escape.clone();
-                    move |_, _action: &DialogClose, window, cx| {
-                        on_close(window, cx);
-                    }
-                }))
+            .on_action(|_: &DialogClose, window, cx| {
+                close_top_dialog_from_window(window, cx);
             });
 
         if animated {
@@ -360,27 +364,6 @@ mod motion_tests {
         assert!(impl_source.contains("pub fn on_close("));
         assert!(impl_source.contains("user_on_close(window, cx);"));
     }
-
-    #[test]
-    fn dialog_supports_focus_and_global_escape_dismissal() {
-        let full_source = include_str!("dialog.rs");
-        let source = full_source.split("#[cfg(test)]").next().unwrap();
-
-        assert!(source.contains("impl Focusable for DialogView"));
-        assert!(source.contains("focus_handle: FocusHandle"));
-        assert!(source.contains(".track_focus(&focus_handle)"));
-        assert!(source.contains("!self.focus_requested && animated"));
-        assert!(source.contains("window.defer(cx, move |window, cx|"));
-        assert!(source.contains("window.focus(&focus_handle, cx)"));
-        assert!(source.contains("s.on_action(cx.listener({"));
-        assert!(source.contains("struct DialogEscapeInterceptorInstalled"));
-        assert!(source.contains("cx.intercept_keystrokes"));
-        assert!(source.contains(".detach();"));
-        assert!(full_source.contains("cx.on_action(|_: &DialogClose, cx|"));
-        assert!(source.contains("close_top_dialog_from_window"));
-        assert!(source.contains("close_top_dialog_if_escape_enabled"));
-        assert!(full_source.contains("cx.refresh_windows();"));
-    }
 }
 
 #[cfg(test)]
@@ -388,23 +371,55 @@ mod runtime_tests {
     use super::*;
     use gpui::{Context, Render, px};
 
+    fn active_empty_window(app: &mut gpui::TestAppContext) -> &mut gpui::VisualTestContext {
+        // No portal here: exercise the global fallback, which uses App::active_window().
+        let window = app.add_empty_window();
+        window.update(|window, _| window.activate_window());
+        window.run_until_parked();
+        assert!(window.update(|window, cx| cx.active_window() == Some(window.window_handle())));
+        window
+    }
+
+    fn escape_propagates(window: &mut gpui::VisualTestContext) -> bool {
+        window.update(|window, cx| {
+            let keystroke =
+                gpui::Keystroke::parse_with_os("escape", cx.platform_info().os).unwrap();
+            let down = window.dispatch_event(
+                gpui::PlatformInput::KeyDown(gpui::KeyDownEvent {
+                    keystroke: keystroke.clone(),
+                    is_held: false,
+                    prefer_character_input: false,
+                }),
+                cx,
+            );
+            window.dispatch_event(
+                gpui::PlatformInput::KeyUp(gpui::KeyUpEvent { keystroke }),
+                cx,
+            );
+            down.propagate
+        })
+    }
+
     #[test]
     fn escape_respects_the_top_dialog_close_policy() {
         let mut app = gpui::TestAppContext::single();
-        let window = app.add_empty_window();
+        let window = active_empty_window(&mut app);
         window.update(|_, cx| {
             liora_core::init_liora(cx, liora_theme::Theme::light());
             Dialog::new().id("underlying").show(cx);
             Dialog::new().id("top").close_on_escape(false).show(cx);
         });
 
-        window.simulate_keystrokes("escape");
+        assert!(
+            !escape_propagates(window),
+            "a disabled top dialog still owns Escape"
+        );
         window.update(|_, cx| {
             assert_eq!(cx.global::<ActiveModal>().0.len(), 2);
             Dialog::close_id("top", cx);
         });
 
-        window.simulate_keystrokes("escape");
+        assert!(!escape_propagates(window));
         window.update(|_, cx| assert!(cx.global::<ActiveModal>().0.is_empty()));
         app.quit();
     }
@@ -412,7 +427,7 @@ mod runtime_tests {
     #[test]
     fn escape_does_not_close_a_replacement_modal_with_the_same_id() {
         let mut app = gpui::TestAppContext::single();
-        let window = app.add_empty_window();
+        let window = active_empty_window(&mut app);
         let close_count = std::rc::Rc::new(std::cell::Cell::new(0));
         let replacement_id = window.update(|_, cx| {
             liora_core::init_liora(cx, liora_theme::Theme::light());
@@ -430,7 +445,7 @@ mod runtime_tests {
             entity_id
         });
 
-        window.simulate_keystrokes("escape");
+        assert!(escape_propagates(window), "the replacement is not a Dialog");
 
         assert_eq!(close_count.get(), 0, "dismissed the replaced dialog");
         window.update(|_, cx| {
@@ -441,15 +456,49 @@ mod runtime_tests {
     }
 
     #[test]
-    fn dialog_escape_interceptor_is_process_once_not_runtime_state() {
-        let source = include_str!("dialog.rs")
-            .split("#[cfg(test)]")
-            .next()
-            .unwrap();
-        assert!(source.contains("struct DialogEscapeInterceptorInstalled"));
-        assert!(source.contains("!cx.has_global::<DialogEscapeInterceptorInstalled>()"));
-        assert!(source.contains("cx.set_global(DialogEscapeInterceptorInstalled)"));
-        assert!(source.contains(".detach();"));
+    fn dialog_escape_bindings_install_once_and_show_needs_only_core_init() {
+        let mut app = gpui::TestAppContext::single();
+        let window = active_empty_window(&mut app);
+        let calls = std::rc::Rc::new(std::cell::Cell::new(0));
+        window.update(|_, cx| {
+            liora_core::init_liora(cx, liora_theme::Theme::light());
+            let calls = calls.clone();
+            Dialog::new()
+                .on_close(move |_, _| calls.set(calls.get() + 1))
+                .show(cx);
+        });
+        assert!(!escape_propagates(window));
+        assert_eq!(
+            calls.get(),
+            1,
+            "show must install Escape without components::init"
+        );
+        window.update(|_, cx| {
+            let calls = calls.clone();
+            Dialog::new()
+                .on_close(move |_, _| calls.set(calls.get() + 1))
+                .show(cx);
+            Dialog::register_key_bindings(cx);
+            Dialog::register_key_bindings(cx);
+            assert_eq!(
+                cx.key_bindings()
+                    .borrow()
+                    .bindings_for_action(&DialogClose)
+                    .count(),
+                2,
+                "register only the scoped and fallback bindings, once each"
+            );
+        });
+        assert!(!escape_propagates(window));
+        assert_eq!(calls.get(), 2);
+        window.update(|_, cx| assert!(cx.global::<ActiveModal>().0.is_empty()));
+        assert!(escape_propagates(window), "no Dialog remains to own Escape");
+        assert_eq!(
+            calls.get(),
+            2,
+            "no stale callback after the second dialog closes"
+        );
+        app.quit();
     }
 
     struct ModalSurface;
@@ -690,16 +739,141 @@ mod runtime_tests {
             app.quit();
         }
     }
+    #[test]
+    fn modal_escape_and_rendering_follow_their_window_owner() {
+        use std::{cell::Cell, rc::Rc};
+
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let owner_handle = app.open_window(gpui::size(px(640.0), px(480.0)), |_, _| ModalSurface);
+        let other_handle = app.open_window(gpui::size(px(640.0), px(480.0)), |_, _| ModalSurface);
+        let mut owner = gpui::VisualTestContext::from_window(owner_handle.into(), &app);
+        let mut other = gpui::VisualTestContext::from_window(other_handle.into(), &app);
+        let owner_closes = Rc::new(Cell::new(0));
+        let other_closes = Rc::new(Cell::new(0));
+
+        owner.update(|window, cx| {
+            Dialog::new()
+                .id("owner-dialog")
+                .animated(false)
+                .content(|_, _| {
+                    gpui::div()
+                        .debug_selector(|| "owner-dialog-content".to_string())
+                        .child("A")
+                })
+                .on_close({
+                    let closes = owner_closes.clone();
+                    move |_, _| closes.set(closes.get() + 1)
+                })
+                .show_in_window(window, cx);
+            window.draw(cx).clear(cx);
+        });
+        other.update(|window, cx| {
+            Dialog::new()
+                .id("other-dialog")
+                .animated(false)
+                .content(|_, _| {
+                    gpui::div()
+                        .debug_selector(|| "other-dialog-content".to_string())
+                        .child("B")
+                })
+                .on_close({
+                    let closes = other_closes.clone();
+                    move |_, _| closes.set(closes.get() + 1)
+                })
+                .show_in_window(window, cx);
+            window.draw(cx).clear(cx);
+        });
+
+        assert!(owner.debug_bounds("owner-dialog-content").is_some());
+        assert_eq!(owner.debug_bounds("other-dialog-content"), None);
+        assert!(other.debug_bounds("other-dialog-content").is_some());
+        assert_eq!(
+            other.debug_bounds("owner-dialog-content"),
+            None,
+            "the other window must not render the owner's modal"
+        );
+
+        owner.update(|window, _| window.activate_window());
+        assert!(
+            !escape_propagates(&mut owner),
+            "Escape must close A's modal rather than ignore B's top entry"
+        );
+        assert_eq!(owner_closes.get(), 1);
+        assert_eq!(other_closes.get(), 0);
+
+        owner.update(|window, cx| {
+            Dialog::new()
+                .id("owner-disabled-dialog")
+                .animated(false)
+                .close_on_escape(false)
+                .show_in_window(window, cx);
+            window.draw(cx).clear(cx);
+            window.activate_window();
+        });
+        assert!(
+            !escape_propagates(&mut owner),
+            "a disabled top Dialog must own Escape"
+        );
+        assert_eq!(owner_closes.get(), 1);
+        assert_eq!(other_closes.get(), 0);
+
+        owner.update(|window, cx| {
+            let blocker = cx.new(|_| gpui::Empty);
+            liora_core::set_active_modal_in_window(
+                "owner-non-dialog".into(),
+                blocker.into(),
+                Some(window.window_handle()),
+                cx,
+            );
+            window.draw(cx).clear(cx);
+            window.activate_window();
+        });
+        assert!(
+            escape_propagates(&mut owner),
+            "a non-Dialog top modal keeps its own Escape policy"
+        );
+        owner.update(|_, cx| {
+            let ids: Vec<_> = cx
+                .global::<ActiveModal>()
+                .0
+                .iter()
+                .map(|entry| entry.id.as_ref())
+                .collect();
+            assert!(ids.contains(&"owner-disabled-dialog"));
+            assert!(ids.contains(&"owner-non-dialog"));
+            assert!(ids.contains(&"other-dialog"));
+        });
+
+        other.update(|window, _| window.activate_window());
+        assert!(
+            !escape_propagates(&mut other),
+            "owner A's non-Dialog must not block owner B"
+        );
+        assert_eq!(other_closes.get(), 1);
+        assert_eq!(owner_closes.get(), 1);
+
+        owner.update(|window, _| window.remove_window());
+        other.update(|window, cx| {
+            window.activate_window();
+            window.draw(cx).clear(cx);
+            assert!(
+                cx.global::<ActiveModal>().0.is_empty(),
+                "closing owner A must clear its modal and window-scoped Escape blocker"
+            );
+        });
+        assert!(
+            escape_propagates(&mut other),
+            "closed owners must not leave stale modal bindings"
+        );
+        app.quit();
+    }
 }
 
 impl Dialog {
     /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(cx: &mut App) {
-        ensure_dialog_escape_interceptor(cx);
-        cx.bind_keys([KeyBinding::new("escape", DialogClose, None)]);
-        cx.on_action(|_: &DialogClose, cx| {
-            close_top_dialog_if_escape_enabled(cx);
-        });
+        ensure_dialog_key_bindings(cx);
     }
 
     /// Creates `Dialog` with default theme-driven styling and no optional callbacks attached.
@@ -777,6 +951,10 @@ impl Dialog {
     }
 
     fn show_with_window(self, focus_window: Option<&mut Window>, cx: &mut App) {
+        let owner_window = focus_window
+            .as_ref()
+            .map(|window| window.window_handle())
+            .or_else(|| cx.active_window());
         let focus_requested = focus_window.is_some() || !self.animated;
         let id = self.id;
         let title = self.title;
@@ -817,8 +995,8 @@ impl Dialog {
         });
         let view_for_focus = view.clone();
 
-        ensure_dialog_escape_interceptor(cx);
-        liora_core::set_active_modal(id, view.into(), cx);
+        ensure_dialog_key_bindings(cx);
+        liora_core::set_active_modal_in_window(id, view.into(), owner_window, cx);
         if let Some(window) = focus_window {
             let focus_handle = view_for_focus.read(cx).focus_handle(cx);
             window.focus(&focus_handle, cx);
@@ -829,7 +1007,12 @@ impl Dialog {
 
     /// Closes only the topmost active modal without invoking its built-in `on_close` callback.
     pub fn close(cx: &mut App) {
-        cx.global_mut::<ActiveModal>().0.pop();
+        if let Some(id) = cx
+            .try_global::<ActiveModal>()
+            .and_then(|modal| modal.0.last().map(|entry| entry.id.clone()))
+        {
+            liora_core::clear_modal(&id, cx);
+        }
         cx.refresh_windows();
     }
 

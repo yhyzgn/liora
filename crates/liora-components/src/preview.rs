@@ -245,10 +245,15 @@ pub fn render_image_preview(window: &mut Window, cx: &mut App) {
 }
 
 fn close_active_preview_if_escape_enabled(cx: &mut App) {
-    let close_on_escape = cx
+    let Some(preview) = cx
         .try_global::<ActiveImagePreview>()
-        .is_some_and(|preview| preview.close_on_escape);
-    if close_on_escape {
+        .filter(|preview| preview.image.is_some())
+    else {
+        // An absent Preview must not hide lower-priority Escape bindings or raw key events.
+        cx.propagate();
+        return;
+    };
+    if preview.close_on_escape {
         close_active_preview(cx);
     }
 }
@@ -390,6 +395,43 @@ mod tests {
 
     fn test_render_image(width: u32, height: u32) -> RenderImage {
         RenderImage::new([::image::Frame::new(::image::RgbaImage::new(width, height))])
+    }
+
+    #[test]
+    fn empty_preview_propagates_escape_but_visible_preview_owns_its_policy() {
+        for visible in [false, true] {
+            for close_on_escape in [false, true] {
+                let mut app = gpui::TestAppContext::single();
+                let window = app.add_empty_window();
+                window.update(|window, cx| {
+                    Preview::register_key_bindings(cx);
+                    cx.set_global(ActiveImagePreview {
+                        image: visible.then(|| Arc::new(test_render_image(1, 1))),
+                        closing: false,
+                        close_on_click_outside: true,
+                        close_on_escape,
+                    });
+                    let result = window.dispatch_event(
+                        gpui::PlatformInput::KeyDown(gpui::KeyDownEvent {
+                            keystroke: gpui::Keystroke::parse_with_os(
+                                "escape",
+                                cx.platform_info().os,
+                            )
+                            .unwrap(),
+                            is_held: false,
+                            prefer_character_input: false,
+                        }),
+                        cx,
+                    );
+                    assert_eq!(result.propagate, !visible);
+                    assert_eq!(
+                        cx.global::<ActiveImagePreview>().closing,
+                        visible && close_on_escape
+                    );
+                });
+                app.quit();
+            }
+        }
     }
 
     #[test]

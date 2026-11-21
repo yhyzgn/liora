@@ -14,19 +14,21 @@ impl Render for TooltipDemo {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         page(
             "Tooltip 基础用法",
-            "鼠标悬停在按钮上显示提示信息。",
+            "悬停或 Tab 聚焦原按钮显示；Escape 关闭且保留焦点，离开后重新进入才再次显示。",
             Space::new()
                 .vertical()
                 .gap_lg()
                 .child(section(
                     "基础方位",
-                    "支持上下左右四个基础方向。",
-                    row(vec![
-                        tip("Top Top Top Top Top Top", "Prompt info", Placement::Top),
-                        tip("Bottom", "Prompt info", Placement::Bottom),
-                        tip("Left", "Prompt info", Placement::Left),
-                        tip("Right", "Prompt info", Placement::Right),
-                    ]),
+                    "在 Focus or hover 上按 Escape，再按 Tab / Shift+Tab 离开并返回；也可跨过间距移入提示。",
+                    Space::new().vertical().gap_md()
+                        .child(row(vec![
+                            tip("Focus or hover", "Keyboard and hover help", Placement::Top),
+                            tip("Bottom", "Prompt info", Placement::Bottom),
+                            tip("Left", "Prompt info", Placement::Left),
+                            tip("Right", "Prompt info", Placement::Right),
+                        ]))
+                        .child(Button::new("After tooltip")),
                 ))
                 .child(section(
                     "更多方位",

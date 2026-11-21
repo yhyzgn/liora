@@ -1571,14 +1571,18 @@ Gallery 与 Docs 目前只将平台菜单的 **放大 / 缩小 / 重置缩放** 
 ```rust
 use liora::core::{
     render_active_drawer_in_window, render_active_modal_in_window, render_active_popover_in_window,
+    render_active_tooltip_in_window,
 };
 
 fn render_overlays(window: &mut gpui::Window, cx: &mut gpui::App) {
     render_active_popover_in_window(window, cx);
     render_active_modal_in_window(window, cx);
     render_active_drawer_in_window(window, cx);
+    render_active_tooltip_in_window(window, cx);
 }
 ```
+
+`Tooltip` 在原控件悬停或内部聚焦时显示，不增加 Tab 停靠点，不改变 Button/Input 操作。Escape 仅关闭所属窗口内可见的帮助提示并保留焦点；焦点与指针都离开后才重新武装。指针可跨过定位间距移入提示，保留原有即时显示和 GPUI reduced-motion 淡入。自定义根层须调用 `render_active_tooltip_in_window` 并承载 `PortalLayer`。提示跟随已渲染的锚点边界，并在触发器卸载后退休。原生 Tooltip 角色/名称不代表存在上游未提供的触发器到提示的辅助关系。
 
 使用 Liora `Button` 触发器时，Tab 聚焦后按 Enter/Space 打开 `Popover`；ESC 可从触发按钮或弹层内的交互控件关闭，除非设置了 `.close_on_escape(false)`。关闭（包括 `clear_popover`）时，如果焦点仍在弹层内，会返回原 focus handle；焦点已移到其他控件时不会抢回。包装层不增加额外 Tab 停靠点，也不赋予可编辑触发器按钮键盘语义。手动关闭时请指定稳定 `.id(...)`。
 
