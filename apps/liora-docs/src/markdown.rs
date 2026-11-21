@@ -11214,6 +11214,11 @@ impl Render for DocsShell {
                                     .child(Text::new(locales::docs::subtitle)),
                             ),
                     )
+                    // GPUI's Linux backend stores system menus but cannot activate them.
+                    .when(
+                        cfg!(any(target_os = "linux", target_os = "freebsd")),
+                        |header| header.child(crate::docs_help_fallback(cx)),
+                    )
                     .child(
                         Space::new()
                             .gap_sm()

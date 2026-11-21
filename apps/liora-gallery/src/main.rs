@@ -219,7 +219,12 @@ fn run_gallery() {
         });
 }
 
-gpui::actions!(menu_zoom, [MenuZoomIn, MenuZoomOut, MenuZoomReset]);
+const GITHUB_REPOSITORY_URL: &str = "https://github.com/yhyzgn/liora";
+
+gpui::actions!(
+    menu_zoom,
+    [MenuZoomIn, MenuZoomOut, MenuZoomReset, MenuOpenGithub]
+);
 
 struct MenuZoomHandlers;
 impl Global for MenuZoomHandlers {}
@@ -246,6 +251,7 @@ fn register_gallery_system_menus(cx: &mut App) {
         cx.on_action(|_: &MenuZoomReset, cx| {
             perform_menu_zoom(liora_components::MenuAction::ZoomReset, cx)
         });
+        cx.on_action(|_: &MenuOpenGithub, cx| cx.open_url(GITHUB_REPOSITORY_URL));
         cx.set_global(MenuZoomHandlers);
     }
     Menu::register_with_action_mapper(
@@ -287,7 +293,7 @@ fn register_gallery_system_menus(cx: &mut App) {
             Menu::new(locales::menu::help)
                 .item(MenuItem::open_url(
                     tr(cx, locales::menu::github),
-                    "https://github.com/yhyzgn/liora",
+                    GITHUB_REPOSITORY_URL,
                 ))
                 .item(MenuItem::new(
                     "about-gallery",
@@ -298,6 +304,11 @@ fn register_gallery_system_menus(cx: &mut App) {
             Some(liora_components::MenuAction::ZoomIn) => Box::new(MenuZoomIn),
             Some(liora_components::MenuAction::ZoomOut) => Box::new(MenuZoomOut),
             Some(liora_components::MenuAction::ZoomReset) => Box::new(MenuZoomReset),
+            Some(liora_components::MenuAction::OpenUrl(url))
+                if url.as_ref() == GITHUB_REPOSITORY_URL =>
+            {
+                Box::new(MenuOpenGithub)
+            }
             _ => Box::new(gpui::NoAction),
         },
     );
@@ -1944,7 +1955,7 @@ fn gallery_fallback_menu_bar(cx: &impl liora_core::LocalesContext) -> MenuBar {
             .perform_builtin_actions(false)
             .item(MenuItem::open_url(
                 tr(cx, locales::menu::github),
-                "https://github.com/yhyzgn/liora",
+                GITHUB_REPOSITORY_URL,
             ))
             .item(MenuItem::new(
                 "about-gallery",
@@ -1958,7 +1969,8 @@ fn gallery_fallback_menu_bar(cx: &impl liora_core::LocalesContext) -> MenuBar {
             liora_components::MenuAction::ZoomIn
                 | liora_components::MenuAction::ZoomOut
                 | liora_components::MenuAction::ZoomReset
-        ) {
+        ) || matches!(&action, liora_components::MenuAction::OpenUrl(url) if url.as_ref() == GITHUB_REPOSITORY_URL)
+        {
             action.perform(window, cx);
         }
     })
@@ -2060,6 +2072,113 @@ fn gallery_nav_menu_items(
 
 #[cfg(test)]
 mod shell_regression_tests {
+
+    #[test]
+    fn help_github_registered_action_opens_canonical_url() -> Result<(), Box<dyn std::error::Error>>
+    {
+        use gpui::{OwnedMenuItem, TestAppContext};
+
+        let app = TestAppContext::single();
+        app.update(|cx| super::init_liora_with_options(cx, super::gallery_liora_options()));
+        for (locale, label) in [
+            ("en-US", "Liora on GitHub"),
+            ("zh-CN", "在 GitHub 查看 Liora"),
+        ] {
+            app.update(|cx| -> Result<(), Box<dyn std::error::Error>> {
+                liora_core::set_locale(cx, locale)?;
+                super::register_gallery_system_menus(cx);
+                super::register_gallery_system_menus(cx);
+                Ok(())
+            })?;
+            let action = app
+                .read(|cx| {
+                    cx.get_menus()
+                        .into_iter()
+                        .flatten()
+                        .flat_map(|menu| menu.items)
+                        .find_map(|item| match item {
+                            OwnedMenuItem::Action { name, action, .. } if name == label => {
+                                Some(action)
+                            }
+                            _ => None,
+                        })
+                })
+                .ok_or_else(|| std::io::Error::other("missing registered GitHub Help action"))?;
+            assert!(!action.as_any().is::<gpui::NoAction>());
+            app.update(|cx| cx.dispatch_action(action.as_ref()));
+            assert_eq!(
+                app.opened_url().as_deref(),
+                Some("https://github.com/yhyzgn/liora")
+            );
+        }
+        app.quit();
+        Ok(())
+    }
+
+    #[test]
+    fn help_github_fallback_closes_and_reopens() -> Result<(), Box<dyn std::error::Error>> {
+        use gpui::{
+            Context, IntoElement, Render, TestAppContext, VisualTestContext, Window, div, point,
+            prelude::*, px,
+        };
+
+        struct HelpWindow;
+        impl Render for HelpWindow {
+            fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+                liora_core::render_active_popover_in_window(window, cx);
+                div()
+                    .size_full()
+                    .flex()
+                    .flex_col()
+                    .items_start()
+                    .child(
+                        div()
+                            .flex()
+                            .debug_selector(|| "help-bar".into())
+                            .child(super::gallery_fallback_menu_bar(cx)),
+                    )
+                    .child(liora_components::PortalLayer)
+            }
+        }
+
+        let mut app = TestAppContext::single();
+        app.update(|cx| -> Result<(), Box<dyn std::error::Error>> {
+            super::init_liora_with_options(cx, super::gallery_liora_options());
+            liora_core::set_locale(cx, "en-US")?;
+            super::register_gallery_system_menus(cx);
+            Ok(())
+        })?;
+        let handle = app.add_window(|_, _| HelpWindow);
+        let mut window = VisualTestContext::from_window(handle.into(), &mut app);
+        window.update(|window, cx| {
+            window.activate_window();
+            window.draw(cx).clear(cx);
+        });
+        let bar = window
+            .debug_bounds("help-bar")
+            .ok_or_else(|| std::io::Error::other("missing Help bar bounds"))?;
+        let trigger = point(bar.left() + bar.size.width * 0.875, bar.center().y);
+        assert!(window.opened_url().is_none());
+        for _ in 0..2 {
+            window.simulate_click(trigger, gpui::Modifiers::none());
+            window.update(|window, cx| {
+                assert_eq!(cx.global::<liora_core::ActivePopover>().0.len(), 1);
+                window.draw(cx).clear(cx);
+            });
+            window.simulate_click(
+                point(trigger.x + px(20.0), bar.bottom() + px(24.0)),
+                gpui::Modifiers::none(),
+            );
+            window.run_until_parked();
+            assert_eq!(
+                window.opened_url().as_deref(),
+                Some("https://github.com/yhyzgn/liora")
+            );
+            window.update(|_, cx| assert!(cx.global::<liora_core::ActivePopover>().0.is_empty()));
+        }
+        app.quit();
+        Ok(())
+    }
 
     #[gpui::test]
     fn fallback_menu_zoom_preserves_navigation_and_input(cx: &mut gpui::TestAppContext) {
