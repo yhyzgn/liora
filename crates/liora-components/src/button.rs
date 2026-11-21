@@ -1520,6 +1520,23 @@ mod tests {
             }
         }
     }
+    #[test]
+    fn gradient_button_uses_inverted_foreground_in_enabled_and_disabled_states() {
+        let theme = Theme::light();
+        let enabled = Button::new("gradient").gradient(gpui::blue(), gpui::green());
+        let colors = enabled.resolved_colors(&theme);
+        assert_eq!(colors.text, theme.neutral.inverted);
+        assert_eq!(colors.text_hover, theme.neutral.inverted);
+        assert!(enabled.active_text_color(&colors).is_none());
+
+        let disabled = Button::new("gradient")
+            .gradient(gpui::blue(), gpui::green())
+            .disabled(true);
+        let colors = disabled.resolved_colors(&theme);
+        assert_eq!(colors.text, theme.neutral.inverted.opacity(0.58));
+        assert_eq!(colors.text_hover, colors.text);
+        assert!(disabled.active_text_color(&colors).is_none());
+    }
 
     #[test]
     fn gradient_builder_derives_state_gradients() {

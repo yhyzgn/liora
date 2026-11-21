@@ -833,19 +833,6 @@ mod visual_theme_consistency_tests {
     }
 
     #[test]
-    fn gradient_buttons_use_theme_inverted_text_token() {
-        let production = include_str!("button.rs")
-            .split("#[cfg(test)]")
-            .next()
-            .unwrap_or_default();
-
-        assert!(
-            production.contains("let text = theme.neutral.inverted"),
-            "gradient button text should use the semantic inverted text token"
-        );
-    }
-
-    #[test]
     fn solid_primary_surfaces_do_not_use_neutral_surface_tokens_as_foreground() {
         for (name, source) in [
             ("date_time_picker", include_str!("date_time_picker.rs")),
