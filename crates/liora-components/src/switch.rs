@@ -110,6 +110,12 @@ impl Switch {
         self.checked
     }
 
+    /// Synchronizes checked state without invoking the change callback.
+    pub fn set_checked(&mut self, checked: bool, cx: &mut Context<Self>) {
+        self.checked = checked;
+        cx.notify();
+    }
+
     /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([

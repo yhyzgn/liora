@@ -140,6 +140,9 @@ impl Render for TitleBarDemo {
                 ))
                 .child(Text::new(
                     "说明：如果只想在 Gallery 中演示布局，可关闭 window_controls；如果要验证最小化/最大化/关闭图标和点击区域，请使用上方 Real window controls 示例。",
+                ))
+                .child(Text::new(
+                    "Gallery/Docs 顶部 Frame 开关保留当前页面、搜索和 demo 状态及窗口位置、大小、缩放。Windows/macOS 先成功创建替代窗口再关闭原窗口；Linux/FreeBSD 实时切换装饰。",
                 )),
         )
     }

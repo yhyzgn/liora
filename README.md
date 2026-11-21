@@ -425,6 +425,8 @@ On Windows release builds, use the same subsystem setting as Zed so launching th
 
 `WindowFrameMode::Custom` follows Zed's GPUI compatibility model: Windows/macOS hide the native titlebar through `TitlebarOptions::appears_transparent` when the window is created; macOS additionally uses `app_owns_titlebar_drag` while keeping native window movability/tiling enabled; Linux/FreeBSD use `WindowDecorations::Client`. That means Windows/macOS frame-mode changes need a window reopen, while Linux can request decorations live through `request_window_frame_mode`.
 
+Gallery and Docs retain the same root/child entities, navigation, search and editable demo state when changing frames. Replacement windows reuse current `Window::window_bounds()` (including restore geometry/maximized/fullscreen state), display and rem-size zoom rather than startup defaults. Create the replacement successfully before removing the original; on failure keep the original window and restore the frame selection. The supported modes are System and Custom, not a separate Hybrid mode. `Switch::set_checked` synchronizes retained toggle state without invoking its change callback.
+
 ```rust
 use gpui::{App, AppContext, Context, Render, Window, WindowOptions, px, size};
 use liora::components::{Title, apply_window_frame_mode, WindowFrameMode};

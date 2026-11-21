@@ -10,7 +10,7 @@ use liora_components::{
     SegmentedOption,
     Sidebar, Space, Spinner, Switch, Tag, Text, Title, TitleBar, WindowFrameMode,
     apply_window_frame_mode, frame_mode_switch_row, init_liora_with_options,
-    request_window_frame_mode, toast_info, toast_success,
+    toast_info, toast_success,
 };
 use liora_core::{
     Config, FontConfig, FontLoadMode, FontLoadOptions, LinuxDesktopIdentity, LinuxDesktopPngIcon,
@@ -35,6 +35,9 @@ pub mod locales {
 mod embedded_icon_bundle {
     include!(concat!(env!("OUT_DIR"), "/embedded_icon_bundle.rs"));
 }
+
+mod window_frame;
+use window_frame::set_gallery_frame_mode;
 
 use std::{
     borrow::Cow,
@@ -384,7 +387,7 @@ fn app_locales_dir() -> std::path::PathBuf {
 
 fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
     let frame_mode = gallery_frame_mode(cx);
-    match cx.open_window(gallery_window_options(cx, frame_mode), |window, cx| {
+    match cx.open_window(gallery_window_options(cx, frame_mode, None), |window, cx| {
         attach_system_theme_observer(window, cx);
 
         let entries = demos::registry();
@@ -436,23 +439,24 @@ fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
     }
 }
 
-fn gallery_window_options(cx: &App, frame_mode: WindowFrameMode) -> WindowOptions {
+fn gallery_window_options(cx: &App, frame_mode: WindowFrameMode, current: Option<&Window>) -> WindowOptions {
     apply_window_frame_mode(
         WindowOptions {
             show: false,
-            window_bounds: Some(if cx.is_test() {
+            window_bounds: Some(current.map(Window::window_bounds).unwrap_or_else(|| if cx.is_test() {
                 gpui::WindowBounds::Windowed(gpui::Bounds::new(
                     gpui::point(px(0.), px(0.)),
                     size(px(1920.), px(1080.)),
                 ))
             } else {
                 startup_maximized_window_bounds(cx, size(px(1920.), px(1080.)))
-            }),
+            })),
             titlebar: Some(gpui::TitlebarOptions {
                 title: Some(tr(cx, locales::gallery::window_title)),
                 ..Default::default()
             }),
             app_id: Some("liora-gallery".into()),
+            display_id: current.and_then(|window| window.display(cx).map(|display| display.id())),
             ..Default::default()
         },
         frame_mode,
@@ -599,53 +603,6 @@ fn gallery_frame_mode(cx: &App) -> WindowFrameMode {
         .unwrap_or_default()
 }
 
-fn set_gallery_frame_mode(mode: WindowFrameMode, window: &mut Window, cx: &mut App) {
-    if cx.has_global::<GalleryTrayState>() {
-        let state = cx.global_mut::<GalleryTrayState>();
-        if state.frame_mode == mode {
-            return;
-        }
-        state.frame_mode = mode;
-        state.window_visible = true;
-    }
-
-    match request_window_frame_mode(window, mode) {
-        liora_components::WindowFrameChange::AppliedLive => {
-            toast_info!(
-                "{}",
-                locale_template(cx, locales::window_frame::gallery_switched).replace(
-                    "{mode}",
-                    &if mode.is_custom() {
-                        tr(cx, locales::window_frame::custom).to_string()
-                    } else {
-                        tr(cx, locales::window_frame::system).to_string()
-                    },
-                )
-            );
-        }
-        liora_components::WindowFrameChange::RequiresWindowReopen => {
-            toast_info!(
-                "{}",
-                locale_template(cx, locales::window_frame::gallery_reopen).replace(
-                    "{mode}",
-                    &if mode.is_custom() {
-                        tr(cx, locales::window_frame::custom_frame).to_string()
-                    } else {
-                        tr(cx, locales::window_frame::system_frame).to_string()
-                    },
-                )
-            );
-            window.defer(cx, |window, cx| {
-                window.remove_window();
-                if let Some(handle) = open_gallery_window(cx)
-                    && cx.has_global::<GalleryTrayState>()
-                {
-                    cx.global_mut::<GalleryTrayState>().window = Some(handle);
-                }
-            });
-        }
-    }
-}
 
 fn request_gallery_window_close(window: &mut Window, cx: &mut App) {
     if !cx.has_global::<GalleryTrayState>() || !cx.has_global::<TrayControlCenter>() {
@@ -1274,6 +1231,14 @@ impl Render for Gallery {
 }
 
 impl Gallery {
+    fn set_frame_mode(&mut self, mode: WindowFrameMode, cx: &mut Context<Self>) -> WindowFrameMode {
+        let previous = self.frame_mode;
+        self.frame_mode = mode;
+        self.frame_mode_switch.update(cx, |switch, cx| switch.set_checked(mode.is_custom(), cx));
+        cx.notify();
+        previous
+    }
+
     fn render_status_bar(
         &self,
         selected_label: String,
@@ -1670,15 +1635,10 @@ impl Gallery {
             });
         });
 
-        let gallery = cx.entity().clone();
         cx.update_entity(&self.frame_mode_switch, |switch, _cx| {
             switch.set_on_change(move |enabled, window, cx| {
                 let mode = WindowFrameMode::from_custom(enabled);
                 set_gallery_frame_mode(mode, window, cx);
-                let _ = gallery.update(cx, |gallery, cx| {
-                    gallery.frame_mode = mode;
-                    cx.notify();
-                });
             });
         });
     }
@@ -2716,25 +2676,70 @@ mod shell_regression_tests {
         assert!(hide_arm.contains("hide_gallery_window_in_place(window, cx)"));
     }
 
-    #[test]
-    fn gallery_frame_mode_switch_reopens_when_gpui_requires_creation_time_titlebar_options() {
-        let source = include_str!("main.rs")
-            .split("mod shell_regression_tests")
-            .next()
-            .unwrap();
-        let handler = source
-            .split("fn set_gallery_frame_mode")
-            .nth(1)
-            .expect("Gallery frame mode handler should exist")
-            .split("fn request_gallery_window_close")
-            .next()
-            .expect("Gallery frame mode handler should end before close handler");
+    #[gpui::test]
+    fn frame_mode_switch_preserves_root_input_navigation_and_geometry(cx: &mut gpui::TestAppContext) {
+        use gpui::{Bounds, WindowBounds, WindowOptions, point, px, size};
 
-        assert!(handler.contains("request_window_frame_mode"));
-        assert!(handler.contains("WindowFrameChange::RequiresWindowReopen"));
-        assert!(handler.contains("window.defer(cx"));
-        assert!(handler.contains("window.remove_window()"));
-        assert!(handler.contains("open_gallery_window(cx)"));
+        cx.update(|cx| super::init_liora_with_options(cx, super::gallery_liora_options()));
+        let startup = cx.update(|cx| super::open_gallery_window(cx).unwrap());
+        let root = startup.update(cx, |root, _, _| root.downcast::<super::Gallery>().unwrap()).unwrap();
+        let (child, demo_input) = root.update(cx, |gallery, cx| {
+            let selected = gallery.entries.iter().position(|entry| entry.name == "Input 输入框").unwrap();
+            gallery.selected = selected;
+            gallery.active_demo_index = Some(selected);
+            let demo = (gallery.entries[selected].render)(cx);
+            let input_demo = demo.clone().downcast::<super::demos::form_controls_demo::InputUsage>().unwrap();
+            let input = input_demo.update(cx, |demo, cx| {
+                let input = demo.plain_input();
+                input.update(cx, |input, cx| input.set_value("Frame keep 73 α", cx));
+                input
+            });
+            gallery.active_demo = Some(demo.clone());
+            gallery.nav_query = "input".into();
+            gallery.nav_filter.update(cx, |input, cx| input.set_value("Input", cx));
+            (demo.entity_id(), input)
+        });
+        let bounds = WindowBounds::Windowed(Bounds::new(point(px(73.), px(91.)), size(px(1100.), px(760.))));
+        let mut handle: gpui::AnyWindowHandle = cx.update(|cx| cx.open_window(
+            WindowOptions { window_bounds: Some(bounds), ..Default::default() },
+            |window, _| { window.set_rem_size(px(19.)); root.clone() },
+        ).unwrap().into());
+        startup.update(cx, |_, window, _| window.remove_window()).unwrap();
+
+        for mode in [super::WindowFrameMode::Custom, super::WindowFrameMode::System] {
+            let previous_window = handle.window_id();
+            handle.update(cx, |_, window, cx| {
+                assert!(super::window_frame::reopen_gallery_window(mode, window, cx));
+            }).unwrap();
+            cx.run_until_parked();
+            let windows = cx.windows();
+            assert_eq!(windows.len(), 1);
+            handle = windows[0];
+            assert_ne!(handle.window_id(), previous_window);
+            handle.update(cx, |actual, window, cx| {
+                assert_eq!(actual.entity_id(), root.entity_id());
+                assert_eq!(window.window_bounds(), bounds);
+                assert_eq!(window.rem_size(), px(19.));
+                let gallery = root.read(cx);
+                assert_eq!(gallery.entries[gallery.selected].name, "Input 输入框");
+                assert_eq!(gallery.nav_query, "input");
+                assert_eq!(gallery.nav_filter.read(cx).value().as_ref(), "Input");
+                assert_eq!(gallery.active_demo.as_ref().unwrap().entity_id(), child);
+                assert_eq!(demo_input.read(cx).value().as_ref(), "Frame keep 73 α");
+                let active = gallery.active_demo.clone().unwrap().downcast::<super::demos::form_controls_demo::InputUsage>().unwrap();
+                assert_eq!(active.read(cx).plain_input().entity_id(), demo_input.entity_id());
+                assert_eq!(gallery.frame_mode, mode);
+                demo_input.update(cx, |input, cx| {
+                    use gpui::EntityInputHandler;
+                    let end = input.value().len();
+                    input.set_selection(end..end, cx);
+                    input.replace_text_in_range(None, "!", window, cx);
+                    assert_eq!(input.value().as_ref(), "Frame keep 73 α!");
+                    input.set_value("Frame keep 73 α", cx);
+                });
+            }).unwrap();
+        }
+        handle.update(cx, |_, window, _| window.remove_window()).unwrap();
     }
 
     #[test]
@@ -3077,3 +3082,6 @@ mod document_surface_tests {
         }
     }
 }
+
+#[cfg(test)]
+mod frame_setting_tests;

@@ -420,6 +420,8 @@ Windows release 构建建议使用与 Zed 相同的 subsystem 设置，这样双
 
 `WindowFrameMode::Custom` 遵循 Zed 的 GPUI 兼容模型：Windows/macOS 在创建窗口时通过 `TitlebarOptions::appears_transparent` 隐藏系统标题栏；macOS 另用 `app_owns_titlebar_drag` 接管拖动，同时保留原生窗口可移动性与平铺菜单；Linux/FreeBSD 通过 `WindowDecorations::Client` 使用客户端装饰。因此 Windows/macOS 的 frame mode 变更需要重开窗口生效，而 Linux 可以通过 `request_window_frame_mode` 实时请求 decorations 切换。
 
+Gallery/Docs 切换 frame 时保留同一 root/子实体、导航、搜索和 demo 编辑状态。替代窗口复用当前 `Window::window_bounds()`（含还原位置、尺寸及最大化/全屏状态）、显示器和 rem-size 缩放，不回退到启动默认值。先成功创建替代窗口再移除原窗口；失败则保留原窗口并恢复 frame 选择。当前模式只有 System/Custom，没有独立 Hybrid 模式。`Switch::set_checked` 可同步保留的开关状态，不触发 change 回调。
+
 ```rust
 use gpui::{App, AppContext, Context, Render, Window, WindowOptions, px, size};
 use liora::components::{Title, apply_window_frame_mode, WindowFrameMode};

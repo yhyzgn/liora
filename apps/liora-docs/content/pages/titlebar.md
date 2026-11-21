@@ -12,6 +12,8 @@ Liora 的自定义标题栏对齐 Zed 官方 GPUI 用法：
 - Windows/macOS 的系统标题栏隐藏由 `TitlebarOptions::appears_transparent` 在窗口创建时决定；运行中的窗口不能只靠 `request_decorations` 切掉系统 frame。
 - Linux/FreeBSD 的 client/server decorations 可以通过 GPUI `WindowDecorations` 请求切换。
 - 因此如果运行时切换 system/custom frame，Windows/macOS 应重开窗口并重新传入 `apply_window_frame_mode(...)` 后的 `WindowOptions`；Linux 可以 live switch。
+- Gallery/Docs 顶部 Frame 开关应保留同一个 root entity 及其页面/demo 子实体、搜索/编辑状态。重开时复用 `Window::window_bounds()`（含还原位置、尺寸及最大化/全屏状态）、当前显示器和 `rem_size()`，而不是启动时的最大化配置；先成功打开并接管替代窗口，再移除原窗口。创建失败时保留原窗口并恢复原 frame 选择。
+- 本版本的 `WindowFrameMode` 只有 `System` 与 `Custom`；不提供独立的 Hybrid 模式。
 
 ```rust
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]

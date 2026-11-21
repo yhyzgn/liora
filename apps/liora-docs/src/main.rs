@@ -9,13 +9,15 @@ mod embedded_icon_bundle {
 }
 
 mod markdown;
+mod window_frame;
+use window_frame::set_docs_frame_mode;
 
 use gpui::{
     App, AppContext, AssetSource, FontWeight, Global, SharedString, Window, WindowOptions, px, size,
 };
 use liora_components::{
     Button, Checkbox, Dialog, Menu, MenuItem, Paragraph, Space, WindowFrameMode,
-    apply_window_frame_mode, init_liora_with_options, request_window_frame_mode,
+    apply_window_frame_mode, init_liora_with_options,
 };
 use liora_core::{
     FontConfig, FontLoadMode, FontLoadOptions, LinuxDesktopIdentity, LinuxDesktopPngIcon,
@@ -276,7 +278,7 @@ fn app_locales_dir() -> std::path::PathBuf {
 
 fn open_docs_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
     let frame_mode = docs_frame_mode(cx);
-    match cx.open_window(docs_window_options(cx, frame_mode), |window, cx| {
+    match cx.open_window(docs_window_options(cx, frame_mode, None), |window, cx| {
         attach_system_theme_observer(window, cx);
 
         let view = markdown::render_docs_shell(
@@ -300,19 +302,20 @@ fn open_docs_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
     }
 }
 
-fn docs_window_options(cx: &App, frame_mode: WindowFrameMode) -> WindowOptions {
+fn docs_window_options(cx: &App, frame_mode: WindowFrameMode, current: Option<&Window>) -> WindowOptions {
     apply_window_frame_mode(
         WindowOptions {
             show: false,
-            window_bounds: Some(startup_maximized_window_bounds(
+            window_bounds: Some(current.map(Window::window_bounds).unwrap_or_else(|| startup_maximized_window_bounds(
                 cx,
                 size(px(1680.0), px(1080.0)),
-            )),
+            ))),
             titlebar: Some(gpui::TitlebarOptions {
                 title: Some("Liora Docs — Native Main Window".into()),
                 ..Default::default()
             }),
             app_id: Some("liora-docs".into()),
+            display_id: current.and_then(|window| window.display(cx).map(|display| display.id())),
             ..Default::default()
         },
         frame_mode,
@@ -487,43 +490,6 @@ fn docs_frame_mode(cx: &App) -> WindowFrameMode {
         .unwrap_or_default()
 }
 
-fn set_docs_frame_mode(mode: WindowFrameMode, window: &mut Window, cx: &mut App) {
-    if cx.has_global::<DocsTrayState>() {
-        let state = cx.global_mut::<DocsTrayState>();
-        if state.frame_mode == mode {
-            return;
-        }
-        state.frame_mode = mode;
-        state.window_visible = true;
-    }
-
-    match request_window_frame_mode(window, mode) {
-        liora_components::WindowFrameChange::AppliedLive => {
-            liora_components::toast_info!(
-                "Docs window frame switched to {}",
-                if mode.is_custom() { "custom" } else { "system" }
-            );
-        }
-        liora_components::WindowFrameChange::RequiresWindowReopen => {
-            liora_components::toast_info!(
-                "Docs window frame will reopen to apply {}",
-                if mode.is_custom() {
-                    "custom frame"
-                } else {
-                    "system frame"
-                }
-            );
-            window.defer(cx, |window, cx| {
-                window.remove_window();
-                if let Some(handle) = open_docs_window(cx)
-                    && cx.has_global::<DocsTrayState>()
-                {
-                    cx.global_mut::<DocsTrayState>().window = Some(handle);
-                }
-            });
-        }
-    }
-}
 
 fn request_docs_window_close(window: &mut Window, cx: &mut App) {
     if !cx.has_global::<DocsTrayState>() || !cx.has_global::<TrayControlCenter>() {
@@ -1075,23 +1041,7 @@ mod shell_tests {
         assert!(hide_arm.contains("hide_docs_window_in_place(window, cx)"));
     }
 
-    #[test]
-    fn docs_frame_mode_switch_reopens_when_gpui_requires_creation_time_titlebar_options() {
-        let source = include_str!("main.rs");
-        let handler = source
-            .split("fn set_docs_frame_mode")
-            .nth(1)
-            .expect("Docs frame mode handler should exist")
-            .split("fn request_docs_window_close")
-            .next()
-            .expect("Docs frame mode handler should end before close handler");
 
-        assert!(handler.contains("request_window_frame_mode"));
-        assert!(handler.contains("WindowFrameChange::RequiresWindowReopen"));
-        assert!(handler.contains("window.defer(cx"));
-        assert!(handler.contains("window.remove_window()"));
-        assert!(handler.contains("open_docs_window(cx)"));
-    }
 
     #[test]
     fn close_confirm_dismissal_resets_flag_and_escape_is_enabled() {

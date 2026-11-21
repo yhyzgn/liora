@@ -26,7 +26,7 @@ pub fn render_input(cx: &mut App) -> AnyView {
     cx.new(|cx| InputUsage::new(cx)).into()
 }
 
-struct InputUsage {
+pub struct InputUsage {
     plain: Entity<Input>,
     placeholder: Entity<Input>,
     password: Entity<Input>,
@@ -80,6 +80,10 @@ impl InputUsage {
             clearable: cx.new(|cx| Input::new("Clear me", cx).clearable(true)),
             disabled: cx.new(|cx| Input::new("Disabled", cx).disabled(true)),
         }
+    }
+
+    pub fn plain_input(&self) -> Entity<Input> {
+        self.plain.clone()
     }
 }
 

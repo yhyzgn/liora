@@ -11243,6 +11243,8 @@ impl Render for DocsShell {
 
 struct DocsPageView {
     virtual_list: Entity<VirtualizedList>,
+    #[cfg(test)]
+    live_demos: Vec<Entity<LiveDemoHost>>,
 }
 
 impl DocsPageView {
@@ -11284,7 +11286,11 @@ impl DocsPageView {
             list
         });
 
-        Self { virtual_list }
+        Self {
+            virtual_list,
+            #[cfg(test)]
+            live_demos,
+        }
     }
 }
 
@@ -11508,6 +11514,16 @@ fn theme_mode_segmented(mode: ThemeMode) -> Segmented {
 }
 
 impl DocsShell {
+    pub(super) fn frame_mode(&self) -> WindowFrameMode { self.frame_mode }
+
+    pub(super) fn set_frame_mode(&mut self, mode: WindowFrameMode, cx: &mut Context<Self>) -> WindowFrameMode {
+        let previous = self.frame_mode;
+        self.frame_mode = mode;
+        self.frame_mode_switch.update(cx, |switch, cx| switch.set_checked(mode.is_custom(), cx));
+        cx.notify();
+        previous
+    }
+
     fn render_status_bar(
         &self,
         page_title: &'static str,
@@ -11670,16 +11686,11 @@ impl DocsShell {
             });
         });
 
-        let docs = cx.entity().clone();
         let on_frame_mode_change = self.on_frame_mode_change;
         cx.update_entity(&self.frame_mode_switch, |switch, _cx| {
             switch.set_on_change(move |enabled, window, cx| {
                 let mode = WindowFrameMode::from_custom(enabled);
                 on_frame_mode_change(mode, window, cx);
-                let _ = docs.update(cx, |docs, cx| {
-                    docs.frame_mode = mode;
-                    cx.notify();
-                });
             });
         });
     }
@@ -11992,6 +12003,76 @@ impl InlineSegment {
 
 #[cfg(test)]
 mod tests {
+    #[gpui::test]
+    fn frame_mode_switch_preserves_root_input_navigation_and_geometry(cx: &mut gpui::TestAppContext) {
+        use gpui::{Bounds, WindowBounds, WindowOptions, point, px, size};
+
+        cx.update(|cx| crate::init_liora_with_options(cx, crate::docs_liora_options()));
+        let bounds = WindowBounds::Windowed(Bounds::new(point(px(73.), px(91.)), size(px(1100.), px(760.))));
+        let (root, mut handle, child, demo_input) = cx.update(|cx| {
+            let root = render_docs_shell(
+                WindowFrameMode::System,
+                crate::set_docs_frame_mode,
+                crate::request_docs_window_close,
+                cx,
+            );
+            let (child, demo_input) = root.update(cx, |docs, cx| {
+                docs.update_status = UpdatePanelStatus::Checking;
+                docs.selected = DOC_PAGES.iter().position(|page| page.title == "Input").unwrap();
+                docs.nav_query = "input".into();
+                docs.nav_filter.update(cx, |input, cx| input.set_value("Input", cx));
+                let page = docs.page_view(docs.selected, cx);
+                let host = page.read(cx).live_demos[0].clone();
+                let demo = host.read(cx).demo.clone();
+                let input = demo.read(cx).inputs[0].clone();
+                input.update(cx, |input, cx| input.set_value("Frame keep 73 α", cx));
+                (page.entity_id(), input)
+            });
+            let handle: gpui::AnyWindowHandle = cx.open_window(
+                WindowOptions { window_bounds: Some(bounds), ..Default::default() },
+                |window, _| { window.set_rem_size(px(19.)); root.clone() },
+            ).unwrap().into();
+            (root, handle, child, demo_input)
+        });
+
+        for mode in [WindowFrameMode::Custom, WindowFrameMode::System] {
+            let previous_window = handle.window_id();
+            handle.update(cx, |_, window, cx| {
+                assert!(crate::window_frame::reopen_docs_window(mode, window, cx));
+            }).unwrap();
+            cx.run_until_parked();
+            let windows = cx.windows();
+            assert_eq!(windows.len(), 1);
+            handle = windows[0];
+            assert_ne!(handle.window_id(), previous_window);
+            handle.update(cx, |actual, window, cx| {
+                assert_eq!(actual.entity_id(), root.entity_id());
+                assert_eq!(window.window_bounds(), bounds);
+                assert_eq!(window.rem_size(), px(19.));
+                let docs = root.read(cx);
+                assert_eq!(DOC_PAGES[docs.selected].title, "Input");
+                assert_eq!(docs.nav_query, "input");
+                assert_eq!(docs.nav_filter.read(cx).value().as_ref(), "Input");
+                assert_eq!(docs.page_views[docs.selected].as_ref().unwrap().entity_id(), child);
+                assert_eq!(docs.frame_mode, mode);
+                let page = docs.page_views[docs.selected].as_ref().unwrap();
+                let host = page.read(cx).live_demos[0].read(cx);
+                let actual_input = &host.demo.read(cx).inputs[0];
+                assert_eq!(actual_input.entity_id(), demo_input.entity_id());
+                assert_eq!(actual_input.read(cx).value().as_ref(), "Frame keep 73 α");
+                demo_input.update(cx, |input, cx| {
+                    use gpui::EntityInputHandler;
+                    let end = input.value().len();
+                    input.set_selection(end..end, cx);
+                    input.replace_text_in_range(None, "!", window, cx);
+                    assert_eq!(input.value().as_ref(), "Frame keep 73 α!");
+                    input.set_value("Frame keep 73 α", cx);
+                });
+            }).unwrap();
+        }
+        handle.update(cx, |_, window, _| window.remove_window()).unwrap();
+    }
+
 
     #[cfg(any(target_os = "linux", target_os = "macos"))]
     #[test]
@@ -14355,3 +14436,7 @@ mod tests {
         assert!(source.contains(".on_click(|_, _, _|"));
     }
 }
+
+#[cfg(test)]
+#[path = "frame_setting_tests.rs"]
+mod frame_setting_tests;
