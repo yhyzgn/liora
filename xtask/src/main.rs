@@ -950,6 +950,8 @@ fn package_formats(command: PackageCommand) -> Result<(), String> {
         let git_sha = git_short_sha(&root);
         let mut signed_rpm_path = None;
 
+        prepare_package_output(&out_dir, command.dry_run)?;
+
         if !cargo_formats.is_empty() {
             let config_path = generated_config_path_for(&root, &metadata, command.font_variant);
             let config_text = render_cargo_packager_config_for(
@@ -1108,6 +1110,18 @@ fn package_formats(command: PackageCommand) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+fn prepare_package_output(out_dir: &Path, dry_run: bool) -> Result<(), String> {
+    if dry_run {
+        return Ok(());
+    }
+    if out_dir.exists() {
+        fs::remove_dir_all(out_dir)
+            .map_err(|error| format!("failed to reset {}: {error}", out_dir.display()))?;
+    }
+    fs::create_dir_all(out_dir)
+        .map_err(|error| format!("failed to create {}: {error}", out_dir.display()))
 }
 
 fn portable_tar_gz_path(
@@ -1768,6 +1782,89 @@ fn print_help() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn package_output_reset_only_clears_selected_app_and_variant() {
+        let root =
+            env::temp_dir().join(format!("liora-package-output-reset-{}", std::process::id()));
+        let app = PackageApp::Gallery.metadata();
+        let selected = package_out_dir_for(&root, &app, Platform::Linux, FontVariant::WithoutFonts);
+        let sibling_variant =
+            package_out_dir_for(&root, &app, Platform::Linux, FontVariant::WithFonts);
+        let sibling_app = package_out_dir_for(
+            &root,
+            &PackageApp::Docs.metadata(),
+            Platform::Linux,
+            FontVariant::WithoutFonts,
+        );
+        for dir in [&selected, &sibling_variant, &sibling_app] {
+            fs::create_dir_all(dir.join("backend-intermediates")).unwrap();
+            fs::write(dir.join("old-package.deb"), b"old package").unwrap();
+            fs::write(dir.join("backend-intermediates/stale"), b"stale").unwrap();
+        }
+
+        prepare_package_output(&selected, false).unwrap();
+
+        assert!(selected.is_dir());
+        assert_eq!(fs::read_dir(&selected).unwrap().count(), 0);
+        for dir in [&sibling_variant, &sibling_app] {
+            assert_eq!(
+                fs::read(dir.join("old-package.deb")).unwrap(),
+                b"old package"
+            );
+            assert!(dir.join("backend-intermediates/stale").is_file());
+        }
+        let artifact = selected.join("current-package.deb");
+        fs::write(&artifact, b"current package").unwrap();
+        let artifacts = collect_package_artifacts(
+            &app.package,
+            "1.2.3",
+            Platform::Linux,
+            "x86_64-unknown-linux-gnu",
+            None,
+            &selected,
+            &[PackageFormat::Deb],
+        )
+        .unwrap();
+        assert_eq!(artifacts.len(), 1);
+        assert_eq!(artifacts[0].path, artifact);
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn package_output_dry_run_preserves_existing_and_missing_directories() {
+        let root = env::temp_dir().join(format!(
+            "liora-package-output-dry-run-{}",
+            std::process::id()
+        ));
+        fs::create_dir_all(&root).unwrap();
+        let artifact = root.join("old-package.deb");
+        fs::write(&artifact, b"old package").unwrap();
+
+        prepare_package_output(&root, true).unwrap();
+        prepare_package_output(&root.join("missing"), true).unwrap();
+
+        assert_eq!(fs::read(artifact).unwrap(), b"old package");
+        assert!(!root.join("missing").exists());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn package_output_preparation_propagates_reset_and_creation_errors() {
+        let root = env::temp_dir().join(format!(
+            "liora-package-output-errors-{}",
+            std::process::id()
+        ));
+        fs::create_dir_all(&root).unwrap();
+        let file = root.join("not-a-directory");
+        fs::write(&file, b"preserve").unwrap();
+
+        assert!(prepare_package_output(&file, false).is_err());
+        assert_eq!(fs::read(&file).unwrap(), b"preserve");
+        assert!(prepare_package_output(&file.join("output"), false).is_err());
+        assert_eq!(fs::read(file).unwrap(), b"preserve");
+        fs::remove_dir_all(root).unwrap();
+    }
 
     #[test]
     fn sdk_crates_do_not_reference_repository_demo_apps() {

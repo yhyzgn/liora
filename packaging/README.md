@@ -5,6 +5,8 @@ This directory contains static resources consumed by `cargo xtask package` and
 
 The Gallery and Docs packages remain pure Rust + GPUI native applications. These static files describe package metadata and platform integration; they do not add Tauri or WebView to those applications. The separately published `liora-webview` crate is opt-in and is not used by either app.
 
+Real packaging resets `target/packages/<app>/<platform>/<font-variant>/` before running the package backends, so older generated artifacts cannot enter the current manifest. This replaces all prior formats in that selected directory; sibling app/platform/font-variant directories are preserved. Dry runs do not reset or create package output directories.
+
 ## Icon set
 
 The icon set is generated from deterministic SVG sources in `packaging/icons/`:
