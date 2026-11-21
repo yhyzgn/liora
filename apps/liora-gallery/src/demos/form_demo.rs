@@ -71,15 +71,35 @@ impl FormDemo {
         });
 
         Self {
-            switch_on: cx.new(|cx| Switch::new(true, cx).id("gallery-form-switch-on").aria_label("Notifications")),
+            switch_on: cx.new(|cx| {
+                Switch::new(true, cx)
+                    .id("gallery-form-switch-on")
+                    .aria_label("Notifications")
+            }),
             switch_off: cx.new(|cx| Switch::new(false, cx).aria_label("Auto sync")),
-            switch_disabled: cx.new(|cx| Switch::new(false, cx).aria_label("Managed auto sync").disabled(true)),
-            switch_disabled_on: cx.new(|cx| Switch::new(true, cx).aria_label("Managed notifications").disabled(true)),
+            switch_disabled: cx.new(|cx| {
+                Switch::new(false, cx)
+                    .aria_label("Managed auto sync")
+                    .disabled(true)
+            }),
+            switch_disabled_on: cx.new(|cx| {
+                Switch::new(true, cx)
+                    .aria_label("Managed notifications")
+                    .disabled(true)
+            }),
             cb_checked: cx.new(|cx| Checkbox::new(true, cx).aria_label("Receive updates")),
             cb_unchecked: cx.new(|cx| Checkbox::new(false, cx).aria_label("Enable reminders")),
             cb_labeled: cx.new(|cx| Checkbox::new(false, cx).label("Label")),
-            cb_disabled: cx.new(|cx| Checkbox::new(false, cx).aria_label("Managed reminders").disabled(true)),
-            cb_disabled_checked: cx.new(|cx| Checkbox::new(true, cx).aria_label("Managed updates").disabled(true)),
+            cb_disabled: cx.new(|cx| {
+                Checkbox::new(false, cx)
+                    .aria_label("Managed reminders")
+                    .disabled(true)
+            }),
+            cb_disabled_checked: cx.new(|cx| {
+                Checkbox::new(true, cx)
+                    .aria_label("Managed updates")
+                    .disabled(true)
+            }),
             cb_group: cx.new(|cx| {
                 CheckboxGroup::new(vec!["Option 1", "Option 2", "Option 3"], vec![0, 2], cx)
             }),

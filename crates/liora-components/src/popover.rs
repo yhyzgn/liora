@@ -21,8 +21,8 @@
 
 use crate::{button::ButtonKeyboardActivate, gpui_compat::element_id, motion::pop_in};
 use gpui::{
-    AnyElement, App, Bounds, Context, ElementId, GlobalElementId, InspectorElementId, IntoElement,
-    FocusHandle, KeyBinding, LayoutId, MouseButton, Pixels, Render, RenderOnce, SharedString,
+    AnyElement, App, Bounds, Context, ElementId, FocusHandle, GlobalElementId, InspectorElementId,
+    IntoElement, KeyBinding, LayoutId, MouseButton, Pixels, Render, RenderOnce, SharedString,
     ViewElement as Component, WeakFocusHandle, Window, actions, div, point, prelude::*, px,
 };
 use liora_core::{
@@ -199,7 +199,9 @@ impl Render for PopoverView {
                             element_id(format!("{}-motion", id)),
                             div()
                                 .id(element_id(format!("{}-content", id)))
-                                .when_some(self.focus_scope.as_ref(), |s, scope| s.track_focus(scope))
+                                .when_some(self.focus_scope.as_ref(), |s, scope| {
+                                    s.track_focus(scope)
+                                })
                                 .flex()
                                 .flex_col()
                                 .flex_none()
@@ -475,7 +477,10 @@ impl RenderOnce for Popover {
                 });
             })
             .on_action(move |_: &PopoverClose, window, cx| {
-                let view = cx.global::<liora_core::ActivePopover>().0.iter()
+                let view = cx
+                    .global::<liora_core::ActivePopover>()
+                    .0
+                    .iter()
                     .find(|entry| entry.id == escape_popover_id)
                     .and_then(|entry| entry.view.clone().downcast::<PopoverView>().ok());
                 let Some(view) = view else {
@@ -532,9 +537,14 @@ fn open_popover_view(request: OpenPopoverRequest<'_>) {
             request.content_padding,
             request.close_on_hover_outside,
             move |_window, cx| {
-                if cx.global::<liora_core::ActivePopover>().0.iter().any(|entry| {
-                    entry.id == popover_id_for_close && entry.view.entity_id() == view_id
-                }) {
+                if cx
+                    .global::<liora_core::ActivePopover>()
+                    .0
+                    .iter()
+                    .any(|entry| {
+                        entry.id == popover_id_for_close && entry.view.entity_id() == view_id
+                    })
+                {
                     clear_popover(&popover_id_for_close, cx);
                 }
             },
@@ -543,30 +553,41 @@ fn open_popover_view(request: OpenPopoverRequest<'_>) {
         view
     });
     let view_id = view.entity_id();
-    let focus_scope = view.read(request.cx).focus_scope.clone().expect("opened popover has a focus scope");
+    let focus_scope = view
+        .read(request.cx)
+        .focus_scope
+        .clone()
+        .expect("opened popover has a focus scope");
     if let Some(target) = target {
         let slot = Rc::downgrade(&restore_subscription);
-        let subscription = request.cx.observe_global::<liora_core::ActivePopover>(move |cx| {
-            if let Some(entry) = cx.global::<liora_core::ActivePopover>().0.iter().find(|entry| entry.id == id) {
-                if entry.view.entity_id() == view_id {
-                    return;
+        let subscription = request
+            .cx
+            .observe_global::<liora_core::ActivePopover>(move |cx| {
+                if let Some(entry) = cx
+                    .global::<liora_core::ActivePopover>()
+                    .0
+                    .iter()
+                    .find(|entry| entry.id == id)
+                {
+                    if entry.view.entity_id() == view_id {
+                        return;
+                    }
+                } else if let Some(target) = target.upgrade() {
+                    let _ = window_handle.update(cx, |_, window, cx| {
+                        if focus_scope.contains_focused(window, cx) {
+                            target.focus(window, cx);
+                        }
+                    });
                 }
-            } else if let Some(target) = target.upgrade() {
-                let _ = window_handle.update(cx, |_, window, cx| {
-                    if focus_scope.contains_focused(window, cx) {
-                        target.focus(window, cx);
-                    }
-                });
-            }
-            if let Some(slot) = slot.upgrade() {
-                cx.defer(move |_| {
-                    let mut slot = slot.borrow_mut();
-                    if slot.as_ref().is_some_and(|(id, _)| *id == view_id) {
-                        slot.take();
-                    }
-                });
-            }
-        });
+                if let Some(slot) = slot.upgrade() {
+                    cx.defer(move |_| {
+                        let mut slot = slot.borrow_mut();
+                        if slot.as_ref().is_some_and(|(id, _)| *id == view_id) {
+                            slot.take();
+                        }
+                    });
+                }
+            });
         *restore_subscription.borrow_mut() = Some((view_id, subscription));
     }
     set_active_popover(request.id, view.into(), request.cx);
@@ -836,16 +857,26 @@ mod tests {
                 window,
                 cx,
             });
-            cx.global::<liora_core::ActivePopover>().0[0].view.entity_id()
+            cx.global::<liora_core::ActivePopover>().0[0]
+                .view
+                .entity_id()
         });
         window.update(|window, cx| window.draw(cx).clear(cx));
-        let close_button = window.debug_bounds("replacement-popover-content")
+        let close_button = window
+            .debug_bounds("replacement-popover-content")
             .expect("replacement action must render");
         window.simulate_click(close_button.center(), gpui::Modifiers::none());
-        assert!(clicked.get(), "replacement Button callback did not receive the native click");
+        assert!(
+            clicked.get(),
+            "replacement Button callback did not receive the native click"
+        );
         window.update(|window, cx| {
             let active = &cx.global::<liora_core::ActivePopover>().0;
-            assert_eq!(active.len(), 1, "stale dispatched close cleared replacement");
+            assert_eq!(
+                active.len(),
+                1,
+                "stale dispatched close cleared replacement"
+            );
             assert_eq!(active[0].view.entity_id(), replacement_id);
             window.draw(cx).clear(cx);
         });

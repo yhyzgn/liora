@@ -9,8 +9,11 @@ struct ClosableAlertDemo {
 
 impl Render for ClosableAlertDemo {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        gpui::div().flex().flex_col().gap_3().children(
-            self.visible.iter().enumerate().map(|(index, visible)| {
+        gpui::div()
+            .flex()
+            .flex_col()
+            .gap_3()
+            .children(self.visible.iter().enumerate().map(|(index, visible)| {
                 let view = cx.entity().clone();
                 if *visible {
                     Alert::new("Dismissible warning")
@@ -35,8 +38,7 @@ impl Render for ClosableAlertDemo {
                         })
                         .into_any_element()
                 }
-            }),
-        )
+            }))
     }
 }
 

@@ -26,7 +26,9 @@ pub fn split_dropdown_button() -> impl IntoElement {
         DropdownButton::new("Menu only")
             .id("docs-dropdown-button-split-menu-only")
             .split(true)
-            .item("Preview deployment", |_, _| toast_info!("Preview deployment")),
+            .item("Preview deployment", |_, _| {
+                toast_info!("Preview deployment")
+            }),
     ])
 }
 

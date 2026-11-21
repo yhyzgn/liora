@@ -17,8 +17,16 @@ impl CheckboxBasicDemo {
             checked: cx.new(|cx| Checkbox::new(true, cx).aria_label("Receive updates")),
             unchecked: cx.new(|cx| Checkbox::new(false, cx).aria_label("Enable reminders")),
             labeled: cx.new(|cx| Checkbox::new(false, cx).label("Label")),
-            disabled: cx.new(|cx| Checkbox::new(false, cx).aria_label("Managed reminders").disabled(true)),
-            disabled_checked: cx.new(|cx| Checkbox::new(true, cx).aria_label("Managed updates").disabled(true)),
+            disabled: cx.new(|cx| {
+                Checkbox::new(false, cx)
+                    .aria_label("Managed reminders")
+                    .disabled(true)
+            }),
+            disabled_checked: cx.new(|cx| {
+                Checkbox::new(true, cx)
+                    .aria_label("Managed updates")
+                    .disabled(true)
+            }),
         }
     }
 }

@@ -16,7 +16,11 @@ impl BasicFormDemo {
             role: cx.new(|cx| {
                 Select::new(vec!["Admin", "Editor", "Viewer"], Some(0), cx).disabled(true)
             }),
-            enabled: cx.new(|cx| Switch::new(true, cx).id("docs-form-enabled").aria_label("Enabled")),
+            enabled: cx.new(|cx| {
+                Switch::new(true, cx)
+                    .id("docs-form-enabled")
+                    .aria_label("Enabled")
+            }),
         }
     }
 }

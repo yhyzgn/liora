@@ -20,9 +20,9 @@
 //! crate.
 
 use gpui::{
-    AnyElement, App, Bounds, Context, ElementId, Entity, EntityId, GlobalElementId, InspectorElementId,
-    IntoElement, LayoutId, Pixels, Render, ScrollHandle, SharedString, WeakEntity, Window, div, point,
-    prelude::*, px,
+    AnyElement, App, Bounds, Context, ElementId, Entity, EntityId, GlobalElementId,
+    InspectorElementId, IntoElement, LayoutId, Pixels, Render, ScrollHandle, SharedString,
+    WeakEntity, Window, div, point, prelude::*, px,
 };
 use liora_core::Config;
 use std::collections::HashMap;
@@ -43,7 +43,8 @@ pub struct Anchor {
     active_link: Option<SharedString>,
     links: Vec<AnchorLink>,
     offset: Pixels,
-    targets_bounds: HashMap<SharedString, (Bounds<Pixels>, WeakEntity<AnchorTargetLease>, EntityId)>,
+    targets_bounds:
+        HashMap<SharedString, (Bounds<Pixels>, WeakEntity<AnchorTargetLease>, EntityId)>,
 }
 
 impl AnchorLink {
@@ -361,25 +362,22 @@ mod tests {
 
         impl Render for Workbench {
             fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
-                div()
-                    .size_full()
-                    .child(self.anchor.clone())
-                    .child(
-                        div()
-                            .id("anchor-scroll")
-                            .w(px(240.0))
-                            .h(px(200.0))
-                            .overflow_y_scroll()
-                            .track_scroll(&self.scroll)
-                            .when(self.show_target, |view| {
-                                view.child(div().id(self.generation).child(
-                                    self.target.clone().cached(
-                                        gpui::StyleRefinement::default().w(px(240.0)).h(px(40.0)),
-                                    ),
-                                ))
-                            })
-                            .child(div().h(px(500.0))),
-                    )
+                div().size_full().child(self.anchor.clone()).child(
+                    div()
+                        .id("anchor-scroll")
+                        .w(px(240.0))
+                        .h(px(200.0))
+                        .overflow_y_scroll()
+                        .track_scroll(&self.scroll)
+                        .when(self.show_target, |view| {
+                            view.child(div().id(self.generation).child(
+                                self.target.clone().cached(
+                                    gpui::StyleRefinement::default().w(px(240.0)).h(px(40.0)),
+                                ),
+                            ))
+                        })
+                        .child(div().h(px(500.0))),
+                )
             }
         }
 
@@ -388,9 +386,8 @@ mod tests {
         let scroll = ScrollHandle::new();
         let renders = Rc::new(Cell::new(0));
         let handle = app.add_window(|_, cx| {
-            let anchor = cx.new(|_| {
-                Anchor::new(scroll.clone()).link(AnchorLink::new("Details", "details"))
-            });
+            let anchor =
+                cx.new(|_| Anchor::new(scroll.clone()).link(AnchorLink::new("Details", "details")));
             Workbench {
                 target: cx.new(|_| TargetView {
                     anchor: anchor.clone(),
@@ -408,7 +405,10 @@ mod tests {
         let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
         window.update(|window, cx| window.draw(cx).clear(cx));
         assert!(anchor.read_with(&app, |anchor, _| anchor.scroll_to_target("details")));
-        assert!(anchor.read_with(&app, |anchor, _| anchor.active_link.as_deref() == Some("details")));
+        assert!(
+            anchor.read_with(&app, |anchor, _| anchor.active_link.as_deref()
+                == Some("details"))
+        );
         let rendered = renders.get();
         window.update(|window, cx| window.draw(cx).clear(cx));
         assert_eq!(

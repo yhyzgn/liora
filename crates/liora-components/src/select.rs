@@ -995,7 +995,6 @@ mod searchable_select_tests {
         assert_eq!(matches[0].value, "gpui");
     }
 
-
     #[test]
     fn select_exposes_searchable_and_multiple_modes() {
         let source = include_str!("select.rs");

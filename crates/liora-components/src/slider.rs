@@ -20,9 +20,9 @@
 //! crate.
 
 use gpui::{
-    fill, point, prelude::*, px, relative, size, App, Bounds, Context, Element, ElementId, Entity,
-    FocusHandle, Focusable, GlobalElementId, InspectorElementId, LayoutId, MouseButton,
-    MouseMoveEvent, Pixels, Point, Render, Style, Window,
+    App, Bounds, Context, Element, ElementId, Entity, FocusHandle, Focusable, GlobalElementId,
+    InspectorElementId, LayoutId, MouseButton, MouseMoveEvent, Pixels, Point, Render, Style,
+    Window, fill, point, prelude::*, px, relative, size,
 };
 use liora_core::Config;
 

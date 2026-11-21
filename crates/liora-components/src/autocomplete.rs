@@ -479,13 +479,19 @@ mod tests {
         let handle = app.add_window(move |_, _| LifetimeTestSurface(autocomplete));
         let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
         window.update(|window, cx| window.draw(cx).clear(cx));
-        assert!(weak.read_with(&app, |this, _| this.last_bounds.is_some()).unwrap());
+        assert!(
+            weak.read_with(&app, |this, _| this.last_bounds.is_some())
+                .unwrap()
+        );
 
         window.update(|window, _| window.remove_window());
         drop(window);
         app.run_until_parked();
 
-        assert!(weak.upgrade().is_none(), "Autocomplete retained after window removal");
+        assert!(
+            weak.upgrade().is_none(),
+            "Autocomplete retained after window removal"
+        );
         app.quit();
     }
 

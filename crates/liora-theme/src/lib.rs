@@ -51,9 +51,8 @@ fn filled_foreground(background: Hsla) -> Hsla {
             ((channel + 0.055) / 1.055).powf(2.4)
         }
     };
-    let luminance = 0.2126 * linearize(color.r)
-        + 0.7152 * linearize(color.g)
-        + 0.0722 * linearize(color.b);
+    let luminance =
+        0.2126 * linearize(color.r) + 0.7152 * linearize(color.g) + 0.0722 * linearize(color.b);
     if (luminance + 0.05) / 0.05 >= 1.05 / (luminance + 0.05) {
         gpui::black()
     } else {
@@ -717,11 +716,12 @@ mod tests {
                 .zip([0.2126, 0.7152, 0.0722])
                 .map(|(channel, weight)| {
                     let channel = f64::from(channel);
-                    weight * if channel <= 0.04045 {
-                        channel / 12.92
-                    } else {
-                        ((channel + 0.055) / 1.055).powf(2.4)
-                    }
+                    weight
+                        * if channel <= 0.04045 {
+                            channel / 12.92
+                        } else {
+                            ((channel + 0.055) / 1.055).powf(2.4)
+                        }
                 })
                 .sum()
         }
@@ -743,8 +743,7 @@ mod tests {
                     assert_eq!(background.a, 1.0);
                     let text = luminance(text);
                     let background = luminance(background);
-                    let contrast = (text.max(background) + 0.05)
-                        / (text.min(background) + 0.05);
+                    let contrast = (text.max(background) + 0.05) / (text.min(background) + 0.05);
                     assert!(contrast >= 4.5, "{name} {variant:?} {state}: {contrast}");
                 }
             }

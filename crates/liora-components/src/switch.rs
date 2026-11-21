@@ -189,15 +189,23 @@ impl Render for Switch {
                     ),
             );
 
-        let id = self.id.clone().map(ElementId::from).unwrap_or_else(|| ("liora-switch", cx.entity().entity_id()).into());
+        let id = self
+            .id
+            .clone()
+            .map(ElementId::from)
+            .unwrap_or_else(|| ("liora-switch", cx.entity().entity_id()).into());
         let name = self.aria_label.as_ref().map(|label| label.resolve(cx));
-        let mut el = gpui::div().id(id)
+        let mut el = gpui::div()
+            .id(id)
             .role(gpui::Role::Switch)
             .aria_toggled(self.checked.into())
             .when_some(name, |el, name| el.aria_label(name))
-            .when(self.disabled, |el| el.a11y_synthetic_children(|builder| builder.parent_node().set_disabled()))
+            .when(self.disabled, |el| {
+                el.a11y_synthetic_children(|builder| builder.parent_node().set_disabled())
+            })
             .track_focus(&self.focus_handle)
-            .p(px(2.0)).child(track);
+            .p(px(2.0))
+            .child(track);
         if focused && !self.disabled {
             el = el
                 .rounded(px((h + 4.0) / 2.0))
@@ -210,25 +218,39 @@ impl Render for Switch {
         if !self.disabled {
             el = el.cursor_pointer();
         } else {
-            el = el.cursor_not_allowed().capture_any_mouse_down(|_, window, _| window.prevent_default());
+            el = el
+                .cursor_not_allowed()
+                .capture_any_mouse_down(|_, window, _| window.prevent_default());
         }
 
         el.on_action(cx.listener(Self::toggle))
-        .on_mouse_down(MouseButton::Left, cx.listener(|this, _, _, _| this.pointer_armed = !this.disabled))
-        .on_click(cx.listener(|this, event, window, cx| {
-            // Keep key-down activation; an interrupted pointer press must not survive disabling.
-            let armed = std::mem::take(&mut this.pointer_armed);
-            if matches!(event, gpui::ClickEvent::Mouse(_)) && armed {
-                this.toggle(&SwitchToggle, window, cx);
-            }
-        }))
-        .on_key_down(|event, window, cx| {
-            let modifiers = event.keystroke.modifiers;
-            if event.keystroke.key == "tab" && !modifiers.control && !modifiers.alt && !modifiers.platform && !modifiers.function {
-                if modifiers.shift { window.focus_prev(cx); } else { window.focus_next(cx); }
-                cx.stop_propagation();
-            }
-        })
+            .on_mouse_down(
+                MouseButton::Left,
+                cx.listener(|this, _, _, _| this.pointer_armed = !this.disabled),
+            )
+            .on_click(cx.listener(|this, event, window, cx| {
+                // Keep key-down activation; an interrupted pointer press must not survive disabling.
+                let armed = std::mem::take(&mut this.pointer_armed);
+                if matches!(event, gpui::ClickEvent::Mouse(_)) && armed {
+                    this.toggle(&SwitchToggle, window, cx);
+                }
+            }))
+            .on_key_down(|event, window, cx| {
+                let modifiers = event.keystroke.modifiers;
+                if event.keystroke.key == "tab"
+                    && !modifiers.control
+                    && !modifiers.alt
+                    && !modifiers.platform
+                    && !modifiers.function
+                {
+                    if modifiers.shift {
+                        window.focus_prev(cx);
+                    } else {
+                        window.focus_next(cx);
+                    }
+                    cx.stop_propagation();
+                }
+            })
     }
 }
 

@@ -1862,7 +1862,10 @@ mod tests {
             "liora-gallery/bin/liora-gallery"
         ));
         assert!(!tar_listing_contains(entries, "liora-gallery/bin"));
-        assert!(tar_listing_contains("liora-gallery/bin\n", "liora-gallery/bin"));
+        assert!(tar_listing_contains(
+            "liora-gallery/bin\n",
+            "liora-gallery/bin"
+        ));
         assert!(!tar_listing_contains(
             "liora-gallery/bin/liora-gallery/\n",
             "liora-gallery/bin/liora-gallery"

@@ -38,18 +38,27 @@ impl Render for Surface {
                 }
                 if replace_on_trigger {
                     let content: Arc<dyn Fn(&mut Window, &mut Context<PopoverView>) -> AnyElement> =
-                        Arc::new(|_, _| div().debug_selector(|| "replacement-content".into()).into_any_element());
-                    let replacement = cx.new(|_| PopoverView::new(
-                        content,
-                        Bounds { origin: point(px(10.0), px(10.0)), size: gpui::size(px(80.0), px(24.0)) },
-                        Placement::Bottom,
-                        px(8.0),
-                        true,
-                        true,
-                        "keyboard-popover".into(),
-                        None,
-                        |_, cx| clear_popover(&"keyboard-popover".into(), cx),
-                    ));
+                        Arc::new(|_, _| {
+                            div()
+                                .debug_selector(|| "replacement-content".into())
+                                .into_any_element()
+                        });
+                    let replacement = cx.new(|_| {
+                        PopoverView::new(
+                            content,
+                            Bounds {
+                                origin: point(px(10.0), px(10.0)),
+                                size: gpui::size(px(80.0), px(24.0)),
+                            },
+                            Placement::Bottom,
+                            px(8.0),
+                            true,
+                            true,
+                            "keyboard-popover".into(),
+                            None,
+                            |_, cx| clear_popover(&"keyboard-popover".into(), cx),
+                        )
+                    });
                     replacement_entity.set(Some(replacement.entity_id()));
                     set_active_popover("keyboard-popover".into(), replacement.into(), cx);
                 }
@@ -60,7 +69,9 @@ impl Render for Surface {
         let confirm_focus = self.confirm_focus.clone();
         let confirm_had_focus = self.confirm_had_focus.clone();
         let popup = if self.dropdown {
-            let split = DropdownButton::new("Split").id("keyboard-popover").split(self.split);
+            let split = DropdownButton::new("Split")
+                .id("keyboard-popover")
+                .split(self.split);
             let split = if self.split_has_action {
                 let clicks = self.trigger_clicks.clone();
                 let outside = self.outside.clone();
@@ -90,18 +101,32 @@ impl Render for Surface {
                         .flex()
                         .flex_col()
                         .gap_2()
-                        .child(Button::new("Content action").id("content-action").on_click(
-                            move |_, _, _| clicks.set(clicks.get() + 1),
+                        .child(
+                            Button::new("Content action")
+                                .id("content-action")
+                                .on_click(move |_, _, _| clicks.set(clicks.get() + 1)),
+                        )
+                        .child(
+                            div()
+                                .debug_selector(|| "inside-input".into())
+                                .child(inside.clone()),
+                        )
+                        .child(Button::new("Confirm").id("docs-confirm").on_click(
+                            move |_, window, cx| {
+                                confirm_had_focus.set(
+                                    confirm_focus
+                                        .borrow()
+                                        .as_ref()
+                                        .is_some_and(|confirm| confirm.is_focused(window)),
+                                );
+                                clear_popover(&"keyboard-popover".into(), cx);
+                            },
                         ))
-                        .child(div().debug_selector(|| "inside-input".into()).child(inside.clone()))
-                        .child(Button::new("Confirm").id("docs-confirm").on_click(move |_, window, cx| {
-                            confirm_had_focus.set(confirm_focus.borrow().as_ref()
-                                .is_some_and(|confirm| confirm.is_focused(window)));
-                            clear_popover(&"keyboard-popover".into(), cx);
-                        }))
-                        .child(Button::new("Close").id("content-close").on_click(
-                            |_, _, cx| clear_popover(&"keyboard-popover".into(), cx),
-                        ))
+                        .child(
+                            Button::new("Close")
+                                .id("content-close")
+                                .on_click(|_, _, cx| clear_popover(&"keyboard-popover".into(), cx)),
+                        )
                 })
                 .into_any_element()
         };
@@ -113,7 +138,11 @@ impl Render for Surface {
                     .flex()
                     .flex_col()
                     .gap_4()
-                    .child(div().flex().child(div().debug_selector(|| "fixture-popup".into()).child(popup)))
+                    .child(
+                        div()
+                            .flex()
+                            .child(div().debug_selector(|| "fixture-popup".into()).child(popup)),
+                    )
                     .when(!self.editable_trigger, |s| s.child(self.outside.clone())),
             )
             .child(PortalLayer)
@@ -156,7 +185,13 @@ impl Harness {
             }
         });
         let window = VisualTestContext::from_window(handle.into(), &app);
-        let mut harness = Self { app, handle, window, trigger_clicks, content_clicks };
+        let mut harness = Self {
+            app,
+            handle,
+            window,
+            trigger_clicks,
+            content_clicks,
+        };
         harness.draw();
         harness
     }
@@ -172,32 +207,47 @@ impl Harness {
         self.window.simulate_keystrokes(key);
         self.window.update(|window, cx| {
             let keystroke = gpui::Keystroke::parse_with_os(key, cx.platform_info().os).unwrap();
-            window.dispatch_event(gpui::PlatformInput::KeyUp(gpui::KeyUpEvent { keystroke }), cx);
+            window.dispatch_event(
+                gpui::PlatformInput::KeyUp(gpui::KeyUpEvent { keystroke }),
+                cx,
+            );
         });
         self.draw();
     }
 
     fn click(&mut self, id: &'static str) {
-        let bounds = self.window.debug_bounds(id).expect("visible native control");
-        self.window.simulate_click(bounds.center(), gpui::Modifiers::none());
+        let bounds = self
+            .window
+            .debug_bounds(id)
+            .expect("visible native control");
+        self.window
+            .simulate_click(bounds.center(), gpui::Modifiers::none());
         self.draw();
     }
 
     fn focus_first(&mut self) -> gpui::FocusHandle {
         let focus = self.window.update(|window, cx| {
             window.focus_next(cx);
-            window.focused(cx).expect("first real control must be focusable")
+            window
+                .focused(cx)
+                .expect("first real control must be focusable")
         });
         self.draw();
         focus
     }
 
     fn is_open(&mut self) -> bool {
-        self.window.update(|_, cx| is_popover_active(&"keyboard-popover".into(), cx))
+        self.window
+            .update(|_, cx| is_popover_active(&"keyboard-popover".into(), cx))
     }
 
     fn assert_focus(&mut self, expected: &gpui::FocusHandle) {
-        self.window.update(|window, _| assert!(expected.is_focused(window), "original native focus owner was not restored"));
+        self.window.update(|window, _| {
+            assert!(
+                expected.is_focused(window),
+                "original native focus owner was not restored"
+            )
+        });
     }
 }
 
@@ -210,7 +260,10 @@ fn keyboard_button_opens_once_and_escape_reaches_trigger_and_content() {
     assert_eq!(h.trigger_clicks.get(), 0);
     for key in ["enter", "space"] {
         h.press(key);
-        assert!(h.is_open(), "{key} on the actual Button did not open Popover");
+        assert!(
+            h.is_open(),
+            "{key} on the actual Button did not open Popover"
+        );
         h.assert_focus(&trigger);
         h.press("escape");
         assert!(!h.is_open(), "Escape from trigger did not close Popover");
@@ -221,10 +274,16 @@ fn keyboard_button_opens_once_and_escape_reaches_trigger_and_content() {
     h.click("content-action");
     assert_eq!(h.content_clicks.get(), 1);
     h.press("escape");
-    assert!(!h.is_open(), "Escape from interactive content did not close Popover");
+    assert!(
+        !h.is_open(),
+        "Escape from interactive content did not close Popover"
+    );
     h.assert_focus(&trigger);
     h.press("tab");
-    let outside = h.handle.read_with(&h.app, |view, cx| view.outside.focus_handle(cx)).unwrap();
+    let outside = h
+        .handle
+        .read_with(&h.app, |view, cx| view.outside.focus_handle(cx))
+        .unwrap();
     h.assert_focus(&outside);
     h.app.quit();
 }
@@ -267,7 +326,10 @@ fn pointer_and_manual_clear_restore_focus_without_stealing_unrelated_focus() {
     assert!(!h.is_open());
     h.assert_focus(&trigger);
     h.click("keyboard-trigger");
-    let outside = h.handle.read_with(&h.app, |view, cx| view.outside.focus_handle(cx)).unwrap();
+    let outside = h
+        .handle
+        .read_with(&h.app, |view, cx| view.outside.focus_handle(cx))
+        .unwrap();
     h.window.update(|window, cx| {
         outside.focus(window, cx);
         clear_popover(&"keyboard-popover".into(), cx);
@@ -275,7 +337,8 @@ fn pointer_and_manual_clear_restore_focus_without_stealing_unrelated_focus() {
     h.draw();
     h.assert_focus(&outside);
     h.click("keyboard-trigger");
-    h.window.simulate_click(point(px(580.0), px(380.0)), gpui::Modifiers::none());
+    h.window
+        .simulate_click(point(px(580.0), px(380.0)), gpui::Modifiers::none());
     h.draw();
     assert!(!h.is_open(), "outside pointer click must still dismiss");
     assert_eq!(h.trigger_clicks.get(), 4);
@@ -287,9 +350,15 @@ fn keyboard_activation_keeps_origin_when_user_callback_moves_focus() {
     let mut h = Harness::new(true, true, false, false);
     let trigger = h.focus_first();
     h.press("enter");
-    assert!(h.is_open(), "deferred activation lost the actual Button dispatch path");
+    assert!(
+        h.is_open(),
+        "deferred activation lost the actual Button dispatch path"
+    );
     assert_eq!(h.trigger_clicks.get(), 1);
-    let outside = h.handle.read_with(&h.app, |view, cx| view.outside.focus_handle(cx)).unwrap();
+    let outside = h
+        .handle
+        .read_with(&h.app, |view, cx| view.outside.focus_handle(cx))
+        .unwrap();
     h.assert_focus(&outside);
     h.click("content-close");
     assert!(!h.is_open());
@@ -301,25 +370,36 @@ fn keyboard_activation_keeps_origin_when_user_callback_moves_focus() {
 fn split_primary_never_opens_and_arrow_opens_with_or_without_callback() {
     for has_action in [true, false] {
         let mut h = Harness::new(true, false, true, false);
-        h.handle.update(&mut h.app, |view, _, cx| {
-            view.split_has_action = has_action;
-            cx.notify();
-        }).unwrap();
+        h.handle
+            .update(&mut h.app, |view, _, cx| {
+                view.split_has_action = has_action;
+                cx.notify();
+            })
+            .unwrap();
         h.draw();
         let primary = h.focus_first();
         for key in ["enter", "space"] {
             h.click("keyboard-popover-main-action");
-            assert!(!h.is_open(), "split primary pointer click opened menu; callback={has_action}");
+            assert!(
+                !h.is_open(),
+                "split primary pointer click opened menu; callback={has_action}"
+            );
             h.window.update(|window, cx| primary.focus(window, cx));
             h.draw();
             h.press(key);
-            assert!(!h.is_open(), "split primary {key} opened menu; callback={has_action}");
+            assert!(
+                !h.is_open(),
+                "split primary {key} opened menu; callback={has_action}"
+            );
             h.click("keyboard-popover-toggle");
             assert!(h.is_open(), "split arrow pointer click did not open menu");
             h.press("escape");
             assert!(!h.is_open());
             h.press(key);
-            assert!(h.is_open(), "split arrow {key} did not open menu; callback={has_action}");
+            assert!(
+                h.is_open(),
+                "split arrow {key} did not open menu; callback={has_action}"
+            );
             h.press("escape");
             assert!(!h.is_open());
         }
@@ -333,30 +413,60 @@ fn editable_trigger_does_not_acquire_button_keyboard_semantics() {
     let mut h = Harness::new(true, false, false, true);
     h.focus_first();
     h.press("space");
-    assert_eq!(h.handle.read_with(&h.app, |view, cx| view.outside.read(cx).value()).unwrap().as_ref(), " ", "Space must reach the editable trigger");
+    assert_eq!(
+        h.handle
+            .read_with(&h.app, |view, cx| view.outside.read(cx).value())
+            .unwrap()
+            .as_ref(),
+        " ",
+        "Space must reach the editable trigger"
+    );
     h.press("x");
-    assert_eq!(h.handle.read_with(&h.app, |view, cx| view.outside.read(cx).value()).unwrap().as_ref(), " x", "visible text must reach the editable trigger");
+    assert_eq!(
+        h.handle
+            .read_with(&h.app, |view, cx| view.outside.read(cx).value())
+            .unwrap()
+            .as_ref(),
+        " x",
+        "visible text must reach the editable trigger"
+    );
     h.press("enter");
-    assert!(!h.is_open(), "typing keys in editable trigger must not activate Popover");
+    assert!(
+        !h.is_open(),
+        "typing keys in editable trigger must not activate Popover"
+    );
     h.app.quit();
 }
 
 #[test]
 fn synchronous_activation_preserves_same_id_callback_replacement() {
     let mut h = Harness::new(true, false, false, false);
-    h.handle.update(&mut h.app, |view, _, cx| {
-        view.replace_on_trigger = true;
-        cx.notify();
-    }).unwrap();
+    h.handle
+        .update(&mut h.app, |view, _, cx| {
+            view.replace_on_trigger = true;
+            cx.notify();
+        })
+        .unwrap();
     h.draw();
     h.focus_first();
     h.press("enter");
     assert_eq!(h.trigger_clicks.get(), 1);
-    let expected = h.handle.read_with(&h.app, |view, _| view.replacement_entity.get().unwrap()).unwrap();
+    let expected = h
+        .handle
+        .read_with(&h.app, |view, _| view.replacement_entity.get().unwrap())
+        .unwrap();
     h.window.update(|_, cx| {
-        let active = cx.global::<liora_core::ActivePopover>().0.iter()
-            .find(|entry| entry.id == "keyboard-popover").unwrap();
-        assert_eq!(active.view.entity_id(), expected, "activation dispatched after the user callback replaced its Popover");
+        let active = cx
+            .global::<liora_core::ActivePopover>()
+            .0
+            .iter()
+            .find(|entry| entry.id == "keyboard-popover")
+            .unwrap();
+        assert_eq!(
+            active.view.entity_id(),
+            expected,
+            "activation dispatched after the user callback replaced its Popover"
+        );
     });
     h.app.quit();
 }
@@ -364,10 +474,12 @@ fn synchronous_activation_preserves_same_id_callback_replacement() {
 #[test]
 fn nonsplit_dropdown_opens_from_whole_button_by_keyboard_and_pointer() {
     let mut h = Harness::new(true, false, true, false);
-    h.handle.update(&mut h.app, |view, _, cx| {
-        view.split = false;
-        cx.notify();
-    }).unwrap();
+    h.handle
+        .update(&mut h.app, |view, _, cx| {
+            view.split = false;
+            cx.notify();
+        })
+        .unwrap();
     h.draw();
     h.focus_first();
     for key in ["enter", "space"] {
@@ -384,28 +496,64 @@ fn nonsplit_dropdown_opens_from_whole_button_by_keyboard_and_pointer() {
 #[test]
 fn docs_confirm_pointer_close_restores_focus_with_both_dismissals_disabled() {
     let mut h = Harness::new(false, false, false, false);
-    h.handle.update(&mut h.app, |view, _, cx| {
-        view.close_on_click_outside = false;
-        cx.notify();
-    }).unwrap();
+    h.handle
+        .update(&mut h.app, |view, _, cx| {
+            view.close_on_click_outside = false;
+            cx.notify();
+        })
+        .unwrap();
     h.draw();
     let trigger = h.focus_first();
     h.press("enter");
     h.press("escape");
     assert!(h.is_open(), "Escape disabled by manual-close policy");
-    h.window.simulate_click(point(px(580.0), px(380.0)), gpui::Modifiers::none());
+    h.window
+        .simulate_click(point(px(580.0), px(380.0)), gpui::Modifiers::none());
     h.draw();
-    assert!(h.is_open(), "outside dismissal disabled by manual-close policy");
+    assert!(
+        h.is_open(),
+        "outside dismissal disabled by manual-close policy"
+    );
     h.assert_focus(&trigger);
-    let bounds = h.window.debug_bounds("docs-confirm").expect("Docs-style Confirm rendered");
-    h.window.simulate_mouse_down(bounds.center(), gpui::MouseButton::Left, gpui::Modifiers::none());
-    let confirm = h.window.update(|window, cx| window.focused(cx).expect("Confirm received native pointer focus"));
-    assert_ne!(confirm, trigger, "pointer press must focus Confirm before its clear callback");
-    h.handle.update(&mut h.app, |view, _, _| *view.confirm_focus.borrow_mut() = Some(confirm)).unwrap();
-    h.window.simulate_mouse_up(bounds.center(), gpui::MouseButton::Left, gpui::Modifiers::none());
+    let bounds = h
+        .window
+        .debug_bounds("docs-confirm")
+        .expect("Docs-style Confirm rendered");
+    h.window.simulate_mouse_down(
+        bounds.center(),
+        gpui::MouseButton::Left,
+        gpui::Modifiers::none(),
+    );
+    let confirm = h.window.update(|window, cx| {
+        window
+            .focused(cx)
+            .expect("Confirm received native pointer focus")
+    });
+    assert_ne!(
+        confirm, trigger,
+        "pointer press must focus Confirm before its clear callback"
+    );
+    h.handle
+        .update(&mut h.app, |view, _, _| {
+            *view.confirm_focus.borrow_mut() = Some(confirm)
+        })
+        .unwrap();
+    h.window.simulate_mouse_up(
+        bounds.center(),
+        gpui::MouseButton::Left,
+        gpui::Modifiers::none(),
+    );
     h.draw();
-    assert!(!h.is_open(), "Confirm must call the public clear_popover path");
-    assert!(h.handle.read_with(&h.app, |view, _| view.confirm_had_focus.get()).unwrap(), "Confirm must own native focus before clearing");
+    assert!(
+        !h.is_open(),
+        "Confirm must call the public clear_popover path"
+    );
+    assert!(
+        h.handle
+            .read_with(&h.app, |view, _| view.confirm_had_focus.get())
+            .unwrap(),
+        "Confirm must own native focus before clearing"
+    );
     h.assert_focus(&trigger);
     h.app.quit();
 }
@@ -413,24 +561,32 @@ fn docs_confirm_pointer_close_restores_focus_with_both_dismissals_disabled() {
 #[test]
 fn disabled_outside_dismissal_blank_press_and_release_preserve_external_focus() {
     let mut h = Harness::new(true, false, false, false);
-    h.handle.update(&mut h.app, |view, _, cx| {
-        view.close_on_click_outside = false;
-        cx.notify();
-    }).unwrap();
+    h.handle
+        .update(&mut h.app, |view, _, cx| {
+            view.close_on_click_outside = false;
+            cx.notify();
+        })
+        .unwrap();
     h.draw();
     h.focus_first();
     h.press("enter");
-    let outside = h.handle.read_with(&h.app, |view, cx| view.outside.focus_handle(cx)).unwrap();
+    let outside = h
+        .handle
+        .read_with(&h.app, |view, cx| view.outside.focus_handle(cx))
+        .unwrap();
     h.window.update(|window, cx| outside.focus(window, cx));
     h.draw();
     let blank = point(px(580.0), px(380.0));
-    h.window.simulate_mouse_down(blank, gpui::MouseButton::Left, gpui::Modifiers::none());
+    h.window
+        .simulate_mouse_down(blank, gpui::MouseButton::Left, gpui::Modifiers::none());
     h.assert_focus(&outside);
-    h.window.simulate_mouse_up(blank, gpui::MouseButton::Left, gpui::Modifiers::none());
+    h.window
+        .simulate_mouse_up(blank, gpui::MouseButton::Left, gpui::Modifiers::none());
     h.draw();
     assert!(h.is_open(), "outside=false must leave the Popover open");
     h.assert_focus(&outside);
-    h.window.update(|_, cx| clear_popover(&"keyboard-popover".into(), cx));
+    h.window
+        .update(|_, cx| clear_popover(&"keyboard-popover".into(), cx));
     h.draw();
     assert!(!h.is_open());
     h.assert_focus(&outside);
@@ -443,7 +599,10 @@ fn same_id_replacement_does_not_restore_old_trigger_from_focused_content() {
     let trigger = h.focus_first();
     h.press("enter");
     h.click("inside-input");
-    let old_content = h.handle.read_with(&h.app, |view, cx| view.inside.focus_handle(cx)).unwrap();
+    let old_content = h
+        .handle
+        .read_with(&h.app, |view, cx| view.inside.focus_handle(cx))
+        .unwrap();
     h.assert_focus(&old_content);
     let (replacement_input, replacement_focus) = h.window.update(|_, cx| {
         let input = cx.new(|cx| Input::new("replacement", cx).id("replacement-input"));
@@ -452,31 +611,49 @@ fn same_id_replacement_does_not_restore_old_trigger_from_focused_content() {
     });
     let replacement_id = h.window.update(|_, cx| {
         let content: Arc<dyn Fn(&mut Window, &mut Context<PopoverView>) -> AnyElement> =
-            Arc::new(move |_, _| div().debug_selector(|| "replacement-input-host".into())
-                .child(replacement_input.clone()).into_any_element());
-        let replacement = cx.new(|_| PopoverView::new(
-            content,
-            Bounds { origin: point(px(10.0), px(10.0)), size: gpui::size(px(80.0), px(24.0)) },
-            Placement::Bottom,
-            px(8.0),
-            true,
-            true,
-            "keyboard-popover".into(),
-            None,
-            |_, cx| clear_popover(&"keyboard-popover".into(), cx),
-        ));
+            Arc::new(move |_, _| {
+                div()
+                    .debug_selector(|| "replacement-input-host".into())
+                    .child(replacement_input.clone())
+                    .into_any_element()
+            });
+        let replacement = cx.new(|_| {
+            PopoverView::new(
+                content,
+                Bounds {
+                    origin: point(px(10.0), px(10.0)),
+                    size: gpui::size(px(80.0), px(24.0)),
+                },
+                Placement::Bottom,
+                px(8.0),
+                true,
+                true,
+                "keyboard-popover".into(),
+                None,
+                |_, cx| clear_popover(&"keyboard-popover".into(), cx),
+            )
+        });
         let id = replacement.entity_id();
         set_active_popover("keyboard-popover".into(), replacement.into(), cx);
         id
     });
     h.assert_focus(&old_content);
-    h.window.update(|window, _| assert!(!trigger.is_focused(window), "replacement must not restore the retired trigger"));
+    h.window.update(|window, _| {
+        assert!(
+            !trigger.is_focused(window),
+            "replacement must not restore the retired trigger"
+        )
+    });
     h.draw();
     h.click("replacement-input-host");
     h.assert_focus(&replacement_focus);
     h.window.update(|_, cx| {
-        let active = cx.global::<liora_core::ActivePopover>().0.iter()
-            .find(|entry| entry.id == "keyboard-popover").unwrap();
+        let active = cx
+            .global::<liora_core::ActivePopover>()
+            .0
+            .iter()
+            .find(|entry| entry.id == "keyboard-popover")
+            .unwrap();
         assert_eq!(active.view.entity_id(), replacement_id);
     });
     h.app.quit();
@@ -488,7 +665,10 @@ fn shared_popover_mutations_repaint_without_extra_input(cx: &mut TestAppContext)
     impl Render for Probe {
         fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
             let name = self.0;
-            div().debug_selector(move || name.into()).w(px(40.0)).h(px(20.0))
+            div()
+                .debug_selector(move || name.into())
+                .w(px(40.0))
+                .h(px(20.0))
         }
     }
     struct Root(Rc<Cell<usize>>);
@@ -506,9 +686,11 @@ fn shared_popover_mutations_repaint_without_extra_input(cx: &mut TestAppContext)
     window.update(|window, cx| window.draw(cx).clear(cx));
     let notifications = Rc::new(Cell::new(0));
     let observed = notifications.clone();
-    let _subscription = cx.update(|cx| cx.observe_global::<liora_core::ActivePopover>(move |_| {
-        observed.set(observed.get() + 1);
-    }));
+    let _subscription = cx.update(|cx| {
+        cx.observe_global::<liora_core::ActivePopover>(move |_| {
+            observed.set(observed.get() + 1);
+        })
+    });
     let first = cx.new(|_| Probe("mutation-first"));
     let replacement = cx.new(|_| Probe("mutation-replacement"));
     let second = cx.new(|_| Probe("mutation-second"));
@@ -520,7 +702,11 @@ fn shared_popover_mutations_repaint_without_extra_input(cx: &mut TestAppContext)
     let before_noop = (renders.get(), notifications.get());
     cx.update(|cx| clear_popover(&"missing-popover".into(), cx));
     cx.run_until_parked();
-    assert_eq!((renders.get(), notifications.get()), before_noop, "missing-ID clear dirtied or notified");
+    assert_eq!(
+        (renders.get(), notifications.get()),
+        before_noop,
+        "missing-ID clear dirtied or notified"
+    );
     cx.update(|cx| set_active_popover(id.clone(), replacement.into(), cx));
     cx.run_until_parked();
     assert!(window.debug_bounds("mutation-first").is_none());
@@ -540,5 +726,9 @@ fn shared_popover_mutations_repaint_without_extra_input(cx: &mut TestAppContext)
         liora_core::clear_active_popover(cx);
     });
     cx.run_until_parked();
-    assert_eq!((renders.get(), notifications.get()), before_noop, "empty clears dirtied or notified");
+    assert_eq!(
+        (renders.get(), notifications.get()),
+        before_noop,
+        "empty clears dirtied or notified"
+    );
 }

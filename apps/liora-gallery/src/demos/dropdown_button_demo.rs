@@ -95,7 +95,9 @@ fn split_button_card() -> AnyElement {
             DropdownButton::new("Menu only")
                 .id("dropdown-button-demo-split-menu-only")
                 .split(true)
-                .item("Preview deployment", |_, _| toast_info!("Preview deployment")),
+                .item("Preview deployment", |_, _| {
+                    toast_info!("Preview deployment")
+                }),
         ]),
     )
     .into_any_element()

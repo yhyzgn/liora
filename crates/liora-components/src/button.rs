@@ -81,7 +81,13 @@ fn readable_text(color: Hsla, maximum_luminance: f32, target_luminance: f32) -> 
             1.055 * channel.powf(1.0 / 2.4) - 0.055
         }
     };
-    Rgba { r: encode(channels[0]), g: encode(channels[1]), b: encode(channels[2]), a: 1.0 }.into()
+    Rgba {
+        r: encode(channels[0]),
+        g: encode(channels[1]),
+        b: encode(channels[2]),
+        a: 1.0,
+    }
+    .into()
 }
 
 fn filled_foreground(background: Hsla) -> Hsla {
@@ -241,11 +247,7 @@ fn gradient_background(angle: f32, from: Hsla, to: Hsla) -> Background {
 }
 
 #[cfg(test)]
-fn inspect_button_icon(
-    id: &ElementId,
-    name: IconName,
-    icon: impl IntoElement,
-) -> impl IntoElement {
+fn inspect_button_icon(id: &ElementId, name: IconName, icon: impl IntoElement) -> impl IntoElement {
     gpui::div()
         .flex()
         .debug_selector(|| format!("{id}:{name:?}"))
@@ -582,7 +584,10 @@ impl Button {
             }
         } else if self.variant == ButtonVariant::Text {
             let mut colors = theme.color_by_variant(ButtonVariant::Text, false, false, false);
-            if !matches!(self.text_semantic, ButtonVariant::Default | ButtonVariant::Tertiary) {
+            if !matches!(
+                self.text_semantic,
+                ButtonVariant::Default | ButtonVariant::Tertiary
+            ) {
                 let semantic = theme.color_by_variant(self.text_semantic, true, false, false);
                 colors.text = semantic.text;
                 colors.text_hover = semantic.text_hover;
@@ -596,7 +601,8 @@ impl Button {
                     // Leave headroom for the sRGB/HSL round trip and 8-bit native rendering.
                     let target_luminance = ((darkest_background + 0.05) / 4.55 - 0.05).max(0.0);
                     colors.text = readable_text(colors.text, maximum_luminance, target_luminance);
-                    colors.text_hover = readable_text(colors.text_hover, maximum_luminance, target_luminance);
+                    colors.text_hover =
+                        readable_text(colors.text_hover, maximum_luminance, target_luminance);
                 }
             }
             colors
@@ -883,12 +889,17 @@ impl Button {
         // Track the root's single retained native owner instead of Div's anonymous handle.
         let focus_handle = window.with_global_id(id.clone(), |global_id, window| {
             window.with_element_state::<gpui::FocusHandle, _>(global_id, |previous, _| {
-                let handle = previous.unwrap_or_else(|| cx.focus_handle().tab_stop(true).tab_index(0));
+                let handle =
+                    previous.unwrap_or_else(|| cx.focus_handle().tab_stop(true).tab_index(0));
                 (handle.clone(), handle)
             })
         });
         let paint_focus = focus_handle.clone();
-        let border = if c.border.is_transparent() { px(0.0) } else { px(1.0) };
+        let border = if c.border.is_transparent() {
+            px(0.0)
+        } else {
+            px(1.0)
+        };
         #[cfg(test)]
         let outline_id = id.clone();
         let outline = gpui::canvas(|_, _, _| (), move |bounds, (), window, _| {
@@ -903,7 +914,8 @@ impl Button {
             }
         }).absolute().inset(-border);
 
-        div.track_focus(&focus_handle).tab_index(0)
+        div.track_focus(&focus_handle)
+            .tab_index(0)
             .on_key_down(|event, window, cx| {
                 let modifiers = event.keystroke.modifiers;
                 if event.keystroke.key == "tab"
@@ -1014,11 +1026,14 @@ mod tests {
                         .disabled(disabled)
                         .loading(loading)
                         .on_click(move |_, _, _| clicks.borrow_mut().push(label));
-                    gpui::div().w(px(120.0)).h(px(48.0)).child(if self.icon_only {
-                        button.icon_only(IconName::Check)
-                    } else {
-                        button
-                    })
+                    gpui::div()
+                        .w(px(120.0))
+                        .h(px(48.0))
+                        .child(if self.icon_only {
+                            button.icon_only(IconName::Check)
+                        } else {
+                            button
+                        })
                 }),
             )
         }
@@ -1041,10 +1056,22 @@ mod tests {
 
     impl gpui::Render for FocusOutlineTest {
         fn render(&mut self, _: &mut Window, _: &mut gpui::Context<Self>) -> impl IntoElement {
-            gpui::div().flex().gap_4()
+            gpui::div()
+                .flex()
+                .gap_4()
                 .child(Button::new("Same").id("outline-opaque").primary())
-                .child(Button::new("Same").id("outline-transparent").primary().text())
-                .child(Button::new("Same").id("outline-icon").primary().icon_only(IconName::Check))
+                .child(
+                    Button::new("Same")
+                        .id("outline-transparent")
+                        .primary()
+                        .text(),
+                )
+                .child(
+                    Button::new("Same")
+                        .id("outline-icon")
+                        .primary()
+                        .icon_only(IconName::Check),
+                )
                 .child(Button::new("Same").id("outline-disabled").disabled(true))
                 .child(Button::new("Same").id("outline-loading").loading(true))
         }
@@ -1061,10 +1088,20 @@ mod tests {
         let ids = ["outline-opaque", "outline-transparent", "outline-icon"];
         let roots = ids.map(|id| window.debug_bounds(id).unwrap());
         FOCUS_OUTLINES.with_borrow(|records| {
-            assert_eq!(records.len(), 3, "disabled/loading must not retain or draw focus");
+            assert_eq!(
+                records.len(),
+                3,
+                "disabled/loading must not retain or draw focus"
+            );
             for (id, root) in ids.into_iter().zip(roots) {
-                let (_, canvas, visible) = records.iter().find(|(key, _, _)| *key == element_id(id)).unwrap();
-                assert_eq!(*canvas, root, "canvas must cover the root border box, including an existing border");
+                let (_, canvas, visible) = records
+                    .iter()
+                    .find(|(key, _, _)| *key == element_id(id))
+                    .unwrap();
+                assert_eq!(
+                    *canvas, root,
+                    "canvas must cover the root border box, including an existing border"
+                );
                 assert!(!visible);
             }
         });
@@ -1079,8 +1116,16 @@ mod tests {
             FOCUS_OUTLINES.with_borrow_mut(Vec::clear);
             window.update(|window, cx| window.draw(cx).clear(cx));
             FOCUS_OUTLINES.with_borrow(|records| {
-                let focused_ids: Vec<_> = records.iter().filter(|(_, _, visible)| *visible).map(|(id, _, _)| id.clone()).collect();
-                assert_eq!(focused_ids, vec![element_id(focused)], "one retained root owner must survive rerender and each Tab");
+                let focused_ids: Vec<_> = records
+                    .iter()
+                    .filter(|(_, _, visible)| *visible)
+                    .map(|(id, _, _)| id.clone())
+                    .collect();
+                assert_eq!(
+                    focused_ids,
+                    vec![element_id(focused)],
+                    "one retained root owner must survive rerender and each Tab"
+                );
             });
             for (id, root) in ids.into_iter().zip(roots) {
                 assert_eq!(window.debug_bounds(id), Some(root));
@@ -1089,19 +1134,39 @@ mod tests {
         window.simulate_click(roots[2].center(), gpui::Modifiers::none());
         FOCUS_OUTLINES.with_borrow_mut(Vec::clear);
         window.update(|window, cx| window.draw(cx).clear(cx));
-        FOCUS_OUTLINES.with_borrow(|records| assert!(records.iter().all(|(_, _, visible)| !visible), "pointer focus must not paint a keyboard outline"));
+        FOCUS_OUTLINES.with_borrow(|records| {
+            assert!(
+                records.iter().all(|(_, _, visible)| !visible),
+                "pointer focus must not paint a keyboard outline"
+            )
+        });
         app.quit();
     }
 
     impl gpui::Render for RepeatedLabelTest {
         fn render(&mut self, _: &mut Window, _: &mut gpui::Context<Self>) -> impl IntoElement {
-            gpui::div().flex().gap_2()
-                .child(Button::new("Disabled").id("button-custom-color-disabled")
-                    .custom_color(gpui::blue(), gpui::white()).disabled(true))
-                .child(Button::new("Disabled").id("button-gradient-disabled")
-                    .gradient(gpui::blue(), gpui::green()).disabled(true))
+            gpui::div()
+                .flex()
+                .gap_2()
+                .child(
+                    Button::new("Disabled")
+                        .id("button-custom-color-disabled")
+                        .custom_color(gpui::blue(), gpui::white())
+                        .disabled(true),
+                )
+                .child(
+                    Button::new("Disabled")
+                        .id("button-gradient-disabled")
+                        .gradient(gpui::blue(), gpui::green())
+                        .disabled(true),
+                )
                 .child(Button::new("Primary").primary().id("button-type-primary"))
-                .child(Button::new("Primary").text().primary().id("button-text-primary"))
+                .child(
+                    Button::new("Primary")
+                        .text()
+                        .primary()
+                        .id("button-text-primary"),
+                )
         }
     }
 
@@ -1120,10 +1185,19 @@ mod tests {
         assert!(primary.right() <= text_primary.left());
         handle.update(&mut app, |_, _, cx| cx.notify()).unwrap();
         window.update(|window, cx| window.draw(cx).clear(cx));
-        assert_eq!(window.debug_bounds("button-custom-color-disabled"), Some(first));
-        assert_eq!(window.debug_bounds("button-gradient-disabled"), Some(second));
+        assert_eq!(
+            window.debug_bounds("button-custom-color-disabled"),
+            Some(first)
+        );
+        assert_eq!(
+            window.debug_bounds("button-gradient-disabled"),
+            Some(second)
+        );
         assert_eq!(window.debug_bounds("button-type-primary"), Some(primary));
-        assert_eq!(window.debug_bounds("button-text-primary"), Some(text_primary));
+        assert_eq!(
+            window.debug_bounds("button-text-primary"),
+            Some(text_primary)
+        );
         // TestWindow has no native adapter; the live Gallery/Docs run checks native identities.
         app.quit();
     }
@@ -1132,7 +1206,9 @@ mod tests {
 
     impl gpui::Render for SemanticTextIdentityTest {
         fn render(&mut self, _: &mut Window, _: &mut gpui::Context<Self>) -> impl IntoElement {
-            gpui::div().flex().gap_2()
+            gpui::div()
+                .flex()
+                .gap_2()
                 .child(Button::new("Same").text().primary())
                 .child(Button::new("Same").danger().text())
         }
@@ -1157,7 +1233,6 @@ mod tests {
         app.quit();
     }
 
-
     struct ChangingButtonTest {
         disabled: bool,
         loading: bool,
@@ -1178,7 +1253,8 @@ mod tests {
             }
             let clicks = self.clicks.clone();
             gpui::div().flex().gap_2().child(button).child(
-                Button::new("After").id("after-changing")
+                Button::new("After")
+                    .id("after-changing")
                     .on_click(move |_, _, _| clicks.borrow_mut().push("after")),
             )
         }
@@ -1192,7 +1268,12 @@ mod tests {
             let clicks = Rc::new(RefCell::new(Vec::new()));
             let handle = app.add_window({
                 let clicks = clicks.clone();
-                move |_, _| ChangingButtonTest { disabled: false, loading: false, override_name: false, clicks }
+                move |_, _| ChangingButtonTest {
+                    disabled: false,
+                    loading: false,
+                    override_name: false,
+                    clicks,
+                }
             });
             let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
             window.update(|window, cx| {
@@ -1203,30 +1284,46 @@ mod tests {
             let original = window.debug_bounds("changing-button").unwrap();
             press(&mut window, "enter");
             assert_eq!(*clicks.borrow(), ["changing"]);
-            handle.update(&mut app, |view, _, cx| {
-                view.disabled = !loading;
-                view.loading = loading;
-                cx.notify();
-            }).unwrap();
+            handle
+                .update(&mut app, |view, _, cx| {
+                    view.disabled = !loading;
+                    view.loading = loading;
+                    cx.notify();
+                })
+                .unwrap();
             window.update(|window, cx| window.draw(cx).clear(cx));
             press(&mut window, "enter");
             press(&mut window, "space");
             let center = window.debug_bounds("changing-button").unwrap().center();
             window.simulate_click(center, gpui::Modifiers::none());
             window.update(|window, cx| window.draw(cx).clear(cx));
-            assert_eq!(*clicks.borrow(), ["changing"], "previously focused inert button activated");
+            assert_eq!(
+                *clicks.borrow(),
+                ["changing"],
+                "previously focused inert button activated"
+            );
             window.update(|window, cx| window.focus_next(cx));
             window.update(|window, cx| window.draw(cx).clear(cx));
             press(&mut window, "enter");
-            assert_eq!(*clicks.borrow(), ["changing", "after"], "inert button remained in Tab order");
-            handle.update(&mut app, |view, _, cx| {
-                view.disabled = false;
-                view.loading = false;
-                view.override_name = true;
-                cx.notify();
-            }).unwrap();
+            assert_eq!(
+                *clicks.borrow(),
+                ["changing", "after"],
+                "inert button remained in Tab order"
+            );
+            handle
+                .update(&mut app, |view, _, cx| {
+                    view.disabled = false;
+                    view.loading = false;
+                    view.override_name = true;
+                    cx.notify();
+                })
+                .unwrap();
             window.update(|window, cx| window.draw(cx).clear(cx));
-            assert_eq!(window.debug_bounds("changing-button").unwrap(), original, "native name override changed visible + geometry");
+            assert_eq!(
+                window.debug_bounds("changing-button").unwrap(),
+                original,
+                "native name override changed visible + geometry"
+            );
             window.simulate_keystrokes("shift-tab");
             window.update(|window, cx| window.draw(cx).clear(cx));
             press(&mut window, "space");
@@ -1373,11 +1470,12 @@ mod tests {
                 .zip([0.2126, 0.7152, 0.0722])
                 .map(|(channel, weight)| {
                     let channel = f64::from(channel);
-                    weight * if channel <= 0.04045 {
-                        channel / 12.92
-                    } else {
-                        ((channel + 0.055) / 1.055).powf(2.4)
-                    }
+                    weight
+                        * if channel <= 0.04045 {
+                            channel / 12.92
+                        } else {
+                            ((channel + 0.055) / 1.055).powf(2.4)
+                        }
                 })
                 .sum()
         }
@@ -1397,8 +1495,7 @@ mod tests {
                 assert_eq!(colors.active_bg.a, 1.0);
                 let text = luminance(text);
                 let background = luminance(colors.active_bg);
-                let contrast = (text.max(background) + 0.05)
-                    / (text.min(background) + 0.05);
+                let contrast = (text.max(background) + 0.05) / (text.min(background) + 0.05);
                 assert!(contrast >= 4.5, "{name} {variant:?} pressed: {contrast}");
             }
 
@@ -1407,8 +1504,12 @@ mod tests {
                 Button::new("tertiary").variant(ButtonVariant::Tertiary),
                 Button::new("text").variant(ButtonVariant::Text),
                 Button::new("secondary").primary().secondary(),
-                Button::new("custom").primary().custom_color(gpui::red(), gpui::white()),
-                Button::new("gradient").primary().gradient(gpui::blue(), gpui::green()),
+                Button::new("custom")
+                    .primary()
+                    .custom_color(gpui::red(), gpui::white()),
+                Button::new("gradient")
+                    .primary()
+                    .gradient(gpui::blue(), gpui::green()),
                 Button::new("disabled").primary().disabled(true),
             ] {
                 assert!(
@@ -1439,19 +1540,28 @@ mod tests {
                 .zip([0.2126, 0.7152, 0.0722])
                 .map(|(channel, weight)| {
                     let channel = f64::from(channel);
-                    weight * if channel <= 0.04045 {
-                        channel / 12.92
-                    } else {
-                        ((channel + 0.055) / 1.055).powf(2.4)
-                    }
+                    weight
+                        * if channel <= 0.04045 {
+                            channel / 12.92
+                        } else {
+                            ((channel + 0.055) / 1.055).powf(2.4)
+                        }
                 })
                 .sum()
         }
 
         let theme = Theme::light();
-        for semantic in [Button::primary as fn(Button) -> Button, Button::info,
-            Button::success, Button::warning, Button::danger] {
-            for button in [semantic(Button::new("Action").text()), semantic(Button::new("Action")).text()] {
+        for semantic in [
+            Button::primary as fn(Button) -> Button,
+            Button::info,
+            Button::success,
+            Button::warning,
+            Button::danger,
+        ] {
+            for button in [
+                semantic(Button::new("Action").text()),
+                semantic(Button::new("Action")).text(),
+            ] {
                 let colors = button.resolved_colors(&theme);
                 for surface in [theme.neutral.body, theme.neutral.card] {
                     for (state, foreground, background) in [
@@ -1465,7 +1575,11 @@ mod tests {
                         let background = luminance(surface.blend(background));
                         let contrast = (foreground.max(background) + 0.05)
                             / (foreground.min(background) + 0.05);
-                        assert!(contrast >= 4.5, "{:?} {state}: {contrast}", button.text_semantic);
+                        assert!(
+                            contrast >= 4.5,
+                            "{:?} {state}: {contrast}",
+                            button.text_semantic
+                        );
                     }
                 }
             }
@@ -1482,13 +1596,27 @@ mod tests {
                 (Button::warning, &theme.warning),
                 (Button::danger, &theme.danger),
             ] {
-                let expected = semantic(Button::new("Action")).text().resolved_colors(&theme);
-                for button in [semantic(Button::new("Action").text()), semantic(Button::new("Action")).text()] {
+                let expected = semantic(Button::new("Action"))
+                    .text()
+                    .resolved_colors(&theme);
+                for button in [
+                    semantic(Button::new("Action").text()),
+                    semantic(Button::new("Action")).text(),
+                ] {
                     let colors = button.resolved_colors(&theme);
-                    assert_eq!((colors.bg.a, colors.border.a, colors.border_hover.a), (0.0, 0.0, 0.0));
-                    assert_eq!((colors.text, colors.text_hover), (expected.text, expected.text_hover));
+                    assert_eq!(
+                        (colors.bg.a, colors.border.a, colors.border_hover.a),
+                        (0.0, 0.0, 0.0)
+                    );
+                    assert_eq!(
+                        (colors.text, colors.text_hover),
+                        (expected.text, expected.text_hover)
+                    );
                     if theme.name == "dark" {
-                        assert_eq!((colors.text, colors.text_hover), (family.base, family.hover));
+                        assert_eq!(
+                            (colors.text, colors.text_hover),
+                            (family.base, family.hover)
+                        );
                     }
                     assert_eq!(colors.hover_bg, theme.secondary.hover);
                     assert_eq!(colors.active_bg, theme.secondary.pressed);
@@ -1496,42 +1624,95 @@ mod tests {
                 let filled = semantic(Button::new("Action")).resolved_colors(&theme);
                 assert_eq!((filled.bg, filled.border), (family.base, family.base));
             }
-            let distinct = [ButtonVariant::Primary, ButtonVariant::Info,
-                ButtonVariant::Warning, ButtonVariant::Danger]
-                .map(|variant| Button::new("Action").text().variant(variant).resolved_colors(&theme));
+            let distinct = [
+                ButtonVariant::Primary,
+                ButtonVariant::Info,
+                ButtonVariant::Warning,
+                ButtonVariant::Danger,
+            ]
+            .map(|variant| {
+                Button::new("Action")
+                    .text()
+                    .variant(variant)
+                    .resolved_colors(&theme)
+            });
             for (index, first) in distinct.iter().enumerate() {
                 for second in &distinct[index + 1..] {
-                    assert_ne!(first.text, second.text, "semantic normal foregrounds collapsed");
-                    assert_ne!(first.text_hover, second.text_hover, "semantic hover/pressed foregrounds collapsed");
+                    assert_ne!(
+                        first.text, second.text,
+                        "semantic normal foregrounds collapsed"
+                    );
+                    assert_ne!(
+                        first.text_hover, second.text_hover,
+                        "semantic hover/pressed foregrounds collapsed"
+                    );
                 }
             }
-            for button in [Button::new("Action").text(), Button::new("Action").variant(ButtonVariant::Text)] {
+            for button in [
+                Button::new("Action").text(),
+                Button::new("Action").variant(ButtonVariant::Text),
+            ] {
                 let colors = button.resolved_colors(&theme);
-                assert_eq!((colors.bg.a, colors.border.a, colors.text), (0.0, 0.0, theme.neutral.text_2));
+                assert_eq!(
+                    (colors.bg.a, colors.border.a, colors.text),
+                    (0.0, 0.0, theme.neutral.text_2)
+                );
             }
             let neutral = Button::new("Action").resolved_colors(&theme);
-            assert_eq!((neutral.bg.a, neutral.border, neutral.text), (0.0, theme.neutral.border, theme.neutral.text_2));
-            let plain = Button::new("Action").primary().secondary().background(false).border(false).resolved_colors(&theme);
-            assert_eq!((plain.bg.a, plain.border.a, plain.text, plain.hover_bg),
-                (0.0, 0.0, theme.primary.base, theme.primary.light_8));
+            assert_eq!(
+                (neutral.bg.a, neutral.border, neutral.text),
+                (0.0, theme.neutral.border, theme.neutral.text_2)
+            );
+            let plain = Button::new("Action")
+                .primary()
+                .secondary()
+                .background(false)
+                .border(false)
+                .resolved_colors(&theme);
+            assert_eq!(
+                (plain.bg.a, plain.border.a, plain.text, plain.hover_bg),
+                (0.0, 0.0, theme.primary.base, theme.primary.light_8)
+            );
         }
     }
 
     #[test]
     fn semantic_text_contrast_preserves_explicit_and_inactive_colors() {
         for theme in [Theme::light(), Theme::dark()] {
-            for semantic in [Button::primary as fn(Button) -> Button, Button::info,
-                Button::success, Button::warning, Button::danger] {
+            for semantic in [
+                Button::primary as fn(Button) -> Button,
+                Button::info,
+                Button::success,
+                Button::warning,
+                Button::danger,
+            ] {
                 let custom = semantic(Button::new("Action").text())
-                    .custom_color(gpui::white(), gpui::white()).resolved_colors(&theme);
-                assert_eq!((custom.text, custom.text_hover), (gpui::white(), gpui::white()));
-                let disabled = semantic(Button::new("Action").text()).disabled(true).resolved_colors(&theme);
-                assert_eq!((disabled.text, disabled.text_hover), (theme.neutral.text_disabled, theme.neutral.text_disabled));
+                    .custom_color(gpui::white(), gpui::white())
+                    .resolved_colors(&theme);
+                assert_eq!(
+                    (custom.text, custom.text_hover),
+                    (gpui::white(), gpui::white())
+                );
+                let disabled = semantic(Button::new("Action").text())
+                    .disabled(true)
+                    .resolved_colors(&theme);
+                assert_eq!(
+                    (disabled.text, disabled.text_hover),
+                    (theme.neutral.text_disabled, theme.neutral.text_disabled)
+                );
                 let gradient = semantic(Button::new("Action").text())
-                    .gradient(gpui::white(), gpui::red()).resolved_colors(&theme);
-                assert_eq!((gradient.text, gradient.text_hover), (theme.neutral.inverted, theme.neutral.inverted));
+                    .gradient(gpui::white(), gpui::red())
+                    .resolved_colors(&theme);
+                assert_eq!(
+                    (gradient.text, gradient.text_hover),
+                    (theme.neutral.inverted, theme.neutral.inverted)
+                );
                 let button = semantic(Button::new("Action").text());
-                assert!(button.active_text_color(&button.resolved_colors(&theme)).is_none());
+                assert!(
+                    button
+                        .active_text_color(&button.resolved_colors(&theme))
+                        .is_none()
+                );
             }
         }
         let foreground = rgba(240, 160, 32, 0.5);

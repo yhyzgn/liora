@@ -20,8 +20,8 @@
 //! crate.
 
 use gpui::{
-    App, Hsla, IntoElement, RenderOnce, SharedString, StyledImage, ViewElement as Component, Window,
-    div, img, prelude::*, px,
+    App, Hsla, IntoElement, RenderOnce, SharedString, StyledImage, ViewElement as Component,
+    Window, div, img, prelude::*, px,
 };
 use liora_core::Config;
 use liora_icons::Icon;
@@ -205,7 +205,9 @@ mod tests {
 
         impl gpui::Render for AvatarProbe {
             fn render(&mut self, _: &mut Window, _: &mut gpui::Context<Self>) -> impl IntoElement {
-                Avatar::new().src("https://example.invalid/avatar.png").alt("AB")
+                Avatar::new()
+                    .src("https://example.invalid/avatar.png")
+                    .alt("AB")
             }
         }
 

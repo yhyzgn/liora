@@ -89,67 +89,107 @@ mod tests {
 
     impl Render for VirtualSelectSurface {
         fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
-            div().relative().size_full().child(self.0.clone()).child(PortalLayer)
+            div()
+                .relative()
+                .size_full()
+                .child(self.0.clone())
+                .child(PortalLayer)
         }
     }
 
     fn click(window: &mut Window, cx: &mut App, position: gpui::Point<gpui::Pixels>) {
-        window.dispatch_event(gpui::PlatformInput::MouseMove(gpui::MouseMoveEvent {
-            position,
-            ..Default::default()
-        }), cx);
-        window.dispatch_event(gpui::PlatformInput::MouseDown(gpui::MouseDownEvent {
-            position,
-            button: gpui::MouseButton::Left,
-            click_count: 1,
-            ..Default::default()
-        }), cx);
-        window.dispatch_event(gpui::PlatformInput::MouseUp(gpui::MouseUpEvent {
-            position,
-            button: gpui::MouseButton::Left,
-            click_count: 1,
-            ..Default::default()
-        }), cx);
+        window.dispatch_event(
+            gpui::PlatformInput::MouseMove(gpui::MouseMoveEvent {
+                position,
+                ..Default::default()
+            }),
+            cx,
+        );
+        window.dispatch_event(
+            gpui::PlatformInput::MouseDown(gpui::MouseDownEvent {
+                position,
+                button: gpui::MouseButton::Left,
+                click_count: 1,
+                ..Default::default()
+            }),
+            cx,
+        );
+        window.dispatch_event(
+            gpui::PlatformInput::MouseUp(gpui::MouseUpEvent {
+                position,
+                button: gpui::MouseButton::Left,
+                click_count: 1,
+                ..Default::default()
+            }),
+            cx,
+        );
     }
 
     #[test]
     fn virtualized_select_selects_and_dismisses_without_queued_ghosts() {
         let mut app = gpui::TestAppContext::single();
         app.update(crate::init_liora);
-        let select = app.new(|cx| crate::Select::new(vec!["Apple", "Banana", "Orange"], Some(0), cx));
+        let select =
+            app.new(|cx| crate::Select::new(vec!["Apple", "Banana", "Orange"], Some(0), cx));
         let trigger = Rc::new(Cell::new(None));
         let list = app.new(|cx| {
             let select = select.clone();
             let trigger = trigger.clone();
             crate::VirtualizedList::new(1, cx, move |_, _, _| {
                 let trigger = trigger.clone();
-                div().w(px(200.0)).child(select.clone())
-                    .on_children_prepainted(move |bounds, _, _| trigger.set(bounds.into_iter().next()))
+                div()
+                    .w(px(200.0))
+                    .child(select.clone())
+                    .on_children_prepainted(move |bounds, _, _| {
+                        trigger.set(bounds.into_iter().next())
+                    })
                     .into_any_element()
             })
         });
-        let window = app.open_window(gpui::size(px(400.0), px(300.0)), |_, _| VirtualSelectSurface(list));
+        let window = app.open_window(gpui::size(px(400.0), px(300.0)), |_, _| {
+            VirtualSelectSurface(list)
+        });
         app.update_window(window.into(), |_, window, cx| {
             window.draw(cx).clear(cx);
             let bounds = trigger.get().expect("virtualized Select must be laid out");
             click(window, cx, bounds.center());
             window.draw(cx).clear(cx);
-            assert!(cx.global::<Portal>().entries.is_empty(), "same-frame popup queue must be drained");
-            let second_option = gpui::point(bounds.left() + px(20.0), bounds.bottom() + px(4.0 + 50.0));
+            assert!(
+                cx.global::<Portal>().entries.is_empty(),
+                "same-frame popup queue must be drained"
+            );
+            let second_option =
+                gpui::point(bounds.left() + px(20.0), bounds.bottom() + px(4.0 + 50.0));
             click(window, cx, second_option);
-            assert_eq!(select.read(cx).selected_index(), Some(1), "portal option must receive native dispatch");
+            assert_eq!(
+                select.read(cx).selected_index(),
+                Some(1),
+                "portal option must receive native dispatch"
+            );
             for _ in 0..3 {
                 window.refresh();
                 window.draw(cx).clear(cx);
-                assert!(cx.global::<Portal>().entries.is_empty(), "closed popup must not leave stale entries");
+                assert!(
+                    cx.global::<Portal>().entries.is_empty(),
+                    "closed popup must not leave stale entries"
+                );
             }
             click(window, cx, bounds.center());
             window.draw(cx).clear(cx);
-            click(window, cx, gpui::point(bounds.left() + px(20.0), bounds.bottom() + px(4.0 + 85.0)));
-            assert_eq!(select.read(cx).selected_index(), Some(2), "reopen after redraw must use fresh options");
+            click(
+                window,
+                cx,
+                gpui::point(bounds.left() + px(20.0), bounds.bottom() + px(4.0 + 85.0)),
+            );
+            assert_eq!(
+                select.read(cx).selected_index(),
+                Some(2),
+                "reopen after redraw must use fresh options"
+            );
             window.draw(cx).clear(cx);
             assert!(cx.global::<Portal>().entries.is_empty());
-        }).unwrap();
+        })
+        .unwrap();
         app.quit();
     }
 }

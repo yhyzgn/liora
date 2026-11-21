@@ -7,17 +7,15 @@ use gpui::{
 use liora_components::{
     AppWindowFrame, Button, Card, Checkbox, Container, Dialog, Input, Menu, MenuBar, MenuItem,
     NavigationMenu, NavigationMenuMode, NavigationMenuNode, Paragraph, PortalLayer, Segmented,
-    SegmentedOption,
-    Sidebar, Space, Spinner, Switch, Tag, Text, Title, TitleBar, WindowFrameMode,
-    apply_window_frame_mode, frame_mode_switch_row, init_liora_with_options,
-    toast_info, toast_success,
+    SegmentedOption, Sidebar, Space, Spinner, Switch, Tag, Text, Title, TitleBar, WindowFrameMode,
+    apply_window_frame_mode, frame_mode_switch_row, init_liora_with_options, toast_info,
+    toast_success,
 };
 use liora_core::{
     Config, FontConfig, FontLoadMode, FontLoadOptions, LinuxDesktopIdentity, LinuxDesktopPngIcon,
-    LocalesMap, Options, ThemeMode, apply_locale, apply_theme_mode,
-    attach_system_theme_observer, current_locale, ensure_linux_desktop_identity,
-    linux_desktop_entry, linux_desktop_png_icon_path, load_app_fonts,
-    startup_maximized_window_bounds, tr,
+    LocalesMap, Options, ThemeMode, apply_locale, apply_theme_mode, attach_system_theme_observer,
+    current_locale, ensure_linux_desktop_identity, linux_desktop_entry,
+    linux_desktop_png_icon_path, load_app_fonts, startup_maximized_window_bounds, tr,
 };
 use liora_gallery::{category, demos, tray_menu::gallery_tray_menu};
 use liora_tray::{
@@ -239,9 +237,15 @@ fn perform_menu_zoom(action: liora_components::MenuAction, cx: &mut App) {
 /// Registers the gallery example menu through GPUI's official application menu API.
 fn register_gallery_system_menus(cx: &mut App) {
     if !cx.has_global::<MenuZoomHandlers>() {
-        cx.on_action(|_: &MenuZoomIn, cx| perform_menu_zoom(liora_components::MenuAction::ZoomIn, cx));
-        cx.on_action(|_: &MenuZoomOut, cx| perform_menu_zoom(liora_components::MenuAction::ZoomOut, cx));
-        cx.on_action(|_: &MenuZoomReset, cx| perform_menu_zoom(liora_components::MenuAction::ZoomReset, cx));
+        cx.on_action(|_: &MenuZoomIn, cx| {
+            perform_menu_zoom(liora_components::MenuAction::ZoomIn, cx)
+        });
+        cx.on_action(|_: &MenuZoomOut, cx| {
+            perform_menu_zoom(liora_components::MenuAction::ZoomOut, cx)
+        });
+        cx.on_action(|_: &MenuZoomReset, cx| {
+            perform_menu_zoom(liora_components::MenuAction::ZoomReset, cx)
+        });
         cx.set_global(MenuZoomHandlers);
     }
     Menu::register_with_action_mapper(
@@ -387,46 +391,51 @@ fn app_locales_dir() -> std::path::PathBuf {
 
 fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
     let frame_mode = gallery_frame_mode(cx);
-    match cx.open_window(gallery_window_options(cx, frame_mode, None), |window, cx| {
-        attach_system_theme_observer(window, cx);
+    match cx.open_window(
+        gallery_window_options(cx, frame_mode, None),
+        |window, cx| {
+            attach_system_theme_observer(window, cx);
 
-        let entries = demos::registry();
-        let nav_index = gallery_nav_index(&entries, cx);
-        let view = cx.new(|cx| {
-            let theme_mode = cx.global::<Config>().theme_mode;
-            let selected = default_gallery_selection(&entries);
-            let gallery = Gallery {
-                entries,
-                active_demo_index: None,
-                active_demo: None,
-                pending_demo_index: None,
-                nav_index,
-                selected,
-                nav_filter: cx.new(|cx| {
-                    Input::new("", cx)
-                        .placeholder(locales::gallery::search_placeholder)
-                        .filter(|value| !value.contains(['\n', '\r']))
-                }),
-                nav_menu: None,
-                nav_query: String::new(),
-                nav_refresh_pending: false,
-                theme_mode,
-                theme_mode_segmented: cx.new(move |cx| theme_mode_segmented(theme_mode, cx)),
-                locale_segmented: cx.new(|cx| locale_segmented(cx)),
-                frame_mode,
-                frame_mode_switch: cx.new(|cx| Switch::new(frame_mode.is_custom(), cx).aria_label("Custom window frame")),
-                refresh_revision: 0,
-                updater_status: UpdatePanelStatus::Idle,
-                install_plan: None,
-            };
-            gallery.wire_shell_controls(cx);
-            gallery
-        });
-        window.on_window_should_close(cx, |window, cx| {
-            handle_gallery_window_should_close(window, cx)
-        });
-        view
-    }) {
+            let entries = demos::registry();
+            let nav_index = gallery_nav_index(&entries, cx);
+            let view = cx.new(|cx| {
+                let theme_mode = cx.global::<Config>().theme_mode;
+                let selected = default_gallery_selection(&entries);
+                let gallery = Gallery {
+                    entries,
+                    active_demo_index: None,
+                    active_demo: None,
+                    pending_demo_index: None,
+                    nav_index,
+                    selected,
+                    nav_filter: cx.new(|cx| {
+                        Input::new("", cx)
+                            .placeholder(locales::gallery::search_placeholder)
+                            .filter(|value| !value.contains(['\n', '\r']))
+                    }),
+                    nav_menu: None,
+                    nav_query: String::new(),
+                    nav_refresh_pending: false,
+                    theme_mode,
+                    theme_mode_segmented: cx.new(move |cx| theme_mode_segmented(theme_mode, cx)),
+                    locale_segmented: cx.new(|cx| locale_segmented(cx)),
+                    frame_mode,
+                    frame_mode_switch: cx.new(|cx| {
+                        Switch::new(frame_mode.is_custom(), cx).aria_label("Custom window frame")
+                    }),
+                    refresh_revision: 0,
+                    updater_status: UpdatePanelStatus::Idle,
+                    install_plan: None,
+                };
+                gallery.wire_shell_controls(cx);
+                gallery
+            });
+            window.on_window_should_close(cx, |window, cx| {
+                handle_gallery_window_should_close(window, cx)
+            });
+            view
+        },
+    ) {
         Ok(handle) => {
             let any_handle: gpui::AnyWindowHandle = handle.into();
             let _ = any_handle.update(cx, |_, window, _| window.activate_window());
@@ -439,17 +448,23 @@ fn open_gallery_window(cx: &mut App) -> Option<gpui::AnyWindowHandle> {
     }
 }
 
-fn gallery_window_options(cx: &App, frame_mode: WindowFrameMode, current: Option<&Window>) -> WindowOptions {
+fn gallery_window_options(
+    cx: &App,
+    frame_mode: WindowFrameMode,
+    current: Option<&Window>,
+) -> WindowOptions {
     apply_window_frame_mode(
         WindowOptions {
             show: false,
-            window_bounds: Some(current.map(Window::window_bounds).unwrap_or_else(|| if cx.is_test() {
-                gpui::WindowBounds::Windowed(gpui::Bounds::new(
-                    gpui::point(px(0.), px(0.)),
-                    size(px(1920.), px(1080.)),
-                ))
-            } else {
-                startup_maximized_window_bounds(cx, size(px(1920.), px(1080.)))
+            window_bounds: Some(current.map(Window::window_bounds).unwrap_or_else(|| {
+                if cx.is_test() {
+                    gpui::WindowBounds::Windowed(gpui::Bounds::new(
+                        gpui::point(px(0.), px(0.)),
+                        size(px(1920.), px(1080.)),
+                    ))
+                } else {
+                    startup_maximized_window_bounds(cx, size(px(1920.), px(1080.)))
+                }
             })),
             titlebar: Some(gpui::TitlebarOptions {
                 title: Some(tr(cx, locales::gallery::window_title)),
@@ -602,7 +617,6 @@ fn gallery_frame_mode(cx: &App) -> WindowFrameMode {
         .then(|| cx.global::<GalleryTrayState>().frame_mode)
         .unwrap_or_default()
 }
-
 
 fn request_gallery_window_close(window: &mut Window, cx: &mut App) {
     if !cx.has_global::<GalleryTrayState>() || !cx.has_global::<TrayControlCenter>() {
@@ -1234,7 +1248,8 @@ impl Gallery {
     fn set_frame_mode(&mut self, mode: WindowFrameMode, cx: &mut Context<Self>) -> WindowFrameMode {
         let previous = self.frame_mode;
         self.frame_mode = mode;
-        self.frame_mode_switch.update(cx, |switch, cx| switch.set_checked(mode.is_custom(), cx));
+        self.frame_mode_switch
+            .update(cx, |switch, cx| switch.set_checked(mode.is_custom(), cx));
         cx.notify();
         previous
     }
@@ -1533,12 +1548,16 @@ impl Gallery {
                                             }
                                         }),
                                 )
-                                .child(Button::new(locales::gallery::download_update).disabled(busy).on_click({
-                                    let gallery = gallery.clone();
-                                    move |_, _window, cx| {
-                                        download_gallery_update(gallery.clone(), cx)
-                                    }
-                                }))
+                                .child(
+                                    Button::new(locales::gallery::download_update)
+                                        .disabled(busy)
+                                        .on_click({
+                                            let gallery = gallery.clone();
+                                            move |_, _window, cx| {
+                                                download_gallery_update(gallery.clone(), cx)
+                                            }
+                                        }),
+                                )
                                 .child(
                                     Button::new(locales::gallery::install_update)
                                         .disabled(!can_install)
@@ -1784,8 +1803,9 @@ fn update_cache_dir(app: &str) -> Result<std::path::PathBuf, liora_updater::Upda
     liora_updater::private_update_cache_dir(app, env!("CARGO_PKG_VERSION"), base.as_deref())
 }
 
-fn download_gallery_update_sync(updater: &Updater)
--> Result<Option<(String, InstallPlan)>, liora_updater::UpdaterError> {
+fn download_gallery_update_sync(
+    updater: &Updater,
+) -> Result<Option<(String, InstallPlan)>, liora_updater::UpdaterError> {
     let Some(platform) = Platform::current() else {
         return Ok(None);
     };
@@ -1929,7 +1949,12 @@ fn gallery_fallback_menu_bar(cx: &impl liora_core::LocalesContext) -> MenuBar {
     ])
     .perform_builtin_actions(false)
     .on_select(|action, _, window, cx| {
-        if matches!(action, liora_components::MenuAction::ZoomIn | liora_components::MenuAction::ZoomOut | liora_components::MenuAction::ZoomReset) {
+        if matches!(
+            action,
+            liora_components::MenuAction::ZoomIn
+                | liora_components::MenuAction::ZoomOut
+                | liora_components::MenuAction::ZoomReset
+        ) {
             action.perform(window, cx);
         }
     })
@@ -2029,13 +2054,14 @@ fn gallery_nav_menu_items(
     groups
 }
 
-
 #[cfg(test)]
 mod shell_regression_tests {
 
     #[gpui::test]
     fn fallback_menu_zoom_preserves_navigation_and_input(cx: &mut gpui::TestAppContext) {
-        use gpui::{Context, IntoElement, Render, VisualTestContext, Window, div, point, prelude::*, px};
+        use gpui::{
+            Context, IntoElement, Render, VisualTestContext, Window, div, point, prelude::*, px,
+        };
 
         struct MenuWindow {
             input: gpui::Entity<liora_components::Input>,
@@ -2043,9 +2069,17 @@ mod shell_regression_tests {
         impl Render for MenuWindow {
             fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
                 liora_core::render_active_popover_in_window(window, cx);
-                div().size_full().flex().flex_col().items_start()
-                    .child(div().flex().debug_selector(|| "zoom-menu-bar".into())
-                        .child(super::gallery_fallback_menu_bar(cx)))
+                div()
+                    .size_full()
+                    .flex()
+                    .flex_col()
+                    .items_start()
+                    .child(
+                        div()
+                            .flex()
+                            .debug_selector(|| "zoom-menu-bar".into())
+                            .child(super::gallery_fallback_menu_bar(cx)),
+                    )
                     .child(self.input.clone())
                     .child(liora_components::PortalLayer)
             }
@@ -2055,7 +2089,9 @@ mod shell_regression_tests {
         let input = gallery.update(cx, |gallery, cx| {
             gallery.selected = 1;
             gallery.nav_query = "Input".into();
-            gallery.nav_filter.update(cx, |input, cx| input.set_value("Input", cx));
+            gallery
+                .nav_filter
+                .update(cx, |input, cx| input.set_value("Input", cx));
             gallery.nav_filter.clone()
         });
         cx.update(|cx| liora_core::set_locale(cx, "en-US").unwrap());
@@ -2084,7 +2120,10 @@ mod shell_regression_tests {
             });
             // Three 32px commands and a 9px separator precede the zoom rows.
             target_window.simulate_click(
-                point(bar.left() + bar.size.width * 0.625, bar.bottom() + px(129.0 + row as f32 * 32.0)),
+                point(
+                    bar.left() + bar.size.width * 0.625,
+                    bar.bottom() + px(129.0 + row as f32 * 32.0),
+                ),
                 gpui::Modifiers::none(),
             );
             target_window.run_until_parked();
@@ -2101,22 +2140,35 @@ mod shell_regression_tests {
 
     #[gpui::test]
     fn system_menu_zoom_changes_only_the_active_window(cx: &mut gpui::TestAppContext) {
-        use gpui::{Context, EmptyView, Focusable, IntoElement, OwnedMenuItem, Render, VisualTestContext, Window, div, prelude::*, px, rems};
+        use gpui::{
+            Context, EmptyView, Focusable, IntoElement, OwnedMenuItem, Render, VisualTestContext,
+            Window, div, prelude::*, px, rems,
+        };
 
         struct ZoomWindow {
             input: gpui::Entity<liora_components::Input>,
         }
         impl Render for ZoomWindow {
             fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
-                div().size_full().flex().flex_col()
-                    .child(div().debug_selector(|| "zoom-rem-probe".into()).w(rems(2.0)).h(px(1.0)))
+                div()
+                    .size_full()
+                    .flex()
+                    .flex_col()
+                    .child(
+                        div()
+                            .debug_selector(|| "zoom-rem-probe".into())
+                            .w(rems(2.0))
+                            .h(px(1.0)),
+                    )
                     .child(self.input.clone())
             }
         }
 
         cx.update(|cx| super::init_liora_with_options(cx, super::gallery_liora_options()));
         let other = cx.add_window(|_, _| EmptyView);
-        other.update(cx, |_, window, _| window.set_rem_size(px(23.0))).unwrap();
+        other
+            .update(cx, |_, window, _| window.set_rem_size(px(23.0)))
+            .unwrap();
         let target = cx.add_window(|_, cx| ZoomWindow {
             input: cx.new(|cx| liora_components::Input::new("zoom query α", cx)),
         });
@@ -2149,12 +2201,23 @@ mod shell_regression_tests {
                     window.set_rem_size(px(before));
                     window.draw(cx).clear(cx);
                 });
-                assert_eq!(target_window.debug_bounds("zoom-rem-probe").unwrap().size.width, px(before * 2.0));
+                assert_eq!(
+                    target_window
+                        .debug_bounds("zoom-rem-probe")
+                        .unwrap()
+                        .size
+                        .width,
+                    px(before * 2.0)
+                );
                 let action = cx.read(|cx| {
-                    cx.get_menus().unwrap().into_iter()
+                    cx.get_menus()
+                        .unwrap()
+                        .into_iter()
                         .flat_map(|menu| menu.items)
                         .find_map(|item| match item {
-                            OwnedMenuItem::Action { name, action, .. } if name == label => Some(action),
+                            OwnedMenuItem::Action { name, action, .. } if name == label => {
+                                Some(action)
+                            }
                             _ => None,
                         })
                         .expect("registered zoom command")
@@ -2162,13 +2225,22 @@ mod shell_regression_tests {
                 cx.update(|cx| cx.dispatch_action(action.as_ref()));
                 cx.run_until_parked();
                 // The test effect-cycle redraws only dirty windows; no refresh/draw/input follows the action.
-                assert_eq!(target_window.debug_bounds("zoom-rem-probe").unwrap().size.width, px(expected * 2.0));
+                assert_eq!(
+                    target_window
+                        .debug_bounds("zoom-rem-probe")
+                        .unwrap()
+                        .size
+                        .width,
+                    px(expected * 2.0)
+                );
                 target_window.update(|window, cx| {
                     assert_eq!(window.rem_size(), px(expected), "{locale}: {label}");
                     assert_eq!(input.read(cx).value().as_ref(), "zoom query α");
                     assert!(input.read(cx).focus_handle(cx).is_focused(window));
                 });
-                other.update(cx, |_, window, _| assert_eq!(window.rem_size(), px(23.0))).unwrap();
+                other
+                    .update(cx, |_, window, _| assert_eq!(window.rem_size(), px(23.0)))
+                    .unwrap();
             }
         }
     }
@@ -2181,9 +2253,12 @@ mod shell_regression_tests {
             let mut cx = gpui::TestAppContext::single();
             let view = updater_test_gallery(&mut cx);
             let plan = liora_updater::build_install_plan(
-                "sample", liora_updater::Platform::LinuxX64,
+                "sample",
+                liora_updater::Platform::LinuxX64,
                 &liora_updater::ReleaseAsset {
-                    name: "sample-linux-x64.tar.gz".into(), download_url: String::new(), size: 0,
+                    name: "sample-linux-x64.tar.gz".into(),
+                    download_url: String::new(),
+                    size: 0,
                 },
                 "old-verified-package.tar.gz",
             );
@@ -2196,44 +2271,79 @@ mod shell_regression_tests {
             });
             cx.run_until_parked();
             cx.update(|cx| {
-                assert!(matches!(view.read(cx).updater_status, super::UpdatePanelStatus::Error(_)),
-                    "actual rejected cache must finish the asynchronous download with an error");
-                assert!(view.read(cx).install_plan.is_none(), "a failed download must not resurrect the old plan");
+                assert!(
+                    matches!(
+                        view.read(cx).updater_status,
+                        super::UpdatePanelStatus::Error(_)
+                    ),
+                    "actual rejected cache must finish the asynchronous download with an error"
+                );
+                assert!(
+                    view.read(cx).install_plan.is_none(),
+                    "a failed download must not resurrect the old plan"
+                );
                 super::install_gallery_update(view.clone(), cx);
-                assert!(matches!(view.read(cx).updater_status, super::UpdatePanelStatus::Error(_)),
-                    "install cannot execute the previous plan after failure");
+                assert!(
+                    matches!(
+                        view.read(cx).updater_status,
+                        super::UpdatePanelStatus::Error(_)
+                    ),
+                    "install cannot execute the previous plan after failure"
+                );
             });
             cx.quit();
             return;
         }
         use std::os::unix::fs::{DirBuilderExt, PermissionsExt};
         let root = liora_updater::private_update_cache_dir(
-            "liora-gallery-state-tests", env!("CARGO_PKG_VERSION"), None,
-        ).unwrap();
+            "liora-gallery-state-tests",
+            env!("CARGO_PKG_VERSION"),
+            None,
+        )
+        .unwrap();
         let base = root.join(format!("failure-{}", std::process::id()));
-        std::fs::DirBuilder::new().mode(0o700).create(&base).unwrap();
+        std::fs::DirBuilder::new()
+            .mode(0o700)
+            .create(&base)
+            .unwrap();
         std::fs::set_permissions(&base, std::fs::Permissions::from_mode(0o777)).unwrap();
         let result = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", "shell_regression_tests::updater_failed_download_cannot_install_a_previous_plan", "--nocapture"])
-            .env(CHILD, "1").env("LIORA_UPDATE_CACHE", &base).output().unwrap();
+            .args([
+                "--exact",
+                "shell_regression_tests::updater_failed_download_cannot_install_a_previous_plan",
+                "--nocapture",
+            ])
+            .env(CHILD, "1")
+            .env("LIORA_UPDATE_CACHE", &base)
+            .output()
+            .unwrap();
         std::fs::remove_dir(&base).unwrap();
-        assert!(result.status.success(), "{}{}",
-            String::from_utf8_lossy(&result.stdout), String::from_utf8_lossy(&result.stderr));
+        assert!(
+            result.status.success(),
+            "{}{}",
+            String::from_utf8_lossy(&result.stdout),
+            String::from_utf8_lossy(&result.stderr)
+        );
     }
 
     fn updater_test_gallery(cx: &mut gpui::TestAppContext) -> gpui::Entity<super::Gallery> {
         cx.update(|cx| super::init_liora_with_options(cx, super::gallery_liora_options()));
         let handle = cx.update(|cx| super::open_gallery_window(cx).unwrap());
-        handle.update(cx, |root, _, _| root.downcast::<super::Gallery>().unwrap()).unwrap()
+        handle
+            .update(cx, |root, _, _| root.downcast::<super::Gallery>().unwrap())
+            .unwrap()
     }
 
     #[gpui::test]
     fn updater_download_invalidates_previous_install_plan(cx: &mut gpui::TestAppContext) {
         let view = updater_test_gallery(cx);
         let plan = liora_updater::build_install_plan(
-            "sample", liora_updater::Platform::LinuxX64,
+            "sample",
+            liora_updater::Platform::LinuxX64,
             &liora_updater::ReleaseAsset {
-                name: "sample-linux-x64.tar.gz".into(), download_url: String::new(), size: 0,
+                name: "sample-linux-x64.tar.gz".into(),
+                download_url: String::new(),
+                size: 0,
             },
             "old-verified-package.tar.gz",
         );
@@ -2243,10 +2353,18 @@ mod shell_regression_tests {
                 view.updater_status = super::UpdatePanelStatus::Downloaded("old".into());
             });
             super::download_gallery_update(view.clone(), cx);
-            assert!(view.read(cx).install_plan.is_none(), "starting a new download must revoke the old plan");
+            assert!(
+                view.read(cx).install_plan.is_none(),
+                "starting a new download must revoke the old plan"
+            );
             super::install_gallery_update(view.clone(), cx);
-            assert!(matches!(view.read(cx).updater_status, super::UpdatePanelStatus::Downloading(_)),
-                "install must not replace an in-flight download status");
+            assert!(
+                matches!(
+                    view.read(cx).updater_status,
+                    super::UpdatePanelStatus::Downloading(_)
+                ),
+                "install must not replace an in-flight download status"
+            );
         });
     }
 
@@ -2256,8 +2374,13 @@ mod shell_regression_tests {
         cx.update(|cx| {
             super::check_gallery_update(view.clone(), cx);
             super::download_gallery_update(view.clone(), cx);
-            assert!(matches!(view.read(cx).updater_status, super::UpdatePanelStatus::Checking),
-                "a download must not overlap the active check");
+            assert!(
+                matches!(
+                    view.read(cx).updater_status,
+                    super::UpdatePanelStatus::Checking
+                ),
+                "a download must not overlap the active check"
+            );
         });
         cx.update(|cx| {
             view.update(cx, |view, _| view.updater_status = super::UpdatePanelStatus::Downloading("active".into()));
@@ -2269,7 +2392,6 @@ mod shell_regression_tests {
                 "a second download must not replace the active request");
         });
     }
-
 
     #[cfg(any(target_os = "linux", target_os = "macos"))]
     #[test]
@@ -2287,8 +2409,11 @@ mod shell_regression_tests {
         }
         use std::os::unix::fs::{DirBuilderExt, PermissionsExt};
         let root = liora_updater::private_update_cache_dir(
-            "liora-gallery-cache-tests", env!("CARGO_PKG_VERSION"), None,
-        ).unwrap();
+            "liora-gallery-cache-tests",
+            env!("CARGO_PKG_VERSION"),
+            None,
+        )
+        .unwrap();
         let mut sequence = 0;
         let base = loop {
             let path = root.join(format!("rejection-{}-{sequence}", std::process::id()));
@@ -2307,10 +2432,15 @@ mod shell_regression_tests {
             ])
             .env(CHILD, "1")
             .env("LIORA_UPDATE_CACHE", &base)
-            .output().unwrap();
+            .output()
+            .unwrap();
         std::fs::remove_dir_all(&base).unwrap();
-        assert!(result.status.success(), "{}{}",
-            String::from_utf8_lossy(&result.stdout), String::from_utf8_lossy(&result.stderr));
+        assert!(
+            result.status.success(),
+            "{}{}",
+            String::from_utf8_lossy(&result.stdout),
+            String::from_utf8_lossy(&result.stderr)
+        );
         assert!(String::from_utf8_lossy(&result.stdout).contains("1 passed; 0 failed"));
     }
     use super::{
@@ -2677,18 +2807,29 @@ mod shell_regression_tests {
     }
 
     #[gpui::test]
-    fn frame_mode_switch_preserves_root_input_navigation_and_geometry(cx: &mut gpui::TestAppContext) {
+    fn frame_mode_switch_preserves_root_input_navigation_and_geometry(
+        cx: &mut gpui::TestAppContext,
+    ) {
         use gpui::{Bounds, WindowBounds, WindowOptions, point, px, size};
 
         cx.update(|cx| super::init_liora_with_options(cx, super::gallery_liora_options()));
         let startup = cx.update(|cx| super::open_gallery_window(cx).unwrap());
-        let root = startup.update(cx, |root, _, _| root.downcast::<super::Gallery>().unwrap()).unwrap();
+        let root = startup
+            .update(cx, |root, _, _| root.downcast::<super::Gallery>().unwrap())
+            .unwrap();
         let (child, demo_input) = root.update(cx, |gallery, cx| {
-            let selected = gallery.entries.iter().position(|entry| entry.name == "Input 输入框").unwrap();
+            let selected = gallery
+                .entries
+                .iter()
+                .position(|entry| entry.name == "Input 输入框")
+                .unwrap();
             gallery.selected = selected;
             gallery.active_demo_index = Some(selected);
             let demo = (gallery.entries[selected].render)(cx);
-            let input_demo = demo.clone().downcast::<super::demos::form_controls_demo::InputUsage>().unwrap();
+            let input_demo = demo
+                .clone()
+                .downcast::<super::demos::form_controls_demo::InputUsage>()
+                .unwrap();
             let input = input_demo.update(cx, |demo, cx| {
                 let input = demo.plain_input();
                 input.update(cx, |input, cx| input.set_value("Frame keep 73 α", cx));
@@ -2696,50 +2837,84 @@ mod shell_regression_tests {
             });
             gallery.active_demo = Some(demo.clone());
             gallery.nav_query = "input".into();
-            gallery.nav_filter.update(cx, |input, cx| input.set_value("Input", cx));
+            gallery
+                .nav_filter
+                .update(cx, |input, cx| input.set_value("Input", cx));
             (demo.entity_id(), input)
         });
-        let bounds = WindowBounds::Windowed(Bounds::new(point(px(73.), px(91.)), size(px(1100.), px(760.))));
-        let mut handle: gpui::AnyWindowHandle = cx.update(|cx| cx.open_window(
-            WindowOptions { window_bounds: Some(bounds), ..Default::default() },
-            |window, _| { window.set_rem_size(px(19.)); root.clone() },
-        ).unwrap().into());
-        startup.update(cx, |_, window, _| window.remove_window()).unwrap();
+        let bounds = WindowBounds::Windowed(Bounds::new(
+            point(px(73.), px(91.)),
+            size(px(1100.), px(760.)),
+        ));
+        let mut handle: gpui::AnyWindowHandle = cx.update(|cx| {
+            cx.open_window(
+                WindowOptions {
+                    window_bounds: Some(bounds),
+                    ..Default::default()
+                },
+                |window, _| {
+                    window.set_rem_size(px(19.));
+                    root.clone()
+                },
+            )
+            .unwrap()
+            .into()
+        });
+        startup
+            .update(cx, |_, window, _| window.remove_window())
+            .unwrap();
 
-        for mode in [super::WindowFrameMode::Custom, super::WindowFrameMode::System] {
+        for mode in [
+            super::WindowFrameMode::Custom,
+            super::WindowFrameMode::System,
+        ] {
             let previous_window = handle.window_id();
-            handle.update(cx, |_, window, cx| {
-                assert!(super::window_frame::reopen_gallery_window(mode, window, cx));
-            }).unwrap();
+            handle
+                .update(cx, |_, window, cx| {
+                    assert!(super::window_frame::reopen_gallery_window(mode, window, cx));
+                })
+                .unwrap();
             cx.run_until_parked();
             let windows = cx.windows();
             assert_eq!(windows.len(), 1);
             handle = windows[0];
             assert_ne!(handle.window_id(), previous_window);
-            handle.update(cx, |actual, window, cx| {
-                assert_eq!(actual.entity_id(), root.entity_id());
-                assert_eq!(window.window_bounds(), bounds);
-                assert_eq!(window.rem_size(), px(19.));
-                let gallery = root.read(cx);
-                assert_eq!(gallery.entries[gallery.selected].name, "Input 输入框");
-                assert_eq!(gallery.nav_query, "input");
-                assert_eq!(gallery.nav_filter.read(cx).value().as_ref(), "Input");
-                assert_eq!(gallery.active_demo.as_ref().unwrap().entity_id(), child);
-                assert_eq!(demo_input.read(cx).value().as_ref(), "Frame keep 73 α");
-                let active = gallery.active_demo.clone().unwrap().downcast::<super::demos::form_controls_demo::InputUsage>().unwrap();
-                assert_eq!(active.read(cx).plain_input().entity_id(), demo_input.entity_id());
-                assert_eq!(gallery.frame_mode, mode);
-                demo_input.update(cx, |input, cx| {
-                    use gpui::EntityInputHandler;
-                    let end = input.value().len();
-                    input.set_selection(end..end, cx);
-                    input.replace_text_in_range(None, "!", window, cx);
-                    assert_eq!(input.value().as_ref(), "Frame keep 73 α!");
-                    input.set_value("Frame keep 73 α", cx);
-                });
-            }).unwrap();
+            handle
+                .update(cx, |actual, window, cx| {
+                    assert_eq!(actual.entity_id(), root.entity_id());
+                    assert_eq!(window.window_bounds(), bounds);
+                    assert_eq!(window.rem_size(), px(19.));
+                    let gallery = root.read(cx);
+                    assert_eq!(gallery.entries[gallery.selected].name, "Input 输入框");
+                    assert_eq!(gallery.nav_query, "input");
+                    assert_eq!(gallery.nav_filter.read(cx).value().as_ref(), "Input");
+                    assert_eq!(gallery.active_demo.as_ref().unwrap().entity_id(), child);
+                    assert_eq!(demo_input.read(cx).value().as_ref(), "Frame keep 73 α");
+                    let active = gallery
+                        .active_demo
+                        .clone()
+                        .unwrap()
+                        .downcast::<super::demos::form_controls_demo::InputUsage>()
+                        .unwrap();
+                    assert_eq!(
+                        active.read(cx).plain_input().entity_id(),
+                        demo_input.entity_id()
+                    );
+                    assert_eq!(gallery.frame_mode, mode);
+                    demo_input.update(cx, |input, cx| {
+                        use gpui::EntityInputHandler;
+                        let end = input.value().len();
+                        input.set_selection(end..end, cx);
+                        input.replace_text_in_range(None, "!", window, cx);
+                        assert_eq!(input.value().as_ref(), "Frame keep 73 α!");
+                        input.set_value("Frame keep 73 α", cx);
+                    });
+                })
+                .unwrap();
         }
-        handle.update(cx, |_, window, _| window.remove_window()).unwrap();
+        handle
+            .update(cx, |_, window, _| window.remove_window())
+            .unwrap();
     }
 
     #[test]
@@ -2849,7 +3024,6 @@ mod shell_regression_tests {
         assert!(source.contains(".titlebar(gallery_titlebar())"));
         assert!(!source.contains(".leading(gallery_window_menu_bar())"));
     }
-
 
     #[test]
     fn gallery_startup_does_not_auto_download_updates_on_ui_thread() {

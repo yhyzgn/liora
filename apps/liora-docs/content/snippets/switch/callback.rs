@@ -11,13 +11,15 @@ impl SwitchCallbackDemo {
     fn new(cx: &mut Context<Self>) -> Self {
         Self {
             switch: cx.new(|cx| {
-                Switch::new(false, cx).aria_label("Show notifications").on_change(|checked, _window, _cx| {
-                    if checked {
-                        toast_success!("Switch is on");
-                    } else {
-                        toast_info!("Switch is off");
-                    }
-                })
+                Switch::new(false, cx)
+                    .aria_label("Show notifications")
+                    .on_change(|checked, _window, _cx| {
+                        if checked {
+                            toast_success!("Switch is on");
+                        } else {
+                            toast_info!("Switch is off");
+                        }
+                    })
             }),
         }
     }

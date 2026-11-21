@@ -206,11 +206,16 @@ impl ChecksumManifest {
             if line.is_empty() || line.starts_with('#') {
                 continue;
             }
-            let Some((hex, name)) = line.split_once(char::is_whitespace) else { continue };
+            let Some((hex, name)) = line.split_once(char::is_whitespace) else {
+                continue;
+            };
             if hex.len() != 64 || !hex.bytes().all(|b| b.is_ascii_hexdigit()) {
                 continue;
             }
-            let name = name.strip_prefix(' ').or_else(|| name.strip_prefix('*')).unwrap_or(name);
+            let name = name
+                .strip_prefix(' ')
+                .or_else(|| name.strip_prefix('*'))
+                .unwrap_or(name);
             if name.is_empty() {
                 continue;
             }
@@ -1004,8 +1009,17 @@ mod tests {
             "{hash}  sample.AppImage debug\n{hash}  *leading-star\n{hash} **binary-leading-star\n{hash}   leading-space \n"
         ));
         assert_eq!(manifest.expected_sha256("sample.AppImage"), None);
-        for name in ["sample.AppImage debug", "*leading-star", "*binary-leading-star", " leading-space "] {
-            assert_eq!(manifest.expected_sha256(name), Some(hash.as_str()), "exact name: {name:?}");
+        for name in [
+            "sample.AppImage debug",
+            "*leading-star",
+            "*binary-leading-star",
+            " leading-space ",
+        ] {
+            assert_eq!(
+                manifest.expected_sha256(name),
+                Some(hash.as_str()),
+                "exact name: {name:?}"
+            );
         }
         assert_eq!(manifest.expected_sha256("leading-star"), None);
         assert_eq!(manifest.expected_sha256("binary-leading-star"), None);
@@ -1013,16 +1027,23 @@ mod tests {
 
     #[test]
     fn checksum_exact_names_cannot_authorize_a_truncated_asset() {
-        let (base, server) = test_server(vec![("/checksums", format!(
-            "{}  sample.AppImage debug\n", "ab".repeat(32)
-        ).into_bytes())]);
+        let (base, server) = test_server(vec![(
+            "/checksums",
+            format!("{}  sample.AppImage debug\n", "ab".repeat(32)).into_bytes(),
+        )]);
         let mut release = release_with_assets(&[CHECKSUMS_ASSET, "sample.AppImage"]);
         release.assets[0].download_url = format!("{base}/checksums");
         release.assets[1].download_url = format!("{base}/must-not-download");
         let destination = test_directory("exact-checksum-name");
-        let result = Updater::new("owner", "repo").download_verified_asset(&release, &release.assets[1], &destination);
+        let result = Updater::new("owner", "repo").download_verified_asset(
+            &release,
+            &release.assets[1],
+            &destination,
+        );
         server.join().unwrap();
-        assert!(matches!(result, Err(UpdaterError::MissingChecksumEntry(name)) if name == "sample.AppImage"));
+        assert!(
+            matches!(result, Err(UpdaterError::MissingChecksumEntry(name)) if name == "sample.AppImage")
+        );
         assert_eq!(fs::read_dir(&destination).unwrap().count(), 0);
         fs::remove_dir(destination).unwrap();
     }
@@ -1032,20 +1053,22 @@ mod tests {
         let content = b"verified artifact with spaces".to_vec();
         let checksum = format!("{:x}  sample release.AppImage\n", Sha256::digest(&content));
         let (base, server) = test_server(vec![
-            ("/checksums", checksum.into_bytes()), ("/artifact", content.clone()),
+            ("/checksums", checksum.into_bytes()),
+            ("/artifact", content.clone()),
         ]);
         let mut release = release_with_assets(&[CHECKSUMS_ASSET, "sample release.AppImage"]);
         release.assets[0].download_url = format!("{base}/checksums");
         release.assets[1].download_url = format!("{base}/artifact");
         let directory = test_directory("checksum-spaces");
-        let path = Updater::new("owner", "repo").download_verified_asset(&release, &release.assets[1], &directory).unwrap();
+        let path = Updater::new("owner", "repo")
+            .download_verified_asset(&release, &release.assets[1], &directory)
+            .unwrap();
         server.join().unwrap();
         assert_eq!(path, directory.join("sample release.AppImage"));
         assert_eq!(fs::read(&path).unwrap(), content);
         assert_eq!(fs::read_dir(&directory).unwrap().count(), 1);
         fs::remove_dir_all(directory).unwrap();
     }
-
 
     fn asset(name: &str) -> ReleaseAsset {
         ReleaseAsset {
@@ -1120,12 +1143,20 @@ mod tests {
         release.assets[0].download_url = format!("{base_url}/checksums");
         release.assets[1].download_url = format!("{base_url}/asset");
         let path = Updater::new("owner", "repo")
-            .download_verified_asset(&release, &release.assets[1], &cache).unwrap();
+            .download_verified_asset(&release, &release.assets[1], &cache)
+            .unwrap();
         server.join().unwrap();
         assert_eq!(path.parent(), Some(cache.as_path()));
         assert_eq!(fs::read(&path).unwrap(), content);
-        let plan = build_install_plan("sample", Platform::LinuxX64, &release.assets[1], path.clone());
-        assert!(matches!(plan.action, InstallAction::RunExecutable { program, .. } if program == path));
+        let plan = build_install_plan(
+            "sample",
+            Platform::LinuxX64,
+            &release.assets[1],
+            path.clone(),
+        );
+        assert!(
+            matches!(plan.action, InstallAction::RunExecutable { program, .. } if program == path)
+        );
         assert_eq!(fs::read_dir(&cache).unwrap().count(), 1);
     }
 

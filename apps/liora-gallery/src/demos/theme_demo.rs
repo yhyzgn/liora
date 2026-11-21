@@ -123,4 +123,3 @@ fn surface_sample() -> impl IntoElement {
             )),
     )
 }
-

@@ -126,18 +126,23 @@ impl Render for DrawerDemo {
                                                 .vertical()
                                                 .gap_lg()
                                                 .child(Text::new("Explicit close only").bold())
-                                                .child(Text::new("Cancel or apply to close this panel."))
+                                                .child(Text::new(
+                                                    "Cancel or apply to close this panel.",
+                                                ))
                                                 .child(
                                                     Space::new()
                                                         .gap_sm()
-                                                        .child(
-                                                            Button::new("Cancel")
-                                                                .on_click(|_, _, cx| Drawer::close_id(REVIEW_ID, cx)),
-                                                        )
+                                                        .child(Button::new("Cancel").on_click(
+                                                            |_, _, cx| {
+                                                                Drawer::close_id(REVIEW_ID, cx)
+                                                            },
+                                                        ))
                                                         .child(
                                                             Button::new("Apply")
                                                                 .primary()
-                                                                .on_click(|_, _, cx| Drawer::close_id(REVIEW_ID, cx)),
+                                                                .on_click(|_, _, cx| {
+                                                                    Drawer::close_id(REVIEW_ID, cx)
+                                                                }),
                                                         ),
                                                 )
                                         })
@@ -161,18 +166,22 @@ impl Render for DrawerDemo {
                                             .vertical()
                                             .gap_lg()
                                             .child(Text::new("点击遮罩和按 ESC 都不会关闭。"))
-                                            .child(Button::new("Open Child Drawer").on_click(|_, _, cx| {
-                                                Drawer::new()
-                                                    .title("Child drawer")
-                                                    .left()
-                                                    .close_on_click_outside(false)
-                                                    .close_on_escape(false)
-                                                    .content(|_, _| {
-                                                        Button::new("Close Child Drawer")
-                                                            .on_click(|_, _, cx| Drawer::close(cx))
-                                                    })
-                                                    .show(cx);
-                                            }))
+                                            .child(Button::new("Open Child Drawer").on_click(
+                                                |_, _, cx| {
+                                                    Drawer::new()
+                                                        .title("Child drawer")
+                                                        .left()
+                                                        .close_on_click_outside(false)
+                                                        .close_on_escape(false)
+                                                        .content(|_, _| {
+                                                            Button::new("Close Child Drawer")
+                                                                .on_click(|_, _, cx| {
+                                                                    Drawer::close(cx)
+                                                                })
+                                                        })
+                                                        .show(cx);
+                                                },
+                                            ))
                                             .child(
                                                 Button::new("Close Drawer")
                                                     .primary()

@@ -71,7 +71,11 @@ impl Render for FullProductShellExample {
                 .brand("Workspace")
                 .brand_subtitle("Product navigation")
                 .logo(Icon::new(IconName::Blocks).size_units(18.0))
-                .brand_action(Button::new("+").small().aria_label(liora_core::locales::common::add))
+                .brand_action(
+                    Button::new("+")
+                        .small()
+                        .aria_label(liora_core::locales::common::add),
+                )
                 .background(theme.neutral.card)
                 .border_color(theme.neutral.border)
                 .header_padding_units(14.0)

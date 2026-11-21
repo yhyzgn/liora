@@ -49,7 +49,12 @@ impl Render for BrandSidebarExample {
                                 .size_units(20.0)
                                 .color(theme.primary.base),
                         )
-                        .brand_action(Button::new("+").small().primary().aria_label(liora_core::locales::common::add))
+                        .brand_action(
+                            Button::new("+")
+                                .small()
+                                .primary()
+                                .aria_label(liora_core::locales::common::add),
+                        )
                         .scrollable()
                         .child(self.menu.clone())
                         .footer(

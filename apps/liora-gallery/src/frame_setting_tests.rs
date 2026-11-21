@@ -2,7 +2,7 @@ use super::*;
 
 #[gpui::test]
 fn frame_setting_retains_navigation_input_and_bounds(cx: &mut gpui::TestAppContext) {
-    use gpui::{point, Bounds, Focusable, WindowBounds, WindowOptions};
+    use gpui::{Bounds, Focusable, WindowBounds, WindowOptions, point};
     cx.update(|cx| init_liora_with_options(cx, gallery_liora_options()));
     let startup = cx.update(|cx| open_gallery_window(cx).unwrap());
     let root = startup

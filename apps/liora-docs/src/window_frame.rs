@@ -1,9 +1,9 @@
 use gpui::{App, Window};
-use liora_components::{request_window_frame_mode, WindowFrameChange, WindowFrameMode};
+use liora_components::{WindowFrameChange, WindowFrameMode, request_window_frame_mode};
 use liora_core::attach_system_theme_observer;
 
 use super::{
-    docs_window_options, handle_docs_window_should_close, markdown::DocsShell, DocsTrayState,
+    DocsTrayState, docs_window_options, handle_docs_window_should_close, markdown::DocsShell,
 };
 
 pub(super) fn set_docs_frame_mode(mode: WindowFrameMode, window: &mut Window, cx: &mut App) {

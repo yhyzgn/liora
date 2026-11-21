@@ -1,8 +1,7 @@
 use crate::locales;
 use gpui::{
     AnyElement, AnyView, App, Context, Entity, FontWeight, Hsla, IntoElement, Render, RenderImage,
-    RenderOnce, ScrollHandle, SharedString, WeakEntity, Window, div, img,
-    prelude::*, px, rgb,
+    RenderOnce, ScrollHandle, SharedString, WeakEntity, Window, div, img, prelude::*, px, rgb,
 };
 use liora_components::{
     Affix, AffixPosition, Alert, AlertType, Anchor, AnchorLink, AnchorTarget, AppWindowFrame,
@@ -13,9 +12,8 @@ use liora_components::{
     DropdownButton, DropdownButtonItem, Flex, Form, FormItem, Grid, GridItem, HorizontalList,
     Image, Input, InputNumber, InputNumberControlsPosition, Link, Loading, NavigationMenu,
     NavigationMenuMode, NotificationType, Paragraph, Popconfirm, Popover, PortalLayer, Preview,
-    Progress,
-    ProgressStatus, QrCode, QrEcLevel, QrFinderStyle, QrGradientDirection, QrModuleStyle, Radio,
-    RadioGroup, RadioOptionStyle, Rate, Result as DocResult, ResultStatus, Segmented,
+    Progress, ProgressStatus, QrCode, QrEcLevel, QrFinderStyle, QrGradientDirection, QrModuleStyle,
+    Radio, RadioGroup, RadioOptionStyle, Rate, Result as DocResult, ResultStatus, Segmented,
     SegmentedOption, Select, SelectableTextGroup, Shell, Sidebar, Skeleton, SkeletonItem,
     SkeletonVariant, Slider, Space, Statistic, Switch, Tag as DocTag, Text, Textarea, Timer,
     TimerFormat, TimerUnit, Title, TitleBar, TitleBarContentAlign, Tooltip, Tour, TourPlacement,
@@ -784,7 +782,7 @@ pub struct DocPage {
 
 #[cfg(test)]
 pub fn render_markdown(md_text: &str) -> AnyElement {
- gpui::ViewElement::new(MarkdownDocument::parse(md_text)).into_any_element()
+    gpui::ViewElement::new(MarkdownDocument::parse(md_text)).into_any_element()
 }
 
 struct MarkdownDocument {
@@ -2509,13 +2507,15 @@ impl LiveDemoContent {
                 }));
             }
             "SettingsPageBasic" => {
-                settings_auto_save = Some(cx.new(|cx| Switch::new(true, cx).aria_label("Auto save")));
+                settings_auto_save =
+                    Some(cx.new(|cx| Switch::new(true, cx).aria_label("Auto save")));
                 settings_theme =
                     Some(cx.new(|cx| Select::new(vec!["System", "Light", "Dark"], Some(0), cx)));
                 settings_font_size = Some(cx.new(|cx| Input::new("14", cx).width(px(88.0))));
             }
             "SettingsSensitive" => {
-                settings_telemetry = Some(cx.new(|cx| Switch::new(false, cx).aria_label("Telemetry")));
+                settings_telemetry =
+                    Some(cx.new(|cx| Switch::new(false, cx).aria_label("Telemetry")));
             }
             "InputBasic" => {
                 inputs.push(cx.new(|cx| Input::new("", cx)));
@@ -2863,10 +2863,19 @@ impl LiveDemoContent {
             }
             "CheckboxBasic" => {
                 checkboxes.push(cx.new(|cx| Checkbox::new(true, cx).aria_label("Receive updates")));
-                checkboxes.push(cx.new(|cx| Checkbox::new(false, cx).aria_label("Enable reminders")));
+                checkboxes
+                    .push(cx.new(|cx| Checkbox::new(false, cx).aria_label("Enable reminders")));
                 checkboxes.push(cx.new(|cx| Checkbox::new(false, cx).label("Label")));
-                checkboxes.push(cx.new(|cx| Checkbox::new(false, cx).aria_label("Managed reminders").disabled(true)));
-                checkboxes.push(cx.new(|cx| Checkbox::new(true, cx).aria_label("Managed updates").disabled(true)));
+                checkboxes.push(cx.new(|cx| {
+                    Checkbox::new(false, cx)
+                        .aria_label("Managed reminders")
+                        .disabled(true)
+                }));
+                checkboxes.push(cx.new(|cx| {
+                    Checkbox::new(true, cx)
+                        .aria_label("Managed updates")
+                        .disabled(true)
+                }));
             }
             "CheckboxGroup" => {
                 checkbox_groups.push(cx.new(|cx| {
@@ -2936,18 +2945,28 @@ impl LiveDemoContent {
                 switches.push(cx.new(|cx| Switch::new(false, cx).aria_label("Auto sync")));
             }
             "SwitchDisabled" => {
-                switches.push(cx.new(|cx| Switch::new(false, cx).aria_label("Managed auto sync").disabled(true)));
-                switches.push(cx.new(|cx| Switch::new(true, cx).aria_label("Managed notifications").disabled(true)));
+                switches.push(cx.new(|cx| {
+                    Switch::new(false, cx)
+                        .aria_label("Managed auto sync")
+                        .disabled(true)
+                }));
+                switches.push(cx.new(|cx| {
+                    Switch::new(true, cx)
+                        .aria_label("Managed notifications")
+                        .disabled(true)
+                }));
             }
             "SwitchCallback" => {
                 switches.push(cx.new(|cx| {
-                    Switch::new(false, cx).aria_label("Show notifications").on_change(|checked, _window, _cx| {
-                        if checked {
-                            toast_success!("Switch is on");
-                        } else {
-                            toast_info!("Switch is off");
-                        }
-                    })
+                    Switch::new(false, cx)
+                        .aria_label("Show notifications")
+                        .on_change(|checked, _window, _cx| {
+                            if checked {
+                                toast_success!("Switch is on");
+                            } else {
+                                toast_info!("Switch is off");
+                            }
+                        })
                 }));
             }
             "SegmentedBasic" => {
@@ -9982,9 +10001,14 @@ fn docs_popover_basic() -> Popover {
                 .gap_sm()
                 .child(Text::new("Title").bold())
                 .child(Text::new("This is native GPUI popover content."))
-                .child(Button::new("Confirm").primary().small().on_click(|_, _, cx| {
-                    clear_popover(&"docs-popover-basic".into(), cx);
-                }))
+                .child(
+                    Button::new("Confirm")
+                        .primary()
+                        .small()
+                        .on_click(|_, _, cx| {
+                            clear_popover(&"docs-popover-basic".into(), cx);
+                        }),
+                )
         })
 }
 
@@ -10183,7 +10207,9 @@ fn docs_dropdown_button_split() -> impl IntoElement {
         DropdownButton::new("Menu only")
             .id("docs-dropdown-button-split-menu-only")
             .split(true)
-            .item("Preview deployment", |_, _| toast_info!("Preview deployment")),
+            .item("Preview deployment", |_, _| {
+                toast_info!("Preview deployment")
+            }),
     ])
 }
 
@@ -11028,7 +11054,9 @@ pub fn render_docs_shell(
             theme_mode_segmented: cx.new(move |_| theme_mode_segmented(theme_mode)),
             locale_segmented: cx.new(|cx| locale_segmented(cx)),
             frame_mode,
-            frame_mode_switch: cx.new(|cx| Switch::new(frame_mode.is_custom(), cx).aria_label("Custom window frame")),
+            frame_mode_switch: cx.new(|cx| {
+                Switch::new(frame_mode.is_custom(), cx).aria_label("Custom window frame")
+            }),
             on_frame_mode_change,
             on_close,
         };
@@ -11334,7 +11362,6 @@ fn count_live_demos_in_block(block: &Block) -> usize {
     }
 }
 
-
 fn current_platform_label() -> &'static str {
     match Platform::current() {
         Some(Platform::LinuxX64) => "Linux x64",
@@ -11432,8 +11459,9 @@ fn download_docs_update(docs: Entity<DocsShell>, cx: &mut App) {
         .detach();
 }
 
-fn download_docs_update_sync(updater: &Updater)
--> Result<Option<(String, InstallPlan)>, liora_updater::UpdaterError> {
+fn download_docs_update_sync(
+    updater: &Updater,
+) -> Result<Option<(String, InstallPlan)>, liora_updater::UpdaterError> {
     let Some(platform) = Platform::current() else {
         return Ok(None);
     };
@@ -11521,12 +11549,19 @@ fn theme_mode_segmented(mode: ThemeMode) -> Segmented {
 }
 
 impl DocsShell {
-    pub(super) fn frame_mode(&self) -> WindowFrameMode { self.frame_mode }
+    pub(super) fn frame_mode(&self) -> WindowFrameMode {
+        self.frame_mode
+    }
 
-    pub(super) fn set_frame_mode(&mut self, mode: WindowFrameMode, cx: &mut Context<Self>) -> WindowFrameMode {
+    pub(super) fn set_frame_mode(
+        &mut self,
+        mode: WindowFrameMode,
+        cx: &mut Context<Self>,
+    ) -> WindowFrameMode {
         let previous = self.frame_mode;
         self.frame_mode = mode;
-        self.frame_mode_switch.update(cx, |switch, cx| switch.set_checked(mode.is_custom(), cx));
+        self.frame_mode_switch
+            .update(cx, |switch, cx| switch.set_checked(mode.is_custom(), cx));
         cx.notify();
         previous
     }
@@ -12011,11 +12046,16 @@ impl InlineSegment {
 #[cfg(test)]
 mod tests {
     #[gpui::test]
-    fn frame_mode_switch_preserves_root_input_navigation_and_geometry(cx: &mut gpui::TestAppContext) {
+    fn frame_mode_switch_preserves_root_input_navigation_and_geometry(
+        cx: &mut gpui::TestAppContext,
+    ) {
         use gpui::{Bounds, WindowBounds, WindowOptions, point, px, size};
 
         cx.update(|cx| crate::init_liora_with_options(cx, crate::docs_liora_options()));
-        let bounds = WindowBounds::Windowed(Bounds::new(point(px(73.), px(91.)), size(px(1100.), px(760.))));
+        let bounds = WindowBounds::Windowed(Bounds::new(
+            point(px(73.), px(91.)),
+            size(px(1100.), px(760.)),
+        ));
         let (root, mut handle, child, demo_input) = cx.update(|cx| {
             let root = render_docs_shell(
                 WindowFrameMode::System,
@@ -12025,9 +12065,13 @@ mod tests {
             );
             let (child, demo_input) = root.update(cx, |docs, cx| {
                 docs.update_status = UpdatePanelStatus::Checking;
-                docs.selected = DOC_PAGES.iter().position(|page| page.title == "Input").unwrap();
+                docs.selected = DOC_PAGES
+                    .iter()
+                    .position(|page| page.title == "Input")
+                    .unwrap();
                 docs.nav_query = "input".into();
-                docs.nav_filter.update(cx, |input, cx| input.set_value("Input", cx));
+                docs.nav_filter
+                    .update(cx, |input, cx| input.set_value("Input", cx));
                 let page = docs.page_view(docs.selected, cx);
                 let host = page.read(cx).live_demos[0].clone();
                 let demo = host.read(cx).demo.clone();
@@ -12035,51 +12079,68 @@ mod tests {
                 input.update(cx, |input, cx| input.set_value("Frame keep 73 α", cx));
                 (page.entity_id(), input)
             });
-            let handle: gpui::AnyWindowHandle = cx.open_window(
-                WindowOptions { window_bounds: Some(bounds), ..Default::default() },
-                |window, _| { window.set_rem_size(px(19.)); root.clone() },
-            ).unwrap().into();
+            let handle: gpui::AnyWindowHandle = cx
+                .open_window(
+                    WindowOptions {
+                        window_bounds: Some(bounds),
+                        ..Default::default()
+                    },
+                    |window, _| {
+                        window.set_rem_size(px(19.));
+                        root.clone()
+                    },
+                )
+                .unwrap()
+                .into();
             (root, handle, child, demo_input)
         });
 
         for mode in [WindowFrameMode::Custom, WindowFrameMode::System] {
             let previous_window = handle.window_id();
-            handle.update(cx, |_, window, cx| {
-                assert!(crate::window_frame::reopen_docs_window(mode, window, cx));
-            }).unwrap();
+            handle
+                .update(cx, |_, window, cx| {
+                    assert!(crate::window_frame::reopen_docs_window(mode, window, cx));
+                })
+                .unwrap();
             cx.run_until_parked();
             let windows = cx.windows();
             assert_eq!(windows.len(), 1);
             handle = windows[0];
             assert_ne!(handle.window_id(), previous_window);
-            handle.update(cx, |actual, window, cx| {
-                assert_eq!(actual.entity_id(), root.entity_id());
-                assert_eq!(window.window_bounds(), bounds);
-                assert_eq!(window.rem_size(), px(19.));
-                let docs = root.read(cx);
-                assert_eq!(DOC_PAGES[docs.selected].title, "Input");
-                assert_eq!(docs.nav_query, "input");
-                assert_eq!(docs.nav_filter.read(cx).value().as_ref(), "Input");
-                assert_eq!(docs.page_views[docs.selected].as_ref().unwrap().entity_id(), child);
-                assert_eq!(docs.frame_mode, mode);
-                let page = docs.page_views[docs.selected].as_ref().unwrap();
-                let host = page.read(cx).live_demos[0].read(cx);
-                let actual_input = &host.demo.read(cx).inputs[0];
-                assert_eq!(actual_input.entity_id(), demo_input.entity_id());
-                assert_eq!(actual_input.read(cx).value().as_ref(), "Frame keep 73 α");
-                demo_input.update(cx, |input, cx| {
-                    use gpui::EntityInputHandler;
-                    let end = input.value().len();
-                    input.set_selection(end..end, cx);
-                    input.replace_text_in_range(None, "!", window, cx);
-                    assert_eq!(input.value().as_ref(), "Frame keep 73 α!");
-                    input.set_value("Frame keep 73 α", cx);
-                });
-            }).unwrap();
+            handle
+                .update(cx, |actual, window, cx| {
+                    assert_eq!(actual.entity_id(), root.entity_id());
+                    assert_eq!(window.window_bounds(), bounds);
+                    assert_eq!(window.rem_size(), px(19.));
+                    let docs = root.read(cx);
+                    assert_eq!(DOC_PAGES[docs.selected].title, "Input");
+                    assert_eq!(docs.nav_query, "input");
+                    assert_eq!(docs.nav_filter.read(cx).value().as_ref(), "Input");
+                    assert_eq!(
+                        docs.page_views[docs.selected].as_ref().unwrap().entity_id(),
+                        child
+                    );
+                    assert_eq!(docs.frame_mode, mode);
+                    let page = docs.page_views[docs.selected].as_ref().unwrap();
+                    let host = page.read(cx).live_demos[0].read(cx);
+                    let actual_input = &host.demo.read(cx).inputs[0];
+                    assert_eq!(actual_input.entity_id(), demo_input.entity_id());
+                    assert_eq!(actual_input.read(cx).value().as_ref(), "Frame keep 73 α");
+                    demo_input.update(cx, |input, cx| {
+                        use gpui::EntityInputHandler;
+                        let end = input.value().len();
+                        input.set_selection(end..end, cx);
+                        input.replace_text_in_range(None, "!", window, cx);
+                        assert_eq!(input.value().as_ref(), "Frame keep 73 α!");
+                        input.set_value("Frame keep 73 α", cx);
+                    });
+                })
+                .unwrap();
         }
-        handle.update(cx, |_, window, _| window.remove_window()).unwrap();
+        handle
+            .update(cx, |_, window, _| window.remove_window())
+            .unwrap();
     }
-
 
     #[cfg(any(target_os = "linux", target_os = "macos"))]
     #[test]
@@ -12089,9 +12150,12 @@ mod tests {
             let mut cx = gpui::TestAppContext::single();
             let view = updater_test_docs(&mut cx);
             let plan = liora_updater::build_install_plan(
-                "sample", liora_updater::Platform::LinuxX64,
+                "sample",
+                liora_updater::Platform::LinuxX64,
                 &liora_updater::ReleaseAsset {
-                    name: "sample-linux-x64.tar.gz".into(), download_url: String::new(), size: 0,
+                    name: "sample-linux-x64.tar.gz".into(),
+                    download_url: String::new(),
+                    size: 0,
                 },
                 "old-verified-package.tar.gz",
             );
@@ -12104,29 +12168,59 @@ mod tests {
             });
             cx.run_until_parked();
             cx.update(|cx| {
-                assert!(matches!(view.read(cx).update_status, super::UpdatePanelStatus::Error(_)),
-                    "actual rejected cache must finish the asynchronous download with an error");
-                assert!(view.read(cx).install_plan.is_none(), "a failed download must not resurrect the old plan");
+                assert!(
+                    matches!(
+                        view.read(cx).update_status,
+                        super::UpdatePanelStatus::Error(_)
+                    ),
+                    "actual rejected cache must finish the asynchronous download with an error"
+                );
+                assert!(
+                    view.read(cx).install_plan.is_none(),
+                    "a failed download must not resurrect the old plan"
+                );
                 super::install_docs_update(view.clone(), cx);
-                assert!(matches!(view.read(cx).update_status, super::UpdatePanelStatus::Error(_)),
-                    "install cannot execute the previous plan after failure");
+                assert!(
+                    matches!(
+                        view.read(cx).update_status,
+                        super::UpdatePanelStatus::Error(_)
+                    ),
+                    "install cannot execute the previous plan after failure"
+                );
             });
             cx.quit();
             return;
         }
         use std::os::unix::fs::{DirBuilderExt, PermissionsExt};
         let root = liora_updater::private_update_cache_dir(
-            "liora-docs-state-tests", env!("CARGO_PKG_VERSION"), None,
-        ).unwrap();
+            "liora-docs-state-tests",
+            env!("CARGO_PKG_VERSION"),
+            None,
+        )
+        .unwrap();
         let base = root.join(format!("failure-{}", std::process::id()));
-        std::fs::DirBuilder::new().mode(0o700).create(&base).unwrap();
+        std::fs::DirBuilder::new()
+            .mode(0o700)
+            .create(&base)
+            .unwrap();
         std::fs::set_permissions(&base, std::fs::Permissions::from_mode(0o777)).unwrap();
         let result = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", "markdown::tests::updater_failed_download_cannot_install_a_previous_plan", "--nocapture"])
-            .env(CHILD, "1").env("LIORA_UPDATE_CACHE", &base).output().unwrap();
+            .args([
+                "--exact",
+                "markdown::tests::updater_failed_download_cannot_install_a_previous_plan",
+                "--nocapture",
+            ])
+            .env(CHILD, "1")
+            .env("LIORA_UPDATE_CACHE", &base)
+            .output()
+            .unwrap();
         std::fs::remove_dir(&base).unwrap();
-        assert!(result.status.success(), "{}{}",
-            String::from_utf8_lossy(&result.stdout), String::from_utf8_lossy(&result.stderr));
+        assert!(
+            result.status.success(),
+            "{}{}",
+            String::from_utf8_lossy(&result.stdout),
+            String::from_utf8_lossy(&result.stderr)
+        );
     }
 
     fn updater_test_docs(cx: &mut gpui::TestAppContext) -> Entity<DocsShell> {
@@ -12153,9 +12247,12 @@ mod tests {
     fn updater_download_invalidates_previous_install_plan(cx: &mut gpui::TestAppContext) {
         let view = updater_test_docs(cx);
         let plan = liora_updater::build_install_plan(
-            "sample", liora_updater::Platform::LinuxX64,
+            "sample",
+            liora_updater::Platform::LinuxX64,
             &liora_updater::ReleaseAsset {
-                name: "sample-linux-x64.tar.gz".into(), download_url: String::new(), size: 0,
+                name: "sample-linux-x64.tar.gz".into(),
+                download_url: String::new(),
+                size: 0,
             },
             "old-verified-package.tar.gz",
         );
@@ -12165,10 +12262,18 @@ mod tests {
                 view.update_status = super::UpdatePanelStatus::Downloaded("old".into());
             });
             super::download_docs_update(view.clone(), cx);
-            assert!(view.read(cx).install_plan.is_none(), "starting a new download must revoke the old plan");
+            assert!(
+                view.read(cx).install_plan.is_none(),
+                "starting a new download must revoke the old plan"
+            );
             super::install_docs_update(view.clone(), cx);
-            assert!(matches!(view.read(cx).update_status, super::UpdatePanelStatus::Downloading(_)),
-                "install must not replace an in-flight download status");
+            assert!(
+                matches!(
+                    view.read(cx).update_status,
+                    super::UpdatePanelStatus::Downloading(_)
+                ),
+                "install must not replace an in-flight download status"
+            );
         });
     }
 
@@ -12178,8 +12283,13 @@ mod tests {
         cx.update(|cx| {
             super::check_docs_update(view.clone(), cx);
             super::download_docs_update(view.clone(), cx);
-            assert!(matches!(view.read(cx).update_status, super::UpdatePanelStatus::Checking),
-                "a download must not overlap the active check");
+            assert!(
+                matches!(
+                    view.read(cx).update_status,
+                    super::UpdatePanelStatus::Checking
+                ),
+                "a download must not overlap the active check"
+            );
         });
         cx.update(|cx| {
             view.update(cx, |view, _| view.update_status = super::UpdatePanelStatus::Downloading("active".into()));
@@ -12191,7 +12301,6 @@ mod tests {
                 "a second download must not replace the active request");
         });
     }
-
 
     #[cfg(any(target_os = "linux", target_os = "macos"))]
     #[test]
@@ -12209,8 +12318,11 @@ mod tests {
         }
         use std::os::unix::fs::{DirBuilderExt, PermissionsExt};
         let root = liora_updater::private_update_cache_dir(
-            "liora-docs-cache-tests", env!("CARGO_PKG_VERSION"), None,
-        ).unwrap();
+            "liora-docs-cache-tests",
+            env!("CARGO_PKG_VERSION"),
+            None,
+        )
+        .unwrap();
         let mut sequence = 0;
         let base = loop {
             let path = root.join(format!("rejection-{}-{sequence}", std::process::id()));
@@ -12229,10 +12341,15 @@ mod tests {
             ])
             .env(CHILD, "1")
             .env("LIORA_UPDATE_CACHE", &base)
-            .output().unwrap();
+            .output()
+            .unwrap();
         std::fs::remove_dir_all(&base).unwrap();
-        assert!(result.status.success(), "{}{}",
-            String::from_utf8_lossy(&result.stdout), String::from_utf8_lossy(&result.stderr));
+        assert!(
+            result.status.success(),
+            "{}{}",
+            String::from_utf8_lossy(&result.stdout),
+            String::from_utf8_lossy(&result.stderr)
+        );
         assert!(String::from_utf8_lossy(&result.stdout).contains("1 passed; 0 failed"));
     }
     use super::*;
@@ -13241,7 +13358,11 @@ mod tests {
         let document = MarkdownDocument::parse(LAYOUT_DOC);
         let mut components = Vec::new();
         collect_live_demo_components(document.blocks(), &mut components);
-        assert!(components.iter().any(|component| component == "LayoutAccessible"));
+        assert!(
+            components
+                .iter()
+                .any(|component| component == "LayoutAccessible")
+        );
         assert_eq!(
             load_code_snippet("layout/accessible.rs"),
             Some(include_str!("../content/snippets/layout/accessible.rs"))

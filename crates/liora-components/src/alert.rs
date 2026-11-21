@@ -290,7 +290,9 @@ mod tests {
         window.update(|window, cx| {
             window.draw(cx).clear(cx);
         });
-        let unfocused_bounds = window.debug_bounds("alert-close").expect("second close bounds");
+        let unfocused_bounds = window
+            .debug_bounds("alert-close")
+            .expect("second close bounds");
         window.update(|window, cx| {
             window.focus_next(cx);
         });
@@ -299,7 +301,9 @@ mod tests {
         window.simulate_keystrokes("tab");
         window.update(|window, cx| window.draw(cx).clear(cx));
         assert_eq!(
-            window.debug_bounds("alert-close").expect("focused second close bounds"),
+            window
+                .debug_bounds("alert-close")
+                .expect("focused second close bounds"),
             unfocused_bounds,
             "keyboard focus must not change close-control bounds"
         );
@@ -312,8 +316,16 @@ mod tests {
             );
             window.draw(cx).clear(cx);
         });
-        assert_eq!(first_calls.get(), 0, "Tab must move to the second close control");
-        assert_eq!(second_calls.get(), 1, "Enter must close the focused second alert once");
+        assert_eq!(
+            first_calls.get(),
+            0,
+            "Tab must move to the second close control"
+        );
+        assert_eq!(
+            second_calls.get(),
+            1,
+            "Enter must close the focused second alert once"
+        );
 
         window.simulate_keystrokes("shift-tab");
         window.update(|window, cx| window.draw(cx).clear(cx));
@@ -326,9 +338,17 @@ mod tests {
             );
             window.draw(cx).clear(cx);
         });
-        assert_eq!(first_calls.get(), 1, "Shift-Tab must return to the first close control");
+        assert_eq!(
+            first_calls.get(),
+            1,
+            "Shift-Tab must return to the first close control"
+        );
         assert_eq!(second_calls.get(), 1);
-        assert_eq!(parent_actions.get(), 0, "close keys and Tab must not bubble");
+        assert_eq!(
+            parent_actions.get(),
+            0,
+            "close keys and Tab must not bubble"
+        );
         app.quit();
     }
 
@@ -341,15 +361,27 @@ mod tests {
         let handle = app.add_window({
             let calls = calls.clone();
             let parent_actions = parent_actions.clone();
-            move |_, _| AlertSurface { calls, parent_actions }
+            move |_, _| AlertSurface {
+                calls,
+                parent_actions,
+            }
         });
         let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
         window.update(|window, cx| window.draw(cx).clear(cx));
-        let close_bounds = window.debug_bounds("alert-close").expect("visible close control");
+        let close_bounds = window
+            .debug_bounds("alert-close")
+            .expect("visible close control");
         window.simulate_click(close_bounds.center(), gpui::Modifiers::none());
         window.update(|window, cx| window.draw(cx).clear(cx));
-        assert_eq!(calls.get(), 1, "pointer close must invoke callback exactly once");
-        assert!(window.debug_bounds("alert-close").is_some(), "callback does not hide Alert itself");
+        assert_eq!(
+            calls.get(),
+            1,
+            "pointer close must invoke callback exactly once"
+        );
+        assert!(
+            window.debug_bounds("alert-close").is_some(),
+            "callback does not hide Alert itself"
+        );
         assert_eq!(parent_actions.get(), 0, "close must not trigger its parent");
         app.quit();
     }
@@ -363,7 +395,10 @@ mod tests {
         let handle = app.add_window({
             let calls = calls.clone();
             let parent_actions = parent_actions.clone();
-            move |_, _| AlertSurface { calls, parent_actions }
+            move |_, _| AlertSurface {
+                calls,
+                parent_actions,
+            }
         });
         let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
         window.update(|window, cx| {
@@ -376,12 +411,22 @@ mod tests {
             assert_eq!(calls.get(), index, "activation waits for native key-up");
             window.update(|window, cx| {
                 let keystroke = gpui::Keystroke::parse_with_os(key, cx.platform_info().os).unwrap();
-                window.dispatch_event(gpui::PlatformInput::KeyUp(gpui::KeyUpEvent { keystroke }), cx);
+                window.dispatch_event(
+                    gpui::PlatformInput::KeyUp(gpui::KeyUpEvent { keystroke }),
+                    cx,
+                );
                 window.draw(cx).clear(cx);
             });
             assert_eq!(calls.get(), index + 1, "{key} invokes close exactly once");
-            assert!(window.debug_bounds("alert-close").is_some(), "parent retains visibility");
-            assert_eq!(parent_actions.get(), 0, "{key} must not activate its parent");
+            assert!(
+                window.debug_bounds("alert-close").is_some(),
+                "parent retains visibility"
+            );
+            assert_eq!(
+                parent_actions.get(),
+                0,
+                "{key} must not activate its parent"
+            );
         }
         app.quit();
     }

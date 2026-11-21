@@ -21,7 +21,7 @@
 
 use crate::Input;
 use gpui::{
-    prelude::*, px, App, Context, Entity, FocusHandle, Focusable, MouseButton, Render, Window,
+    App, Context, Entity, FocusHandle, Focusable, MouseButton, Render, Window, prelude::*, px,
 };
 use liora_core::Config;
 use liora_icons::Icon;
@@ -447,7 +447,7 @@ impl InputNumber {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use gpui::{size, EntityInputHandler, TestAppContext};
+    use gpui::{EntityInputHandler, TestAppContext, size};
     use std::{cell::RefCell, rc::Rc};
 
     struct Surface(Entity<InputNumber>);

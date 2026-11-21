@@ -4,39 +4,53 @@ use std::{
     fs::OpenOptions,
     io,
     mem::size_of,
-    os::windows::{ffi::OsStrExt, fs::{MetadataExt, OpenOptionsExt}, io::{AsRawHandle, FromRawHandle, OwnedHandle}},
+    os::windows::{
+        ffi::OsStrExt,
+        fs::{MetadataExt, OpenOptionsExt},
+        io::{AsRawHandle, FromRawHandle, OwnedHandle},
+    },
     path::{Component, Path, Prefix},
     ptr,
 };
 use windows_sys::Win32::{
     Foundation::{ERROR_SUCCESS, GENERIC_ALL, GENERIC_WRITE, LocalFree},
     Security::{
-        ACE_HEADER, ACL, CopySid, DACL_SECURITY_INFORMATION, EqualSid, GetAce,
-        GetTokenInformation, INHERIT_ONLY_ACE, IsValidAcl, IsWellKnownSid,
-        OWNER_SECURITY_INFORMATION, PSID, SECURITY_ATTRIBUTES, SECURITY_MAX_SID_SIZE,
-        TOKEN_QUERY, TOKEN_USER, TokenUser, WinBuiltinAdministratorsSid, WinCreatorOwnerRightsSid,
-        WinCreatorOwnerSid, WinLocalSystemSid,
-        Authorization::{ConvertSidToStringSidW, ConvertStringSecurityDescriptorToSecurityDescriptorW,
-            ConvertStringSidToSidW, GetSecurityInfo, SDDL_REVISION_1, SE_FILE_OBJECT},
+        ACE_HEADER, ACL,
+        Authorization::{
+            ConvertSidToStringSidW, ConvertStringSecurityDescriptorToSecurityDescriptorW,
+            ConvertStringSidToSidW, GetSecurityInfo, SDDL_REVISION_1, SE_FILE_OBJECT,
+        },
+        CopySid, DACL_SECURITY_INFORMATION, EqualSid, GetAce, GetTokenInformation,
+        INHERIT_ONLY_ACE, IsValidAcl, IsWellKnownSid, OWNER_SECURITY_INFORMATION, PSID,
+        SECURITY_ATTRIBUTES, SECURITY_MAX_SID_SIZE, TOKEN_QUERY, TOKEN_USER, TokenUser,
+        WinBuiltinAdministratorsSid, WinCreatorOwnerRightsSid, WinCreatorOwnerSid,
+        WinLocalSystemSid,
     },
     Storage::FileSystem::{
-        CreateDirectoryW, DELETE, FILE_ADD_FILE, FILE_ADD_SUBDIRECTORY, FILE_ATTRIBUTE_REPARSE_POINT,
-        FILE_DELETE_CHILD, FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT,
-        FILE_READ_ATTRIBUTES, FILE_WRITE_ATTRIBUTES, FILE_WRITE_EA, GetDriveTypeW,
-        GetVolumeInformationByHandleW,
-        READ_CONTROL, WRITE_DAC, WRITE_OWNER,
+        CreateDirectoryW, DELETE, FILE_ADD_FILE, FILE_ADD_SUBDIRECTORY,
+        FILE_ATTRIBUTE_REPARSE_POINT, FILE_DELETE_CHILD, FILE_FLAG_BACKUP_SEMANTICS,
+        FILE_FLAG_OPEN_REPARSE_POINT, FILE_READ_ATTRIBUTES, FILE_WRITE_ATTRIBUTES, FILE_WRITE_EA,
+        GetDriveTypeW, GetVolumeInformationByHandleW, READ_CONTROL, WRITE_DAC, WRITE_OWNER,
     },
     System::{
-        SystemServices::{ACCESS_ALLOWED_ACE_TYPE, ACCESS_DENIED_ACE_TYPE,
-            ACCESS_DENIED_CALLBACK_ACE_TYPE, ACCESS_DENIED_CALLBACK_OBJECT_ACE_TYPE,
-            ACCESS_DENIED_OBJECT_ACE_TYPE, FILE_PERSISTENT_ACLS},
+        SystemServices::{
+            ACCESS_ALLOWED_ACE_TYPE, ACCESS_DENIED_ACE_TYPE, ACCESS_DENIED_CALLBACK_ACE_TYPE,
+            ACCESS_DENIED_CALLBACK_OBJECT_ACE_TYPE, ACCESS_DENIED_OBJECT_ACE_TYPE,
+            FILE_PERSISTENT_ACLS,
+        },
         Threading::{GetCurrentProcess, OpenProcessToken},
         WindowsProgramming::{DRIVE_FIXED, DRIVE_RAMDISK, DRIVE_REMOVABLE},
     },
 };
 
-const REPLACEMENT_RIGHTS: u32 = FILE_DELETE_CHILD | FILE_WRITE_ATTRIBUTES | FILE_WRITE_EA
-    | DELETE | WRITE_DAC | WRITE_OWNER | GENERIC_WRITE | GENERIC_ALL;
+const REPLACEMENT_RIGHTS: u32 = FILE_DELETE_CHILD
+    | FILE_WRITE_ATTRIBUTES
+    | FILE_WRITE_EA
+    | DELETE
+    | WRITE_DAC
+    | WRITE_OWNER
+    | GENERIC_WRITE
+    | GENERIC_ALL;
 const SID_WORDS: usize = SECURITY_MAX_SID_SIZE as usize / size_of::<u32>();
 // The operating system servicing identity can own protected Windows directories.
 const TRUSTED_INSTALLER: &str = "S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464";
@@ -64,15 +78,27 @@ impl Guard {
             info: TOKEN_USER,
             sid: [u32; SID_WORDS],
         }
-        let mut info = UserBuffer { info: TOKEN_USER::default(), sid: [0; SID_WORDS] };
+        let mut info = UserBuffer {
+            info: TOKEN_USER::default(),
+            sid: [0; SID_WORDS],
+        };
         let mut returned = 0;
         let mut user = [0u32; SID_WORDS];
         // SAFETY: the aligned buffer holds TOKEN_USER plus the maximum SID size.
         // Copy the SID before that buffer goes out of scope.
         unsafe {
-            if GetTokenInformation(token.as_raw_handle(), TokenUser, ptr::from_mut(&mut info).cast(),
-                size_of::<UserBuffer>() as u32, &mut returned) == 0
-                || CopySid(SECURITY_MAX_SID_SIZE, user.as_mut_ptr().cast(), info.info.User.Sid) == 0
+            if GetTokenInformation(
+                token.as_raw_handle(),
+                TokenUser,
+                ptr::from_mut(&mut info).cast(),
+                size_of::<UserBuffer>() as u32,
+                &mut returned,
+            ) == 0
+                || CopySid(
+                    SECURITY_MAX_SID_SIZE,
+                    user.as_mut_ptr().cast(),
+                    info.info.User.Sid,
+                ) == 0
             {
                 return Err(io::Error::last_os_error());
             }
@@ -83,7 +109,10 @@ impl Guard {
         if unsafe { ConvertStringSidToSidW(text.as_ptr(), &mut servicing) } == 0 {
             return Err(io::Error::last_os_error());
         }
-        Ok(Self { user, servicing: LocalAllocation(servicing) })
+        Ok(Self {
+            user,
+            servicing: LocalAllocation(servicing),
+        })
     }
 
     fn user_sid(&self) -> PSID {
@@ -92,9 +121,12 @@ impl Guard {
 
     // SAFETY: sid must point to a valid SID.
     unsafe fn trusted_sid(&self, sid: PSID) -> bool {
-        unsafe { EqualSid(sid, self.user_sid()) != 0 || EqualSid(sid, self.servicing.0) != 0
-            || IsWellKnownSid(sid, WinLocalSystemSid) != 0
-            || IsWellKnownSid(sid, WinBuiltinAdministratorsSid) != 0 }
+        unsafe {
+            EqualSid(sid, self.user_sid()) != 0
+                || EqualSid(sid, self.servicing.0) != 0
+                || IsWellKnownSid(sid, WinLocalSystemSid) != 0
+                || IsWellKnownSid(sid, WinBuiltinAdministratorsSid) != 0
+        }
     }
 
     pub(super) fn check(&self, path: &Path, private: bool) -> io::Result<()> {
@@ -104,49 +136,88 @@ impl Guard {
         let Prefix::VerbatimDisk(drive) = prefix.kind() else {
             return Err(unsafe_cache(path, "expected a resolved drive path"));
         };
-        let dir = OpenOptions::new().read(true).access_mode(READ_CONTROL | FILE_READ_ATTRIBUTES)
-            .custom_flags(FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT).open(path)?;
+        let dir = OpenOptions::new()
+            .read(true)
+            .access_mode(READ_CONTROL | FILE_READ_ATTRIBUTES)
+            .custom_flags(FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT)
+            .open(path)?;
         let metadata = dir.metadata()?;
         if !metadata.is_dir() || metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 {
-            return Err(unsafe_cache(path, "expected a directory without a reparse point"));
+            return Err(unsafe_cache(
+                path,
+                "expected a directory without a reparse point",
+            ));
         }
         if path.components().count() == 2 {
             let root = [u16::from(drive), u16::from(b':'), u16::from(b'\\'), 0];
             // SAFETY: root is a NUL-terminated drive root with the required backslash.
             if !local_drive_type(unsafe { GetDriveTypeW(root.as_ptr()) }) {
-                return Err(unsafe_cache(path, "cache drive is remote, unknown, or not writable media"));
+                return Err(unsafe_cache(
+                    path,
+                    "cache drive is remote, unknown, or not writable media",
+                ));
             }
             let mut flags = 0;
             // SAFETY: flags is writable and the other outputs are optional.
-            if unsafe { GetVolumeInformationByHandleW(dir.as_raw_handle(), ptr::null_mut(), 0,
-                ptr::null_mut(), ptr::null_mut(), &mut flags, ptr::null_mut(), 0) } == 0
+            if unsafe {
+                GetVolumeInformationByHandleW(
+                    dir.as_raw_handle(),
+                    ptr::null_mut(),
+                    0,
+                    ptr::null_mut(),
+                    ptr::null_mut(),
+                    &mut flags,
+                    ptr::null_mut(),
+                    0,
+                )
+            } == 0
             {
                 return Err(io::Error::last_os_error());
             }
             if flags & FILE_PERSISTENT_ACLS == 0 {
-                return Err(unsafe_cache(path, "volume does not enforce persistent ACLs"));
+                return Err(unsafe_cache(
+                    path,
+                    "volume does not enforce persistent ACLs",
+                ));
             }
         }
         let mut owner = ptr::null_mut();
         let mut dacl = ptr::null_mut();
         let mut descriptor = ptr::null_mut();
         // SAFETY: the handle and all requested out-pointers are valid.
-        let status = unsafe { GetSecurityInfo(dir.as_raw_handle(), SE_FILE_OBJECT,
-            OWNER_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION,
-            &mut owner, ptr::null_mut(), &mut dacl, ptr::null_mut(), &mut descriptor) };
+        let status = unsafe {
+            GetSecurityInfo(
+                dir.as_raw_handle(),
+                SE_FILE_OBJECT,
+                OWNER_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION,
+                &mut owner,
+                ptr::null_mut(),
+                &mut dacl,
+                ptr::null_mut(),
+                &mut descriptor,
+            )
+        };
         if status != ERROR_SUCCESS {
             return Err(io::Error::from_raw_os_error(status as i32));
         }
         let _descriptor = LocalAllocation(descriptor);
         // SAFETY: the owner and DACL are borrowed from the live security descriptor.
-        let owner_is_trusted = !owner.is_null() && unsafe {
-            if private { EqualSid(owner, self.user_sid()) != 0 } else { self.trusted_sid(owner) }
-        };
+        let owner_is_trusted = !owner.is_null()
+            && unsafe {
+                if private {
+                    EqualSid(owner, self.user_sid()) != 0
+                } else {
+                    self.trusted_sid(owner)
+                }
+            };
         if !owner_is_trusted {
             return Err(unsafe_cache(path, "directory has an untrusted owner"));
         }
         if dacl.is_null() || !unsafe { self.dacl_is_safe(dacl, private)? } {
-            return Err(unsafe_cache(path, "directory DACL permits or cannot rule out modification by another user"));
+            return Err(unsafe_cache(
+                path,
+                "directory DACL permits or cannot rule out modification by another user",
+            ));
         }
         Ok(())
     }
@@ -156,8 +227,11 @@ impl Guard {
         if unsafe { IsValidAcl(dacl) } == 0 {
             return Ok(false);
         }
-        let rights = if private { REPLACEMENT_RIGHTS | FILE_ADD_FILE | FILE_ADD_SUBDIRECTORY }
-            else { REPLACEMENT_RIGHTS };
+        let rights = if private {
+            REPLACEMENT_RIGHTS | FILE_ADD_FILE | FILE_ADD_SUBDIRECTORY
+        } else {
+            REPLACEMENT_RIGHTS
+        };
         for index in 0..u32::from(unsafe { (*dacl).AceCount }) {
             let mut ace = ptr::null_mut();
             if unsafe { GetAce(dacl, index, &mut ace) } == 0 {
@@ -169,9 +243,11 @@ impl Guard {
                 continue;
             }
             match u32::from(header.AceType) {
-                ACCESS_DENIED_ACE_TYPE | ACCESS_DENIED_OBJECT_ACE_TYPE
-                | ACCESS_DENIED_CALLBACK_ACE_TYPE | ACCESS_DENIED_CALLBACK_OBJECT_ACE_TYPE => continue,
-                ACCESS_ALLOWED_ACE_TYPE => {},
+                ACCESS_DENIED_ACE_TYPE
+                | ACCESS_DENIED_OBJECT_ACE_TYPE
+                | ACCESS_DENIED_CALLBACK_ACE_TYPE
+                | ACCESS_DENIED_CALLBACK_OBJECT_ACE_TYPE => continue,
+                ACCESS_ALLOWED_ACE_TYPE => {}
                 _ => return Ok(false),
             }
             // An allow ACE holds a header, a DWORD mask, and a variable-length SID.
@@ -190,9 +266,11 @@ impl Guard {
             }
             let sid = sid.cast();
             // OWNER RIGHTS follows the proven owner. CREATOR OWNER is substituted only on inheritance.
-            if !unsafe { self.trusted_sid(sid) || IsWellKnownSid(sid, WinCreatorOwnerRightsSid) != 0
-                || (inherit_only && IsWellKnownSid(sid, WinCreatorOwnerSid) != 0) }
-            {
+            if !unsafe {
+                self.trusted_sid(sid)
+                    || IsWellKnownSid(sid, WinCreatorOwnerRightsSid) != 0
+                    || (inherit_only && IsWellKnownSid(sid, WinCreatorOwnerSid) != 0)
+            } {
                 return Ok(false);
             }
         }
@@ -209,12 +287,21 @@ impl Guard {
         // SAFETY: Windows returned a NUL-terminated SID string.
         let length = (0..).find(|&i| unsafe { *sid.add(i) } == 0).unwrap();
         let user = String::from_utf16_lossy(unsafe { std::slice::from_raw_parts(sid, length) });
-        let sddl: Vec<_> = format!("O:{user}D:P(A;OICI;FA;;;{user})(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)")
-            .encode_utf16().chain(Some(0)).collect();
+        let sddl: Vec<_> =
+            format!("O:{user}D:P(A;OICI;FA;;;{user})(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)")
+                .encode_utf16()
+                .chain(Some(0))
+                .collect();
         let mut descriptor = ptr::null_mut();
         // SAFETY: the descriptor string is NUL-terminated and the out-pointer is valid.
-        if unsafe { ConvertStringSecurityDescriptorToSecurityDescriptorW(sddl.as_ptr(),
-            SDDL_REVISION_1, &mut descriptor, ptr::null_mut()) } == 0
+        if unsafe {
+            ConvertStringSecurityDescriptorToSecurityDescriptorW(
+                sddl.as_ptr(),
+                SDDL_REVISION_1,
+                &mut descriptor,
+                ptr::null_mut(),
+            )
+        } == 0
         {
             return Err(io::Error::last_os_error());
         }
@@ -251,18 +338,28 @@ mod tests {
         let text: Vec<_> = text.encode_utf16().chain(Some(0)).collect();
         let mut descriptor = ptr::null_mut();
         // SAFETY: the NUL-terminated SDDL and writable output remain live.
-        assert_ne!(unsafe {
-            ConvertStringSecurityDescriptorToSecurityDescriptorW(text.as_ptr(),
-                SDDL_REVISION_1, &mut descriptor, ptr::null_mut())
-        }, 0);
+        assert_ne!(
+            unsafe {
+                ConvertStringSecurityDescriptorToSecurityDescriptorW(
+                    text.as_ptr(),
+                    SDDL_REVISION_1,
+                    &mut descriptor,
+                    ptr::null_mut(),
+                )
+            },
+            0
+        );
         let descriptor = LocalAllocation(descriptor);
         let mut present = 0;
         let mut defaulted = 0;
         let mut dacl = ptr::null_mut();
         // SAFETY: descriptor is valid and all output pointers are writable.
-        assert_ne!(unsafe {
-            GetSecurityDescriptorDacl(descriptor.0, &mut present, &mut dacl, &mut defaulted)
-        }, 0);
+        assert_ne!(
+            unsafe {
+                GetSecurityDescriptorDacl(descriptor.0, &mut present, &mut dacl, &mut defaulted)
+            },
+            0
+        );
         assert_ne!(present, 0);
         assert!(!dacl.is_null());
         // SAFETY: dacl is borrowed from the live descriptor.

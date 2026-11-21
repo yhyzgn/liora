@@ -1,10 +1,10 @@
 use gpui::{App, Window};
-use liora_components::{request_window_frame_mode, toast_info, WindowFrameChange, WindowFrameMode};
+use liora_components::{WindowFrameChange, WindowFrameMode, request_window_frame_mode, toast_info};
 use liora_core::{attach_system_theme_observer, tr};
 
 use super::{
-    gallery_window_options, handle_gallery_window_should_close, locale_template, locales, Gallery,
-    GalleryTrayState,
+    Gallery, GalleryTrayState, gallery_window_options, handle_gallery_window_should_close,
+    locale_template, locales,
 };
 
 pub(super) fn set_gallery_frame_mode(mode: WindowFrameMode, window: &mut Window, cx: &mut App) {

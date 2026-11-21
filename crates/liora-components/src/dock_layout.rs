@@ -861,10 +861,14 @@ impl RenderOnce for DockLayout {
 
             let mut live_keys = HashSet::new();
             collect_live_keys(&snapshot.root, &mut live_keys);
-            focus.headers.retain(|key, _| live_keys.contains(key.as_str()));
+            focus
+                .headers
+                .retain(|key, _| live_keys.contains(key.as_str()));
             for key in live_keys {
                 if !focus.headers.contains_key(key) {
-                    focus.headers.insert(key.to_owned(), cx.focus_handle().tab_stop(true));
+                    focus
+                        .headers
+                        .insert(key.to_owned(), cx.focus_handle().tab_stop(true));
                 }
             }
         });

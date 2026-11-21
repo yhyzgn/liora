@@ -286,22 +286,36 @@ mod tests {
             }),
             scroll: scroll.clone(),
         });
-        let affix = handle.update(&mut app, |view, _, _| view.affix.clone()).unwrap();
+        let affix = handle
+            .update(&mut app, |view, _, _| view.affix.clone())
+            .unwrap();
         let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
         window.update(|window, cx| window.draw(cx).clear(cx));
         let expected = Bounds::new(point(px(23.0), px(117.0)), size(px(120.0), px(30.0)));
         assert_eq!(window.debug_bounds("affix-child"), Some(expected));
-        assert_eq!(affix.read_with(&app, |affix, _| affix.last_bounds), Some(expected));
+        assert_eq!(
+            affix.read_with(&app, |affix, _| affix.last_bounds),
+            Some(expected)
+        );
         assert!(!affix.read_with(&app, |affix, _| affix.is_fixed));
 
         scroll.set_offset(point(px(0.0), px(-20.0)));
-        window.update(|window, cx| { window.refresh(); window.draw(cx).clear(cx); });
+        window.update(|window, cx| {
+            window.refresh();
+            window.draw(cx).clear(cx);
+        });
         let scrolled = Bounds::new(point(px(23.0), px(97.0)), expected.size);
         assert_eq!(window.debug_bounds("affix-child"), Some(scrolled));
-        assert_eq!(affix.read_with(&app, |affix, _| affix.last_bounds), Some(scrolled));
+        assert_eq!(
+            affix.read_with(&app, |affix, _| affix.last_bounds),
+            Some(scrolled)
+        );
 
         scroll.set_offset(point(px(0.0), px(-60.0)));
-        window.update(|window, cx| { window.refresh(); window.draw(cx).clear(cx); });
+        window.update(|window, cx| {
+            window.refresh();
+            window.draw(cx).clear(cx);
+        });
         assert!(affix.read_with(&app, |affix, _| affix.is_fixed));
         window.update(|window, cx| window.draw(cx).clear(cx));
         let slot = window.debug_bounds("affix-slot").unwrap();
@@ -310,7 +324,10 @@ mod tests {
         assert_eq!(tracked.size, expected.size);
 
         scroll.set_offset(point(px(0.0), px(0.0)));
-        window.update(|window, cx| { window.refresh(); window.draw(cx).clear(cx); });
+        window.update(|window, cx| {
+            window.refresh();
+            window.draw(cx).clear(cx);
+        });
         window.update(|window, cx| window.draw(cx).clear(cx));
         assert_eq!(window.debug_bounds("affix-child"), Some(expected));
         assert_eq!(*changes.borrow(), [true, false]);

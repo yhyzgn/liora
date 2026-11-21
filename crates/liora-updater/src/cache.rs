@@ -33,9 +33,13 @@ pub fn private_update_cache_dir(
         if name.is_empty()
             || !name.as_bytes()[0].is_ascii_alphanumeric()
             || name.ends_with('.')
-            || !name.bytes().all(|c| c.is_ascii_alphanumeric() || b"._-+".contains(&c))
+            || !name
+                .bytes()
+                .all(|c| c.is_ascii_alphanumeric() || b"._-+".contains(&c))
         {
-            return Err(io::Error::new(io::ErrorKind::InvalidInput, "invalid update cache name").into());
+            return Err(
+                io::Error::new(io::ErrorKind::InvalidInput, "invalid update cache name").into(),
+            );
         }
     }
 
@@ -53,7 +57,8 @@ pub fn private_update_cache_dir(
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
             "update cache base must be absolute and contain no parent components",
-        ).into());
+        )
+        .into());
     }
 
     #[cfg(any(target_os = "linux", target_os = "macos", windows))]
@@ -75,7 +80,11 @@ pub fn private_update_cache_dir(
         Ok(path)
     }
     #[cfg(not(any(target_os = "linux", target_os = "macos", windows)))]
-    Err(io::Error::new(io::ErrorKind::Unsupported, "no native update cache protection for this platform").into())
+    Err(io::Error::new(
+        io::ErrorKind::Unsupported,
+        "no native update cache protection for this platform",
+    )
+    .into())
 }
 
 #[cfg(any(target_os = "linux", target_os = "macos", windows))]
@@ -116,7 +125,10 @@ fn ensure_directory(guard: &native::Guard, path: &Path, private: bool) -> io::Re
 
 #[cfg(any(target_os = "linux", target_os = "macos", windows))]
 fn unsafe_cache(path: &Path, reason: &str) -> io::Error {
-    io::Error::new(io::ErrorKind::PermissionDenied, format!("unsafe update cache {}: {reason}", path.display()))
+    io::Error::new(
+        io::ErrorKind::PermissionDenied,
+        format!("unsafe update cache {}: {reason}", path.display()),
+    )
 }
 
 #[cfg(all(test, any(target_os = "linux", target_os = "macos")))]
@@ -137,7 +149,10 @@ pub(crate) mod tests {
             let home = dirs::home_dir().unwrap().canonicalize().unwrap();
             loop {
                 let sequence = NEXT_FIXTURE.fetch_add(1, Ordering::Relaxed);
-                let path = home.join(format!(".liora-cache-test-{name}-{}-{sequence}", std::process::id()));
+                let path = home.join(format!(
+                    ".liora-cache-test-{name}-{}-{sequence}",
+                    std::process::id()
+                ));
                 match fs::DirBuilder::new().mode(0o700).create(&path) {
                     Ok(()) => return Self(path),
                     Err(error) if error.kind() == io::ErrorKind::AlreadyExists => continue,
@@ -165,7 +180,10 @@ pub(crate) mod tests {
         let fixture = Fixture::new("private");
         let base = fixture.0.join("private");
         let alias = fixture.0.join("alias");
-        native::Guard::new().unwrap().create_private_dir(&base).unwrap();
+        native::Guard::new()
+            .unwrap()
+            .create_private_dir(&base)
+            .unwrap();
         symlink(&base, &alias).unwrap();
 
         let path = private_update_cache_dir("app", "1.2.3", Some(&alias)).unwrap();
@@ -175,7 +193,10 @@ pub(crate) mod tests {
             assert!(metadata.is_dir());
             assert_eq!(metadata.permissions().mode() & 0o077, 0);
         }
-        assert_eq!(private_update_cache_dir("app", "1.2.3", Some(&alias)).unwrap(), path);
+        assert_eq!(
+            private_update_cache_dir("app", "1.2.3", Some(&alias)).unwrap(),
+            path
+        );
     }
 
     #[test]
@@ -185,10 +206,15 @@ pub(crate) mod tests {
         let base = writable.join("private");
         fs::create_dir(&writable).unwrap();
         fs::set_permissions(&writable, fs::Permissions::from_mode(0o777)).unwrap();
-        native::Guard::new().unwrap().create_private_dir(&base).unwrap();
+        native::Guard::new()
+            .unwrap()
+            .create_private_dir(&base)
+            .unwrap();
 
         let error = private_update_cache_dir("app", "1.2.3", Some(&base)).unwrap_err();
-        assert!(matches!(error, UpdaterError::Io(error) if error.kind() == io::ErrorKind::PermissionDenied));
+        assert!(
+            matches!(error, UpdaterError::Io(error) if error.kind() == io::ErrorKind::PermissionDenied)
+        );
         assert!(!base.join("app").exists());
     }
 
@@ -215,13 +241,19 @@ pub(crate) mod tests {
     fn rejects_app_and_version_aliases_without_changing_the_target() {
         let fixture = Fixture::new("leaf-alias");
         let target = fixture.0.join("protected");
-        native::Guard::new().unwrap().create_private_dir(&target).unwrap();
+        native::Guard::new()
+            .unwrap()
+            .create_private_dir(&target)
+            .unwrap();
         fs::write(target.join("keep"), b"protected bytes").unwrap();
         let app = fixture.0.join("app");
         symlink(&target, &app).unwrap();
         assert!(private_update_cache_dir("app", "1.2.3", Some(&fixture.0)).is_err());
         fs::remove_file(&app).unwrap();
-        native::Guard::new().unwrap().create_private_dir(&app).unwrap();
+        native::Guard::new()
+            .unwrap()
+            .create_private_dir(&app)
+            .unwrap();
         symlink(&target, app.join("1.2.3")).unwrap();
         assert!(private_update_cache_dir("app", "1.2.3", Some(&fixture.0)).is_err());
         assert_eq!(fs::read(target.join("keep")).unwrap(), b"protected bytes");
@@ -236,7 +268,10 @@ pub(crate) mod tests {
         assert!(private_update_cache_dir("app", "1.2.3", Some(&dangling)).is_err());
         assert!(!fixture.0.join("absent").exists());
         let app = fixture.0.join("app");
-        native::Guard::new().unwrap().create_private_dir(&app).unwrap();
+        native::Guard::new()
+            .unwrap()
+            .create_private_dir(&app)
+            .unwrap();
         fs::set_permissions(&app, fs::Permissions::from_mode(0o750)).unwrap();
         assert!(private_update_cache_dir("app", "1.2.3", Some(&fixture.0)).is_err());
         assert!(!app.join("1.2.3").exists());
@@ -250,9 +285,20 @@ pub(crate) mod tests {
     #[test]
     fn default_cache_uses_the_os_cache_root_without_temp_fallback() {
         let fixture = Fixture::new("default");
-        let app = fixture.0.file_name().unwrap().to_str().unwrap().strip_prefix('.').unwrap();
+        let app = fixture
+            .0
+            .file_name()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .strip_prefix('.')
+            .unwrap();
         let path = private_update_cache_dir(app, "1.2.3+build", None).unwrap();
-        let base = dirs::cache_dir().unwrap().join("liora-updates").canonicalize().unwrap();
+        let base = dirs::cache_dir()
+            .unwrap()
+            .join("liora-updates")
+            .canonicalize()
+            .unwrap();
         assert_eq!(path, base.join(app).join("1.2.3+build"));
         assert_eq!(fs::metadata(&path).unwrap().permissions().mode() & 0o077, 0);
         fs::remove_dir_all(base.join(app)).unwrap();

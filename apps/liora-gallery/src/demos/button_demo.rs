@@ -210,11 +210,23 @@ fn types() -> Vec<impl IntoElement> {
 fn text_buttons() -> Vec<impl IntoElement> {
     vec![
         Button::new("Default").id("button-text-default").text(),
-        Button::new("Primary").id("button-text-primary").text().primary(),
+        Button::new("Primary")
+            .id("button-text-primary")
+            .text()
+            .primary(),
         Button::new("Info").id("button-text-info").text().info(),
-        Button::new("Success").id("button-text-success").text().success(),
-        Button::new("Warning").id("button-text-warning").text().warning(),
-        Button::new("Danger").id("button-text-danger").text().danger(),
+        Button::new("Success")
+            .id("button-text-success")
+            .text()
+            .success(),
+        Button::new("Warning")
+            .id("button-text-warning")
+            .text()
+            .warning(),
+        Button::new("Danger")
+            .id("button-text-danger")
+            .text()
+            .danger(),
     ]
 }
 
@@ -266,9 +278,15 @@ fn icons() -> Vec<impl IntoElement> {
         Button::new("Download")
             .info()
             .icon_bottom(IconName::ArrowDown),
-        Button::new(liora_core::locales::common::search).primary().icon_only(IconName::Search),
-        Button::new(liora_core::locales::common::cancel).danger().icon_only(IconName::X),
-        Button::new(liora_core::locales::common::confirm).success().icon_only(IconName::Check),
+        Button::new(liora_core::locales::common::search)
+            .primary()
+            .icon_only(IconName::Search),
+        Button::new(liora_core::locales::common::cancel)
+            .danger()
+            .icon_only(IconName::X),
+        Button::new(liora_core::locales::common::confirm)
+            .success()
+            .icon_only(IconName::Check),
     ]
 }
 

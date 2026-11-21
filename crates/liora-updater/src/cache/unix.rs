@@ -43,15 +43,19 @@ fn trusted_owner(owner: libc::uid_t, user: libc::uid_t, private: bool) -> bool {
 #[cfg(target_os = "macos")]
 mod macos {
     use super::*;
-    use std::{ffi::{CString, c_char, c_int, c_void}, os::unix::ffi::OsStrExt, ptr};
+    use std::{
+        ffi::{CString, c_char, c_int, c_void},
+        os::unix::ffi::OsStrExt,
+        ptr,
+    };
 
     // Darwin's <sys/acl.h> extended ACL API. These grants are independent of mode bits.
     const ACL_TYPE_EXTENDED: c_int = 0x100;
     const ACL_EXTENDED_ALLOW: c_int = 1;
     const ACL_EXTENDED_DENY: c_int = 2;
     const ACL_ENTRY_ONLY_INHERIT: c_int = 1 << 8;
-    const WRITE_PERMISSIONS: u64 = (1 << 2) | (1 << 4) | (1 << 5) | (1 << 6)
-        | (1 << 8) | (1 << 10) | (1 << 12) | (1 << 13);
+    const WRITE_PERMISSIONS: u64 =
+        (1 << 2) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 8) | (1 << 10) | (1 << 12) | (1 << 13);
     type AclPtr = *mut c_void;
 
     unsafe extern "C" {
@@ -82,7 +86,11 @@ mod macos {
         if acl.is_null() {
             let error = io::Error::last_os_error();
             // Darwin reports ENOENT when the already-validated directory has no ACL.
-            return if error.raw_os_error() == Some(libc::ENOENT) { Ok(()) } else { Err(error) };
+            return if error.raw_os_error() == Some(libc::ENOENT) {
+                Ok(())
+            } else {
+                Err(error)
+            };
         }
         let acl = AclAllocation(acl);
         let mut entry = ptr::null_mut();
@@ -92,11 +100,18 @@ mod macos {
             if unsafe { acl_get_entry(acl.0, index, &mut entry) } != 0 {
                 let error = io::Error::last_os_error();
                 // Darwin's iterator reports EINVAL at the end of a valid ACL.
-                return if error.raw_os_error() == Some(libc::EINVAL) { Ok(()) } else { Err(error) };
+                return if error.raw_os_error() == Some(libc::EINVAL) {
+                    Ok(())
+                } else {
+                    Err(error)
+                };
             }
             index = -1; // ACL_NEXT_ENTRY
             if !entry_is_safe(entry, user, private)? {
-                return Err(unsafe_cache(path, "extended ACL grants modification to another user"));
+                return Err(unsafe_cache(
+                    path,
+                    "extended ACL grants modification to another user",
+                ));
             }
         }
     }
@@ -107,12 +122,14 @@ mod macos {
         let mut flags = ptr::null_mut();
         // SAFETY: entry points into a live native ACL. All outputs are initialized on success.
         unsafe {
-            if acl_get_tag_type(entry, &mut tag) != 0 || acl_get_permset_mask_np(entry, &mut mask) != 0 {
+            if acl_get_tag_type(entry, &mut tag) != 0
+                || acl_get_permset_mask_np(entry, &mut mask) != 0
+            {
                 return Err(io::Error::last_os_error());
             }
             match tag {
                 ACL_EXTENDED_DENY => return Ok(true),
-                ACL_EXTENDED_ALLOW => {},
+                ACL_EXTENDED_ALLOW => {}
                 _ => return Ok(false),
             }
             if mask & WRITE_PERMISSIONS == 0 {
@@ -124,7 +141,7 @@ mod macos {
                 }
                 match acl_get_flag_np(flags, ACL_ENTRY_ONLY_INHERIT) {
                     1 => return Ok(true),
-                    0 => {},
+                    0 => {}
                     _ => return Err(io::Error::last_os_error()),
                 }
             }
@@ -137,7 +154,8 @@ mod macos {
             let mut kind = 0;
             // membership.h defines ID_TYPE_UID as 0. Neither groups nor unknown IDs are trusted.
             Ok(mbr_uuid_to_id(qualifier.0.cast(), &mut id, &mut kind) == 0
-                && kind == 0 && (id == 0 || id == user))
+                && kind == 0
+                && (id == 0 || id == user))
         }
     }
 }
@@ -164,7 +182,9 @@ mod tests {
         assert!(guard.check(&base, true).is_ok());
         let status = std::process::Command::new("/bin/chmod")
             .args(["+a", "everyone allow delete_child"])
-            .arg(&base).status().unwrap();
+            .arg(&base)
+            .status()
+            .unwrap();
         assert!(status.success());
         let result = guard.check(&base, true);
         assert!(matches!(result, Err(error) if error.kind() == io::ErrorKind::PermissionDenied));

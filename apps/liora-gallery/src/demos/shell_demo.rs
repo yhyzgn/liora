@@ -98,7 +98,11 @@ fn full_product_shell(
             .brand("Workspace")
             .brand_subtitle("Product navigation")
             .logo(Icon::new(IconName::Blocks).size_units(18.0))
-            .brand_action(Button::new("+").small().aria_label(liora_core::locales::common::add))
+            .brand_action(
+                Button::new("+")
+                    .small()
+                    .aria_label(liora_core::locales::common::add),
+            )
             .scrollable()
             .child(menu)
             .footer(

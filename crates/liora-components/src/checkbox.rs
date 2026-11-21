@@ -21,8 +21,8 @@
 
 use crate::motion::pop_in;
 use gpui::{
-    App, Context, EventEmitter, FocusHandle, Focusable, Hsla, KeyBinding, MouseButton, Render, Rgba,
-    Window, prelude::*, px,
+    App, Context, EventEmitter, FocusHandle, Focusable, Hsla, KeyBinding, MouseButton, Render,
+    Rgba, Window, prelude::*, px,
 };
 use liora_core::LocalizedText;
 use liora_icons::Icon;
@@ -175,21 +175,30 @@ impl Render for Checkbox {
         };
 
         let label = self.label.as_ref().map(|label| label.resolve(cx));
-        let name = self.aria_label.as_ref().map(|label| label.resolve(cx)).or_else(|| label.clone());
+        let name = self
+            .aria_label
+            .as_ref()
+            .map(|label| label.resolve(cx))
+            .or_else(|| label.clone());
         let disabled = self.disabled;
         let mut row = gpui::div()
             .id(("liora-checkbox", cx.entity().entity_id()))
             .role(gpui::Role::CheckBox)
             .aria_toggled(self.checked.into())
             .when_some(name, |row, name| row.aria_label(name))
-            .when(disabled, |row| row.a11y_synthetic_children(|builder| builder.parent_node().set_disabled()))
+            .when(disabled, |row| {
+                row.a11y_synthetic_children(|builder| builder.parent_node().set_disabled())
+            })
             .track_focus(&self.focus_handle)
             .flex()
             .flex_row()
             .items_center()
             .gap_2()
             .on_action(cx.listener(Self::toggle))
-            .on_mouse_down(MouseButton::Left, cx.listener(|this, _, _, _| this.pointer_armed = !this.disabled))
+            .on_mouse_down(
+                MouseButton::Left,
+                cx.listener(|this, _, _, _| this.pointer_armed = !this.disabled),
+            )
             .on_click(cx.listener(|this, event, window, cx| {
                 // Keep key-down activation; an interrupted pointer press must not survive disabling.
                 let armed = std::mem::take(&mut this.pointer_armed);
@@ -199,8 +208,17 @@ impl Render for Checkbox {
             }))
             .on_key_down(|event, window, cx| {
                 let modifiers = event.keystroke.modifiers;
-                if event.keystroke.key == "tab" && !modifiers.control && !modifiers.alt && !modifiers.platform && !modifiers.function {
-                    if modifiers.shift { window.focus_prev(cx); } else { window.focus_next(cx); }
+                if event.keystroke.key == "tab"
+                    && !modifiers.control
+                    && !modifiers.alt
+                    && !modifiers.platform
+                    && !modifiers.function
+                {
+                    if modifiers.shift {
+                        window.focus_prev(cx);
+                    } else {
+                        window.focus_next(cx);
+                    }
                     cx.stop_propagation();
                 }
             });
@@ -208,7 +226,9 @@ impl Render for Checkbox {
         if !self.disabled {
             row = row.cursor_pointer();
         } else {
-            row = row.cursor_not_allowed().capture_any_mouse_down(|_, window, _| window.prevent_default());
+            row = row
+                .cursor_not_allowed()
+                .capture_any_mouse_down(|_, window, _| window.prevent_default());
         }
 
         let mut box_el = gpui::div()
@@ -282,8 +302,16 @@ mod tests {
                 .flex()
                 .gap_4()
                 .child(Button::new("Before").id("toggle-before"))
-                .child(gpui::div().debug_selector(|| "checkbox".into()).child(self.checkbox.clone()))
-                .child(gpui::div().debug_selector(|| "switch".into()).child(self.switch.clone()))
+                .child(
+                    gpui::div()
+                        .debug_selector(|| "checkbox".into())
+                        .child(self.checkbox.clone()),
+                )
+                .child(
+                    gpui::div()
+                        .debug_selector(|| "switch".into())
+                        .child(self.switch.clone()),
+                )
                 .child(Button::new("After").id("toggle-after").on_click({
                     let changes = self.changes.clone();
                     move |_, _, _| changes.borrow_mut().push(("after", true))
@@ -295,14 +323,22 @@ mod tests {
         app.update(crate::init_liora);
         let changes = Rc::new(RefCell::new(Vec::new()));
         let handle = app.add_window(move |_, cx| ToggleSurface {
-            checkbox: cx.new(|cx| Checkbox::new(false, cx).label("Remember choice").on_change({
-                let changes = changes.clone();
-                move |checked, _, _| changes.borrow_mut().push(("checkbox", checked))
-            })),
-            switch: cx.new(|cx| Switch::new(false, cx).aria_label("Background sync").on_change({
-                let changes = changes.clone();
-                move |checked, _, _| changes.borrow_mut().push(("switch", checked))
-            })),
+            checkbox: cx.new(|cx| {
+                Checkbox::new(false, cx)
+                    .label("Remember choice")
+                    .on_change({
+                        let changes = changes.clone();
+                        move |checked, _, _| changes.borrow_mut().push(("checkbox", checked))
+                    })
+            }),
+            switch: cx.new(|cx| {
+                Switch::new(false, cx)
+                    .aria_label("Background sync")
+                    .on_change({
+                        let changes = changes.clone();
+                        move |checked, _, _| changes.borrow_mut().push(("switch", checked))
+                    })
+            }),
             changes,
         });
         let entity = handle.root(app).unwrap();
@@ -319,7 +355,10 @@ mod tests {
         window.simulate_keystrokes(key);
         window.update(|window, cx| {
             let keystroke = gpui::Keystroke::parse_with_os(key, cx.platform_info().os).unwrap();
-            window.dispatch_event(gpui::PlatformInput::KeyUp(gpui::KeyUpEvent { keystroke }), cx);
+            window.dispatch_event(
+                gpui::PlatformInput::KeyUp(gpui::KeyUpEvent { keystroke }),
+                cx,
+            );
         });
         draw(window);
     }
@@ -350,7 +389,12 @@ mod tests {
             window.simulate_mouse_up(inside, MouseButton::Left, Modifiers::none());
             draw(&mut window);
         }
-        root.read_with(&app, |surface, _| assert_eq!(*surface.changes.borrow(), [("checkbox", true), ("switch", true)]));
+        root.read_with(&app, |surface, _| {
+            assert_eq!(
+                *surface.changes.borrow(),
+                [("checkbox", true), ("switch", true)]
+            )
+        });
         app.quit();
     }
 
@@ -380,7 +424,19 @@ mod tests {
         press(&mut window, "shift-tab");
         press(&mut window, "shift-tab");
         press(&mut window, "space");
-        root.read_with(&app, |surface, _| assert_eq!(*surface.changes.borrow(), [("checkbox", true), ("checkbox", false), ("switch", true), ("switch", false), ("after", true), ("checkbox", true)]));
+        root.read_with(&app, |surface, _| {
+            assert_eq!(
+                *surface.changes.borrow(),
+                [
+                    ("checkbox", true),
+                    ("checkbox", false),
+                    ("switch", true),
+                    ("switch", false),
+                    ("after", true),
+                    ("checkbox", true)
+                ]
+            )
+        });
         app.quit();
     }
 
@@ -388,7 +444,9 @@ mod tests {
     fn focused_disabled_toggle_controls_stay_inert_and_reenable_with_same_identity() {
         let mut app = gpui::TestAppContext::single();
         let (mut window, root) = surface(&mut app);
-        let (checkbox, switch) = root.read_with(&app, |surface, _| (surface.checkbox.clone(), surface.switch.clone()));
+        let (checkbox, switch) = root.read_with(&app, |surface, _| {
+            (surface.checkbox.clone(), surface.switch.clone())
+        });
         let checkbox_focus = checkbox.read_with(&app, |checkbox, cx| checkbox.focus_handle(cx));
         let switch_focus = switch.read_with(&app, |switch, cx| switch.focus_handle(cx));
         for selector in ["checkbox", "switch"] {
@@ -404,7 +462,13 @@ mod tests {
             press(&mut window, "space");
             window.simulate_click(inside, Modifiers::none());
             draw(&mut window);
-            assert!(root.read_with(&app, |surface, _| surface.changes.borrow().iter().all(|(name, _)| *name == "after")));
+            assert!(root.read_with(&app, |surface, _| {
+                surface
+                    .changes
+                    .borrow()
+                    .iter()
+                    .all(|(name, _)| *name == "after")
+            }));
             press(&mut window, "tab");
             press(&mut window, "enter");
             window.update(|window, cx| {
@@ -419,7 +483,17 @@ mod tests {
         press(&mut window, "space");
         press(&mut window, "shift-tab");
         press(&mut window, "enter");
-        root.read_with(&app, |surface, _| assert_eq!(*surface.changes.borrow(), [("after", true), ("after", true), ("switch", true), ("checkbox", true)]));
+        root.read_with(&app, |surface, _| {
+            assert_eq!(
+                *surface.changes.borrow(),
+                [
+                    ("after", true),
+                    ("after", true),
+                    ("switch", true),
+                    ("checkbox", true)
+                ]
+            )
+        });
         app.quit();
     }
 
@@ -427,7 +501,9 @@ mod tests {
     fn toggle_controls_cancel_a_press_when_disabled_then_reenabled_before_release() {
         let mut app = gpui::TestAppContext::single();
         let (mut window, root) = surface(&mut app);
-        let (checkbox, switch) = root.read_with(&app, |surface, _| (surface.checkbox.clone(), surface.switch.clone()));
+        let (checkbox, switch) = root.read_with(&app, |surface, _| {
+            (surface.checkbox.clone(), surface.switch.clone())
+        });
         for selector in ["checkbox", "switch"] {
             let inside = window.debug_bounds(selector).unwrap().origin + point(px(8.0), px(8.0));
             window.simulate_mouse_down(inside, MouseButton::Left, Modifiers::none());
@@ -443,7 +519,9 @@ mod tests {
             assert!(root.read_with(&app, |surface, _| surface.changes.borrow().is_empty()));
             window.simulate_click(inside, Modifiers::none());
             draw(&mut window);
-            root.read_with(&app, |surface, _| assert_eq!(surface.changes.borrow().last(), Some(&(selector, true))));
+            root.read_with(&app, |surface, _| {
+                assert_eq!(surface.changes.borrow().last(), Some(&(selector, true)))
+            });
             root.read_with(&app, |surface, _| surface.changes.borrow_mut().clear());
         }
         app.quit();
@@ -451,10 +529,15 @@ mod tests {
 
     #[test]
     fn toggle_controls_write_role_checked_and_name_on_the_stable_native_root() {
-        use gpui::{Element, accesskit::{Node, Toggled}};
+        use gpui::{
+            Element,
+            accesskit::{Node, Toggled},
+        };
         let mut app = gpui::TestAppContext::single();
         let (mut window, root) = surface(&mut app);
-        let (checkbox, switch) = root.read_with(&app, |surface, _| (surface.checkbox.clone(), surface.switch.clone()));
+        let (checkbox, switch) = root.read_with(&app, |surface, _| {
+            (surface.checkbox.clone(), surface.switch.clone())
+        });
         let initial = window.update(|window, cx| {
             let checkbox_id = checkbox.update(cx, |checkbox, cx| {
                 let element = checkbox.render(window, cx).into_element();
@@ -490,7 +573,10 @@ mod tests {
                 assert_eq!(node.label(), Some("Remember this account"));
                 assert_eq!(node.toggled(), Some(Toggled::True));
                 assert_eq!(element.id(), initial.0);
-                assert_eq!(checkbox.label.as_ref().unwrap().resolve(cx).as_ref(), "Remember choice");
+                assert_eq!(
+                    checkbox.label.as_ref().unwrap().resolve(cx).as_ref(),
+                    "Remember choice"
+                );
             });
             switch.update(cx, |switch, cx| {
                 let element = switch.render(window, cx).into_element();

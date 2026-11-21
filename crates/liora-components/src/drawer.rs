@@ -427,7 +427,9 @@ mod tests {
         window.update(|_, cx| {
             liora_core::init_liora(cx, liora_theme::Theme::light());
             Drawer::new().id("parent").show(cx);
-            let parent = cx.global::<liora_core::ActiveDrawer>().0[0].view.entity_id();
+            let parent = cx.global::<liora_core::ActiveDrawer>().0[0]
+                .view
+                .entity_id();
             Drawer::new().id("child").show(cx);
 
             Drawer::close(cx);

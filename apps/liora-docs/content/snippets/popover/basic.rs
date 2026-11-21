@@ -13,9 +13,14 @@ pub fn basic_popover() -> Popover {
                 .gap_sm()
                 .child(Text::new("Title").bold())
                 .child(Text::new("This is native GPUI popover content."))
-                .child(Button::new("Confirm").primary().small().on_click(|_, _, cx| {
-                    clear_popover(&"docs-popover-basic".into(), cx);
-                }))
+                .child(
+                    Button::new("Confirm")
+                        .primary()
+                        .small()
+                        .on_click(|_, _, cx| {
+                            clear_popover(&"docs-popover-basic".into(), cx);
+                        }),
+                )
         })
 }
 

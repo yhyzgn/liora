@@ -135,8 +135,13 @@ fn card_popover(label: &'static str, placement: Placement) -> Popover {
                 .gap_sm()
                 .child(Text::new("Title").bold())
                 .child(Text::new("This is the popover content."))
-                .child(Button::new("Confirm").primary().small().on_click(move |_, _, cx| {
-                    liora_core::clear_popover(&id, cx);
-                }))
+                .child(
+                    Button::new("Confirm")
+                        .primary()
+                        .small()
+                        .on_click(move |_, _, cx| {
+                            liora_core::clear_popover(&id, cx);
+                        }),
+                )
         })
 }
