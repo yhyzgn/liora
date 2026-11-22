@@ -378,24 +378,43 @@ impl Global for ActiveDrawer {}
 
 /// Updates the stored active drawer value and keeps the existing component identity.
 pub fn set_active_drawer(id: SharedString, view: gpui::AnyView, cx: &mut App) {
+    let drawers = &cx.global::<ActiveDrawer>().0;
+    let index = drawers.iter().position(|entry| entry.id == id);
+    if index.is_some_and(|index| drawers[index].view.entity_id() == view.entity_id()) {
+        return;
+    }
     let drawers = &mut cx.global_mut::<ActiveDrawer>().0;
-    if let Some(existing) = drawers.iter_mut().find(|entry| entry.id == id) {
-        existing.view = view;
+    if let Some(index) = index {
+        drawers[index].view = view;
     } else {
         drawers.push(ActiveOverlayEntry { id, view });
     }
+    cx.refresh_windows();
 }
 
 /// Clears the current drawer state.
 pub fn clear_drawer(id: &SharedString, cx: &mut App) {
+    if !cx
+        .global::<ActiveDrawer>()
+        .0
+        .iter()
+        .any(|entry| &entry.id == id)
+    {
+        return;
+    }
     cx.global_mut::<ActiveDrawer>()
         .0
         .retain(|entry| &entry.id != id);
+    cx.refresh_windows();
 }
 
 /// Clears the current active drawer state.
 pub fn clear_active_drawer(cx: &mut App) {
+    if cx.global::<ActiveDrawer>().0.is_empty() {
+        return;
+    }
     cx.global_mut::<ActiveDrawer>().0.clear();
+    cx.refresh_windows();
 }
 
 /// Runtime state used by Liora popper behavior.

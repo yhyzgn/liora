@@ -12,6 +12,9 @@
 //! popup, drag, or editing state should be stored as `gpui::Entity<T>` fields in
 //! the parent view so state survives GPUI render passes.
 //!
+//! Opening, replacing, or removing a Drawer schedules redraws of the host windows;
+//! callers do not need to refresh them manually. No-op stack updates do not request redraws.
+//!
 //! ## Design contract
 //!
 //! The implementation should use Liora theme tokens from `liora-core` and
@@ -406,7 +409,14 @@ impl Drawer {
 
     /// Closes only the topmost drawer, leaving any underlying drawers open.
     pub fn close(cx: &mut App) {
-        cx.global_mut::<liora_core::ActiveDrawer>().0.pop();
+        if let Some(id) = cx
+            .global::<liora_core::ActiveDrawer>()
+            .0
+            .last()
+            .map(|entry| entry.id.clone())
+        {
+            liora_core::clear_drawer(&id, cx);
+        }
     }
 
     /// Closes the drawer with the given ID, regardless of its stack position.
@@ -419,6 +429,120 @@ impl Drawer {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn shared_drawer_mutations_repaint_without_extra_input() {
+        use std::{cell::Cell, rc::Rc};
+
+        struct Probe(&'static str);
+        impl Render for Probe {
+            fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+                let name = self.0;
+                div()
+                    .debug_selector(move || name.into())
+                    .w(px(40.0))
+                    .h(px(20.0))
+            }
+        }
+        struct Root(Rc<Cell<usize>>);
+        impl Render for Root {
+            fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+                self.0.set(self.0.get() + 1);
+                liora_core::render_active_drawer_in_window(window, cx);
+                div().size_full().child(crate::PortalLayer)
+            }
+        }
+
+        let mut stale = Vec::new();
+        for operation in ["insert", "replace", "clear-id", "clear-all", "close-top"] {
+            let mut app = gpui::TestAppContext::single();
+            app.update(crate::init_liora);
+            let renders = Rc::new(Cell::new(0));
+            let root = app.add_window(|_, _| Root(renders.clone()));
+            let mut window = gpui::VisualTestContext::from_window(root.into(), &app);
+            let parent = app.new(|_| Probe("drawer-parent"));
+            let child = app.new(|_| Probe("drawer-child"));
+            let replacement = app.new(|_| Probe("drawer-replacement"));
+            app.update(|cx| {
+                liora_core::set_active_drawer("parent".into(), parent.clone().into(), cx);
+                if operation != "insert" {
+                    liora_core::set_active_drawer("child".into(), child.clone().into(), cx);
+                }
+            });
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            app.run_until_parked();
+            assert!(window.debug_bounds("drawer-parent").is_some());
+            assert_eq!(
+                window.debug_bounds("drawer-child").is_some(),
+                operation != "insert"
+            );
+
+            let notifications = Rc::new(Cell::new(0));
+            let observed = notifications.clone();
+            let _subscription = app.update(|cx| {
+                cx.observe_global::<liora_core::ActiveDrawer>(move |_| {
+                    observed.set(observed.get() + 1)
+                })
+            });
+            app.update(|cx| match operation {
+                "insert" => liora_core::set_active_drawer("child".into(), child.clone().into(), cx),
+                "replace" => {
+                    liora_core::set_active_drawer("child".into(), replacement.clone().into(), cx)
+                }
+                "clear-id" => Drawer::close_id("child", cx),
+                "clear-all" => liora_core::clear_active_drawer(cx),
+                "close-top" => Drawer::close(cx),
+                _ => unreachable!(),
+            });
+            app.run_until_parked();
+            // Inspect the naturally painted frame; never draw, refresh, or send input after mutation.
+            let painted = (
+                window.debug_bounds("drawer-parent").is_some(),
+                window.debug_bounds("drawer-child").is_some(),
+                window.debug_bounds("drawer-replacement").is_some(),
+            );
+            let expected = (
+                operation != "clear-all",
+                operation == "insert",
+                operation == "replace",
+            );
+            if painted != expected {
+                stale.push(format!(
+                    "{operation}: rendered {painted:?}, expected {expected:?}"
+                ));
+            }
+            app.update(|cx| {
+                let drawers = &cx.global::<liora_core::ActiveDrawer>().0;
+                assert_eq!(
+                    drawers.len(),
+                    usize::from(expected.0) + usize::from(expected.1 || expected.2)
+                );
+                if expected.0 {
+                    assert_eq!(drawers[0].view.entity_id(), parent.entity_id());
+                }
+            });
+            let before_noop = (renders.get(), notifications.get());
+            app.update(|cx| {
+                liora_core::clear_drawer(&"missing".into(), cx);
+                if operation != "clear-all" {
+                    liora_core::set_active_drawer("parent".into(), parent.clone().into(), cx);
+                }
+                if operation == "clear-all" {
+                    liora_core::clear_active_drawer(cx);
+                    Drawer::close(cx);
+                }
+            });
+            app.run_until_parked();
+            if (renders.get(), notifications.get()) != before_noop {
+                stale.push(format!("{operation}: no-op changed render/notification counts from {before_noop:?} to {:?}", (renders.get(), notifications.get())));
+            }
+            app.quit();
+        }
+        assert!(
+            stale.is_empty(),
+            "stale rendered state or dirty no-op: {stale:?}"
+        );
+    }
 
     #[test]
     fn manual_close_only_removes_topmost_drawer() {
