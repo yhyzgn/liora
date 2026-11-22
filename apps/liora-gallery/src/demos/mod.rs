@@ -813,6 +813,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Grid" => Some(grid_demo::render(cx).into()),
         "HeatBar" => Some(heat_bar_demo::render(cx).into()),
         "HorizontalList" => Some(horizontal_list_demo::render(cx).into()),
+        "HorizontalListDragHelpers" => Some(horizontal_list_demo::render_drag_helpers(cx)),
         "Label" => Some(label_demo::render(cx).into()),
         "Kbd" => Some(kbd_demo::render(cx).into()),
         "OtpInput" => Some(otp_input_demo::render(cx).into()),

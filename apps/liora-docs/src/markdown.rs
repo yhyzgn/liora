@@ -1373,6 +1373,9 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "virtualized_list/draggable.rs" => Some(include_str!(
             "../content/snippets/virtualized_list/draggable.rs"
         )),
+        "horizontal_list/drag_helpers.rs" => Some(include_str!(
+            "../content/snippets/horizontal_list/drag_helpers.rs"
+        )),
         "horizontal_list/draggable.rs" => Some(include_str!(
             "../content/snippets/horizontal_list/draggable.rs"
         )),

@@ -34,3 +34,16 @@
 
 ```rust src="horizontal_list/draggable.rs"
 ```
+
+## 直接组合公共拖拽 helpers
+
+按住 Grip 并移动超过 GPUI 原生拖拽阈值后开始，`offset(DragAxis::Vertical)` 从激活时记录位移；左键在目标行松开时通过 `finish()` 和 `reorder_indices` 提交重排，右键或列表外松开由原生预览释放清理并取消。这个示例直接组合公共拖拽 helpers，不使用 `HorizontalList`。
+
+### 效果
+
+::Demo{component="HorizontalListDragHelpers"}::
+
+### 代码
+
+```rust src="horizontal_list/drag_helpers.rs"
+```

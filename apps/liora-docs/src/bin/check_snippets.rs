@@ -301,6 +301,8 @@ mod highlighted_text_basic;
 mod horizontal_list_basic;
 #[path = "../../content/snippets/horizontal_list/divider.rs"]
 mod horizontal_list_divider;
+#[path = "../../content/snippets/horizontal_list/drag_helpers.rs"]
+mod horizontal_list_drag_helpers;
 #[path = "../../content/snippets/horizontal_list/draggable.rs"]
 mod horizontal_list_draggable;
 #[path = "../../content/snippets/hover_card/basic.rs"]
