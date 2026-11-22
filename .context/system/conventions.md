@@ -9,6 +9,7 @@
 - Public types should not be prefixed with `Liora`; crate/module namespaces provide context.
 - Prefer existing utilities and focused modules over dumping logic into public entry files.
 - After retaining required hashes and acceptance evidence, promptly remove used or idle `/tmp/liora-*` Cargo targets, build caches and ELF artifacts; do not remove active build/run resources or sources, scripts, logs, screenshots, patches, or manifests, and do not follow symlinks outside the cleanup scope.
+- Commits made on behalf of this owner must use repo-local `user.name=Neo` and `user.email=yhyzgn@gmail.com` for both author and committer identity, including isolated delivery clones; check the effective Git identities before committing and never overwrite attribution of other contributors.
 
 ## Documentation conventions
 
