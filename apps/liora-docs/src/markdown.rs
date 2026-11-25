@@ -11090,6 +11090,14 @@ impl UpdatePanelStatus {
         matches!(self, Self::Checking | Self::Downloading(_))
     }
 
+    fn label_color(&self, theme: &liora_theme::Theme) -> gpui::Hsla {
+        if matches!(self, Self::Error(_)) {
+            theme.danger.base
+        } else {
+            theme.primary.base
+        }
+    }
+
     fn label(&self, cx: &impl liora_core::LocalesContext) -> String {
         match self {
             Self::Idle => tr(cx, locales::update_status::idle).to_string(),
@@ -11656,7 +11664,7 @@ impl DocsShell {
         let busy = self.update_status.is_busy();
         let can_install = !busy && self.install_plan.is_some();
 
-        Space::new().vertical().gap_lg().child(page_view).child(
+        let content = Space::new().vertical().gap_lg().child(page_view).child(
             Card::new(
                 Space::new()
                     .vertical()
@@ -11677,7 +11685,7 @@ impl DocsShell {
                     .child(Paragraph::with_text(locales::docs::update_body))
                     .child(
                         Text::new(self.update_status.label(cx))
-                            .text_color(theme.primary.base)
+                            .text_color(self.update_status.label_color(&theme))
                             .bold(),
                     )
                     .child(
@@ -11714,7 +11722,13 @@ impl DocsShell {
                     ),
             )
             .no_shadow(),
-        )
+        );
+
+        div()
+            .id("docs-about-scroll")
+            .size_full()
+            .overflow_y_scroll()
+            .child(content)
     }
 
     fn wire_shell_controls(&self, cx: &mut Context<Self>) {
@@ -12323,6 +12337,19 @@ mod tests {
         let status = UpdatePanelStatus::Installing("launched".into());
         assert!(!status.is_busy());
         assert_ne!(status.status_bar_icon(), "syncing");
+    }
+
+    #[test]
+    fn updater_error_label_uses_the_current_danger_color() {
+        let error = UpdatePanelStatus::Error("status code 403".into());
+        for theme in [liora_theme::Theme::light(), liora_theme::Theme::dark()] {
+            assert_eq!(error.label_color(&theme), theme.danger.base);
+            assert_ne!(error.label_color(&theme), theme.primary.base);
+            assert_eq!(
+                UpdatePanelStatus::Downloaded("verified".into()).label_color(&theme),
+                theme.primary.base,
+            );
+        }
     }
 
     #[gpui::test]

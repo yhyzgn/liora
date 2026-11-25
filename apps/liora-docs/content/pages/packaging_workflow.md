@@ -25,6 +25,8 @@ The reusable packaging logic lives in:
 
   Manual install plans display instructions; they do not launch a command or report installation started. A successful installer-command spawn reports only that it launched, not that installation completed. Both are terminal presentations rather than active update requests, so they do not keep a busy indicator or lock later checks/downloads. Gallery and Docs resolve update status labels in the active locale. Installer completion and cancellation remain caller-owned; no elevation or system trust changes happen automatically.
 
+  Both About update panels render errors with the current theme's danger color and preserve the original error text; other states keep their existing primary color. Docs gives its About panel a native vertical scroll viewport so long explanations and wrapped actions remain reachable in narrow or short windows. Other documentation pages retain their existing virtualized scroll ownership.
+
   SHA-256 entries match the complete asset name, not its first whitespace-separated word. Unescaped text/binary checksum rows retain filename spaces and literal leading `*`; a manifest row for `sample.AppImage debug` cannot authorize downloading `sample.AppImage`. Escaped-filename records are not supported. A matching checksum is integrity evidence against that manifest, not an independent publisher signature.
 
 - `xtask` — command-line entry point used locally and by CI.

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Use the active theme's danger token for Gallery/Docs About update errors while preserving error details and all action guards. Give the Docs About panel its own native scroll viewport so narrow or short windows can reach wrapped update actions without changing ordinary virtualized pages.
+
 - Resolve Docs theme choices and About/Updates text through existing typed locale keys instead of fixed English/Chinese captions. Keep retained control identity, selected values and update callbacks unchanged; authored documentation is not auto-translated.
 
 - Use the existing protected OS-cache helper in both root README updater examples instead of a predictable shared temporary directory. Preserve fail-closed cache errors and the caller-owned install action.

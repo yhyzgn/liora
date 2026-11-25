@@ -93,6 +93,14 @@ impl UpdatePanelStatus {
         matches!(self, Self::Checking | Self::Downloading(_))
     }
 
+    fn label_color(&self, theme: &liora_theme::Theme) -> gpui::Hsla {
+        if matches!(self, Self::Error(_)) {
+            theme.danger.base
+        } else {
+            theme.primary.base
+        }
+    }
+
     fn label(&self, cx: &impl liora_core::LocalesContext) -> String {
         match self {
             Self::Idle => tr(cx, locales::update_status::idle).to_string(),
@@ -1563,7 +1571,7 @@ impl Gallery {
                         .gap_md()
                         .child(
                             Text::new(self.updater_status.label(cx))
-                                .text_color(theme.primary.base)
+                                .text_color(self.updater_status.label_color(&theme))
                                 .bold(),
                         )
                         .child(
@@ -2515,6 +2523,19 @@ mod shell_regression_tests {
         let status = super::UpdatePanelStatus::Installing("launched".into());
         assert!(!status.is_busy());
         assert_ne!(status.status_bar_icon(), "syncing");
+    }
+
+    #[test]
+    fn updater_error_label_uses_the_current_danger_color() {
+        let error = super::UpdatePanelStatus::Error("status code 403".into());
+        for theme in [liora_theme::Theme::light(), liora_theme::Theme::dark()] {
+            assert_eq!(error.label_color(&theme), theme.danger.base);
+            assert_ne!(error.label_color(&theme), theme.primary.base);
+            assert_eq!(
+                super::UpdatePanelStatus::Downloaded("verified".into()).label_color(&theme),
+                theme.primary.base,
+            );
+        }
     }
 
     #[gpui::test]

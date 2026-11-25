@@ -758,6 +758,8 @@ Reusable GitHub Release update flow for your own app:
 
 Gallery and Docs distinguish manual install instructions from a successfully launched installer command. Neither terminal state claims completed installation or remains busy; Check/Download requests retain their existing mutual-exclusion guard. Both apps resolve update-status labels from the active locale.
 
+Both About update panels use the current theme's danger color for errors without replacing the error text; other update states retain their existing primary color. The Docs About panel scrolls within its content viewport so wrapped explanations do not hide the update actions in narrow or short windows. Ordinary Docs pages keep their existing virtualized scroll owner.
+
 The example uses a protected OS cache through `private_update_cache_dir`. Cache-protection failures propagate to the caller; there is no shared temporary-directory fallback.
 
 ```rust
