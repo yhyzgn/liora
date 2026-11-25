@@ -1667,6 +1667,8 @@ Docs 中现在有单独的 `Locales` 页面，完整说明应用级国际化、c
 
 Liora 的国际化系统保持低耦合：语言资源放在外部 TOML 文件中，Rust 调用处使用 `locales::empty::description` 这样的类型化 key，运行时翻译后端也可以由应用完全替换。
 
+Docs 的主题选项及“关于 / 更新”面板标题、说明和动作在渲染时解析既有类型化语言 key。切换语言保留主题控件 Entity、选中值和回调；作者编写的文档正文保持其原语言。
+
 `Config::set_locales_config` 方法与独立的 `set_locales_config` 函数都会将当前已存储的 locale 版本递增，并在 `u64::MAX` 饱和；传入配置中的版本值会被忽略。
 
 目录加载采用全部成功后提交的方式：`LocalesMap::load_dir` 与运行时 `load_locales_dir` 在任意文件读取或解析失败时保留原有翻译；运行时失败也不会改变 locale 版本号和已记录的资源目录，可修复文件后重试。成功时仍按已加载的语言整体替换，未出现在目录中的语言保持不变。

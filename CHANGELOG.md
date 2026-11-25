@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Resolve Docs theme choices and About/Updates text through existing typed locale keys instead of fixed English/Chinese captions. Keep retained control identity, selected values and update callbacks unchanged; authored documentation is not auto-translated.
+
 - Use the existing protected OS-cache helper in both root README updater examples instead of a predictable shared temporary directory. Preserve fail-closed cache errors and the caller-owned install action.
 
 - Distinguish manual installation instructions from launched installer commands in Gallery/Docs, without showing either terminal state as active update work. Resolve Docs update-status text in the current locale and preserve existing check/download coordination and caller-owned installer completion.

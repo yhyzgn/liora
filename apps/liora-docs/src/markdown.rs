@@ -11575,9 +11575,9 @@ fn locale_segmented_options(_cx: &impl liora_core::LocalesContext) -> Vec<Segmen
 
 fn theme_mode_segmented(mode: ThemeMode) -> Segmented {
     Segmented::new(vec![
-        SegmentedOption::new("System", ThemeMode::System.value()),
-        SegmentedOption::new("Light", ThemeMode::Light.value()),
-        SegmentedOption::new("Dark", ThemeMode::Dark.value()),
+        SegmentedOption::new(locales::theme_mode::system, ThemeMode::System.value()),
+        SegmentedOption::new(locales::theme_mode::light, ThemeMode::Light.value()),
+        SegmentedOption::new(locales::theme_mode::dark, ThemeMode::Dark.value()),
     ])
     .id("docs-theme-mode")
     .value(mode.value())
@@ -11656,60 +11656,65 @@ impl DocsShell {
         let busy = self.update_status.is_busy();
         let can_install = !busy && self.install_plan.is_some();
 
-        Space::new()
-            .vertical()
-            .gap_lg()
-            .child(page_view)
-            .child(
-                Card::new(
-                    Space::new()
-                        .vertical()
-                        .gap_md()
-                        .child(Title::new("About / Updates").h3())
-                        .child(
-                            Space::new()
-                                .gap_sm()
-                                .wrap()
-                                .child(
-                                    DocTag::new(format!("Docs {}", env!("CARGO_PKG_VERSION")))
-                                        .success()
-                                        .round(true),
-                                )
-                                .child(DocTag::new("GitHub Releases").round(true))
-                                .child(DocTag::new(current_platform_label()).round(true)),
-                        )
-                        .child(Paragraph::with_text(
-                            "Docs 会自动检查 GitHub Releases。Docs 当前按项目发布策略提供跨平台原始可执行程序；下载后会校验 SHA256SUMS.txt，替换正在运行的二进制文件需要由外部启动器或用户手动完成。",
-                        ))
-                        .child(
-                            Text::new(self.update_status.label(cx))
-                                .text_color(theme.primary.base)
-                                .bold(),
-                        )
-                        .child(
-                            Space::new()
-                                .gap_sm()
-                                .wrap()
-                                .child(Button::new("检查更新 / Check").primary().disabled(busy).on_click({
-                                    let docs = docs.clone();
-                                    move |_, _window, cx| check_docs_update(docs.clone(), cx)
-                                }))
-                                .child(Button::new("下载更新 / Download").disabled(busy).on_click({
-                                    let docs = docs.clone();
-                                    move |_, _window, cx| download_docs_update(docs.clone(), cx)
-                                }))
-                                .child(
-                                    Button::new("安装计划 / Install Plan")
-                                        .disabled(!can_install)
-                                        .on_click({
-                                            let docs = docs.clone();
-                                            move |_, _window, cx| install_docs_update(docs.clone(), cx)
-                                        }),
-                                ),
-                        ),
-                )
-                .no_shadow(),
+        Space::new().vertical().gap_lg().child(page_view).child(
+            Card::new(
+                Space::new()
+                    .vertical()
+                    .gap_md()
+                    .child(Title::new(locales::docs::about_updates).h3())
+                    .child(
+                        Space::new()
+                            .gap_sm()
+                            .wrap()
+                            .child(
+                                DocTag::new(format!("Docs {}", env!("CARGO_PKG_VERSION")))
+                                    .success()
+                                    .round(true),
+                            )
+                            .child(DocTag::new("GitHub Releases").round(true))
+                            .child(DocTag::new(current_platform_label()).round(true)),
+                    )
+                    .child(Paragraph::with_text(locales::docs::update_body))
+                    .child(
+                        Text::new(self.update_status.label(cx))
+                            .text_color(theme.primary.base)
+                            .bold(),
+                    )
+                    .child(
+                        Space::new()
+                            .gap_sm()
+                            .wrap()
+                            .child(
+                                Button::new(locales::docs::check_updates)
+                                    .primary()
+                                    .disabled(busy)
+                                    .on_click({
+                                        let docs = docs.clone();
+                                        move |_, _window, cx| check_docs_update(docs.clone(), cx)
+                                    }),
+                            )
+                            .child(
+                                Button::new(locales::docs::download_update)
+                                    .disabled(busy)
+                                    .on_click({
+                                        let docs = docs.clone();
+                                        move |_, _window, cx| {
+                                            download_docs_update(docs.clone(), cx);
+                                        }
+                                    }),
+                            )
+                            .child(
+                                Button::new(locales::docs::install_plan_button)
+                                    .disabled(!can_install)
+                                    .on_click({
+                                        let docs = docs.clone();
+                                        move |_, _window, cx| install_docs_update(docs.clone(), cx)
+                                    }),
+                            ),
+                    ),
             )
+            .no_shadow(),
+        )
     }
 
     fn wire_shell_controls(&self, cx: &mut Context<Self>) {

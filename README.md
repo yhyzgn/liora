@@ -1673,6 +1673,8 @@ Docs has a dedicated `Locales` page with the full application-level guide, inclu
 
 Liora's locale system is deliberately low-coupling: language resources live in external TOML files, Rust code uses typed keys such as `locales::empty::description`, and the runtime translator can be replaced by the application.
 
+Docs resolves theme choices and its About/Updates heading, explanation and actions from existing typed locale keys at render time. The theme selector retains its entity, selected value and callback when the language changes; authored documentation stays in its source language.
+
 Both `Config::set_locales_config` and the free `set_locales_config` function advance the currently stored locale version with saturation at `u64::MAX`; the replacement config's version is ignored.
 
 Directory loading is all-or-nothing: `LocalesMap::load_dir` and runtime `load_locales_dir` preserve existing translations when any file cannot be read or parsed. A failed runtime load also preserves the locale version and remembered resource directory; repair the file before retrying. Successful loads still replace each loaded locale while retaining locales absent from the directory.
