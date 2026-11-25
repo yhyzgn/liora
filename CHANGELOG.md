@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Use the existing protected OS-cache helper in both root README updater examples instead of a predictable shared temporary directory. Preserve fail-closed cache errors and the caller-owned install action.
+
 - Distinguish manual installation instructions from launched installer commands in Gallery/Docs, without showing either terminal state as active update work. Resolve Docs update-status text in the current locale and preserve existing check/download coordination and caller-owned installer completion.
 
 - Add opt-in content-driven Container header height and let Gallery/Docs toolbars wrap without covering the body or clipping translated theme, language and frame controls. Keep default and explicit fixed header heights unchanged; pair the Container examples and retain native resize geometry coverage.

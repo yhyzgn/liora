@@ -758,8 +758,12 @@ Reusable GitHub Release update flow for your own app:
 
 Gallery and Docs distinguish manual install instructions from a successfully launched installer command. Neither terminal state claims completed installation or remains busy; Check/Download requests retain their existing mutual-exclusion guard. Both apps resolve update-status labels from the active locale.
 
+The example uses a protected OS cache through `private_update_cache_dir`. Cache-protection failures propagate to the caller; there is no shared temporary-directory fallback.
+
 ```rust
-use liora::updater::{AssetKind, AssetSelector, Platform, UpdateRequest, Updater};
+use liora::updater::{
+    AssetKind, AssetSelector, Platform, UpdateRequest, Updater, private_update_cache_dir,
+};
 
 fn check_for_update() -> Result<(), liora::updater::UpdaterError> {
     let platform = Platform::current().expect("supported desktop platform");
@@ -767,7 +771,7 @@ fn check_for_update() -> Result<(), liora::updater::UpdaterError> {
         "acme-notes",
         "v0.4.0",
         platform,
-        std::env::temp_dir().join("acme-notes-updates"),
+        private_update_cache_dir("acme-notes", "0.4.0", None)?,
     )
     .selector(
         AssetSelector::for_platform(platform)

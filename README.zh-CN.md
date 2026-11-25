@@ -752,8 +752,12 @@ fn install_tray() -> liora::tray::Result<()> {
 
 Gallery 与 Docs 区分手动安装说明和已成功启动的安装命令；两种终态都不宣称安装完成，也不持续显示忙碌状态。检查/下载请求仍保持原有互斥，两应用的更新状态文案按当前语言解析。
 
+示例通过 `private_update_cache_dir` 使用受保护的系统缓存目录；缓存保护校验失败会直接返回错误，不回退到共享临时目录。
+
 ```rust
-use liora::updater::{AssetKind, AssetSelector, Platform, UpdateRequest, Updater};
+use liora::updater::{
+    AssetKind, AssetSelector, Platform, UpdateRequest, Updater, private_update_cache_dir,
+};
 
 fn check_for_update() -> Result<(), liora::updater::UpdaterError> {
     let platform = Platform::current().expect("supported desktop platform");
@@ -761,7 +765,7 @@ fn check_for_update() -> Result<(), liora::updater::UpdaterError> {
         "acme-notes",
         "v0.4.0",
         platform,
-        std::env::temp_dir().join("acme-notes-updates"),
+        private_update_cache_dir("acme-notes", "0.4.0", None)?,
     )
     .selector(
         AssetSelector::for_platform(platform)
