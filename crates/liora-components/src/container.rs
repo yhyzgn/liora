@@ -205,6 +205,7 @@ impl RenderOnce for Container {
         // Body: aside + main
         let main = gpui::div()
             .flex_1()
+            .min_w(px(0.0))
             .min_h_0()
             .flex()
             .flex_col()
@@ -273,6 +274,42 @@ impl IntoElement for Container {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    struct WidthProbe(std::rc::Rc<std::cell::Cell<Option<gpui::Bounds<Pixels>>>>);
+
+    impl gpui::Render for WidthProbe {
+        fn render(&mut self, _: &mut Window, _: &mut gpui::Context<Self>) -> impl IntoElement {
+            let measured = self.0.clone();
+            gpui::div().w(px(300.0)).h(px(160.0)).child(
+                Container::new()
+                    .aside_width(px(80.0))
+                    .aside(gpui::div())
+                    .main_scroll()
+                    .child(gpui::div().w(px(600.0)).h(px(20.0)))
+                    .child(
+                        gpui::canvas(
+                            move |bounds, _, _| measured.set(Some(bounds)),
+                            |_, _, _, _| {},
+                        )
+                        .w_full()
+                        .h(px(20.0)),
+                    ),
+            )
+        }
+    }
+
+    #[gpui::test]
+    fn main_viewport_stays_beside_aside_with_wide_content(cx: &mut gpui::TestAppContext) {
+        let observed = std::rc::Rc::new(std::cell::Cell::new(None));
+        cx.update(|cx| liora_core::init_liora(cx, liora_theme::Theme::light()));
+        let measured = observed.clone();
+        let handle = cx.add_window(move |_, _| WidthProbe(measured));
+        cx.update_window(handle.into(), |_, window, cx| window.draw(cx).clear(cx))
+            .expect("draw native Container");
+        let bounds = observed.get().expect("main content measured");
+        assert_eq!(bounds.left(), px(80.0));
+        assert_eq!(bounds.right(), px(300.0));
+    }
 
     #[test]
     fn container_shell_helpers_track_layout_state() {

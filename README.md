@@ -1086,6 +1086,8 @@ impl Render for AppShell {
 }
 ```
 
+For page-level `Container` layouts, the main viewport stays within the space remaining beside the sidebar, even with intrinsically wide children. Wrapping text uses that available width; hosts still choose horizontal scrolling or clipping for fixed-width content.
+
 ### Charts and metrics
 
 ```rust
@@ -1364,6 +1366,10 @@ Liora separates **font resource loading** from **font family / weight selection*
 An empty code-family list uses the SDK's concrete candidate stack: Consolas, JetBrains Mono, SF Mono, Menlo, Monaco, Lilex, DejaVu Sans Mono, Liberation Mono, Noto Sans Mono, Ubuntu Mono, then Courier New. Gallery and Docs inherit this default and keep their MiSans UI policy. The selected default is cached per initialized app, not enumerated every render; successful SDK font registration refreshes it. After calling raw GPUI `add_fonts` at runtime, reuse your original `FontConfig` with its code list kept empty and reapply it through `set_font_config` to refresh the default without losing UI family or weight settings. Explicit nonempty lists still select the first available family, or their final candidate if none is available, including deliberate proportional overrides.
 
 These names do not supply font files. If no default candidate is available, Liora requests DejaVu Sans Mono as a last resort and GPUI may substitute a proportional font; install/register a concrete code font when fixed Latin advances are required. Neither `Monospace` nor `.ZedMono` provides a font automatically. CJK and emoji coverage remains dependent on installed/registered fonts and platform shaping.
+
+Gallery's Typography page and Docs' Typography multilingual live demo share a native Paragraph with Latin, Chinese, Japanese, Korean, emoji, and a combining accent. `multilingual_font_native_smoke` uses the applications' font stack, weight and theme size, checks native glyph clusters and nonempty raster pixels, then waits for an external screenshot capture handshake. It requires a real display and compatible installed fonts; it is not a headless or all-Unicode guarantee.
+
+On the pinned Linux/WGPU backend, Noto Color Emoji's COLRv1 font can shape into nonzero glyph IDs but render blank. The native probe rejects this empty raster. The official [Noto Color Emoji v2.051 CBDT/CBLC font](https://github.com/googlefonts/noto-emoji/tree/v2.051/fonts) rendered the sample in an isolated font environment; this does not fix a system that still selects COLRv1. Host applications own compatible font distribution/selection. Liora neither installs fonts nor changes desktop font configuration.
 
 Supported file extensions are `ttf`, `otf`, `ttc`, `otc`, `woff`, and `woff2`, but actual parsing is delegated to the official GPUI backend for each platform. Prefer `ttf`/`otf`/`ttc`/`otc` for native desktop apps. On Linux/WGPU, the current GPUI `fontdb` path can ignore WOFF/WOFF2 bytes without returning an error, so use `FontLoadOptions::require_family(...)` and check `FontLoadReport::missing_required_families` whenever a specific family must be active.
 

@@ -1080,6 +1080,8 @@ impl Render for AppShell {
 }
 ```
 
+页面级 `Container` 的主视口保持在侧栏以外的剩余空间内，不会被宽子内容撑出窗口。可折行文本使用实际可用宽度；固定宽度内容的横向滚动或裁剪策略仍归宿主管理。
+
 ### 图表与指标
 
 ```rust
@@ -1358,6 +1360,10 @@ Liora 把 **字体资源加载** 和 **字体族 / 字重选择** 拆成两步�
 代码字体列表为空时使用 SDK 的具体候选栈：Consolas、JetBrains Mono、SF Mono、Menlo、Monaco、Lilex、DejaVu Sans Mono、Liberation Mono、Noto Sans Mono、Ubuntu Mono、Courier New。Gallery/Docs 继承此默认值，保留 MiSans UI 配置。SDK 初始化后按应用缓存默认选择，不在每次 render 枚举；SDK 成功注册字体后会刷新。运行时直接调用 GPUI `add_fonts` 后，请重用原 `FontConfig`、代码列表保持空，再调用 `set_font_config` 刷新默认值，保留原 UI family 和字重配置。显式非空列表仍优先选择首个可用 family，均不可用时保留最后候选；明确的比例字体覆盖不变。
 
 family 名称不会提供字体文件。如果默认候选均不可用，Liora 最后请求 DejaVu Sans Mono，GPUI 仍可能替代为比例字体；需要固定拉丁字符 advance 的宿主应安装或注册真实代码字体。`Monospace` 和 `.ZedMono` 均不会自动供应字体。CJK/emoji 覆盖依赖已安装/注册字体与平台排版。
+
+Gallery Typography 与 Docs Typography 的多语言 Live Demo 共用原生 Paragraph，覆盖 Latin、中日韩、emoji 和组合附加符。`multilingual_font_native_smoke` 对齐应用字体栈、字重和主题字号，检查原生 glyph cluster、非空栅格像素，再等待外部截图握手。需要真实显示后端和兼容字体，不是 headless 或全 Unicode 保证。
+
+固定版本的 Linux/WGPU 后端可能把 Noto Color Emoji 的 COLRv1 字体排版为非零 glyph ID，却显示为空白；原生探针会拒绝这种空 raster。官方 [Noto Color Emoji v2.051 CBDT/CBLC 字体](https://github.com/googlefonts/noto-emoji/tree/v2.051/fonts) 已在隔离字体环境中显示该样例，但这不等于修复仍选择 COLRv1 的系统。兼容字体的发布和选择归宿主管理；Liora 不安装字体，也不修改桌面字体配置。
 
 支持的文件扩展名包括 `ttf`、`otf`、`ttc`、`otc`、`woff`、`woff2`，但真正解析能力由各平台官方 GPUI 后端决定。原生桌面应用优先使用 `ttf` / `otf` / `ttc` / `otc`。在 Linux/WGPU 上，当前 GPUI 的 `fontdb` 路径可能会忽略 WOFF/WOFF2 字节且不返回错误，所以只要某个 family 必须生效，就应该使用 `FontLoadOptions::require_family(...)` 并检查 `FontLoadReport::missing_required_families`。
 

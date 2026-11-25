@@ -32,6 +32,8 @@
 
 `Container::header / aside / footer / child` 可组合典型后台页面骨架。
 
+Main 的宽度约束为侧栏以外的剩余空间；宽内容不会把主视口撑出窗口。可折行正文应在此空间内排版，固定宽度子内容仍由宿主选择横向滚动或裁剪策略，不会被强制缩放。
+
 ### 效果
 
 ::Demo{component="ContainerLayout"}::

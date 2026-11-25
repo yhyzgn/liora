@@ -117,7 +117,7 @@ pub mod virtualized_table_demo;
 pub mod virtualized_tree_demo;
 pub mod watermark_demo;
 
-use gpui::{AnyView, App};
+use gpui::{AnyView, App, AppContext};
 
 #[derive(Clone, Copy)]
 pub struct DemoEntry {
@@ -894,6 +894,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "TreeSelect" => Some(tree_select_demo::render(cx).into()),
         "Tree" => Some(tree_demo::render(cx).into()),
         "Typography" => Some(typography_demo::render(cx).into()),
+        "TypographyMultilingual" => Some(cx.new(|_| typography_demo::MultilingualDemo).into()),
         "Upload" => Some(upload_demo::render(cx).into()),
         "VirtualizedList" => Some(virtualized_list_demo::render(cx).into()),
         "VirtualizedTable" => Some(virtualized_table_demo::render(cx).into()),

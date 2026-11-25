@@ -9,6 +9,24 @@ pub fn render(cx: &mut App) -> Entity<TypographyDemo> {
 
 pub struct TypographyDemo;
 
+pub struct MultilingualDemo;
+
+impl Render for MultilingualDemo {
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        gpui::div()
+            .w_full()
+            .p_4()
+            .bg(cx.global::<liora_core::Config>().theme.neutral.body)
+            .child(multilingual_sample())
+    }
+}
+
+fn multilingual_sample() -> impl IntoElement {
+    Paragraph::with_text(
+        "Latin: Liora 0123 · 中文：字体回退 · 日本語：表示 · 한국어: 글꼴 · Emoji: 😀 🚀 · Combining: e\u{301}",
+    )
+}
+
 impl Render for TypographyDemo {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<liora_core::Config>().theme.clone();
@@ -19,6 +37,11 @@ impl Render for TypographyDemo {
             Space::new()
                 .vertical()
                 .gap_lg()
+                .child(section(
+                    "Multilingual 字形回退",
+                    "包含中日韩、emoji 和组合字符；平台字体兼容限制见 Docs。",
+                    multilingual_sample(),
+                ))
                 .child(section(
                     "Title 标题",
                     "内置 h1 到 h6 标题层级；默认可用鼠标拖拽选择标题文字。",

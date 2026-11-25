@@ -10,6 +10,12 @@ Liora Typography 可以把多个不同样式的文本片段合成为同一个 `S
 
 `Text` 用于描述一段文字及其样式：颜色、背景、字号、字重、斜体、下划线、删除线和等宽字体。它默认启用原生鼠标选择；如果只是按钮内装饰性文案或状态标签，可以调用 `.selectable(false)` 关闭。默认情况下，普通文本使用 GPUI 的系统 UI 字体；`code_style` 只表达 inline code 语义，不会强制品牌字体。应用如需固定字体，应通过 `FontConfig::system().with_ui_families([...]).with_ui_weight(...).with_code_families([...])` 指定有序 family 兜底列表和可选默认字重，或先用 `load_app_fonts` / `load_fonts_from_dir` / `load_font_assets` / `load_embedded_fonts` 注册私有字体资源后再配置 fallback 列表。建议原生应用优先发布 TTF/OTF/TTC/OTC，并通过 `FontLoadOptions::require_family` 验证目标 family 确实被当前 GPUI 后端识别。
 
+### 多语言字形与平台回退
+
+Gallery Typography 和下方示例共用同一原生 Paragraph，包含 Latin、CJK、emoji 与组合附加符。family 可用或 glyph ID 非零都不代表能显示：固定 Linux/WGPU 后端下，Noto Color Emoji 的 COLRv1 字体可能产生空 raster。宿主需选择后端兼容的字体；官方 Noto Color Emoji v2.051 CBDT/CBLC 字体已通过隔离原生样例验证。SDK 不下载字体、不修改系统 fontconfig。此样例不是完整 Unicode 或系统 IME 验收；`multilingual_font_native_smoke` 同时检查实际字形和非空栅格像素。
+
+::Demo{component="TypographyMultilingual"}::
+
 
 ### 效果
 
