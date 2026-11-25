@@ -33,7 +33,7 @@ pub struct Container {
     footer: Option<AnyElement>,
     main: Vec<AnyElement>,
     overlays: Vec<AnyElement>,
-    header_height: Pixels,
+    header_height: Option<Pixels>,
     footer_height: Pixels,
     aside_width: Pixels,
     aside_passthrough: bool,
@@ -52,7 +52,7 @@ impl Container {
             footer: None,
             main: vec![],
             overlays: vec![],
-            header_height: px(48.0),
+            header_height: Some(px(48.0)),
             footer_height: px(48.0),
             aside_width: px(200.0),
             aside_passthrough: false,
@@ -93,15 +93,21 @@ impl Container {
         self
     }
 
-    /// Sets the header height value used by the component.
+    /// Sets a fixed header height, replacing content-driven sizing.
     pub fn header_height(mut self, height: impl Into<Pixels>) -> Self {
-        self.header_height = height.into();
+        self.header_height = Some(height.into());
         self
     }
 
     /// Applies the predefined header height lg sizing preset.
     pub fn header_height_lg(self) -> Self {
         self.header_height(px(84.0))
+    }
+
+    /// Sizes the header to its content, including wrapped rows.
+    pub fn header_height_auto(mut self) -> Self {
+        self.header_height = None;
+        self
     }
 
     /// Sets the footer height value used by the component.
@@ -191,7 +197,7 @@ impl RenderOnce for Container {
             page = page.child(
                 gpui::div()
                     .flex_none()
-                    .h(self.header_height)
+                    .when_some(self.header_height, |header, height| header.h(height))
                     .w_full()
                     .border_b_1()
                     .border_color(theme.neutral.border)
@@ -311,6 +317,96 @@ mod tests {
         assert_eq!(bounds.right(), px(300.0));
     }
 
+    #[gpui::test]
+    fn wrapped_header_resizes_without_overlapping_body(cx: &mut gpui::TestAppContext) {
+        use std::{cell::Cell, rc::Rc};
+
+        struct HeaderProbe {
+            auto: bool,
+            last_row: Rc<Cell<Option<gpui::Bounds<Pixels>>>>,
+            body: Rc<Cell<Option<gpui::Bounds<Pixels>>>>,
+        }
+
+        impl gpui::Render for HeaderProbe {
+            fn render(&mut self, _: &mut Window, _: &mut gpui::Context<Self>) -> impl IntoElement {
+                let last_row = self.last_row.clone();
+                let body = self.body.clone();
+                let container = Container::new().header(
+                    gpui::div()
+                        .w_full()
+                        .flex()
+                        .flex_wrap()
+                        .gap(px(8.0))
+                        .child(gpui::div().w(px(90.0)).h(px(32.0)))
+                        .child(gpui::div().w(px(90.0)).h(px(32.0)))
+                        .child(
+                            gpui::canvas(
+                                move |bounds, _, _| last_row.set(Some(bounds)),
+                                |_, _, _, _| {},
+                            )
+                            .w(px(90.0))
+                            .h(px(32.0)),
+                        ),
+                );
+                let container = if self.auto {
+                    container.header_height_lg().header_height_auto()
+                } else {
+                    container
+                };
+                container.child(
+                    gpui::canvas(move |bounds, _, _| body.set(Some(bounds)), |_, _, _, _| {})
+                        .w_full()
+                        .h(px(20.0)),
+                )
+            }
+        }
+
+        cx.update(|cx| liora_core::init_liora(cx, liora_theme::Theme::light()));
+        for auto in [false, true] {
+            let last_row = Rc::new(Cell::new(None));
+            let body = Rc::new(Cell::new(None));
+            let probe = HeaderProbe {
+                auto,
+                last_row: last_row.clone(),
+                body: body.clone(),
+            };
+            let handle = cx.add_window(move |_, _| probe);
+            let mut window = gpui::VisualTestContext::from_window(handle.into(), cx);
+            let mut tops = [px(0.0); 3];
+            for (top, width) in tops.iter_mut().zip([240.0, 360.0, 240.0]) {
+                window.simulate_resize(gpui::size(px(width), px(240.0)));
+                window.update(|window, cx| window.draw(cx).clear(cx));
+                let body = body.get().expect("body measured");
+                let last_row = last_row.get().expect("last header row measured");
+                if auto {
+                    assert!(
+                        body.top() >= last_row.bottom(),
+                        "wrapped header overlaps body"
+                    );
+                } else {
+                    assert_eq!(
+                        body.top(),
+                        px(48.0),
+                        "default fixed header must remain unchanged"
+                    );
+                }
+                assert!(body.bottom() <= px(240.0));
+                *top = body.top();
+            }
+            if auto {
+                assert!(
+                    tops[0] > tops[1],
+                    "header must shrink when rows fit side by side"
+                );
+                assert_eq!(
+                    tops[0], tops[2],
+                    "narrowing again must restore the wrapped height"
+                );
+            }
+            window.update(|window, _| window.remove_window());
+        }
+    }
+
     #[test]
     fn container_shell_helpers_track_layout_state() {
         let container = Container::new()
@@ -321,7 +417,6 @@ mod tests {
             .main_padding_xl()
             .overlay("portal");
 
-        assert_eq!(container.header_height, px(84.0));
         assert_eq!(container.aside_width, px(280.0));
         assert!(container.aside_scroll);
         assert!(container.main_scroll);

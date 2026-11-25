@@ -1092,6 +1092,8 @@ impl Render for AppShell {
 
 For page-level `Container` layouts, the main viewport stays within the space remaining beside the sidebar, even with intrinsically wide children. Wrapping text uses that available width; hosts still choose horizontal scrolling or clipping for fixed-width content.
 
+For wrapping headers, opt into `Container::header_height_auto()`; the default remains a fixed 48px, and later fixed-height setters replace auto sizing. Set a minimum on the header content itself when needed. Gallery and Docs let their translated theme/language/frame toolbars wrap and grow without overlapping the body; their Container examples show the same API.
+
 ### Charts and metrics
 
 ```rust

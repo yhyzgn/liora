@@ -6957,7 +6957,14 @@ fn container_layout_demo() -> AnyElement {
         .border()
         .child(
             liora_components::Container::new()
-                .header(Title::new("Header").h5())
+                .header(
+                    Space::new()
+                        .wrap()
+                        .child(Title::new("Header").h5())
+                        .child(Text::new("Wrapping header content"))
+                        .child(Text::new("Theme / Language / Frame")),
+                )
+                .header_height_auto()
                 .aside(
                     liora_components::Flex::new()
                         .padding_md()
@@ -11196,16 +11203,22 @@ impl Render for DocsShell {
         let shell = Container::new()
             .header(
                 div()
+                    .w_full()
+                    .min_h(px(84.0))
+                    .py_2()
                     .flex()
+                    .flex_wrap()
                     .items_center()
                     .justify_between()
                     .gap_4()
                     .child(
                         Space::new()
                             .gap_md()
+                            .shrink()
                             .child(
                                 div()
                                     .size(px(42.0))
+                                    .flex_none()
                                     .rounded(px(13.0))
                                     .overflow_hidden()
                                     .child(img(docs_status_icon()).size(px(42.0))),
@@ -11214,6 +11227,7 @@ impl Render for DocsShell {
                                 Space::new()
                                     .vertical()
                                     .gap_xs()
+                                    .shrink()
                                     .child(Title::new("Liora Docs").h2())
                                     .child(Text::new(locales::docs::subtitle)),
                             ),
@@ -11240,7 +11254,7 @@ impl Render for DocsShell {
                         self.frame_mode,
                     )),
             )
-            .header_height_lg()
+            .header_height_auto()
             .aside(
                 Sidebar::new()
                     .id("docs-sidebar")

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add opt-in content-driven Container header height and let Gallery/Docs toolbars wrap without covering the body or clipping translated theme, language and frame controls. Keep default and explicit fixed header heights unchanged; pair the Container examples and retain native resize geometry coverage.
+
 - Improve default light/dark tertiary and placeholder contrast across neutral surfaces and hover/pressed states, including alpha compositing. Preserve disabled colors and avoid runtime work; share readable Theme samples and keep color-swatch labels off saturated fills.
 - Handle Drawer Escape from retained trigger or underlying drawer focus through the app-wide stack policy; honor protected top drawers without dismissing lower ones. Install bindings once, including core-only hosts, and preserve stale-close identity guards without moving focus or adding a focus trap.
 

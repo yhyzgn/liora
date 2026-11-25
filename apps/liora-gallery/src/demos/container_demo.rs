@@ -65,10 +65,17 @@ impl Render for ContainerDemo {
                 ))
                 .child(section(
                     "Container 布局容器",
-                    "Header / Aside / Main / Footer 组合。",
+                    "Header 随折行内容增长，Main 保留剩余高度。",
                     Flex::new().height_units(300.0).w_full().border().child(
                         Container::new()
-                            .header(Title::new("Header").h5())
+                            .header(
+                                Space::new()
+                                    .wrap()
+                                    .child(Title::new("Header").h5())
+                                    .child(Text::new("Wrapping header content"))
+                                    .child(Text::new("Theme / Language / Frame")),
+                            )
+                            .header_height_auto()
                             .aside(Flex::new().padding_md().child(Text::new("Aside Sidebar")))
                             .footer(Text::new("Footer"))
                             .child(

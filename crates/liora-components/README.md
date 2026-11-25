@@ -24,6 +24,10 @@ fn setup(cx: &mut gpui::App) {
 - Depend on `liora-components` directly when you need fine-grained dependency control or are building another Liora crate.
 - Keep application UI pure Rust + native GPUI; Liora crates do not require WebView, Tauri, HTML, CSS, or DOM runtime paths.
 
+## Container headers
+
+`Container` keeps a fixed 48px header by default. Use `.header_height_auto()` with wrapping header content to let it grow naturally while the body keeps the remaining height. A subsequent `.header_height(...)` or `.header_height_lg()` returns to fixed sizing; apply any minimum height to the header content itself. Gallery and Docs use this opt-in for their translated theme/language/frame toolbars and pair the layout example in their Container pages.
+
 ## Dropdown menus
 
 `Dropdown::item(label, callback)` adds an executable menu item. Use `Dropdown::disabled_item(label)` for a non-executable item with no callback. Arrow/Home/End navigation skips it, and its native `MenuItem` node exposes the disabled state. Open menus focus the first enabled row on the next frame. A complete pointer click or Enter/Space press and release activates an enabled row once. Tab/Shift+Tab closes the menu and moves focus through the host’s normal tab order. This contract covers ordinary short menus; long-menu scrolling and revealing remain separate concerns.

@@ -1093,16 +1093,20 @@ impl Render for Gallery {
             .unwrap_or_else(|| tr(cx, locales::gallery::about_label).to_string());
 
         let header_main = div()
+            .w_full()
             .flex()
+            .flex_wrap()
             .items_center()
             .justify_between()
             .gap_4()
             .child(
                 Space::new()
                     .gap_md()
+                    .shrink()
                     .child(
                         div()
                             .size(px(42.0))
+                            .flex_none()
                             .rounded(px(13.0))
                             .overflow_hidden()
                             .child(img(gallery_status_icon()).size(px(42.0))),
@@ -1111,6 +1115,7 @@ impl Render for Gallery {
                         Space::new()
                             .vertical()
                             .gap_xs()
+                            .shrink()
                             .child(Title::new(locales::gallery::title).h2())
                             .child(Text::new(
                                 locale_template(cx, locales::gallery::subtitle)
@@ -1122,6 +1127,7 @@ impl Render for Gallery {
                 Space::new()
                     .gap_md()
                     .wrap()
+                    .shrink()
                     .child(
                         Tag::new(format!("rev {}", self.refresh_revision))
                             .success()
@@ -1227,6 +1233,8 @@ impl Render for Gallery {
 
         let header = div()
             .w_full()
+            .min_h(px(112.0))
+            .py_2()
             .flex()
             .flex_col()
             .gap_2()
@@ -1235,7 +1243,7 @@ impl Render for Gallery {
 
         let mut shell = Container::new()
             .header(header)
-            .header_height(px(112.0))
+            .header_height_auto()
             .aside(
                 Sidebar::new()
                     .id("gallery-sidebar")

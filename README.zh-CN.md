@@ -1086,6 +1086,8 @@ impl Render for AppShell {
 
 页面级 `Container` 的主视口保持在侧栏以外的剩余空间内，不会被宽子内容撑出窗口。可折行文本使用实际可用宽度；固定宽度内容的横向滚动或裁剪策略仍归宿主管理。
 
+需要 Header 折行时启用 `Container::header_height_auto()`；默认仍为固定 48px，后调用的固定高度方法会取代 auto。需要最小高度时设置在 header 内容上。Gallery/Docs 的翻译后主题、语言和 Frame 工具栏可以折行并增长，不覆盖正文；两应用 Container 示例展示同一 API。
+
 ### 图表与指标
 
 ```rust
