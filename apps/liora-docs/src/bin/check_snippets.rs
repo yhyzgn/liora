@@ -631,6 +631,8 @@ mod spinner_colors;
 mod spinner_composition;
 #[path = "../../content/snippets/spinner/sizes.rs"]
 mod spinner_sizes;
+#[path = "../../content/snippets/spinner/spring.rs"]
+mod spinner_spring;
 #[path = "../../content/snippets/splitter/basic.rs"]
 mod splitter_basic;
 #[path = "../../content/snippets/statistic/affix.rs"]

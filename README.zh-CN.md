@@ -167,6 +167,8 @@ liora = { version = "0.6.1", default-features = false }
 
 当前工作区将官方 Zed `main` 固定到 `f0d896f2c18a543335eb155f729d36b624695591`。`MotionSpring::{Gentle, Snappy, Bouncy}.animation_to(target)` 提供可选的原生弹簧动画；重定向目标时应保持 `with_spring` 的 element ID 稳定，原有 duration-based 动效不变。GPUI 动画包装器遵循 `cx.set_reduce_motion(true)`；这是应用级偏好，并不代表自动读取操作系统偏好。完整变更与平台风险见[升级记录](docs/gpui-latest-upgrade.md)。
 
+Gallery Spinner 与 Docs Spinner 页面共用保留状态的 spring 示例，可重定向目标并显式移除/恢复动画行；Docs 包含编译检查的完整有状态代码。重新挂载的 spring 默认从目标开始，入口位置需显式通过 `.from(...)` 指定。
+
 下方 crates.io 示例面向 v0.6.1 发布版本，仅在 crates.io 发布流程完成后可解析。此前请使用[采用指南中的本地 path 方式](apps/liora-docs/content/pages/adoption.md#dependency-shape)，并把所有 GPUI crates pin 到上方工作区 revision.
 
 v0.6.1 使用当前工作区 GPUI pin；下方所有 GPUI revision 均必须统一为 `f0d896f2c18a543335eb155f729d36b624695591`。macOS 要求 12+，构建使用 macOS 26 SDK。

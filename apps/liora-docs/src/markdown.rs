@@ -1538,6 +1538,7 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         }
         "spinner/colors.rs" => Some(include_str!("../content/snippets/spinner/colors.rs")),
         "spinner/sizes.rs" => Some(include_str!("../content/snippets/spinner/sizes.rs")),
+        "spinner/spring.rs" => Some(include_str!("../content/snippets/spinner/spring.rs")),
         "status_bar/shell.rs" => Some(include_str!("../content/snippets/status_bar/shell.rs")),
         "status_bar/tones.rs" => Some(include_str!("../content/snippets/status_bar/tones.rs")),
         "status_bar/custom.rs" => Some(include_str!("../content/snippets/status_bar/custom.rs")),

@@ -173,6 +173,8 @@ liora = { version = "0.6.1", default-features = false }
 
 The workspace pins official Zed `main` at `f0d896f2c18a543335eb155f729d36b624695591`. `MotionSpring::{Gentle, Snappy, Bouncy}.animation_to(target)` exposes opt-in interruptible GPUI springs; keep a stable `with_spring` element ID when retargeting. Existing duration-based effects remain unchanged. GPUI animation wrappers honor `cx.set_reduce_motion(true)`; this is an app-level preference, not automatic OS preference detection. See [upgrade notes and platform risks](docs/gpui-latest-upgrade.md).
 
+Gallery Spinner and the Docs Spinner page share a retained spring example with target retargeting and explicit remove/restore controls. Docs includes a compile-checked stateful example; a remounted spring starts at its target unless `.from(...)` supplies an entrance position.
+
 The downstream manifest below targets the v0.6.1 release; its crates.io dependency resolves after publication completes. Until then, use the local workspace path example in the [adoption guide](apps/liora-docs/content/pages/adoption.md#dependency-shape) with the official Zed revision `f0d896f2c18a543335eb155f729d36b624695591`. macOS requires version 12+ and the macOS 26 SDK.
 
 
