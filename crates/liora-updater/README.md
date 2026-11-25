@@ -22,6 +22,8 @@ The helper validates resolved ancestors and restricts the app/version directorie
 
 Gallery and Docs allow only one update check or download at a time. Their update controls and action handlers reject conflicting checks, downloads and installs while that request is running. Starting either request revokes the previous install plan; a failed download or an up-to-date result therefore leaves no older plan available to install. A later request can be started after completion. This is app-owned UI coordination, not cancellation or serialization of independent SDK callers.
 
+In Gallery/Docs, a manual install action displays its instructions without claiming that an installer started. A successful process spawn reports only that the command launched, not that installation completed; the external installer owns its lifecycle. Neither terminal presentation shows active update work or locks future checks/downloads. Docs resolves status labels from the active locale at render time, matching Gallery. No cancellation or installer-completion tracking is implied.
+
 ## Quick example
 
 ```rust

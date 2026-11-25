@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Distinguish manual installation instructions from launched installer commands in Gallery/Docs, without showing either terminal state as active update work. Resolve Docs update-status text in the current locale and preserve existing check/download coordination and caller-owned installer completion.
+
 - Add opt-in content-driven Container header height and let Gallery/Docs toolbars wrap without covering the body or clipping translated theme, language and frame controls. Keep default and explicit fixed header heights unchanged; pair the Container examples and retain native resize geometry coverage.
 
 - Improve default light/dark tertiary and placeholder contrast across neutral surfaces and hover/pressed states, including alpha compositing. Preserve disabled colors and avoid runtime work; share readable Theme samples and keep color-swatch labels off saturated fills.

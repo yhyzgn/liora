@@ -11079,7 +11079,9 @@ enum UpdatePanelStatus {
     Available(String),
     Downloading(String),
     Downloaded(String),
+    // Successful spawn is terminal here; the external installer owns completion.
     Installing(String),
+    ManualInstall(String),
     Error(String),
 }
 
@@ -11088,23 +11090,39 @@ impl UpdatePanelStatus {
         matches!(self, Self::Checking | Self::Downloading(_))
     }
 
-    fn label(&self) -> String {
+    fn label(&self, cx: &impl liora_core::LocalesContext) -> String {
         match self {
-            Self::Idle => "未检查更新 / Not checked".into(),
-            Self::Checking => "正在检查 GitHub Release…".into(),
-            Self::UpToDate(version) => format!("已是最新版本 {version}"),
-            Self::Available(version) => format!("发现新版本 {version}"),
-            Self::Downloading(version) => format!("正在下载并校验 {version}…"),
-            Self::Downloaded(version) => format!("已下载并通过 SHA-256 校验：{version}"),
-            Self::Installing(detail) => format!("安装计划：{detail}"),
-            Self::Error(error) => format!("更新失败：{error}"),
+            Self::Idle => tr(cx, locales::update_status::idle).to_string(),
+            Self::Checking => tr(cx, locales::update_status::checking).to_string(),
+            Self::UpToDate(version) => {
+                tr(cx, locales::update_status::up_to_date).replace("{version}", version)
+            }
+            Self::Available(version) => {
+                tr(cx, locales::update_status::available).replace("{version}", version)
+            }
+            Self::Downloading(version) => {
+                tr(cx, locales::update_status::downloading).replace("{version}", version)
+            }
+            Self::Downloaded(version) => {
+                tr(cx, locales::update_status::downloaded).replace("{version}", version)
+            }
+            Self::Installing(detail) => {
+                tr(cx, locales::update_status::installing).replace("{detail}", detail)
+            }
+            Self::ManualInstall(detail) => {
+                tr(cx, locales::update_status::install_plan).replace("{detail}", detail)
+            }
+            Self::Error(error) => tr(cx, locales::update_status::error).replace("{error}", error),
         }
     }
 
     fn status_bar_icon(&self) -> &'static str {
         match self {
-            Self::Checking | Self::Downloading(_) | Self::Installing(_) => "syncing",
-            Self::Available(_) | Self::Downloaded(_) => "update",
+            Self::Checking | Self::Downloading(_) => "syncing",
+            Self::Available(_)
+            | Self::Downloaded(_)
+            | Self::Installing(_)
+            | Self::ManualInstall(_) => "update",
             Self::Error(_) => "error",
             Self::Idle | Self::UpToDate(_) => "ready",
         }
@@ -11499,7 +11517,9 @@ fn install_docs_update(docs: Entity<DocsShell>, cx: &mut App) {
     }
     let _ = docs.update(cx, |docs, cx| {
         let Some(plan) = &docs.install_plan else {
-            docs.update_status = UpdatePanelStatus::Error("请先下载并校验更新".into());
+            docs.update_status = UpdatePanelStatus::Error(
+                tr(cx, locales::update_status::download_first).to_string(),
+            );
             cx.notify();
             return;
         };
@@ -11518,7 +11538,7 @@ fn install_docs_update(docs: Entity<DocsShell>, cx: &mut App) {
                 }
             }
             InstallAction::Manual { .. } => {
-                docs.update_status = UpdatePanelStatus::Installing(description);
+                docs.update_status = UpdatePanelStatus::ManualInstall(description);
             }
         }
         cx.notify();
@@ -11607,7 +11627,7 @@ impl DocsShell {
                                     .size(px(22.0)),
                             ),
                     )
-                    .child(Text::new(self.update_status.label()).sm().nowrap()),
+                    .child(Text::new(self.update_status.label(cx)).sm().nowrap()),
             )
             .child(
                 Space::new()
@@ -11662,7 +11682,7 @@ impl DocsShell {
                             "Docs 会自动检查 GitHub Releases。Docs 当前按项目发布策略提供跨平台原始可执行程序；下载后会校验 SHA256SUMS.txt，替换正在运行的二进制文件需要由外部启动器或用户手动完成。",
                         ))
                         .child(
-                            Text::new(self.update_status.label())
+                            Text::new(self.update_status.label(cx))
                                 .text_color(theme.primary.base)
                                 .bold(),
                         )
@@ -12239,7 +12259,7 @@ mod tests {
     }
 
     fn updater_test_docs(cx: &mut gpui::TestAppContext) -> Entity<DocsShell> {
-        cx.update(liora_components::init_liora);
+        cx.update(|cx| crate::init_liora_with_options(cx, crate::docs_liora_options()));
         cx.new(|cx| DocsShell {
             selected: 0,
             nav_filter: cx.new(|cx| Input::new("", cx)),
@@ -12256,6 +12276,48 @@ mod tests {
             on_frame_mode_change: |_, _, _| {},
             on_close: |_, _| {},
         })
+    }
+
+    #[gpui::test]
+    fn updater_install_manual_keeps_instructions_without_launching(cx: &mut gpui::TestAppContext) {
+        let view = updater_test_docs(cx);
+        let plan = liora_updater::build_install_plan(
+            "sample",
+            liora_updater::Platform::LinuxX64,
+            &liora_updater::ReleaseAsset {
+                name: "sample-linux-x64.tar.gz".into(),
+                download_url: String::new(),
+                size: 0,
+            },
+            "verified-package.tar.gz",
+        );
+        assert!(matches!(
+            &plan.action,
+            liora_updater::InstallAction::Manual { .. }
+        ));
+        let instructions = super::install_plan_description(&plan);
+        cx.update(|cx| {
+            view.update(cx, |view, _| {
+                view.install_plan = Some(plan);
+                view.update_status = UpdatePanelStatus::Downloaded("verified".into());
+            });
+            super::install_docs_update(view.clone(), cx);
+            let status = &view.read(cx).update_status;
+            assert!(
+                !matches!(status, UpdatePanelStatus::Installing(_)),
+                "manual instructions must not report an installer launch"
+            );
+            assert!(status.label(cx).contains(&instructions));
+            assert!(!status.is_busy());
+            assert_ne!(status.status_bar_icon(), "syncing");
+        });
+    }
+
+    #[test]
+    fn updater_install_launch_status_is_not_running_work() {
+        let status = UpdatePanelStatus::Installing("launched".into());
+        assert!(!status.is_busy());
+        assert_ne!(status.status_bar_icon(), "syncing");
     }
 
     #[gpui::test]

@@ -750,6 +750,8 @@ fn install_tray() -> liora::tray::Result<()> {
 
 适合你自己应用的 GitHub Release 更新流程：
 
+Gallery 与 Docs 区分手动安装说明和已成功启动的安装命令；两种终态都不宣称安装完成，也不持续显示忙碌状态。检查/下载请求仍保持原有互斥，两应用的更新状态文案按当前语言解析。
+
 ```rust
 use liora::updater::{AssetKind, AssetSelector, Platform, UpdateRequest, Updater};
 

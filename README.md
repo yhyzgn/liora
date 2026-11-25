@@ -756,6 +756,8 @@ fn install_tray() -> liora::tray::Result<()> {
 
 Reusable GitHub Release update flow for your own app:
 
+Gallery and Docs distinguish manual install instructions from a successfully launched installer command. Neither terminal state claims completed installation or remains busy; Check/Download requests retain their existing mutual-exclusion guard. Both apps resolve update-status labels from the active locale.
+
 ```rust
 use liora::updater::{AssetKind, AssetSelector, Platform, UpdateRequest, Updater};
 

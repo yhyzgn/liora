@@ -82,7 +82,9 @@ enum UpdatePanelStatus {
     Available(String),
     Downloading(String),
     Downloaded(String),
+    // Successful spawn is terminal here; the external installer owns completion.
     Installing(String),
+    ManualInstall(String),
     Error(String),
 }
 
@@ -107,6 +109,9 @@ impl UpdatePanelStatus {
             Self::Installing(detail) => {
                 locale_template(cx, locales::update_status::installing).replace("{detail}", detail)
             }
+            Self::ManualInstall(detail) => {
+                tr(cx, locales::update_status::install_plan).replace("{detail}", detail)
+            }
             Self::Error(error) => {
                 locale_template(cx, locales::update_status::error).replace("{error}", error)
             }
@@ -115,8 +120,11 @@ impl UpdatePanelStatus {
 
     fn status_bar_icon(&self) -> &'static str {
         match self {
-            Self::Checking | Self::Downloading(_) | Self::Installing(_) => "syncing",
-            Self::Available(_) | Self::Downloaded(_) => "update",
+            Self::Checking | Self::Downloading(_) => "syncing",
+            Self::Available(_)
+            | Self::Downloaded(_)
+            | Self::Installing(_)
+            | Self::ManualInstall(_) => "update",
             Self::Error(_) => "error",
             Self::Idle | Self::UpToDate(_) => "ready",
         }
@@ -1790,7 +1798,7 @@ fn install_gallery_update(gallery: gpui::Entity<Gallery>, cx: &mut App) {
                 }
             }
             InstallAction::Manual { .. } => {
-                gallery.updater_status = UpdatePanelStatus::Installing(description);
+                gallery.updater_status = UpdatePanelStatus::ManualInstall(description);
             }
         }
         cx.notify();
@@ -2465,6 +2473,48 @@ mod shell_regression_tests {
         handle
             .update(cx, |root, _, _| root.downcast::<super::Gallery>().unwrap())
             .unwrap()
+    }
+
+    #[gpui::test]
+    fn updater_install_manual_keeps_instructions_without_launching(cx: &mut gpui::TestAppContext) {
+        let view = updater_test_gallery(cx);
+        let plan = liora_updater::build_install_plan(
+            "sample",
+            liora_updater::Platform::LinuxX64,
+            &liora_updater::ReleaseAsset {
+                name: "sample-linux-x64.tar.gz".into(),
+                download_url: String::new(),
+                size: 0,
+            },
+            "verified-package.tar.gz",
+        );
+        assert!(matches!(
+            &plan.action,
+            liora_updater::InstallAction::Manual { .. }
+        ));
+        let instructions = super::install_plan_description(&plan);
+        cx.update(|cx| {
+            view.update(cx, |view, _| {
+                view.install_plan = Some(plan);
+                view.updater_status = super::UpdatePanelStatus::Downloaded("verified".into());
+            });
+            super::install_gallery_update(view.clone(), cx);
+            let status = &view.read(cx).updater_status;
+            assert!(
+                !matches!(status, super::UpdatePanelStatus::Installing(_)),
+                "manual instructions must not report an installer launch"
+            );
+            assert!(status.label(cx).contains(&instructions));
+            assert!(!status.is_busy());
+            assert_ne!(status.status_bar_icon(), "syncing");
+        });
+    }
+
+    #[test]
+    fn updater_install_launch_status_is_not_running_work() {
+        let status = super::UpdatePanelStatus::Installing("launched".into());
+        assert!(!status.is_busy());
+        assert_ne!(status.status_bar_icon(), "syncing");
     }
 
     #[gpui::test]
