@@ -35,3 +35,9 @@ Escape 按真实激活来源优先关闭提示：原触发控件仍持有焦点�
 
 ```rust src="tooltip/more.rs"
 ```
+
+## 锚点移动与卸载
+
+先点击 **Move in 2 s**，再立即 Tab 聚焦 **Lifecycle trigger**：锚点移动后，提示应跟随仍有焦点的触发器。若仅悬停且移动使触发器离开静止指针，提示应关闭。点击 **Remove in 2 s** 后重新悬停或聚焦触发器，卸载时提示应退出；**Reset trigger** 取消待执行操作并恢复触发器，不应恢复旧提示。每次重新安排操作会替换前一次待执行操作。
+
+::Demo{component="TooltipLifecycle"}::

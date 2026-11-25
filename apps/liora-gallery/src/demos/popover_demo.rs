@@ -5,10 +5,18 @@ use liora_core::Placement;
 use liora_components::layout_helpers::{page, section};
 
 pub fn render(cx: &mut App) -> AnyView {
-    cx.new(|_| PopoverDemo).into()
+    cx.new(|cx| PopoverDemo {
+        lifecycle: super::overlay_lifecycle_demo::render(
+            super::overlay_lifecycle_demo::Kind::Popover,
+            cx,
+        ),
+    })
+    .into()
 }
 
-struct PopoverDemo;
+struct PopoverDemo {
+    lifecycle: AnyView,
+}
 
 impl Render for PopoverDemo {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
@@ -111,6 +119,11 @@ impl Render for PopoverDemo {
                                 .offset_lg()
                                 .content(|_, _| Text::new("Offset = 20px")),
                         ),
+                ))
+                .child(section(
+                    "Anchor lifecycle 锚点生命周期",
+                    "打开卡片后移动锚点，卡片应跟随；卸载后卡片与遮罩应一起消失，Reset 不应复活旧卡片。",
+                    self.lifecycle.clone(),
                 )),
         )
     }

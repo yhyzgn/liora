@@ -229,6 +229,7 @@ impl Render for PopoverView {
                         )
                         .into_any_element(),
                         bounds: self.content_bounds.clone(),
+                        anchor: None,
                     }),
             )
     }
@@ -396,6 +397,37 @@ impl RenderOnce for Popover {
         let keyboard_content = content.clone();
         let keyboard_popover_id = popover_id.clone();
         let escape_popover_id = popover_id.clone();
+        // Frame-owned state releases the popup even when its view is retained elsewhere.
+        let anchor = _window.with_global_id(trigger_id.clone(), |global_id, window| {
+            window.with_element_state::<gpui::Entity<PopoverAnchor>, _>(global_id, |previous, _| {
+                let state = previous.unwrap_or_else(|| {
+                    _cx.new(|cx| {
+                        cx.on_release(|anchor: &mut PopoverAnchor, cx| {
+                            if let Some(view) = anchor.view.as_ref().and_then(|view| view.upgrade())
+                            {
+                                let id = view.read(cx).id.clone();
+                                if cx.try_global::<liora_core::ActivePopover>().is_some_and(
+                                    |active| {
+                                        active.0.iter().any(|entry| {
+                                            entry.id == id
+                                                && entry.view.entity_id() == view.entity_id()
+                                        })
+                                    },
+                                ) {
+                                    clear_popover(&id, cx);
+                                }
+                            }
+                        })
+                        .detach();
+                        PopoverAnchor { view: None }
+                    })
+                });
+                (state.clone(), state)
+            })
+        });
+        let hover_anchor = anchor.clone();
+        let click_anchor = anchor.clone();
+        let keyboard_anchor = anchor.clone();
         let restore_subscription = _window.with_global_id(trigger_id.clone(), |global_id, window| {
             window.with_element_state::<Rc<RefCell<Option<(gpui::EntityId, gpui::Subscription)>>>, _>(global_id, |previous, _| {
                 let state = previous.unwrap_or_else(|| Rc::new(RefCell::new(None)));
@@ -411,6 +443,7 @@ impl RenderOnce for Popover {
             .child(BoundsTracker {
                 child: self.trigger,
                 bounds: bounds_cell,
+                anchor: Some(anchor),
             })
             .when(open_on_hover, |s| {
                 s.on_hover(move |hovered, _window, cx| {
@@ -429,6 +462,7 @@ impl RenderOnce for Popover {
                             cx,
                             window: _window,
                             restore_subscription: hover_restore_subscription.clone(),
+                            anchor: Some(hover_anchor.clone()),
                         });
                     }
                 })
@@ -451,6 +485,7 @@ impl RenderOnce for Popover {
                     close_on_hover_outside: false,
                     return_focus: _window.focused(cx).map(|handle| handle.downgrade()),
                     restore_subscription: click_restore_subscription.clone(),
+                    anchor: Some(click_anchor.clone()),
                     window: _window,
                     cx,
                 });
@@ -472,6 +507,7 @@ impl RenderOnce for Popover {
                     close_on_hover_outside: false,
                     return_focus: Some(activation.origin.downgrade()),
                     restore_subscription: keyboard_restore_subscription.clone(),
+                    anchor: Some(keyboard_anchor.clone()),
                     window,
                     cx,
                 });
@@ -509,6 +545,7 @@ struct OpenPopoverRequest<'a> {
     window: &'a mut Window,
     return_focus: Option<WeakFocusHandle>,
     restore_subscription: Rc<RefCell<Option<(gpui::EntityId, gpui::Subscription)>>>,
+    anchor: Option<gpui::Entity<PopoverAnchor>>,
     cx: &'a mut App,
 }
 
@@ -553,6 +590,9 @@ fn open_popover_view(request: OpenPopoverRequest<'_>) {
         view
     });
     let view_id = view.entity_id();
+    if let Some(anchor) = request.anchor {
+        anchor.update(request.cx, |anchor, _| anchor.view = Some(view.downgrade()));
+    }
     let focus_scope = view
         .read(request.cx)
         .focus_scope
@@ -607,9 +647,14 @@ impl IntoElement for Popover {
     }
 }
 
+struct PopoverAnchor {
+    view: Option<gpui::WeakEntity<PopoverView>>,
+}
+
 struct BoundsTracker {
     child: AnyElement,
     bounds: Rc<Cell<Option<Bounds<Pixels>>>>,
+    anchor: Option<gpui::Entity<PopoverAnchor>>,
 }
 
 impl gpui::Element for BoundsTracker {
@@ -656,6 +701,20 @@ impl gpui::Element for BoundsTracker {
         cx: &mut App,
     ) {
         self.bounds.set(Some(bounds));
+        if let Some(view) = self
+            .anchor
+            .as_ref()
+            .and_then(|anchor| anchor.read(cx).view.as_ref())
+            .and_then(|view| view.upgrade())
+            && view.read(cx).anchor_bounds != bounds
+        {
+            window.defer(cx, move |_, cx| {
+                view.update(cx, |view, cx| {
+                    view.anchor_bounds = bounds;
+                    cx.notify();
+                });
+            });
+        }
         self.child.paint(window, cx);
     }
 }
@@ -808,6 +867,7 @@ mod tests {
                 close_on_hover_outside: false,
                 return_focus: None,
                 restore_subscription: Rc::new(RefCell::new(None)),
+                anchor: None,
                 window,
                 cx,
             });
@@ -854,6 +914,7 @@ mod tests {
                 close_on_hover_outside: false,
                 return_focus: None,
                 restore_subscription: Rc::new(RefCell::new(None)),
+                anchor: None,
                 window,
                 cx,
             });

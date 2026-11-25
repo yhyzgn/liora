@@ -19,6 +19,8 @@ struct Surface {
     confirm_focus: Rc<RefCell<Option<gpui::FocusHandle>>>,
     confirm_had_focus: Rc<Cell<bool>>,
     editable_trigger: bool,
+    show_popup: bool,
+    popup_offset: Pixels,
 }
 
 impl Render for Surface {
@@ -138,12 +140,20 @@ impl Render for Surface {
                     .flex()
                     .flex_col()
                     .gap_4()
-                    .child(
-                        div()
-                            .flex()
-                            .child(div().debug_selector(|| "fixture-popup".into()).child(popup)),
-                    )
-                    .when(!self.editable_trigger, |s| s.child(self.outside.clone())),
+                    .when(self.show_popup, |s| {
+                        s.child(
+                            div().flex().mt(self.popup_offset).child(
+                                div().debug_selector(|| "fixture-popup".into()).child(popup),
+                            ),
+                        )
+                    })
+                    .when(!self.editable_trigger, |s| {
+                        s.child(
+                            div()
+                                .debug_selector(|| "outside-input-host".into())
+                                .child(self.outside.clone()),
+                        )
+                    }),
             )
             .child(PortalLayer)
     }
@@ -182,6 +192,8 @@ impl Harness {
                 split,
                 dropdown: split,
                 editable_trigger,
+                show_popup: true,
+                popup_offset: px(0.0),
             }
         });
         let window = VisualTestContext::from_window(handle.into(), &app);
@@ -249,6 +261,62 @@ impl Harness {
             )
         });
     }
+}
+
+#[test]
+fn open_popover_follows_anchor_movement_and_preserves_escape_focus() {
+    let mut h = Harness::new(true, false, false, false);
+    let trigger = h.focus_first();
+    h.press("enter");
+    let before = h.window.debug_bounds("inside-input").unwrap();
+    h.handle
+        .update(&mut h.app, |view, _, cx| {
+            view.popup_offset = px(60.0);
+            cx.notify();
+        })
+        .unwrap();
+    h.draw();
+    h.draw();
+    let after = h.window.debug_bounds("inside-input").unwrap();
+    assert_eq!(after.origin.y - before.origin.y, px(60.0));
+    h.assert_focus(&trigger);
+    h.click("inside-input");
+    h.press("escape");
+    assert!(!h.is_open());
+    h.assert_focus(&trigger);
+    h.app.quit();
+}
+
+#[test]
+fn unmounting_anchor_clears_retained_popover_and_its_backdrop() {
+    let mut h = Harness::new(false, false, false, false);
+    h.handle
+        .update(&mut h.app, |view, _, _| view.close_on_click_outside = false)
+        .unwrap();
+    h.draw();
+    h.click("keyboard-trigger");
+    h.click("inside-input");
+    let retained_view = h
+        .window
+        .update(|_, cx| cx.global::<liora_core::ActivePopover>().0[0].view.clone());
+    h.handle
+        .update(&mut h.app, |view, _, cx| {
+            view.show_popup = false;
+            cx.notify();
+        })
+        .unwrap();
+    h.draw();
+    h.draw();
+    assert!(!h.is_open(), "unmounted anchor left its popover registered");
+    assert!(h.window.debug_bounds("inside-input").is_none());
+    h.click("outside-input-host");
+    let outside = h
+        .handle
+        .read_with(&h.app, |view, cx| view.outside.focus_handle(cx))
+        .unwrap();
+    h.assert_focus(&outside);
+    drop(retained_view);
+    h.app.quit();
 }
 
 #[test]
@@ -656,6 +724,20 @@ fn same_id_replacement_does_not_restore_old_trigger_from_focused_content() {
             .unwrap();
         assert_eq!(active.view.entity_id(), replacement_id);
     });
+    h.handle
+        .update(&mut h.app, |view, _, cx| {
+            view.show_popup = false;
+            cx.notify();
+        })
+        .unwrap();
+    h.draw();
+    h.draw();
+    assert!(
+        h.is_open(),
+        "retired anchor cleared its same-id replacement"
+    );
+    assert!(h.window.debug_bounds("replacement-input-host").is_some());
+    h.assert_focus(&replacement_focus);
     h.app.quit();
 }
 

@@ -1586,6 +1586,8 @@ fn render_overlays(window: &mut gpui::Window, cx: &mut gpui::App) {
 
 使用 Liora `Button` 触发器时，Tab 聚焦后按 Enter/Space 打开 `Popover`；ESC 可从触发按钮或弹层内的交互控件关闭，除非设置了 `.close_on_escape(false)`。关闭（包括 `clear_popover`）时，如果焦点仍在弹层内，会返回原 focus handle；焦点已移到其他控件时不会抢回。包装层不增加额外 Tab 停靠点，也不赋予可编辑触发器按钮键盘语义。手动关闭时请指定稳定 `.id(...)`。
 
+已打开的 Popover 跟随触发器实际绘制的边界。触发器卸载时，即使其他代码仍保留弹层 view，也会清除对应卡片与遮罩；同 ID 的新替代弹层不会被旧锚点清除。Gallery 与 Docs 共用 Tooltip/Popover 的延时移动、移除与恢复用例，可直接操作验证，无需注入应用状态。
+
 普通 `Popover` 内容默认带 16 px 内边距，适合简单文本或卡片气泡，避免内容贴边。如果你的弹层主体本身已经是完整 surface（例如菜单、命令面板、自定义确认框），应移除共享 padding，让主体自己控制宽度、留白、滚动和条目间距：
 
 ```rust

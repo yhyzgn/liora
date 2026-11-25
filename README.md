@@ -1592,6 +1592,8 @@ fn render_overlays(window: &mut gpui::Window, cx: &mut gpui::App) {
 
 With a Liora `Button` trigger, Tab to the button and press Enter/Space to open `Popover`; Escape closes it from the trigger or interactive popup content unless `.close_on_escape(false)` is set. Dismissal, including `clear_popover`, returns focus to the originating handle when focus is still inside the popup, but does not steal focus already moved elsewhere. The wrapper adds no extra Tab stop and does not give editable triggers button keyboard semantics. Use a stable `.id(...)` for manual dismissal.
 
+Open Popovers follow their painted trigger bounds. Unmounting a trigger retires its card and backdrop even if the popup view is retained elsewhere; a replacement popup using the same ID is not cleared. Gallery and Docs share delayed move/remove/reset examples for both Tooltip and Popover, so these lifecycle paths can be exercised without application-state injection.
+
 Plain `Popover` content gets default 16 px padding so simple text/card bubbles are not cramped. If your popup body is already a complete surface (for example a menu, command palette, or custom confirmation panel), remove the shared padding and let that body own its spacing:
 
 ```rust

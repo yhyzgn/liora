@@ -5,10 +5,18 @@ use liora_core::Placement;
 use liora_components::layout_helpers::{page, row, section};
 
 pub fn render(cx: &mut App) -> AnyView {
-    cx.new(|_| TooltipDemo).into()
+    cx.new(|cx| TooltipDemo {
+        lifecycle: super::overlay_lifecycle_demo::render(
+            super::overlay_lifecycle_demo::Kind::Tooltip,
+            cx,
+        ),
+    })
+    .into()
 }
 
-struct TooltipDemo;
+struct TooltipDemo {
+    lifecycle: AnyView,
+}
 
 impl Render for TooltipDemo {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
@@ -39,6 +47,11 @@ impl Render for TooltipDemo {
                         tip("Bottom Start", "Bottom Start", Placement::BottomStart),
                         tip("Bottom End", "Bottom End", Placement::BottomEnd),
                     ]),
+                ))
+                .child(section(
+                    "Anchor lifecycle 锚点生命周期",
+                    "延时移动后提示跟随焦点锚点；移开静止指针或卸载后提示应关闭，Reset 不应复活旧提示。",
+                    self.lifecycle.clone(),
                 )),
         )
     }

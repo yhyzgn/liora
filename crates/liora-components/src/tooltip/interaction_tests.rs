@@ -347,6 +347,7 @@ fn stationary_hover_tracks_a_moving_anchor_and_releases_unmounted_help() {
         })
         .unwrap();
     draw(&mut window);
+    assert!(window.debug_bounds("tooltip-button").is_none());
     assert!(active(&mut window).is_empty());
     assert!(window.debug_bounds("liora-tooltip-panel").is_none());
     press(&mut window, "escape");
@@ -356,7 +357,166 @@ fn stationary_hover_tracks_a_moving_anchor_and_releases_unmounted_help() {
             .unwrap(),
         1
     );
+
+    handle
+        .update(&mut app, |view, _, cx| {
+            view.button_offset = Some(px(200.0));
+            view.content = "Remounted help";
+            cx.notify();
+        })
+        .unwrap();
+    draw(&mut window);
+    let remounted = window.debug_bounds("tooltip-button").unwrap();
+    assert!(!remounted.contains(&moved_panel.center()));
+    assert!(active(&mut window).is_empty());
+    assert!(window.debug_bounds("liora-tooltip-panel").is_none());
+    window.simulate_mouse_move(remounted.center(), None, Modifiers::none());
+    draw(&mut window);
+    assert_eq!(
+        active(&mut window),
+        [("button-tip".to_string(), "Remounted help".to_string())]
+    );
+    press(&mut window, "escape");
+    assert!(active(&mut window).is_empty());
+    assert_eq!(
+        handle
+            .read_with(&app, |view, _| view.escapes.get())
+            .unwrap(),
+        1,
+        "only the newly hovered owner consumes Escape after remount"
+    );
     app.quit();
+}
+
+#[test]
+fn stationary_pointer_releases_help_when_the_trigger_moves_away_and_rearms_on_return() {
+    let (mut app, handle, mut window) = setup();
+    window.update(|window, cx| window.focus_next(cx));
+    let trigger = window.debug_bounds("tooltip-button").unwrap();
+    window.simulate_mouse_move(trigger.center(), None, Modifiers::none());
+    draw(&mut window);
+    let panel = window.debug_bounds("liora-tooltip-panel").unwrap();
+    assert_eq!(
+        active(&mut window),
+        [("button-tip".to_string(), "Button help".to_string())]
+    );
+
+    handle
+        .update(&mut app, |view, _, cx| {
+            view.button_offset = Some(px(200.0));
+            cx.notify();
+        })
+        .unwrap();
+    draw(&mut window);
+    let moved = window.debug_bounds("tooltip-button").unwrap();
+    assert!(!moved.contains(&trigger.center()));
+    assert!(!panel.contains(&trigger.center()));
+    assert_eq!(
+        window.update(|window, _| window.mouse_position()),
+        trigger.center()
+    );
+    assert!(active(&mut window).is_empty());
+    assert!(window.debug_bounds("liora-tooltip-panel").is_none());
+    press(&mut window, "escape");
+    assert_eq!(
+        handle
+            .read_with(&app, |view, _| view.escapes.get())
+            .unwrap(),
+        1,
+        "the moved-away trigger must release its Escape interceptor"
+    );
+
+    handle
+        .update(&mut app, |view, _, cx| {
+            view.button_offset = Some(px(0.0));
+            view.content = "Returned help";
+            cx.notify();
+        })
+        .unwrap();
+    draw(&mut window);
+    assert_eq!(window.debug_bounds("tooltip-button"), Some(trigger));
+    assert_eq!(
+        active(&mut window),
+        [("button-tip".to_string(), "Returned help".to_string())]
+    );
+    assert!(window.debug_bounds("liora-tooltip-panel").is_some());
+    app.quit();
+}
+
+#[test]
+fn focused_trigger_tracks_layout_and_remount_does_not_restore_old_focus_ownership() {
+    for dismissed in [false, true] {
+        let (mut app, handle, mut window) = setup();
+        window.update(|window, cx| window.focus_next(cx));
+        press(&mut window, "tab");
+        let focused = window.update(|window, cx| window.focused(cx).unwrap());
+        let pointer = window.update(|window, _| window.mouse_position());
+        let trigger = window.debug_bounds("tooltip-button").unwrap();
+        let panel = window.debug_bounds("liora-tooltip-panel").unwrap();
+        if dismissed {
+            press(&mut window, "escape");
+        }
+
+        handle
+            .update(&mut app, |view, _, cx| {
+                view.button_offset = Some(px(160.0));
+                cx.notify();
+            })
+            .unwrap();
+        draw(&mut window);
+        let moved = window.debug_bounds("tooltip-button").unwrap();
+        assert_eq!(moved.left() - trigger.left(), px(160.0));
+        assert_eq!(window.update(|window, _| window.mouse_position()), pointer);
+        assert!(window.update(|window, _| focused.is_focused(window)));
+        if dismissed {
+            assert!(active(&mut window).is_empty());
+            assert!(window.debug_bounds("liora-tooltip-panel").is_none());
+        } else {
+            let moved_panel = window.debug_bounds("liora-tooltip-panel").unwrap();
+            assert_eq!(moved_panel.left() - panel.left(), px(160.0));
+            assert_eq!(moved_panel.top(), panel.top());
+            window.update(|_, cx| {
+                let active = &cx.global::<ActiveTooltip>().0;
+                assert_eq!(active.len(), 1);
+                assert_eq!(active[0].anchor_bounds, moved);
+            });
+        }
+
+        handle
+            .update(&mut app, |view, _, cx| {
+                view.button_offset = None;
+                cx.notify();
+            })
+            .unwrap();
+        draw(&mut window);
+        assert!(window.debug_bounds("tooltip-button").is_none());
+        assert!(active(&mut window).is_empty());
+        assert!(window.debug_bounds("liora-tooltip-panel").is_none());
+
+        handle
+            .update(&mut app, |view, _, cx| {
+                view.button_offset = Some(px(160.0));
+                view.content = "Fresh focused help";
+                cx.notify();
+            })
+            .unwrap();
+        draw(&mut window);
+        assert!(
+            active(&mut window).is_empty(),
+            "remount is not a focus entry"
+        );
+        assert!(window.debug_bounds("liora-tooltip-panel").is_none());
+        let before = window.debug_bounds("tooltip-before").unwrap();
+        window.simulate_click(before.center(), Modifiers::none());
+        draw(&mut window);
+        press(&mut window, "tab");
+        assert_eq!(
+            active(&mut window),
+            [("button-tip".to_string(), "Fresh focused help".to_string())]
+        );
+        assert!(window.debug_bounds("liora-tooltip-panel").is_some());
+        app.quit();
+    }
 }
 
 #[test]

@@ -62,6 +62,7 @@ pub mod navigation_menu_demo;
 pub mod notification_demo;
 pub mod operation_demo;
 pub mod otp_input_demo;
+mod overlay_lifecycle_demo;
 pub mod page_header_demo;
 pub mod pagination_demo;
 pub mod paragraph_demo;
@@ -845,6 +846,10 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Pagination" => Some(pagination_demo::render(cx).into()),
         "Popconfirm" => Some(popconfirm_demo::render(cx).into()),
         "Popover" => Some(popover_demo::render(cx).into()),
+        "PopoverLifecycle" => Some(overlay_lifecycle_demo::render(
+            overlay_lifecycle_demo::Kind::Popover,
+            cx,
+        )),
         "Preview" => Some(preview_demo::render(cx).into()),
         "PieChart" => Some(pie_chart_demo::render(cx).into()),
         "RingChart" => Some(ring_chart_demo::render(cx).into()),
@@ -880,6 +885,10 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "Timeline" => Some(timeline_demo::render(cx).into()),
         "Tour" => Some(tour_demo::render(cx).into()),
         "Tooltip" => Some(tooltip_demo::render(cx).into()),
+        "TooltipLifecycle" => Some(overlay_lifecycle_demo::render(
+            overlay_lifecycle_demo::Kind::Tooltip,
+            cx,
+        )),
         "Tray" => Some(tray_demo::render(cx).into()),
         "Transfer" => Some(transfer_demo::render(cx).into()),
         "TreeSelect" => Some(tree_select_demo::render(cx).into()),

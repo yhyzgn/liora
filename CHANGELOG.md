@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Follow painted Popover anchor bounds and retire its card/backdrop when the trigger unmounts, even if the popup view remains retained. Preserve same-ID replacement owners and existing focus/Escape policies. Add shared Gallery/Docs delayed move/remove/reset examples and Tooltip movement/remount regressions.
 - Keep `Config::set_locales_config` version updates consistent with the free setter: advance the stored counter with saturation instead of adopting the replacement config's version.
 
 - Expose Input's existing native root as a stable named text/password/multiline input, with localized `aria_label` naming and readable non-password text runs. Preserve focus, disabled state and native editing; omit password values and text runs even when revealed. This adds text-reading metadata, not synchronized AT caret/selection, text geometry or AT editing actions.

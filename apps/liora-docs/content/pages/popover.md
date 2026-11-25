@@ -42,3 +42,9 @@
 
 ```rust src="popover/close_strategy.rs"
 ```
+
+## 锚点移动与卸载
+
+点击 **Move in 2 s** 后立即打开 **Lifecycle trigger**，观察卡片是否跟随移动后的触发器。点击 **Remove in 2 s** 后立即打开触发器，卸载时卡片及外部点击遮罩应一起清除。**Reset trigger** 取消待执行操作并恢复触发器，不应重开旧卡片；重新安排操作会替换前一次待执行操作。
+
+::Demo{component="PopoverLifecycle"}::
