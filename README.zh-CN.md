@@ -1872,6 +1872,7 @@ Liora 避免为同一类功能提供重复控件：
 
 - `Drawer` 同时覆盖完整抽屉和轻量面板场景。`Drawer::sheet()` 提供轻量默认尺寸，不再单独暴露 Sheet 控件。
 - `Drawer::close(cx)` 只关闭栈顶抽屉；用 `Drawer::close_id(id, cx)` 关闭指定抽屉，不影响其他抽屉。
+- 焦点保留在触发控件或底层抽屉内容时，Escape 也仅遵循栈顶抽屉的关闭策略；`close_on_escape(false)` 保留整个栈。打开抽屉不会移动焦点或增加焦点陷阱；仅初始化 core 时，`show` 也会自动安装键盘绑定。
 - `Select` 同时覆盖固定选项和可搜索选择。`Select::searchable(...)`、`.multiple()`、分组、禁用项和 footer slot 覆盖原 Combobox 类工作流。
 - 布尔设置使用 `Switch`，工具栏或视图模式选择使用 `Segmented` / button-style 选择；原独立 Toggle 控件已移除以避免 API 重复。
 - `Checkbox` / `Switch` 保留原生根节点 identity，提供 checked/disabled 语义，支持 Tab/Shift+Tab 与 Enter/Space。每个 `Switch` 及无文本 `Checkbox` 应有明确的 `aria_label`；Checkbox 默认用可见 `label` 作为名称。`set_disabled` 保留实体并将禁用控件移出 Tab 顺序；实际辅助技术状态仍取决于平台 adapter 的映射。

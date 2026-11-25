@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Handle Drawer Escape from retained trigger or underlying drawer focus through the app-wide stack policy; honor protected top drawers without dismissing lower ones. Install bindings once, including core-only hosts, and preserve stale-close identity guards without moving focus or adding a focus trap.
+
 - Share the retained native spring interaction between Gallery Spinner and Docs, with retarget and remove/restore controls, stable animation identity, and a compile-checked example. Keep reduced-motion preference host-owned; do not add SDK motion policy or replace existing duration effects.
 - Add a shared Gallery/Docs multilingual Typography sample and a real-display probe checking native glyph clusters and visible raster pixels with app-matched font settings. Document the pinned Linux/WGPU COLRv1 emoji blank-raster limitation and isolated CBDT font evidence; keep font installation/selection host-owned, without an SDK font policy or dependency change.
 - Keep Container's main viewport within the width remaining beside its sidebar instead of expanding to wide children's intrinsic size. Add a native geometry regression for the bounded main region; preserve host-owned fixed-content overflow policy.

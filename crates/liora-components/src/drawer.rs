@@ -41,6 +41,30 @@ actions!(
     ]
 );
 
+struct DrawerKeyBindingsInstalled;
+impl gpui::Global for DrawerKeyBindingsInstalled {}
+
+fn close_top_drawer_if_escape_enabled(cx: &mut App) {
+    let Some(view) = cx
+        .try_global::<liora_core::ActiveDrawer>()
+        .and_then(|drawers| drawers.0.last())
+        .map(|entry| entry.view.clone())
+    else {
+        cx.propagate();
+        return;
+    };
+    let Ok(view) = view.downcast::<DrawerView>() else {
+        cx.propagate();
+        return;
+    };
+    let drawer = view.read(cx);
+    if drawer.close_on_escape {
+        let on_close = drawer.on_close.clone();
+        on_close(cx);
+    }
+    cx.stop_propagation();
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 /// Options that control drawer placement behavior.
 pub enum DrawerPlacement {
@@ -77,7 +101,7 @@ pub struct DrawerView {
     height: Pixels,
     close_on_click_outside: bool,
     close_on_escape: bool,
-    on_close: Arc<dyn Fn(&mut Window, &mut App) + 'static>,
+    on_close: Arc<dyn Fn(&mut App) + 'static>,
 }
 
 impl DrawerView {
@@ -90,7 +114,7 @@ impl DrawerView {
         height: Pixels,
         close_on_click_outside: bool,
         close_on_escape: bool,
-        on_close: impl Fn(&mut Window, &mut App) + 'static,
+        on_close: impl Fn(&mut App) + 'static,
     ) -> Self {
         Self {
             id,
@@ -117,7 +141,6 @@ impl Render for DrawerView {
         let width = self.width;
         let height = self.height;
         let close_on_click_outside = self.close_on_click_outside;
-        let close_on_escape = self.close_on_escape;
 
         let mut container = div()
             .id(id.clone())
@@ -131,18 +154,10 @@ impl Render for DrawerView {
             .when(close_on_click_outside, |s| {
                 s.on_mouse_down(MouseButton::Left, {
                     let on_close = on_close.clone();
-                    move |_, window, cx| {
-                        on_close(window, cx);
+                    move |_, _, cx| {
+                        on_close(cx);
                     }
                 })
-            })
-            .when(close_on_escape, |s| {
-                s.on_action(cx.listener({
-                    let on_close = on_close.clone();
-                    move |_, _action: &DrawerClose, window, cx| {
-                        on_close(window, cx);
-                    }
-                }))
             });
 
         let mut panel = div()
@@ -215,8 +230,8 @@ impl Render for DrawerView {
                                             .size(px(16.0))
                                             .color(theme.neutral.icon),
                                     )
-                                    .on_mouse_down(MouseButton::Left, move |_, window, cx| {
-                                        on_close(window, cx);
+                                    .on_mouse_down(MouseButton::Left, move |_, _, cx| {
+                                        on_close(cx);
                                     }),
                             ),
                     )
@@ -229,7 +244,12 @@ impl Render for DrawerView {
 impl Drawer {
     /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(cx: &mut App) {
+        if cx.has_global::<DrawerKeyBindingsInstalled>() {
+            return;
+        }
         cx.bind_keys([KeyBinding::new("escape", DrawerClose, None)]);
+        cx.on_action(|_: &DrawerClose, cx| close_top_drawer_if_escape_enabled(cx));
+        cx.set_global(DrawerKeyBindingsInstalled);
     }
 
     /// Creates `Drawer` with default theme-driven styling and no optional callbacks attached.
@@ -366,6 +386,7 @@ impl Drawer {
 
     /// Performs the show operation used by this component.
     pub fn show(self, cx: &mut App) {
+        Self::register_key_bindings(cx);
         let id = self.id;
         let title = self.title;
         let content = self.content;
@@ -388,7 +409,7 @@ impl Drawer {
                 height,
                 close_on_click_outside,
                 close_on_escape,
-                move |_window, cx| {
+                move |cx| {
                     if !cx
                         .try_global::<liora_core::ActiveDrawer>()
                         .is_some_and(|drawers| {
@@ -544,6 +565,128 @@ mod tests {
         );
     }
 
+    struct KeyboardRoot(gpui::FocusHandle);
+
+    impl Render for KeyboardRoot {
+        fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+            liora_core::render_active_drawer_in_window(window, cx);
+            div()
+                .relative()
+                .size_full()
+                .track_focus(&self.0)
+                .child(crate::PortalLayer)
+        }
+    }
+
+    fn dispatch_escape(window: &mut gpui::VisualTestContext) -> bool {
+        window.update(|window, cx| {
+            let keystroke =
+                gpui::Keystroke::parse_with_os("escape", cx.platform_info().os).unwrap();
+            let result = window.dispatch_event(
+                gpui::PlatformInput::KeyDown(gpui::KeyDownEvent {
+                    keystroke: keystroke.clone(),
+                    is_held: false,
+                    prefer_character_input: false,
+                }),
+                cx,
+            );
+            window.dispatch_event(
+                gpui::PlatformInput::KeyUp(gpui::KeyUpEvent { keystroke }),
+                cx,
+            );
+            result.propagate
+        })
+    }
+
+    #[test]
+    fn trigger_focused_escape_respects_top_drawer_policy() {
+        for core_only in [false, true] {
+            let mut app = gpui::TestAppContext::single();
+            app.update(|cx| {
+                if core_only {
+                    liora_core::init_liora(cx, liora_theme::Theme::light());
+                } else {
+                    crate::init_liora(cx);
+                }
+                cx.set_reduce_motion(true);
+            });
+            let focus = app.update(|cx| cx.focus_handle());
+            let root = app.add_window(|_, _| KeyboardRoot(focus.clone()));
+            let mut window = gpui::VisualTestContext::from_window(root.into(), &app);
+            window.update(|window, cx| {
+                window.activate_window();
+                window.focus(&focus, cx);
+                Drawer::new().id("parent").show(cx);
+                Drawer::new().id("child").close_on_escape(false).show(cx);
+            });
+            app.run_until_parked();
+            dispatch_escape(&mut window);
+            window.update(|window, cx| {
+                assert_eq!(cx.global::<liora_core::ActiveDrawer>().0.len(), 2);
+                assert!(focus.is_focused(window));
+                Drawer::close(cx);
+            });
+            app.run_until_parked();
+            dispatch_escape(&mut window);
+            window.update(|window, cx| {
+                assert!(
+                    cx.global::<liora_core::ActiveDrawer>().0.is_empty(),
+                    "trigger Escape did not close the enabled parent; core_only={core_only}"
+                );
+                assert!(focus.is_focused(window), "the trigger lost focus");
+            });
+            assert!(
+                dispatch_escape(&mut window),
+                "an empty drawer stack swallowed Escape"
+            );
+            app.quit();
+        }
+    }
+
+    #[test]
+    fn escape_inside_parent_obeys_child_policy_and_closes_only_child() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let trigger = app.update(|cx| cx.focus_handle());
+        let parent_focus = app.update(|cx| cx.focus_handle());
+        let root = app.add_window(|_, _| KeyboardRoot(trigger));
+        let mut window = gpui::VisualTestContext::from_window(root.into(), &app);
+        window.update(|window, cx| {
+            cx.set_reduce_motion(true);
+            window.activate_window();
+            Drawer::new()
+                .id("parent")
+                .content({
+                    let focus = parent_focus.clone();
+                    move |_, _| div().track_focus(&focus).child("parent content")
+                })
+                .show(cx);
+            Drawer::new().id("child").close_on_escape(false).show(cx);
+            window.focus(&parent_focus, cx);
+        });
+        app.run_until_parked();
+        dispatch_escape(&mut window);
+        window.update(|_, cx| {
+            let drawers = &cx.global::<liora_core::ActiveDrawer>().0;
+            assert_eq!(drawers.len(), 2, "Escape bypassed the protected child");
+            assert_eq!(drawers[0].id.as_ref(), "parent");
+            Drawer::new().id("child").show(cx);
+        });
+        app.run_until_parked();
+        dispatch_escape(&mut window);
+        window.update(|window, cx| {
+            let drawers = &cx.global::<liora_core::ActiveDrawer>().0;
+            assert_eq!(drawers.len(), 1);
+            assert_eq!(
+                drawers[0].id.as_ref(),
+                "parent",
+                "Escape closed the focused parent instead of the top child"
+            );
+            assert!(parent_focus.is_focused(window));
+        });
+        app.quit();
+    }
+
     #[test]
     fn manual_close_only_removes_topmost_drawer() {
         let mut app = gpui::TestAppContext::single();
@@ -612,13 +755,13 @@ mod tests {
             (old_close, current_close, replacement_id)
         });
 
-        window.update(|window, cx| old_close(window, cx));
+        window.update(|_, cx| old_close(cx));
         window.update(|_, cx| {
             let active = cx.global::<liora_core::ActiveDrawer>().0.last().unwrap();
             assert_eq!(active.view.entity_id(), replacement_id);
         });
-        window.update(|window, cx| current_close(window, cx));
-        window.update(|window, cx| current_close(window, cx));
+        window.update(|_, cx| current_close(cx));
+        window.update(|_, cx| current_close(cx));
         window.update(|_, cx| assert!(cx.global::<liora_core::ActiveDrawer>().0.is_empty()));
         app.quit();
     }

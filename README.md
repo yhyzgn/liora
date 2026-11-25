@@ -1880,6 +1880,7 @@ Liora avoids duplicate controls for the same job:
 
 - Use `Drawer` for both full drawers and lightweight sheet-style panels. `Drawer::sheet()` provides the compact defaults that would otherwise become a separate Sheet control.
 - `Drawer::close(cx)` dismisses only the topmost drawer; use `Drawer::close_id(id, cx)` to dismiss a specific drawer without closing others.
+- Drawer Escape handling also works while focus remains on the opening control. Only the topmost drawer's policy applies, including when focus stays in an underlying drawer; `close_on_escape(false)` preserves the stack. Opening does not move focus or introduce a focus trap, and `show` installs its keyboard binding even after core-only initialization.
 - Use `Select` for fixed options and searchable selection. `Select::searchable(...)`, `.multiple()`, item groups, disabled items, and footer slots cover Combobox-style workflows.
 - Use `Switch` for settings booleans and `Segmented` / button-style selections for toolbar or view-mode choices; the former standalone Toggle control was removed to avoid API duplication.
 - `Checkbox` and `Switch` retain their native root identity, expose checked/disabled semantics, and support Tab/Shift+Tab plus Enter/Space. Give every `Switch` and textless `Checkbox` a meaningful `aria_label`; a Checkbox's visible `label` is its default name. `set_disabled` preserves the entity while removing disabled controls from the Tab order. Native assistive-technology state mapping remains platform-adapter-dependent.
