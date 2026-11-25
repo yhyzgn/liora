@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Commit locale directory resources only after every file reads and parses successfully; preserve existing translations on failure so runtime reloads cannot leave partially updated text behind an unchanged locale version. Retain successful per-locale replacement and unrelated locales, with a failed-load/retry regression.
 - Preserve package manifest, checksum and generated release-note entries across sequential font-variant/app builds; replace selected output scopes, retire missing files and reject changed retained bytes or symlink-parent escapes without relabeling their original provenance or signing state. Document building each variant immediately before `--skip-build` packaging.
 - Follow painted Popover anchor bounds and retire its card/backdrop when the trigger unmounts, even if the popup view remains retained. Preserve same-ID replacement owners and existing focus/Escape policies. Add shared Gallery/Docs delayed move/remove/reset examples and Tooltip movement/remount regressions.
 - Keep `Config::set_locales_config` version updates consistent with the free setter: advance the stored counter with saturation instead of adopting the replacement config's version.

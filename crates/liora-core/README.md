@@ -22,6 +22,7 @@ fn setup(cx: &mut gpui::App) {
 - Depend on `liora-core` directly when you need fine-grained dependency control or are building another Liora crate.
 - Keep application UI pure Rust + native GPUI; Liora crates do not require WebView, Tauri, HTML, CSS, or DOM runtime paths.
 - `apply_theme_mode` schedules all open GPUI windows to redraw; System appearance synchronization does the same when the shared theme changes.
+- Locale directory loads commit only after every file has been read and parsed; a failed runtime reload preserves translations, locale version, and the remembered resource directory. Successful loads replace each loaded locale, not individual keys, and retain locales absent from the directory.
 
 ## GPUI dependency note
 

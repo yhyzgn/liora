@@ -1651,6 +1651,8 @@ Liora 的国际化系统保持低耦合：语言资源放在外部 TOML 文件�
 
 `Config::set_locales_config` 方法与独立的 `set_locales_config` 函数都会将当前已存储的 locale 版本递增，并在 `u64::MAX` 饱和；传入配置中的版本值会被忽略。
 
+目录加载采用全部成功后提交的方式：`LocalesMap::load_dir` 与运行时 `load_locales_dir` 在任意文件读取或解析失败时保留原有翻译；运行时失败也不会改变 locale 版本号和已记录的资源目录，可修复文件后重试。成功时仍按已加载的语言整体替换，未出现在目录中的语言保持不变。
+
 适合以下需求：
 
 - 语言包放在 `assets/locales/<locale>.toml`，而不是写死在 Rust 源码里；

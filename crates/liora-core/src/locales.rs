@@ -345,6 +345,7 @@ impl LocalesMap {
     }
 
     /// Loads all `*.toml` files from a directory, using file stems as locale ids.
+    /// Preserves existing translations if any file fails to read or parse.
     pub fn load_dir(&mut self, dir: impl AsRef<Path>) -> Result<Vec<LocaleId>, LocalesLoadError> {
         let dir = dir.as_ref();
         let mut loaded = Vec::new();
@@ -364,14 +365,16 @@ impl LocalesMap {
             }
         }
         files.sort();
+        let mut pending = Self::new();
         for path in files {
             let Some(locale) = path.file_stem().and_then(|stem| stem.to_str()) else {
                 continue;
             };
             let locale = LocaleId::from(locale);
-            self.load_locale_file(locale.clone(), &path)?;
+            pending.load_locale_file(locale.clone(), &path)?;
             loaded.push(locale);
         }
+        self.locales.extend(pending.locales);
         Ok(loaded)
     }
 
@@ -904,6 +907,88 @@ no_data = "No data"
             Some("测试")
         );
 
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn failed_directory_load_preserves_translations_and_allows_retry() {
+        let dir = temp_dir("liora-locales-atomic");
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(dir.join("en-US.toml"), "[demo]\ntitle = \"Updated\"\n").unwrap();
+        fs::write(dir.join("zh-CN.toml"), "[demo\n").unwrap();
+        let mut map = LocalesMap::new()
+            .with_locale("en-US", [("demo.title", "Original")])
+            .with_locale("fr-FR", [("demo.title", "Original français")]);
+        let previous = map.clone();
+
+        assert!(matches!(
+            map.load_dir(&dir),
+            Err(LocalesLoadError::Parse { .. })
+        ));
+        assert_eq!(map, previous);
+
+        fs::write(dir.join("zh-CN.toml"), "[demo]\ntitle = \"已更新\"\n").unwrap();
+        map.load_dir(&dir).unwrap();
+        for (locale, expected) in [
+            ("en-US", "Updated"),
+            ("zh-CN", "已更新"),
+            ("fr-FR", "Original français"),
+        ] {
+            assert_eq!(
+                map.translate(&LocaleId::from(locale), "demo.title")
+                    .as_deref(),
+                Some(expected)
+            );
+        }
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn runtime_directory_reload_preserves_config_on_errors_and_commits_once_on_retry() {
+        let dir = temp_dir("liora-locales-runtime");
+        fs::create_dir_all(&dir).unwrap();
+        let chinese_path = dir.join("zh-CN.toml");
+        fs::write(dir.join("en-US.toml"), "[demo]\ntitle = \"Updated\"\n").unwrap();
+        fs::write(&chinese_path, "[demo\n").unwrap();
+        let mut previous = LocalesConfig::system()
+            .with_locale("fr-FR")
+            .with_resources(LocalesMap::new().with_locale("en-US", [("demo.title", "Original")]));
+        previous.version = 17;
+        previous.resource_dir = Some(dir.join("previous"));
+
+        let mut app = gpui::TestAppContext::single();
+        app.update(|cx| {
+            crate::init_liora_with_mode(cx, crate::ThemeMode::Light);
+            cx.global_mut::<crate::Config>().locales = previous.clone();
+            assert!(matches!(
+                load_locales_dir(cx, &dir),
+                Err(LocalesLoadError::Parse { path, .. }) if path == chinese_path
+            ));
+            assert_eq!(cx.global::<crate::Config>().locales, previous);
+
+            fs::remove_file(&chinese_path).unwrap();
+            fs::create_dir(&chinese_path).unwrap();
+            assert!(matches!(
+                load_locales_dir(cx, &dir),
+                Err(LocalesLoadError::Io { path, .. }) if path == chinese_path
+            ));
+            assert_eq!(cx.global::<crate::Config>().locales, previous);
+
+            fs::remove_dir(&chinese_path).unwrap();
+            fs::write(&chinese_path, "[demo]\ntitle = \"已更新\"\n").unwrap();
+            load_locales_dir(cx, &dir).unwrap();
+            let mut expected = previous.clone();
+            expected
+                .resources
+                .insert_locale("en-US", [("demo.title", "Updated")]);
+            expected
+                .resources
+                .insert_locale("zh-CN", [("demo.title", "已更新")]);
+            expected.resource_dir = Some(dir.clone());
+            expected.version = 18;
+            assert_eq!(cx.global::<crate::Config>().locales, expected);
+        });
+        app.quit();
         fs::remove_dir_all(dir).unwrap();
     }
 
