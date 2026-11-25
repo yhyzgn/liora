@@ -346,9 +346,9 @@ impl Theme {
 
                 text_1: rgb(31, 34, 37),
                 text_2: rgb(51, 54, 57),
-                text_3: rgb(118, 124, 130),
+                text_3: rgb(100, 106, 112),
                 text_disabled: rgba(194, 194, 194, 1.0),
-                placeholder: rgba(194, 194, 194, 1.0),
+                placeholder: rgb(100, 106, 112),
                 icon: rgba(31, 34, 37, 1.0),
 
                 border: rgb(224, 224, 230),
@@ -443,9 +443,9 @@ impl Theme {
 
                 text_1: rgba(255, 255, 255, 0.90),
                 text_2: rgba(255, 255, 255, 0.82),
-                text_3: rgba(255, 255, 255, 0.52),
+                text_3: rgba(255, 255, 255, 0.75),
                 text_disabled: rgba(255, 255, 255, 0.38),
-                placeholder: rgba(255, 255, 255, 0.38),
+                placeholder: rgba(255, 255, 255, 0.75),
                 icon: rgba(255, 255, 255, 0.38),
 
                 border: rgba(255, 255, 255, 0.24),
@@ -707,25 +707,59 @@ mod tests {
         color.into()
     }
 
+    fn luminance(color: Hsla) -> f64 {
+        let color: Rgba = color.into();
+        [color.r, color.g, color.b]
+            .into_iter()
+            .zip([0.2126, 0.7152, 0.0722])
+            .map(|(channel, weight)| {
+                let channel = f64::from(channel);
+                weight
+                    * if channel <= 0.04045 {
+                        channel / 12.92
+                    } else {
+                        ((channel + 0.055) / 1.055).powf(2.4)
+                    }
+            })
+            .sum()
+    }
+
+    #[test]
+    fn neutral_text_and_placeholders_meet_wcag_on_surface_states() {
+        for (name, theme) in [("light", Theme::light()), ("dark", Theme::dark())] {
+            for (surface, base) in [
+                ("body", theme.neutral.body),
+                ("card", theme.neutral.card),
+                ("modal", theme.neutral.modal),
+                ("popover", theme.neutral.popover),
+            ] {
+                for (state, background) in [
+                    ("normal", base),
+                    ("hover", base.blend(theme.neutral.hover)),
+                    ("pressed", base.blend(theme.neutral.pressed)),
+                ] {
+                    for (token, foreground) in [
+                        ("text_1", theme.neutral.text_1),
+                        ("text_2", theme.neutral.text_2),
+                        ("text_3", theme.neutral.text_3),
+                        ("placeholder", theme.neutral.placeholder),
+                    ] {
+                        let text = luminance(background.blend(foreground));
+                        let background = luminance(background);
+                        let contrast =
+                            (text.max(background) + 0.05) / (text.min(background) + 0.05);
+                        assert!(
+                            contrast >= 4.5,
+                            "{name} {surface} {state} {token}: {contrast}"
+                        );
+                    }
+                }
+            }
+        }
+    }
+
     #[test]
     fn filled_button_normal_and_hover_text_meet_wcag_for_semantic_families() {
-        fn luminance(color: Hsla) -> f64 {
-            let color: Rgba = color.into();
-            [color.r, color.g, color.b]
-                .into_iter()
-                .zip([0.2126, 0.7152, 0.0722])
-                .map(|(channel, weight)| {
-                    let channel = f64::from(channel);
-                    weight
-                        * if channel <= 0.04045 {
-                            channel / 12.92
-                        } else {
-                            ((channel + 0.055) / 1.055).powf(2.4)
-                        }
-                })
-                .sum()
-        }
-
         for (name, theme) in [("light", Theme::light()), ("dark", Theme::dark())] {
             for variant in [
                 ButtonVariant::Primary,

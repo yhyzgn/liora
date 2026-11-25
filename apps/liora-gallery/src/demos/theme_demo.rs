@@ -76,7 +76,7 @@ impl Render for ThemeDemo {
                                     .child(Button::new("Danger").danger())
                                     .child(Button::new("Disabled").primary().disabled(true)),
                             )
-                            .child(surface_sample()),
+                            .child(surface_sample(theme.neutral.text_3)),
                     ),
                 )),
         )
@@ -99,27 +99,27 @@ fn color_row(
 }
 
 fn color_chip(label: &'static str, color: gpui::Hsla) -> impl IntoElement {
-    div()
-        .w(px(112.0))
-        .h(px(44.0))
-        .rounded_lg()
-        .border_1()
-        .border_color(color)
-        .bg(color)
-        .flex()
-        .items_center()
-        .justify_center()
+    Space::new()
+        .vertical()
+        .gap_sm()
         .child(Text::new(label).size(px(12.0)))
+        .child(
+            div()
+                .w(px(112.0))
+                .h(px(44.0))
+                .rounded_lg()
+                .border_1()
+                .border_color(color)
+                .bg(color),
+        )
 }
 
-fn surface_sample() -> impl IntoElement {
+fn surface_sample(tertiary: gpui::Hsla) -> impl IntoElement {
     div().rounded_lg().border_1().p_4().child(
         Space::new()
             .vertical()
             .gap_sm()
             .child(Text::new("Themed surface").bold())
-            .child(Text::new(
-                "Hover and selected backgrounds should stay readable in both light and dark modes.",
-            )),
+            .child(Text::new("Readable tertiary text on the themed surface.").text_color(tertiary)),
     )
 }

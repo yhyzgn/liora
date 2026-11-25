@@ -27,6 +27,13 @@ Liora 的主题系统提供 `System`、`Light`、`Dark` 三种模式。默认推
 - 遮罩：`theme.neutral.overlay`、`theme.neutral.mask`
 - 彩色面上的文本：`theme.neutral.inverted`
 
+### 默认中性文本对比度
+
+默认 Light / Dark 的 `text_1`、`text_2`、`text_3` 和 `placeholder`，在 body / card / modal / popover 表面及其 neutral hover / pressed 状态上，按透明度合成后的普通文本对比度至少为 4.5:1。占位符仍是需要可读的文本，不沿用豁免于该阈值的 disabled 颜色。自定义主题、额外叠层、彩色表面与完整无障碍符合性需要单独验证。
+
+上方 Theme live 示例展示三级文本；色块标签放在中性表面而不是颜色内部。实际输入占位符可在 Input 的原生示例中查看。
+
+
 ## 暗色模式下的 subtle token
 
 `primary.light_9` / `light_8` / `light_7` 在浅色模式下是偏白的色彩 tint；在暗色模式下则是低透明度的语义色 overlay。这样 Table hover、Picker selected chip、Upload drag hover 等区域不会在深色背景上变成刺眼的浅色块。

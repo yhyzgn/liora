@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Improve default light/dark tertiary and placeholder contrast across neutral surfaces and hover/pressed states, including alpha compositing. Preserve disabled colors and avoid runtime work; share readable Theme samples and keep color-swatch labels off saturated fills.
 - Handle Drawer Escape from retained trigger or underlying drawer focus through the app-wide stack policy; honor protected top drawers without dismissing lower ones. Install bindings once, including core-only hosts, and preserve stale-close identity guards without moving focus or adding a focus trap.
 
 - Share the retained native spring interaction between Gallery Spinner and Docs, with retarget and remove/restore controls, stable animation identity, and a compile-checked example. Keep reduced-motion preference host-owned; do not add SDK motion policy or replace existing duration effects.

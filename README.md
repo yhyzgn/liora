@@ -547,6 +547,8 @@ let large = ButtonSize::Large;
 let surface = light.neutral.card;
 ```
 
+Default light/dark `text_1`, `text_2`, `text_3`, and `placeholder` meet 4.5:1 normal-text contrast after alpha compositing over body/card/modal/popover and their neutral hover/pressed states. Disabled colors are unchanged; custom themes, extra overlays, saturated backgrounds, and full accessibility compliance need separate verification. Gallery/Docs share the Theme sample; real placeholders appear in the Input examples.
+
 ### `liora-components`
 
 Reusable native controls. Most stateless components can be built inline:

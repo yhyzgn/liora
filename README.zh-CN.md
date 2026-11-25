@@ -542,6 +542,8 @@ let large = ButtonSize::Large;
 let surface = light.neutral.card;
 ```
 
+默认浅色/深色的 `text_1`、`text_2`、`text_3` 和 `placeholder`，在 body/card/modal/popover 及其 neutral hover/pressed 表面按透明度合成后，普通文本对比度至少为 4.5:1。禁用态颜色不变；自定义主题、额外叠层、彩色背景及完整无障碍符合性需另行验证。Gallery/Docs 共用 Theme 示例，真实占位符见 Input 示例。
+
 ### `liora-components`
 
 可复用原生控件。大多数无状态组件可以 inline 构造：
