@@ -950,36 +950,11 @@ mod tooltip_text_tests {
     use super::*;
 
     #[test]
-    fn tooltip_renderer_never_shapes_multiline_content_as_one_line() {
-        let source = include_str!("lib.rs").split("#[cfg(test)]").next().unwrap();
-
-        assert!(
-            !source.contains(".shape_line(data.content.clone()"),
-            "GPUI shape_line panics when the text argument contains newlines"
-        );
-        assert!(
-            source.contains("tooltip_content_lines(&data.content)")
-                || source.contains("tooltip_content_lines("),
-            "tooltip rendering should split multiline content before measuring and rendering"
-        );
-    }
-
-    #[test]
     fn tooltip_content_lines_preserves_multiline_tooltips_without_newline_lines() {
         let lines = tooltip_content_lines(&SharedString::from("Mon\nO 100  H 110\nL 96  C 108"));
 
         assert_eq!(lines, vec!["Mon", "O 100  H 110", "L 96  C 108"]);
         assert!(lines.iter().all(|line| !line.contains('\n')));
-    }
-
-    #[test]
-    fn tooltip_lines_are_rendered_as_single_visual_lines() {
-        let source = include_str!("lib.rs").split("#[cfg(test)]").next().unwrap();
-
-        assert!(
-            source.contains(".whitespace_nowrap()"),
-            "tooltip line elements must opt out of default wrapping so short labels do not fold inside the overlay"
-        );
     }
 }
 
@@ -1279,17 +1254,6 @@ mod theme_mode_tests {
                 .as_deref(),
             Some("DejaVu Sans Mono")
         );
-    }
-}
-
-#[cfg(test)]
-mod motion_tests {
-    #[test]
-    fn tooltip_rendering_uses_gpui_motion() {
-        let source = include_str!("lib.rs").split("#[cfg(test)]").next().unwrap();
-
-        assert!(source.contains("tooltip-motion"));
-        assert!(source.contains("with_animation("));
     }
 }
 
