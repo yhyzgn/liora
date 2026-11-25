@@ -11,6 +11,8 @@ use liora_packager::{
     render_generate_rpm_config_for, supplemental_formats, validate_app_packaging_layout,
 };
 
+mod package_manifest;
+
 fn main() {
     if let Err(error) = run() {
         eprintln!("error: {error}");
@@ -939,6 +941,7 @@ fn package_formats(command: PackageCommand) -> Result<(), String> {
     }
 
     let mut manifest = PackageManifest::default();
+    let mut replaced_dirs = Vec::new();
 
     for app in command.apps {
         let metadata = app.metadata();
@@ -1102,11 +1105,12 @@ fn package_formats(command: PackageCommand) -> Result<(), String> {
                 artifact.signed = signed_rpm_path.as_deref() == Some(artifact.path.as_path());
             }
             manifest.extend(artifacts);
+            replaced_dirs.push(out_dir);
         }
     }
 
     if !command.dry_run {
-        write_manifest_outputs(&root, &manifest)?;
+        write_manifest_outputs(&root, manifest, &replaced_dirs)?;
     }
 
     Ok(())
@@ -1454,8 +1458,10 @@ fn git_short_sha(root: &Path) -> Option<String> {
 
 fn write_manifest_outputs(
     root: &std::path::Path,
-    manifest: &PackageManifest,
+    mut manifest: PackageManifest,
+    replaced_dirs: &[PathBuf],
 ) -> Result<(), String> {
+    package_manifest::merge_existing(root, &mut manifest, replaced_dirs)?;
     let package_dir = root.join("target/packages");
     fs::create_dir_all(&package_dir)
         .map_err(|error| format!("failed to create {}: {error}", package_dir.display()))?;
@@ -1782,6 +1788,151 @@ fn print_help() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn summaries_keep_both_font_variants() {
+        let root = env::temp_dir().join(format!("liora-font-summaries-{}", std::process::id()));
+        let app = PackageApp::Gallery.metadata();
+        let mut generated = Vec::new();
+        for variant in [FontVariant::WithoutFonts, FontVariant::WithFonts] {
+            let dir = package_out_dir_for(&root, &app, Platform::Linux, variant);
+            fs::create_dir_all(&dir).unwrap();
+            fs::write(dir.join("gallery.deb"), variant.as_str()).unwrap();
+            let artifacts = collect_package_artifacts(
+                &app.package,
+                "1.2.3",
+                Platform::Linux,
+                "x86_64-unknown-linux-gnu",
+                Some("source123"),
+                &dir,
+                &[PackageFormat::Deb],
+            )
+            .unwrap();
+            let manifest = PackageManifest { artifacts };
+            generated.extend(
+                manifest
+                    .artifacts
+                    .iter()
+                    .map(|artifact| (artifact.path.clone(), artifact.checksum.hex.clone())),
+            );
+            write_manifest_outputs(&root, manifest, &[dir]).unwrap();
+        }
+        let summary = root.join("target/packages");
+        let json = fs::read_to_string(summary.join("package-manifest.json")).unwrap();
+        let checksums = fs::read_to_string(summary.join("checksums.txt")).unwrap();
+        let notes = fs::read_to_string(summary.join("release-notes.md")).unwrap();
+        let records: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert_eq!(
+            records["artifacts"].as_array().unwrap().len(),
+            generated.len()
+        );
+        for (path, checksum) in &generated {
+            assert!(
+                json.contains(checksum),
+                "variant missing from manifest: {}",
+                path.display()
+            );
+            assert!(checksums.contains(&format!("{checksum}  {}\n", path.display())));
+            assert!(
+                notes.contains(checksum),
+                "variant missing from release notes"
+            );
+        }
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn summary_rebuild_retires_selected_scope_and_rejects_changed_siblings() {
+        let root = env::temp_dir().join(format!("liora-summary-rebuild-{}", std::process::id()));
+        let gallery = PackageApp::Gallery.metadata();
+        let docs = PackageApp::Docs.metadata();
+        let selected =
+            package_out_dir_for(&root, &gallery, Platform::Linux, FontVariant::WithoutFonts);
+        let sibling = package_out_dir_for(&root, &gallery, Platform::Linux, FontVariant::WithFonts);
+        let other_app =
+            package_out_dir_for(&root, &docs, Platform::Linux, FontVariant::WithoutFonts);
+        let mut initial = PackageManifest::default();
+        for (app, dir, signed) in [
+            (&gallery, &selected, false),
+            (&gallery, &sibling, true),
+            (&docs, &other_app, false),
+        ] {
+            fs::create_dir_all(dir).unwrap();
+            fs::write(dir.join("original.rpm"), dir.to_str().unwrap()).unwrap();
+            let mut artifacts = collect_package_artifacts(
+                &app.package,
+                "1.2.3",
+                Platform::Linux,
+                "x86_64-unknown-linux-gnu",
+                Some("original-source"),
+                dir,
+                &[PackageFormat::Rpm],
+            )
+            .unwrap();
+            artifacts[0].signed = signed;
+            initial.extend(artifacts);
+        }
+        write_manifest_outputs(&root, initial, &[]).unwrap();
+        prepare_package_output(&selected, false).unwrap();
+        fs::write(selected.join("replacement.deb"), "replacement package").unwrap();
+        let replacement = PackageManifest {
+            artifacts: collect_package_artifacts(
+                &gallery.package,
+                "2.0.0",
+                Platform::Linux,
+                "x86_64-unknown-linux-gnu",
+                Some("replacement-source"),
+                &selected,
+                &[PackageFormat::Deb],
+            )
+            .unwrap(),
+        };
+        write_manifest_outputs(&root, replacement, std::slice::from_ref(&selected)).unwrap();
+        let summary = root.join("target/packages");
+        let manifest_path = summary.join("package-manifest.json");
+        let json: serde_json::Value =
+            serde_json::from_slice(&fs::read(&manifest_path).unwrap()).unwrap();
+        let artifacts = json["artifacts"].as_array().unwrap();
+        assert_eq!(artifacts.len(), 3);
+        assert!(!artifacts.iter().any(|artifact| artifact["path"] == selected.join("original.rpm").to_str().unwrap()));
+        let retained = artifacts
+            .iter()
+            .find(|artifact| artifact["path"] == sibling.join("original.rpm").to_str().unwrap())
+            .unwrap();
+        assert_eq!(retained["signed"], true);
+        assert_eq!(retained["version"], "1.2.3");
+        assert_eq!(retained["gitSha"], "original-source");
+        assert!(
+            artifacts
+                .iter()
+                .any(|artifact| artifact["app"] == docs.package)
+        );
+
+        prepare_package_output(&selected, false).unwrap();
+        write_manifest_outputs(&root, PackageManifest::default(), &[selected]).unwrap();
+        fs::remove_file(other_app.join("original.rpm")).unwrap();
+        write_manifest_outputs(&root, PackageManifest::default(), &[]).unwrap();
+        let json: serde_json::Value =
+            serde_json::from_slice(&fs::read(&manifest_path).unwrap()).unwrap();
+        assert_eq!(json["artifacts"].as_array().unwrap().len(), 1);
+        assert_eq!(
+            json["artifacts"][0]["path"],
+            sibling.join("original.rpm").to_str().unwrap()
+        );
+
+        let files = ["package-manifest.json", "checksums.txt", "release-notes.md"];
+        let before: Vec<_> = files
+            .iter()
+            .map(|name| fs::read(summary.join(name)).unwrap())
+            .collect();
+        fs::write(sibling.join("original.rpm"), "changed package bytes").unwrap();
+        let error = write_manifest_outputs(&root, PackageManifest::default(), &[]).unwrap_err();
+        assert!(error.contains("changed since packaging"), "{error}");
+        for (name, bytes) in files.iter().zip(before) {
+            assert_eq!(fs::read(summary.join(name)).unwrap(), bytes);
+        }
+        fs::remove_dir_all(root).unwrap();
+    }
 
     #[test]
     fn package_output_reset_only_clears_selected_app_and_variant() {

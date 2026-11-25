@@ -1883,8 +1883,8 @@ Repository-owned packaging readiness is implemented through the published `liora
 cargo run -p xtask -- package validate
 cargo run -p xtask -- package release-readiness
 cargo run -p xtask -- package build --all-apps --font-variant without-fonts
-cargo run -p xtask -- package build --all-apps --font-variant with-fonts
 cargo run -p xtask -- package ci --app gallery --format platform-defaults --skip-build --font-variant without-fonts
+cargo run -p xtask -- package build --all-apps --font-variant with-fonts
 cargo run -p xtask -- package ci --app gallery --format platform-defaults --skip-build --font-variant with-fonts
 cargo run -p xtask -- package smoke --app gallery --format platform-defaults --font-variant without-fonts
 cargo run -p xtask -- package install-smoke --app gallery --format platform-defaults --dry-run --font-variant without-fonts
@@ -1899,6 +1899,8 @@ Font variants:
 | `with-fonts` | Builds app with `--features embedded-fonts` | Includes app `assets/fonts` as external resources | You want bundled MiSans resources/fallback for Gallery/Docs typography |
 
 `--font-variant` defaults to `without-fonts`. CI publishes both variants and names release assets with `-without-fonts` or `-with-fonts` suffixes.
+
+Build and package each font variant together: `--skip-build` reuses the current release executable, not a variant-specific binary cache. Root `target/packages/` manifest/checksum/release-note summaries retain matching, existing sibling app/platform/font-variant artifacts and replace only selected directories. Retained records keep their original build provenance and expected signing state; corrupt metadata or changed retained bytes fail packaging rather than being silently accepted. These summaries are a local inventory, not independent signature verification or a single-release certification.
 
 Supported release artifacts include:
 

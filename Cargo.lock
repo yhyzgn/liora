@@ -8856,6 +8856,7 @@ name = "xtask"
 version = "0.6.1"
 dependencies = [
  "liora-packager",
+ "serde_json",
 ]
 
 [[package]]

@@ -153,10 +153,12 @@ liora-<preview|release>-binaries-<platform>
 
 ### 6. Build installer/package artifacts
 
-After raw binaries are built, Gallery package generation reuses the Gallery release executable via `--skip-build`:
+After raw binaries are built, build each Gallery font variant immediately before packaging that variant. `--skip-build` reuses the current release executable; it does not select or validate its embedded-font features:
 
 ```bash
+cargo run -p xtask -- package build --app gallery --font-variant without-fonts
 cargo run -p xtask -- package ci --app gallery --format platform-defaults --skip-build --font-variant without-fonts
+cargo run -p xtask -- package build --app gallery --font-variant with-fonts
 cargo run -p xtask -- package ci --app gallery --format platform-defaults --skip-build --font-variant with-fonts
 ```
 
@@ -167,6 +169,8 @@ liora-<preview|release>-gallery-packages-<platform>
 ```
 
 The Actions package artifact bundle includes generated backend TOML files and package manifest/checksum/release-note files under `target/packages/`; the public GitHub Release uploads distributable binaries/installers/archives, `SHA256SUMS.txt`, and the RPM publisher public key/fingerprint. Public asset names include `without-fonts` or `with-fonts`: default `without-fonts` assets are smaller and do not bundle app font files, while `with-fonts` assets include MiSans resources or embedded fallback where applicable. The manifest records `version`, `platform`, `targetTriple`, optional `gitSha`, format, path, checksum, and expected signing state.
+
+The root manifest, checksums and generated notes retain recorded sibling app/platform/font-variant outputs instead of losing the first variant when the second command runs. Rebuilding one selected directory replaces all of its prior entries, even when no artifacts are found. Retained files must still match their recorded SHA-256 and keep their original version, target, source commit and expected signing state; missing files are omitted. Invalid metadata or changed/non-regular retained files fail before these summaries are rewritten. This is a local output inventory, not a signature-verification result or proof that all entries belong to the current release candidate.
 
 Linux `.deb` and `.rpm` configs include explicit runtime dependency metadata for GTK3, Ayatana/AppIndicator, X11/Wayland, xkbcommon, fontconfig/freetype, Vulkan, ALSA, and xdg desktop integration.
 

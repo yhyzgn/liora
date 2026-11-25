@@ -7,6 +7,8 @@ The Gallery and Docs packages remain pure Rust + GPUI native applications. These
 
 Real packaging resets `target/packages/<app>/<platform>/<font-variant>/` before running the package backends, so older generated artifacts cannot enter the current manifest. This replaces all prior formats in that selected directory; sibling app/platform/font-variant directories are preserved. Dry runs do not reset or create package output directories.
 
+The root `target/packages/package-manifest.json`, `checksums.txt`, and `release-notes.md` summarize recorded outputs across app/platform/font-variant directories. A successful package command replaces entries for its selected directories, including empty results, and retains other existing files only after their SHA-256 still matches. Retained entries keep their original version, target, source commit and expected signing state; they are not relabeled as the current build. Missing files are removed from the inventory. A malformed manifest or changed/non-regular retained artifact fails the command before rewriting these summaries. This inventory does not independently verify package signatures or certify all entries as one release candidate.
+
 ## Icon set
 
 The icon set is generated from deterministic SVG sources in `packaging/icons/`:

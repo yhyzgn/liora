@@ -9,3 +9,4 @@ publish = false
 
 [dependencies]
 liora-packager = { path = "../crates/liora-packager" }
+serde_json.workspace = true

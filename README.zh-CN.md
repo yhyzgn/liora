@@ -1875,12 +1875,14 @@ Liora 避免为同一类功能提供重复控件：
 cargo run -p xtask -- package validate
 cargo run -p xtask -- package release-readiness
 cargo run -p xtask -- package build --all-apps --font-variant without-fonts
-cargo run -p xtask -- package build --all-apps --font-variant with-fonts
 cargo run -p xtask -- package ci --app gallery --format platform-defaults --skip-build --font-variant without-fonts
+cargo run -p xtask -- package build --all-apps --font-variant with-fonts
 cargo run -p xtask -- package ci --app gallery --format platform-defaults --skip-build --font-variant with-fonts
 cargo run -p xtask -- package smoke --app gallery --format platform-defaults --font-variant without-fonts
 cargo run -p xtask -- package install-smoke --app gallery --format platform-defaults --dry-run --font-variant without-fonts
 ```
+
+每种字体变体应紧接着构建、打包：`--skip-build` 复用当前 release 可执行文件，不会从独立变体缓存选择或校验嵌入字体特性。`target/packages/` 根目录的 manifest、checksums 和 release notes 会替换所选 app/platform/font-variant 目录的记录，保留其他仍存在且 SHA-256 匹配的产物。保留记录维持原有版本、目标、源码提交和预期签名状态；元数据损坏或保留产物字节变化会使打包失败，不会静默接受。这是本地产物清单，不代表已独立验签或所有条目属于同一发行版本。
 
 当前发布产物覆盖：
 
