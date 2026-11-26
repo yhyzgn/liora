@@ -11,7 +11,7 @@ use liora_components::{
     CodeEditor, CodeEditorConfig, CodeHighlighter, CodeLanguage, CodeTheme, Container, Dropdown,
     DropdownButton, DropdownButtonItem, Flex, Form, FormItem, Grid, GridItem, HorizontalList,
     Image, Input, InputNumber, InputNumberControlsPosition, Link, Loading, NavigationMenu,
-    NavigationMenuMode, NotificationType, Paragraph, Popconfirm, Popover, PortalLayer, Preview,
+    NavigationMenuMode, Paragraph, Popconfirm, Popover, PortalLayer, Preview,
     Progress, ProgressStatus, QrCode, QrEcLevel, QrFinderStyle, QrGradientDirection, QrModuleStyle,
     Radio, RadioGroup, RadioOptionStyle, Rate, Result as DocResult, ResultStatus, Segmented,
     SegmentedOption, Select, SelectableTextGroup, Shell, Sidebar, Skeleton, SkeletonItem,
@@ -19,7 +19,7 @@ use liora_components::{
     TimerFormat, TimerUnit, Title, TitleBar, TitleBarContentAlign, Tooltip, Tour, TourPlacement,
     TourStep, Transfer, TransferItem, Tree, TreeNode, TreeSelect, TreeSelectNode, Upload,
     UploadFile, UploadStatus, VirtualizedList, VirtualizedTable, VirtualizedTree, Watermark,
-    WindowControlsPosition, WindowFrameMode, frame_mode_switch_row, show_notification, toast_error,
+    WindowControlsPosition, WindowFrameMode, frame_mode_switch_row, toast_error,
     toast_info, toast_success, toast_warning,
 };
 use liora_core::{
@@ -49,6 +49,9 @@ mod tooltip_basic_example;
 
 #[path = "../content/snippets/carousel/autoplay.rs"]
 mod carousel_autoplay_example;
+
+#[path = "../content/snippets/notification/types.rs"]
+mod notification_types_example;
 
 const INTRO_DOC: &str = include_str!("../content/pages/overview.md");
 const QUICK_START_DOC: &str = include_str!("../content/pages/quick_start.md");
@@ -10306,48 +10309,7 @@ fn docs_message_box_manual_close() -> impl IntoElement {
 }
 
 fn docs_notification_types() -> impl IntoElement {
-    Space::new()
-        .wrap()
-        .gap_md()
-        .child(
-            Button::new("Success Notification")
-                .primary()
-                .on_click(|_, _, cx| {
-                    show_notification(
-                        "Success",
-                        Some("This is a success description".into()),
-                        NotificationType::Success,
-                        cx,
-                    );
-                }),
-        )
-        .child(Button::new("Info Notification").on_click(|_, _, cx| {
-            show_notification(
-                "Notification Title",
-                Some("This is the content".into()),
-                NotificationType::Info,
-                cx,
-            );
-        }))
-        .child(
-            Button::new("Warning Notification")
-                .warning()
-                .on_click(|_, _, cx| {
-                    show_notification("Warning", None, NotificationType::Warning, cx);
-                }),
-        )
-        .child(
-            Button::new("Error Notification")
-                .danger()
-                .on_click(|_, _, cx| {
-                    show_notification(
-                        "Error",
-                        Some("Detailed error message goes here".into()),
-                        NotificationType::Error,
-                        cx,
-                    );
-                }),
-        )
+    notification_types_example::notification_types()
 }
 
 fn docs_upload_basic() -> Upload {

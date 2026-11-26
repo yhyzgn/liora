@@ -46,4 +46,9 @@ pub fn notification_types() -> impl IntoElement {
                     );
                 }),
         )
+        .child(Button::new("Stack notifications").on_click(|_, _, cx| {
+            show_notification("Queue alpha", None, NotificationType::Info, cx);
+            show_notification("Queue beta", None, NotificationType::Success, cx);
+            show_notification("Queue gamma", None, NotificationType::Warning, cx);
+        }))
 }

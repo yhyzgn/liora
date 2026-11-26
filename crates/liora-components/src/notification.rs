@@ -21,12 +21,13 @@
 
 use crate::motion::pop_in;
 use gpui::{
-    App, Context, Entity, Global, IntoElement, Render, SharedString, Window, div, prelude::*, px,
+    App, Context, Entity, Global, HoverListenerMode, IntoElement, Render, SharedString,
+    Subscription, Task, Window, WindowId, div, prelude::*, px,
 };
 use liora_core::{Config, push_passive_portal};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Options that control notification type behavior.
@@ -54,10 +55,19 @@ pub struct NotificationItem {
     pub msg_type: NotificationType,
 }
 
+struct ActiveNotification {
+    item: NotificationItem,
+    remaining: Duration,
+    started: Option<Instant>,
+    hovered_windows: Vec<WindowId>,
+    expiration: Option<Task<()>>,
+}
+
 /// Fluent native GPUI component for rendering Liora notification manager.
 pub struct NotificationManager {
-    notifications: Vec<NotificationItem>,
+    notifications: Vec<ActiveNotification>,
     next_id: usize,
+    window_closed: Option<Subscription>,
 }
 
 /// Fluent native GPUI component for rendering Liora notification manager global.
@@ -70,6 +80,7 @@ impl NotificationManager {
         Self {
             notifications: vec![],
             next_id: 0,
+            window_closed: None,
         }
     }
 
@@ -94,40 +105,98 @@ impl NotificationManager {
 
         manager.update(cx, |this, cx| {
             let id = this.next_id;
-            this.notifications.push(NotificationItem {
-                id,
-                title: title.clone(),
-                description: description.clone(),
-                msg_type,
+            this.notifications.push(ActiveNotification {
+                item: NotificationItem {
+                    id,
+                    title,
+                    description,
+                    msg_type,
+                },
+                remaining: Duration::from_secs(4),
+                started: None,
+                hovered_windows: Vec::new(),
+                expiration: None,
             });
             this.next_id += 1;
-
-            let async_cx = cx.to_async();
-            let executor = cx.background_executor().clone();
-            cx.foreground_executor()
-                .spawn(async move {
-                    executor.timer(Duration::from_secs(4)).await;
-                    let _ = async_cx.update(|cx| {
-                        if cx.has_global::<NotificationManagerGlobal>() {
-                            let manager = cx.global::<NotificationManagerGlobal>().0.clone();
-                            manager.update(cx, |this, cx| {
-                                this.notifications.retain(|n| n.id != id);
-                                cx.notify();
-                            });
+            this.resume(this.notifications.len() - 1, cx);
+            if this.window_closed.is_none() {
+                let owner = cx.entity().downgrade();
+                this.window_closed = Some(cx.on_window_closed(move |cx, closed| {
+                    let _ = owner.update(cx, |this, cx| {
+                        for index in 0..this.notifications.len() {
+                            let item = &mut this.notifications[index];
+                            let hovered = !item.hovered_windows.is_empty();
+                            item.hovered_windows.retain(|window| *window != closed);
+                            if hovered && item.hovered_windows.is_empty() {
+                                this.resume(index, cx);
+                            }
                         }
                     });
-                })
-                .detach();
+                }));
+            }
 
             cx.notify();
         });
+    }
+
+    fn resume(&mut self, index: usize, cx: &mut Context<Self>) {
+        let entry = &mut self.notifications[index];
+        let id = entry.item.id;
+        let timer = cx.background_executor().timer(entry.remaining);
+        entry.started = Some(cx.background_executor().now());
+        entry.expiration = Some(cx.spawn(async move |owner, cx| {
+            timer.await;
+            let _ = owner.update(cx, |this, cx| this.dismiss(id, cx));
+        }));
+    }
+
+    fn dismiss(&mut self, id: usize, cx: &mut Context<Self>) {
+        let Some(index) = self
+            .notifications
+            .iter()
+            .position(|entry| entry.item.id == id)
+        else {
+            return;
+        };
+        self.notifications.remove(index);
+        cx.notify();
+    }
+
+    fn set_hovered(&mut self, id: usize, window: WindowId, hovered: bool, cx: &mut Context<Self>) {
+        let Some(index) = self
+            .notifications
+            .iter()
+            .position(|entry| entry.item.id == id)
+        else {
+            return;
+        };
+        let entry = &mut self.notifications[index];
+        if hovered {
+            if entry.hovered_windows.contains(&window) {
+                return;
+            }
+            entry.hovered_windows.push(window);
+            if let Some(started) = entry.started.take() {
+                let elapsed = cx
+                    .background_executor()
+                    .now()
+                    .saturating_duration_since(started);
+                entry.remaining = entry.remaining.saturating_sub(elapsed);
+                entry.expiration = None;
+            }
+        } else {
+            let before = entry.hovered_windows.len();
+            entry.hovered_windows.retain(|id| *id != window);
+            if before > 0 && entry.hovered_windows.is_empty() {
+                self.resume(index, cx);
+            }
+        }
     }
 }
 
 impl Render for NotificationManager {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let items = self.notifications.clone();
-        if items.is_empty() {
+        if self.notifications.is_empty() {
             return div();
         }
 
@@ -141,7 +210,11 @@ impl Render for NotificationManager {
             .flex_col()
             .items_end()
             .gap_4()
-            .children(items.into_iter().map(|item| {
+            .children(self.notifications.iter().map(|entry| {
+                let item = &entry.item;
+                let id = item.id;
+                let hover_owner = cx.entity().downgrade();
+                let close_owner = hover_owner.clone();
                 let (color, icon) = match item.msg_type {
                     NotificationType::Info => (theme.primary.base, IconName::Info),
                     NotificationType::Success => (theme.success.base, IconName::Check),
@@ -152,6 +225,15 @@ impl Render for NotificationManager {
                 pop_in(
                     ("liora-notification", item.id),
                     div()
+                        .id(("notification-body", id))
+                        .debug_selector(move || format!("notification-{id}"))
+                        .hover_listener_mode(HoverListenerMode::InputModalityIndependent)
+                        .on_hover(move |hovered, window, cx| {
+                            let window = window.window_handle().window_id();
+                            let _ = hover_owner.update(cx, |this, cx| {
+                                this.set_hovered(id, window, *hovered, cx);
+                            });
+                        })
                         .w(px(320.0))
                         .bg(theme.neutral.card)
                         .border_1()
@@ -179,12 +261,22 @@ impl Render for NotificationManager {
                                     div()
                                         .font_weight(gpui::FontWeight::BOLD)
                                         .text_color(theme.neutral.text_1)
-                                        .child(item.title),
+                                        .child(item.title.clone()),
                                 )
-                                .when_some(item.description, |s, d| {
+                                .when_some(item.description.clone(), |s, d| {
                                     s.child(
                                         div().text_sm().text_color(theme.neutral.text_3).child(d),
                                     )
+                                }),
+                        )
+                        .child(
+                            crate::Button::new("Close notification")
+                                .id(("notification-close", id))
+                                .icon_only(IconName::X)
+                                .text()
+                                .small()
+                                .on_click(move |_, _, cx| {
+                                    let _ = close_owner.update(cx, |this, cx| this.dismiss(id, cx));
                                 }),
                         ),
                 )
@@ -193,46 +285,7 @@ impl Render for NotificationManager {
 }
 
 #[cfg(test)]
-mod tests {
-    #[test]
-    fn notifications_use_liora_motion() {
-        let source = include_str!("notification.rs")
-            .split("#[cfg(test)]")
-            .next()
-            .unwrap();
-
-        assert!(source.contains("pop_in("));
-        assert!(source.contains("liora-notification"));
-    }
-
-    #[test]
-    fn notification_surfaces_text_and_layout_use_theme_tokens() {
-        let production = include_str!("notification.rs")
-            .split("#[cfg(test)]")
-            .next()
-            .unwrap_or_default();
-
-        assert!(production.contains(".bg(theme.neutral.card)"));
-        assert!(production.contains(".border_color(theme.neutral.border)"));
-        assert!(
-            production.contains(".text_color(theme.neutral.text_2)"),
-            "notification root text should inherit a theme-aware body color"
-        );
-        assert!(
-            production.contains(".text_color(theme.neutral.text_1)"),
-            "notification title should use the primary theme-aware text color"
-        );
-        assert!(production.contains(".text_color(theme.neutral.text_3)"));
-        assert!(
-            production.contains(".flex_none()"),
-            "notification icon should not shrink into the text column"
-        );
-        assert!(
-            production.contains(".min_w(px(0.0))"),
-            "notification text column should be allowed to wrap inside fixed-width toasts"
-        );
-    }
-}
+mod interaction_tests;
 
 /// Configures whether notification is visible in the rendered component.
 pub fn show_notification(

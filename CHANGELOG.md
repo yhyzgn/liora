@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Bind Notification deadlines to their owning manager, cancel tasks on dismissal and preserve four seconds of unhovered display time across pointer hover and window closure. Add a native keyboard-accessible per-notification close action; share the executable semantic-type and stack example between Gallery and Docs.
 - Make Carousel autoplay advance natively with cancellable deadlines, whole-carousel hover pause and retained uncontrolled selection. Preserve controlled `active_index` feedback through `on_change`; share stable, weakly owned Gallery/Docs examples and the executable Docs autoplay source.
 - Reserve Carousel content space beside visible navigation arrows, preventing overlap with title-only slides and custom slots.
 
