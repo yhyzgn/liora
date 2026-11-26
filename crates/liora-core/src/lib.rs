@@ -230,10 +230,9 @@ pub fn stable_unique_id(
     window: &mut Window,
     cx: &mut App,
 ) -> gpui::SharedString {
-    let prefix = prefix.to_string();
     let key = gpui::ElementId::from(key.into());
     window
-        .use_keyed_state(key, cx, move |_, _| unique_id(&prefix))
+        .use_keyed_state(key, cx, move |_, _| unique_id(prefix))
         .read(cx)
         .clone()
 }

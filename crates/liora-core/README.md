@@ -25,6 +25,7 @@ fn setup(cx: &mut gpui::App) {
 - Linux/FreeBSD GTK startup hints resolve theme name and dark preference independently of configuration line order: `true` requests a dark variant; `false` does not force an explicitly dark theme back to light.
 - System appearance resolves from GPUI's explicit initialized snapshot, not whether an appearance callback happened. Pending Linux snapshots retain synchronous startup hints; initialized Light/Dark wins even before any observer was attached. Fixed modes remain fixed, and switching back to System uses the current initialized window snapshot.
 - Locale directory loads commit only after every file has been read and parsed; a failed runtime reload preserves translations, locale version, and the remembered resource directory. Successful loads replace each loaded locale, not individual keys, and retain locales absent from the directory.
+- `stable_unique_id` borrows its prefix during keyed-state initialization instead of copying it on every render; generated identities remain owned, with unchanged window/element namespace and consecutive-frame lifetimes.
 
 ## GPUI dependency note
 

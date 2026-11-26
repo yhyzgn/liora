@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Avoid copying the `stable_unique_id` prefix on every render. Borrow it only during state initialization; preserve existing keys, owned identities and window/element lifetimes across all component consumers.
 - Execute the displayed Loading snippets in Gallery and Docs, including a retained window-content overlay with pointer occlusion, explicit cancellation and a three-second entity-owned deadline. Replace Docs' inline stand-in for the full-screen example; document that `Loading::full_screen()` itself is visual, not keyboard-modal.
 - Dismiss pointer-opened HoverCard/Popover previews with unmodified, unconsumed Escape in their originating window without stealing editor focus. Keep the keystroke subscription owned by the popup; share keyboard-accessible two-trigger HoverCard examples between Gallery, Docs and displayed source, with native focus/window/modifier regression coverage.
 - Let hover-card departure reach the shared Popover backdrop on the first mouse move instead of swallowing it in hover-transition handlers. Preserve click-only Popover isolation and the pointer-safe trigger/card bridge; guard single-move dismissal in the existing native pointer smoke.
