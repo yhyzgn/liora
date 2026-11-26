@@ -133,6 +133,8 @@ mod candlestick_chart_dense;
 mod card_basic;
 #[path = "../../content/snippets/card/footer.rs"]
 mod card_footer;
+#[path = "../../content/snippets/card/layout.rs"]
+mod card_layout;
 #[path = "../../content/snippets/carousel/autoplay.rs"]
 mod carousel_autoplay;
 #[path = "../../content/snippets/carousel/basic.rs"]

@@ -24,6 +24,16 @@ fn setup(cx: &mut gpui::App) {
 - Depend on `liora-components` directly when you need fine-grained dependency control or are building another Liora crate.
 - Keep application UI pure Rust + native GPUI; Liora crates do not require WebView, Tauri, HTML, CSS, or DOM runtime paths.
 
+## Cards
+
+`Card::full_width()` fills its available width without overriding `.no_shrink()`, including in flex layouts. Optional titles take precedence over custom headers; body and footer retain theme-aware text and surface colors. `.hoverable()` changes the border and shadow without making the whole card an action; compose real buttons or links for actions.
+
+Card identity defaults to its constructor call site and survives redraws. Give cards built by the same factory or loop distinct stable `.id(...)` values so their interactive children remain independent. Rendering copies only the required theme colors and radius, not the complete theme.
+
+Gallery and Docs execute the same authored basic, footer-action and narrow scrolling examples. Footer messages report demo requests only; they do not save or undo data. Shared showcase wrappers use their static titles as identities, so sibling showcase titles must be distinct within their parent scope.
+
+`Text::document` and `SelectableTextGroup` own their shared native selection, independently of nested Card/container identities. Mouse release retains the selected word or dragged range; Select All and Copy span the owning document, not an unrelated document with the same local ID under a different parent. Nonselectable documents do not allocate a selection owner.
+
 ## Calendar
 
 `Calendar::show_adjacent_months(false)` preserves the six-week grid with same-height blank slots for adjacent dates. Those slots render no date or event content, have no hover feedback and cannot select; disabled adjacent dates remain blank too. Visible enabled dates invoke `on_select`, including when the surface redraws between pointer press and release; the host owns selected-date state and month navigation. Gallery and Docs execute the same authored event and range examples with date feedback.

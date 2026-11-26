@@ -114,6 +114,13 @@ mod calendar_events_example;
 #[path = "../content/snippets/calendar/range.rs"]
 mod calendar_range_example;
 
+#[path = "../content/snippets/card/basic.rs"]
+mod card_basic_example;
+#[path = "../content/snippets/card/footer.rs"]
+mod card_footer_example;
+#[path = "../content/snippets/card/layout.rs"]
+mod card_layout_example;
+
 const INTRO_DOC: &str = include_str!("../content/pages/overview.md");
 const QUICK_START_DOC: &str = include_str!("../content/pages/quick_start.md");
 const ARCHITECTURE_DOC: &str = include_str!("../content/pages/architecture.md");
@@ -1773,6 +1780,7 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "statistic/layout.rs" => Some(include_str!("../content/snippets/statistic/layout.rs")),
         "card/basic.rs" => Some(include_str!("../content/snippets/card/basic.rs")),
         "card/footer.rs" => Some(include_str!("../content/snippets/card/footer.rs")),
+        "card/layout.rs" => Some(include_str!("../content/snippets/card/layout.rs")),
         "empty/basic.rs" => Some(include_str!("../content/snippets/empty/basic.rs")),
         "empty/description.rs" => Some(include_str!("../content/snippets/empty/description.rs")),
         "empty/image.rs" => Some(include_str!("../content/snippets/empty/image.rs")),
@@ -5673,27 +5681,9 @@ impl Render for LiveDemoContent {
                 .max_render_points(180)
                 .into_any_element(),
             ]),
-            "CardBasic" => demo_row(vec![
-                Card::new("Standard card content goes here.")
-                    .title("Standard Card")
-                    .width_md()
-                    .into_any_element(),
-                Card::new("This card will change shadow on hover.")
-                    .title("Hoverable Card")
-                    .hoverable()
-                    .width_md()
-                    .into_any_element(),
-            ]),
-            "CardFooter" => Card::new("Card body with a custom footer.")
-                .title("Card with Footer")
-                .width_lg()
-                .footer(
-                    liora_components::Row::new()
-                        .justify(liora_components::RowJustify::End)
-                        .child(Button::new("Cancel").small())
-                        .child(Button::new("Save").primary().small()),
-                )
-                .into_any_element(),
+            "CardBasic" => card_basic_example::basic_cards().into_any_element(),
+            "CardFooter" => card_footer_example::card_with_footer().into_any_element(),
+            "CardLayout" => card_layout_example::card_layout().into_any_element(),
             "EmptyBasic" => Card::new(liora_components::Empty::new())
                 .width_md()
                 .into_any_element(),
@@ -14010,7 +14000,7 @@ mod tests {
             (
                 include_str!("../content/pages/card.md"),
                 "CardBasic",
-                &["card/basic.rs", "card/footer.rs"][..],
+                &["card/basic.rs", "card/footer.rs", "card/layout.rs"][..],
             ),
             (
                 include_str!("../content/pages/empty.md"),
