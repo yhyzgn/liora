@@ -2,7 +2,7 @@
 
 use liora_components::{Badge, BadgeType, Button, Space};
 
-fn badge_basic() -> Space {
+pub fn badge_basic() -> Space {
     Space::new()
         .wrap()
         .gap_lg()
@@ -17,8 +17,14 @@ fn badge_basic() -> Space {
                 .value("2")
                 .badge_type(BadgeType::Warning),
         )
-}
-
-fn main() {
-    let _ = badge_basic();
+        .child(
+            Badge::new(Button::new("Completed"))
+                .value("0")
+                .badge_type(BadgeType::Success),
+        )
+        .child(
+            Badge::new(Button::new("Info"))
+                .value("New")
+                .badge_type(BadgeType::Info),
+        )
 }

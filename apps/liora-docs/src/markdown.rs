@@ -5,7 +5,7 @@ use gpui::{
 };
 use liora_components::{
     Affix, Alert, AlertType, Anchor, AnchorTarget, AppWindowFrame,
-    Autocomplete, AutocompleteItem, Avatar, Backtop, Badge, BadgeType, Button, ButtonColors,
+    Autocomplete, AutocompleteItem, Avatar, Backtop, Button, ButtonColors,
     Calendar, CalendarDate, CalendarEvent, Card, Carousel, CarouselItem,
     Checkbox, CheckboxGroup, CheckboxOptionStyle, CodeBlock as DocCodeBlock, CodeDiagnostic,
     CodeEditor, CodeEditorConfig, CodeHighlighter, CodeLanguage, CodeTheme, Container, Dropdown,
@@ -76,6 +76,15 @@ mod affix_bottom_example;
 mod affix_container_example;
 #[path = "../content/snippets/affix/top.rs"]
 mod affix_top_example;
+
+#[path = "../content/snippets/badge/basic.rs"]
+mod badge_basic_example;
+#[path = "../content/snippets/badge/dot.rs"]
+mod badge_dot_example;
+#[path = "../content/snippets/badge/max.rs"]
+mod badge_max_example;
+#[path = "../content/snippets/badge/visibility.rs"]
+mod badge_visibility_example;
 
 #[path = "../content/snippets/anchor/basic.rs"]
 mod anchor_basic_example;
@@ -1543,6 +1552,7 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "badge/basic.rs" => Some(include_str!("../content/snippets/badge/basic.rs")),
         "badge/max.rs" => Some(include_str!("../content/snippets/badge/max.rs")),
         "badge/dot.rs" => Some(include_str!("../content/snippets/badge/dot.rs")),
+        "badge/visibility.rs" => Some(include_str!("../content/snippets/badge/visibility.rs")),
         "input_number/basic.rs" => Some(include_str!("../content/snippets/input_number/basic.rs")),
         "bar_chart/basic.rs" => Some(include_str!("../content/snippets/bar_chart/basic.rs")),
         "candlestick_chart/basic.rs" => Some(include_str!(
@@ -2384,6 +2394,7 @@ struct LiveDemoContent {
     scroll_handle: ScrollHandle,
     timer: Option<AnyView>,
     clocks: Option<(AnyView, Timer)>,
+    badge_hidden: bool,
 }
 
 impl LiveDemoContent {
@@ -3554,6 +3565,7 @@ impl LiveDemoContent {
             form_textareas,
             otp_inputs,
             scroll_handle,
+            badge_hidden: false,
         }
     }
 }
@@ -4336,35 +4348,17 @@ impl Render for LiveDemoContent {
                     .alt("AB")
                     .into_any_element(),
             ]),
-            "BadgeBasic" => demo_row(vec![
-                Badge::new(Button::new("Messages"))
-                    .value("5")
-                    .into_any_element(),
-                Badge::new(Button::new("Updates"))
-                    .value("10")
-                    .badge_type(BadgeType::Primary)
-                    .into_any_element(),
-                Badge::new(Button::new("Alerts"))
-                    .value("2")
-                    .badge_type(BadgeType::Warning)
-                    .into_any_element(),
-            ]),
-            "BadgeMax" => demo_row(vec![
-                Badge::new(Button::new("Messages"))
-                    .value("200")
-                    .max(99)
-                    .into_any_element(),
-                Badge::new(Button::new("Updates"))
-                    .value("50")
-                    .max(10)
-                    .into_any_element(),
-            ]),
-            "BadgeDot" => demo_row(vec![
-                Badge::new(Text::new("Query"))
-                    .is_dot(true)
-                    .into_any_element(),
-                Badge::new(Avatar::new()).is_dot(true).into_any_element(),
-            ]),
+            "BadgeBasic" => badge_basic_example::badge_basic().into_any_element(),
+            "BadgeMax" => badge_max_example::badge_max().into_any_element(),
+            "BadgeDot" => badge_dot_example::badge_dot().into_any_element(),
+            "BadgeVisibility" => badge_visibility_example::badge_visibility(
+                self.badge_hidden,
+                _cx.listener(|view, _, _, cx| {
+                    view.badge_hidden = !view.badge_hidden;
+                    cx.notify();
+                }),
+            )
+            .into_any_element(),
             "InputBasic" | "InputPassword" | "InputAffix" | "InputStates" => demo_stack(
                 self.inputs
                     .iter()

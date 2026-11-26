@@ -42,6 +42,10 @@ A Space keydown cannot arm a later, unpaired Enter release.
 
 `Flex::overflow_y_scroll()` contains wheel input, including at its scroll boundaries, so scrolling a nested viewport does not also move an ancestor list. Move the pointer outside that viewport to scroll the outer page.
 
+## Badges
+
+`Badge::value` accepts text or integer-count strings. `max(i32)` caps valid integers of any length at `max+`; noninteger text and uncapped labels are preserved. Zero remains visible. Dot mode skips count parsing, and `hidden(true)` keeps the child and its layout while skipping theme/count/marker work. Visible badges borrow the configured theme rather than cloning it. Gallery and Docs execute the same authored examples for all five semantic colors, counts/text, limits, dots and host-owned visibility toggling.
+
 ## Affixed content
 
 Retain `Affix` as an `Entity<Affix>` in its host view. Top/bottom offsets are relative to the window viewport, not the surrounding scroll container. Fixed/unfixed transitions schedule their functional follow-up frame even with decorative motion disabled; a stable Affix does not continuously request frames. Gallery and Docs execute the displayed 80px top / 20px bottom constructors. Docs also executes the complete container snippet with the retained entity as its real child.

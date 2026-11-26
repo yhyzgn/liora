@@ -64,7 +64,7 @@ impl Badge {
         }
     }
 
-    /// Returns the serialized value used by forms, configuration, or persistence.
+    /// Sets the displayed text or integer count.
     pub fn value(mut self, value: impl Into<SharedString>) -> Self {
         self.value = Some(value.into());
         self
@@ -76,7 +76,7 @@ impl Badge {
         self
     }
 
-    /// Returns whether dot is currently true for this value.
+    /// Displays a dot instead of the value when enabled.
     pub fn is_dot(mut self, is_dot: bool) -> Self {
         self.is_dot = is_dot;
         self
@@ -95,9 +95,36 @@ impl Badge {
     }
 }
 
+fn display_value(value: Option<SharedString>, max: Option<i32>) -> SharedString {
+    let value = value.unwrap_or_default();
+    let Some(max) = max else {
+        return value;
+    };
+    let exceeds_max = match value.parse::<i32>() {
+        Ok(number) => number > max,
+        Err(error) => {
+            matches!(error.kind(), std::num::IntErrorKind::PosOverflow)
+                && value
+                    .strip_prefix('+')
+                    .unwrap_or(&value)
+                    .bytes()
+                    .all(|digit| digit.is_ascii_digit())
+        }
+    };
+    if exceeds_max {
+        format!("{max}+").into()
+    } else {
+        value
+    }
+}
+
 impl RenderOnce for Badge {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let theme = cx.global::<Config>().theme.clone();
+        let base = div().relative().child(self.child);
+        if self.hidden {
+            return base;
+        }
+        let theme = &cx.global::<Config>().theme;
 
         let color = match self.badge_type {
             BadgeType::Danger => theme.danger.base,
@@ -115,24 +142,7 @@ impl RenderOnce for Badge {
                 .border_1()
                 .border_color(theme.neutral.body)
         } else {
-            let display_value = if let Some(val) = self.value {
-                // Try to parse as i32 if max is set
-                if let Some(max) = self.max {
-                    if let Ok(num) = val.parse::<i32>() {
-                        if num > max {
-                            format!("{}+", max).into()
-                        } else {
-                            val
-                        }
-                    } else {
-                        val
-                    }
-                } else {
-                    val
-                }
-            } else {
-                "".into()
-            };
+            let display_value = display_value(self.value, self.max);
 
             div()
                 .flex()
@@ -151,16 +161,13 @@ impl RenderOnce for Badge {
                 .child(display_value)
         };
 
-        div().relative().child(self.child).when(!self.hidden, |s| {
-            s.child(
-                div()
-                    .absolute()
-                    .top(px(-6.0))
-                    .right(px(-6.0))
-                    // We use a small negative offset to put it in the top-right corner
-                    .child(badge_content),
-            )
-        })
+        base.child(
+            div()
+                .absolute()
+                .top(px(-6.0))
+                .right(px(-6.0))
+                .child(badge_content),
+        )
     }
 }
 
@@ -168,5 +175,31 @@ impl IntoElement for Badge {
     type Element = Component<Self>;
     fn into_element(self) -> Self::Element {
         Component::new(self)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn numeric_cap_preserves_text_and_handles_large_counts() {
+        for (value, max, expected) in [
+            ("200", Some(99), "99+"),
+            ("99", Some(99), "99"),
+            ("+000100", Some(99), "99+"),
+            ("00099", Some(99), "00099"),
+            ("0", Some(99), "0"),
+            ("-50", Some(99), "-50"),
+            ("100", None, "100"),
+            ("New", Some(99), "New"),
+            ("999999999999x", Some(99), "999999999999x"),
+            ("-2147483649", Some(-1), "-2147483649"),
+            ("2147483648", Some(99), "99+"),
+            ("+4294967295", Some(99), "99+"),
+            ("340282366920938463463374607431768211455", Some(99), "99+"),
+        ] {
+            assert_eq!(display_value(Some(value.into()), max), expected, "{value}");
+        }
     }
 }
