@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Prevent Space keydown from arming a later, unpaired Enter release on Link. Keep native Enter/focus-generation handling and URL dispatch unchanged; cover the mixed-key sequence in the existing platform-input regression.
+
 - Make Anchor links keyboard reachable with retained native focus, forward/reverse Tab traversal, Enter-only release-time navigation and Link role/name metadata. Preserve painted-target lifetime checks; execute the authored basic/nested navigation constructors in Docs and share the nested constructor with Gallery.
 
 - Activate Link through GPUI's native click lifecycle instead of mouse-up alone, rejecting unmatched releases. Add retained keyboard focus, Tab/Shift+Tab traversal, Enter-only keyboard activation, a layout-neutral keyboard focus outline and native Link name/URL/disabled metadata. Share the executable Gallery/Docs keyboard example, including inert destinationless and disabled links.

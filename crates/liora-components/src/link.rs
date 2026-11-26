@@ -230,6 +230,12 @@ impl Link {
                 div = div
                     .track_focus(&focus)
                     .tab_index(0)
+                    .capture_key_down(|event, window, _| {
+                        // Keep Space from arming GPUI's shared Enter/Space click marker.
+                        if event.keystroke.key == "space" && !event.keystroke.modifiers.modified() {
+                            window.prevent_default();
+                        }
+                    })
                     .on_key_down(|event, window, cx| {
                         let modifiers = event.keystroke.modifiers;
                         if event.keystroke.key == "tab"
@@ -466,20 +472,27 @@ mod tests {
 
     #[test]
     fn space_modified_enter_and_unpaired_release_do_not_open_url() {
-        for key in ["space", "ctrl-enter", "alt-enter", "shift-enter", "enter"] {
+        for (down, up) in [
+            (Some("space"), "space"),
+            (Some("space"), "enter"),
+            (Some("ctrl-enter"), "ctrl-enter"),
+            (Some("alt-enter"), "alt-enter"),
+            (Some("shift-enter"), "shift-enter"),
+            (None, "enter"),
+        ] {
             assert_eq!(
                 click_link(Some("https://example.invalid/"), false, |window, _| {
                     window.update(|window, cx| {
                         window.focus_next(cx);
                         window.draw(cx).clear(cx);
                     });
-                    if key != "enter" {
-                        window.simulate_keystrokes(key);
+                    if let Some(down) = down {
+                        window.simulate_keystrokes(down);
                     }
-                    release_key(window, key);
+                    release_key(window, up);
                 }),
                 None,
-                "unexpected activation from {key}"
+                "unexpected activation from {down:?} -> {up}"
             );
         }
     }
