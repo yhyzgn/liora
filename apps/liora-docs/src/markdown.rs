@@ -6,7 +6,7 @@ use gpui::{
 use liora_components::{
     Affix, AffixPosition, Alert, AlertType, Anchor, AnchorLink, AnchorTarget, AppWindowFrame,
     Autocomplete, AutocompleteItem, Avatar, Backtop, Badge, BadgeType, Button, ButtonColors,
-    Calendar, CalendarDate, CalendarEvent, Card, Carousel, CarouselIndicatorPosition, CarouselItem,
+    Calendar, CalendarDate, CalendarEvent, Card, Carousel, CarouselItem,
     Checkbox, CheckboxGroup, CheckboxOptionStyle, CodeBlock as DocCodeBlock, CodeDiagnostic,
     CodeEditor, CodeEditorConfig, CodeHighlighter, CodeLanguage, CodeTheme, Container, Dropdown,
     DropdownButton, DropdownButtonItem, Flex, Form, FormItem, Grid, GridItem, HorizontalList,
@@ -46,6 +46,9 @@ use std::{
 
 #[path = "../content/snippets/tooltip/basic.rs"]
 mod tooltip_basic_example;
+
+#[path = "../content/snippets/carousel/autoplay.rs"]
+mod carousel_autoplay_example;
 
 const INTRO_DOC: &str = include_str!("../content/pages/overview.md");
 const QUICK_START_DOC: &str = include_str!("../content/pages/quick_start.md");
@@ -2289,6 +2292,7 @@ mod timer_count_up;
 struct LiveDemoContent {
     component: SharedString,
     gallery_demo: Option<AnyView>,
+    carousel_autoplay: Option<Entity<carousel_autoplay_example::AutoplayCarousel>>,
     autocompletes: Vec<Entity<Autocomplete>>,
     select_advanceds: Vec<Entity<Select>>,
     input_numbers: Vec<Entity<InputNumber>>,
@@ -2346,6 +2350,8 @@ struct LiveDemoContent {
 impl LiveDemoContent {
     fn new(component: SharedString, cx: &mut Context<Self>) -> Self {
         let gallery_demo = liora_gallery::demos::render_doc_demo(component.as_ref(), cx);
+        let carousel_autoplay = (component.as_ref() == "CarouselAutoplay")
+            .then(|| carousel_autoplay_example::autoplay_carousel(cx));
         let mut autocompletes = Vec::new();
         let mut select_advanceds = Vec::new();
         let mut input_numbers = Vec::new();
@@ -3457,6 +3463,7 @@ impl LiveDemoContent {
             }),
             component,
             gallery_demo,
+            carousel_autoplay,
             autocompletes,
             select_advanceds,
             input_numbers,
@@ -3764,7 +3771,9 @@ impl Render for LiveDemoContent {
             "CalendarEvents" => Card::new(docs_calendar_events()).no_shadow().into_any_element(),
             "CalendarRange" => Card::new(docs_calendar_range()).no_shadow().into_any_element(),
             "CarouselBasic" => Card::new(docs_carousel_basic()).no_shadow().into_any_element(),
-            "CarouselAutoplay" => Card::new(docs_carousel_autoplay()).no_shadow().into_any_element(),
+            "CarouselAutoplay" => self.carousel_autoplay.as_ref().cloned()
+                .map(|carousel| Card::new(carousel).no_shadow().into_any_element())
+                .unwrap_or_else(|| Paragraph::with_text("Carousel demo is not initialized.").into_any_element()),
             "CarouselCustom" => Card::new(docs_carousel_custom()).no_shadow().into_any_element(),
             "CodeBlockBasic" => Card::new(docs_code_block_basic()).no_shadow().into_any_element(),
             "CodeBlockLanguage" => Card::new(docs_code_block_language()).no_shadow().into_any_element(),
@@ -8539,19 +8548,8 @@ fn docs_carousel_basic() -> impl IntoElement {
             .description("Native chart primitives for desktop apps.")
             .accent(rgb(0x16a34a).into()),
     ])
+    .id("docs-carousel-basic")
     .height(px(240.0))
-}
-
-fn docs_carousel_autoplay() -> impl IntoElement {
-    Carousel::new(vec![
-        CarouselItem::new("Preview").accent(rgb(0x2563eb).into()),
-        CarouselItem::new("Release").accent(rgb(0x9333ea).into()),
-    ])
-    .autoplay(true)
-    .interval_ms(1800)
-    .pause_on_hover(true)
-    .indicator_position(CarouselIndicatorPosition::Outside)
-    .height(px(220.0))
 }
 
 fn docs_carousel_custom() -> impl IntoElement {
@@ -8572,6 +8570,7 @@ fn docs_carousel_custom() -> impl IntoElement {
                     .child("Composable slot"),
             ),
     ])
+    .id("docs-carousel-custom")
     .show_arrows(false)
     .hide_indicators()
 }

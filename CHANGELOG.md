@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Make Carousel autoplay advance natively with cancellable deadlines, whole-carousel hover pause and retained uncontrolled selection. Preserve controlled `active_index` feedback through `on_change`; share stable, weakly owned Gallery/Docs examples and the executable Docs autoplay source.
+- Reserve Carousel content space beside visible navigation arrows, preventing overlap with title-only slides and custom slots.
+
 - Maintain an explicitly pinned Liora GPUI source derivative of official Zed `f0d896f2c18a543335eb155f729d36b624695591`. Distinguish pending Linux appearance from initialized Light/Dark, cache window readiness with its color, subscribe before the initial portal read, and resolve System mode from that state rather than synthetic notification history. Preserve same-color and decoration callbacks, fixed modes, zero-window transitions and native backends; keep old experiment manifests inert to avoid Git package collisions.
 
 - Resolve Linux/FreeBSD GTK startup theme hints independently of configuration line order. Honor an explicit dark preference without letting a false preference override an explicitly dark theme name; retain fixed theme modes and live appearance observers.

@@ -28,12 +28,12 @@ fn items() -> Vec<CarouselItem> {
 
 impl Render for CarouselDemo {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let view = cx.entity().clone();
+        let view = cx.entity().downgrade();
         let basic_index = self.basic_index;
         let autoplay_index = self.autoplay_index;
         page(
             "Carousel 走马灯",
-            "轮播展示宣传卡片、功能亮点或图片内容，支持方向、指示器和自动播放配置。",
+            "轮播展示宣传卡片、功能亮点或图片内容，支持方向、指示器和自动播放。",
             Space::new()
                 .vertical()
                 .gap_lg()
@@ -42,12 +42,13 @@ impl Render for CarouselDemo {
                     "默认水平轮播，指示器位于内容内部。",
                     Card::new(
                         Carousel::new(items())
+                            .id("gallery-carousel-basic")
                             .active_index(basic_index)
                             .height(px(240.0))
                             .on_change({
                                 let view = view.clone();
                                 move |index, _, cx| {
-                                    view.update(cx, |demo, cx| {
+                                    let _ = view.update(cx, |demo, cx| {
                                         demo.basic_index = index;
                                         cx.notify();
                                     });
@@ -56,10 +57,11 @@ impl Render for CarouselDemo {
                     ),
                 ))
                 .child(section(
-                    "外置指示器与自动播放配置",
-                    "autoplay、interval 与 pause_on_hover 作为配置展示，后续可由上层定时状态驱动 active_index。",
+                    "外置指示器与自动播放",
+                    "组件每 1800ms 请求切换；示例保留 active_index 并接收 on_change，悬停时暂停，移开后恢复。",
                     Card::new(
                         Carousel::new(items())
+                            .id("gallery-carousel-autoplay")
                             .active_index(autoplay_index)
                             .autoplay(true)
                             .interval_ms(1800)
@@ -69,7 +71,7 @@ impl Render for CarouselDemo {
                             .on_change({
                                 let view = view.clone();
                                 move |index, _, cx| {
-                                    view.update(cx, |demo, cx| {
+                                    let _ = view.update(cx, |demo, cx| {
                                         demo.autoplay_index = index;
                                         cx.notify();
                                     });
@@ -96,7 +98,7 @@ impl Render for CarouselDemo {
                                     .text_color(rgb(0x9a3412).into())
                                     .child("Composable slot"),
                             ),
-                    ]).show_arrows(false).hide_indicators()),
+                    ]).id("gallery-carousel-custom").show_arrows(false).hide_indicators()),
                 )),
         )
     }

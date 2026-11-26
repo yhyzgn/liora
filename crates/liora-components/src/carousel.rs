@@ -20,13 +20,13 @@
 //! crate.
 
 use gpui::{
-    AnyElement, App, Hsla, IntoElement, MouseButton, Pixels, RenderOnce, SharedString,
-    ViewElement as Component, Window, div, prelude::*, px,
+    AnyElement, App, ElementId, HoverListenerMode, Hsla, IntoElement, MouseButton, Pixels,
+    RenderOnce, SharedString, Task, ViewElement as Component, Window, div, prelude::*, px,
 };
-use liora_core::Config;
+use liora_core::{Config, stable_unique_id};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
-use std::sync::Arc;
+use std::{cell::RefCell, panic::Location, rc::Rc, sync::Arc, time::Duration};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 /// Options that control carousel direction behavior.
@@ -88,10 +88,79 @@ impl CarouselItem {
     }
 }
 
+type OnChange = Arc<dyn Fn(usize, &mut Window, &mut App) + 'static>;
+
+#[derive(Clone, Copy)]
+enum Navigation {
+    Previous,
+    Next,
+    Index(usize),
+}
+
+#[derive(Default)]
+struct CarouselState {
+    index: usize,
+    controlled: bool,
+    count: usize,
+    hovered: bool,
+    interval: Option<Duration>,
+    wake: Option<Task<()>>,
+    on_change: Option<OnChange>,
+}
+
+impl CarouselState {
+    fn sync_wake(state: &Rc<RefCell<Self>>, interval: Option<Duration>, window: &Window, cx: &App) {
+        let mut value = state.borrow_mut();
+        if value.interval != interval {
+            value.interval = interval;
+            value.wake = None;
+        }
+        if let Some(interval) = interval
+            && value.wake.is_none()
+        {
+            let weak = Rc::downgrade(state);
+            let timer = cx.background_executor().timer(interval);
+            value.wake = Some(window.spawn(cx, async move |cx| {
+                timer.await;
+                let _ = cx.update(|window, cx| {
+                    if let Some(state) = weak.upgrade() {
+                        Self::navigate(&state, Navigation::Next, window, cx);
+                    }
+                });
+            }));
+        }
+    }
+
+    fn navigate(state: &RefCell<Self>, target: Navigation, window: &mut Window, cx: &mut App) {
+        let (index, refresh, callback) = {
+            let mut state = state.borrow_mut();
+            let index = match target {
+                Navigation::Previous if state.index == 0 => state.count - 1,
+                Navigation::Previous => state.index - 1,
+                Navigation::Next => (state.index + 1) % state.count,
+                Navigation::Index(index) => index,
+            };
+            let changed = !state.controlled && state.index != index;
+            if changed {
+                state.index = index;
+            }
+            let refresh = state.wake.take().is_some() || changed;
+            (index, refresh, state.on_change.clone())
+        };
+        if refresh {
+            window.refresh();
+        }
+        if let Some(callback) = callback {
+            callback(index, window, cx);
+        }
+    }
+}
+
 /// Fluent native GPUI component for rendering Liora carousel.
 pub struct Carousel {
+    id: ElementId,
     items: Vec<CarouselItem>,
-    active_index: usize,
+    active_index: Option<usize>,
     direction: CarouselDirection,
     indicator_position: CarouselIndicatorPosition,
     height: Pixels,
@@ -104,10 +173,12 @@ pub struct Carousel {
 
 impl Carousel {
     /// Creates `Carousel` that renders the supplied items collection.
+    #[track_caller]
     pub fn new(items: Vec<CarouselItem>) -> Self {
         Self {
+            id: Location::caller().into(),
             items,
-            active_index: 0,
+            active_index: None,
             direction: CarouselDirection::Horizontal,
             indicator_position: CarouselIndicatorPosition::Inside,
             height: px(220.0),
@@ -119,9 +190,15 @@ impl Carousel {
         }
     }
 
-    /// Sets the current active index state.
+    /// Sets a stable identity for carousels built at the same call site in the same parent.
+    pub fn id(mut self, id: impl Into<ElementId>) -> Self {
+        self.id = id.into();
+        self
+    }
+
+    /// Controls the displayed item. Navigation requests changes through `on_change`.
     pub fn active_index(mut self, index: usize) -> Self {
-        self.active_index = index;
+        self.active_index = Some(index);
         self
     }
     /// Selects the layout or animation direction.
@@ -160,9 +237,10 @@ impl Carousel {
         self.autoplay = enabled;
         self
     }
-    /// Sets the interval ms value used by the component.
+    /// Sets the autoplay interval, clamped to 250ms through the native scheduler's maximum.
     pub fn interval_ms(mut self, ms: u64) -> Self {
-        self.interval_ms = ms.max(250);
+        // Apple's dispatch_after converts the duration to signed 64-bit nanoseconds.
+        self.interval_ms = ms.clamp(250, (i64::MAX as u64) / 1_000_000);
         self
     }
     /// Configures whether arrows is visible in the rendered component.
@@ -184,16 +262,20 @@ impl Carousel {
     pub fn item_count(&self) -> usize {
         self.items.len()
     }
-    /// Returns the active carousel index after clamping it to available items.
+    /// Returns the clamped explicit index, or the initial zero index when uncontrolled.
+    ///
+    /// This builder helper does not read the mounted carousel's retained selection.
     pub fn resolved_active_index(&self) -> Option<usize> {
-        (!self.items.is_empty()).then(|| self.active_index.min(self.items.len() - 1))
+        (!self.items.is_empty()).then(|| self.active_index.unwrap_or(0).min(self.items.len() - 1))
     }
-    /// Returns the carousel index reached by moving one item forward.
+
+    /// Returns the next index derived from the builder props, not mounted selection.
     pub fn next_index(&self) -> Option<usize> {
         self.resolved_active_index()
             .map(|idx| (idx + 1) % self.items.len())
     }
-    /// Returns the carousel index reached by moving one item backward.
+
+    /// Returns the previous index derived from the builder props, not mounted selection.
     pub fn previous_index(&self) -> Option<usize> {
         self.resolved_active_index().map(|idx| {
             if idx == 0 {
@@ -206,23 +288,56 @@ impl Carousel {
 }
 
 impl RenderOnce for Carousel {
-    fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
-        let active_index = self.resolved_active_index();
+        let id = window.with_id(self.id, |window| {
+            stable_unique_id("carousel", "carousel", window, cx)
+        });
+        let state = window.with_global_id(id.clone().into(), |global_id, window| {
+            window.with_element_state(
+                global_id,
+                |previous: Option<Rc<RefCell<CarouselState>>>, _| {
+                    let state = previous.unwrap_or_default();
+                    (state.clone(), state)
+                },
+            )
+        });
         let count = self.items.len();
-        let previous_target = self.previous_index();
-        let next_target = self.next_index();
-        let on_change = self.on_change.clone();
+        let (index, hovered) = {
+            let mut state = state.borrow_mut();
+            if state.count != count {
+                state.wake = None;
+                state.count = count;
+            }
+            state.controlled = self.active_index.is_some();
+            state.index = self
+                .active_index
+                .unwrap_or(state.index)
+                .min(count.saturating_sub(1));
+            state.on_change = self.on_change;
+            (state.index, state.hovered)
+        };
+        let active_index = (count > 0).then_some(index);
+        let interval = (self.autoplay && count > 1 && !(self.pause_on_hover && hovered))
+            .then(|| Duration::from_millis(self.interval_ms));
+        CarouselState::sync_wake(&state, interval, window, cx);
+        let navigate = |target| {
+            let state = Rc::downgrade(&state);
+            move |_: &gpui::MouseDownEvent, window: &mut Window, cx: &mut App| {
+                if let Some(state) = state.upgrade() {
+                    CarouselState::navigate(&state, target, window, cx);
+                    cx.stop_propagation();
+                }
+            }
+        };
         let mut items = self.items;
-        let active_item =
-            active_index.and_then(|idx| (idx < items.len()).then(|| items.remove(idx)));
+        let active_item = active_index.map(|idx| items.swap_remove(idx));
         let accent = active_item
             .as_ref()
             .and_then(|item| item.accent)
             .unwrap_or(theme.primary.base);
         let empty = active_item.is_none();
         let mut frame = div()
-            .id(liora_core::unique_id("carousel"))
             .relative()
             .overflow_hidden()
             .rounded_lg()
@@ -252,6 +367,7 @@ impl RenderOnce for Carousel {
                     .justify_center()
                     .gap_3()
                     .p_6()
+                    .when(self.show_arrows && count > 1, |s| s.px_16())
                     .text_color(theme.neutral.text_1)
                     .when_some(item.content, |s, content| s.child(content))
                     .child(
@@ -301,32 +417,20 @@ impl RenderOnce for Carousel {
                     .child(Icon::new(icon).size(px(18.0)).color(theme.neutral.text_1))
             };
             frame = frame
-                .child(div().absolute().left(px(14.0)).top_1_2().child(
-                    arrow(IconName::ChevronLeft).when_some(
-                        previous_target.and_then(|target| {
-                            on_change.clone().map(|callback| (target, callback))
-                        }),
-                        |s, (target, callback)| {
-                            s.on_mouse_down(MouseButton::Left, move |_, window, cx| {
-                                callback(target, window, cx);
-                                cx.stop_propagation();
-                            })
-                        },
+                .child(
+                    div().absolute().left(px(14.0)).top_1_2().child(
+                        arrow(IconName::ChevronLeft)
+                            .debug_selector(|| "carousel-previous".into())
+                            .on_mouse_down(MouseButton::Left, navigate(Navigation::Previous)),
                     ),
-                ))
-                .child(div().absolute().right(px(14.0)).top_1_2().child(
-                    arrow(IconName::ChevronRight).when_some(
-                        next_target.and_then(|target| {
-                            on_change.clone().map(|callback| (target, callback))
-                        }),
-                        |s, (target, callback)| {
-                            s.on_mouse_down(MouseButton::Left, move |_, window, cx| {
-                                callback(target, window, cx);
-                                cx.stop_propagation();
-                            })
-                        },
+                )
+                .child(
+                    div().absolute().right(px(14.0)).top_1_2().child(
+                        arrow(IconName::ChevronRight)
+                            .debug_selector(|| "carousel-next".into())
+                            .on_mouse_down(MouseButton::Left, navigate(Navigation::Next)),
                     ),
-                ));
+                );
         }
 
         let make_dots = || {
@@ -337,7 +441,6 @@ impl RenderOnce for Carousel {
                 .gap_2()
                 .children((0..count).map(|idx| {
                     let active_dot = Some(idx) == active_index;
-                    let dot_target = idx;
                     div()
                         .w(if active_dot { px(22.0) } else { px(7.0) })
                         .h(px(7.0))
@@ -348,12 +451,8 @@ impl RenderOnce for Carousel {
                             theme.neutral.border
                         })
                         .cursor_pointer()
-                        .when_some(on_change.clone(), |s, callback| {
-                            s.on_mouse_down(MouseButton::Left, move |_, window, cx| {
-                                callback(dot_target, window, cx);
-                                cx.stop_propagation();
-                            })
-                        })
+                        .debug_selector(|| format!("carousel-dot-{idx}"))
+                        .on_mouse_down(MouseButton::Left, navigate(Navigation::Index(idx)))
                         .into_any_element()
                 }))
         };
@@ -367,7 +466,27 @@ impl RenderOnce for Carousel {
             format!("manual · {:?}", self.direction)
         };
 
-        let mut body = div().flex().flex_col().gap_2().child(frame);
+        let hover_state = Rc::downgrade(&state);
+        let mut body = div()
+            .id(id)
+            .hover_listener_mode(HoverListenerMode::InputModalityIndependent)
+            .on_hover(move |hovered, window, _| {
+                if let Some(state) = hover_state.upgrade() {
+                    let mut state = state.borrow_mut();
+                    state.hovered = *hovered;
+                    if self.autoplay && self.pause_on_hover {
+                        if *hovered {
+                            state.wake = None;
+                        } else {
+                            window.refresh();
+                        }
+                    }
+                }
+            })
+            .flex()
+            .flex_col()
+            .gap_2()
+            .child(frame);
         if !empty && self.indicator_position == CarouselIndicatorPosition::Outside {
             body = body.child(make_dots());
         }
@@ -391,6 +510,9 @@ impl IntoElement for Carousel {
 }
 
 #[cfg(test)]
+mod interaction_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use gpui::rgb;
@@ -401,21 +523,6 @@ mod tests {
             CarouselItem::new("B"),
             CarouselItem::new("C").accent(rgb(0x16a34a).into()),
         ]
-    }
-
-    #[test]
-    fn carousel_controls_wire_pointer_events_to_on_change() {
-        let source = include_str!("carousel.rs")
-            .split("#[cfg(test)]")
-            .next()
-            .unwrap();
-
-        assert!(source.contains(".on_mouse_down(MouseButton::Left"));
-        assert!(source.contains("on_change"));
-        assert!(source.contains("previous_target"));
-        assert!(source.contains("next_target"));
-        assert!(source.contains("dot_target"));
-        assert!(source.contains("cx.stop_propagation();"));
     }
 
     #[test]

@@ -32,6 +32,12 @@ fn setup(cx: &mut gpui::App) {
 
 `Dropdown::item(label, callback)` adds an executable menu item. Use `Dropdown::disabled_item(label)` for a non-executable item with no callback. Arrow/Home/End navigation skips it, and its native `MenuItem` node exposes the disabled state. Open menus focus the first enabled row on the next frame. A complete pointer click or Enter/Space press and release activates an enabled row once. Tab/Shift+Tab closes the menu and moves focus through the host’s normal tab order. This contract covers ordinary short menus; long-menu scrolling and revealing remain separate concerns.
 
+## Carousel
+
+`Carousel::autoplay(true)` schedules native slide changes without a host timer: 3000ms by default, with `interval_ms` clamped to 250–9,223,372,036,854ms for native scheduler compatibility. Hover pauses the whole carousel, including outside indicators; leaving starts a fresh interval. Without `.active_index(...)`, the component retains its own selection. Supplying that index makes selection controlled: handle `on_change`, retain the requested index and notify the host. Arrows, indicators and autoplay use that same callback. Give dynamically arranged instances distinct stable `.id(...)` values. Gallery and Docs retain their demo hosts; Docs displays the actual executable autoplay snippet.
+
+Visible navigation arrows reserve horizontal content space so they do not cover titles, descriptions or custom slots. Hidden arrows and single-item carousels retain the normal content padding.
+
 ## Images
 
 - Use `Image::embedded(include_bytes!("asset.png"))` for app-bundled artwork. The byte slice must be `'static`; decoded rasters are cached and shared with the preview overlay. Embedded images have no `ImageSource`, so `source()` returns `None` and the public `ImageSource::Url` / `File` variants remain unchanged.
