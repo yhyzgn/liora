@@ -76,8 +76,9 @@ impl Spinner {
 
 impl RenderOnce for Spinner {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let theme = cx.global::<Config>().theme.clone();
-        let color = self.color.unwrap_or(theme.primary.base);
+        let color = self
+            .color
+            .unwrap_or(cx.global::<Config>().theme.primary.base);
         let motion_id = stable_unique_id(
             format!(
                 "liora-spinner-motion:{:?}:{:?}:{:?}",
