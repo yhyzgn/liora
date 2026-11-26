@@ -61,19 +61,19 @@ Windows 需要 Rust MSVC 工具链、Visual Studio Build Tools、Git 长路径�
 
 ## 4. 配置 Cargo 依赖
 
-Liora SDK 从 crates.io 安装；GPUI 通过 Cargo `[patch.crates-io]` 解析到 Liora 验证过的 Zed 官方 git revision，并通过 `gpui_platform::application()` 启动原生事件循环。外部项目可以按下面方式配置：
+Liora SDK 在对应版本发布后从 crates.io 安装；GPUI 通过 Cargo `[patch.crates-io]` 解析到同一固定的 Liora 自有源码修订，并通过 `gpui_platform::application()` 启动原生事件循环。该修订基于官方 Zed，维护边界见 Theme System 页与根 README，不是新的官方 revision。
 
 ```toml src="quick_start/app_cargo.toml"
 ```
 
 几个关键点：
 
-- `gpui` 在 `[dependencies]` 中保留 `version = "0.2.2"` 作为 crates.io 发布 fallback，然后通过 `[patch.crates-io]` 覆盖到 Zed 官方 `https://github.com/zed-industries/zed` 指定 `rev`。不要使用非官方 fork。
+- `gpui` 保留 `version = "0.2.2"` 作为 crates.io 发布 fallback，通过 `[patch.crates-io]` 覆盖到下方固定的 Liora Git `rev`；`gpui_platform` 必须匹配同一来源与 SHA，不得混用官方基线或其他 fork。
 - Linux / FreeBSD app 需要在 target-specific dependencies 中同时为 `gpui` 与 `gpui_platform` 显式启用 `wayland`、`x11`、`font-kit`。
 - macOS app 需要同时为 `gpui` 与 `gpui_platform` 启用 `font-kit`。
-- Windows app 使用官方 GPUI Windows 后端即可。
+- Windows app 使用维护源中保留的 GPUI Windows 后端；保留源码不等于已验证 Windows 原生运行。
 - 组件库 crate 不应该开启平台 feature；平台 feature 应放在最终 app crate 的 `cfg(...)` target dependency 中。
-- 如果你在 Liora 仓库内开发，优先使用 workspace 中已有的 path dependency；外部应用优先使用 crates.io `liora = "0.6.1"`。
+- 仓库内开发使用既有 workspace 依赖；外部应用仅在对应 crates.io 版本发布后使用 `liora = "0.6.1"`，此前采用 Adoption Guide 的本地 SDK path 与同一 GPUI Git pin。
 
 ## 5. 启用自动图标资源优化
 

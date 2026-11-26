@@ -2,7 +2,12 @@
 
 Requires dbus-daemon, Python dbus-next, KWin Wayland, Xwayland and software Vulkan.
 The public entry always creates a fresh bus; OUTPUT_DIR must not already exist.
+Use case early-light to deliver initial Light before Liora initialization with a stale GTK Dark hint.
+Use case read-race to emit Dark while returning the initial Light read snapshot.
 For the paired fixed-light negative control only, set LIORA_SUPPRESS_SEQ1=1.
+Set LIORA_NATIVE_WAYLAND=1 to use the private compositor directly instead of Xwayland.
+On multi-GPU hosts, select the software Vulkan ICD explicitly with VK_DRIVER_FILES;
+LIBGL_ALWAYS_SOFTWARE alone does not select a Vulkan adapter.
 """
 import asyncio, hashlib, json, os, secrets, signal, struct, subprocess, sys, time
 from pathlib import Path
@@ -36,6 +41,7 @@ async def main():
     assert len(sys.argv) == 4, 'expected OUTPUT_DIR NATIVE_BINARY CASE'
     root = Path(sys.argv[1]).resolve(); root.mkdir(mode=0o700)
     owned=[]; logs=[]
+    asyncio.get_running_loop().add_signal_handler(signal.SIGTERM, asyncio.current_task().cancel)
     try:
         async with asyncio.timeout(90):
             log=(root/'dbus.log').open('w'); logs.append(log)
@@ -46,6 +52,8 @@ async def main():
             assert address.startswith('unix:'), 'private daemon did not publish a Unix address'
             return await run(root, address, owned, logs)
     finally:
+        # A repeated termination request must not interrupt the kill/reap pass.
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)
         failures=[]
         # Leaders may have exited while their process group still has descendants.
         for sig in (signal.SIGTERM, signal.SIGKILL):
@@ -64,9 +72,10 @@ async def main():
         assert not failures, failures
 
 class Settings(ServiceInterface):
-    def __init__(self):
+    def __init__(self, change_during_read=False):
         super().__init__('org.freedesktop.portal.Settings')
         self.scheme = 2
+        self.change_during_read = change_during_read
     @dbus_property(access=PropertyAccess.READ)
     def version(self) -> 'u':
         return 1
@@ -79,6 +88,10 @@ class Settings(ServiceInterface):
                   ('org.gnome.desktop.wm.preferences', 'button-layout'): Variant('s', ':minimize,maximize,close')}
         if (namespace, key) not in values:
             raise DBusError('org.freedesktop.portal.Error.NotFound', 'Unknown setting')
+        if self.change_during_read and (namespace, key) == ('org.freedesktop.appearance', 'color-scheme'):
+            self.change_during_read = False
+            self.scheme = 1
+            self.SettingChanged(namespace, key, Variant('u', self.scheme))
         return values[namespace, key]
     @dbus_signal()
     def SettingChanged(self, namespace: 's', key: 's', value: 'v') -> 'ssv':
@@ -86,7 +99,7 @@ class Settings(ServiceInterface):
 
 async def run(root, address, owned, logs):
     binary = Path(sys.argv[2]).resolve(strict=True); case = sys.argv[3]
-    assert case in ('system', 'fixed-dark', 'fixed-light'), 'unknown case'
+    assert case in ('system', 'early-light', 'read-race', 'fixed-dark', 'fixed-light'), 'unknown case'
     suppress = os.environ.get('LIORA_SUPPRESS_SEQ1') == '1'
     assert not suppress or case == 'fixed-light', 'negative control requires fixed-light'
     env = os.environ.copy()
@@ -98,14 +111,14 @@ async def run(root, address, owned, logs):
     gtk=root/'home/.config/gtk-4.0'; gtk.mkdir(parents=True)
     (gtk/'settings.ini').write_text('[Settings]\ngtk-application-prefer-dark-theme=false\n')
     env.update(QT_QPA_PLATFORM='offscreen', KWIN_COMPOSE='Q', LIBGL_ALWAYS_SOFTWARE='1', GSETTINGS_BACKEND='memory', GTK_THEME='Adwaita', NO_AT_BRIDGE='1')
-    if case == 'fixed-light':
+    if case in ('fixed-light', 'early-light'):
         env['GTK_THEME'] = 'Adwaita-dark'
     # Prevent subprocesses from consulting the host gsettings executable.
     bin_dir=root/'private-bin'; bin_dir.mkdir()
     deny=bin_dir/'gsettings'; deny.write_text('#!/bin/sh\necho forbidden-gsettings >&2\nexit 99\n'); deny.chmod(0o700)
     env['PATH']=str(bin_dir)+':'+env['PATH']
     bus = await MessageBus(bus_address=address).connect()
-    service = Settings(); bus.export('/org/freedesktop/portal/desktop', service)
+    service = Settings(change_during_read=case == 'read-race'); bus.export('/org/freedesktop/portal/desktop', service)
     await bus.request_name('org.freedesktop.portal.Desktop')
     monitor = await MessageBus(bus_address=address).connect()
     reads = {}; subscriptions = {}; pending = {}
@@ -126,7 +139,7 @@ async def run(root, address, owned, logs):
                     and message.path == '/org/freedesktop/DBus'
                     and message.interface == 'org.freedesktop.DBus'
                     and message.member == 'AddMatch' and message.signature == 's'
-                    and message.body == [rule] and message.sender in reads):
+                    and message.body == [rule]):
                 kind = 'AddMatch'
             if kind:
                 pending[(message.sender, message.serial)] = kind
@@ -162,20 +175,21 @@ async def run(root, address, owned, logs):
             assert p.poll() is None and time.monotonic()<deadline, 'compositor readiness failed'
             await asyncio.sleep(.05)
         env['WAYLAND_DISPLAY']=str(socket)
-        record=lambda b:struct.pack('>H',len(b))+b
-        auth=root/'xauth'; auth.write_bytes(b'\xff\xff'+b'\x00\x00'*2+record(b'MIT-MAGIC-COOKIE-1')+record(secrets.token_bytes(16))); auth.chmod(0o600)
-        env['XAUTHORITY']=str(auth)
-        xlog=(root/'xwayland.log').open('w'); logs.append(xlog)
-        x=subprocess.Popen(['/usr/bin/Xwayland','-displayfd','1','-auth',str(auth),'-shm','-noreset','-nolisten','tcp','-geometry','1024x768'],env=env,stdout=subprocess.PIPE,stderr=xlog,start_new_session=True); owned.append(x)
-        number=await read_line(x.stdout); assert number.isdecimal()
-        env['DISPLAY']=':'+number; env.pop('WAYLAND_DISPLAY'); env['XMODIFIERS']='@im=none'
+        if os.environ.get('LIORA_NATIVE_WAYLAND') != '1':
+            record=lambda b:struct.pack('>H',len(b))+b
+            auth=root/'xauth'; auth.write_bytes(b'\xff\xff'+b'\x00\x00'*2+record(b'MIT-MAGIC-COOKIE-1')+record(secrets.token_bytes(16))); auth.chmod(0o600)
+            env['XAUTHORITY']=str(auth)
+            xlog=(root/'xwayland.log').open('w'); logs.append(xlog)
+            x=subprocess.Popen(['/usr/bin/Xwayland','-displayfd','1','-auth',str(auth),'-shm','-noreset','-nolisten','tcp','-geometry','1024x768'],env=env,stdout=subprocess.PIPE,stderr=xlog,start_new_session=True); owned.append(x)
+            number=await read_line(x.stdout); assert number.isdecimal()
+            env['DISPLAY']=':'+number; env.pop('WAYLAND_DISPLAY'); env['XMODIFIERS']='@im=none'
         app_log=(root/'app.log').open('w'); logs.append(app_log)
         app=subprocess.Popen([str(binary),str(root),case],env=env,stdout=app_log,stderr=app_log,start_new_session=True); owned.append(app)
         await asyncio.sleep(.05)
         actual=Path(f'/proc/{app.pid}/exe').resolve(strict=True)
         assert actual == binary, (actual, binary)
         digest=sha256(Path(f'/proc/{app.pid}/exe'))
-        (root/'identity.json').write_text(json.dumps({'pid':app.pid,'exe':str(actual),'sha256':digest,'argv':[str(binary),str(root),case],'gtk_theme':env['GTK_THEME'],'display':env['DISPLAY'],'bus':env['DBUS_SESSION_BUS_ADDRESS']},indent=2))
+        (root/'identity.json').write_text(json.dumps({'pid':app.pid,'exe':str(actual),'sha256':digest,'argv':[str(binary),str(root),case],'gtk_theme':env['GTK_THEME'],'display':env.get('DISPLAY'),'wayland_display':env.get('WAYLAND_DISPLAY'),'bus':env['DBUS_SESSION_BUS_ADDRESS']},indent=2))
         last=None; verified=set()
         while app.poll() is None:
             for name in (reads.keys() & subscriptions.keys()) - verified:

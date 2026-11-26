@@ -43,18 +43,18 @@ fn main() {
 
 ## Dependency shape
 
-For a downstream project after the v0.6.1 crates.io release, use Liora from crates.io and patch Cargo's `gpui` registry fallback to Liora's matching official Zed revision:
+After the next v0.6.1 crates.io publication, use Liora from crates.io and patch Cargo's `gpui` registry fallback to the matching immutable Liora-maintained GPUI source revision:
 
-This 0.6.1 release targets official Zed GPUI revision `f0d896f2c18a543335eb155f729d36b624695591`. The example below becomes registry-installable after publication completes; until then, use the local workspace paths described below. macOS 0.6 builds require the macOS 26 SDK and run on macOS 12+.
+The current source is a [Liora-maintained derivative](https://github.com/yhyzgn/liora/tree/main/third_party/gpui) of official Zed `f0d896f2c18a543335eb155f729d36b624695591`, not a newer official revision. All GPUI crates must share the same source SHA from the root workspace. The example becomes registry-installable only after publication; until then use the local SDK paths below. Do not mix an older published SDK with this unreleased pin. macOS requires SDK 26 and runtime 12+.
 
 ```toml
 [dependencies]
 liora = "0.6.1"
 gpui = { version = "0.2.2", default-features = false }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false }
+gpui_platform = { git = "https://github.com/yhyzgn/liora", rev = "743b465820bdfbea7a8105c98ef3dce9d12f01b6", default-features = false }
 
 [patch.crates-io]
-gpui = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591" }
+gpui = { git = "https://github.com/yhyzgn/liora", rev = "743b465820bdfbea7a8105c98ef3dce9d12f01b6" }
 ```
 
 For local monorepo development, use `liora = { path = "../liora/crates/liora" }` and use the exact GPUI revision from that checkout's workspace manifest for both `gpui` and `gpui_platform`.

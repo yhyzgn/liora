@@ -19,7 +19,7 @@
     <a href="https://crates.io/crates/liora"><img alt="crates.io liora" src="https://img.shields.io/crates/v/liora.svg?label=liora"></a>
     <img alt="MSRV 1.95" src="https://img.shields.io/badge/rustc-1.95%2B-dea584?logo=rust&logoColor=white">
     <img alt="Rust 2024" src="https://img.shields.io/badge/edition-2024-dea584?logo=rust&logoColor=white">
-    <img alt="GPUI native" src="https://img.shields.io/badge/GPUI-official%20Zed%20git-7c3aed">
+    <img alt="GPUI native" src="https://img.shields.io/badge/GPUI-Liora%20maintained-7c3aed">
     <img alt="Pure Rust" src="https://img.shields.io/badge/runtime-pure%20Rust%20native-10b981">
     <img alt="Native packaging" src="https://img.shields.io/badge/packaging-native-0ea5e9">
     <img alt="LicenseRef-Liora" src="https://img.shields.io/badge/license-LicenseRef--Liora-64748b">
@@ -99,7 +99,7 @@ Gallery 与 Docs 使用相同原生实现，示例进入 snippet 编译检查。
 | 项 | 要求 |
 |---|---|
 | Rust | `rustc 1.95+`，Rust edition 2024。 |
-| UI 后端 | 官方 Zed GPUI git 依赖，并 pin 到 Liora 验证过的 revision。 |
+| UI 后端 | 基于官方 Zed 的 Liora 自有 GPUI 派生修订，固定到不可变 Git SHA。 |
 | Linux 原生依赖 | GTK3、Wayland/X11、xkbcommon、fontconfig/freetype、Vulkan、ALSA、`pkg-config`；只有显式使用 `liora-webview` 时才额外需要 WebKitGTK 4.1。Fedora 可参考 `scripts/install-fedora-deps.sh`。 |
 | macOS | 当前源码要求 macOS 12 或更高版本，构建使用 macOS 26 SDK（Xcode 26）。 |
 | Windows | MSVC toolchain；GPUI Windows backend 会通过 `windows-manifest` 提供应用 manifest。 |
@@ -108,7 +108,7 @@ Gallery 与 Docs 使用相同原生实现，示例进入 snippet 编译检查。
 
 大多数应用应该直接依赖顶层 facade：
 
-以下 registry 示例面向 v0.6.1；crates.io 发布流程完成后才能安装。此前请参考[采用指南中的本地 path 示例](apps/liora-docs/content/pages/adoption.md#dependency-shape)，并将 GPUI 固定到匹配的官方 Zed revision。
+以下 registry 示例面向 v0.6.1；crates.io 发布流程完成后才能安装。此前请参考[采用指南中的本地 path 示例](apps/liora-docs/content/pages/adoption.md#dependency-shape)，并将 GPUI 固定到匹配的 Liora 自有 revision。
 
 ```toml
 [dependencies]
@@ -165,23 +165,21 @@ liora = { version = "0.6.1", default-features = false }
 
 ## GPUI 依赖与本地 patch 策略
 
-当前工作区将官方 Zed `main` 固定到 `f0d896f2c18a543335eb155f729d36b624695591`。`MotionSpring::{Gentle, Snappy, Bouncy}.animation_to(target)` 提供可选的原生弹簧动画；重定向目标时应保持 `with_spring` 的 element ID 稳定，原有 duration-based 动效不变。GPUI 动画包装器遵循 `cx.set_reduce_motion(true)`；这是应用级偏好，并不代表自动读取操作系统偏好。完整变更与平台风险见[升级记录](docs/gpui-latest-upgrade.md)。
+当前工作区将 Liora 自有 GPUI 固定到 `743b465820bdfbea7a8105c98ef3dce9d12f01b6`，基于官方 Zed `f0d896f2c18a543335eb155f729d36b624695591`。`MotionSpring::{Gentle, Snappy, Bouncy}.animation_to(target)` 提供可选的原生弹簧动画；重定向目标时应保持 `with_spring` 的 element ID 稳定，原有 duration-based 动效不变。GPUI 动画包装器遵循 `cx.set_reduce_motion(true)`；这是应用级偏好，并不代表自动读取操作系统偏好。完整变更与平台风险见[升级记录](docs/gpui-latest-upgrade.md)。
 
 Gallery Spinner 与 Docs Spinner 页面共用保留状态的 spring 示例，可重定向目标并显式移除/恢复动画行；Docs 包含编译检查的完整有状态代码。重新挂载的 spring 默认从目标开始，入口位置需显式通过 `.from(...)` 指定。
 
-下方 crates.io 示例面向 v0.6.1 发布版本，仅在 crates.io 发布流程完成后可解析。此前请使用[采用指南中的本地 path 方式](apps/liora-docs/content/pages/adoption.md#dependency-shape)，并把所有 GPUI crates pin 到上方工作区 revision.
+下方 crates.io 示例面向下一次 v0.6.1 发布，仅在发布流程完成后可解析。此前请使用[采用指南中的本地 path 方式](apps/liora-docs/content/pages/adoption.md#dependency-shape)，并使所有 GPUI 依赖匹配根工作区的同一源码 pin；不得将旧版已发布 SDK 与此未发布 pin 混用。macOS 要求 12+，构建使用 macOS 26 SDK。
 
-v0.6.1 使用当前工作区 GPUI pin；下方所有 GPUI revision 均必须统一为 `f0d896f2c18a543335eb155f729d36b624695591`。macOS 要求 12+，构建使用 macOS 26 SDK。
-
-Liora **只能使用官方 Zed GPUI**。禁止使用 `open-gpui` 等重命名或社区 fork。
+Liora 使用**本仓库维护的 GPUI 派生修订**，该原生外观初始化修复已获明确授权，基于官方 Zed `f0d896f2c18a543335eb155f729d36b624695591`，不是新的官方 Zed revision。[源码维护边界](third_party/gpui/README.md)说明来源、九个 crate 的类型身份、许可证与回滚。其他 fork 和 `open-gpui` 等重命名依赖仍不受支持。
 
 为什么需要额外配置 GPUI：
 
 1. `liora` 各个 crate 已发布到 crates.io。
-2. 当前 Liora 面向比 registry 里旧的 `gpui 0.2.2` 更新的官方 Zed GPUI git revision 开发。
+2. 当前实现需要官方基线与旧 registry `gpui 0.2.2` 均缺少的明确外观初始化状态。
 3. Cargo 不允许 crates.io 包强制所有下游应用使用 git-only transitive dependency。
-4. 因此 Liora 发布包使用 Cargo 支持的 multiple-location dependency：发布时保留 registry fallback，本地开发时使用官方 Zed git rev。
-5. 最终应用必须在根 `Cargo.toml` 添加 `[patch.crates-io]`，把所有传递依赖中的 `gpui` 统一解析到官方 Zed commit。
+4. 发布包使用 Cargo multiple-location dependency：发布时保留 registry fallback，源码构建时使用固定的 Liora Git revision，不发布开发者本地 path。
+5. 最终应用必须在根 `Cargo.toml` 添加 `[patch.crates-io]`，把传递依赖中的 `gpui` 统一到同一 Liora commit；`gpui_platform` 必须精确匹配。
 
 应用推荐使用以下 manifest 模式：
 
@@ -204,22 +202,22 @@ gpui = { version = "0.2.2", default-features = false }
 
 # 什么时候需要手动添加 gpui_platform？
 # 最终会打开窗口的 binary crate 使用 gpui_platform::application().run(...) 时需要。
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false }
+gpui_platform = { git = "https://github.com/yhyzgn/liora", rev = "743b465820bdfbea7a8105c98ef3dce9d12f01b6", default-features = false }
 
 [target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
 gpui = { version = "0.2.2", default-features = false, features = ["wayland", "x11", "font-kit"] }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false, features = ["wayland", "x11", "font-kit"] }
+gpui_platform = { git = "https://github.com/yhyzgn/liora", rev = "743b465820bdfbea7a8105c98ef3dce9d12f01b6", default-features = false, features = ["wayland", "x11", "font-kit"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 gpui = { version = "0.2.2", default-features = false, features = ["font-kit"] }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false, features = ["font-kit"] }
+gpui_platform = { git = "https://github.com/yhyzgn/liora", rev = "743b465820bdfbea7a8105c98ef3dce9d12f01b6", default-features = false, features = ["font-kit"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 gpui = { version = "0.2.2", default-features = false }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false }
+gpui_platform = { git = "https://github.com/yhyzgn/liora", rev = "743b465820bdfbea7a8105c98ef3dce9d12f01b6", default-features = false }
 
 [patch.crates-io]
-gpui = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591" }
+gpui = { git = "https://github.com/yhyzgn/liora", rev = "743b465820bdfbea7a8105c98ef3dce9d12f01b6" }
 ```
 
 什么时候必须手动添加 `gpui`？看这个例子：
@@ -245,9 +243,9 @@ fn needs_gpui_app_type(_cx: &mut App) {}
 
 什么时候可以不直接使用 `gpui`？如果只是做数据模型、主题值、更新请求或打包元数据 helper，不打开窗口、不写 GPUI 类型签名，就可以只依赖 focused Liora crate。
 
-本仓库保留 `third_party/zed` 仅作为早期 Linux 启动窗口 patch 工作和 upstream PR 对照的未发布源码材料。当前开发应使用上面的官方 `zed-industries/zed` git 依赖。如确需临时本地 patch 做 app-only 验证，必须保持在可发布 SDK manifest 之外，并明确记录边界。
+`third_party/gpui` 是当前维护源码，其工具依赖仍 pin 到官方 Zed 基线。`third_party/zed` 仅保留旧启动窗口实验，manifest 使用 `Cargo.toml.reference` 后缀防止 Git 包名发现冲突，不得重新接入依赖图。
 
-此前禁止 workspace `[patch.crates-io]` 的合同现作出明确、唯一的应用根例外：`third_party/accesskit_atspi_common` 中官方 `accesskit_atspi_common 0.19.1`，仅回移上游 Busy/Disabled 两处修复，以修正 Linux AT-SPI 状态映射，不改变官方 GPUI pin 或 AccessKit 版本。其他 crate/source override、本地或 fork GPUI 仍被禁止。该 patch **不会被下游 SDK 宿主继承**，也不随 SDK crate 发布；[来源、固定源码获取、最终应用配置与验证边界](docs/accesskit-atspi-backport.md)说明了所需的显式 root override。仅升级 SDK 不能宣称任意宿主已修复。
+独立的应用根 AccessKit 例外保持不变：`third_party/accesskit_atspi_common` 中官方 `accesskit_atspi_common 0.19.1`，仅回移 Busy/Disabled 两处修复，不改变 AccessKit 版本；其他 root source override 仍禁止。该 patch **不会被下游 SDK 宿主继承**，也不随 SDK crate 发布；[来源、固定源码获取、最终应用配置与验证边界](docs/accesskit-atspi-backport.md)说明所需显式 root override。仅升级 SDK 不能宣称任意宿主已修复。
 
 
 ## 快速开始：创建一个 Liora 应用
@@ -273,22 +271,22 @@ publish = false
 [dependencies]
 liora = "0.6.1"
 gpui = { version = "0.2.2", default-features = false }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false }
+gpui_platform = { git = "https://github.com/yhyzgn/liora", rev = "743b465820bdfbea7a8105c98ef3dce9d12f01b6", default-features = false }
 
 [target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
 gpui = { version = "0.2.2", default-features = false, features = ["wayland", "x11", "font-kit"] }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false, features = ["wayland", "x11", "font-kit"] }
+gpui_platform = { git = "https://github.com/yhyzgn/liora", rev = "743b465820bdfbea7a8105c98ef3dce9d12f01b6", default-features = false, features = ["wayland", "x11", "font-kit"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 gpui = { version = "0.2.2", default-features = false, features = ["font-kit"] }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false, features = ["font-kit"] }
+gpui_platform = { git = "https://github.com/yhyzgn/liora", rev = "743b465820bdfbea7a8105c98ef3dce9d12f01b6", default-features = false, features = ["font-kit"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 gpui = { version = "0.2.2", default-features = false }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false }
+gpui_platform = { git = "https://github.com/yhyzgn/liora", rev = "743b465820bdfbea7a8105c98ef3dce9d12f01b6", default-features = false }
 
 [patch.crates-io]
-gpui = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591" }
+gpui = { git = "https://github.com/yhyzgn/liora", rev = "743b465820bdfbea7a8105c98ef3dce9d12f01b6" }
 ```
 
 ### 3. 写入 `src/main.rs`
@@ -413,6 +411,8 @@ liora_core::init_liora_with_mode(cx, liora_core::ThemeMode::System);
 ## 窗口启动、系统主题与图标
 
 正式应用建议先用隐藏窗口创建，创建 root view 前附加系统主题观察器，`open_window` 返回后再激活窗口。这个模式可以避免首帧主题闪烁，也与 Gallery/Docs 的原生应用写法一致。
+
+Linux/FreeBSD 的 GTK 启动提示不依赖配置行顺序：`gtk-application-prefer-dark-theme=true` 优先请求深色变体；`false` 不会把 `gtk-theme-name` 已指定的深色主题强制变浅。未识别到主题名时，显式 `false` 保留浅色回退。同步提示仅在 GPUI 外观尚未初始化时使用；已初始化的系统快照不依赖窗口观察器是否收过通知。
 
 Windows release 构建建议使用与 Zed 相同的 subsystem 设置，这样双击 GUI `.exe` 时不会额外弹出空白命令行窗口：
 
@@ -1985,7 +1985,7 @@ gh variable get LIORA_RPM_SIGNING_FINGERPRINT --repo "$GH_REPO"
 
 ```toml
 [patch.crates-io]
-gpui = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591" }
+gpui = { git = "https://github.com/yhyzgn/liora", rev = "743b465820bdfbea7a8105c98ef3dce9d12f01b6" }
 ```
 
 用以下命令确认：
@@ -2002,7 +2002,7 @@ cargo tree -p gpui
 ```toml
 [dependencies]
 gpui = { version = "0.2.2", default-features = false }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false }
+gpui_platform = { git = "https://github.com/yhyzgn/liora", rev = "743b465820bdfbea7a8105c98ef3dce9d12f01b6", default-features = false }
 ```
 
 ### Linux 缺 GTK、Wayland、X11、Vulkan、ALSA 或字体包导致构建失败
@@ -2030,7 +2030,7 @@ WindowOptions {
 
 窗口使用 `show: false` 创建，在 `open_window` 回调一开始调用 `attach_system_theme_observer(window, cx)`，并在 `open_window` 返回 handle 后调用 `window.activate_window()`。
 
-Linux/FreeBSD 在 SDK 收到窗口外观通知前仍使用同步启动提示；收到后，System 重选、同步和新窗口初始化均采用当前窗口外观，包括固定模式或主题颜色不变时收到的通知。这不解决 portal 初值早于观察器挂载且此后没有通知的冷启动 ready 竞争。
+Linux/FreeBSD 仅在 GPUI 外观尚未初始化时使用同步启动提示。System 初始化、重选与同步均使用已初始化的系统快照，即使 portal 初值早于窗口或观察器；通知历史不代表 readiness。窗口 ready 与颜色保存在同一缓存快照中；既有颜色 stream 在初次 Read 前订阅，但不声称快照与订阅原子化。
 
 ### Input 文本或焦点每次 render 后重置
 

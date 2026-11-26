@@ -1,6 +1,6 @@
 # GPUI upstream refresh — 2026-11-10
 
-The workspace pins `gpui`, `gpui_platform`, and `collections` to [official Zed main at intake](https://github.com/zed-industries/zed/commit/f0d896f2c18a543335eb155f729d36b624695591). GPUI remains `0.2.2`; the Git revision defines compatibility. See the [upstream comparison](https://github.com/zed-industries/zed/compare/1de16662ee0d704285c524a7753f0f8858e86abf...f0d896f2c18a543335eb155f729d36b624695591).
+At this upgrade's intake, the workspace pinned `gpui`, `gpui_platform`, and `collections` to [official Zed main](https://github.com/zed-industries/zed/commit/f0d896f2c18a543335eb155f729d36b624695591). The current appearance initialization repair uses a separately authorized [Liora-maintained GPUI derivative](../third_party/gpui/README.md) of that exact source; `collections` and other utilities remain on the official baseline. GPUI remains `0.2.2`; the Git source/revision defines compatibility. Historical upgrade comparison: [upstream diff](https://github.com/zed-industries/zed/compare/1de16662ee0d704285c524a7753f0f8858e86abf...f0d896f2c18a543335eb155f729d36b624695591).
 
 Highlights: less per-line and per-glyph text work (#66682, #66722), lazy tab-stop ordering (#66721), corrected horizontal list padding (#64056), and unavailable macOS pasteboard handling (#66736). The lockfile follows upstream's WGPU 30 Git revision. Target-specific upstream dependencies do not add an iOS or browser app to Liora.
 
@@ -170,6 +170,4 @@ a local policy check, not a signed release.
 
 Keep changes on `chore/gpui-latest-upgrade-20261013`. Revert this upgrade's pin,
 lock, spring/demo/frame changes and documentation together to the previous SHA.
-Do not change GPUI dependency source to a fork or add a local GPUI runtime patch.
-The later, explicitly bounded [AccessKit leaf exception](accesskit-atspi-backport.md)
-does not change that GPUI rule. Do not use broad resets that erase unrelated subsequent work.
+This historical upgrade did not authorize a GPUI fork. The later appearance initialization work separately authorizes the bounded [Liora-maintained source](../third_party/gpui/README.md); the independent [AccessKit leaf exception](accesskit-atspi-backport.md) remains a root patch, not an implicit GPUI override. Do not use broad resets that erase unrelated subsequent work.

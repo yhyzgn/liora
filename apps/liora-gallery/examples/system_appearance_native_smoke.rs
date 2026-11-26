@@ -72,11 +72,15 @@ async fn portal(
     loop {
         let acknowledged =
             std::fs::read_to_string(root.join("ack")).is_ok_and(|v| v == seq.to_string());
-        let app_ready = cx.update(|cx| cx.window_appearance() == expected);
+        let app_ready = cx.update(|cx| {
+            cx.is_window_appearance_initialized() && cx.window_appearance() == expected
+        });
         let window_ready = window
             .map(|handle| {
-                cx.update_window(handle, |_, window, _| window.appearance() == expected)
-                    .unwrap()
+                cx.update_window(handle, |_, window, _| {
+                    window.is_appearance_initialized() && window.appearance() == expected
+                })
+                .unwrap()
             })
             .unwrap_or(true);
         if acknowledged && app_ready && window_ready && (window.is_none() || events.get() > before)
@@ -112,28 +116,47 @@ fn main() {
     );
     let case = std::env::args()
         .nth(2)
-        .expect("system, fixed-dark, or fixed-light");
+        .expect("system, early-light, read-race, fixed-dark, or fixed-light");
     gpui_platform::application().with_quit_mode(gpui::QuitMode::Explicit).run(move |cx| {
         let mode = match case.as_str() {
-            "system" => ThemeMode::System,
+            "system" | "early-light" | "read-race" => ThemeMode::System,
             "fixed-dark" => ThemeMode::Dark,
             "fixed-light" => ThemeMode::Light,
             _ => panic!("unknown scenario"),
         };
-        init_liora_with_mode(cx, mode);
-        let events = Rc::new(Cell::new(0));
-        let first = open(cx, events.clone(), None);
-        assert_theme(cx, if mode == ThemeMode::Dark { "dark" } else { "light" }, "startup");
         cx.spawn(async move |cx| {
+            if case == "early-light" {
+                let deadline = Instant::now() + Duration::from_secs(8);
+                while !cx.update(|cx| cx.is_window_appearance_initialized()) {
+                    assert!(Instant::now() < deadline, "pre-window initial appearance timeout");
+                    cx.background_executor().timer(Duration::from_millis(25)).await;
+                }
+                cx.update(|cx| assert!(cx.windows().is_empty()));
+            }
+            let events = Rc::new(Cell::new(0));
+            let first = cx.update(|cx| {
+                init_liora_with_mode(cx, mode);
+                if case != "read-race" {
+                    assert_theme(cx, if mode == ThemeMode::Dark { "dark" } else { "light" }, "startup");
+                }
+                let first = open(cx, events.clone(), None);
+                if case != "read-race" {
+                    assert_theme(cx, if mode == ThemeMode::Dark { "dark" } else { "light" }, "initial attach");
+                }
+                first
+            });
+            let initial = if case == "read-race" { WindowAppearance::Dark } else { WindowAppearance::Light };
             let deadline = Instant::now() + Duration::from_secs(8);
             loop {
-                let initial_light = cx.update_window(first, |_, window, cx| {
-                    cx.window_appearance() == WindowAppearance::Light
-                        && window.appearance() == WindowAppearance::Light
-                        && events.get() > 0
+                let initial_ready = cx.update_window(first, |_, window, cx| {
+                    cx.window_appearance() == initial
+                        && window.appearance() == initial
+                        && cx.is_window_appearance_initialized()
+                        && window.is_appearance_initialized()
                 }).unwrap();
-                if root.join("subscription-ready").exists() && initial_light {
-                    println!("READY initial Light observed; PID-bound Read return and Settings AddMatch acknowledged; notifications={}", events.get());
+                if root.join("subscription-ready").exists() && initial_ready {
+                    cx.update(|cx| assert_theme(cx, if mode == ThemeMode::Dark || case == "read-race" { "dark" } else { "light" }, "initial portal state"));
+                    println!("READY initial {initial:?} observed; PID-bound Read return and Settings AddMatch acknowledged; notifications={}", events.get());
                     break;
                 }
                 assert!(Instant::now() < deadline, "Settings subscription/initial delivery readiness timeout");

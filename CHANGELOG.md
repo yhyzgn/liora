@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Maintain an explicitly pinned Liora GPUI source derivative of official Zed `f0d896f2c18a543335eb155f729d36b624695591`. Distinguish pending Linux appearance from initialized Light/Dark, cache window readiness with its color, subscribe before the initial portal read, and resolve System mode from that state rather than synthetic notification history. Preserve same-color and decoration callbacks, fixed modes, zero-window transitions and native backends; keep old experiment manifests inert to avoid Git package collisions.
+
+- Resolve Linux/FreeBSD GTK startup theme hints independently of configuration line order. Honor an explicit dark preference without letting a false preference override an explicitly dark theme name; retain fixed theme modes and live appearance observers.
+
 - Use the active theme's danger token for Gallery/Docs About update errors while preserving error details and all action guards. Give the Docs About panel its own native scroll viewport so narrow or short windows can reach wrapped update actions without changing ordinary virtualized pages.
 
 - Resolve Docs theme choices and About/Updates text through existing typed locale keys instead of fixed English/Chinese captions. Keep retained control identity, selected values and update callbacks unchanged; authored documentation is not auto-translated.

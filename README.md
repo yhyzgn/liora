@@ -19,7 +19,7 @@
     <a href="https://crates.io/crates/liora"><img alt="crates.io liora" src="https://img.shields.io/crates/v/liora.svg?label=liora"></a>
     <img alt="MSRV 1.95" src="https://img.shields.io/badge/rustc-1.95%2B-dea584?logo=rust&logoColor=white">
     <img alt="Rust 2024" src="https://img.shields.io/badge/edition-2024-dea584?logo=rust&logoColor=white">
-    <img alt="GPUI native" src="https://img.shields.io/badge/GPUI-official%20Zed%20git-7c3aed">
+    <img alt="GPUI native" src="https://img.shields.io/badge/GPUI-Liora%20maintained-7c3aed">
     <img alt="Pure Rust" src="https://img.shields.io/badge/runtime-pure%20Rust%20native-10b981">
     <img alt="Native packaging" src="https://img.shields.io/badge/packaging-native-0ea5e9">
     <img alt="LicenseRef-Liora" src="https://img.shields.io/badge/license-LicenseRef--Liora-64748b">
@@ -105,7 +105,7 @@ The PdfReader Gallery/Docs demo loads a bundled PDF and offers a native **Open P
 | Item | Requirement |
 |---|---|
 | Rust | `rustc 1.95+`, Rust edition 2024. |
-| UI backend | Official Zed GPUI git dependency pinned to Liora's verified revision. |
+| UI backend | Liora-maintained GPUI derivative of official Zed, pinned to an immutable Git revision. |
 | Linux native deps | GTK3, Wayland/X11, xkbcommon, fontconfig/freetype, Vulkan, ALSA, `pkg-config`; WebKitGTK 4.1 is additionally required only when explicitly using `liora-webview`. See `scripts/install-fedora-deps.sh` for a Fedora-oriented baseline. |
 | macOS | The current checkout requires macOS 12+ and the macOS 26 SDK (Xcode 26). |
 | Windows | MSVC toolchain; GPUI's Windows backend provides the application manifest through `windows-manifest`. |
@@ -114,7 +114,7 @@ The PdfReader Gallery/Docs demo loads a bundled PDF and offers a native **Open P
 
 Most applications should depend on the facade crate:
 
-These registry examples target v0.6.1 and become installable after the crates.io release workflow completes. Until then, use the local-path example in the [adoption guide](apps/liora-docs/content/pages/adoption.md#dependency-shape) and keep GPUI pinned to the matching official Zed revision.
+These registry examples target v0.6.1 and become installable after the crates.io release workflow completes. Until then, use the local-path example in the [adoption guide](apps/liora-docs/content/pages/adoption.md#dependency-shape) and keep GPUI pinned to the matching Liora-maintained revision.
 
 ```toml
 [dependencies]
@@ -171,22 +171,22 @@ liora = { version = "0.6.1", default-features = false }
 
 ## GPUI dependency and local patch policy
 
-The workspace pins official Zed `main` at `f0d896f2c18a543335eb155f729d36b624695591`. `MotionSpring::{Gentle, Snappy, Bouncy}.animation_to(target)` exposes opt-in interruptible GPUI springs; keep a stable `with_spring` element ID when retargeting. Existing duration-based effects remain unchanged. GPUI animation wrappers honor `cx.set_reduce_motion(true)`; this is an app-level preference, not automatic OS preference detection. See [upgrade notes and platform risks](docs/gpui-latest-upgrade.md).
+The workspace pins Liora-maintained GPUI at `743b465820bdfbea7a8105c98ef3dce9d12f01b6`, derived from official Zed `f0d896f2c18a543335eb155f729d36b624695591`. `MotionSpring::{Gentle, Snappy, Bouncy}.animation_to(target)` exposes opt-in interruptible GPUI springs; keep a stable `with_spring` element ID when retargeting. Existing duration-based effects remain unchanged. GPUI animation wrappers honor `cx.set_reduce_motion(true)`; this is an app-level preference, not automatic OS preference detection. See [upgrade notes and platform risks](docs/gpui-latest-upgrade.md).
 
 Gallery Spinner and the Docs Spinner page share a retained spring example with target retargeting and explicit remove/restore controls. Docs includes a compile-checked stateful example; a remounted spring starts at its target unless `.from(...)` supplies an entrance position.
 
-The downstream manifest below targets the v0.6.1 release; its crates.io dependency resolves after publication completes. Until then, use the local workspace path example in the [adoption guide](apps/liora-docs/content/pages/adoption.md#dependency-shape) with the official Zed revision `f0d896f2c18a543335eb155f729d36b624695591`. macOS requires version 12+ and the macOS 26 SDK.
+The downstream manifest below targets the next v0.6.1 publication; its crates.io dependency resolves only after publication completes. Until then, use the local workspace path example in the [adoption guide](apps/liora-docs/content/pages/adoption.md#dependency-shape), with the same GPUI source pin as the root workspace. Do not mix an older published SDK with this unreleased pin. macOS requires version 12+ and the macOS 26 SDK.
 
 
-Liora uses **official Zed GPUI only** from the official Zed upstream repository. Do not use renamed or community forks such as `open-gpui`.
+Liora uses a **repository-maintained GPUI derivative**, explicitly authorized for the native appearance initialization repair and based on official Zed `f0d896f2c18a543335eb155f729d36b624695591`. This is not a newer official Zed revision. Provenance, nine-crate type-identity boundary, licensing and rollback are documented in [the source maintenance notes](third_party/gpui/README.md). Other forks and renamed dependencies such as `open-gpui` remain unsupported.
 
 Why the extra GPUI setup exists:
 
 1. `liora` crates are published on crates.io.
-2. Current Liora development targets a newer official Zed GPUI git revision than the old registry `gpui 0.2.2` fallback.
+2. Current Liora development needs explicit appearance readiness absent from the official Zed baseline and the old registry `gpui 0.2.2` fallback.
 3. Cargo does not let a crates.io package force a git-only transitive dependency on every downstream app.
-4. Therefore published Liora crates use Cargo's multiple-location dependency form: registry fallback for publication, official Zed git rev for local development.
-5. Final applications must add a root-level `[patch.crates-io]` entry so every transitive `gpui` dependency resolves to the official Zed commit.
+4. Published Liora crates use Cargo's multiple-location dependency form: registry fallback for publication, immutable Liora Git revision for source builds; no developer-local path is published.
+5. Final applications must add a root-level `[patch.crates-io]` entry so every transitive `gpui` dependency resolves to that same Liora commit. `gpui_platform` must match it exactly.
 
 Use this application manifest pattern:
 
@@ -208,22 +208,22 @@ gpui = { version = "0.2.2", default-features = false }
 
 # Add gpui_platform manually in final binary crates that create native windows
 # with gpui_platform::application().run(...).
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false }
+gpui_platform = { git = "https://github.com/yhyzgn/liora", rev = "743b465820bdfbea7a8105c98ef3dce9d12f01b6", default-features = false }
 
 [target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
 gpui = { version = "0.2.2", default-features = false, features = ["wayland", "x11", "font-kit"] }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false, features = ["wayland", "x11", "font-kit"] }
+gpui_platform = { git = "https://github.com/yhyzgn/liora", rev = "743b465820bdfbea7a8105c98ef3dce9d12f01b6", default-features = false, features = ["wayland", "x11", "font-kit"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 gpui = { version = "0.2.2", default-features = false, features = ["font-kit"] }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false, features = ["font-kit"] }
+gpui_platform = { git = "https://github.com/yhyzgn/liora", rev = "743b465820bdfbea7a8105c98ef3dce9d12f01b6", default-features = false, features = ["font-kit"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 gpui = { version = "0.2.2", default-features = false }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false }
+gpui_platform = { git = "https://github.com/yhyzgn/liora", rev = "743b465820bdfbea7a8105c98ef3dce9d12f01b6", default-features = false }
 
 [patch.crates-io]
-gpui = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591" }
+gpui = { git = "https://github.com/yhyzgn/liora", rev = "743b465820bdfbea7a8105c98ef3dce9d12f01b6" }
 ```
 
 When do you manually add `gpui`?
@@ -249,9 +249,9 @@ fn needs_gpui_app_type(_cx: &mut App) {}
 
 When can you avoid direct `gpui` usage? Very small helper crates that only build data models, theme values, update requests, or packaging metadata can depend on focused Liora crates without opening windows or naming `gpui` types.
 
-The repository keeps `third_party/zed` only as non-published upstream-source reference material for prior Linux startup-window patch work and PR comparison. Current development should use the official `zed-industries/zed` git dependency above. If a temporary local patch is needed for app-only verification, keep it outside publishable SDK manifests and document the boundary.
+`third_party/gpui` contains the maintained source; its utility dependencies remain pinned to the official Zed baseline. `third_party/zed` contains only old startup-window experiments, with manifests archived as `Cargo.toml.reference` to prevent duplicate Git package discovery. Do not restore them into the dependency graph.
 
-The previous blanket ban on workspace `[patch.crates-io]` is explicitly amended for one application-root exception: official `accesskit_atspi_common 0.19.1` with only the upstream Busy/Disabled backports at `third_party/accesskit_atspi_common`. This fixes Linux AT-SPI state mapping without changing the official GPUI pin or AccessKit versions. All other source overrides and local/fork GPUI remain forbidden. This patch is **not inherited by downstream SDK hosts** and is not included in SDK crate packages; see [provenance, exact consumer setup, verification and removal boundary](docs/accesskit-atspi-backport.md). Merely updating the SDK does not fix an arbitrary host's native accessibility state.
+The separate application-root AccessKit exception remains: official `accesskit_atspi_common 0.19.1` with only the upstream Busy/Disabled backports at `third_party/accesskit_atspi_common`. It does not change AccessKit versions. Other root source overrides remain forbidden. This patch is **not inherited by downstream SDK hosts** and is not included in SDK crate packages; see [provenance, exact consumer setup, verification and removal boundary](docs/accesskit-atspi-backport.md). Merely updating the SDK does not fix an arbitrary host's native accessibility state.
 
 
 ## Quick start: create a Liora app
@@ -277,22 +277,22 @@ publish = false
 [dependencies]
 liora = "0.6.1"
 gpui = { version = "0.2.2", default-features = false }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false }
+gpui_platform = { git = "https://github.com/yhyzgn/liora", rev = "743b465820bdfbea7a8105c98ef3dce9d12f01b6", default-features = false }
 
 [target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
 gpui = { version = "0.2.2", default-features = false, features = ["wayland", "x11", "font-kit"] }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false, features = ["wayland", "x11", "font-kit"] }
+gpui_platform = { git = "https://github.com/yhyzgn/liora", rev = "743b465820bdfbea7a8105c98ef3dce9d12f01b6", default-features = false, features = ["wayland", "x11", "font-kit"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 gpui = { version = "0.2.2", default-features = false, features = ["font-kit"] }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false, features = ["font-kit"] }
+gpui_platform = { git = "https://github.com/yhyzgn/liora", rev = "743b465820bdfbea7a8105c98ef3dce9d12f01b6", default-features = false, features = ["font-kit"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 gpui = { version = "0.2.2", default-features = false }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false }
+gpui_platform = { git = "https://github.com/yhyzgn/liora", rev = "743b465820bdfbea7a8105c98ef3dce9d12f01b6", default-features = false }
 
 [patch.crates-io]
-gpui = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591" }
+gpui = { git = "https://github.com/yhyzgn/liora", rev = "743b465820bdfbea7a8105c98ef3dce9d12f01b6" }
 ```
 
 ### 3. Write a minimal `src/main.rs`
@@ -2003,7 +2003,7 @@ Your application is missing the root patch:
 
 ```toml
 [patch.crates-io]
-gpui = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591" }
+gpui = { git = "https://github.com/yhyzgn/liora", rev = "743b465820bdfbea7a8105c98ef3dce9d12f01b6" }
 ```
 
 Verify with:
@@ -2020,7 +2020,7 @@ Add direct dependencies when your final binary names GPUI types or starts the ap
 ```toml
 [dependencies]
 gpui = { version = "0.2.2", default-features = false }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", default-features = false }
+gpui_platform = { git = "https://github.com/yhyzgn/liora", rev = "743b465820bdfbea7a8105c98ef3dce9d12f01b6", default-features = false }
 ```
 
 ### Linux build fails because GTK, Wayland, X11, Vulkan, ALSA, or font packages are missing
@@ -2048,7 +2048,9 @@ WindowOptions {
 
 Create windows with `show: false`, call `attach_system_theme_observer(window, cx)` at the beginning of the `open_window` callback, and activate the window after `open_window` returns.
 
-On Linux/FreeBSD, synchronous startup hints remain in use until the SDK receives a window-appearance notification. After that, System reselection, synchronization, and new-window setup use the current window appearance, including notifications received in fixed modes or without a theme-color change. This does not resolve the cold-start race where the portal's initial value arrives before observer attachment and no later notification occurs.
+On Linux/FreeBSD, synchronous startup hints apply only while GPUI appearance is uninitialized. System initialization, reselection and synchronization use an initialized appearance snapshot even when the initial portal value arrived before any window or observer; notification history is not a readiness signal. Window readiness and color share one cached snapshot. The existing color stream is subscribed before the initial read, but this is not an atomic snapshot-and-subscription protocol.
+
+GTK settings resolve `gtk-theme-name` and `gtk-application-prefer-dark-theme` independently of line order. A `true` preference requests the dark variant; `false` does not override an explicitly dark theme name with light. Without a recognized theme name, explicit `false` retains the light startup fallback.
 
 ### Input text or focus state resets during render
 

@@ -530,26 +530,23 @@ fn write_if_changed(path: &std::path::Path, bytes: &[u8]) -> std::io::Result<boo
 }
 
 fn startup_system_appearance(cx: &App) -> WindowAppearance {
-    platform_system_appearance().unwrap_or_else(|| cx.window_appearance())
+    if cx.is_window_appearance_initialized() {
+        cx.window_appearance()
+    } else {
+        platform_system_appearance().unwrap_or_else(|| cx.window_appearance())
+    }
 }
 
-#[derive(Default)]
-struct LiveSystemAppearanceObserved(bool);
-
-impl Global for LiveSystemAppearanceObserved {}
-
 #[cfg(test)]
-static CURRENT_SYSTEM_APPEARANCE_CALLS: std::sync::atomic::AtomicUsize =
-    std::sync::atomic::AtomicUsize::new(0);
+thread_local! {
+    static CURRENT_SYSTEM_APPEARANCE_CALLS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
 
-fn current_system_appearance(window: &Window, cx: &App) -> WindowAppearance {
+fn current_system_appearance(window: &Window) -> WindowAppearance {
     #[cfg(test)]
-    CURRENT_SYSTEM_APPEARANCE_CALLS.fetch_add(1, Ordering::Relaxed);
+    CURRENT_SYSTEM_APPEARANCE_CALLS.set(CURRENT_SYSTEM_APPEARANCE_CALLS.get() + 1);
 
-    if cx
-        .try_global::<LiveSystemAppearanceObserved>()
-        .is_some_and(|observed| observed.0)
-    {
+    if window.is_appearance_initialized() {
         return window.appearance();
     }
 
@@ -622,6 +619,8 @@ fn appearance_from_color_scheme(value: &str) -> Option<WindowAppearance> {
 
 #[cfg(any(target_os = "linux", target_os = "freebsd"))]
 fn appearance_from_gtk_settings(settings: &str) -> Option<WindowAppearance> {
+    let mut theme = None;
+    let mut prefer_dark = None;
     for line in settings.lines() {
         let line = line.trim();
         if line.starts_with('#') || line.starts_with(';') || line.is_empty() {
@@ -633,19 +632,23 @@ fn appearance_from_gtk_settings(settings: &str) -> Option<WindowAppearance> {
         let key = key.trim();
         let value = value.trim();
         if key == "gtk-application-prefer-dark-theme" {
-            return match value.to_ascii_lowercase().as_str() {
-                "true" | "1" => Some(WindowAppearance::Dark),
-                "false" | "0" => Some(WindowAppearance::Light),
-                _ => None,
-            };
+            if value == "1" || value.eq_ignore_ascii_case("true") {
+                prefer_dark = Some(true);
+            } else if value == "0" || value.eq_ignore_ascii_case("false") {
+                prefer_dark = Some(false);
+            }
         }
         if key == "gtk-theme-name"
             && let Some(appearance) = appearance_from_theme_name(value)
         {
-            return Some(appearance);
+            theme = Some(appearance);
         }
     }
-    None
+    if prefer_dark == Some(true) {
+        Some(WindowAppearance::Dark)
+    } else {
+        theme.or(prefer_dark.map(|_| WindowAppearance::Light))
+    }
 }
 
 #[cfg(any(target_os = "linux", target_os = "freebsd"))]
@@ -732,7 +735,6 @@ pub fn init_liora(cx: &mut App, theme: Theme) {
 
 fn set_core_config(cx: &mut App, config: Config) {
     cx.set_global(config);
-    cx.set_global(LiveSystemAppearanceObserved(false));
     fonts::refresh_default_code_font(cx);
     cx.set_global(crate::popper::ZIndexStack::default());
     cx.set_global(crate::popper::ActiveTooltip(Vec::new()));
@@ -828,7 +830,7 @@ pub fn code_font_weight(cx: &App) -> Option<FontWeight> {
 /// Applies a new theme mode and schedules all open GPUI windows to redraw.
 pub fn apply_theme_mode(window: &mut Window, cx: &mut App, mode: ThemeMode) {
     let appearance = (mode == ThemeMode::System)
-        .then(|| current_system_appearance(window, cx))
+        .then(|| current_system_appearance(window))
         .unwrap_or(WindowAppearance::Light);
     cx.global_mut::<Config>().set_theme_mode(mode, appearance);
     cx.refresh_windows();
@@ -839,27 +841,10 @@ pub fn sync_system_theme(window: &mut Window, cx: &mut App) {
     if cx.global::<Config>().theme_mode != ThemeMode::System {
         return;
     }
-    let appearance = current_system_appearance(window, cx);
+    let appearance = current_system_appearance(window);
     if cx.global_mut::<Config>().sync_system_theme(appearance) {
         cx.refresh_windows();
     }
-}
-
-fn sync_observed_system_theme(window: &mut Window, cx: &mut App) {
-    sync_observed_system_appearance(window, cx, window.appearance());
-}
-
-fn sync_observed_system_appearance(
-    _window: &mut Window,
-    cx: &mut App,
-    appearance: WindowAppearance,
-) -> bool {
-    cx.default_global::<LiveSystemAppearanceObserved>().0 = true;
-    let changed = cx.global_mut::<Config>().sync_system_theme(appearance);
-    if changed {
-        cx.refresh_windows();
-    }
-    changed
 }
 
 /// Attach System theme tracking to a concrete GPUI window.
@@ -870,18 +855,8 @@ fn sync_observed_system_appearance(
 /// at the start of the `open_window` callback before constructing the root view,
 /// then activate the returned window handle after `open_window` completes.
 pub fn attach_system_theme_observer(window: &mut Window, cx: &mut App) {
-    attach_system_theme_observer_with(window, cx, sync_system_theme);
-}
-
-fn attach_system_theme_observer_with(
-    window: &mut Window,
-    cx: &mut App,
-    initial_sync: impl FnOnce(&mut Window, &mut App),
-) {
-    initial_sync(window, cx);
-    window
-        .observe_window_appearance(sync_observed_system_theme)
-        .detach();
+    sync_system_theme(window, cx);
+    window.observe_window_appearance(sync_system_theme).detach();
 }
 
 /// Renders the render active popover in window layer into native GPUI elements.
@@ -1011,8 +986,8 @@ mod theme_mode_tests {
         let before_system_change = renders.each_ref().map(|count| count.get());
         app.update_window(first.into(), |_, window, cx| {
             assert_eq!(window.appearance(), WindowAppearance::Light);
-            // Invoke the production observer callback; no OS event is simulated.
-            sync_observed_system_theme(window, cx);
+            // Exercise the same readiness-aware resolver used by window notifications.
+            sync_system_theme(window, cx);
         })
         .unwrap();
         app.run_until_parked();
@@ -1034,19 +1009,19 @@ mod theme_mode_tests {
         let window = app.open_window(size(px(320.), px(240.)), |_, _| ThemeSurface);
 
         app.update_window(window.into(), |_, window, cx| {
-            CURRENT_SYSTEM_APPEARANCE_CALLS.store(0, Ordering::Relaxed);
+            CURRENT_SYSTEM_APPEARANCE_CALLS.set(0);
 
             apply_theme_mode(window, cx, ThemeMode::Dark);
-            assert_eq!(CURRENT_SYSTEM_APPEARANCE_CALLS.load(Ordering::Relaxed), 0);
+            assert_eq!(CURRENT_SYSTEM_APPEARANCE_CALLS.get(), 0);
             assert_eq!(cx.global::<Config>().theme.name, "dark");
 
             sync_system_theme(window, cx);
-            assert_eq!(CURRENT_SYSTEM_APPEARANCE_CALLS.load(Ordering::Relaxed), 0);
+            assert_eq!(CURRENT_SYSTEM_APPEARANCE_CALLS.get(), 0);
 
             apply_theme_mode(window, cx, ThemeMode::System);
-            assert_eq!(CURRENT_SYSTEM_APPEARANCE_CALLS.load(Ordering::Relaxed), 1);
+            assert_eq!(CURRENT_SYSTEM_APPEARANCE_CALLS.get(), 1);
             sync_system_theme(window, cx);
-            assert_eq!(CURRENT_SYSTEM_APPEARANCE_CALLS.load(Ordering::Relaxed), 2);
+            assert_eq!(CURRENT_SYSTEM_APPEARANCE_CALLS.get(), 2);
         })
         .unwrap();
         app.quit();
@@ -1073,6 +1048,31 @@ mod theme_mode_tests {
             appearance_from_theme_name("Adwaita-dark"),
             Some(WindowAppearance::Dark)
         );
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "freebsd"))]
+    #[test]
+    fn gtk_startup_theme_honors_dark_preference_independently_of_line_order() {
+        for (theme, prefer_dark, expected) in [
+            ("Adwaita-light", true, WindowAppearance::Dark),
+            ("Adwaita-dark", false, WindowAppearance::Dark),
+            ("Adwaita-light", false, WindowAppearance::Light),
+            ("Breeze", true, WindowAppearance::Dark),
+            ("Breeze", false, WindowAppearance::Light),
+        ] {
+            let theme_line = format!("gtk-theme-name={theme}\n");
+            let preference_line = format!("gtk-application-prefer-dark-theme={prefer_dark}\n");
+            for settings in [
+                format!("[Settings]\n{theme_line}{preference_line}"),
+                format!("[Settings]\n{preference_line}{theme_line}"),
+            ] {
+                assert_eq!(
+                    appearance_from_gtk_settings(&settings),
+                    Some(expected),
+                    "{settings}"
+                );
+            }
+        }
     }
 
     #[test]
@@ -1119,54 +1119,72 @@ mod theme_mode_tests {
     }
 
     #[test]
-    fn observed_theme_transition_overrides_startup_and_preserves_fixed_modes() {
+    fn initialized_appearance_before_liora_init_needs_no_observer_history() {
+        let mut app = gpui::TestAppContext::single();
+        for (appearance, expected) in [
+            (WindowAppearance::Dark, "dark"),
+            (WindowAppearance::Light, "light"),
+        ] {
+            app.set_window_appearance(Some(appearance));
+            app.update(|cx| {
+                init_liora_with_mode(cx, ThemeMode::System);
+                assert_eq!(cx.global::<Config>().theme.name, expected);
+            });
+            let handle = app.add_window(|_, _| ThemeSurface);
+            app.update_window(handle.into(), |_, window, cx| {
+                attach_system_theme_observer(window, cx);
+                assert_eq!(cx.global::<Config>().theme.name, expected);
+                window.remove_window();
+            })
+            .unwrap();
+        }
+        app.quit();
+    }
+
+    #[test]
+    fn initialized_appearance_overrides_startup_and_preserves_fixed_modes() {
         let mut app = gpui::TestAppContext::single();
         app.update(|cx| init_liora(cx, Theme::dark()));
         let handle = app.add_window(|_, _| ThemeSurface);
         app.update_window(handle.into(), |_, window, cx| {
+            assert!(window.is_appearance_initialized());
             assert_eq!(window.appearance(), WindowAppearance::Light);
-            let config = cx.global_mut::<Config>();
-            config.set_theme_mode(ThemeMode::System, WindowAppearance::Light);
-            // Exercise production setup with a supplied startup hint, not OS probes.
-            attach_system_theme_observer_with(window, cx, |window, cx| {
-                assert!(sync_observed_system_appearance(
-                    window,
-                    cx,
-                    WindowAppearance::Dark
-                ));
-            });
-            assert_eq!(cx.global::<Config>().theme.name, "dark");
-            // Invoke the production callback directly; GPUI event delivery is not simulated.
-            sync_observed_system_theme(window, cx);
-            assert_eq!(cx.global::<Config>().theme.name, "light");
             cx.global_mut::<Config>()
                 .set_theme_mode(ThemeMode::System, WindowAppearance::Dark);
-            assert!(sync_observed_system_appearance(
-                window,
-                cx,
-                WindowAppearance::Light
-            ));
-            // A later Dark notification overrides the preceding Light state/hint.
-            assert!(sync_observed_system_appearance(
-                window,
-                cx,
-                WindowAppearance::Dark
-            ));
-            assert_eq!(cx.global::<Config>().theme.name, "dark");
-            assert!(!sync_observed_system_appearance(
-                window,
-                cx,
-                WindowAppearance::Dark
-            ));
-            for (mode, observed, expected) in [
-                (ThemeMode::Light, WindowAppearance::Dark, "light"),
-                (ThemeMode::Dark, WindowAppearance::Light, "dark"),
-            ] {
-                cx.global_mut::<Config>()
-                    .set_theme_mode(mode, WindowAppearance::Light);
-                assert!(!sync_observed_system_appearance(window, cx, observed));
+            attach_system_theme_observer(window, cx);
+            assert_eq!(cx.global::<Config>().theme.name, "light");
+        })
+        .unwrap();
+
+        for (fixed, observed, expected) in [
+            (ThemeMode::Light, WindowAppearance::Dark, "dark"),
+            (ThemeMode::Dark, WindowAppearance::Light, "light"),
+        ] {
+            app.update_window(handle.into(), |_, window, cx| {
+                apply_theme_mode(window, cx, fixed);
+            })
+            .unwrap();
+            app.simulate_window_appearance_change(handle.into(), observed);
+            app.run_until_parked();
+            app.update_window(handle.into(), |_, window, cx| {
+                assert_eq!(cx.global::<Config>().theme.name, fixed.value());
+                apply_theme_mode(window, cx, ThemeMode::System);
                 assert_eq!(cx.global::<Config>().theme.name, expected);
-            }
+                sync_system_theme(window, cx);
+                assert_eq!(cx.global::<Config>().theme.name, expected);
+            })
+            .unwrap();
+        }
+
+        let late = app.add_window(|_, _| ThemeSurface);
+        app.simulate_window_appearance_change(late.into(), WindowAppearance::Dark);
+        app.run_until_parked();
+        app.update_window(late.into(), |_, window, cx| {
+            assert_eq!(window.appearance(), WindowAppearance::Dark);
+            cx.global_mut::<Config>()
+                .set_theme_mode(ThemeMode::System, WindowAppearance::Light);
+            attach_system_theme_observer(window, cx);
+            assert_eq!(cx.global::<Config>().theme.name, "dark");
         })
         .unwrap();
         app.quit();

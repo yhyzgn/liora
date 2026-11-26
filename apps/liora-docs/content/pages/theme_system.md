@@ -4,7 +4,7 @@ Liora 的主题系统提供 `System`、`Light`、`Dark` 三种模式。默认推
 
 ## 三种模式
 
-- `System`：启动时优先采用可同步获取的系统外观偏好，未取得时回退到 GPUI 外观；后续通过 `observe_window_appearance` 采用 GPUI 更新后的窗口外观。
+- `System`：GPUI 已初始化外观时使用其当前快照；尚未初始化时使用同步可用的桌面偏好，最后回退到 GPUI 默认值。通知发生本身不等于系统初值已返回。
 - `Light`：固定浅色主题，不再跟随后续系统外观变化。
 - `Dark`：固定深色主题，不再跟随后续系统外观变化。
 
@@ -45,14 +45,15 @@ Gallery 和 Docs 都使用同一套接入方式：
 1. `liora::init_liora(cx)` 初始化默认跟随系统，并统一注册组件全局服务和 key bindings。
 2. 如果产品需要固定启动主题，调用 `liora::init_liora_with_mode(cx, ThemeMode::Light | ThemeMode::Dark | ThemeMode::System)`。
 3. 最大化启动窗口使用 `startup_maximized_window_bounds(cx, fallback)`：它保留 GPUI 的 `WindowBounds::Maximized` 语义，并把当前显示器可用区域作为 restore/fallback bounds。
-4. Liora SDK 不耦合、不嵌入本仓库 `third_party/zed` 下的 GPUI patch；当前依赖面使用 Zed 官方 `zed-industries/zed` git revision `f0d896f2c18a543335eb155f729d36b624695591`，并让 `gpui` 与 `gpui_platform` 保持同一 revision。
-5. Gallery / Docs 也按同一官方 git revision 构建，并只在最终 app crate 中启用平台 feature。不要把本地 path GPUI、`[patch]` override 或非官方 fork 写入可发布 SDK manifest。
-6. 注意：`third_party/zed` 是未发布的上游源码对照材料，不是 SDK 依赖；如需临时验证本地 patch，只能放在 app-only 临时分支。
-   工作区旧有的全面 patch 禁令现仅对 `third_party/accesskit_atspi_common` 中官方 `0.19.1` 的 Busy/Disabled 上游回移作出显式应用根例外；不是 GPUI patch，不进入可发布 SDK manifest，也不会被 SDK 宿主继承。其他 crate/source override 仍禁止；具体来源、固定源码获取及宿主 root override 见仓库 `docs/accesskit-atspi-backport.md`。
+4. 当前 GPUI 使用本仓库维护的 `third_party/gpui` 源码修订，基于官方 `zed-industries/zed` 的 `f0d896f2c18a543335eb155f729d36b624695591`；这不是新的官方 revision。`gpui` 与 `gpui_platform` 必须使用根 `Cargo.toml` 记录的同一 Liora Git revision，九个相互依赖的平台 crate 保持同一 GPUI 类型身份。
+5. SDK 保留 `gpui 0.2.2` registry fallback；crates.io 消费者在自己的应用根为 `gpui` 配置匹配的 `[patch.crates-io]`。不能依赖库的 root patch 传播，也不能把开发者本地 path 写入发布依赖；平台 feature 仍只由最终 app 启用。
+6. `third_party/zed` 仅保留旧实验；其 manifest 使用 `.reference` 后缀防止 Cargo Git 包名冲突，不是当前依赖。AccessKit Busy/Disabled 回移仍是独立且不传播的应用根例外；其他 source override 不因此开放。来源与移除边界见 `third_party/gpui/README.md` 和 `docs/accesskit-atspi-backport.md`。
 7. 窗口选项保留 `show: false` 并在 `open_window` 返回 handle 后调用 `window.activate_window()`，与 Zed 主窗口显示时机保持一致；但 Linux 尺寸首帧正确性最终取决于应用选择的 GPUI backend 是否在平台窗口创建阶段处理初始 `Maximized` / `Fullscreen` 状态。
 8. 在 `open_window` 回调一开始、创建 root view 之前调用 `attach_system_theme_observer(window, cx)`；它会先同步一次，再保活 `observe_window_appearance` 以跟随后续系统变化。
-9. Linux / FreeBSD 启动时，`System` 会优先读取同步可用的桌面偏好（`GTK_THEME`、GTK settings、`gsettings org.gnome.desktop.interface color-scheme`），避免 GPUI Linux 后端默认 `Light` 等待 xdg-desktop-portal 异步回传时造成首帧浅色。
+9. Linux / FreeBSD 的 GPUI 外观尚未初始化时，`System` 读取同步桌面偏好（`GTK_THEME`、GTK settings、`gsettings org.gnome.desktop.interface color-scheme`），避免等待 portal 异步初值期间误用默认 Light。
 10. 用户切换分段控件时调用 `apply_theme_mode(window, cx, mode)`，通过 GPUI 原生 `App::refresh_windows()` 为所有已打开窗口安排重绘。
-11. 收到首次 `observe_window_appearance` 通知前，初次挂载与手动切回 `System` 仍使用上述同步启动偏好。收到通知后（包括固定模式或主题颜色不变时），`System` 重选、显式同步和新窗口挂载均采用该窗口当前的 `window.appearance()`，不再让旧 GTK / gsettings 值覆盖实时外观；仅主题实际改变时刷新所有已打开窗口，固定 `Light` / `Dark` 的主题不受通知影响。新平台窗口从 GPUI 的应用级外观初始化，因此无窗口期间的系统变化也不会回退为旧窗口颜色。冷启动中 portal 初值早于观察器挂载且此后没有通知的 ready 竞争仍未解决。
+11. 通过 `App::is_window_appearance_initialized()` 与 `Window::is_appearance_initialized()` 区分 pending Light 与已确认 Light；窗口颜色和 ready 状态来自同一份缓存快照。初值早于窗口/观察器、无窗口期间变化、固定模式切回 System 都不依赖通知历史。真实同色通知和窗口装饰通知保留，但 pending 状态不能覆盖同步启动提示。仅主题实际改变时刷新所有窗口，固定 Light/Dark 不受系统通知影响。portal 在初次读取前订阅同一个颜色 stream，避免读完初值后、尚未订阅时丢失变化；不新增平行监听、定时猜测或产品轮询。
+
+GTK settings 的 `gtk-theme-name` 与 `gtk-application-prefer-dark-theme` 不依赖配置行顺序：`true` 优先请求深色变体；`false` 表示不额外请求深色，而不是强制浅色，因此仍保留主题名指定的深色外观。未取得可识别主题名时，显式 `false` 保留浅色启动回退。此规则只处理 GPUI 尚未初始化时的同步提示；参见 [GTK 属性定义](https://docs.gtk.org/gtk3/property.Settings.gtk-application-prefer-dark-theme.html)。
 
 这套能力仍然是纯 Rust + GPUI 原生应用能力，不依赖 Tauri、WebView、HTML、CSS 或 DOM runtime。

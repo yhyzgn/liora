@@ -1,11 +1,11 @@
-"""Audit SDK metadata and the single application-root AccessKit backport exception."""
+"""Audit immutable Liora GPUI dependencies and the application-root AccessKit exception."""
 
 from pathlib import Path
 import sys
 import tomllib
 
-ZED = "https://github.com/zed-industries/zed"
-REV = "f0d896f2c18a543335eb155f729d36b624695591"
+GPUI_SOURCE = "https://github.com/yhyzgn/liora"
+REV = "743b465820bdfbea7a8105c98ef3dce9d12f01b6"
 LEAF = "third_party/accesskit_atspi_common"
 SDK_CRATES = "liora-theme liora-icons-optimizer liora-tray liora-packager liora-updater liora-core liora-icons liora-icons-lucide liora-icons-antd liora-icons-ionic liora-icons-tabler liora-icons-carbon liora-icons-material liora-components liora liora-webview".split()
 APPROVED_PATCH = {
@@ -36,7 +36,7 @@ def check_dependencies(manifest: dict, *, workspace: bool, publish: bool) -> Non
                 require(name == package, "renamed GPUI dependencies are forbidden")
                 if not workspace:
                     require(isinstance(dependency, dict) and dependency.get("workspace") is True,
-                            f"{name} must inherit the official workspace dependency")
+                            f"{name} must inherit the pinned workspace dependency")
                     require(set(dependency) <= {"workspace", "features", "default-features", "optional"},
                             f"{name} must not override its workspace source")
                 require(not (publish and kind != "dev-dependencies" and name == "gpui_platform"),
@@ -51,11 +51,11 @@ def audit(root: Path) -> None:
     require("replace" not in manifest and "source" not in manifest and "paths" not in manifest,
             "workspace replacement/source overrides are forbidden")
     dependencies = manifest["workspace"]["dependencies"]
-    official = {"git": ZED, "rev": REV, "default-features": False}
-    require(dependencies["gpui"] == {**official, "version": "0.2.2"},
-            "gpui must retain the exact official revision and 0.2.2 registry fallback")
-    require(dependencies["gpui_platform"] == official,
-            "gpui_platform must retain the same official revision without a registry version")
+    pinned = {"git": GPUI_SOURCE, "rev": REV, "default-features": False}
+    require(dependencies["gpui"] == {**pinned, "version": "0.2.2"},
+            "gpui must retain the exact Liora source revision and 0.2.2 registry fallback")
+    require(dependencies["gpui_platform"] == pinned,
+            "gpui_platform must retain the same Liora revision without a registry version")
     check_dependencies(manifest["workspace"], workspace=True, publish=False)
 
     members = manifest["workspace"]["members"]

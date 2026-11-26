@@ -2,7 +2,7 @@
 
 ## Explicit policy amendment and source
 
-The former blanket ban on workspace `[patch.crates-io]` is amended for exactly one application-root override, not reinterpreted as a typo. `third_party/accesskit_atspi_common` is the complete official `accesskit_atspi_common 0.19.1` crate plus two upstream mapping backports and a regression test. All other crate/source overrides, GPUI forks, local GPUI paths and official-Zed source patches remain forbidden. Publishable SDK manifests remain unchanged and contain no patches or local GPUI paths. GPUI remains official Zed `f0d896f2c18a543335eb155f729d36b624695591` with registry fallback `0.2.2`; AccessKit versions and dependency edges are unchanged.
+The former blanket ban on workspace `[patch.crates-io]` is amended for exactly one application-root override: `third_party/accesskit_atspi_common`, the complete official `accesskit_atspi_common 0.19.1` crate plus two upstream mapping backports and a regression test. Other root crate/source overrides remain forbidden. The separately authorized [Liora-maintained GPUI source](../third_party/gpui/README.md), derived from official Zed `f0d896f2c18a543335eb155f729d36b624695591`, is selected directly by immutable Git dependencies, not by a root source patch. SDK manifests contain no patches or local GPUI paths and retain registry fallback `0.2.2`; AccessKit versions and dependency edges are unchanged.
 
 - [Official 0.19.1 crate](https://crates.io/crates/accesskit_atspi_common/0.19.1): archive SHA-256 `023da0e5097f46df7092d5280b02efb9bbf8d93298daeced42652463e357d636`, source commit [`c88605b96d04431f9c3c792464a0f2f253480e94`](https://github.com/AccessKit/accesskit/tree/c88605b96d04431f9c3c792464a0f2f253480e94/platforms/atspi-common).
 - [Upstream #780](https://github.com/AccessKit/accesskit/commit/58412b89d64a00b2f79563c2ae8dc6b9e06cb68e): only its Busy-state hunk, not the additional Document interface.
@@ -27,11 +27,11 @@ git -C "$LIORA_CHECKOUT" archive "$LIORA_REV" third_party/accesskit_atspi_common
   | tar -x -C .
 ```
 
-Keep the existing official-GPUI patch in the application's root `Cargo.toml`, and add the leaf in the **same** table (do not create duplicate tables):
+Keep the GPUI patch matching the consumed SDK's source revision in the application's root `Cargo.toml`, and add the leaf in the **same** table (do not create duplicate tables):
 
 ```toml
 [patch.crates-io]
-gpui = { git = "https://github.com/zed-industries/zed", rev = "f0d896f2c18a543335eb155f729d36b624695591", version = "=0.2.2" }
+gpui = { git = "https://github.com/yhyzgn/liora", rev = "743b465820bdfbea7a8105c98ef3dce9d12f01b6", version = "=0.2.2" }
 accesskit_atspi_common = { path = "third_party/accesskit_atspi_common", version = "=0.19.1" }
 ```
 

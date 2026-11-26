@@ -8,7 +8,7 @@ pub fn ordered_list() -> Card {
             .item(
                 ListItem::new("Install Liora")
                     .child(ListItem::new("Add the liora crate"))
-                    .child(ListItem::new("Pin the matching official GPUI rev")),
+                    .child(ListItem::new("Pin the matching GPUI source revision")),
             )
             .item(
                 ListItem::new("Initialize the app")

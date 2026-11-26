@@ -11,7 +11,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 AUDIT = ROOT / "scripts/audit_sdk_policy.py"
 BASE = (ROOT / "Cargo.toml").read_text().split("\n[patch.crates-io]")[0]
-PIN = "f0d896f2c18a543335eb155f729d36b624695591"
+PIN = "743b465820bdfbea7a8105c98ef3dce9d12f01b6"
 LEAF = "third_party/accesskit_atspi_common"
 PATCH = '\n[patch.crates-io]\naccesskit_atspi_common = { path = "' + LEAF + '", version = "=0.19.1" }\n'
 
@@ -78,7 +78,9 @@ class SdkPolicyTests(unittest.TestCase):
     def test_pin_and_leaf_negative_controls(self):
         for name, manifest, leaf, files in [
             ("wrong-revision", BASE.replace(PIN, "a" * 40), None, None),
-            ("gpui-fork", BASE.replace("https://github.com/zed-industries/zed", "https://example.invalid/fork"), None, None),
+            ("gpui-fork", BASE.replace("https://github.com/yhyzgn/liora", "https://example.invalid/fork"), None, None),
+            ("gpui-official-without-readiness", BASE.replace("https://github.com/yhyzgn/liora", "https://github.com/zed-industries/zed"), None, None),
+            ("mixed-gpui-platform-source", BASE.replace('gpui_platform = { git = "https://github.com/yhyzgn/liora"', 'gpui_platform = { git = "https://github.com/zed-industries/zed"'), None, None),
             ("gpui-no-fallback", BASE.replace('version = "0.2.2", git =', 'git ='), None, None),
             ("wrong-leaf-package", BASE + PATCH, '[package]\nname = "gpui"\nversion = "0.19.1"\n', None),
             ("wrong-leaf-version", BASE + PATCH, '[package]\nname = "accesskit_atspi_common"\nversion = "0.19.0"\n', None),

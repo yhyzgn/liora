@@ -76,16 +76,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          zed_gpui_rev="$(python - <<'PY'
+          read -r gpui_git gpui_rev < <(python - <<'PY'
           from pathlib import Path
           import tomllib
 
           root = tomllib.loads(Path("Cargo.toml").read_text())
-          print(root["workspace"]["dependencies"]["gpui"]["rev"])
+          source = root["workspace"]["dependencies"]["gpui"]
+          print(source["git"], source["rev"])
           PY
-          )"
-          if [[ -z "${zed_gpui_rev}" ]]; then
-            echo "Could not resolve the pinned official Zed GPUI revision from Cargo.toml." >&2
+          )
+          if [[ -z "${gpui_git}" || -z "${gpui_rev}" ]]; then
+            echo "Could not resolve the pinned Liora GPUI source/revision from Cargo.toml." >&2
             exit 1
           fi
           tmp="$(mktemp -d)"
@@ -102,7 +103,7 @@ jobs:
           liora = { path = "$PWD/crates/liora", default-features = true }
 
           [patch.crates-io]
-          gpui = { git = "https://github.com/zed-industries/zed", rev = "$zed_gpui_rev", version = "=0.2.2" }
+          gpui = { git = "$gpui_git", rev = "$gpui_rev", version = "=0.2.2" }
           EOF
           mkdir -p "$tmp/src"
           cat > "$tmp/src/main.rs" <<'EOF'
