@@ -1,8 +1,8 @@
-# Zed / GPUI local patch
+# Historical Zed / GPUI patch reference
 
 This directory contains a small repo-local Zed source patch used for Liora Gallery / Docs startup-window verification. It is **not** part of the published Liora SDK dependency surface.
 
-Upstream base: `zed-industries/zed` commit `492acd6c815cbe8c7366d54e6092341340afa6c7` for current Liora dependency comparison; older patch experiments may have originated from earlier upstream commits.
+Historical comparison base: `zed-industries/zed` commit `492acd6c815cbe8c7366d54e6092341340afa6c7`; the archived manifests retain their original older dependency pins. This is not the current Liora backend.
 
 Why this exists:
 
@@ -13,30 +13,15 @@ Why this exists:
 
 Dependency boundary:
 
-- Published Liora crates use only the official `zed-industries/zed` git dependency pinned in the workspace and must not depend on this directory.
-- The former blanket ban on root `[patch.crates-io]` is explicitly amended only for the licensed official `accesskit_atspi_common 0.19.1` Busy/Disabled backport at `third_party/accesskit_atspi_common`; see [the exception and downstream boundary](../../docs/accesskit-atspi-backport.md). This is not a GPUI patch. All local/fork GPUI overrides remain forbidden, and publishable SDK manifests still must not contain patches.
+- Current GPUI source maintenance lives in [`../gpui`](../gpui/README.md); do not restore these historical manifests into the dependency graph.
+- The three `Cargo.toml.reference` files retain their original bytes but are deliberately not named `Cargo.toml`: Cargo recursively discovers Git packages even inside excluded workspaces, and the old package names would collide with the current GPUI crates.
 - Cargo patches are root-application decisions; a library crate cannot safely force downstream applications to use a patched backend.
 
-How Gallery / Docs can test this patch locally:
-
-1. Use a throwaway local branch for verification.
-2. Keep the normal workspace dependency on official `zed-industries/zed` `gpui` / `gpui_platform` git sources.
-3. Add this app-root patch only on the throwaway branch:
-
-```toml
-[patch."https://github.com/zed-industries/zed"]
-gpui = { path = "third_party/zed/crates/gpui" }
-gpui_platform = { path = "third_party/zed/crates/gpui_platform" }
-```
-
-Do not commit that override to publishable Liora SDK manifests. The SDK release path must remain official `zed-industries/zed` git sources with no local path override.
+The reference is not directly buildable. Keep historical source and manifests inert; any future experiment must use a separate checkout so Git package discovery remains unambiguous.
 
 Kept intentionally small:
 
 - Only `crates/gpui`, `crates/gpui_linux`, the workspace manifest required for inherited dependencies, the Apache license, and GPUI font assets required by `include_bytes!` are included.
 - Upstream examples, docs, build targets, and GPUI self-tests are excluded from Liora's root workspace.
 
-Preferred long-term exit:
-
-1. Upstream this patch to `zed-industries/zed` and remove this directory.
-2. Or move the patch to a dedicated fork branch and let application roots opt into a pinned git revision.
+The historical startup-window experiment is not included in the current appearance repair and is not a verified fix for the present GPUI baseline.
