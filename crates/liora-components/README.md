@@ -48,6 +48,12 @@ A Space keydown cannot arm a later, unpaired Enter release.
 
 Badge text uses the shared `liora_theme::filled_foreground` black/white contrast policy, including for custom opaque semantic fills. Default light/dark semantic fills meet 4.5:1 text contrast. Translucent or gradient backgrounds require a host-owned compositing/contrast policy.
 
+## Breadcrumb navigation
+
+Ancestor items with `on_click` expose native Link names, retained Tab/Shift+Tab focus and Enter-only release-time activation with a layout-neutral keyboard focus outline. Space does not activate or arm Enter. The final/current item is inert even if a callback is supplied. Native pointer activation still requires a matching press/release. The SDK invokes host callbacks; it does not own navigation or open URLs implicitly.
+
+`Breadcrumb::id` supplies a stable namespace for repeated identical trails. Default namespaces derive from labels and separator; item IDs include their label and position. Rendering copies only the needed theme colors and avoids per-item formatted ID strings. Gallery and Docs execute all five authored examples, including visible message feedback for activation.
+
 ## Affixed content
 
 Retain `Affix` as an `Entity<Affix>` in its host view. Top/bottom offsets are relative to the window viewport, not the surrounding scroll container. Fixed/unfixed transitions schedule their functional follow-up frame even with decorative motion disabled; a stable Affix does not continuously request frames. Gallery and Docs execute the displayed 80px top / 20px bottom constructors. Docs also executes the complete container snippet with the retained entity as its real child.

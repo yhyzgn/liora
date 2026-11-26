@@ -98,6 +98,17 @@ mod backtop_custom_example;
 #[path = "../content/snippets/backtop/container.rs"]
 mod backtop_container_example;
 
+#[path = "../content/snippets/breadcrumb/basic.rs"]
+mod breadcrumb_basic_example;
+#[path = "../content/snippets/breadcrumb/icon.rs"]
+mod breadcrumb_icon_example;
+#[path = "../content/snippets/breadcrumb/separator.rs"]
+mod breadcrumb_separator_example;
+#[path = "../content/snippets/breadcrumb/separator_icon.rs"]
+mod breadcrumb_separator_icon_example;
+#[path = "../content/snippets/breadcrumb/clickable.rs"]
+mod breadcrumb_clickable_example;
+
 const INTRO_DOC: &str = include_str!("../content/pages/overview.md");
 const QUICK_START_DOC: &str = include_str!("../content/pages/quick_start.md");
 const ARCHITECTURE_DOC: &str = include_str!("../content/pages/architecture.md");
@@ -5834,43 +5845,17 @@ impl Render for LiveDemoContent {
                     ),
             )
             .into_any_element(),
-            "BreadcrumbBasic" => liora_components::Breadcrumb::new()
-                .item(liora_components::BreadcrumbItem::new("首页"))
-                .item(liora_components::BreadcrumbItem::new("活动管理"))
-                .item(liora_components::BreadcrumbItem::new("活动列表"))
-                .item(liora_components::BreadcrumbItem::new("活动详情"))
-                .into_any_element(),
-            "BreadcrumbIcon" => liora_components::Breadcrumb::new()
-                .item(liora_components::BreadcrumbItem::new("首页").icon(IconName::House))
-                .item(liora_components::BreadcrumbItem::new("推广管理"))
-                .item(liora_components::BreadcrumbItem::new("推广列表"))
-                .item(liora_components::BreadcrumbItem::new("推广详情"))
-                .into_any_element(),
-            "BreadcrumbSeparator" => liora_components::Breadcrumb::new()
-                .separator(">")
-                .item(liora_components::BreadcrumbItem::new("首页"))
-                .item(liora_components::BreadcrumbItem::new("推广管理"))
-                .item(liora_components::BreadcrumbItem::new("推广列表"))
-                .item(liora_components::BreadcrumbItem::new("推广详情"))
-                .into_any_element(),
-            "BreadcrumbSeparatorIcon" => liora_components::Breadcrumb::new()
-                .separator_icon(IconName::ChevronRight)
-                .item(liora_components::BreadcrumbItem::new("首页"))
-                .item(liora_components::BreadcrumbItem::new("推广管理"))
-                .item(liora_components::BreadcrumbItem::new("推广列表"))
-                .item(liora_components::BreadcrumbItem::new("推广详情"))
-                .into_any_element(),
-            "BreadcrumbClickable" => liora_components::Breadcrumb::new()
-                .item(
-                    liora_components::BreadcrumbItem::new("首页")
-                        .on_click(|_, _| toast_info!("Home Clicked")),
-                )
-                .item(
-                    liora_components::BreadcrumbItem::new("推广管理")
-                        .on_click(|_, _| toast_info!("Management Clicked")),
-                )
-                .item(liora_components::BreadcrumbItem::new("推广列表"))
-                .into_any_element(),
+            "BreadcrumbBasic" => breadcrumb_basic_example::basic_breadcrumb().into_any_element(),
+            "BreadcrumbIcon" => breadcrumb_icon_example::icon_breadcrumb().into_any_element(),
+            "BreadcrumbSeparator" => {
+                breadcrumb_separator_example::text_separator_breadcrumb().into_any_element()
+            }
+            "BreadcrumbSeparatorIcon" => {
+                breadcrumb_separator_icon_example::icon_separator_breadcrumb().into_any_element()
+            }
+            "BreadcrumbClickable" => {
+                breadcrumb_clickable_example::clickable_breadcrumb().into_any_element()
+            }
             "PageHeaderBasic" => liora_components::PageHeader::new("详情页面")
                 .on_back(|_, _| toast_info!("Back Clicked"))
                 .into_any_element(),
