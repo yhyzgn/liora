@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Make visible Backtop buttons keyboard reachable with native Button name/role, Tab/Shift+Tab traversal, Enter/Space release-time activation and a layout-neutral focus ring. Request redraw after returning only the bound scroll container, and schedule the follow-up frame when paint detects a visibility change so the affordance cannot remain stale; avoid cloning the full theme. Execute the authored basic/custom constructors in Gallery and Docs, and mount the complete displayed Docs container snippet with a theme-correct custom icon.
+- Contain wheel input inside `Flex::overflow_y_scroll()` viewports so nested examples do not also move their ancestor list. Wheel input outside the inner viewport still scrolls the outer page; reaching an inner boundary does not forward that event.
+
 - Prevent Space keydown from arming a later, unpaired Enter release on Link. Keep native Enter/focus-generation handling and URL dispatch unchanged; cover the mixed-key sequence in the existing platform-input regression.
 
 - Make Anchor links keyboard reachable with retained native focus, forward/reverse Tab traversal, Enter-only release-time navigation and Link role/name metadata. Preserve painted-target lifetime checks; execute the authored basic/nested navigation constructors in Docs and share the nested constructor with Gallery.

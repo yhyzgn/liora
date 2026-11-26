@@ -75,6 +75,13 @@ mod anchor_basic_example;
 #[path = "../content/snippets/anchor/nested.rs"]
 mod anchor_nested_example;
 
+#[path = "../content/snippets/backtop/basic.rs"]
+mod backtop_basic_example;
+#[path = "../content/snippets/backtop/custom.rs"]
+mod backtop_custom_example;
+#[path = "../content/snippets/backtop/container.rs"]
+mod backtop_container_example;
+
 const INTRO_DOC: &str = include_str!("../content/pages/overview.md");
 const QUICK_START_DOC: &str = include_str!("../content/pages/quick_start.md");
 const ARCHITECTURE_DOC: &str = include_str!("../content/pages/architecture.md");
@@ -3441,11 +3448,11 @@ impl LiveDemoContent {
             }
             "BacktopBasic" | "BacktopContainer" => {
                 let handle = scroll_handle.clone();
-                backtops.push(cx.new(move |_| docs_backtop_basic(handle)));
+                backtops.push(cx.new(move |_| backtop_basic_example::basic_backtop(handle)));
             }
             "BacktopCustom" => {
                 let handle = scroll_handle.clone();
-                backtops.push(cx.new(move |_| docs_backtop_custom(handle)));
+                backtops.push(cx.new(move |_| backtop_custom_example::custom_backtop(handle)));
             }
             "FormBasic" => {
                 form_inputs.push(cx.new(|cx| Input::new("Liora", cx).placeholder("Name")));
@@ -9795,64 +9802,12 @@ fn docs_anchor_panel(
         .child(Text::new(label))
 }
 
-fn docs_backtop_basic(scroll_handle: ScrollHandle) -> Backtop {
-    Backtop::new(scroll_handle)
-        .id("docs-backtop-basic")
-        .visibility_height_sm()
-}
-
-fn docs_backtop_custom(scroll_handle: ScrollHandle) -> Backtop {
-    Backtop::new(scroll_handle)
-        .id("docs-backtop-custom")
-        .right_lg()
-        .content(|_, cx| {
-            let theme = cx.global::<Config>().theme.clone();
-            Flex::new()
-                .size_full()
-                .center()
-                .bg(theme.primary.base)
-                .child(
-                    Icon::new(IconName::ArrowUp)
-                        .size_md()
-                        .color(theme.neutral.inverted),
-                )
-                .into_any_element()
-        })
-}
-
 fn docs_backtop_shell(
     scroll_handle: ScrollHandle,
     backtop: Entity<Backtop>,
     cx: &mut Context<LiveDemoContent>,
 ) -> AnyElement {
-    let theme = cx.global::<Config>().theme.clone();
-
-    Flex::new()
-        .relative()
-        .height_units(360.0)
-        .overflow_hidden()
-        .border()
-        .border_color(theme.neutral.border)
-        .rounded_md()
-        .child(
-            Flex::new()
-                .size_full()
-                .id("docs-backtop-scroll-view")
-                .overflow_y_scroll()
-                .track_scroll(&scroll_handle)
-                .child(Space::new().vertical().gap_sm().children((0..32).map(|i| {
-                    Flex::new()
-                        .height_units(40.0)
-                        .row()
-                        .align_center()
-                        .padding_x_units(16.0)
-                        .bg(theme.neutral.hover)
-                        .rounded_units(4.0)
-                        .child(Text::new(format!("Scroll Item {i}")))
-                }))),
-        )
-        .child(backtop)
-        .into_any_element()
+    backtop_container_example::backtop_scroll_region(cx, scroll_handle, backtop).into_any_element()
 }
 
 fn docs_form_basic(

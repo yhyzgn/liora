@@ -36,6 +36,12 @@ A Space keydown cannot arm a later, unpaired Enter release.
 
 `Anchor` uses retained native focus, Tab/Shift+Tab traversal and unmodified Enter press/release to scroll to painted targets. Space does not activate a target. Links expose a native Link role and name with a layout-neutral keyboard focus outline; `AnchorLink::href` names an `AnchorTarget` in the bound scroll handle, not an external URL. Missing targets leave the scroll position unchanged. Gallery and Docs execute the authored nested-navigation snippet; this is not complete screen-reader or cross-platform certification.
 
+## Back to top
+
+`Backtop` becomes visible when its bound `ScrollHandle` reaches `visibility_height` (200 by default, or 100 with `.visibility_height_sm()`). Its native Button exposes the name `Back to top`, Tab/Shift+Tab traversal and a layout-neutral 2px keyboard focus ring. A complete pointer click or unmodified Enter/Space press and release resets only that handle and requests a redraw; hidden buttons leave the tab order. Retain the entity in its host view. Gallery and Docs execute the authored basic/custom constructors, and Docs mounts the displayed container snippet. This is not full screen-reader or cross-platform certification.
+
+`Flex::overflow_y_scroll()` contains wheel input, including at its scroll boundaries, so scrolling a nested viewport does not also move an ancestor list. Move the pointer outside that viewport to scroll the outer page.
+
 ## Container headers
 
 `Container` keeps a fixed 48px header by default. Use `.header_height_auto()` with wrapping header content to let it grow naturally while the body keeps the remaining height. A subsequent `.header_height(...)` or `.header_height_lg()` returns to fixed sizing; apply any minimum height to the header content itself. Gallery and Docs use this opt-in for their translated theme/language/frame toolbars and pair the layout example in their Container pages.

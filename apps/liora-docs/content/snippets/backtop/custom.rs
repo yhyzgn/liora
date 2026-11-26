@@ -11,7 +11,7 @@ pub fn custom_backtop(scroll_handle: ScrollHandle) -> Backtop {
         .id("docs-backtop-custom")
         .right_lg()
         .content(|_, cx| {
-            let theme = cx.global::<Config>().theme.clone();
+            let theme = &cx.global::<Config>().theme;
             Flex::new()
                 .size_full()
                 .center()
@@ -19,7 +19,7 @@ pub fn custom_backtop(scroll_handle: ScrollHandle) -> Backtop {
                 .child(
                     Icon::new(IconName::ArrowUp)
                         .size_md()
-                        .color(theme.neutral.card),
+                        .color(theme.neutral.inverted),
                 )
                 .into_any_element()
         })

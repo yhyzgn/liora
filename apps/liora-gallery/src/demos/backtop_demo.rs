@@ -1,10 +1,13 @@
 use gpui::{AnyView, App, Context, Entity, IntoElement, Render, ScrollHandle, Window, prelude::*};
 use liora_components::{Backtop, Flex, Space, Text};
 use liora_core::Config;
-use liora_icons::Icon;
-use liora_icons_lucide::IconName;
 
 use liora_components::layout_helpers::page;
+
+#[path = "../../../liora-docs/content/snippets/backtop/basic.rs"]
+mod basic_example;
+#[path = "../../../liora-docs/content/snippets/backtop/custom.rs"]
+mod custom_example;
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|cx| BacktopDemo::new(cx)).into()
@@ -22,32 +25,11 @@ impl BacktopDemo {
         Self {
             primary: cx.new({
                 let scroll_handle = scroll_handle.clone();
-                |_| {
-                    Backtop::new(scroll_handle)
-                        .id("backtop-demo-primary")
-                        .visibility_height_sm()
-                }
+                move |_| basic_example::basic_backtop(scroll_handle).id("backtop-demo-primary")
             }),
             custom: cx.new({
                 let scroll_handle = scroll_handle.clone();
-                |_| {
-                    Backtop::new(scroll_handle)
-                        .id("backtop-demo-custom")
-                        .right_lg()
-                        .content(|_, cx| {
-                            let theme = cx.global::<Config>().theme.clone();
-                            Flex::new()
-                                .size_full()
-                                .center()
-                                .bg(theme.primary.base)
-                                .child(
-                                    Icon::new(IconName::ArrowUp)
-                                        .size_md()
-                                        .color(theme.neutral.inverted),
-                                )
-                                .into_any_element()
-                        })
-                }
+                move |_| custom_example::custom_backtop(scroll_handle).id("backtop-demo-custom")
             }),
             scroll_handle,
         }

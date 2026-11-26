@@ -1,14 +1,17 @@
 //! Backtop must share the same ScrollHandle as the scroll container.
 //!
-//! In a real view `Backtop` is stored as `Entity<Backtop>` and inserted as an
-//! overlay child of the relative container.
+//! Retain `Backtop` as `Entity<Backtop>` in the view and pass it with the same handle.
 
-use gpui::{App, IntoElement, ScrollHandle};
-use liora_components::{Flex, Space, Text};
+use gpui::{App, Entity, IntoElement, ScrollHandle};
+use liora_components::{Backtop, Flex, Space, Text};
 use liora_core::Config;
 
-pub fn backtop_scroll_region(cx: &mut App, scroll_handle: ScrollHandle) -> impl IntoElement {
-    let theme = cx.global::<Config>().theme.clone();
+pub fn backtop_scroll_region(
+    cx: &mut App,
+    scroll_handle: ScrollHandle,
+    backtop: Entity<Backtop>,
+) -> impl IntoElement {
+    let theme = &cx.global::<Config>().theme;
 
     Flex::new()
         .relative()
@@ -31,5 +34,5 @@ pub fn backtop_scroll_region(cx: &mut App, scroll_handle: ScrollHandle) -> impl 
                         .child(Text::new(format!("Scroll Item {i}")))
                 }))),
         )
-    // .child(backtop_entity.clone())
+        .child(backtop)
 }

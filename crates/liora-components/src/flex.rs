@@ -359,7 +359,7 @@ impl Flex {
         self
     }
 
-    /// Sets the overflow y-scroll value used by the component.
+    /// Scrolls vertically without forwarding wheel input to ancestor scroll containers.
     pub fn overflow_y_scroll(mut self) -> Self {
         self.overflow_y_scroll = true;
         self
@@ -549,7 +549,10 @@ impl RenderOnce for Flex {
         if let Some(id) = self.id {
             let mut stateful = el.id(id);
             if self.overflow_y_scroll {
-                stateful = stateful.overflow_y_scroll();
+                // The native div scrolls before this bubble handler; contain the event afterward.
+                stateful = stateful
+                    .overflow_y_scroll()
+                    .on_scroll(|_, _, cx| cx.stop_propagation());
             }
             if let Some(scroll_handle) = self.scroll_handle {
                 stateful = stateful.track_scroll(&scroll_handle);
@@ -571,6 +574,78 @@ impl IntoElement for Flex {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn inner_scroll_does_not_move_ancestor_list() -> Result<(), Box<dyn std::error::Error>> {
+        use gpui::{Context, ListAlignment, ListState, Render, ScrollDelta, ScrollEvent, point};
+
+        struct Page {
+            outer: ListState,
+            inner: ScrollHandle,
+        }
+
+        impl Render for Page {
+            fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+                let inner = self.inner.clone();
+                gpui::list(self.outer.clone(), move |index, _, _| {
+                    if index == 0 {
+                        Flex::new()
+                            .id("nested-flex-scroll")
+                            .height_units(200.0)
+                            .width_percent(100.0)
+                            .overflow_y_scroll()
+                            .track_scroll(&inner)
+                            .child(Flex::new().height_units(600.0))
+                            .into_any_element()
+                    } else {
+                        div().h(px(200.0)).into_any_element()
+                    }
+                })
+                .w_full()
+                .h(px(240.0))
+            }
+        }
+
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let outer = ListState::new(3, ListAlignment::Top, px(0.0));
+        let inner = ScrollHandle::new();
+        let handle = app.add_window(|_, _| Page {
+            outer: outer.clone(),
+            inner: inner.clone(),
+        });
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        let before = outer.logical_scroll_top();
+        window.simulate_event(ScrollEvent {
+            position: point(px(100.0), px(100.0)),
+            delta: ScrollDelta::Pixels(point(px(0.0), px(-60.0))),
+            ..Default::default()
+        });
+        assert_eq!(inner.offset().y, px(-60.0), "inner viewport must scroll");
+        let after = outer.logical_scroll_top();
+        assert_eq!(
+            after.item_ix, before.item_ix,
+            "ancestor row must not change"
+        );
+        assert_eq!(
+            after.offset_in_item, before.offset_in_item,
+            "inner wheel must not also move the ancestor viewport"
+        );
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        window.simulate_event(ScrollEvent {
+            position: point(px(100.0), px(220.0)),
+            delta: ScrollDelta::Pixels(point(px(0.0), px(-60.0))),
+            ..Default::default()
+        });
+        assert_eq!(
+            outer.logical_scroll_top().offset_in_item,
+            px(60.0),
+            "wheel input outside the inner viewport must still scroll the ancestor"
+        );
+        app.quit();
+        Ok(())
+    }
 
     #[test]
     fn flex_tracks_scroll_container_configuration() {

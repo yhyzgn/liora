@@ -100,7 +100,13 @@ impl Backtop {
 
 impl Render for Backtop {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let theme = cx.global::<Config>().theme.clone();
+        let theme = &cx.global::<Config>().theme;
+        let (card, border, hover, primary) = (
+            theme.neutral.card,
+            theme.neutral.border,
+            theme.neutral.hover,
+            theme.primary.base,
+        );
         let is_visible = self.is_visible;
 
         let scroll_handle = self.scroll_handle.clone();
@@ -120,6 +126,9 @@ impl Render for Backtop {
                     element_id(format!("{}-btn-motion", self.id)),
                     div()
                         .id(element_id(format!("{}-btn", self.id)))
+                        .tab_index(0)
+                        .role(gpui::accesskit::Role::Button)
+                        .aria_label("Back to top")
                         .absolute()
                         .bottom(self.bottom)
                         .right(self.right)
@@ -130,19 +139,48 @@ impl Render for Backtop {
                         .w(px(40.0))
                         .h(px(40.0))
                         .rounded_full()
-                        .bg(theme.neutral.card)
+                        .bg(card)
                         .border_1()
-                        .border_color(theme.neutral.border)
+                        .border_color(border)
                         .shadow_lg()
-                        .hover(|s| s.cursor_pointer().bg(theme.neutral.hover))
-                        .on_click(move |_, _, _| {
+                        .hover(|s| s.cursor_pointer().bg(hover))
+                        .focus_visible(|style| {
+                            style.shadow(vec![
+                                gpui::BoxShadow::new(px(0.0), px(0.0), primary)
+                                    .spread_radius(px(2.0)),
+                            ])
+                        })
+                        .on_key_down(|event, window, cx| {
+                            let modifiers = event.keystroke.modifiers;
+                            if event.keystroke.key == "tab"
+                                && !modifiers.control
+                                && !modifiers.alt
+                                && !modifiers.platform
+                                && !modifiers.function
+                            {
+                                if modifiers.shift {
+                                    window.focus_prev(cx);
+                                } else {
+                                    window.focus_next(cx);
+                                }
+                                window.prevent_default();
+                                cx.stop_propagation();
+                            } else if matches!(event.keystroke.key.as_str(), "enter" | "space")
+                                && !event.keystroke.modifiers.modified()
+                            {
+                                cx.stop_propagation();
+                            }
+                        })
+                        .on_click(move |_, window, cx| {
                             scroll_handle.set_offset(point(px(0.0), px(0.0)));
+                            window.refresh();
+                            cx.stop_propagation();
                         })
                         .child(match &self.content {
                             Some(content_fn) => (content_fn)(_window, cx),
                             None => Icon::new(IconName::ChevronUp)
                                 .size(px(20.0))
-                                .color(theme.primary.base)
+                                .color(primary)
                                 .into_any_element(),
                         }),
                 ))
@@ -199,15 +237,276 @@ impl gpui::Element for BacktopVisibilityTracker {
         _bounds: Bounds<Pixels>,
         _request_layout: &mut Self::RequestLayoutState,
         _prepaint: &mut Self::PrepaintState,
-        _window: &mut Window,
+        window: &mut Window,
         cx: &mut App,
     ) {
         let visible = -self.scroll_handle.offset().y >= self.visibility_height;
-        self.backtop.update(cx, |this, cx| {
+        self.backtop.update(cx, |this, _| {
             if this.is_visible != visible {
                 this.is_visible = visible;
-                cx.notify();
+                // Paint-time notifications do not schedule another native frame.
+                window.request_animation_frame();
             }
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn keyboard_return_respects_threshold_and_bound_container()
+    -> Result<(), Box<dyn std::error::Error>> {
+        struct Page {
+            scroll: ScrollHandle,
+            other: ScrollHandle,
+            backtop: Entity<Backtop>,
+        }
+
+        impl Render for Page {
+            fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+                div()
+                    .size_full()
+                    .flex()
+                    .child(
+                        div()
+                            .relative()
+                            .w(px(240.0))
+                            .h(px(200.0))
+                            .child(
+                                div()
+                                    .id("backtop-primary-scroll")
+                                    .size_full()
+                                    .overflow_y_scroll()
+                                    .track_scroll(&self.scroll)
+                                    .child(div().h(px(600.0))),
+                            )
+                            .child(self.backtop.clone()),
+                    )
+                    .child(
+                        div()
+                            .id("backtop-unrelated-scroll")
+                            .w(px(240.0))
+                            .h(px(200.0))
+                            .overflow_y_scroll()
+                            .track_scroll(&self.other)
+                            .child(div().h(px(600.0))),
+                    )
+            }
+        }
+
+        for key in ["enter", "space"] {
+            let mut app = gpui::TestAppContext::single();
+            app.update(crate::init_liora);
+            app.update(|cx| cx.set_reduce_motion(true));
+            let scroll = ScrollHandle::new();
+            let other = ScrollHandle::new();
+            let handle = app.add_window(|_, cx| Page {
+                scroll: scroll.clone(),
+                other: other.clone(),
+                backtop: cx.new(|_| Backtop::new(scroll.clone()).visibility_height_sm()),
+            });
+            let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            other.set_offset(point(px(0.0), px(-250.0)));
+            for (offset, reachable) in [(-99.0, false), (-100.0, true)] {
+                scroll.set_offset(point(px(0.0), px(offset)));
+                window.update(|window, cx| {
+                    window.refresh();
+                    window.draw(cx).clear(cx);
+                    if reachable {
+                        assert!(
+                            window.simulate_next_frame(cx) > 0,
+                            "visibility change must request the frame that exposes Backtop"
+                        );
+                    }
+                });
+                window.update(|window, cx| {
+                    window.draw(cx).clear(cx);
+                    window.blur(cx);
+                    window.focus_next(cx);
+                    assert_eq!(
+                        window.focused(cx).is_some(),
+                        reachable,
+                        "Backtop keyboard reachability at offset {offset}"
+                    );
+                    window.draw(cx).clear(cx);
+                    assert_eq!(
+                        window.simulate_next_frame(cx),
+                        0,
+                        "stable visibility must not keep requesting frames"
+                    );
+                });
+            }
+            window.simulate_keystrokes(key);
+            assert_eq!(
+                scroll.offset().y,
+                px(-100.0),
+                "keydown must not return to top"
+            );
+            window.update(|window, cx| {
+                window.refresh();
+                window.draw(cx).clear(cx);
+                let keystroke = gpui::Keystroke::parse_with_os(key, cx.platform_info().os)?;
+                window.dispatch_event(
+                    gpui::PlatformInput::KeyUp(gpui::KeyUpEvent { keystroke }),
+                    cx,
+                );
+                Ok::<_, Box<dyn std::error::Error>>(())
+            })?;
+            assert_eq!(
+                scroll.offset().y,
+                px(0.0),
+                "{key} must return its container to top"
+            );
+            assert_eq!(
+                other.offset().y,
+                px(-250.0),
+                "unrelated container must not move"
+            );
+            window.update(|window, cx| {
+                window.draw(cx).clear(cx);
+                assert!(
+                    window.simulate_next_frame(cx) > 0,
+                    "return must request the frame that removes Backtop"
+                );
+            });
+            window.update(|window, cx| {
+                window.draw(cx).clear(cx);
+                window.blur(cx);
+                window.focus_next(cx);
+                assert!(
+                    window.focused(cx).is_none(),
+                    "hidden Backtop must not remain a tab stop"
+                );
+                assert_eq!(
+                    window.simulate_next_frame(cx),
+                    0,
+                    "hidden Backtop must settle without another frame"
+                );
+            });
+            app.quit();
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn tab_navigation_preserves_parent_shortcuts() -> Result<(), Box<dyn std::error::Error>> {
+        use std::{cell::Cell, rc::Rc};
+
+        struct Page {
+            before: gpui::FocusHandle,
+            after: gpui::FocusHandle,
+            scroll: ScrollHandle,
+            backtop: Entity<Backtop>,
+            parent_shortcuts: Rc<Cell<usize>>,
+        }
+
+        impl Render for Page {
+            fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+                let parent_shortcuts = self.parent_shortcuts.clone();
+                div()
+                    .relative()
+                    .flex()
+                    .flex_col()
+                    .w(px(240.0))
+                    .h(px(200.0))
+                    .on_key_down(move |event, window, cx| {
+                        if event.keystroke.key == "tab" {
+                            let modifiers = event.keystroke.modifiers;
+                            if modifiers.control
+                                || modifiers.alt
+                                || modifiers.platform
+                                || modifiers.function
+                            {
+                                parent_shortcuts.set(parent_shortcuts.get() + 1);
+                            } else if modifiers.shift {
+                                window.focus_prev(cx);
+                            } else {
+                                window.focus_next(cx);
+                            }
+                        }
+                    })
+                    .child(
+                        div()
+                            .id("before")
+                            .size(px(20.0))
+                            .tab_index(0)
+                            .track_focus(&self.before),
+                    )
+                    .child(
+                        div()
+                            .id("scroll")
+                            .h(px(200.0))
+                            .overflow_y_scroll()
+                            .track_scroll(&self.scroll)
+                            .child(div().h(px(600.0))),
+                    )
+                    .child(self.backtop.clone())
+                    .child(
+                        div()
+                            .id("after")
+                            .size(px(20.0))
+                            .tab_index(0)
+                            .track_focus(&self.after),
+                    )
+            }
+        }
+
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let before = app.update(|cx| cx.focus_handle().tab_stop(true));
+        let after = app.update(|cx| cx.focus_handle().tab_stop(true));
+        let scroll = ScrollHandle::new();
+        let parent_shortcuts = Rc::new(Cell::new(0));
+        let handle = app.add_window(|_, cx| Page {
+            before: before.clone(),
+            after: after.clone(),
+            scroll: scroll.clone(),
+            backtop: cx.new(|_| Backtop::new(scroll.clone()).visibility_height_sm()),
+            parent_shortcuts: parent_shortcuts.clone(),
+        });
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        scroll.set_offset(point(px(0.0), px(-200.0)));
+        window.update(|window, cx| {
+            window.refresh();
+            window.draw(cx).clear(cx);
+            window.draw(cx).clear(cx);
+            before.focus(window, cx);
+            window.draw(cx).clear(cx);
+        });
+        window.simulate_keystrokes("tab");
+        let focused = window
+            .update(|window, cx| window.focused(cx))
+            .ok_or("Backtop focus missing")?;
+        assert_ne!(focused, before);
+        assert_ne!(focused, after);
+        for (index, shortcut) in ["ctrl-tab", "ctrl-shift-tab", "alt-tab", "cmd-tab", "fn-tab"]
+            .iter()
+            .enumerate()
+        {
+            window.simulate_keystrokes(shortcut);
+            window.update(|window, cx| assert_eq!(window.focused(cx), Some(focused.clone())));
+            assert_eq!(
+                parent_shortcuts.get(),
+                index + 1,
+                "parent shortcut {shortcut}"
+            );
+        }
+        window.simulate_keystrokes("tab");
+        window.update(|window, _| assert!(after.is_focused(window)));
+        window.simulate_keystrokes("shift-tab");
+        window.update(|window, cx| assert_eq!(window.focused(cx), Some(focused.clone())));
+        window.simulate_keystrokes("shift-tab");
+        window.update(|window, _| assert!(before.is_focused(window)));
+        assert_eq!(
+            scroll.offset().y,
+            px(-200.0),
+            "Tab must not activate Backtop"
+        );
+        app.quit();
+        Ok(())
     }
 }
