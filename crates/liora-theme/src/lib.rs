@@ -42,7 +42,12 @@ fn lighten(base: Hsla, factor: f32) -> Hsla {
     base.blend(gpui::white().opacity(factor))
 }
 
-fn filled_foreground(background: Hsla) -> Hsla {
+/// Returns opaque black or white, whichever has higher WCAG contrast on `background`.
+///
+/// Use for solid opaque fills only. Translucent fills require the composited
+/// background, and gradients require a separate contrast policy. Input alpha is ignored.
+#[must_use]
+pub fn filled_foreground(background: Hsla) -> Hsla {
     let color: Rgba = background.into();
     let linearize = |channel: f32| {
         if channel <= 0.04045 {

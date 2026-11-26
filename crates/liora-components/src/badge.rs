@@ -155,7 +155,7 @@ impl RenderOnce for Badge {
                 .rounded_full()
                 .border_1()
                 .border_color(theme.neutral.body)
-                .text_color(theme.neutral.inverted)
+                .text_color(liora_theme::filled_foreground(color))
                 .text_size(px(10.0))
                 .font_weight(gpui::FontWeight::BOLD)
                 .child(display_value)
