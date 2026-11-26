@@ -8,6 +8,8 @@
 
 从 `IconName` 选择图标，并用 `Icon::new` 创建原生图标元素。
 
+常用 Lucide 预览直接执行本页展示的 `icon/lucide.rs`：Home、User、Search、Check 四个图标均使用默认色，避免预览的图标集合与设色偏离源码。
+
 ### 效果
 
 ::Demo{component="IconLucide"}::

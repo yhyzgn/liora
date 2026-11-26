@@ -64,6 +64,9 @@ mod hover_card_basic_example;
 #[path = "../content/snippets/loading/basic.rs"]
 mod loading_basic_example;
 
+#[path = "../content/snippets/icon/lucide.rs"]
+mod icon_lucide_example;
+
 const INTRO_DOC: &str = include_str!("../content/pages/overview.md");
 const QUICK_START_DOC: &str = include_str!("../content/pages/quick_start.md");
 const ARCHITECTURE_DOC: &str = include_str!("../content/pages/architecture.md");
@@ -6020,7 +6023,7 @@ impl Render for LiveDemoContent {
             "TableFixedHeader" => table_fixed_header_demo(),
             "TableLoading" => table_basic_table().loading(true).into_any_element(),
             "TableEmpty" => table_basic_table().empty_text("暂无订单数据").into_any_element(),
-            "IconLucide" => icon_lucide_demo(_cx),
+            "IconLucide" => icon_lucide_example::lucide_icon_row().into_any_element(),
             "IconLibraries" => icon_libraries_demo(_cx),
             "IconColors" => icon_colors_demo(_cx),
             "IconSizes" => icon_sizes_demo(),
@@ -7686,31 +7689,6 @@ fn icon_labeled(icon: liora_icons::Icon, label: &'static str) -> impl IntoElemen
         .gap_xs()
         .child(icon)
         .child(Text::new(label).nowrap())
-}
-
-fn icon_lucide_demo(cx: &mut Context<LiveDemoContent>) -> AnyElement {
-    let theme = &cx.global::<Config>().theme;
-    demo_row(
-        [
-            (IconName::House, "Home"),
-            (IconName::User, "User"),
-            (IconName::Search, "Search"),
-            (IconName::Check, "Check"),
-            (IconName::ChevronDown, "ChevronDown"),
-            (IconName::Settings, "Settings"),
-        ]
-        .into_iter()
-        .map(|(icon, label)| {
-            icon_labeled(
-                liora_icons::Icon::new(icon)
-                    .size_lg()
-                    .color(theme.primary.base),
-                label,
-            )
-            .into_any_element()
-        })
-        .collect(),
-    )
 }
 
 fn icon_libraries_demo(_cx: &mut Context<LiveDemoContent>) -> AnyElement {

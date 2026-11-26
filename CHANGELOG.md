@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Execute the displayed Lucide example directly in Docs instead of a separate six-icon, primary-colored preview. Keep its four default-colored icons and the shown source in sync.
 - Borrow the current theme in Docs' Lucide/color previews and the authored Icon color example instead of cloning it. Correct Icon's default-color contract to `theme.neutral.icon`, not inherited parent text; preserve SDK SVG loading, hover and transforms.
 - Read Spinner's current primary color directly instead of cloning the entire theme for one copied color. Preserve explicit colors, motion identities and rotation behavior.
 - Clarify font-loading failure boundaries: discover each external root before registration, continue after individual file failures, and retry embedded sources when a required family remains unavailable even after an external source was accepted. Keep loading behavior unchanged.

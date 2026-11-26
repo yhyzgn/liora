@@ -1,6 +1,6 @@
 //! Render a small set of Lucide icons with labels.
 
-use gpui::{IntoElement, prelude::*};
+use gpui::IntoElement;
 use liora_components::{Space, Text};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
