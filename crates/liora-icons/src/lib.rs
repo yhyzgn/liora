@@ -311,7 +311,7 @@ impl Icon {
         self.size(px(32.0))
     }
 
-    /// Set explicit color. If not called, inherits parent's text_color.
+    /// Set explicit color. If not called, uses the current theme's `neutral.icon`.
     pub fn color(mut self, color: Hsla) -> Self {
         self.color = Some(color);
         self

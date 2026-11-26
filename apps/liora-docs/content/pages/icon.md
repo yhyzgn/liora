@@ -2,6 +2,8 @@
 
 `Icon` 基于 `liora-icons` 的 `IntoIconPath` 渲染原生矢量图标。Lucide、Ant Design、Ionicons、Tabler、Carbon 和 Material 图标库都提供同构的 `IconName` 枚举，常用于按钮、表单前后缀、空状态和导航项。
 
+图标渲染时读取当前 `Config.theme`：未指定 `color` 时使用 `theme.neutral.icon`，不继承父级文字颜色；显式 `color` 优先。Gallery 的 Default Color、Sizes 和本页尺寸示例展示默认色，语义颜色示例展示显式覆盖。预览和示例借用当前主题，不克隆整套主题；这不是零分配或帧率保证。
+
 ## 常用图标
 
 从 `IconName` 选择图标，并用 `Icon::new` 创建原生图标元素。

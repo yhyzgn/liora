@@ -1,6 +1,6 @@
 //! Use Liora theme colors to communicate semantic state.
 
-use gpui::{Context, IntoElement, Render, Window, prelude::*};
+use gpui::{Context, IntoElement, Render, Window};
 use liora_components::{Space, Text};
 use liora_core::Config;
 use liora_icons::Icon;
@@ -10,7 +10,7 @@ pub struct IconColorsDemo;
 
 impl Render for IconColorsDemo {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let theme = cx.global::<Config>().theme.clone();
+        let theme = &cx.global::<Config>().theme;
 
         Space::new()
             .wrap()

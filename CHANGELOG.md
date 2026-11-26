@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Borrow the current theme in Docs' Lucide/color previews and the authored Icon color example instead of cloning it. Correct Icon's default-color contract to `theme.neutral.icon`, not inherited parent text; preserve SDK SVG loading, hover and transforms.
 - Read Spinner's current primary color directly instead of cloning the entire theme for one copied color. Preserve explicit colors, motion identities and rotation behavior.
 - Clarify font-loading failure boundaries: discover each external root before registration, continue after individual file failures, and retry embedded sources when a required family remains unavailable even after an external source was accepted. Keep loading behavior unchanged.
 - Avoid copying the `stable_unique_id` prefix on every render. Borrow it only during state initialization; preserve existing keys, owned identities and window/element lifetimes across all component consumers.

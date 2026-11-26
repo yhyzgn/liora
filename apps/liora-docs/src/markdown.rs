@@ -7689,7 +7689,7 @@ fn icon_labeled(icon: liora_icons::Icon, label: &'static str) -> impl IntoElemen
 }
 
 fn icon_lucide_demo(cx: &mut Context<LiveDemoContent>) -> AnyElement {
-    let theme = cx.global::<Config>().theme.clone();
+    let theme = &cx.global::<Config>().theme;
     demo_row(
         [
             (IconName::House, "Home"),
@@ -7744,7 +7744,7 @@ fn icon_libraries_demo(_cx: &mut Context<LiveDemoContent>) -> AnyElement {
 }
 
 fn icon_colors_demo(cx: &mut Context<LiveDemoContent>) -> AnyElement {
-    let theme = cx.global::<Config>().theme.clone();
+    let theme = &cx.global::<Config>().theme;
     demo_row(vec![
         icon_labeled(
             liora_icons::Icon::new(IconName::Star)
