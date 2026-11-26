@@ -24,6 +24,12 @@ fn setup(cx: &mut gpui::App) {
 - Depend on `liora-components` directly when you need fine-grained dependency control or are building another Liora crate.
 - Keep application UI pure Rust + native GPUI; Liora crates do not require WebView, Tauri, HTML, CSS, or DOM runtime paths.
 
+## Links
+
+`Link` uses GPUI's native click lifecycle and platform URL opener. An enabled destination is reachable by Tab/Shift+Tab; an unmodified Enter press/release opens it, while Space does not. A keyboard-only focus outline preserves layout and survives redraws. Disabled and destinationless links are not tab stops and cannot activate. Destination-bearing links expose a native Link role, label, target URL and disabled state; this is not a complete cross-platform screen-reader certification. Gallery and Docs execute the same keyboard example.
+
+Losing focus cancels a pending Enter activation. Disabling or destination removal cancels pending input; re-enabling cannot replay a stale pointer press. Handled Enter activation does not propagate into parent keyboard handlers.
+
 ## Container headers
 
 `Container` keeps a fixed 48px header by default. Use `.header_height_auto()` with wrapping header content to let it grow naturally while the body keeps the remaining height. A subsequent `.header_height(...)` or `.header_height_lg()` returns to fixed sizing; apply any minimum height to the header content itself. Gallery and Docs use this opt-in for their translated theme/language/frame toolbars and pair the layout example in their Container pages.

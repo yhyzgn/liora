@@ -2,6 +2,9 @@ use gpui::{App, Context, Entity, IntoElement, Render, Window, prelude::*};
 use liora_components::{Link, Space, Title};
 use liora_icons_lucide::IconName;
 
+#[path = "../../../liora-docs/content/snippets/link/keyboard.rs"]
+mod keyboard_example;
+
 pub fn render(cx: &mut App) -> Entity<LinkDemo> {
     cx.new(|_| LinkDemo)
 }
@@ -46,6 +49,8 @@ impl Render for LinkDemo {
                     .icon_start(IconName::House)
                     .href("https://example.com"),
             ]))
+            .child(hdr("Keyboard 键盘"))
+            .child(keyboard_example::keyboard_links())
     }
 }
 

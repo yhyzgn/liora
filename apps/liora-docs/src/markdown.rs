@@ -67,6 +67,9 @@ mod loading_basic_example;
 #[path = "../content/snippets/icon/lucide.rs"]
 mod icon_lucide_example;
 
+#[path = "../content/snippets/link/keyboard.rs"]
+mod link_keyboard_example;
+
 const INTRO_DOC: &str = include_str!("../content/pages/overview.md");
 const QUICK_START_DOC: &str = include_str!("../content/pages/quick_start.md");
 const ARCHITECTURE_DOC: &str = include_str!("../content/pages/architecture.md");
@@ -4705,6 +4708,7 @@ impl Render for LiveDemoContent {
                     .href("https://example.com")
                     .into_any_element(),
             ]),
+            "LinkKeyboard" => link_keyboard_example::keyboard_links().into_any_element(),
             "SkeletonBasic" => Skeleton::new().rows(4).into_any_element(),
             "SkeletonVariants" => demo_row(vec![
                 SkeletonItem::new(SkeletonVariant::Circle).into_any_element(),

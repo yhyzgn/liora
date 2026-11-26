@@ -137,6 +137,7 @@ impl Link {
         let theme = &cx.global::<Config>().theme;
         let (color, hover_color) = self.color_for(theme);
         let fs = theme.font_size.md;
+        let focus_color = theme.primary.base;
         let icon_sz = 14.0;
         let id = self.id.unwrap_or_else(|| {
             stable_unique_id(
@@ -149,6 +150,14 @@ impl Link {
                 cx,
             )
         });
+        if self.disabled || self.href.is_none() {
+            // Discard native presses before an inert frame can retain them across re-enabling.
+            window.with_global_id(id.clone().into(), |global_id, window| {
+                window.with_element_state::<gpui::InteractiveElementState, _>(global_id, |_, _| {
+                    ((), Default::default())
+                });
+            });
+        }
 
         let mut div = gpui::div()
             .flex()
@@ -157,12 +166,26 @@ impl Link {
             .gap_1()
             .text_size(px(fs))
             .text_color(color)
-            .id(id);
+            .id(id.clone());
 
-        if !self.disabled {
-            div = div.cursor_pointer();
-        } else {
+        if self.disabled {
             div = div.cursor_not_allowed();
+        } else if self.href.is_some() {
+            div = div.cursor_pointer();
+        }
+        if let Some(url) = self.href.as_ref() {
+            let url = url.clone();
+            let disabled = self.disabled;
+            div = div
+                .role(gpui::Role::Link)
+                .aria_label(self.label.clone())
+                .a11y_synthetic_children(move |builder| {
+                    let node = builder.parent_node();
+                    node.set_url(url.as_ref());
+                    if disabled {
+                        node.set_disabled();
+                    }
+                });
         }
         if self.underline {
             div = div.underline();
@@ -178,9 +201,71 @@ impl Link {
 
         if !self.disabled {
             if let Some(url) = self.href {
-                div = div.on_mouse_up(MouseButton::Left, move |_, _, cx| {
-                    cx.open_url(&url);
+                let focus = window.with_global_id(id.into(), |global_id, window| {
+                    window.with_element_state::<gpui::FocusHandle, _>(global_id, |previous, _| {
+                        let handle = previous
+                            .unwrap_or_else(|| cx.focus_handle().tab_stop(true).tab_index(0));
+                        (handle.clone(), handle)
+                    })
                 });
+                let paint_focus = focus.clone();
+                let outline = gpui::canvas(
+                    |_, _, _| (),
+                    move |bounds, (), window, _| {
+                        if paint_focus.is_focused(window) && window.last_input_was_keyboard() {
+                            window.paint_quad(
+                                gpui::outline(
+                                    bounds.dilate(px(2.0)),
+                                    focus_color,
+                                    gpui::BorderStyle::default(),
+                                )
+                                .border_widths(px(2.0))
+                                .corner_radii(px(2.0)),
+                            );
+                        }
+                    },
+                )
+                .absolute()
+                .inset(px(0.0));
+                div = div
+                    .track_focus(&focus)
+                    .tab_index(0)
+                    .on_key_down(|event, window, cx| {
+                        let modifiers = event.keystroke.modifiers;
+                        if event.keystroke.key == "tab"
+                            && !modifiers.control
+                            && !modifiers.alt
+                            && !modifiers.platform
+                            && !modifiers.function
+                        {
+                            if modifiers.shift {
+                                window.focus_prev(cx);
+                            } else {
+                                window.focus_next(cx);
+                            }
+                            cx.stop_propagation();
+                        } else if event.keystroke.key == "enter" && !modifiers.modified() {
+                            // Preserve GPUI's release-time click while containing parent shortcuts.
+                            cx.stop_propagation();
+                        }
+                    })
+                    .on_click(move |event, _, cx| {
+                        let activate = match event {
+                            gpui::ClickEvent::Mouse(click) => click.up.button == MouseButton::Left,
+                            gpui::ClickEvent::Keyboard(click) => {
+                                let enter = click.button == gpui::KeyboardButton::Enter;
+                                if enter {
+                                    cx.stop_propagation();
+                                }
+                                enter
+                            }
+                            gpui::ClickEvent::Touch(_) => true,
+                        };
+                        if activate {
+                            cx.open_url(&url);
+                        }
+                    })
+                    .child(outline);
             }
             div = div.hover(move |style| style.text_color(hover_color));
         }
@@ -211,29 +296,44 @@ mod tests {
         href: Option<&'static str>,
         disabled: bool,
         bounds: Rc<Cell<Option<gpui::Bounds<gpui::Pixels>>>>,
+        parent_enters: Rc<Cell<usize>>,
     }
 
     impl gpui::Render for LinkUrlTest {
         fn render(&mut self, _: &mut Window, _: &mut gpui::Context<Self>) -> impl IntoElement {
             let measured = self.bounds.clone();
+            let parent_enters = self.parent_enters.clone();
             let mut link = Link::new("Native URL")
                 .id("link-url")
                 .disabled(self.disabled);
             if let Some(href) = self.href {
                 link = link.href(href);
             }
-            gpui::div().w(px(240.0)).h(px(40.0)).child(link).child(
-                gpui::canvas(
-                    move |bounds, _, _| measured.set(Some(bounds)),
-                    |_, (), _, _| {},
+            gpui::div()
+                .w(px(240.0))
+                .h(px(40.0))
+                .on_key_up(move |event, _, _| {
+                    if event.keystroke.key == "enter" {
+                        parent_enters.set(parent_enters.get() + 1);
+                    }
+                })
+                .child(link)
+                .child(
+                    gpui::canvas(
+                        move |bounds, _, _| measured.set(Some(bounds)),
+                        |_, (), _, _| {},
+                    )
+                    .absolute()
+                    .inset(px(0.0)),
                 )
-                .absolute()
-                .inset(px(0.0)),
-            )
         }
     }
 
-    fn click_link(href: Option<&'static str>, disabled: bool) -> Option<String> {
+    fn click_link(
+        href: Option<&'static str>,
+        disabled: bool,
+        input: impl FnOnce(&mut gpui::VisualTestContext, gpui::Point<gpui::Pixels>),
+    ) -> Option<String> {
         let mut app = gpui::TestAppContext::single();
         app.update(crate::init_liora);
         let bounds = Rc::new(Cell::new(None));
@@ -242,17 +342,25 @@ mod tests {
             href,
             disabled,
             bounds: measured,
+            parent_enters: Rc::new(Cell::new(0)),
         });
         let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
         window.update(|window, cx| window.draw(cx).clear(cx));
         let origin = bounds.get().expect("Link frame must be laid out").origin;
-        window.simulate_click(
-            origin + gpui::point(px(4.0), px(4.0)),
-            gpui::Modifiers::none(),
-        );
+        input(&mut window, origin + gpui::point(px(4.0), px(4.0)));
         let opened = app.opened_url();
         app.quit();
         opened
+    }
+
+    fn release_key(window: &mut gpui::VisualTestContext, key: &str) {
+        window.update(|window, cx| {
+            let keystroke = gpui::Keystroke::parse_with_os(key, cx.platform_info().os).unwrap();
+            window.dispatch_event(
+                gpui::PlatformInput::KeyUp(gpui::KeyUpEvent { keystroke }),
+                cx,
+            );
+        });
     }
 
     #[test]
@@ -262,13 +370,237 @@ mod tests {
             "https://example.invalid/%22quoted%22?q=hello%20world",
             "https://example.invalid/文档?语言=中文#标题",
         ] {
-            assert_eq!(click_link(Some(href), false).as_deref(), Some(href));
+            assert_eq!(
+                click_link(Some(href), false, |window, inside| {
+                    window.simulate_click(inside, gpui::Modifiers::none());
+                })
+                .as_deref(),
+                Some(href)
+            );
         }
     }
 
     #[test]
     fn disabled_and_destinationless_links_do_not_open_urls() {
-        assert_eq!(click_link(Some("https://example.invalid/"), true), None);
-        assert_eq!(click_link(None, false), None);
+        for (href, disabled) in [(Some("https://example.invalid/"), true), (None, false)] {
+            assert_eq!(
+                click_link(href, disabled, |window, inside| {
+                    window.simulate_click(inside, gpui::Modifiers::none());
+                }),
+                None
+            );
+        }
+    }
+
+    #[test]
+    fn release_without_a_matching_press_does_not_open_url() {
+        assert_eq!(
+            click_link(Some("https://example.invalid/"), false, |window, inside| {
+                window.update(|window, cx| {
+                    window.dispatch_event(
+                        gpui::PlatformInput::MouseUp(gpui::MouseUpEvent {
+                            button: MouseButton::Left,
+                            position: inside,
+                            modifiers: gpui::Modifiers::none(),
+                            click_count: 1,
+                        }),
+                        cx,
+                    );
+                });
+            }),
+            None
+        );
+    }
+
+    #[test]
+    fn keyboard_focus_and_enter_open_exact_url_after_redraw() {
+        let href = "https://example.invalid/文档?q=hello%20world#标题";
+        assert_eq!(
+            click_link(Some(href), false, |window, _| {
+                window.update(|window, cx| {
+                    window.focus_next(cx);
+                    window.draw(cx).clear(cx);
+                });
+                window.simulate_keystrokes("enter");
+                assert_eq!(window.cx.opened_url(), None, "keydown must not open a URL");
+                window.update(|window, cx| {
+                    window.refresh();
+                    window.draw(cx).clear(cx);
+                });
+                release_key(window, "enter");
+            })
+            .as_deref(),
+            Some(href)
+        );
+    }
+
+    #[test]
+    fn outside_pointer_gestures_and_nonprimary_release_do_not_open_url() {
+        for (press_outside, release_outside, release_button) in [
+            (true, false, MouseButton::Left),
+            (false, true, MouseButton::Left),
+            (false, false, MouseButton::Right),
+        ] {
+            assert_eq!(
+                click_link(Some("https://example.invalid/"), false, |window, inside| {
+                    let outside = inside + gpui::point(px(300.0), px(80.0));
+                    window.simulate_mouse_down(
+                        if press_outside { outside } else { inside },
+                        MouseButton::Left,
+                        gpui::Modifiers::none(),
+                    );
+                    window.update(|window, cx| {
+                        window.refresh();
+                        window.draw(cx).clear(cx);
+                    });
+                    window.simulate_mouse_up(
+                        if release_outside { outside } else { inside },
+                        release_button,
+                        gpui::Modifiers::none(),
+                    );
+                }),
+                None
+            );
+        }
+    }
+
+    #[test]
+    fn space_modified_enter_and_unpaired_release_do_not_open_url() {
+        for key in ["space", "ctrl-enter", "alt-enter", "shift-enter", "enter"] {
+            assert_eq!(
+                click_link(Some("https://example.invalid/"), false, |window, _| {
+                    window.update(|window, cx| {
+                        window.focus_next(cx);
+                        window.draw(cx).clear(cx);
+                    });
+                    if key != "enter" {
+                        window.simulate_keystrokes(key);
+                    }
+                    release_key(window, key);
+                }),
+                None,
+                "unexpected activation from {key}"
+            );
+        }
+    }
+
+    #[test]
+    fn focus_departure_disabling_and_destination_removal_cancel_enter() {
+        for change in ["blur", "disable", "remove destination"] {
+            assert_eq!(
+                click_link(Some("https://example.invalid/"), false, |window, _| {
+                    window.update(|window, cx| {
+                        window.focus_next(cx);
+                        window.draw(cx).clear(cx);
+                    });
+                    window.simulate_keystrokes("enter");
+                    window.update(|window, cx| {
+                        if change == "blur" {
+                            window.blur(cx);
+                        } else {
+                            window.root::<LinkUrlTest>().flatten().unwrap().update(
+                                cx,
+                                |view, cx| {
+                                    if change == "disable" {
+                                        view.disabled = true;
+                                    } else {
+                                        view.href = None;
+                                    }
+                                    cx.notify();
+                                },
+                            );
+                        }
+                        window.refresh();
+                        window.draw(cx).clear(cx);
+                    });
+                    release_key(window, "enter");
+                }),
+                None,
+                "unexpected activation after {change}"
+            );
+        }
+    }
+
+    #[test]
+    fn enter_activation_does_not_reach_parent_key_up_handler() {
+        let href = "https://example.invalid/only-link";
+        assert_eq!(
+            click_link(Some(href), false, |window, _| {
+                window.update(|window, cx| {
+                    window.focus_next(cx);
+                    window.draw(cx).clear(cx);
+                });
+                window.simulate_keystrokes("enter");
+                release_key(window, "enter");
+                let parent_enters = window.update(|window, cx| {
+                    window
+                        .root::<LinkUrlTest>()
+                        .flatten()
+                        .unwrap()
+                        .read(cx)
+                        .parent_enters
+                        .get()
+                });
+                assert_eq!(
+                    parent_enters, 0,
+                    "Enter release must not also trigger the parent"
+                );
+            })
+            .as_deref(),
+            Some(href)
+        );
+    }
+
+    #[test]
+    fn inactive_round_trip_cancels_pointer_press_and_allows_fresh_click() {
+        for remove_destination in [false, true] {
+            let href = "https://example.invalid/restored";
+            assert_eq!(
+                click_link(Some(href), false, |window, inside| {
+                    window.simulate_mouse_down(inside, MouseButton::Left, gpui::Modifiers::none());
+                    window.update(|window, cx| {
+                        window
+                            .root::<LinkUrlTest>()
+                            .flatten()
+                            .unwrap()
+                            .update(cx, |view, cx| {
+                                if remove_destination {
+                                    view.href = None;
+                                } else {
+                                    view.disabled = true;
+                                }
+                                cx.notify();
+                            });
+                        window.refresh();
+                        window.draw(cx).clear(cx);
+                    });
+                    window.simulate_mouse_up(inside, MouseButton::Left, gpui::Modifiers::none());
+                    window.update(|window, cx| {
+                        window
+                            .root::<LinkUrlTest>()
+                            .flatten()
+                            .unwrap()
+                            .update(cx, |view, cx| {
+                                view.href = Some(href);
+                                view.disabled = false;
+                                cx.notify();
+                            });
+                        window.refresh();
+                        window.draw(cx).clear(cx);
+                    });
+                    let outside = inside + gpui::point(px(300.0), px(80.0));
+                    window.simulate_mouse_down(outside, MouseButton::Left, gpui::Modifiers::none());
+                    window.simulate_mouse_up(inside, MouseButton::Left, gpui::Modifiers::none());
+                    assert_eq!(
+                        window.cx.opened_url(),
+                        None,
+                        "stale press survived an inactive frame"
+                    );
+                    window.simulate_click(inside, gpui::Modifiers::none());
+                })
+                .as_deref(),
+                Some(href)
+            );
+        }
     }
 }

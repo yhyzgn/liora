@@ -7,6 +7,8 @@
 #![allow(unused_imports)]
 #![allow(unused_variables)]
 
+#[path = "../../content/snippets/link/keyboard.rs"]
+mod link_keyboard;
 #[path = "../../content/snippets/about/doc_rule.rs"]
 mod about_doc_rule;
 #[path = "../../content/snippets/accordion/basic.rs"]
