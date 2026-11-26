@@ -5,6 +5,7 @@ use super::{
     ImageResolver, MarkdownImage, is_safe_markdown_link,
     model::{Block, Kind},
 };
+use crate::selectable_text::SelectionScope;
 use crate::{Button, SelectableText, SelectableTextOptions, Tooltip};
 use gpui::{
     AnyElement, App, Bounds, ClipboardItem, ElementId, Entity, Font, FontStyle, FontWeight,
@@ -28,7 +29,7 @@ pub(super) type EditActivation = Rc<dyn Fn(u64, usize, &mut Window, &mut App)>;
 struct DocumentFonts {
     ui: Option<SharedString>,
     code: SharedString,
-    selection_scope: Option<SharedString>,
+    selection_scope: Option<SelectionScope>,
     order: Cell<usize>,
     assets: super::assets::AssetCache,
     on_edit: Option<EditActivation>,
@@ -170,7 +171,7 @@ pub(super) fn document(
     let fonts = DocumentFonts {
         ui: liora_core::ui_font_family(cx),
         code: liora_core::code_font_family(cx),
-        selection_scope: Some(selection_scope),
+        selection_scope: Some(SelectableText::selection_scope(selection_scope, window, cx)),
         order: Cell::new(0),
         assets: assets.clone(),
         on_edit: None,
@@ -512,8 +513,20 @@ fn render_block(
             })
             .collect();
         if let Kind::Math(display) = block.kind {
-            let scope = fonts.selection_scope.clone().unwrap_or_else(|| id.clone());
-            return inline::formula(options, display, fonts, &scope, true, None, window, cx);
+            let scope = fonts
+                .selection_scope
+                .clone()
+                .unwrap_or_else(|| SelectableText::selection_scope(id.clone(), window, cx));
+            return inline::formula(
+                options,
+                display,
+                fonts,
+                Some(&scope),
+                true,
+                None,
+                window,
+                cx,
+            );
         }
         let text = if block
             .spans

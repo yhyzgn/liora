@@ -20,13 +20,14 @@
 //! crate.
 
 use gpui::{
-    AnyElement, App, IntoElement, Pixels, RenderOnce, SharedString, ViewElement as Component,
-    Window, div, prelude::*, px,
+    AnyElement, App, ElementId, IntoElement, Pixels, RenderOnce, SharedString,
+    ViewElement as Component, Window, div, prelude::*, px,
 };
-use liora_core::{Config, stable_unique_id};
+use liora_core::Config;
 
 /// Fluent native GPUI component for rendering Liora card.
 pub struct Card {
+    id: ElementId,
     title: Option<SharedString>,
     header: Option<AnyElement>,
     footer: Option<AnyElement>,
@@ -40,8 +41,10 @@ pub struct Card {
 
 impl Card {
     /// Creates `Card` initialized from the supplied body.
+    #[track_caller]
     pub fn new(body: impl IntoElement) -> Self {
         Self {
+            id: std::panic::Location::caller().into(),
             title: None,
             header: None,
             footer: None,
@@ -52,6 +55,12 @@ impl Card {
             full_width: false,
             shrink: true,
         }
+    }
+
+    /// Sets a stable identity for cards built by the same factory or loop.
+    pub fn id(mut self, id: impl Into<ElementId>) -> Self {
+        self.id = id.into();
+        self
     }
 
     /// Sets the primary title text displayed by the component.
@@ -117,21 +126,27 @@ impl Card {
 
 impl RenderOnce for Card {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let theme = cx.global::<Config>().theme.clone();
-        let id = stable_unique_id("card", "card", _window, cx);
+        let theme = &cx.global::<Config>().theme;
+        let (background, body_color, border, radius, accent, title_color, footer_background) = (
+            theme.neutral.card,
+            theme.neutral.text_2,
+            theme.neutral.border,
+            theme.radius.md,
+            theme.primary.base,
+            theme.neutral.text_1,
+            theme.neutral.hover,
+        );
 
         let mut el = div()
-            .id(id)
-            .bg(theme.neutral.card)
-            .text_color(theme.neutral.text_2)
+            .id(self.id)
+            .bg(background)
+            .text_color(body_color)
             .border_1()
-            .border_color(theme.neutral.border)
-            .rounded(px(theme.radius.md))
+            .border_color(border)
+            .rounded(px(radius))
             .overflow_hidden()
             .when(!self.shrink, |s| s.flex_none())
-            .when(self.full_width, |s| {
-                s.w_full().min_w(px(0.0)).flex_shrink(1.0)
-            })
+            .when(self.full_width, |s| s.w_full().min_w(px(0.0)))
             .when_some(self.width, |s, width| s.w(width));
 
         if self.shadow {
@@ -139,11 +154,8 @@ impl RenderOnce for Card {
         }
 
         if self.hoverable {
-            el = el.hover(|s| s.shadow_xl().border_color(theme.primary.base));
+            el = el.hover(|s| s.shadow_xl().border_color(accent));
         }
-
-        // We use on_click to ensure the ID-based hover and other interactions are registered correctly
-        el = el.on_click(|_, _, _| {});
 
         // Header
         if let Some(title) = self.title {
@@ -152,11 +164,11 @@ impl RenderOnce for Card {
                     .when(self.full_width, |s| s.w_full())
                     .p_4()
                     .border_b_1()
-                    .border_color(theme.neutral.border)
+                    .border_color(border)
                     .child(
                         div()
                             .font_weight(gpui::FontWeight::BOLD)
-                            .text_color(theme.neutral.text_1)
+                            .text_color(title_color)
                             .child(title),
                     ),
             );
@@ -166,7 +178,7 @@ impl RenderOnce for Card {
                     .when(self.full_width, |s| s.w_full())
                     .p_4()
                     .border_b_1()
-                    .border_color(theme.neutral.border)
+                    .border_color(border)
                     .child(header),
             );
         }
@@ -178,7 +190,7 @@ impl RenderOnce for Card {
                     s.flex().flex_col().w_full().min_w(px(0.0))
                 })
                 .p_4()
-                .text_color(theme.neutral.text_2)
+                .text_color(body_color)
                 .child(self.body),
         );
 
@@ -189,9 +201,9 @@ impl RenderOnce for Card {
                     .when(self.full_width, |s| s.w_full())
                     .p_4()
                     .border_t_1()
-                    .border_color(theme.neutral.border)
-                    .bg(theme.neutral.hover)
-                    .text_color(theme.neutral.text_2)
+                    .border_color(border)
+                    .bg(footer_background)
+                    .text_color(body_color)
                     .child(footer),
             );
         }
@@ -217,41 +229,154 @@ mod tests {
         assert_eq!(Card::new("body").width_lg().width, Some(px(400.0)));
     }
 
-    #[test]
-    fn card_full_width_stretches_internal_regions() {
-        let card = Card::new("body").full_width();
-        let production = include_str!("card.rs")
-            .split("#[cfg(test)]")
-            .next()
-            .unwrap_or_default();
+    struct CardSizingTest {
+        with_sibling: bool,
+        prevent_shrink: bool,
+    }
 
-        assert!(card.full_width);
-        assert_eq!(card.width, None);
-        assert!(production.contains("s.w_full().min_w(px(0.0)).flex_shrink(1.0)"));
-        assert!(production.contains("s.flex().flex_col().w_full().min_w(px(0.0))"));
+    impl gpui::Render for CardSizingTest {
+        fn render(&mut self, _: &mut Window, _: &mut gpui::Context<Self>) -> impl IntoElement {
+            let body = div()
+                .w_full()
+                .h(px(40.0))
+                .debug_selector(|| "card-sizing-body".into());
+            let card = Card::new(body).full_width();
+            let card = if self.prevent_shrink {
+                card.no_shrink()
+            } else {
+                card
+            };
+            div()
+                .flex()
+                .w(px(400.0))
+                .child(card)
+                .when(self.with_sibling, |row| {
+                    row.child(div().w(px(200.0)).h(px(40.0)).flex_none())
+                })
+        }
     }
 
     #[test]
-    fn card_no_shrink_tracks_scroll_container_usage() {
-        assert!(!Card::new("body").no_shrink().shrink);
+    fn full_width_respects_no_shrink_in_flex_layouts() -> Result<(), String> {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let handle = app.add_window(|_, _| CardSizingTest {
+            with_sibling: false,
+            prevent_shrink: false,
+        });
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        let baseline = window
+            .debug_bounds("card-sizing-body")
+            .ok_or("missing baseline body")?
+            .size
+            .width;
+        handle
+            .update(&mut app, |view, _, cx| {
+                view.with_sibling = true;
+                cx.notify();
+            })
+            .map_err(|error| error.to_string())?;
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        let shrunk = window
+            .debug_bounds("card-sizing-body")
+            .ok_or("missing shrinking body")?
+            .size
+            .width;
+        assert_eq!(shrunk, baseline - px(200.0));
+        handle
+            .update(&mut app, |view, _, cx| {
+                view.prevent_shrink = true;
+                cx.notify();
+            })
+            .map_err(|error| error.to_string())?;
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        let preserved = window
+            .debug_bounds("card-sizing-body")
+            .ok_or("missing nonshrinking body")?
+            .size
+            .width;
+        assert_eq!(preserved, baseline);
+        app.quit();
+        Ok(())
+    }
+
+    struct SiblingCardsTest {
+        activations: std::rc::Rc<std::cell::RefCell<Vec<usize>>>,
+    }
+
+    impl gpui::Render for SiblingCardsTest {
+        fn render(&mut self, _: &mut Window, _: &mut gpui::Context<Self>) -> impl IntoElement {
+            let activations = self.activations.clone();
+            let first = div()
+                .id("card-action")
+                .debug_selector(|| "card-first-action".into())
+                .w_full()
+                .h(px(40.0))
+                .on_click(move |_, _, _| activations.borrow_mut().push(0));
+            let activations = self.activations.clone();
+            let second = div()
+                .id("card-action")
+                .debug_selector(|| "card-second-action".into())
+                .w_full()
+                .h(px(40.0))
+                .on_click(move |_, _, _| activations.borrow_mut().push(1));
+            div()
+                .flex()
+                .w(px(800.0))
+                .child(Card::new(first).width(px(400.0)))
+                .child(Card::new(second).width(px(400.0)))
+        }
+    }
+
+    fn click_across_redraw(window: &mut gpui::VisualTestContext, position: gpui::Point<Pixels>) {
+        window.update(|window, cx| {
+            window.dispatch_event(
+                gpui::PlatformInput::MouseDown(gpui::MouseDownEvent {
+                    position,
+                    button: gpui::MouseButton::Left,
+                    modifiers: gpui::Modifiers::none(),
+                    click_count: 1,
+                    first_mouse: false,
+                }),
+                cx,
+            );
+            window.draw(cx).clear(cx);
+            window.dispatch_event(
+                gpui::PlatformInput::MouseUp(gpui::MouseUpEvent {
+                    position,
+                    button: gpui::MouseButton::Left,
+                    modifiers: gpui::Modifiers::none(),
+                    click_count: 1,
+                }),
+                cx,
+            );
+        });
     }
 
     #[test]
-    fn card_surfaces_and_text_use_theme_tokens() {
-        let production = include_str!("card.rs")
-            .split("#[cfg(test)]")
-            .next()
-            .unwrap_or_default();
-
-        assert!(production.contains(".bg(theme.neutral.card)"));
-        assert!(production.contains(".border_color(theme.neutral.border)"));
-        assert!(
-            production.contains(".text_color(theme.neutral.text_2)"),
-            "card root/body/footer text should inherit a theme-aware body color"
-        );
-        assert!(
-            production.contains(".text_color(theme.neutral.text_1)"),
-            "card title text should use the primary theme-aware text color"
-        );
+    fn sibling_cards_keep_native_child_actions_independent() -> Result<(), String> {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let activations = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        let handle = app.add_window({
+            let activations = activations.clone();
+            move |_, _| SiblingCardsTest { activations }
+        });
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        let first = window
+            .debug_bounds("card-first-action")
+            .ok_or("missing first Card action")?;
+        let second = window
+            .debug_bounds("card-second-action")
+            .ok_or("missing second Card action")?;
+        click_across_redraw(&mut window, first.center());
+        assert_eq!(*activations.borrow(), [0]);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        click_across_redraw(&mut window, second.center());
+        assert_eq!(*activations.borrow(), [0, 1]);
+        app.quit();
+        Ok(())
     }
 }

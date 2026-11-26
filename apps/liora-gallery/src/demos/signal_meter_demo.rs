@@ -30,6 +30,7 @@ impl Render for SignalMeterDemo {
                                         .child(SignalMeter::new(level))
                                         .child(Text::new(format!("{} 格", level)).size(px(12.0))),
                                 )
+                                .id(("signal-level-card", level as usize))
                                 .width(px(88.0))
                             })
                             .collect::<Vec<_>>(),

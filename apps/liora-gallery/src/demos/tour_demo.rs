@@ -101,6 +101,7 @@ impl Render for TourDemo {
     }
 }
 
+#[track_caller]
 fn demo_panel(button: impl IntoElement) -> impl IntoElement {
     Card::new(
         Space::new()

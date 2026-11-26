@@ -19,6 +19,7 @@
 //! the component, and avoid app-specific host-application resources in this SDK
 //! crate.
 
+use crate::selectable_text::SelectionScope;
 use crate::{SelectableText, SelectableTextOptions, SelectableTextWrap, Text};
 use gpui::{
     App, ElementId, IntoElement, RenderOnce, SharedString, StyledText, TextRun, TextStyle,
@@ -39,7 +40,7 @@ pub struct Paragraph {
     selectable: bool,
     id: SharedString,
     preserve_segment_styles: bool,
-    selection_scope: Option<(SharedString, usize, SharedString)>,
+    selection_scope: Option<(SelectionScope, usize, SharedString)>,
 }
 
 impl Paragraph {
@@ -94,11 +95,11 @@ impl Paragraph {
 
     pub(crate) fn in_selection_scope(
         mut self,
-        scope: SharedString,
+        scope: Option<SelectionScope>,
         order: usize,
         separator: SharedString,
     ) -> Self {
-        self.selection_scope = Some((scope, order, separator));
+        self.selection_scope = scope.map(|scope| (scope, order, separator));
         self
     }
 

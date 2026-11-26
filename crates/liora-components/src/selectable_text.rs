@@ -113,7 +113,17 @@ impl SelectableTextOptions {
 /// Fluent native GPUI component for rendering Liora selectable text.
 pub struct SelectableText;
 
+pub(crate) type SelectionScope = Entity<ScopedSelection>;
+
 impl SelectableText {
+    pub(crate) fn selection_scope(
+        id: impl Into<ElementId>,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> SelectionScope {
+        window.use_keyed_state(id, cx, |_, _| ScopedSelection::default())
+    }
+
     /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(cx: &mut App) {
         cx.bind_keys([
@@ -164,7 +174,7 @@ impl SelectableText {
     /// Renders a leaf in a window-local selection scope, preserving its own text layout.
     pub(crate) fn view_in_scope(
         options: SelectableTextOptions,
-        scope: SharedString,
+        scope: SelectionScope,
         order: usize,
         separator: SharedString,
         window: &mut Window,
@@ -175,17 +185,13 @@ impl SelectableText {
 
     fn scoped_input(
         options: SelectableTextOptions,
-        scope: SharedString,
+        shared: SelectionScope,
         order: usize,
         separator: SharedString,
         window: &mut Window,
         cx: &mut App,
     ) -> Entity<SelectableTextState> {
-        let shared = window.use_keyed_state(
-            element_id(format!("selectable-scope:{scope}")),
-            cx,
-            |_, _| ScopedSelection::default(),
-        );
+        // The document/group owner supplies one scope across nested element namespaces.
         let input = window.use_keyed_state(options.id.clone(), cx, {
             let initial = options.clone();
             move |_, cx| SelectableTextState::new(cx, initial)
@@ -246,7 +252,7 @@ impl SelectableText {
 
     pub(crate) fn view_with_group_hover(
         options: SelectableTextOptions,
-        scope: Option<(SharedString, usize, SharedString)>,
+        scope: Option<(SelectionScope, usize, SharedString)>,
         hover: (SharedString, gpui::Hsla),
         window: &mut Window,
         cx: &mut App,
@@ -276,7 +282,7 @@ struct ScopedMember {
 }
 
 #[derive(Default)]
-struct ScopedSelection {
+pub(crate) struct ScopedSelection {
     members: BTreeMap<usize, ScopedMember>,
     anchor: Option<ScopedPosition>,
     head: Option<ScopedPosition>,
@@ -911,26 +917,14 @@ impl SelectableTextState {
             .is_some_and(|state| state.selecting)
     }
 
-    fn on_mouse_up(&mut self, event: &MouseUpEvent, window: &mut Window, cx: &mut Context<Self>) {
+    fn on_mouse_up(&mut self, _event: &MouseUpEvent, window: &mut Window, cx: &mut Context<Self>) {
         if let Some((scope, order)) = &self.scope {
-            if !scope.read(cx).selecting {
-                return;
-            }
-            let active = ScopedPosition {
-                order: *order,
-                offset: self.index_for_point(event.position),
-            };
-            let changed = scope.update(cx, |state, cx| {
+            let changed = scope.update(cx, |state, _| {
                 if !state.selecting || state.anchor.is_none_or(|anchor| anchor.order != *order) {
                     return false;
                 }
-                let next = state.point_at(event.position, active, cx);
-                let changed = next.is_some() && next != state.head;
-                if changed {
-                    state.head = next;
-                }
                 state.selecting = false;
-                changed
+                true
             });
             if changed {
                 window.refresh();

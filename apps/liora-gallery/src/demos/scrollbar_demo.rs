@@ -113,6 +113,7 @@ fn card_scrollbar(cx: &mut Context<Scrollbar>) -> Scrollbar {
                                 .child(Tag::new("gpui").warning()),
                         ),
                 )
+                .id(("workflow-card", i as usize))
                 .no_shadow()
             }))
             .into_any_element()

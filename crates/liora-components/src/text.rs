@@ -19,6 +19,7 @@
 //! the component, and avoid app-specific host-application resources in this SDK
 //! crate.
 
+use crate::selectable_text::SelectionScope;
 use crate::{
     Card, CodeBlock, CodeLanguage, Divider, Paragraph, SelectableText, SelectableTextOptions,
     SelectableTextWrap, Space, Title,
@@ -180,7 +181,7 @@ pub struct Text {
     pub(crate) padding: Pixels,
     pub(crate) document_background: Option<Hsla>,
     pub(crate) id: SharedString,
-    pub(crate) selection_scope: Option<(SharedString, usize, SharedString)>,
+    pub(crate) selection_scope: Option<(SelectionScope, usize, SharedString)>,
 }
 
 impl Text {
@@ -343,11 +344,11 @@ impl Text {
 
     pub(crate) fn in_selection_scope(
         mut self,
-        scope: SharedString,
+        scope: Option<SelectionScope>,
         order: usize,
         separator: SharedString,
     ) -> Self {
-        self.selection_scope = Some((scope, order, separator));
+        self.selection_scope = scope.map(|scope| (scope, order, separator));
         self
     }
 
@@ -466,11 +467,15 @@ impl Text {
 
 impl RenderOnce for Text {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let theme = &cx.global::<Config>().theme;
-
         if matches!(self.content, TextContent::Document(_)) {
-            return render_text_document(self, cx, theme).into_any_element();
+            let selection_scope = self
+                .selectable
+                .then(|| SelectableText::selection_scope(self.id.clone(), _window, cx));
+            let theme = &cx.global::<Config>().theme;
+            return render_text_document(self, selection_scope, cx, theme).into_any_element();
         }
+
+        let theme = &cx.global::<Config>().theme;
 
         let font_size = self.size.unwrap_or_else(|| px(theme.font_size.md));
         let line_height = font_size * 1.6;
@@ -613,6 +618,7 @@ fn default_text_id(prefix: &str, seed: &str, location: &Location<'_>) -> SharedS
 
 fn render_text_document(
     text: Text,
+    selection_scope: Option<SelectionScope>,
     cx: &impl liora_core::LocalesContext,
     theme: &liora_theme::Theme,
 ) -> AnyElement {
@@ -632,6 +638,7 @@ fn render_text_document(
                     block,
                     text.selectable,
                     &text.id,
+                    &selection_scope,
                     &mut order,
                     cx,
                     theme,
@@ -661,6 +668,7 @@ fn render_text_block(
     block: &TextBlock,
     selectable: bool,
     scope: &SharedString,
+    selection_scope: &Option<SelectionScope>,
     order: &mut usize,
     cx: &impl liora_core::LocalesContext,
     theme: &liora_theme::Theme,
@@ -671,7 +679,7 @@ fn render_text_block(
             let (id, index) = next_document_leaf(scope, order);
             title_for_level(text.clone(), *level)
                 .id(id)
-                .in_selection_scope(scope.clone(), index, separator)
+                .in_selection_scope(selection_scope.clone(), index, separator)
                 .selectable(selectable)
                 .into_any_element()
         }
@@ -679,7 +687,7 @@ fn render_text_block(
             let (id, index) = next_document_leaf(scope, order);
             Paragraph::with_text(text.clone())
                 .id(id)
-                .in_selection_scope(scope.clone(), index, separator)
+                .in_selection_scope(selection_scope.clone(), index, separator)
                 .selectable(selectable)
                 .into_any_element()
         }
@@ -693,10 +701,11 @@ fn render_text_block(
                     .child(
                         Paragraph::with_text(text.clone())
                             .id(id)
-                            .in_selection_scope(scope.clone(), index, separator)
+                            .in_selection_scope(selection_scope.clone(), index, separator)
                             .selectable(selectable),
                     ),
             )
+            .id(("text-document-quote", index))
             .no_shadow()
             .into_any_element()
         }
@@ -707,7 +716,7 @@ fn render_text_block(
                 .language(*language)
                 .copyable(true)
                 .selectable(selectable)
-                .in_selection_scope(scope.clone(), index, separator)
+                .in_selection_scope(selection_scope.clone(), index, separator)
                 .into_any_element()
         }
         TextBlock::List { ordered, items } => Space::new()
@@ -736,7 +745,11 @@ fn render_text_block(
                         .child(
                             Paragraph::with_text(item.clone())
                                 .id(id)
-                                .in_selection_scope(scope.clone(), leaf_index, "\n".into())
+                                .in_selection_scope(
+                                    selection_scope.clone(),
+                                    leaf_index,
+                                    "\n".into(),
+                                )
                                 .selectable(selectable),
                         )
                         .into_any_element(),
@@ -912,6 +925,152 @@ impl IntoElement for Text {
 #[cfg(test)]
 mod document_tests {
     use super::*;
+    use gpui::{AppContext, Context, Render, TestAppContext, point};
+
+    struct SiblingQuotes;
+
+    impl Render for SiblingQuotes {
+        fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+            div()
+                .flex()
+                .flex_col()
+                .child(
+                    Text::document([
+                        TextBlock::heading(2, "Heading"),
+                        TextBlock::quote("Firstquote"),
+                        TextBlock::quote("Secondquote"),
+                        TextBlock::paragraph("Afterword"),
+                    ])
+                    .id("sibling-quotes"),
+                )
+                .child(
+                    Card::new(
+                        Text::document([TextBlock::quote("Otherquote")]).id("sibling-quotes"),
+                    )
+                    .id("other-document-owner")
+                    .no_shadow(),
+                )
+        }
+    }
+
+    #[gpui::test]
+    fn sibling_quotes_preserve_selection_across_redraw(cx: &mut TestAppContext) {
+        cx.update(crate::init_liora);
+        let handle = gpui::AnyWindowHandle::from(cx.add_window(|_, _| SiblingQuotes));
+        cx.update_window(handle, |_, window, cx| {
+            window.draw(cx).clear(cx);
+            let accent = cx.global::<Config>().theme.primary.base;
+            let mut quotes: Vec<_> = window
+                .painted_quads()
+                .into_iter()
+                .filter(|quad| {
+                    let borders = quad.border_widths;
+                    quad.border_color == accent
+                        && borders.left.0 > 0.0
+                        && borders.top.0 == 0.0
+                        && borders.right.0 == 0.0
+                        && borders.bottom.0 == 0.0
+                })
+                .map(|quad| quad.bounds)
+                .collect();
+            quotes.sort_by(|a, b| a.origin.y.partial_cmp(&b.origin.y).unwrap());
+            // GPUI splits border-only quads into masked primitives with identical bounds.
+            quotes.dedup();
+            assert_eq!(
+                quotes.len(),
+                3,
+                "all document quote borders must be painted"
+            );
+            assert!(quotes[0].bottom() < quotes[1].top());
+
+            for (index, expected) in [
+                (0, "Firstquote"),
+                (1, "Secondquote"),
+                (2, "Otherquote"),
+                (0, "Firstquote"),
+            ] {
+                let origin = quotes[index].origin;
+                let position = point(
+                    px(origin.x.0 / window.scale_factor() + 24.0),
+                    px(origin.y.0 / window.scale_factor() + 8.0),
+                );
+                window.dispatch_event(
+                    gpui::PlatformInput::MouseDown(gpui::MouseDownEvent {
+                        position,
+                        button: gpui::MouseButton::Left,
+                        click_count: 2,
+                        ..Default::default()
+                    }),
+                    cx,
+                );
+                window.draw(cx).clear(cx);
+                window.dispatch_event(
+                    gpui::PlatformInput::MouseUp(gpui::MouseUpEvent {
+                        position,
+                        button: gpui::MouseButton::Left,
+                        click_count: 2,
+                        ..Default::default()
+                    }),
+                    cx,
+                );
+                window.draw(cx).clear(cx);
+                cx.write_to_clipboard(gpui::ClipboardItem::new_string("sentinel".into()));
+                window.dispatch_keystroke(gpui::Keystroke::parse("ctrl-c").unwrap(), cx);
+                assert_eq!(
+                    cx.read_from_clipboard()
+                        .and_then(|item| item.text())
+                        .as_deref(),
+                    Some(expected),
+                );
+            }
+            let start = point(
+                px(quotes[0].left().0 / window.scale_factor() + 24.0),
+                px(quotes[0].top().0 / window.scale_factor() + 8.0),
+            );
+            let end = point(
+                px(quotes[1].right().0 / window.scale_factor() - 2.0),
+                px(quotes[1].top().0 / window.scale_factor() + 8.0),
+            );
+            for event in [
+                gpui::PlatformInput::MouseDown(gpui::MouseDownEvent {
+                    position: start,
+                    button: gpui::MouseButton::Left,
+                    click_count: 2,
+                    ..Default::default()
+                }),
+                gpui::PlatformInput::MouseMove(gpui::MouseMoveEvent {
+                    position: end,
+                    pressed_button: Some(gpui::MouseButton::Left),
+                    ..Default::default()
+                }),
+                gpui::PlatformInput::MouseUp(gpui::MouseUpEvent {
+                    position: end,
+                    button: gpui::MouseButton::Left,
+                    click_count: 2,
+                    ..Default::default()
+                }),
+            ] {
+                window.dispatch_event(event, cx);
+                window.draw(cx).clear(cx);
+            }
+            window.dispatch_keystroke(gpui::Keystroke::parse("ctrl-c").unwrap(), cx);
+            assert_eq!(
+                cx.read_from_clipboard()
+                    .and_then(|item| item.text())
+                    .as_deref(),
+                Some("Firstquote\n\nSecondquote"),
+            );
+            window.dispatch_keystroke(gpui::Keystroke::parse("ctrl-a").unwrap(), cx);
+            window.dispatch_keystroke(gpui::Keystroke::parse("ctrl-c").unwrap(), cx);
+            assert_eq!(
+                cx.read_from_clipboard()
+                    .and_then(|item| item.text())
+                    .as_deref(),
+                Some("Heading\n\nFirstquote\n\nSecondquote\n\nAfterword"),
+            );
+        })
+        .unwrap();
+    }
 
     #[test]
     fn text_default_id_is_stable_across_render_rebuilds() {
@@ -1023,7 +1182,7 @@ mod group_hover_tests {
     }
 
     impl Render for HoverText {
-        fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
             let mut text = Text::new("hover selection")
                 .id("hover-selection-regression")
                 .underline();
@@ -1034,7 +1193,8 @@ mod group_hover_tests {
                 text.group_hover_text_color("text-hover", rgb(0xff0000).into())
             };
             if self.scoped {
-                text = text.in_selection_scope("hover-scope".into(), 0, "".into());
+                let scope = SelectableText::selection_scope("hover-scope", window, cx);
+                text = text.in_selection_scope(Some(scope), 0, "".into());
             }
             div()
                 .size_full()

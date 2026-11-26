@@ -27,6 +27,7 @@ pub fn card_scrollbar(cx: &mut Context<Scrollbar>) -> Scrollbar {
                                 .child(Tag::new("native").info()),
                         ),
                 )
+                .id(("workflow-card", i as usize))
                 .no_shadow()
             }))
             .into_any_element()

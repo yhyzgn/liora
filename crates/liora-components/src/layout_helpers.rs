@@ -36,6 +36,7 @@ pub fn page(
 }
 
 /// Renders a consistent demo/documentation showcase card for compact component examples.
+/// Sibling showcase titles must be distinct within their parent identity scope.
 pub fn showcase_card(
     title: &'static str,
     description: &'static str,
@@ -48,11 +49,13 @@ pub fn showcase_card(
             .child(header(title, description))
             .child(body),
     )
+    .id(title)
     .width(px(360.0))
     .no_shadow()
 }
 
 /// Renders a consistent demo/documentation showcase card for wide component examples.
+/// Sibling showcase titles must be distinct within their parent identity scope.
 pub fn showcase_card_wide(
     title: &'static str,
     description: &'static str,
@@ -65,6 +68,7 @@ pub fn showcase_card_wide(
             .child(header(title, description))
             .child(body),
     )
+    .id(title)
     .full_width()
     .no_shadow()
 }

@@ -19,6 +19,7 @@
 //! the component, and avoid app-specific host-application resources in this SDK
 //! crate.
 
+use crate::selectable_text::SelectionScope;
 use crate::{SelectableText, SelectableTextOptions, SelectableTextWrap};
 use gpui::{
     App, ElementId, IntoElement, RenderOnce, SharedString, TextStyle, ViewElement as Component,
@@ -37,7 +38,7 @@ pub struct Title {
     level: u8,
     selectable: bool,
     id: SharedString,
-    selection_scope: Option<(SharedString, usize, SharedString)>,
+    selection_scope: Option<(SelectionScope, usize, SharedString)>,
 }
 
 fn default_title_id(seed: &str, location: &Location<'_>) -> SharedString {
@@ -107,11 +108,11 @@ impl Title {
 
     pub(crate) fn in_selection_scope(
         mut self,
-        scope: SharedString,
+        scope: Option<SelectionScope>,
         order: usize,
         separator: SharedString,
     ) -> Self {
-        self.selection_scope = Some((scope, order, separator));
+        self.selection_scope = scope.map(|scope| (scope, order, separator));
         self
     }
 

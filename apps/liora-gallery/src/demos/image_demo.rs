@@ -47,6 +47,7 @@ impl Render for ImageDemo {
                                 .child(Image::embedded(local).thumbnail_sm().fit(fit))
                                 .child(Text::new(label).nowrap()),
                         )
+                        .id(label)
                         .no_shadow()
                     })
                     .collect::<Vec<_>>()),

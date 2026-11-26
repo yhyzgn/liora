@@ -20,6 +20,7 @@ pub fn image_fit_modes(local: &'static [u8]) -> impl IntoElement {
                     .child(Image::embedded(local).thumbnail_sm().fit(fit))
                     .child(Text::new(label).nowrap()),
             )
+            .id(label)
             .no_shadow()
         }),
     )

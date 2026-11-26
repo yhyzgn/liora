@@ -285,6 +285,7 @@ fn metric_card(theme: &Theme, label: &'static str, value: &'static str) -> Card 
             .child(Text::new(label).xs().text_color(theme.neutral.text_3))
             .child(Title::new(value).h3()),
     )
+    .id(label)
     .width_md()
     .no_shadow()
 }

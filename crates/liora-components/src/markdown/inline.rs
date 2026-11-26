@@ -39,7 +39,7 @@ fn pieces(text: &str) -> impl Iterator<Item = Range<usize>> + '_ {
 fn leaf(
     options: SelectableTextOptions,
     fonts: &DocumentFonts,
-    scope: &SharedString,
+    scope: Option<&SelectionScope>,
     last: bool,
     edit: Option<(u64, usize)>,
     window: &mut Window,
@@ -60,9 +60,12 @@ fn leaf(
     }
     let order = fonts.order.get();
     fonts.order.set(order + 1);
+    let scope = scope
+        .cloned()
+        .unwrap_or_else(|| SelectableText::selection_scope(options.id.clone(), window, cx));
     SelectableText::view_in_scope(
         options,
-        scope.clone(),
+        scope,
         order,
         if last { "\n".into() } else { "".into() },
         window,
@@ -74,7 +77,7 @@ pub(super) fn formula(
     mut options: SelectableTextOptions,
     display: bool,
     fonts: &DocumentFonts,
-    scope: &SharedString,
+    scope: Option<&SelectionScope>,
     last: bool,
     edit: Option<(u64, usize)>,
     window: &mut Window,
@@ -175,10 +178,17 @@ pub(super) fn render(
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let scope = fonts
-        .selection_scope
-        .clone()
-        .unwrap_or_else(|| SharedString::from(format!("markdown-inline:{:?}", options.id)));
+    let can_edit =
+        matches!(block.kind, Kind::Paragraph | Kind::Heading(_)) && block.images.is_empty();
+    let scope = fonts.selection_scope.clone().or_else(|| {
+        (!can_edit || fonts.on_edit.is_none()).then(|| {
+            SelectableText::selection_scope(
+                SharedString::from(format!("markdown-inline:{:?}", options.id)),
+                window,
+                cx,
+            )
+        })
+    });
     let mut flow = div()
         .flex()
         .flex_row()
@@ -192,8 +202,6 @@ pub(super) fn render(
         _ => flow,
     };
     let runs = std::mem::take(&mut options.runs);
-    let can_edit =
-        matches!(block.kind, Kind::Paragraph | Kind::Heading(_)) && block.images.is_empty();
     let mut previous_newline = true;
     for (span_index, span) in block.spans.iter().enumerate() {
         let source = &block.text[span.range.clone()];
@@ -211,7 +219,7 @@ pub(super) fn render(
                 base,
                 display,
                 fonts,
-                &scope,
+                scope.as_ref(),
                 last,
                 can_edit.then_some((block.id, span.range.start)),
                 window,
@@ -240,7 +248,7 @@ pub(super) fn render(
             let child = leaf(
                 part,
                 fonts,
-                &scope,
+                scope.as_ref(),
                 last,
                 can_edit.then_some((block.id, span.range.start + range.start)),
                 window,

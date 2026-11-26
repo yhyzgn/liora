@@ -7810,6 +7810,7 @@ fn image_fit_demo() -> AnyElement {
                     )
                     .child(Text::new(label).nowrap()),
             )
+            .id(label)
             .no_shadow()
             .into_any_element()
         })
@@ -9306,6 +9307,7 @@ fn docs_scrollbar_cards_demo(
                                 .child(DocTag::new("gpui").warning()),
                         ),
                 )
+                .id(("workflow-card", i as usize))
                 .no_shadow()
             }))
             .into_any_element()

@@ -123,10 +123,13 @@ impl Default for SelectableTextGroup {
 }
 impl RenderOnce for SelectableTextGroup {
     fn render(self, _window: &mut Window, _cx: &mut App) -> impl IntoElement {
+        let scope = self
+            .selectable
+            .then(|| SelectableText::selection_scope(self.id.clone(), _window, _cx));
         let mut content = Space::new().vertical().gap_md();
         for (order, block) in self.blocks.into_iter().enumerate() {
             let leaf_id = format!("{}-{order}", self.id);
-            let scope = self.id.clone();
+            let scope = scope.clone();
             let separator = self.separator.clone();
             let child = match block {
                 SelectableTextGroupBlock::Text(text) => {

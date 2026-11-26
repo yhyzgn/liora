@@ -102,7 +102,7 @@ impl Render for SparklineDemo {
     }
 }
 
-fn metric_card(title: &str, value: &str, sparkline: Sparkline) -> impl IntoElement {
+fn metric_card(title: &'static str, value: &str, sparkline: Sparkline) -> impl IntoElement {
     Card::new(
         Space::new()
             .vertical()
@@ -115,6 +115,7 @@ fn metric_card(title: &str, value: &str, sparkline: Sparkline) -> impl IntoEleme
             .child(Text::new(value.to_string()).size(px(24.0)).bold())
             .child(sparkline.height(px(64.0)).area_fill(true)),
     )
+    .id(title)
     .width(px(240.0))
 }
 

@@ -20,6 +20,7 @@
 //! crate.
 
 use crate::gpui_compat::element_id;
+use crate::selectable_text::SelectionScope;
 use crate::{SelectableText, SelectableTextOptions, SelectableTextWrap};
 use gpui::{
     App, Bounds, ClipboardItem, Context, ElementId, Entity, FocusHandle, Focusable, FontStyle,
@@ -256,7 +257,7 @@ pub struct CodeBlock {
     selectable: bool,
     id: Option<ElementId>,
     on_copy: Option<Arc<CodeCopyCallback>>,
-    selection_scope: Option<(SharedString, usize, SharedString)>,
+    selection_scope: Option<(SelectionScope, usize, SharedString)>,
 }
 
 type CodeCopyCallback = dyn Fn(&str, &mut Window, &mut App) + 'static;
@@ -419,11 +420,11 @@ impl CodeBlock {
 
     pub(crate) fn in_selection_scope(
         mut self,
-        scope: SharedString,
+        scope: Option<SelectionScope>,
         order: usize,
         separator: SharedString,
     ) -> Self {
-        self.selection_scope = Some((scope, order, separator));
+        self.selection_scope = scope.map(|scope| (scope, order, separator));
         self
     }
 
@@ -567,7 +568,7 @@ fn render_block_code(
     code_family: &SharedString,
     code_weight: Option<FontWeight>,
     on_copy: Option<Arc<CodeCopyCallback>>,
-    selection_scope: Option<(SharedString, usize, SharedString)>,
+    selection_scope: Option<(SelectionScope, usize, SharedString)>,
     window: &mut Window,
     cx: &mut App,
 ) -> gpui::AnyElement {
@@ -828,7 +829,7 @@ fn render_code_content(
     theme: &liora_theme::Theme,
     code_family: &SharedString,
     code_weight: Option<FontWeight>,
-    selection_scope: Option<(SharedString, usize, SharedString)>,
+    selection_scope: Option<(SelectionScope, usize, SharedString)>,
     window: &mut Window,
     cx: &mut App,
 ) -> gpui::AnyElement {
