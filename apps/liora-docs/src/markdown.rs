@@ -1720,6 +1720,7 @@ fn load_code_snippet(path: &str) -> Option<&'static str> {
         "timer/count_down.rs" => Some(include_str!("../content/snippets/timer/count_down.rs")),
         "timer/clock.rs" => Some(include_str!("../content/snippets/timer/clock.rs")),
         "timer/count_up.rs" => Some(include_str!("../content/snippets/timer/count_up.rs")),
+        "timer/controls.rs" => Some(include_str!("../content/snippets/timer/controls.rs")),
         "timeline/placement.rs" => Some(include_str!("../content/snippets/timeline/placement.rs")),
         "timeline/reverse.rs" => Some(include_str!("../content/snippets/timeline/reverse.rs")),
         "breadcrumb/basic.rs" => Some(include_str!("../content/snippets/breadcrumb/basic.rs")),
@@ -2278,6 +2279,13 @@ impl Render for LiveDemoHost {
     }
 }
 
+#[path = "../content/snippets/timer/clock.rs"]
+mod timer_clock;
+#[path = "../content/snippets/timer/count_down.rs"]
+mod timer_count_down;
+#[path = "../content/snippets/timer/count_up.rs"]
+mod timer_count_up;
+
 struct LiveDemoContent {
     component: SharedString,
     gallery_demo: Option<AnyView>,
@@ -2331,6 +2339,8 @@ struct LiveDemoContent {
     form_textareas: Vec<Entity<Textarea>>,
     otp_inputs: Vec<Entity<liora_components::OtpInput>>,
     scroll_handle: ScrollHandle,
+    timer: Option<AnyView>,
+    clocks: Option<(AnyView, Timer)>,
 }
 
 impl LiveDemoContent {
@@ -3427,6 +3437,24 @@ impl LiveDemoContent {
         }
 
         Self {
+            timer: match component.as_ref() {
+                "TimerCountUp" => Some(timer_count_up::timer_count_up(cx)),
+                "TimerCountDown" => Some(timer_count_down::timer_count_down(cx)),
+                _ => None,
+            },
+            clocks: (component.as_ref() == "TimerClock").then(|| {
+                (
+                    timer_clock::timer_clock(cx),
+                    Timer::count_down(
+                        std::time::Duration::from_secs(7200),
+                        std::time::Duration::from_secs(139),
+                    )
+                    .start()
+                    .title("Remaining clock")
+                    .format(TimerFormat::Clock)
+                    .prefix("剩余"),
+                )
+            }),
             component,
             gallery_demo,
             autocompletes,
@@ -6295,22 +6323,12 @@ impl Render for LiveDemoContent {
             "PreviewImageTrigger" => docs_preview_image_trigger().into_any_element(),
             "PreviewCustomTrigger" => docs_preview_custom_trigger(_cx).into_any_element(),
             "PreviewEscape" => docs_preview_escape().into_any_element(),
-            "TimerCountUp" => Timer::count_up(std::time::Duration::ZERO)
-                .id("docs-live-timer-count-up")
-                .start()
-                .title("Build elapsed")
-                .display_unit(TimerUnit::Seconds)
+            "TimerCountUp" | "TimerCountDown" => self
+                .timer
+                .as_ref()
+                .expect("Timer demo is initialized with its retained host state")
+                .clone()
                 .into_any_element(),
-            "TimerCountDown" => Timer::count_down(
-                std::time::Duration::from_secs(300),
-                std::time::Duration::from_secs(84),
-            )
-            .id("docs-live-timer-count-down")
-            .start()
-            .title("Deploy window")
-            .display_unit(TimerUnit::Minutes)
-            .prefix("剩余")
-            .into_any_element(),
             "TimerUnits" => demo_row(vec![
                 Timer::count_up(std::time::Duration::from_millis(1532))
                     .title("Latency")
@@ -6325,24 +6343,13 @@ impl Render for LiveDemoContent {
                     .compact()
                     .into_any_element(),
             ]),
-            "TimerClock" => demo_row(vec![
-                Timer::count_up(std::time::Duration::from_secs(3661))
-                    .id("docs-live-timer-clock-up")
-                    .start()
-                    .title("Elapsed clock")
-                    .clock_format()
-                    .into_any_element(),
-                Timer::count_down(
-                    std::time::Duration::from_secs(7200),
-                    std::time::Duration::from_secs(139),
-                )
-                .id("docs-live-timer-clock-down")
-                .start()
-                .title("Remaining clock")
-                .format(TimerFormat::Clock)
-                .prefix("剩余")
-                .into_any_element(),
-            ]),
+            "TimerClock" => {
+                let (clock, countdown) = self.clocks.as_ref().expect("Clock demo is initialized");
+                demo_row(vec![
+                    clock.clone().into_any_element(),
+                    countdown.clone().into_any_element(),
+                ])
+            }
             _ => self.gallery_demo.clone().map_or_else(
                 || {
                     Paragraph::with_text(format!(

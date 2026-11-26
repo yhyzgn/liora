@@ -20,12 +20,12 @@
 //! crate.
 
 use gpui::{
-    App, ElementId, Global, IntoElement, RenderOnce, SharedString, ViewElement as Component,
+    App, ElementId, Global, IntoElement, RenderOnce, SharedString, Task, ViewElement as Component,
     Window, div, prelude::*, px,
 };
 use liora_core::Config;
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     sync::{Arc, Mutex, MutexGuard},
     time::{Duration, Instant},
 };
@@ -246,7 +246,8 @@ impl Timer {
         self.running(false)
     }
 
-    /// Sets the tick interval value used by the component.
+    /// Sets the window refresh interval, clamped to at least 16ms; faster sibling timers may refresh it sooner.
+    /// Intervals beyond the platform clock range do not schedule a wake.
     pub fn tick_interval(mut self, interval: Duration) -> Self {
         self.tick_interval = interval.max(Duration::from_millis(16));
         self
@@ -264,11 +265,12 @@ impl Timer {
 
     /// Performs the snapshot operation used by this component.
     pub fn snapshot(&self) -> TimerSnapshot {
+        let elapsed = self.effective_elapsed();
         let remaining = self
             .duration
-            .map(|duration| duration.saturating_sub(self.effective_elapsed()));
+            .map(|duration| duration.saturating_sub(elapsed));
         TimerSnapshot {
-            elapsed: self.effective_elapsed(),
+            elapsed,
             remaining,
             finished: matches!(self.direction, TimerDirection::CountDown)
                 && remaining.is_some_and(|remaining| remaining.is_zero()),
@@ -312,12 +314,13 @@ impl RenderOnce for Timer {
         if timer.running {
             ensure_timer_runtime(cx);
             if let Some(runtime) = cx.try_global::<TimerRuntime>() {
-                timer.started_at = Some(runtime.started_at(timer.id.clone()));
+                let started_at = timer.started_at.unwrap_or_else(Instant::now);
+                timer.started_at = Some(runtime.started_at(timer.id.clone(), started_at));
             }
         }
         if timer.running && !timer.snapshot().finished {
-            if let Some(runtime) = cx.try_global::<TimerRuntime>() {
-                runtime.register(window.window_handle(), timer.tick_interval);
+            if let Some(runtime) = cx.try_global::<TimerRuntime>().cloned() {
+                runtime.register(window.window_handle(), timer.tick_interval, cx);
             }
         }
         let value = timer.format_value();
@@ -375,49 +378,65 @@ impl RenderOnce for Timer {
 
 #[derive(Clone)]
 struct TimerRuntime {
-    windows: Arc<Mutex<HashSet<gpui::AnyWindowHandle>>>,
+    windows: Arc<Mutex<HashMap<gpui::AnyWindowHandle, TimerWindow>>>,
+    // shortcut: stable-id render builders retain epochs for the app lifetime until an explicit owner/reset contract exists.
     starts: Arc<Mutex<HashMap<SharedString, Instant>>>,
+}
+
+struct TimerWindow {
+    deadline: Instant,
+    task: Task<()>,
 }
 
 impl Global for TimerRuntime {}
 
 impl TimerRuntime {
-    fn new(cx: &mut App) -> Self {
-        let windows = Arc::new(Mutex::new(HashSet::new()));
-        let runtime = Self {
-            windows: windows.clone(),
+    fn new() -> Self {
+        Self {
+            windows: Arc::new(Mutex::new(HashMap::new())),
             starts: Arc::new(Mutex::new(HashMap::new())),
-        };
-        let executor = cx.background_executor().clone();
-        cx.spawn(async move |cx: &mut gpui::AsyncApp| {
-            loop {
-                executor.timer(Duration::from_millis(250)).await;
-                let handles = lock_timer_windows(&windows)
-                    .iter()
-                    .copied()
-                    .collect::<Vec<_>>();
-                for handle in handles {
-                    let _ = handle.update(cx, |_, window, _| window.refresh());
-                }
-            }
-        })
-        .detach();
-        runtime
+        }
     }
 
-    fn started_at(&self, id: SharedString) -> Instant {
+    fn started_at(&self, id: SharedString, started_at: Instant) -> Instant {
         let mut starts = lock_timer_starts(&self.starts);
-        *starts.entry(id).or_insert_with(Instant::now)
+        *starts.entry(id).or_insert(started_at)
     }
 
-    fn register(&self, window: gpui::AnyWindowHandle, _interval: Duration) {
-        lock_timer_windows(&self.windows).insert(window);
+    fn register(&self, window: gpui::AnyWindowHandle, interval: Duration, cx: &mut App) {
+        let executor = cx.background_executor();
+        let Some(deadline) = executor.now().checked_add(interval) else {
+            return;
+        };
+        let mut windows = lock_timer_windows(&self.windows);
+        if windows
+            .get(&window)
+            .is_some_and(|scheduled| scheduled.deadline <= deadline)
+        {
+            return;
+        }
+
+        let timer = executor.timer(interval);
+        let pending = Arc::downgrade(&self.windows);
+        let task = cx.spawn(async move |cx| {
+            timer.await;
+            let Some(pending) = pending.upgrade() else {
+                return;
+            };
+            // Retire before refreshing so only timers still rendered schedule the next wake.
+            if let Some(scheduled) = lock_timer_windows(&pending).remove(&window) {
+                scheduled.task.detach();
+            }
+            let _ = window.update(cx, |_, window, _| window.refresh());
+        });
+        // Replacing the retained task cancels a later wake for this window.
+        windows.insert(window, TimerWindow { deadline, task });
     }
 }
 
 fn lock_timer_windows(
-    windows: &Arc<Mutex<HashSet<gpui::AnyWindowHandle>>>,
-) -> MutexGuard<'_, HashSet<gpui::AnyWindowHandle>> {
+    windows: &Arc<Mutex<HashMap<gpui::AnyWindowHandle, TimerWindow>>>,
+) -> MutexGuard<'_, HashMap<gpui::AnyWindowHandle, TimerWindow>> {
     windows
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -433,7 +452,7 @@ fn lock_timer_starts(
 
 fn ensure_timer_runtime(cx: &mut App) {
     if !cx.has_global::<TimerRuntime>() {
-        let runtime = TimerRuntime::new(cx);
+        let runtime = TimerRuntime::new();
         cx.set_global(runtime);
     }
 }
@@ -493,6 +512,389 @@ fn unit_label(unit: TimerUnit) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::{cell::Cell, rc::Rc};
+
+    struct TimerSurface {
+        intervals: Vec<Duration>,
+        running: Vec<bool>,
+        visible: Vec<bool>,
+        renders: Rc<Cell<usize>>,
+    }
+
+    impl gpui::Render for TimerSurface {
+        fn render(&mut self, _: &mut Window, _: &mut gpui::Context<Self>) -> impl IntoElement {
+            self.renders.set(self.renders.get() + 1);
+            div().children(
+                self.intervals
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(index, interval)| {
+                        self.visible[index].then(|| {
+                            Timer::count_up(Duration::ZERO)
+                                .id(format!("mounted-timer-{index}"))
+                                .running(self.running[index])
+                                .tick_interval(*interval)
+                        })
+                    }),
+            )
+        }
+    }
+
+    struct TimerRoot<T: gpui::Render>(gpui::Entity<T>);
+
+    impl<T: gpui::Render> gpui::Render for TimerRoot<T> {
+        fn render(&mut self, _: &mut Window, _: &mut gpui::Context<Self>) -> impl IntoElement {
+            self.0.clone().cached(Default::default())
+        }
+    }
+
+    fn serve_headless_frame(window: &mut gpui::VisualTestContext) {
+        // Serve the public headless frame path; do not invalidate the cached root ourselves.
+        let settled = (0..100).any(|_| !window.executor().tick());
+        assert!(settled, "timer tasks must settle without a polling loop");
+        window.update(|window, cx| window.draw(cx).clear(cx));
+    }
+
+    #[test]
+    fn retained_countdown_finished_before_first_render_does_not_restart() {
+        struct RetainedCountdown {
+            timer: Timer,
+            renders: Rc<Cell<usize>>,
+        }
+
+        impl gpui::Render for RetainedCountdown {
+            fn render(&mut self, _: &mut Window, _: &mut gpui::Context<Self>) -> impl IntoElement {
+                self.renders.set(self.renders.get() + 1);
+                self.timer.clone()
+            }
+        }
+
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let renders = Rc::new(Cell::new(0));
+        let mut timer = Timer::count_down(Duration::from_secs(3600), Duration::ZERO).start();
+        timer.started_at = Some(Instant::now() - Duration::from_secs(7200));
+        assert!(timer.snapshot().finished);
+        let handle = app.add_window(|_, cx| {
+            TimerRoot(cx.new(|_| RetainedCountdown {
+                timer,
+                renders: renders.clone(),
+            }))
+        });
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        serve_headless_frame(&mut window);
+        let initial = renders.get();
+        assert!(initial > 0);
+        app.executor().advance_clock(Duration::from_secs(1));
+        serve_headless_frame(&mut window);
+        assert_eq!(
+            renders.get(),
+            initial,
+            "a finished retained timer must not restart on first render"
+        );
+        app.quit();
+    }
+
+    #[test]
+    fn mounted_timer_refreshes_cached_root_at_requested_interval_and_rearms() {
+        for millis in [50, 250, 500] {
+            let mut app = gpui::TestAppContext::single();
+            app.update(crate::init_liora);
+            let renders = Rc::new(Cell::new(0));
+            let handle = app.add_window(|_, cx| {
+                TimerRoot(cx.new(|_| TimerSurface {
+                    intervals: vec![Duration::from_millis(millis)],
+                    running: vec![true],
+                    visible: vec![true],
+                    renders: renders.clone(),
+                }))
+            });
+            let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+            serve_headless_frame(&mut window);
+            let initial = renders.get();
+            assert!(initial > 0);
+            for tick in 1..=3 {
+                app.executor()
+                    .advance_clock(Duration::from_millis(millis - 1));
+                serve_headless_frame(&mut window);
+                assert_eq!(
+                    renders.get(),
+                    initial + tick - 1,
+                    "no early {millis}ms redraw"
+                );
+                app.executor().advance_clock(Duration::from_millis(1));
+                serve_headless_frame(&mut window);
+                assert_eq!(
+                    renders.get(),
+                    initial + tick,
+                    "{millis}ms wake must invalidate the mounted root and rearm on render"
+                );
+            }
+            app.quit();
+        }
+    }
+
+    #[test]
+    fn unrepresentable_interval_stays_idle_without_displacing_sibling_wakes() {
+        let fast = Duration::from_millis(50);
+        for intervals in [
+            vec![Duration::MAX],
+            vec![Duration::MAX, fast],
+            vec![fast, Duration::MAX],
+        ] {
+            let mut app = gpui::TestAppContext::single();
+            app.update(crate::init_liora);
+            let renders = Rc::new(Cell::new(0));
+            let has_sibling = intervals.contains(&fast);
+            let handle = app.add_window(|_, cx| {
+                TimerRoot(cx.new(|_| TimerSurface {
+                    running: vec![true; intervals.len()],
+                    visible: vec![true; intervals.len()],
+                    intervals,
+                    renders: renders.clone(),
+                }))
+            });
+            let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+            serve_headless_frame(&mut window);
+            let initial = renders.get();
+            assert!(initial > 0);
+            for tick in 1..=3 {
+                app.executor().advance_clock(fast);
+                serve_headless_frame(&mut window);
+                assert_eq!(renders.get(), initial + if has_sibling { tick } else { 0 });
+            }
+            app.quit();
+        }
+    }
+
+    #[test]
+    fn mounted_timer_pause_unmount_and_close_stop_renewal_without_stopping_siblings() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let renders = Rc::new(Cell::new(0));
+        let handle = app.add_window(|_, cx| {
+            TimerRoot(cx.new(|_| TimerSurface {
+                intervals: vec![Duration::from_millis(500), Duration::from_millis(50)],
+                running: vec![true, true],
+                visible: vec![true, true],
+                renders: renders.clone(),
+            }))
+        });
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        serve_headless_frame(&mut window);
+        let initial = renders.get();
+        app.executor().advance_clock(Duration::from_millis(50));
+        serve_headless_frame(&mut window);
+        assert_eq!(renders.get(), initial + 1);
+
+        // Change host state without notify: the outstanding wake must perform the redraw.
+        assert!(
+            handle
+                .update(&mut app, |root, _, cx| {
+                    root.0.update(cx, |surface, _| surface.running[1] = false)
+                })
+                .is_ok()
+        );
+        app.executor().advance_clock(Duration::from_millis(50));
+        serve_headless_frame(&mut window);
+        let paused = renders.get();
+        assert_eq!(paused, initial + 2);
+        app.executor().advance_clock(Duration::from_millis(499));
+        serve_headless_frame(&mut window);
+        assert_eq!(renders.get(), paused);
+        app.executor().advance_clock(Duration::from_millis(1));
+        serve_headless_frame(&mut window);
+        assert_eq!(
+            renders.get(),
+            paused + 1,
+            "remaining sibling keeps its 500ms wake"
+        );
+
+        assert!(
+            handle
+                .update(&mut app, |root, _, cx| {
+                    root.0.update(cx, |surface, _| surface.visible[0] = false)
+                })
+                .is_ok()
+        );
+        app.executor().advance_clock(Duration::from_millis(500));
+        serve_headless_frame(&mut window);
+        let unmounted = renders.get();
+        assert_eq!(
+            unmounted,
+            paused + 2,
+            "one pending wake may retire after unmount"
+        );
+        app.executor().advance_clock(Duration::from_secs(2));
+        serve_headless_frame(&mut window);
+        assert_eq!(renders.get(), unmounted);
+
+        assert!(
+            handle
+                .update(&mut app, |_, window, _| window.remove_window())
+                .is_ok()
+        );
+        app.quit();
+    }
+
+    #[test]
+    fn closing_mounted_timer_window_retires_its_pending_wake() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let renders = Rc::new(Cell::new(0));
+        let handle = app.add_window(|_, cx| {
+            TimerRoot(cx.new(|_| TimerSurface {
+                intervals: vec![Duration::from_millis(50)],
+                running: vec![true],
+                visible: vec![true],
+                renders: renders.clone(),
+            }))
+        });
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        serve_headless_frame(&mut window);
+        let closing = renders.get();
+        assert!(
+            handle
+                .update(&mut app, |_, window, _| window.remove_window())
+                .is_ok()
+        );
+        app.executor().advance_clock(Duration::from_millis(50));
+        for _ in 0..100 {
+            if !app.executor().tick() {
+                break;
+            }
+        }
+        assert_eq!(renders.get(), closing);
+        assert!(!app.windows().contains(&handle.into()));
+        app.executor().advance_clock(Duration::from_secs(1));
+        assert!(
+            !app.executor().tick(),
+            "closed window must not renew its timer"
+        );
+        app.quit();
+    }
+
+    #[test]
+    fn timer_registration_expires_at_requested_interval() {
+        for millis in [50, 250, 500] {
+            let mut app = gpui::TestAppContext::single();
+            app.update(crate::init_liora);
+            let executor = app.executor();
+            let window = app.add_empty_window();
+            window.update(|window, cx| {
+                let _ = Timer::count_up(Duration::ZERO)
+                    .start()
+                    .tick_interval(Duration::from_millis(millis))
+                    .render(window, cx);
+            });
+            while executor.tick() {}
+            executor.advance_clock(Duration::from_millis(millis - 1));
+            while executor.tick() {}
+            window.update(|_, cx| {
+                assert_eq!(
+                    lock_timer_windows(&cx.global::<TimerRuntime>().windows).len(),
+                    1
+                );
+            });
+            executor.advance_clock(Duration::from_millis(1));
+            while executor.tick() {}
+            window.update(|window, cx| {
+                let _ = Timer::count_up(Duration::ZERO).paused().render(window, cx);
+                let _ = Timer::count_down(Duration::from_secs(1), Duration::from_secs(1))
+                    .start()
+                    .render(window, cx);
+                assert!(
+                    lock_timer_windows(&cx.global::<TimerRuntime>().windows).is_empty(),
+                    "registration should wake and expire after {millis}ms"
+                );
+            });
+            app.quit();
+        }
+    }
+
+    #[test]
+    fn timer_registration_keeps_earliest_deadline_and_rearms_after_waking() {
+        let mut app = gpui::TestAppContext::single();
+        let executor = app.executor();
+        let handle = app
+            .add_empty_window()
+            .update(|window, _| window.window_handle());
+        app.update(|cx| {
+            ensure_timer_runtime(cx);
+            let runtime = cx.global::<TimerRuntime>().clone();
+            for millis in [500, 250, 50, 500] {
+                runtime.register(handle, Duration::from_millis(millis), cx);
+            }
+            let windows = lock_timer_windows(&runtime.windows);
+            assert_eq!(windows.len(), 1);
+            assert_eq!(
+                windows[&handle].deadline,
+                executor.now() + Duration::from_millis(50)
+            );
+        });
+        while executor.tick() {}
+        executor.advance_clock(Duration::from_millis(50));
+        while executor.tick() {}
+        app.update(|cx| {
+            let runtime = cx.global::<TimerRuntime>().clone();
+            assert!(lock_timer_windows(&runtime.windows).is_empty());
+            runtime.register(handle, Duration::from_millis(250), cx);
+            assert_eq!(
+                lock_timer_windows(&runtime.windows)[&handle].deadline,
+                executor.now() + Duration::from_millis(250)
+            );
+        });
+        while executor.tick() {}
+        executor.advance_clock(Duration::from_millis(249));
+        while executor.tick() {}
+        app.update(|cx| {
+            assert_eq!(
+                lock_timer_windows(&cx.global::<TimerRuntime>().windows).len(),
+                1
+            );
+        });
+        executor.advance_clock(Duration::from_millis(1));
+        while executor.tick() {}
+        app.update(|cx| {
+            assert!(lock_timer_windows(&cx.global::<TimerRuntime>().windows).is_empty());
+        });
+        app.quit();
+    }
+
+    #[test]
+    fn timer_windows_wake_independently_and_closed_windows_are_retired() {
+        let mut app = gpui::TestAppContext::single();
+        let executor = app.executor();
+        let first = app
+            .add_empty_window()
+            .update(|window, _| window.window_handle());
+        let second = app
+            .add_empty_window()
+            .update(|window, _| window.window_handle());
+        app.update(|cx| {
+            ensure_timer_runtime(cx);
+            let runtime = cx.global::<TimerRuntime>().clone();
+            runtime.register(first, Duration::from_millis(50), cx);
+            runtime.register(second, Duration::from_millis(500), cx);
+            second
+                .update(cx, |_, window, _| window.remove_window())
+                .unwrap();
+        });
+        while executor.tick() {}
+        executor.advance_clock(Duration::from_millis(50));
+        while executor.tick() {}
+        app.update(|cx| {
+            let windows = lock_timer_windows(&cx.global::<TimerRuntime>().windows);
+            assert!(!windows.contains_key(&first));
+            assert!(windows.contains_key(&second));
+        });
+        executor.advance_clock(Duration::from_millis(450));
+        while executor.tick() {}
+        app.update(|cx| {
+            assert!(lock_timer_windows(&cx.global::<TimerRuntime>().windows).is_empty());
+        });
+        app.quit();
+    }
 
     #[test]
     fn timer_snapshot_tracks_countdown_remaining() {

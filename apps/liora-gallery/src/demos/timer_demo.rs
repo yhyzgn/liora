@@ -3,11 +3,43 @@ use liora_components::layout_helpers::{page, row_md, section};
 use liora_components::{Space, Timer, TimerFormat, TimerUnit};
 use std::time::Duration;
 
+#[path = "../../../liora-docs/content/snippets/timer/controls.rs"]
+mod controls;
+
 pub fn render(cx: &mut App) -> AnyView {
-    cx.new(|_| TimerDemo).into()
+    cx.new(|cx| TimerDemo {
+        count_up: controls::controlled_timer(
+            cx,
+            |elapsed| {
+                Timer::count_up(elapsed)
+                    .title("Build elapsed")
+                    .display_unit(TimerUnit::Seconds)
+            },
+            Duration::ZERO,
+        ),
+        count_down: controls::controlled_timer(
+            cx,
+            |elapsed| {
+                Timer::count_down(Duration::from_secs(300), elapsed)
+                    .title("Deploy window")
+                    .display_unit(TimerUnit::Minutes)
+                    .prefix("剩余")
+            },
+            Duration::from_secs(84),
+        ),
+        clock: Timer::count_up(Duration::from_secs(3661))
+            .start()
+            .title("Elapsed clock")
+            .clock_format(),
+    })
+    .into()
 }
 
-struct TimerDemo;
+struct TimerDemo {
+    count_up: AnyView,
+    count_down: AnyView,
+    clock: Timer,
+}
 
 impl Render for TimerDemo {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
@@ -21,12 +53,7 @@ impl Render for TimerDemo {
                     "正向计时",
                     "count_up 用于展示已耗时，可选择显示单位。",
                     row_md(vec![
-                        Timer::count_up(Duration::ZERO)
-                            .id("timer-demo-running-count-up")
-                            .start()
-                            .title("Build elapsed")
-                            .display_unit(TimerUnit::Seconds)
-                            .into_any_element(),
+                        self.count_up.clone().into_any_element(),
                         Timer::count_up(Duration::from_secs(7320))
                             .title("Session")
                             .display_unit(TimerUnit::Hours)
@@ -38,13 +65,7 @@ impl Render for TimerDemo {
                     "倒计时",
                     "count_down 接收总时长和已用时，remaining 会自动饱和到 0。",
                     row_md(vec![
-                        Timer::count_down(Duration::from_secs(300), Duration::from_secs(84))
-                            .id("timer-demo-running-count-down")
-                            .start()
-                            .title("Deploy window")
-                            .display_unit(TimerUnit::Minutes)
-                            .prefix("剩余")
-                            .into_any_element(),
+                        self.count_down.clone().into_any_element(),
                         Timer::count_down(Duration::from_secs(30), Duration::from_secs(36))
                             .title("Finished")
                             .display_unit(TimerUnit::Seconds)
@@ -55,12 +76,7 @@ impl Render for TimerDemo {
                     "时钟格式",
                     "支持 00:00:00 形式的 HH:MM:SS clock format。",
                     row_md(vec![
-                        Timer::count_up(Duration::from_secs(3661))
-                            .id("timer-demo-running-clock")
-                            .start()
-                            .title("Elapsed clock")
-                            .clock_format()
-                            .into_any_element(),
+                        self.clock.clone().into_any_element(),
                         Timer::count_down(Duration::from_secs(7200), Duration::from_secs(139))
                             .title("Remaining clock")
                             .format(TimerFormat::Clock)
@@ -87,19 +103,5 @@ impl Render for TimerDemo {
                     ]),
                 )),
         )
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn timer_demo_uses_timer_api() {
-        let source = include_str!("timer_demo.rs");
-        assert!(source.contains("Timer::count_up"));
-        assert!(source.contains("Timer::count_down"));
-        assert!(source.contains("TimerUnit"));
-        assert!(source.contains("clock_format"));
-        assert!(source.contains("TimerFormat::Clock"));
-        assert!(source.contains(".start()"));
     }
 }

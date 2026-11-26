@@ -64,6 +64,15 @@ Use `focus_source_offset(offset, window, cx)` and `set_selection(range, cx)` wit
 
 The Quiet.md-informed migration and exact runtime acceptance are tracked in `.context/tasks/011_quiet_markdown_native_20261117.md`. Syntax typing passed 112 focused Markdown tests, shared demo typing/scrolling tests, native Xwayland captures and real Linux XIM checks. This is not a claim of full Typora parity or Windows/macOS validation. Standard Markdown does not persist merged cells, columns, colors or whiteboards without an explicit extension format.
 
+## Timers
+
+`Timer::tick_interval` controls refresh scheduling for running, unfinished timers: the default is 250ms and requested intervals are clamped to at least 16ms. Timers in one window share its earliest pending wake, so a faster sibling may refresh slower timers sooner. Active timers schedule the next wake when rendered; paused, finished or removed timers do not renew it. A pending wake can still retire after unmount or window close; other active timers in the same window keep running.
+Intervals beyond the platform clock range do not schedule a new wake or displace an existing sibling wake. A retained Timer's first render preserves its original start time, even when its countdown has already finished.
+
+The Gallery/Docs Timer examples share a retained native host with Start / Pause / Resume / Reset. The host saves `snapshot().elapsed` before pausing and creates a fresh retained Timer on resume, preserving the countdown duration. `.paused()` only configures the display; it does not save elapsed time. Retain the returned view across renders, and reset a completed countdown before restarting it.
+
+Stable Timer IDs reuse app-global start epochs. Pending refresh work is bounded by the windows with an outstanding wake, but epoch storage is not reclaimed by this scheduling change; creating unbounded timer identities can still grow that existing cache.
+
 ## GPUI dependency note
 
 Liora uses the repository-maintained GPUI derivative described in [the source maintenance boundary](../../third_party/gpui/README.md), based on official `zed-industries/zed`. Follow the root README for the exact immutable Liora Git revision and application-root patch. Do not mix it with official GPUI or other forks; SDK manifests must not contain developer-local paths.
