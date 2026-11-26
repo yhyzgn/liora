@@ -21,14 +21,17 @@
 
 use crate::gpui_compat::element_id;
 use gpui::{
-    App, Hsla, IntoElement, RenderOnce, SharedString, ViewElement as Component, Window, div,
-    prelude::*, px,
+    App, ElementId, Hsla, IntoElement, RenderOnce, SharedString, ViewElement as Component, Window,
+    div, prelude::*, px,
 };
 use liora_core::Config;
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
-use std::collections::{BTreeMap, HashSet};
-use std::sync::Arc;
+use std::{
+    collections::{BTreeMap, HashSet},
+    panic::Location,
+    sync::Arc,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 /// Fluent native GPUI component for rendering Liora calendar date.
@@ -93,6 +96,7 @@ impl CalendarEvent {
 
 /// Fluent native GPUI component for rendering Liora calendar.
 pub struct Calendar {
+    id: ElementId,
     year: i32,
     month: u32,
     selected: Option<CalendarDate>,
@@ -106,9 +110,11 @@ pub struct Calendar {
 
 impl Calendar {
     /// Creates `Calendar` initialized from the supplied year, and month.
+    #[track_caller]
     pub fn new(year: i32, month: u32) -> Self {
         let month = month.clamp(1, 12);
         Self {
+            id: Location::caller().into(),
             year,
             month,
             selected: None,
@@ -119,6 +125,12 @@ impl Calendar {
             show_adjacent_months: true,
             on_select: None,
         }
+    }
+
+    /// Sets a stable identity for calendars built at the same call site in the same parent.
+    pub fn id(mut self, id: impl Into<ElementId>) -> Self {
+        self.id = id.into();
+        self
     }
 
     /// Sets the current selected state.
@@ -169,7 +181,7 @@ impl RenderOnce for Calendar {
         let on_select = self.on_select.clone();
 
         div()
-            .id(liora_core::unique_id("calendar"))
+            .id(self.id)
             .w_full()
             .rounded_lg()
             .border_1()
@@ -224,12 +236,16 @@ impl RenderOnce for Calendar {
                     .gap_2()
                     .children(cells.into_iter().map(|date| {
                         let in_month = date.month == self.month;
+                        if !self.show_adjacent_months && !in_month {
+                            return div().min_h(px(70.0)).into_any_element();
+                        }
                         let selected = self.selected == Some(date);
                         let disabled = self.disabled_dates.contains(&date);
                         let in_range = is_between_or_edge(date, self.range_start, self.range_end);
                         let day_events = events.get(&date).cloned().unwrap_or_default();
                         let mut cell = div()
                             .id(element_id(format!("calendar-cell-{}", date.format())))
+                            .debug_selector(move || format!("calendar-cell-{}", date.format()))
                             .min_h(px(70.0))
                             .rounded_md()
                             .border_1()
@@ -264,6 +280,9 @@ impl RenderOnce for Calendar {
                                     } else {
                                         gpui::FontWeight::NORMAL
                                     })
+                                    .debug_selector(move || {
+                                        format!("calendar-day-{}", date.format())
+                                    })
                                     .child(date.day.to_string()),
                             )
                             .children(day_events.into_iter().take(2).map(|event| {
@@ -274,8 +293,7 @@ impl RenderOnce for Calendar {
                                     .text_color(color)
                                     .child(format!("• {}", event.label))
                                     .into_any_element()
-                            }))
-                            .when(!self.show_adjacent_months && !in_month, |s| s.opacity(0.0));
+                            }));
                         if disabled {
                             cell = cell.cursor_not_allowed().opacity(0.55);
                         } else {
@@ -403,5 +421,208 @@ mod tests {
             CalendarDate::new(2024, 2, 28),
             CalendarDate::new(2024, 3, 1)
         ));
+    }
+
+    struct CalendarInteractionTest {
+        show_adjacent: bool,
+        selections: std::rc::Rc<std::cell::RefCell<Vec<CalendarDate>>>,
+    }
+
+    impl gpui::Render for CalendarInteractionTest {
+        fn render(&mut self, _: &mut Window, _: &mut gpui::Context<Self>) -> impl IntoElement {
+            let selections = self.selections.clone();
+            div().child(
+                Calendar::new(2026, 6)
+                    .show_adjacent_months(self.show_adjacent)
+                    .disabled_dates([CalendarDate {
+                        year: 2026,
+                        month: 7,
+                        day: 2,
+                    }])
+                    .on_select(move |date, _, _| selections.borrow_mut().push(date)),
+            )
+        }
+    }
+
+    fn click(window: &mut gpui::VisualTestContext, position: gpui::Point<gpui::Pixels>) {
+        window.update(|window, cx| {
+            window.dispatch_event(
+                gpui::PlatformInput::MouseDown(gpui::MouseDownEvent {
+                    position,
+                    button: gpui::MouseButton::Left,
+                    modifiers: gpui::Modifiers::none(),
+                    click_count: 1,
+                    first_mouse: false,
+                }),
+                cx,
+            );
+            window.draw(cx).clear(cx);
+            window.dispatch_event(
+                gpui::PlatformInput::MouseUp(gpui::MouseUpEvent {
+                    position,
+                    button: gpui::MouseButton::Left,
+                    modifiers: gpui::Modifiers::none(),
+                    click_count: 1,
+                }),
+                cx,
+            );
+        });
+    }
+
+    #[test]
+    fn hidden_adjacent_dates_stay_hidden_and_cannot_be_selected() -> Result<(), String> {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let selections = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        let handle = app.add_window({
+            let selections = selections.clone();
+            move |_, _| CalendarInteractionTest {
+                selections,
+                show_adjacent: true,
+            }
+        });
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+
+        let visible = window
+            .debug_bounds("calendar-cell-2026-06-01")
+            .ok_or("missing visible June 1 cell")?;
+        let hidden_enabled = window
+            .debug_bounds("calendar-cell-2026-07-01")
+            .ok_or("missing visible July 1 cell")?;
+        let hidden_disabled = window
+            .debug_bounds("calendar-cell-2026-07-02")
+            .ok_or("missing visible July 2 cell")?;
+        assert_eq!(hidden_enabled.size.height, visible.size.height);
+        assert_eq!(hidden_disabled.size.height, visible.size.height);
+        assert!(window.debug_bounds("calendar-day-2026-07-02").is_some());
+        click(&mut window, hidden_disabled.center());
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert!(selections.borrow().is_empty());
+        click(&mut window, hidden_enabled.center());
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert_eq!(
+            *selections.borrow(),
+            [CalendarDate {
+                year: 2026,
+                month: 7,
+                day: 1,
+            }]
+        );
+        selections.borrow_mut().clear();
+
+        handle
+            .update(&mut app, |surface, _, cx| {
+                surface.show_adjacent = false;
+                cx.notify();
+            })
+            .map_err(|error| error.to_string())?;
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert_eq!(
+            window.debug_bounds("calendar-cell-2026-06-01"),
+            Some(visible)
+        );
+
+        click(&mut window, hidden_enabled.center());
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert!(
+            selections.borrow().is_empty(),
+            "hidden adjacent date selected"
+        );
+
+        click(&mut window, hidden_disabled.center());
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert!(
+            selections.borrow().is_empty(),
+            "hidden disabled date selected"
+        );
+        assert!(window.debug_bounds("calendar-cell-2026-07-01").is_none());
+        assert!(window.debug_bounds("calendar-cell-2026-07-02").is_none());
+        assert!(window.debug_bounds("calendar-day-2026-07-01").is_none());
+        assert!(window.debug_bounds("calendar-day-2026-07-02").is_none());
+
+        click(&mut window, visible.center());
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert_eq!(
+            *selections.borrow(),
+            [CalendarDate {
+                year: 2026,
+                month: 6,
+                day: 1,
+            }]
+        );
+        app.quit();
+        Ok(())
+    }
+
+    struct SiblingCalendarsTest {
+        selections: std::rc::Rc<std::cell::RefCell<Vec<(usize, CalendarDate)>>>,
+    }
+
+    impl gpui::Render for SiblingCalendarsTest {
+        fn render(&mut self, _: &mut Window, _: &mut gpui::Context<Self>) -> impl IntoElement {
+            let selections = self.selections.clone();
+            let first = Calendar::new(2026, 6)
+                .on_select(move |date, _, _| selections.borrow_mut().push((0, date)));
+            let selections = self.selections.clone();
+            let second = Calendar::new(2026, 6)
+                .on_select(move |date, _, _| selections.borrow_mut().push((1, date)));
+            // Debug selectors measure siblings without adding identity namespaces.
+            div()
+                .flex()
+                .w(px(800.0))
+                .child(
+                    div()
+                        .w(px(400.0))
+                        .debug_selector(|| "calendar-first".into())
+                        .child(first),
+                )
+                .child(
+                    div()
+                        .w(px(400.0))
+                        .debug_selector(|| "calendar-second".into())
+                        .child(second),
+                )
+        }
+    }
+
+    #[test]
+    fn sibling_calendars_keep_selections_independent_across_redraw() -> Result<(), String> {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let selections = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        let handle = app.add_window({
+            let selections = selections.clone();
+            move |_, _| SiblingCalendarsTest { selections }
+        });
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        let first = window
+            .debug_bounds("calendar-first")
+            .ok_or("missing first Calendar")?;
+        let second = window
+            .debug_bounds("calendar-second")
+            .ok_or("missing second Calendar")?;
+        assert_eq!(first.size, second.size);
+        let cell = window
+            .debug_bounds("calendar-cell-2026-06-01")
+            .ok_or("missing second June 1")?;
+        assert!(cell.center().x > second.origin.x);
+        let first_position = gpui::point(
+            cell.center().x + first.origin.x - second.origin.x,
+            cell.center().y + first.origin.y - second.origin.y,
+        );
+        let date = CalendarDate {
+            year: 2026,
+            month: 6,
+            day: 1,
+        };
+        click(&mut window, first_position);
+        assert_eq!(*selections.borrow(), [(0, date)]);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        click(&mut window, cell.center());
+        assert_eq!(*selections.borrow(), [(0, date), (1, date)]);
+        app.quit();
+        Ok(())
     }
 }

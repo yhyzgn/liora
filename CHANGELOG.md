@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Render hidden adjacent-month Calendar dates as inert, same-height blanks before attaching date content, hover styles or selection handlers, including disabled dates. Preserve the six-week grid and visible adjacent-date selection; retain caller-based identity across redraws so native pointer press/release can select dates, with explicit `.id(...)` namespaces for repeated factory instances. Execute both authored Calendar examples in Gallery and Docs with independent identities and exact date feedback.
 - Make clickable Breadcrumb ancestors keyboard reachable with retained native Link focus, forward/reverse Tab traversal, Enter-only release-time activation and a layout-neutral focus outline; leave current items inert. Scope item identity to each trail and expose explicit namespaces for repeated identical paths. Borrow theme colors instead of cloning the full theme, remove per-item formatted IDs, and execute all five authored examples in Gallery and Docs with visible activation feedback.
 - Choose Badge text color with the shared black/white foreground policy instead of fixed inverted text. Expose the existing theme helper with its opaque-fill contract and cover both built-in theme palettes and threshold-adjacent custom grays.
 - Cap Badge integer counts above `i32` without corrupting noninteger labels; avoid full-theme clones and hidden-marker construction. Execute the authored Badge examples in Gallery and Docs, covering all semantic types, zero/text/large counts, dots and retained host-owned visibility toggling with wrapping layout.

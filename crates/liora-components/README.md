@@ -24,6 +24,12 @@ fn setup(cx: &mut gpui::App) {
 - Depend on `liora-components` directly when you need fine-grained dependency control or are building another Liora crate.
 - Keep application UI pure Rust + native GPUI; Liora crates do not require WebView, Tauri, HTML, CSS, or DOM runtime paths.
 
+## Calendar
+
+`Calendar::show_adjacent_months(false)` preserves the six-week grid with same-height blank slots for adjacent dates. Those slots render no date or event content, have no hover feedback and cannot select; disabled adjacent dates remain blank too. Visible enabled dates invoke `on_select`, including when the surface redraws between pointer press and release; the host owns selected-date state and month navigation. Gallery and Docs execute the same authored event and range examples with date feedback.
+
+Calendar identity defaults to its constructor call site and survives redraws. Use distinct stable `.id(...)` values for instances built at the same call site, such as a loop or factory. The authored examples assign independent event/range identities.
+
 ## Links
 
 `Link` uses GPUI's native click lifecycle and platform URL opener. An enabled destination is reachable by Tab/Shift+Tab; an unmodified Enter press/release opens it, while Space does not. A keyboard-only focus outline preserves layout and survives redraws. Disabled and destinationless links are not tab stops and cannot activate. Destination-bearing links expose a native Link role, label, target URL and disabled state; this is not a complete cross-platform screen-reader certification. Gallery and Docs execute the same keyboard example.

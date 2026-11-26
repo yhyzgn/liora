@@ -6,7 +6,7 @@ use gpui::{
 use liora_components::{
     Affix, Alert, AlertType, Anchor, AnchorTarget, AppWindowFrame,
     Autocomplete, AutocompleteItem, Avatar, Backtop, Button, ButtonColors,
-    Calendar, CalendarDate, CalendarEvent, Card, Carousel, CarouselItem,
+    Card, Carousel, CarouselItem,
     Checkbox, CheckboxGroup, CheckboxOptionStyle, CodeBlock as DocCodeBlock, CodeDiagnostic,
     CodeEditor, CodeEditorConfig, CodeHighlighter, CodeLanguage, CodeTheme, Container, Dropdown,
     DropdownButton, DropdownButtonItem, Flex, Form, FormItem, Grid, GridItem, HorizontalList,
@@ -108,6 +108,11 @@ mod breadcrumb_separator_example;
 mod breadcrumb_separator_icon_example;
 #[path = "../content/snippets/breadcrumb/clickable.rs"]
 mod breadcrumb_clickable_example;
+
+#[path = "../content/snippets/calendar/events.rs"]
+mod calendar_events_example;
+#[path = "../content/snippets/calendar/range.rs"]
+mod calendar_range_example;
 
 const INTRO_DOC: &str = include_str!("../content/pages/overview.md");
 const QUICK_START_DOC: &str = include_str!("../content/pages/quick_start.md");
@@ -3831,8 +3836,8 @@ impl Render for LiveDemoContent {
                     .round(true)
                     .into_any_element(),
             ]),
-            "CalendarEvents" => Card::new(docs_calendar_events()).no_shadow().into_any_element(),
-            "CalendarRange" => Card::new(docs_calendar_range()).no_shadow().into_any_element(),
+            "CalendarEvents" => Card::new(calendar_events_example::events_calendar()).no_shadow().into_any_element(),
+            "CalendarRange" => Card::new(calendar_range_example::range_calendar()).no_shadow().into_any_element(),
             "CarouselBasic" => Card::new(docs_carousel_basic()).no_shadow().into_any_element(),
             "CarouselAutoplay" => self.carousel_autoplay.as_ref().cloned()
                 .map(|carousel| Card::new(carousel).no_shadow().into_any_element())
@@ -8475,23 +8480,6 @@ fn docs_virtualized_tree(cx: &mut Context<VirtualizedTree>, checkable: bool) -> 
     }
 
     tree
-}
-
-fn docs_date(day: u32) -> CalendarDate {
-    CalendarDate::new(2026, 6, day).expect("docs demo date should be valid")
-}
-
-fn docs_calendar_events() -> impl IntoElement {
-    Calendar::new(2026, 6).selected(docs_date(16)).events([
-        CalendarEvent::new(docs_date(3), "Design review").color(rgb(0x2563eb).into()),
-        CalendarEvent::new(docs_date(18), "Docs polish").color(rgb(0xf97316).into()),
-    ])
-}
-
-fn docs_calendar_range() -> impl IntoElement {
-    Calendar::new(2026, 6)
-        .range(docs_date(10), docs_date(18))
-        .disabled_dates([docs_date(6), docs_date(7), docs_date(21)])
 }
 
 fn docs_carousel_basic() -> impl IntoElement {
