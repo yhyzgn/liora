@@ -19,7 +19,7 @@ use liora_components::{
     TimerFormat, TimerUnit, Title, TitleBar, TitleBarContentAlign, Tooltip, Tour, TourPlacement,
     TourStep, Transfer, TransferItem, Tree, TreeNode, TreeSelect, TreeSelectNode, Upload,
     UploadFile, UploadStatus, VirtualizedList, VirtualizedTable, VirtualizedTree, Watermark,
-    WindowControlsPosition, WindowFrameMode, frame_mode_switch_row, toast_error,
+    WindowControlsPosition, WindowFrameMode, frame_mode_switch_row,
     toast_info, toast_success, toast_warning,
 };
 use liora_core::{
@@ -52,6 +52,11 @@ mod carousel_autoplay_example;
 
 #[path = "../content/snippets/notification/types.rs"]
 mod notification_types_example;
+
+#[path = "../content/snippets/message/types.rs"]
+mod message_types_example;
+#[path = "../content/snippets/message/formatting.rs"]
+mod message_formatting_example;
 
 const INTRO_DOC: &str = include_str!("../content/pages/overview.md");
 const QUICK_START_DOC: &str = include_str!("../content/pages/quick_start.md");
@@ -4342,40 +4347,10 @@ impl Render for LiveDemoContent {
                     .map(Entity::into_any_element)
                     .collect(),
             ),
-            "MessageTypes" => demo_row(vec![
-                Button::new("toast_info!")
-                    .on_click(|_, _, _| toast_info!("This is an info toast"))
-                    .into_any_element(),
-                Button::new("toast_success!")
-                    .primary()
-                    .on_click(|_, _, _| toast_success!("Operation completed"))
-                    .into_any_element(),
-                Button::new("toast_warning!")
-                    .warning()
-                    .on_click(|_, _, _| toast_warning!("Please check the input"))
-                    .into_any_element(),
-                Button::new("toast_error!")
-                    .danger()
-                    .on_click(|_, _, _| toast_error!("Operation failed"))
-                    .into_any_element(),
-            ]),
-            "MessageFormatting" => demo_row(vec![
-                Button::new("位置参数")
-                    .on_click(|_, _, _| {
-                        let name = "Liora";
-                        let count = 4;
-                        toast_info!("{}, you have {} toast variants.", name, count);
-                    })
-                    .into_any_element(),
-                Button::new("命名参数")
-                    .primary()
-                    .on_click(|_, _, _| {
-                        let component = "Message";
-                        let api = "toast_success!";
-                        toast_success!("{component} macro {api} works.");
-                    })
-                    .into_any_element(),
-            ]),
+            "MessageTypes" => message_types_example::message_types().into_any_element(),
+            "MessageFormatting" => {
+                message_formatting_example::message_formatting().into_any_element()
+            }
             "ProgressBasic" => demo_stack(vec![
                 Progress::new(0.0).into_any_element(),
                 Progress::new(30.0).into_any_element(),

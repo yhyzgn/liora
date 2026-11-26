@@ -38,6 +38,10 @@ fn setup(cx: &mut gpui::App) {
 
 Visible navigation arrows reserve horizontal content space so they do not cover titles, descriptions or custom slots. Hidden arrows and single-item carousels retain the normal content padding.
 
+## Messages / toast
+
+`show_message`, the `toast_*` functions and the `toast_*!` macros use the same app-wide Message manager. Initialize Liora before macro use; call `message::render_messages(cx)` from the host root render and mount `liora_components::PortalLayer`. Each message expires independently three seconds after insertion, without hover pause or a close button. Its cancellable task belongs to the originating manager entity, so an old deadline cannot remove a replacement manager's new messages. Gallery and Docs execute the same displayed type/stack and positional/named-formatting snippets.
+
 ## Notifications
 
 `show_notification` displays each app-wide notification for four seconds of unhovered time. Hover preserves its remaining time; leaving resumes that deadline. If the same notification appears in multiple windows, it stays paused until none is hovered; closing a hovered window releases its pause. Each native, keyboard-accessible “Close notification” button dismisses only its own notification. Pending tasks belong to their manager entity, so replacing or dropping that manager cannot remove a successor's notifications. Gallery and Docs execute the same displayed snippet, including a three-notification stack action.

@@ -22,7 +22,7 @@
 use crate::motion::pop_in;
 use gpui::{
     App, AsyncApp, Context, Entity, ForegroundExecutor, Global, IntoElement, Render, SharedString,
-    Window, div, prelude::*, px,
+    Task, Window, div, prelude::*, px,
 };
 use liora_core::{Config, push_passive_portal};
 use liora_icons::Icon;
@@ -54,9 +54,14 @@ pub struct MessageItem {
     pub msg_type: MessageType,
 }
 
+struct ActiveMessage {
+    item: MessageItem,
+    _expiration: Task<()>,
+}
+
 /// Fluent native GPUI component for rendering Liora message manager.
 pub struct MessageManager {
-    messages: Vec<MessageItem>,
+    messages: Vec<ActiveMessage>,
     next_id: usize,
 }
 
@@ -128,29 +133,23 @@ impl MessageManager {
 
         manager.update(cx, |this, cx| {
             let id = this.next_id;
-            this.messages.push(MessageItem {
-                id,
-                content: content.clone(),
-                msg_type,
+            let timer = cx.background_executor().timer(Duration::from_secs(3));
+            let expiration = cx.spawn(async move |owner, cx| {
+                timer.await;
+                let _ = owner.update(cx, |this, cx| {
+                    this.messages.retain(|entry| entry.item.id != id);
+                    cx.notify();
+                });
+            });
+            this.messages.push(ActiveMessage {
+                item: MessageItem {
+                    id,
+                    content,
+                    msg_type,
+                },
+                _expiration: expiration,
             });
             this.next_id += 1;
-
-            let async_cx = cx.to_async();
-            let executor = cx.background_executor().clone();
-            cx.foreground_executor()
-                .spawn(async move {
-                    executor.timer(Duration::from_secs(3)).await;
-                    let _ = async_cx.update(|cx| {
-                        if cx.has_global::<MessageManagerGlobal>() {
-                            let manager = cx.global::<MessageManagerGlobal>().0.clone();
-                            manager.update(cx, |this, cx| {
-                                this.messages.retain(|m| m.id != id);
-                                cx.notify();
-                            });
-                        }
-                    });
-                })
-                .detach();
 
             cx.notify();
         });
@@ -159,8 +158,7 @@ impl MessageManager {
 
 impl Render for MessageManager {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let messages = self.messages.clone();
-        if messages.is_empty() {
+        if self.messages.is_empty() {
             return div();
         }
 
@@ -175,7 +173,8 @@ impl Render for MessageManager {
             .flex_col()
             .items_center()
             .gap_2()
-            .children(messages.into_iter().map(|msg| {
+            .children(self.messages.iter().map(|entry| {
+                let msg = &entry.item;
                 let style = message_style(&theme, msg.msg_type);
 
                 pop_in(
@@ -197,7 +196,7 @@ impl Render for MessageManager {
                             div()
                                 .text_color(style.fg)
                                 .text_size(px(theme.font_size.sm))
-                                .child(msg.content),
+                                .child(msg.content.clone()),
                         ),
                 )
             }))
@@ -342,6 +341,9 @@ macro_rules! toast_error {
 }
 
 #[cfg(test)]
+mod interaction_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -362,54 +364,5 @@ mod tests {
             assert_eq!(message.border, expected_bg);
             assert_eq!(message.fg, theme.neutral.card);
         }
-    }
-
-    #[test]
-    fn toast_helpers_map_to_message_types() {
-        let source = include_str!("message.rs")
-            .split("#[cfg(test)]")
-            .next()
-            .unwrap();
-
-        assert!(source.contains("pub fn toast_info"));
-        assert!(source.contains("pub fn toast_success"));
-        assert!(source.contains("pub fn toast_warning"));
-        assert!(source.contains("pub fn toast_error"));
-        assert!(source.contains("MessageType::Info"));
-        assert!(source.contains("MessageType::Success"));
-        assert!(source.contains("MessageType::Warning"));
-        assert!(source.contains("MessageType::Error"));
-    }
-
-    #[test]
-    fn toast_macros_support_format_arguments() {
-        let source = include_str!("message.rs")
-            .split("#[cfg(test)]")
-            .next()
-            .unwrap();
-
-        assert!(source.contains("macro_rules! toast_info"));
-        assert!(source.contains("format!("));
-        assert!(source.contains("dispatch_toast_info"));
-        assert!(source.contains("dispatch_toast_success"));
-        assert!(source.contains("dispatch_toast_warning"));
-        assert!(source.contains("dispatch_toast_error"));
-    }
-
-    #[test]
-    #[should_panic(expected = "toast macros require MessageManager::init(cx) before use")]
-    fn toast_macro_expands_format_arguments() {
-        crate::toast_info!("{left}, {right}", left = "left", right = "right");
-    }
-
-    #[test]
-    fn messages_use_liora_motion() {
-        let source = include_str!("message.rs")
-            .split("#[cfg(test)]")
-            .next()
-            .unwrap();
-
-        assert!(source.contains("pop_in("));
-        assert!(source.contains("liora-message"));
     }
 }
