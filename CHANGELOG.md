@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Schedule Affix's portal correction frame explicitly after paint-time fixed/unfixed or horizontal-anchor changes, including with decorative motion disabled, and stop requesting frames once stable. Follow the container's available width on shrinking and expanding instead of locking the placeholder to the old content width; preserve explicit child width constraints. Measure the portal root to keep its placeholder height and bottom offset correct during content reflow; call `on_change` only for fixed/unfixed transitions. Execute the displayed top/bottom constructors in Gallery and Docs; mount the real retained Affix entity in the complete displayed Docs container rather than a comment-only placeholder.
 - Make visible Backtop buttons keyboard reachable with native Button name/role, Tab/Shift+Tab traversal, Enter/Space release-time activation and a layout-neutral focus ring. Request redraw after returning only the bound scroll container, and schedule the follow-up frame when paint detects a visibility change so the affordance cannot remain stale; avoid cloning the full theme. Execute the authored basic/custom constructors in Gallery and Docs, and mount the complete displayed Docs container snippet with a theme-correct custom icon.
 - Contain wheel input inside `Flex::overflow_y_scroll()` viewports so nested examples do not also move their ancestor list. Wheel input outside the inner viewport still scrolls the outer page; reaching an inner boundary does not forward that event.
 

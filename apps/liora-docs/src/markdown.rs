@@ -4,7 +4,7 @@ use gpui::{
     RenderOnce, ScrollHandle, SharedString, WeakEntity, Window, div, img, prelude::*, px, rgb,
 };
 use liora_components::{
-    Affix, AffixPosition, Alert, AlertType, Anchor, AnchorTarget, AppWindowFrame,
+    Affix, Alert, AlertType, Anchor, AnchorTarget, AppWindowFrame,
     Autocomplete, AutocompleteItem, Avatar, Backtop, Badge, BadgeType, Button, ButtonColors,
     Calendar, CalendarDate, CalendarEvent, Card, Carousel, CarouselItem,
     Checkbox, CheckboxGroup, CheckboxOptionStyle, CodeBlock as DocCodeBlock, CodeDiagnostic,
@@ -69,6 +69,13 @@ mod icon_lucide_example;
 
 #[path = "../content/snippets/link/keyboard.rs"]
 mod link_keyboard_example;
+
+#[path = "../content/snippets/affix/bottom.rs"]
+mod affix_bottom_example;
+#[path = "../content/snippets/affix/container.rs"]
+mod affix_container_example;
+#[path = "../content/snippets/affix/top.rs"]
+mod affix_top_example;
 
 #[path = "../content/snippets/anchor/basic.rs"]
 mod anchor_basic_example;
@@ -3435,9 +3442,10 @@ impl LiveDemoContent {
             "NavigationMenuHorizontal" => menus.push(cx.new(|_| docs_menu_horizontal())),
             "NavigationMenuVertical" => menus.push(cx.new(|_| docs_menu_vertical())),
             "NavigationMenuCollapsed" => menus.push(cx.new(|_| docs_menu_collapsed())),
-            "AffixTop" => affixes.push(cx.new(|_| docs_affix_top())),
-            "AffixBottom" => affixes.push(cx.new(|_| docs_affix_bottom())),
-            "AffixContainer" => affixes.push(cx.new(|_| docs_affix_top())),
+            "AffixTop" | "AffixContainer" => {
+                affixes.push(cx.new(|_| affix_top_example::top_affix()));
+            }
+            "AffixBottom" => affixes.push(cx.new(|_| affix_bottom_example::bottom_affix())),
             "AnchorBasic" => {
                 let handle = scroll_handle.clone();
                 anchors.push(cx.new(move |_| anchor_basic_example::basic_anchor(handle)));
@@ -6291,16 +6299,16 @@ impl Render for LiveDemoContent {
                 .unwrap_or_else(|| {
                     Paragraph::with_text("Menu demo is not initialized.").into_any_element()
                 }),
-            "AffixTop" | "AffixBottom" => docs_affix_scroll_shell(
-                self.affixes.first().cloned().map(Entity::into_any_element),
-                false,
-                _cx,
-            ),
-            "AffixContainer" => docs_affix_scroll_shell(
-                self.affixes.first().cloned().map(Entity::into_any_element),
-                true,
-                _cx,
-            ),
+            "AffixTop" | "AffixBottom" | "AffixContainer" => self
+                .affixes
+                .first()
+                .cloned()
+                .map(|affix| {
+                    affix_container_example::affix_scroll_container(_cx, affix).into_any_element()
+                })
+                .unwrap_or_else(|| {
+                    Paragraph::with_text("Affix demo is not initialized.").into_any_element()
+                }),
             "AnchorBasic" | "AnchorNested" | "AnchorTargets" => self
                 .anchors
                 .first()
@@ -9662,76 +9670,6 @@ fn dialog_body(message: &'static str) -> impl IntoElement {
                         .on_click(|_, _, cx| liora_components::Dialog::close(cx)),
                 ),
         )
-}
-
-fn docs_affix_top() -> Affix {
-    Affix::new().offset_lg().content(|_, _| {
-        Button::new("固钉在距离顶部 80px 的位置")
-            .primary()
-            .into_any_element()
-    })
-}
-
-fn docs_affix_bottom() -> Affix {
-    Affix::new()
-        .position(AffixPosition::Bottom)
-        .offset_md()
-        .content(|_, _| {
-            Button::new("固钉在距离底部 20px 的位置")
-                .success()
-                .into_any_element()
-        })
-}
-
-fn docs_affix_scroll_shell(
-    affix: Option<AnyElement>,
-    show_container_note: bool,
-    cx: &mut Context<LiveDemoContent>,
-) -> AnyElement {
-    let theme = cx.global::<Config>().theme.clone();
-
-    Flex::new()
-        .relative()
-        .height_units(360.0)
-        .overflow_hidden()
-        .border()
-        .border_color(theme.neutral.border)
-        .rounded_md()
-        .bg(theme.neutral.hover)
-        .child(
-            Flex::new()
-                .size_full()
-                .id(if show_container_note {
-                    "docs-affix-container-scroll-view"
-                } else {
-                    "docs-affix-scroll-view"
-                })
-                .overflow_y_scroll()
-                .padding_md()
-                .child(
-                    Flex::new()
-                        .height_units(120.0)
-                        .center()
-                        .child(Text::new("向下滚动查看固钉效果").text_color(theme.neutral.text_3)),
-                )
-                .when_some(affix, |this, affix| this.child(affix))
-                .child(
-                    Flex::new()
-                        .height_units(520.0)
-                        .bg(theme.neutral.card)
-                        .margin_y_units(16.0)
-                        .border()
-                        .border_color(theme.neutral.border)
-                        .center()
-                        .child(Text::new(if show_container_note {
-                            "滚动容器负责触发 Affix 测量"
-                        } else {
-                            "长内容占位"
-                        })),
-                )
-                .child(Flex::new().height_units(180.0)),
-        )
-        .into_any_element()
 }
 
 fn docs_anchor_shell(

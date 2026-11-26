@@ -1,28 +1,18 @@
 use gpui::{AnyView, App, Context, Entity, IntoElement, Render, Window, prelude::*};
-use liora_components::{Affix, AffixPosition, Button, ButtonVariant, Flex, Text};
+use liora_components::{Affix, Flex, Text};
 use liora_core::Config;
 
 use liora_components::layout_helpers::page;
 
+#[path = "../../../liora-docs/content/snippets/affix/bottom.rs"]
+mod bottom_example;
+#[path = "../../../liora-docs/content/snippets/affix/top.rs"]
+mod top_example;
+
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|cx| AffixDemo {
-        top_affix: cx.new(|_| {
-            Affix::new().offset_lg().content(|_, _| {
-                Button::new("固钉在距离顶部 80px 的位置")
-                    .variant(ButtonVariant::Primary)
-                    .into_any_element()
-            })
-        }),
-        bottom_affix: cx.new(|_| {
-            Affix::new()
-                .position(AffixPosition::Bottom)
-                .offset_md()
-                .content(|_, _| {
-                    Button::new("固钉在距离底部 20px 的位置")
-                        .variant(ButtonVariant::Success)
-                        .into_any_element()
-                })
-        }),
+        top_affix: cx.new(|_| top_example::top_affix()),
+        bottom_affix: cx.new(|_| bottom_example::bottom_affix()),
     })
     .into()
 }
@@ -34,7 +24,7 @@ struct AffixDemo {
 
 impl Render for AffixDemo {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let theme = cx.global::<Config>().theme.clone();
+        let theme = &cx.global::<Config>().theme;
 
         page(
             "Affix 固钉",

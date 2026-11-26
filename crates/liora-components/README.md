@@ -42,6 +42,12 @@ A Space keydown cannot arm a later, unpaired Enter release.
 
 `Flex::overflow_y_scroll()` contains wheel input, including at its scroll boundaries, so scrolling a nested viewport does not also move an ancestor list. Move the pointer outside that viewport to scroll the outer page.
 
+## Affixed content
+
+Retain `Affix` as an `Entity<Affix>` in its host view. Top/bottom offsets are relative to the window viewport, not the surrounding scroll container. Fixed/unfixed transitions schedule their functional follow-up frame even with decorative motion disabled; a stable Affix does not continuously request frames. Gallery and Docs execute the displayed 80px top / 20px bottom constructors. Docs also executes the complete container snippet with the retained entity as its real child.
+
+While fixed, the portal follows horizontal anchor movement and the container's available width in both resize directions, preserving explicit content width constraints. Its measured height includes child margins and updates both the placeholder and bottom-edge placement. Correction frames settle once geometry is stable; ordinary vertical scrolling while fixed does not request a redundant geometry frame. `on_change` reports only fixed/unfixed transitions.
+
 ## Container headers
 
 `Container` keeps a fixed 48px header by default. Use `.header_height_auto()` with wrapping header content to let it grow naturally while the body keeps the remaining height. A subsequent `.header_height(...)` or `.header_height_lg()` returns to fixed sizing; apply any minimum height to the header content itself. Gallery and Docs use this opt-in for their translated theme/language/frame toolbars and pair the layout example in their Container pages.

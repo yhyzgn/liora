@@ -10,7 +10,3 @@ pub fn top_affix() -> Affix {
             .into_any_element()
     })
 }
-
-fn main() {
-    let _ = top_affix();
-}
