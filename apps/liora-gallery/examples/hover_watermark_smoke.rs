@@ -142,6 +142,10 @@ mod smoke {
                     "preview must remain readable"
                 );
                 move_to(550.0, 220.0, window, cx);
+                assert!(
+                    !is_popover_active(&hover_id, cx),
+                    "one move from the preview outside its safe region must close it"
+                );
                 let click_id = SharedString::from("click-smoke");
                 move_to(360.0, 96.0, window, cx);
                 assert!(

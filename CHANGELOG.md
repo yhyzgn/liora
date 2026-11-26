@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Dismiss pointer-opened HoverCard/Popover previews with unmodified, unconsumed Escape in their originating window without stealing editor focus. Keep the keystroke subscription owned by the popup; share keyboard-accessible two-trigger HoverCard examples between Gallery, Docs and displayed source, with native focus/window/modifier regression coverage.
+- Let hover-card departure reach the shared Popover backdrop on the first mouse move instead of swallowing it in hover-transition handlers. Preserve click-only Popover isolation and the pointer-safe trigger/card bridge; guard single-move dismissal in the existing native pointer smoke.
 - Bind Message/toast three-second expiry tasks to their originating manager and cancel them on entity release instead of looking up a replacement global manager. Avoid cloning the full message collection during render; share executable type/stack and formatting snippets between Gallery and Docs, with behavioral macro and lifetime regressions.
 - Bind Notification deadlines to their owning manager, cancel tasks on dismissal and preserve four seconds of unhovered display time across pointer hover and window closure. Add a native keyboard-accessible per-notification close action; share the executable semantic-type and stack example between Gallery and Docs.
 - Make Carousel autoplay advance natively with cancellable deadlines, whole-carousel hover pause and retained uncontrolled selection. Preserve controlled `active_index` feedback through `on_change`; share stable, weakly owned Gallery/Docs examples and the executable Docs autoplay source.

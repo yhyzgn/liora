@@ -114,13 +114,90 @@ mod tests {
     }
 
     #[test]
-    fn hover_card_configures_popover_for_hover_opening() {
-        let source = include_str!("hover_card.rs")
-            .split("#[cfg(test)]")
-            .next()
-            .unwrap();
+    fn hover_escape_preserves_unrelated_editor_focus() {
+        use gpui::prelude::*;
+        use gpui::{AppContext, Entity, Focusable, Render, TestAppContext, VisualTestContext};
 
-        assert!(source.contains(".open_on_hover(true)"));
+        struct Surface {
+            editor: Entity<crate::Input>,
+        }
+        impl Render for Surface {
+            fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+                div()
+                    .size_full()
+                    .flex()
+                    .flex_col()
+                    .child(self.editor.clone())
+                    .child(
+                        HoverCard::new(
+                            div()
+                                .id("hover-target")
+                                .debug_selector(|| "hover-target".into())
+                                .w(px(180.0))
+                                .h(px(32.0))
+                                .child("Preview"),
+                        )
+                        .id("hover-escape")
+                        .content(|_, _| div().child("Read-only preview")),
+                    )
+                    .child(crate::PortalLayer)
+            }
+        }
+
+        let mut app = TestAppContext::single();
+        app.update(crate::init_liora);
+        let handle = app.open_window(gpui::size(px(600.0), px(400.0)), |_, cx| Surface {
+            editor: cx.new(|cx| crate::Input::new("Keep editing", cx)),
+        });
+        let mut window = VisualTestContext::from_window(handle.into(), &app);
+        let editor_focus = handle
+            .read_with(&app, |view, cx| view.editor.focus_handle(cx))
+            .unwrap();
+        window.update(|window, cx| {
+            editor_focus.focus(window, cx);
+            window.refresh();
+            window.draw(cx).clear(cx);
+        });
+        let bounds = window
+            .debug_bounds("hover-target")
+            .expect("native hover target");
+        window.simulate_mouse_move(bounds.center(), None, gpui::Modifiers::none());
+        window.update(|window, cx| {
+            window.draw(cx).clear(cx);
+            assert!(liora_core::is_popover_active(&"hover-escape".into(), cx));
+            assert!(editor_focus.is_focused(window), "hover stole editor focus");
+        });
+        window.simulate_keystrokes("ctrl-escape");
+        window.update(|_, cx| {
+            assert!(
+                liora_core::is_popover_active(&"hover-escape".into(), cx),
+                "modified Escape dismissed the preview"
+            );
+        });
+        let other = app.open_window(gpui::size(px(200.0), px(100.0)), |_, _| gpui::Empty);
+        let mut other_window = VisualTestContext::from_window(other.into(), &app);
+        other_window.update(|window, cx| {
+            window.draw(cx).clear(cx);
+        });
+        other_window.simulate_keystrokes("escape");
+        window.update(|_, cx| {
+            assert!(
+                liora_core::is_popover_active(&"hover-escape".into(), cx),
+                "another window dismissed the preview"
+            );
+        });
+        window.simulate_keystrokes("escape");
+        window.update(|window, cx| {
+            assert!(
+                !liora_core::is_popover_active(&"hover-escape".into(), cx),
+                "Escape did not dismiss a read-only hover preview"
+            );
+            assert!(
+                editor_focus.is_focused(window),
+                "dismissal stole editor focus"
+            );
+        });
+        app.quit();
     }
 
     #[test]

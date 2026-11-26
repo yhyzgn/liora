@@ -38,6 +38,10 @@ fn setup(cx: &mut gpui::App) {
 
 Visible navigation arrows reserve horizontal content space so they do not cover titles, descriptions or custom slots. Hidden arrows and single-item carousels retain the normal content padding.
 
+## Hover previews
+
+`HoverCard` uses Popover's pointer-safe bridge between trigger and card, closing when the pointer leaves that region without scheduling delayed tasks. Use a focusable trigger such as `Button` for Tab and Enter/Space access. Pointer-opened previews do not move focus; unmodified, unconsumed Escape in their originating window dismisses them even while an unrelated editor retains focus. Raw keys consumed by IME/input handlers remain with those handlers. Unmounting the trigger retires the popup and backdrop. Gallery and Docs execute the same displayed two-trigger example.
+
 ## Messages / toast
 
 `show_message`, the `toast_*` functions and the `toast_*!` macros use the same app-wide Message manager. Initialize Liora before macro use; call `message::render_messages(cx)` from the host root render and mount `liora_components::PortalLayer`. Each message expires independently three seconds after insertion, without hover pause or a close button. Its cancellable task belongs to the originating manager entity, so an old deadline cannot remove a replacement manager's new messages. Gallery and Docs execute the same displayed type/stack and positional/named-formatting snippets.

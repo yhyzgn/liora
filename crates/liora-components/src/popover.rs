@@ -67,6 +67,7 @@ pub struct PopoverView {
     content_bounds: Rc<Cell<Option<Bounds<Pixels>>>>,
     on_close: Arc<dyn Fn(&mut Window, &mut App) + 'static>,
     focus_scope: Option<FocusHandle>,
+    hover_escape_subscription: Option<gpui::Subscription>,
 }
 
 impl PopoverView {
@@ -121,6 +122,7 @@ impl PopoverView {
             content_bounds: Rc::new(Cell::new(None)),
             on_close: Arc::new(on_close),
             focus_scope: None,
+            hover_escape_subscription: None,
         }
     }
 }
@@ -155,11 +157,11 @@ impl Render for PopoverView {
             .cursor_default()
             .occlude()
             .bg(gpui::transparent_black())
-            .on_hover(|_, _, cx| {
-                cx.stop_propagation();
-            })
             .when(!close_on_hover_outside, |s| {
-                s.on_mouse_move(|_, _, cx| {
+                s.on_hover(|_, _, cx| {
+                    cx.stop_propagation();
+                })
+                .on_mouse_move(|_, _, cx| {
                     cx.stop_propagation();
                 })
             })
@@ -209,8 +211,11 @@ impl Render for PopoverView {
                                 .cursor_default()
                                 .occlude()
                                 .max_w(max_w)
-                                .on_hover(|_, _, cx| {
-                                    cx.stop_propagation();
+                                // Hover exit shares mouse propagation with the backdrop's dismissal.
+                                .when(!close_on_hover_outside, |s| {
+                                    s.on_hover(|_, _, cx| {
+                                        cx.stop_propagation();
+                                    })
                                 })
                                 .on_mouse_move(|_, _, cx| {
                                     cx.stop_propagation();
@@ -587,6 +592,19 @@ fn open_popover_view(request: OpenPopoverRequest<'_>) {
             },
         );
         view.focus_scope = Some(cx.focus_handle());
+        if request.close_on_hover_outside && request.close_on_escape {
+            // Hover leaves focus outside the popup, so focused-node actions cannot dismiss it.
+            view.hover_escape_subscription = Some(cx.observe_keystrokes(
+                move |view: &mut PopoverView, event, window, cx| {
+                    if window.window_handle() == window_handle
+                        && event.keystroke.key == "escape"
+                        && !event.keystroke.modifiers.modified()
+                    {
+                        (view.on_close.clone())(window, cx);
+                    }
+                },
+            ));
+        }
         view
     });
     let view_id = view.entity_id();
