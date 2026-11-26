@@ -1387,6 +1387,8 @@ On the pinned Linux/WGPU backend, Noto Color Emoji's COLRv1 font can shape into 
 
 Supported file extensions are `ttf`, `otf`, `ttc`, `otc`, `woff`, and `woff2`, but actual parsing is delegated to the official GPUI backend for each platform. Prefer `ttf`/`otf`/`ttc`/`otc` for native desktop apps. On Linux/WGPU, the current GPUI `fontdb` path can ignore WOFF/WOFF2 bytes without returning an error, so use `FontLoadOptions::require_family(...)` and check `FontLoadReport::missing_required_families` whenever a specific family must be active.
 
+External directory discovery is all-or-error for each root: an unreadable subtree skips registration of that root's files and is reported in `failures`; it is not treated as a missing root. Once discovery succeeds, individual file read/registration failures do not stop later files. `ExternalThenEmbedded` retries embedded sources whenever a required family remains unavailable, even if an external source already incremented `loaded`. Inspect both `failures` and `missing_required_families`; an accepted source is not proof of a parsed face or rendered glyphs.
+
 #### Use only system-installed fonts
 
 ```rust

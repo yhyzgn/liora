@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Clarify font-loading failure boundaries: discover each external root before registration, continue after individual file failures, and retry embedded sources when a required family remains unavailable even after an external source was accepted. Keep loading behavior unchanged.
 - Avoid copying the `stable_unique_id` prefix on every render. Borrow it only during state initialization; preserve existing keys, owned identities and window/element lifetimes across all component consumers.
 - Execute the displayed Loading snippets in Gallery and Docs, including a retained window-content overlay with pointer occlusion, explicit cancellation and a three-second entity-owned deadline. Replace Docs' inline stand-in for the full-screen example; document that `Loading::full_screen()` itself is visual, not keyboard-modal.
 - Dismiss pointer-opened HoverCard/Popover previews with unmodified, unconsumed Escape in their originating window without stealing editor focus. Keep the keystroke subscription owned by the popup; share keyboard-accessible two-trigger HoverCard examples between Gallery, Docs and displayed source, with native focus/window/modifier regression coverage.

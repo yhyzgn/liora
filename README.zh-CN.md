@@ -1381,6 +1381,8 @@ Gallery Typography 与 Docs Typography 的多语言 Live Demo 共用原生 Parag
 
 支持的文件扩展名包括 `ttf`、`otf`、`ttc`、`otc`、`woff`、`woff2`，但真正解析能力由各平台官方 GPUI 后端决定。原生桌面应用优先使用 `ttf` / `otf` / `ttc` / `otc`。在 Linux/WGPU 上，当前 GPUI 的 `fontdb` 路径可能会忽略 WOFF/WOFF2 字节且不返回错误，所以只要某个 family 必须生效，就应该使用 `FontLoadOptions::require_family(...)` 并检查 `FontLoadReport::missing_required_families`。
 
+外部目录按每个根目录完整发现后再注册：子目录不可读时，整个根目录的字体都跳过注册，错误记入 `failures`，不冒充根目录缺失；发现成功后，单个文件读取或注册失败不会阻止后续文件。`ExternalThenEmbedded` 在必需 family 仍不可用时会尝试嵌入资源，即使外部源已增加 `loaded`。应同时检查 `failures` 与 `missing_required_families`；源字节被后端接受不等于成功解析字体或呈现字形。
+
 #### 只使用系统已安装字体
 
 ```rust

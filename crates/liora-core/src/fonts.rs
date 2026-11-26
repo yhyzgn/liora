@@ -77,8 +77,8 @@ pub enum FontLoadMode {
     Embedded,
     /// Only load fonts from external filesystem directories or GPUI assets.
     External,
-    /// Prefer external mounted files/assets and fall back to embedded bytes when
-    /// no external font could be registered.
+    /// Prefer external files/assets, embedding if declared required families remain
+    /// missing, or if none are declared and no external source was registered.
     #[default]
     ExternalThenEmbedded,
     /// Always register both external and embedded fonts. Use this when the app
@@ -321,6 +321,10 @@ pub fn load_font_files(cx: &mut App, paths: impl IntoIterator<Item = PathBuf>) -
 }
 
 /// Recursively reads and registers fonts from an external directory.
+///
+/// Discovery must complete for this root before any of its files are registered.
+/// A discovery error skips the whole root. After discovery, individual file read
+/// or registration failures are reported without stopping later files.
 pub fn load_fonts_from_dir(cx: &mut App, dir: impl AsRef<Path>) -> FontLoadReport {
     let dir = dir.as_ref();
     match discover_font_files(dir) {
