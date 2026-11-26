@@ -4,7 +4,7 @@ use gpui::{
     RenderOnce, ScrollHandle, SharedString, WeakEntity, Window, div, img, prelude::*, px, rgb,
 };
 use liora_components::{
-    Affix, AffixPosition, Alert, AlertType, Anchor, AnchorLink, AnchorTarget, AppWindowFrame,
+    Affix, AffixPosition, Alert, AlertType, Anchor, AnchorTarget, AppWindowFrame,
     Autocomplete, AutocompleteItem, Avatar, Backtop, Badge, BadgeType, Button, ButtonColors,
     Calendar, CalendarDate, CalendarEvent, Card, Carousel, CarouselItem,
     Checkbox, CheckboxGroup, CheckboxOptionStyle, CodeBlock as DocCodeBlock, CodeDiagnostic,
@@ -69,6 +69,11 @@ mod icon_lucide_example;
 
 #[path = "../content/snippets/link/keyboard.rs"]
 mod link_keyboard_example;
+
+#[path = "../content/snippets/anchor/basic.rs"]
+mod anchor_basic_example;
+#[path = "../content/snippets/anchor/nested.rs"]
+mod anchor_nested_example;
 
 const INTRO_DOC: &str = include_str!("../content/pages/overview.md");
 const QUICK_START_DOC: &str = include_str!("../content/pages/quick_start.md");
@@ -3428,11 +3433,11 @@ impl LiveDemoContent {
             "AffixContainer" => affixes.push(cx.new(|_| docs_affix_top())),
             "AnchorBasic" => {
                 let handle = scroll_handle.clone();
-                anchors.push(cx.new(move |_| docs_anchor_basic(handle)));
+                anchors.push(cx.new(move |_| anchor_basic_example::basic_anchor(handle)));
             }
             "AnchorNested" | "AnchorTargets" => {
                 let handle = scroll_handle.clone();
-                anchors.push(cx.new(move |_| docs_anchor_nested(handle)));
+                anchors.push(cx.new(move |_| anchor_nested_example::nested_anchor(handle)));
             }
             "BacktopBasic" | "BacktopContainer" => {
                 let handle = scroll_handle.clone();
@@ -9720,24 +9725,6 @@ fn docs_affix_scroll_shell(
                 .child(Flex::new().height_units(180.0)),
         )
         .into_any_element()
-}
-
-fn docs_anchor_basic(scroll_handle: ScrollHandle) -> Anchor {
-    Anchor::new(scroll_handle)
-        .offset_sm()
-        .link(AnchorLink::new("基础用法", "basic"))
-        .link(AnchorLink::new("API", "api"))
-}
-
-fn docs_anchor_nested(scroll_handle: ScrollHandle) -> Anchor {
-    Anchor::new(scroll_handle)
-        .offset_sm()
-        .link(AnchorLink::new("基础用法", "basic"))
-        .link(
-            AnchorLink::new("API", "api")
-                .child(AnchorLink::new("Attributes", "attributes"))
-                .child(AnchorLink::new("Events", "events")),
-        )
 }
 
 fn docs_anchor_shell(

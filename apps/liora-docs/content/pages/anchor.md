@@ -2,6 +2,10 @@
 
 为长页面提供快速跳转和滚动同步。Anchor 使用同一个 `ScrollHandle` 连接导航和内容区，`AnchorTarget` 负责把目标区域的原生布局边界回报给 Anchor。
 
+Tab / Shift+Tab 可按树中的显示顺序在锚点间移动；无修饰键的 Enter 在释放时跳转到已绘制的目标，Space 和带修饰键的 Enter 不执行目标跳转。键盘焦点框不改变布局，链接提供原生 Link 角色和可访问名称；这不代表完整屏幕阅读器或跨平台验收。
+
+`AnchorLink::href` 是对应 `AnchorTarget` 的 id，不会打开外部 URL。Gallery 和 Docs 的嵌套导航直接执行下方 `nested.rs`，Docs 基础导航直接执行 `basic.rs`。
+
 ## 基础锚点
 
 创建 Anchor 时传入滚动区的 `ScrollHandle`，然后通过 `AnchorLink` 注册可跳转的目标 id。

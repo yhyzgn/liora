@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Make Anchor links keyboard reachable with retained native focus, forward/reverse Tab traversal, Enter-only release-time navigation and Link role/name metadata. Preserve painted-target lifetime checks; execute the authored basic/nested navigation constructors in Docs and share the nested constructor with Gallery.
+
 - Activate Link through GPUI's native click lifecycle instead of mouse-up alone, rejecting unmatched releases. Add retained keyboard focus, Tab/Shift+Tab traversal, Enter-only keyboard activation, a layout-neutral keyboard focus outline and native Link name/URL/disabled metadata. Share the executable Gallery/Docs keyboard example, including inert destinationless and disabled links.
 - Read Link's current theme colors and size without cloning the full theme, and directly assemble its leading icon, label and trailing icon instead of allocating a temporary boxed-closure list. Preserve visual tokens, element identities and native URL activation.
 - Open Link destinations through GPUI's platform URL handler instead of launching `xdg-open`, `open`, or `cmd /c start` from the widget. Preserve destination text and disabled/no-destination behavior; cover pointer dispatch with GPUI platform-test receipts.

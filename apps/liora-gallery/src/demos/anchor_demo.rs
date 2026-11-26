@@ -1,8 +1,11 @@
 use gpui::{AnyView, App, Context, Entity, IntoElement, Render, ScrollHandle, Window, prelude::*};
-use liora_components::{Anchor, AnchorLink, AnchorTarget, Flex, Space, Text};
+use liora_components::{Anchor, AnchorTarget, Flex, Space, Text};
 use liora_core::Config;
 
 use liora_components::layout_helpers::page;
+
+#[path = "../../../liora-docs/content/snippets/anchor/nested.rs"]
+mod nested_example;
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|cx| AnchorDemo::new(cx)).into()
@@ -18,16 +21,7 @@ impl AnchorDemo {
         let scroll_handle = ScrollHandle::new();
         let anchor = cx.new({
             let scroll_handle = scroll_handle.clone();
-            |_| {
-                Anchor::new(scroll_handle)
-                    .offset_sm()
-                    .link(AnchorLink::new("基础用法", "basic"))
-                    .link(
-                        AnchorLink::new("API", "api")
-                            .child(AnchorLink::new("Attributes", "attributes"))
-                            .child(AnchorLink::new("Events", "events")),
-                    )
-            }
+            move |_| nested_example::nested_anchor(scroll_handle)
         });
         Self {
             scroll_handle,

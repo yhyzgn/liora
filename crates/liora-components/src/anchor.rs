@@ -157,11 +157,39 @@ impl Anchor {
         depth: u32,
         theme: &liora_theme::Theme,
         anchor_entity: Entity<Anchor>,
+        window: &mut Window,
         cx: &Context<Self>,
     ) -> AnyElement {
         let is_active = self.active_link.as_ref() == Some(&link.href);
         let href = link.href.clone();
         let click_anchor_entity = anchor_entity.clone();
+        let focus = window.with_global_id(href.clone().into(), |global_id, window| {
+            window.with_element_state::<gpui::FocusHandle, _>(global_id, |previous, _| {
+                let handle =
+                    previous.unwrap_or_else(|| cx.focus_handle().tab_stop(true).tab_index(0));
+                (handle.clone(), handle)
+            })
+        });
+        let paint_focus = focus.clone();
+        let focus_color = theme.primary.base;
+        let outline = gpui::canvas(
+            |_, _, _| (),
+            move |bounds, (), window, _| {
+                if paint_focus.is_focused(window) && window.last_input_was_keyboard() {
+                    window.paint_quad(
+                        gpui::outline(
+                            bounds.dilate(px(2.0)),
+                            focus_color,
+                            gpui::BorderStyle::default(),
+                        )
+                        .border_widths(px(2.0))
+                        .corner_radii(px(2.0)),
+                    );
+                }
+            },
+        )
+        .absolute()
+        .inset(px(0.0));
 
         div()
             .flex()
@@ -169,6 +197,10 @@ impl Anchor {
             .child(
                 div()
                     .id(href.clone())
+                    .track_focus(&focus)
+                    .tab_index(0)
+                    .role(gpui::Role::Link)
+                    .aria_label(link.title.clone())
                     .cursor_pointer()
                     .flex()
                     .items_center()
@@ -180,25 +212,54 @@ impl Anchor {
                         theme.neutral.text_2
                     })
                     .hover(|s| s.text_color(theme.primary.base))
-                    .on_click(move |_, _, cx| {
-                        let _ = click_anchor_entity.update(cx, |this, _| {
-                            this.scroll_to_target(&href);
-                        });
+                    .capture_key_down(|event, window, _| {
+                        // Keep Space from arming GPUI's shared Enter/Space click marker.
+                        if event.keystroke.key == "space" && !event.keystroke.modifiers.modified() {
+                            window.prevent_default();
+                        }
                     })
-                    .child(div().text_sm().child(link.title.clone())),
+                    .on_key_down(|event, window, cx| {
+                        let modifiers = event.keystroke.modifiers;
+                        if event.keystroke.key == "tab"
+                            && !modifiers.control
+                            && !modifiers.alt
+                            && !modifiers.platform
+                            && !modifiers.function
+                        {
+                            if modifiers.shift {
+                                window.focus_prev(cx);
+                            } else {
+                                window.focus_next(cx);
+                            }
+                            cx.stop_propagation();
+                        } else if event.keystroke.key == "enter" && !modifiers.modified() {
+                            cx.stop_propagation();
+                        }
+                    })
+                    .on_click(move |event, window, cx| {
+                        if let gpui::ClickEvent::Keyboard(click) = event {
+                            if click.button != gpui::KeyboardButton::Enter {
+                                return;
+                            }
+                            cx.stop_propagation();
+                        }
+                        if click_anchor_entity.update(cx, |this, _| this.scroll_to_target(&href)) {
+                            window.refresh();
+                        }
+                    })
+                    .child(div().text_sm().child(link.title.clone()))
+                    .child(outline),
             )
-            .children(
-                link.children.iter().map(|child| {
-                    self.render_link(child, depth + 1, theme, anchor_entity.clone(), cx)
-                }),
-            )
+            .children(link.children.iter().map(|child| {
+                self.render_link(child, depth + 1, theme, anchor_entity.clone(), window, cx)
+            }))
             .into_any_element()
     }
 }
 
 impl Render for Anchor {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let theme = cx.global::<Config>().theme.clone();
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let theme = &cx.global::<Config>().theme;
         let anchor_entity = cx.entity().clone();
 
         div()
@@ -216,15 +277,10 @@ impl Render for Anchor {
                     .w(px(2.0))
                     .bg(theme.neutral.border),
             )
-            .when_some(self.active_link.clone(), |s, _active| {
-                // We'd need to know the position of the active link to render the indicator
-                // For simplicity, we'll just style the link itself
-                s
-            })
             .children(
-                self.links
-                    .iter()
-                    .map(|link| self.render_link(link, 0, &theme, anchor_entity.clone(), cx)),
+                self.links.iter().map(|link| {
+                    self.render_link(link, 0, theme, anchor_entity.clone(), window, cx)
+                }),
             )
     }
 }
@@ -453,5 +509,105 @@ mod tests {
             "releasing the last target must clear its active highlight"
         );
         app.quit();
+    }
+
+    #[test]
+    fn keyboard_enter_scrolls_to_painted_target_after_redraw()
+    -> Result<(), Box<dyn std::error::Error>> {
+        struct Page {
+            anchor: Entity<Anchor>,
+            scroll: ScrollHandle,
+        }
+
+        impl Render for Page {
+            fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+                div().size_full().child(self.anchor.clone()).child(
+                    div()
+                        .id("anchor-keyboard-scroll")
+                        .w(px(240.0))
+                        .h(px(200.0))
+                        .overflow_y_scroll()
+                        .track_scroll(&self.scroll)
+                        .child(AnchorTarget::new(
+                            "details",
+                            self.anchor.clone(),
+                            div().h(px(40.0)),
+                        ))
+                        .child(div().h(px(500.0))),
+                )
+            }
+        }
+
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let scroll = ScrollHandle::new();
+        let handle = app.add_window(|_, cx| Page {
+            anchor: cx
+                .new(|_| Anchor::new(scroll.clone()).link(AnchorLink::new("Details", "details"))),
+            scroll: scroll.clone(),
+        });
+        let anchor = handle.update(&mut app, |page, _, _| page.anchor.clone())?;
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        scroll.set_offset(point(px(0.0), px(-17.0)));
+        window.update(|window, cx| {
+            window.refresh();
+            window.draw(cx).clear(cx);
+            window.focus_next(cx);
+            window.draw(cx).clear(cx);
+        });
+        assert_eq!(scroll.offset().y, px(-17.0));
+        let before_top = anchor.read_with(&app, |anchor, _| anchor.targets_bounds["details"].0.top());
+        for (down, up) in [
+            (None, "enter"),
+            (Some("space"), "space"),
+            (Some("space"), "enter"),
+            (Some("ctrl-enter"), "ctrl-enter"),
+            (Some("alt-enter"), "alt-enter"),
+            (Some("shift-enter"), "shift-enter"),
+        ] {
+            if let Some(down) = down {
+                window.simulate_keystrokes(down);
+            }
+            window.update(|window, cx| {
+                let keystroke = gpui::Keystroke::parse_with_os(up, cx.platform_info().os)?;
+                window.dispatch_event(
+                    gpui::PlatformInput::KeyUp(gpui::KeyUpEvent { keystroke }),
+                    cx,
+                );
+                Ok::<_, Box<dyn std::error::Error>>(())
+            })?;
+            assert_eq!(
+                scroll.offset().y,
+                px(-17.0),
+                "unexpected navigation from {down:?} -> {up}"
+            );
+        }
+        window.simulate_keystrokes("enter");
+        assert_eq!(scroll.offset().y, px(-17.0), "keydown must not navigate");
+        window.update(|window, cx| {
+            window.refresh();
+            window.draw(cx).clear(cx);
+            let keystroke = gpui::Keystroke::parse_with_os("enter", cx.platform_info().os)?;
+            window.dispatch_event(
+                gpui::PlatformInput::KeyUp(gpui::KeyUpEvent { keystroke }),
+                cx,
+            );
+            Ok::<_, Box<dyn std::error::Error>>(())
+        })?;
+        assert_eq!(
+            scroll.offset().y,
+            px(0.0),
+            "Enter release must navigate to Details"
+        );
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        let after_top = anchor.read_with(&app, |anchor, _| anchor.targets_bounds["details"].0.top());
+        assert_eq!(
+            after_top - before_top,
+            px(17.0),
+            "target must repaint at the new offset"
+        );
+        app.quit();
+        Ok(())
     }
 }

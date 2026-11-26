@@ -30,6 +30,10 @@ fn setup(cx: &mut gpui::App) {
 
 Losing focus cancels a pending Enter activation. Disabling or destination removal cancels pending input; re-enabling cannot replay a stale pointer press. Handled Enter activation does not propagate into parent keyboard handlers.
 
+## In-page anchors
+
+`Anchor` uses retained native focus, Tab/Shift+Tab traversal and unmodified Enter press/release to scroll to painted targets. Space does not activate a target. Links expose a native Link role and name with a layout-neutral keyboard focus outline; `AnchorLink::href` names an `AnchorTarget` in the bound scroll handle, not an external URL. Missing targets leave the scroll position unchanged. Gallery and Docs execute the authored nested-navigation snippet; this is not complete screen-reader or cross-platform certification.
+
 ## Container headers
 
 `Container` keeps a fixed 48px header by default. Use `.header_height_auto()` with wrapping header content to let it grow naturally while the body keeps the remaining height. A subsequent `.header_height(...)` or `.header_height_lg()` returns to fixed sizing; apply any minimum height to the header content itself. Gallery and Docs use this opt-in for their translated theme/language/frame toolbars and pair the layout example in their Container pages.
