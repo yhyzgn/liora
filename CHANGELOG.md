@@ -6,6 +6,8 @@
 
 - Resolve Linux/FreeBSD GTK startup theme hints independently of configuration line order. Honor an explicit dark preference without letting a false preference override an explicitly dark theme name; retain fixed theme modes and live appearance observers.
 
+- Correct Gallery's bilingual About badges to identify Liora-maintained GPUI and its official Zed provenance, matching the documented source boundary.
+
 - Use the active theme's danger token for Gallery/Docs About update errors while preserving error details and all action guards. Give the Docs About panel its own native scroll viewport so narrow or short windows can reach wrapped update actions without changing ordinary virtualized pages.
 
 - Resolve Docs theme choices and About/Updates text through existing typed locale keys instead of fixed English/Chinese captions. Keep retained control identity, selected values and update callbacks unchanged; authored documentation is not auto-translated.
