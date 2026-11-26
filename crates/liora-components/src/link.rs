@@ -54,7 +54,7 @@ impl Link {
             id: None,
         }
     }
-    /// Sets the destination URL or anchor fragment.
+    /// Sets the destination URL opened by the platform's default handler.
     pub fn href(mut self, url: impl Into<SharedString>) -> Self {
         self.href = Some(url.into());
         self
@@ -197,33 +197,14 @@ impl Link {
         if !self.disabled {
             if let Some(ref href) = self.href {
                 let url = href.clone();
-                div = div.on_mouse_up(MouseButton::Left, move |_, _, _| {
-                    open_url(&url);
+                div = div.on_mouse_up(MouseButton::Left, move |_, _, cx| {
+                    cx.open_url(&url);
                 });
             }
             div = div.hover(move |style| style.text_color(hover_color));
         }
 
         div.children(children.into_iter().map(|f| f()))
-    }
-}
-
-fn open_url(url: &str) {
-    #[cfg(target_os = "linux")]
-    {
-        if let Err(e) = std::process::Command::new("xdg-open").arg(url).spawn() {
-            eprintln!("Link: failed to open URL: {}", e);
-        }
-    }
-    #[cfg(target_os = "macos")]
-    {
-        let _ = std::process::Command::new("open").arg(url).spawn();
-    }
-    #[cfg(target_os = "windows")]
-    {
-        let _ = std::process::Command::new("cmd")
-            .args(["/c", "start", "", url])
-            .spawn();
     }
 }
 
@@ -238,5 +219,76 @@ impl IntoElement for Link {
     type Element = Component<Self>;
     fn into_element(self) -> Self::Element {
         Component::new(self)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{cell::Cell, rc::Rc};
+
+    struct LinkUrlTest {
+        href: Option<&'static str>,
+        disabled: bool,
+        bounds: Rc<Cell<Option<gpui::Bounds<gpui::Pixels>>>>,
+    }
+
+    impl gpui::Render for LinkUrlTest {
+        fn render(&mut self, _: &mut Window, _: &mut gpui::Context<Self>) -> impl IntoElement {
+            let measured = self.bounds.clone();
+            let mut link = Link::new("Native URL")
+                .id("link-url")
+                .disabled(self.disabled);
+            if let Some(href) = self.href {
+                link = link.href(href);
+            }
+            gpui::div().w(px(240.0)).h(px(40.0)).child(link).child(
+                gpui::canvas(
+                    move |bounds, _, _| measured.set(Some(bounds)),
+                    |_, (), _, _| {},
+                )
+                .absolute()
+                .inset(px(0.0)),
+            )
+        }
+    }
+
+    fn click_link(href: Option<&'static str>, disabled: bool) -> Option<String> {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let bounds = Rc::new(Cell::new(None));
+        let measured = bounds.clone();
+        let handle = app.add_window(move |_, _| LinkUrlTest {
+            href,
+            disabled,
+            bounds: measured,
+        });
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        let origin = bounds.get().expect("Link frame must be laid out").origin;
+        window.simulate_click(
+            origin + gpui::point(px(4.0), px(4.0)),
+            gpui::Modifiers::none(),
+        );
+        let opened = app.opened_url();
+        app.quit();
+        opened
+    }
+
+    #[test]
+    fn pointer_activation_dispatches_exact_url_through_native_platform() {
+        for href in [
+            "https://example.invalid/path?a=1&b=2#section",
+            "https://example.invalid/%22quoted%22?q=hello%20world",
+            "https://example.invalid/文档?语言=中文#标题",
+        ] {
+            assert_eq!(click_link(Some(href), false).as_deref(), Some(href));
+        }
+    }
+
+    #[test]
+    fn disabled_and_destinationless_links_do_not_open_urls() {
+        assert_eq!(click_link(Some("https://example.invalid/"), true), None);
+        assert_eq!(click_link(None, false), None);
     }
 }
