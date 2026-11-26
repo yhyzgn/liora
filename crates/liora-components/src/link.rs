@@ -133,16 +133,12 @@ impl Link {
         (family.base, family.hover)
     }
 
-    fn render_with_theme(
-        self,
-        theme: Theme,
-        window: &mut Window,
-        cx: &mut App,
-    ) -> impl IntoElement {
-        let (color, hover_color) = self.color_for(&theme);
+    fn render_with_theme(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let theme = &cx.global::<Config>().theme;
+        let (color, hover_color) = self.color_for(theme);
         let fs = theme.font_size.md;
         let icon_sz = 14.0;
-        let id = self.id.clone().unwrap_or_else(|| {
+        let id = self.id.unwrap_or_else(|| {
             stable_unique_id(
                 format!(
                     "link:{}:{:?}:disabled={}:underline={}",
@@ -172,31 +168,16 @@ impl Link {
             div = div.underline();
         }
 
-        let mut children: Vec<Box<dyn FnOnce() -> gpui::AnyElement>> = Vec::new();
         if let Some(icon) = self.icon_start {
-            children.push(Box::new(move || {
-                Icon::new(icon)
-                    .size(px(icon_sz))
-                    .color(color)
-                    .into_any_element()
-            }));
+            div = div.child(Icon::new(icon).size(px(icon_sz)).color(color));
         }
-        let label = self.label.clone();
-        children.push(Box::new(move || {
-            gpui::div().child(label).into_any_element()
-        }));
+        div = div.child(gpui::div().child(self.label));
         if let Some(icon) = self.icon_end {
-            children.push(Box::new(move || {
-                Icon::new(icon)
-                    .size(px(icon_sz))
-                    .color(color)
-                    .into_any_element()
-            }));
+            div = div.child(Icon::new(icon).size(px(icon_sz)).color(color));
         }
 
         if !self.disabled {
-            if let Some(ref href) = self.href {
-                let url = href.clone();
+            if let Some(url) = self.href {
                 div = div.on_mouse_up(MouseButton::Left, move |_, _, cx| {
                     cx.open_url(&url);
                 });
@@ -204,14 +185,13 @@ impl Link {
             div = div.hover(move |style| style.text_color(hover_color));
         }
 
-        div.children(children.into_iter().map(|f| f()))
+        div
     }
 }
 
 impl RenderOnce for Link {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let theme = cx.global::<Config>().theme.clone();
-        self.render_with_theme(theme, _window, cx)
+        self.render_with_theme(_window, cx)
     }
 }
 

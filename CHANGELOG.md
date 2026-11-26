@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Read Link's current theme colors and size without cloning the full theme, and directly assemble its leading icon, label and trailing icon instead of allocating a temporary boxed-closure list. Preserve visual tokens, element identities and native URL activation.
 - Open Link destinations through GPUI's platform URL handler instead of launching `xdg-open`, `open`, or `cmd /c start` from the widget. Preserve destination text and disabled/no-destination behavior; cover pointer dispatch with GPUI platform-test receipts.
 - Execute the displayed Lucide example directly in Docs instead of a separate six-icon, primary-colored preview. Keep its four default-colored icons and the shown source in sync.
 - Borrow the current theme in Docs' Lucide/color previews and the authored Icon color example instead of cloning it. Correct Icon's default-color contract to `theme.neutral.icon`, not inherited parent text; preserve SDK SVG loading, hover and transforms.
