@@ -91,6 +91,12 @@ The Gallery/Docs Timer examples share a retained native host with Start / Pause 
 
 Stable Timer IDs reuse app-global start epochs. Pending refresh work is bounded by the windows with an outstanding wake, but epoch storage is not reclaimed by this scheduling change; creating unbounded timer identities can still grow that existing cache.
 
+## Loading
+
+`Loading` is a visual spinner with optional text. `.full_screen()` absolutely fills its positioning container; it does not block input or move/trap focus. To cover a window's content and occlude background pointer input, queue it with `liora_core::push_portal` during active renders and mount `liora_components::PortalLayer` last at the window root. Stop queuing when loading ends. Use `Dialog` when keyboard-modal focus isolation is required.
+
+Gallery and Docs execute the same authored basic/full-screen snippets. Retain the full-screen example's returned view across renders: its three-second dismissal task is canceled on manual dismissal or entity release, and cancellation cannot close a subsequent preview early. The demonstration covers window content, not system decorations or other windows.
+
 ## GPUI dependency note
 
 Liora uses the repository-maintained GPUI derivative described in [the source maintenance boundary](../../third_party/gpui/README.md), based on official `zed-industries/zed`. Follow the root README for the exact immutable Liora Git revision and application-root patch. Do not mix it with official GPUI or other forks; SDK manifests must not contain developer-local paths.

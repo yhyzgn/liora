@@ -10,7 +10,7 @@ use liora_components::{
     Checkbox, CheckboxGroup, CheckboxOptionStyle, CodeBlock as DocCodeBlock, CodeDiagnostic,
     CodeEditor, CodeEditorConfig, CodeHighlighter, CodeLanguage, CodeTheme, Container, Dropdown,
     DropdownButton, DropdownButtonItem, Flex, Form, FormItem, Grid, GridItem, HorizontalList,
-    Image, Input, InputNumber, InputNumberControlsPosition, Link, Loading, NavigationMenu,
+    Image, Input, InputNumber, InputNumberControlsPosition, Link, NavigationMenu,
     NavigationMenuMode, Paragraph, Popconfirm, Popover, PortalLayer, Preview,
     Progress, ProgressStatus, QrCode, QrEcLevel, QrFinderStyle, QrGradientDirection, QrModuleStyle,
     Radio, RadioGroup, RadioOptionStyle, Rate, Result as DocResult, ResultStatus, Segmented,
@@ -60,6 +60,9 @@ mod message_formatting_example;
 
 #[path = "../content/snippets/hover_card/basic.rs"]
 mod hover_card_basic_example;
+
+#[path = "../content/snippets/loading/basic.rs"]
+mod loading_basic_example;
 
 const INTRO_DOC: &str = include_str!("../content/pages/overview.md");
 const QUICK_START_DOC: &str = include_str!("../content/pages/quick_start.md");
@@ -4505,17 +4508,7 @@ impl Render for LiveDemoContent {
                         .into_any_element(),
                 ])
             }
-            "LoadingBasic" => demo_row(vec![
-                Loading::new().into_any_element(),
-                Loading::new().text("Loading...").into_any_element(),
-            ]),
-            "LoadingFullscreen" => demo_stack(vec![
-                Text::new("通常由页面或弹层容器按需渲染全屏 Loading。下面展示同一配置的局部形态，避免遮挡文档页。")
-                    .into_any_element(),
-                Loading::new()
-                    .text("Preparing workspace...")
-                    .into_any_element(),
-            ]),
+            "LoadingBasic" => loading_basic_example::basic_loading().into_any_element(),
             "SpinnerSizes" | "SpinnerBasic" => {
                 let theme = _cx.global::<Config>().theme.clone();
                 let card_bg = theme.neutral.hover.opacity(0.56);

@@ -835,6 +835,7 @@ pub fn render_doc_demo(component: &str, cx: &mut App) -> Option<AnyView> {
         "List" => Some(list_demo::render(cx).into()),
         "LineChart" => Some(line_chart_demo::render(cx).into()),
         "Loading" => Some(loading_demo::render(cx).into()),
+        "LoadingFullscreen" => Some(loading_demo::render_fullscreen(cx)),
         "NavigationMenu" => Some(navigation_menu_demo::render(cx).into()),
         "Mention" => Some(mention_demo::render(cx).into()),
         "Watermark" => Some(watermark_demo::render(cx).into()),
