@@ -339,6 +339,12 @@ impl NodeWrapper<'_> {
         if state.is_busy() {
             atspi_state.insert(State::Busy);
         }
+        if let Some(expanded) = state.data().is_expanded() {
+            atspi_state.insert(State::Expandable);
+            if expanded {
+                atspi_state.insert(State::Expanded);
+            }
+        }
         if state.is_modal() {
             atspi_state.insert(State::Modal);
         }

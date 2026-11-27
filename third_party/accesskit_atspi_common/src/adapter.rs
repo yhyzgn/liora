@@ -648,7 +648,11 @@ mod tests {
                     target: NodeIdOrRoot::Node(id),
                     event:
                         ObjectEvent::StateChanged(
-                            state @ (State::Enabled | State::Sensitive | State::Busy),
+                            state @ (State::Enabled
+                            | State::Sensitive
+                            | State::Busy
+                            | State::Expandable
+                            | State::Expanded),
                             value,
                         ),
                 } => ops.push(CacheOp::StateChanged(id, state, value)),
@@ -753,6 +757,56 @@ mod tests {
                 "{observed:?} != {expected:?}"
             );
         }
+    }
+
+    #[test]
+    fn expanded_state_and_events_follow_property_presence_and_value()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (mut adapter, ops) = build(initial_tree());
+        let id = adapter
+            .context
+            .read_tree()
+            .state()
+            .node_by_tree_local_id(LocalNodeId(1), TreeId::ROOT)
+            .map(|node| node.id())
+            .ok_or("button missing from test tree")?;
+        let platform_node = adapter.platform_node(id);
+        let read = || {
+            let state = platform_node.state();
+            [State::Expandable, State::Expanded].map(|flag| state.contains(flag))
+        };
+        assert_eq!(read(), [false, false]);
+
+        for (expanded, delta) in [
+            (Some(false), [Some(true), None]),
+            (Some(true), [None, Some(true)]),
+            (Some(false), [None, Some(false)]),
+            (None, [Some(false), None]),
+            (Some(true), [Some(true), Some(true)]),
+            (None, [Some(false), Some(false)]),
+            (None, [None, None]),
+        ] {
+            let mut node = Node::new(Role::Button);
+            if let Some(expanded) = expanded {
+                node.set_expanded(expanded);
+            }
+            adapter.update(update(vec![(LocalNodeId(1), node)]));
+            assert_eq!(read(), [expanded.is_some(), expanded == Some(true)]);
+            let observed = std::mem::take(&mut *ops.lock().map_err(|_| "callback mutex poisoned")?);
+            let expected: Vec<_> = [State::Expandable, State::Expanded]
+                .into_iter()
+                .zip(delta)
+                .filter_map(|(state, value)| {
+                    value.map(|value| CacheOp::StateChanged(id, state, value))
+                })
+                .collect();
+            assert_eq!(observed.len(), expected.len());
+            assert!(
+                expected.iter().all(|event| observed.contains(event)),
+                "{observed:?} != {expected:?}"
+            );
+        }
+        Ok(())
     }
 
     #[test]

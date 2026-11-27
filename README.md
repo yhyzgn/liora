@@ -251,7 +251,7 @@ When can you avoid direct `gpui` usage? Very small helper crates that only build
 
 `third_party/gpui` contains the maintained source; its utility dependencies remain pinned to the official Zed baseline. `third_party/zed` contains only old startup-window experiments, with manifests archived as `Cargo.toml.reference` to prevent duplicate Git package discovery. Do not restore them into the dependency graph.
 
-The separate application-root AccessKit exception remains: official `accesskit_atspi_common 0.19.1` with only the upstream Busy/Disabled backports at `third_party/accesskit_atspi_common`. It does not change AccessKit versions. Other root source overrides remain forbidden. This patch is **not inherited by downstream SDK hosts** and is not included in SDK crate packages; see [provenance, exact consumer setup, verification and removal boundary](docs/accesskit-atspi-backport.md). Merely updating the SDK does not fix an arbitrary host's native accessibility state.
+The separate application-root AccessKit exception remains: official `accesskit_atspi_common 0.19.1` with the upstream Busy/Disabled backports and the owner-authorized local expanded-state mapping at `third_party/accesskit_atspi_common`. It does not change AccessKit versions. Other root source overrides remain forbidden. This patch is **not inherited by downstream SDK hosts** and is not included in SDK crate packages; see [provenance, exact consumer setup, verification and removal boundary](docs/accesskit-atspi-backport.md). Merely updating the SDK does not fix an arbitrary host's native accessibility state.
 
 
 ## Quick start: create a Liora app
