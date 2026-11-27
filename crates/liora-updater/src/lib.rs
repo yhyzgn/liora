@@ -1003,6 +1003,92 @@ mod tests {
     };
 
     #[test]
+    fn prepare_update_selects_and_verifies_the_newest_eligible_release() {
+        let content = b"verified composed update".to_vec();
+        let asset_name = "sample-app-v0.10.0-linux-x64.AppImage";
+        let checksum = format!("{:x}  {asset_name}\n", Sha256::digest(&content));
+        let (download_base, download_server) = test_server(vec![
+            ("/checksums", checksum.as_bytes().to_vec()),
+            ("/artifact", content.clone()),
+        ]);
+        let asset = |name: &str, route: &str, size: usize| {
+            serde_json::json!({
+                "name": name,
+                "browser_download_url": format!("{download_base}{route}"),
+                "size": size,
+            })
+        };
+        let release = |tag: &str, draft: bool, prerelease: bool, assets: Vec<serde_json::Value>| {
+            serde_json::json!({
+                "tag_name": tag,
+                "name": tag,
+                "draft": draft,
+                "prerelease": prerelease,
+                "assets": assets,
+            })
+        };
+        let releases = serde_json::json!([
+            release("v0.9.9", false, false, vec![asset(
+                "sample-app-v0.9.9-linux-x64.AppImage", "/older", content.len()
+            )]),
+            release("v99.0.0", true, false, vec![asset(
+                "sample-app-v99.0.0-linux-x64.AppImage", "/draft", content.len()
+            )]),
+            release("v0.10.0", false, false, vec![
+                asset("sample-app-v0.10.0-linux-x64", "/raw", content.len()),
+                asset("other-app-v0.10.0-linux-x64.AppImage", "/wrong-app", content.len()),
+                asset("sample-app-v0.10.0-windows-x64-setup.exe", "/wrong-platform", content.len()),
+                asset(asset_name, "/artifact", content.len()),
+                asset(CHECKSUMS_ASSET, "/checksums", checksum.len()),
+            ]),
+            release("v100.0.0-rc.1", false, true, vec![asset(
+                "sample-app-v100.0.0-rc.1-linux-x64.AppImage", "/prerelease", content.len()
+            )]),
+        ]);
+        let (api_base, api_server) = test_server(vec![(
+            "/repos/owner/repo/releases",
+            serde_json::to_vec(&releases).unwrap(),
+        )]);
+        let directory = test_directory("composed-success");
+        let request = UpdateRequest::new(
+            "sample-app",
+            "v0.9.0",
+            Platform::LinuxX64,
+            &directory,
+        );
+        let prepared = Updater::new("owner", "repo")
+            .with_api_base(api_base)
+            .prepare_update(&request)
+            .unwrap()
+            .expect("a newer stable release must produce a verified update");
+        api_server.join().unwrap();
+        download_server.join().unwrap();
+
+        let expected_path = directory.join(asset_name);
+        assert_eq!(prepared.release_tag(), "v0.10.0");
+        assert!(!prepared.release.draft);
+        assert!(!prepared.release.prerelease);
+        assert_eq!(prepared.asset.name, asset_name);
+        assert_eq!(prepared.asset.size, content.len() as u64);
+        assert_eq!(prepared.asset_path, expected_path);
+        assert_eq!(fs::read(&prepared.asset_path).unwrap(), content);
+        assert_eq!(prepared.install_plan.app_name, "sample-app");
+        assert_eq!(prepared.install_plan.platform, Platform::LinuxX64);
+        assert_eq!(prepared.install_plan.asset_kind, AssetKind::Installer);
+        assert_eq!(prepared.install_plan.asset_name, asset_name);
+        assert_eq!(prepared.install_plan.asset_path, expected_path);
+        assert_eq!(
+            prepared.install_plan.action,
+            InstallAction::RunExecutable {
+                program: expected_path,
+                args: Vec::new(),
+            }
+        );
+        assert_eq!(fs::read_dir(&directory).unwrap().count(), 1);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
     fn checksum_exact_names_preserve_spaces_and_asterisks() {
         let hash = "ab".repeat(32);
         let manifest = ChecksumManifest::parse(&format!(
