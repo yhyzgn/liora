@@ -408,6 +408,8 @@ liora_components::init_liora(cx);
 liora_core::init_liora_with_mode(cx, liora_core::ThemeMode::System);
 ```
 
+`Config.z_index_base` 是公开 `liora_core::z_index_*` helper 的数值基值（默认 `1000`，偏移为 `+100`、`+200`、`+300`、`+400`）。读取时会将共享有效基值限制在 `u32::MAX - 400`，不会修改配置值。此数值刻度不会设置现有内置 overlay 的层级；参见 [z-index helper 参考](apps/liora-docs/content/pages/theme_system.md#z-index-helper-scale)。
+
 ## 窗口启动、系统主题与图标
 
 正式应用建议先用隐藏窗口创建，创建 root view 前附加系统主题观察器，`open_window` 返回后再激活窗口。这个模式可以避免首帧主题闪烁，也与 Gallery/Docs 的原生应用写法一致。

@@ -54,6 +54,16 @@ Gallery 和 Docs 都使用同一套接入方式：
 10. 用户切换分段控件时调用 `apply_theme_mode(window, cx, mode)`，通过 GPUI 原生 `App::refresh_windows()` 为所有已打开窗口安排重绘。
 11. 通过 `App::is_window_appearance_initialized()` 与 `Window::is_appearance_initialized()` 区分 pending Light 与已确认 Light；窗口颜色和 ready 状态来自同一份缓存快照。初值早于窗口/观察器、无窗口期间变化、固定模式切回 System 都不依赖通知历史。真实同色通知和窗口装饰通知保留，但 pending 状态不能覆盖同步启动提示。仅主题实际改变时刷新所有窗口，固定 Light/Dark 不受系统通知影响。portal 在初次读取前订阅同一个颜色 stream，避免读完初值后、尚未订阅时丢失变化；不新增平行监听、定时猜测或产品轮询。
 
+## z-index helper scale
+
+`Config.z_index_base` 是公开 `liora_core::z_index_popup`、`z_index_modal`、`z_index_notification` 与 `z_index_tooltip` helper 的数值基值，默认值为 `1000`，偏移分别为 `+100`、`+200`、`+300` 和 `+400`。宿主初始化 Liora 后可设置此值，例如：
+
+```rust
+cx.global_mut::<liora_core::Config>().z_index_base = 10_000;
+```
+
+读取 helper 时会将共享有效基值限制在 `u32::MAX - 400`，保证所有偏移都可表示且类别顺序不变；配置字段本身不会被修改。此数值刻度只供这些公开 helper 使用，不会设置现有内置 overlay 的层级。
+
 GTK settings 的 `gtk-theme-name` 与 `gtk-application-prefer-dark-theme` 不依赖配置行顺序：`true` 优先请求深色变体；`false` 表示不额外请求深色，而不是强制浅色，因此仍保留主题名指定的深色外观。未取得可识别主题名时，显式 `false` 保留浅色启动回退。此规则只处理 GPUI 尚未初始化时的同步提示；参见 [GTK 属性定义](https://docs.gtk.org/gtk3/property.Settings.gtk-application-prefer-dark-theme.html)。
 
 这套能力仍然是纯 Rust + GPUI 原生应用能力，不依赖 Tauri、WebView、HTML、CSS 或 DOM runtime。

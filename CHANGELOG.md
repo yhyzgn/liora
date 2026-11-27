@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Clamp the shared base used by public z-index helpers so category offsets remain ordered through `u32::MAX`, without changing the configured value or existing built-in overlay ordering.
 - Prune `.app` directories case-insensitively when selecting GitHub Release assets, preventing bundle-internal package files from overwriting sibling downloads or duplicating asset-index entries; preserve raw executables, both font variants, supported package downloads, and portable-staging exclusions.
 - Bind `VirtualizedTable::list_state()` to its first keyed mount and create the builder `ListState` only when requested, avoiding discarded state-tree allocations during inline renders.
 - Make the existing Docs VirtualizedTable load-more footer append 500-row pages up to 10,000 rows through retained parent state, preserving the table viewport and Docs page anchor; replace the companion snippet's no-op with a working retained-view example and avoid notifying again at the cap.

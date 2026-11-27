@@ -702,7 +702,8 @@ pub struct Config {
     pub fonts: FontConfig,
     /// Runtime locale resources state.
     pub locales: LocalesConfig,
-    /// Base z-index offset for overlay layering.
+    /// Base for the public z-index helper scale; clamped on read so all offsets fit.
+    /// Built-in overlays do not use this value.
     pub z_index_base: u32,
 }
 
@@ -1424,24 +1425,73 @@ impl ElementExt for gpui::Div {
     }
 }
 
+const Z_INDEX_TOOLTIP_OFFSET: u32 = 400;
+
+fn z_index_base<V>(cx: &Context<'_, V>) -> u32 {
+    cx.global::<Config>().z_index_base.min(u32::MAX - Z_INDEX_TOOLTIP_OFFSET)
+}
+
 /// Returns the z-index reserved for popup overlays.
 pub fn z_index_popup<V>(cx: &Context<'_, V>) -> u32 {
-    cx.global::<Config>().z_index_base + 100
+    z_index_base(cx) + 100
 }
 
 /// Returns the z-index reserved for modal overlays.
 pub fn z_index_modal<V>(cx: &Context<'_, V>) -> u32 {
-    cx.global::<Config>().z_index_base + 200
+    z_index_base(cx) + 200
 }
 
 /// Returns the z-index reserved for notifications.
 pub fn z_index_notification<V>(cx: &Context<'_, V>) -> u32 {
-    cx.global::<Config>().z_index_base + 300
+    z_index_base(cx) + 300
 }
 
 /// Returns the z-index reserved for tooltip overlays.
 pub fn z_index_tooltip<V>(cx: &Context<'_, V>) -> u32 {
-    cx.global::<Config>().z_index_base + 400
+    z_index_base(cx) + Z_INDEX_TOOLTIP_OFFSET
+}
+
+#[cfg(test)]
+mod z_index_tests {
+    use super::*;
+
+    fn assert_indices(base: u32, expected: [u32; 4]) {
+        let app = gpui::TestAppContext::single();
+        app.update(|cx| {
+            cx.set_global(Config {
+                theme: Theme::light(),
+                theme_mode: ThemeMode::Light,
+                fonts: FontConfig::default(),
+                locales: LocalesConfig::default(),
+                z_index_base: base,
+            });
+            let _entity = cx.new(|cx| {
+                let actual = [
+                    z_index_popup(cx),
+                    z_index_modal(cx),
+                    z_index_notification(cx),
+                    z_index_tooltip(cx),
+                ];
+                assert_eq!(actual, expected);
+                assert!(actual.windows(2).all(|pair| pair[0] < pair[1]));
+                assert_eq!(cx.global::<Config>().z_index_base, base);
+            });
+        });
+        app.quit();
+    }
+
+    #[test]
+    fn ordinary_base_preserves_category_offsets() {
+        assert_indices(50_000, [50_100, 50_200, 50_300, 50_400]);
+    }
+
+    #[test]
+    fn maximum_bases_keep_categories_distinct_and_ordered() {
+        let expected = [u32::MAX - 300, u32::MAX - 200, u32::MAX - 100, u32::MAX];
+        for base in [u32::MAX - 400, u32::MAX - 399, u32::MAX] {
+            assert_indices(base, expected);
+        }
+    }
 }
 
 /// Converts a packed RGB integer into a GPUI HSLA color.

@@ -415,6 +415,8 @@ liora_components::init_liora(cx);
 liora_core::init_liora_with_mode(cx, liora_core::ThemeMode::System);
 ```
 
+`Config.z_index_base` sets the numeric base for the public `liora_core::z_index_*` helpers (default `1000`; offsets `+100`, `+200`, `+300`, `+400`). On read, they clamp one shared effective base to `u32::MAX - 400`, without changing the configured value. This helper scale does not set existing built-in overlay ordering; see the [z-index helper reference](apps/liora-docs/content/pages/theme_system.md#z-index-helper-scale).
+
 ## Window startup, system theme, and icons
 
 A production app should create the window hidden, attach system theme tracking before creating the root view, then activate the window after `open_window` returns. This avoids first-frame theme flicker and mirrors the pattern used by the native Gallery and Docs apps.
