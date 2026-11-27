@@ -64,7 +64,7 @@ pub struct Select {
     is_open: bool,
     focus_handle: FocusHandle,
     last_bounds: Option<Bounds<Pixels>>,
-    on_change: Option<Box<dyn Fn(usize, &mut Window, &mut App) + 'static>>,
+    on_change: Option<Arc<dyn Fn(usize, &mut Window, &mut App) + 'static>>,
     on_values_change: Option<Arc<dyn Fn(Vec<SharedString>, &mut Window, &mut App) + 'static>>,
     footer: Option<Arc<dyn Fn(&mut Window, &mut App) -> AnyElement + 'static>>,
     placeholder: SharedString,
@@ -418,13 +418,13 @@ impl Select {
 
     /// Registers a callback that runs when change occurs.
     pub fn on_change(mut self, cb: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
-        self.on_change = Some(Box::new(cb));
+        self.on_change = Some(Arc::new(cb));
         self
     }
 
     /// Updates the stored on change value and keeps the existing component identity.
     pub fn set_on_change(&mut self, cb: impl Fn(usize, &mut Window, &mut App) + 'static) {
-        self.on_change = Some(Box::new(cb));
+        self.on_change = Some(Arc::new(cb));
     }
 
     /// Returns the currently selected item index, if any.
@@ -449,10 +449,10 @@ impl Select {
         }
         self.selected_idx = Some(idx);
         self.is_open = false;
-        if let Some(ref cb) = self.on_change {
-            cb(idx, window, cx);
-        }
         cx.notify();
+        if let Some(cb) = self.on_change.clone() {
+            window.defer(cx, move |window, cx| cb(idx, window, cx));
+        }
     }
 
     fn query(&self, cx: &App) -> SharedString {
@@ -550,10 +550,11 @@ impl Select {
             }
         }
 
-        if let Some(callback) = &self.on_values_change {
-            callback(self.selected_values.clone(), window, cx);
-        }
         cx.notify();
+        if let Some(callback) = self.on_values_change.clone() {
+            let values = self.selected_values.clone();
+            window.defer(cx, move |window, cx| callback(values, window, cx));
+        }
     }
 
     fn open(&mut self, window: &mut Window, cx: &mut Context<Self>) {
@@ -1233,6 +1234,96 @@ mod searchable_select_tests {
                 *events.borrow(),
                 vec![Vec::<SharedString>::new(), Vec::new()]
             );
+            app.quit();
+        }
+    }
+
+    struct CallbackSelectSurface(Entity<Select>);
+
+    impl Render for CallbackSelectSurface {
+        fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+            div()
+                .relative()
+                .size_full()
+                .child(self.0.clone())
+                .child(crate::PortalLayer)
+        }
+    }
+
+    #[test]
+    fn selection_callbacks_can_read_and_update_their_select() {
+        use std::{cell::Cell, rc::Rc};
+
+        for mode in [SelectMode::Plain, SelectMode::Searchable, SelectMode::Multiple] {
+            let mut app = gpui::TestAppContext::single();
+            app.update(crate::init_liora);
+            let calls = Rc::new(Cell::new(0));
+            let observed = calls.clone();
+            let select = app.new(|cx| {
+                let owner = cx.weak_entity();
+                match mode {
+                    SelectMode::Plain => Select::new(vec!["Apple", "Banana"], Some(1), cx)
+                        .width(px(300.0))
+                        .on_change(move |index, _, cx| {
+                            let select = owner.upgrade().unwrap();
+                            assert_eq!(index, 0);
+                            assert_eq!(select.read(cx).selected_index(), Some(0));
+                            assert!(!select.read(cx).is_open);
+                            select.update(cx, |this, cx| {
+                                this.set_options(vec!["Replacement".into()], cx);
+                                this.set_selected_idx(None, cx);
+                            });
+                            observed.set(observed.get() + 1);
+                        }),
+                    SelectMode::Searchable | SelectMode::Multiple => {
+                        Select::searchable_values(vec!["Apple", "Banana"], cx)
+                            .mode(mode)
+                            .on_values_change(move |values, _, cx| {
+                                let select = owner.upgrade().unwrap();
+                                assert_eq!(values, vec![SharedString::from("Apple")]);
+                                assert_eq!(select.read(cx).selected_values_ref(), values);
+                                assert_eq!(select.read(cx).is_open, mode == SelectMode::Multiple);
+                                assert_eq!(
+                                    select.read(cx).query(cx).as_ref(),
+                                    if mode == SelectMode::Multiple { "" } else { "Apple" }
+                                );
+                                select.update(cx, |this, cx| {
+                                    this.selected_values = vec!["Banana".into()];
+                                    cx.notify();
+                                });
+                                observed.set(observed.get() + 1);
+                            })
+                    }
+                }
+            });
+            let root = select.clone();
+            let handle = app.add_window(move |_, _| CallbackSelectSurface(root));
+            let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+            window.update(|window, _| window.activate_window());
+            window.run_until_parked();
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            window.simulate_click(gpui::point(px(12.0), px(12.0)), gpui::Modifiers::none());
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            let bounds = select.read_with(&app, |this, _| {
+                assert!(this.is_open);
+                this.last_bounds.unwrap()
+            });
+            window.simulate_click(
+                gpui::point(bounds.left() + px(20.0), bounds.bottom() + px(20.0)),
+                gpui::Modifiers::none(),
+            );
+            window.run_until_parked();
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            assert_eq!(calls.get(), 1, "mode={mode:?}");
+            select.read_with(&app, |this, _| {
+                if mode == SelectMode::Plain {
+                    assert_eq!(this.options, vec![SharedString::from("Replacement")]);
+                    assert_eq!(this.selected_index(), None);
+                } else {
+                    assert_eq!(this.selected_values_ref(), &[SharedString::from("Banana")]);
+                }
+            });
+            assert_eq!(calls.get(), 1, "redraw must not repeat the callback");
             app.quit();
         }
     }
