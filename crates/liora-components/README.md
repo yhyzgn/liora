@@ -34,6 +34,14 @@ Gallery and Docs execute the same authored basic, footer-action and narrow scrol
 
 `Text::document` and `SelectableTextGroup` own their shared native selection, independently of nested Card/container identities. Mouse release retains the selected word or dragged range; Select All and Copy span the owning document, not an unrelated document with the same local ID under a different parent. Nonselectable documents do not allocate a selection owner.
 
+## Cascader
+
+Enabled Cascader triggers participate in Tab/Shift+Tab traversal. Enter/Space release toggles the popup; Escape closes it unless `close_on_escape(false)` is configured. The trigger exposes a native Button role, its displayed label, expanded state and disabled state. Disabled triggers are skipped and cannot activate, including when they retain focus from an earlier enabled frame. Hierarchical option selection remains pointer-driven; this is not an editable combobox or complete screen-reader certification.
+
+Disabled or loading nodes block selection through their descendants, including precomputed search results whose ancestors change before activation. Search excludes those subtrees; `is_selectable_path` also checks every ancestor. Lazy-data callbacks can still update loading branches through the mutable data APIs.
+
+Gallery and Docs execute the same five authored constructors with actual selection/clear feedback. The searchable example preloads `search_query("杭州")` to match option labels; no editable search field is provided. The lazy example synchronously attaches fixed data without network I/O. The host owns persistence and asynchronous data loading.
+
 ## Calendar
 
 `Calendar::show_adjacent_months(false)` preserves the six-week grid with same-height blank slots for adjacent dates. Those slots render no date or event content, have no hover feedback and cannot select; disabled adjacent dates remain blank too. Visible enabled dates invoke `on_select`, including when the surface redraws between pointer press and release; the host owns selected-date state and month navigation. Gallery and Docs execute the same authored event and range examples with date feedback.

@@ -251,7 +251,7 @@ impl Cascader {
 
     /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(cx: &mut App) {
-        cx.bind_keys([KeyBinding::new("escape", CascaderClose, None)]);
+        cx.bind_keys([KeyBinding::new("escape", CascaderClose, Some("Cascader"))]);
     }
 
     fn close_on_escape_action(
@@ -263,6 +263,8 @@ impl Cascader {
         if self.close_on_escape && self.is_open {
             self.is_open = false;
             cx.notify();
+        } else {
+            cx.propagate();
         }
     }
 
@@ -366,7 +368,7 @@ impl Cascader {
         labels
     }
 
-    /// Returns whether selectable path is currently true for this value.
+    /// Returns whether the path ends at a selectable leaf and every ancestor is enabled and not loading.
     pub fn is_selectable_path(options: &[CascaderOption], path: &[SharedString]) -> bool {
         let Some(option) = Self::option_for_path(options, path) else {
             return false;
@@ -419,9 +421,15 @@ impl Cascader {
     ) -> Option<&'a CascaderOption> {
         let (first, rest) = path.split_first()?;
         let mut option = options.iter().find(|option| &option.value == first)?;
+        if option.disabled || option.loading {
+            return None;
+        }
 
         for value in rest {
             option = option.find_child(value)?;
+            if option.disabled || option.loading {
+                return None;
+            }
         }
 
         Some(option)
@@ -458,7 +466,7 @@ impl Cascader {
             let Some(option) = siblings.iter().find(|option| &option.value == value) else {
                 break;
             };
-            if option.children.is_empty() {
+            if option.disabled || option.loading || option.children.is_empty() {
                 break;
             }
             columns.push(option.children.clone());
@@ -516,6 +524,9 @@ impl Cascader {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if self.disabled {
+            return;
+        }
         let Some(option) = Self::option_for_path(&self.options, &path) else {
             return;
         };
@@ -568,6 +579,7 @@ impl Focusable for Cascader {
 impl Render for Cascader {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
+        self.focus_handle = self.focus_handle.clone().tab_stop(!self.disabled);
         let focused = self.focus_handle.is_focused(_window);
         let display_text = self.display_text();
         let has_value = !self.selected_path.is_empty();
@@ -594,15 +606,23 @@ impl Render for Cascader {
             let matches = self.matching_leaf_paths();
             let close_on_click_outside = self.close_on_click_outside;
 
+            let trigger_width = trigger_bounds.map_or(px(240.0), |bounds| bounds.size.width);
+            let popup_height = if filterable && !matches.is_empty() {
+                popup_content_height(matches.len())
+            } else {
+                popup_content_height(columns.iter().map(Vec::len).max().unwrap_or_default())
+            };
+            let requested_panel_width =
+                px((columns.len().max(1) as f32 * 180.0).max(f32::from(trigger_width)));
+
             push_portal(
-                move |_window, _cx| {
-                    let (top, left, trigger_width) = if let Some(bounds) = trigger_bounds {
-                        (bounds.bottom() + px(4.0), bounds.left(), bounds.size.width)
-                    } else {
-                        (px(100.0), px(100.0), px(240.0))
-                    };
-                    let panel_width =
-                        px((columns.len().max(1) as f32 * 180.0).max(f32::from(trigger_width)));
+                move |window, _cx| {
+                    let viewport = window.viewport_size();
+                    let panel_width = popup_panel_width(requested_panel_width, viewport.width);
+                    let (top, left) =
+                        popup_position(trigger_bounds, panel_width, popup_height, viewport);
+                    let panel_height =
+                        popup_height.min((viewport.height - top - px(8.0)).max(px(1.0)));
                     let theme = theme_portal.clone();
                     let entity = entity.clone();
 
@@ -613,7 +633,7 @@ impl Render for Cascader {
                         .top(top)
                         .left(left)
                         .w(panel_width)
-                        .max_h(px(280.0))
+                        .max_h(panel_height)
                         .overflow_hidden()
                         .bg(theme.neutral.card)
                         .rounded(px(theme.radius.md))
@@ -636,6 +656,7 @@ impl Render for Cascader {
                                 matches.clone(),
                                 entity.clone(),
                                 theme.clone(),
+                                (panel_height - px(2.0)).max(px(1.0)),
                             ))
                         })
                         .when(!filterable || matches.is_empty(), |panel| {
@@ -646,6 +667,7 @@ impl Render for Cascader {
                                 selected_path.clone(),
                                 entity.clone(),
                                 theme.clone(),
+                                (panel_height - px(2.0)).max(px(1.0)),
                             ))
                         });
 
@@ -674,6 +696,48 @@ impl Render for Cascader {
         }
 
         div()
+            .id(element_id(self.id.clone()))
+            .accessibility_id(self.id.clone())
+            .role(gpui::Role::Button)
+            .aria_label(display_text.clone())
+            .aria_expanded(self.is_open)
+            .when(self.disabled, |s| {
+                s.a11y_synthetic_children(|builder| {
+                    builder.parent_node().set_disabled();
+                })
+            })
+            .track_focus(&self.focus_handle)
+            .key_context("Cascader")
+            .on_key_down(cx.listener(|this, event: &gpui::KeyDownEvent, window, cx| {
+                let modifiers = event.keystroke.modifiers;
+                if event.keystroke.key == "tab"
+                    && !modifiers.control
+                    && !modifiers.alt
+                    && !modifiers.platform
+                    && !modifiers.function
+                {
+                    if modifiers.shift {
+                        window.focus_prev(cx);
+                    } else {
+                        window.focus_next(cx);
+                    }
+                    cx.stop_propagation();
+                } else if !this.disabled
+                    && !modifiers.modified()
+                    && matches!(event.keystroke.key.as_str(), "enter" | "space")
+                {
+                    // Native GPUI delivers activation on key-up through on_click.
+                    cx.stop_propagation();
+                }
+            }))
+            .when(!self.disabled, |s| {
+                s.on_click(cx.listener(|this, event, window, cx| {
+                    if matches!(event, gpui::ClickEvent::Keyboard(_)) {
+                        this.toggle_open(window, cx);
+                        cx.stop_propagation();
+                    }
+                }))
+            })
             .relative()
             .when_some(self.width, |s, width| s.w(width))
             .when(self.width.is_none(), |s| s.w_full())
@@ -751,6 +815,41 @@ impl Render for Cascader {
     }
 }
 
+fn popup_panel_width(requested: Pixels, viewport_width: Pixels) -> Pixels {
+    requested.min((viewport_width - px(16.0)).max(px(1.0)))
+}
+
+fn popup_content_height(row_count: usize) -> Pixels {
+    if row_count > 8 {
+        px(280.0)
+    } else {
+        px((row_count.max(1) as f32 * 34.0) + 2.0)
+    }
+}
+
+fn popup_position(
+    trigger_bounds: Option<Bounds<Pixels>>,
+    panel_width: Pixels,
+    panel_height: Pixels,
+    viewport: gpui::Size<Pixels>,
+) -> (Pixels, Pixels) {
+    let margin = px(8.0);
+    let max_left = (viewport.width - panel_width - margin).max(margin);
+    let max_top = (viewport.height - panel_height - margin).max(margin);
+    let (preferred_top, preferred_left) = trigger_bounds.map_or((margin, margin), |bounds| {
+        (bounds.bottom() + px(4.0), bounds.left())
+    });
+    let top = if preferred_top <= max_top {
+        preferred_top
+    } else {
+        trigger_bounds
+            .map(|bounds| (bounds.top() - panel_height - px(4.0)).max(margin))
+            .unwrap_or(max_top)
+            .min(max_top)
+    };
+    (top, preferred_left.min(max_left).max(margin))
+}
+
 fn render_columns(
     cascader_id: SharedString,
     columns: Vec<Vec<CascaderOption>>,
@@ -758,10 +857,14 @@ fn render_columns(
     selected_path: Vec<SharedString>,
     entity: Entity<Cascader>,
     theme: liora_theme::Theme,
+    panel_height: Pixels,
 ) -> AnyElement {
     div()
+        .id(element_id(format!("{}-columns", cascader_id)))
+        .w_full()
         .flex()
         .flex_row()
+        .overflow_x_scroll()
         .children(columns.into_iter().enumerate().map(|(depth, column)| {
             let active_value = active_path.get(depth).cloned();
             let selected_value = selected_path.get(depth).cloned();
@@ -771,7 +874,8 @@ fn render_columns(
             div()
                 .id(element_id(column_id))
                 .w(px(180.0))
-                .max_h(px(280.0))
+                .flex_shrink_0()
+                .max_h(panel_height)
                 .overflow_y_scroll()
                 .border_r_1()
                 .border_color(theme.neutral.divider)
@@ -791,8 +895,10 @@ fn render_columns(
 
                         let item_id = Cascader::popup_item_id(item_id_prefix.as_ref(), &path);
 
-                        div()
-                            .id(item_id)
+                        let item = div();
+                        #[cfg(test)]
+                        let item = item.debug_selector(|| item_id.to_string());
+                        item.id(item_id)
                             .h(px(34.0))
                             .px_3()
                             .flex()
@@ -851,12 +957,15 @@ fn render_match_list(
     matches: Vec<(Vec<SharedString>, Vec<SharedString>)>,
     entity: Entity<Cascader>,
     theme: liora_theme::Theme,
+    panel_height: Pixels,
 ) -> AnyElement {
-    div()
-        .id("cascader-search-results")
+    let list = div();
+    #[cfg(test)]
+    let list = list.debug_selector(|| "cascader-search-results".to_string());
+    list.id("cascader-search-results")
         .flex()
         .flex_col()
-        .max_h(px(280.0))
+        .max_h(panel_height)
         .overflow_y_scroll()
         .children(matches.into_iter().map(move |(path, labels)| {
             let entity = entity.clone();
@@ -868,9 +977,12 @@ fn render_match_list(
                 .join(" / ");
             let item_id = Cascader::popup_item_id(cascader_id.as_ref(), &path);
 
-            div()
-                .id(item_id)
+            let item = div();
+            #[cfg(test)]
+            let item = item.debug_selector(|| item_id.to_string());
+            item.id(item_id)
                 .h(px(34.0))
+                .flex_shrink_0()
                 .px_3()
                 .flex()
                 .items_center()
@@ -908,6 +1020,9 @@ fn collect_leaf_matches(
     matches: &mut Vec<(Vec<SharedString>, Vec<SharedString>)>,
 ) {
     for option in options {
+        if option.disabled || option.loading {
+            continue;
+        }
         path.push(option.value.clone());
         labels.push(option.label.clone());
 
@@ -918,7 +1033,7 @@ fn collect_leaf_matches(
                 .collect::<Vec<_>>()
                 .join(" /")
                 .to_lowercase();
-            if !option.disabled && !option.loading && haystack.contains(query) {
+            if haystack.contains(query) {
                 matches.push((path.clone(), labels.clone()));
             }
         } else {
@@ -987,21 +1102,402 @@ impl Element for BoundsCapturer {
 }
 
 #[cfg(test)]
-mod cursor_regression_tests {
-    #[test]
-    fn cascader_disabled_states_use_not_allowed_cursor() {
-        let source = include_str!("cascader.rs")
-            .split("#[cfg(test)]")
-            .next()
-            .unwrap();
+mod popup_layout_tests {
+    use super::*;
 
-        assert!(
-            source.contains(".when(self.disabled, |s| s.cursor_not_allowed())"),
-            "disabled cascader trigger should show a not-allowed cursor"
+    #[test]
+    fn popup_height_matches_the_rendered_scroll_limit() {
+        assert_eq!(popup_content_height(0), px(36.0));
+        assert_eq!(popup_content_height(3), px(104.0));
+        assert_eq!(popup_content_height(20), px(280.0));
+    }
+
+    #[test]
+    fn popup_flips_above_trigger_and_stays_inside_viewport() {
+        let bounds = Bounds::new(
+            gpui::point(px(320.0), px(760.0)),
+            gpui::size(px(360.0), px(34.0)),
         );
-        assert!(
-            source.contains(".when(disabled, |s| s.cursor_not_allowed())"),
-            "disabled cascader options should show a not-allowed cursor"
+        assert_eq!(
+            popup_position(
+                Some(bounds),
+                px(360.0),
+                px(104.0),
+                gpui::size(px(800.0), px(900.0)),
+            ),
+            (px(652.0), px(320.0))
         );
+    }
+
+    #[test]
+    fn popup_clamps_wide_panel_to_viewport_margin() {
+        let bounds = Bounds::new(
+            gpui::point(px(700.0), px(200.0)),
+            gpui::size(px(360.0), px(34.0)),
+        );
+        let panel_width = popup_panel_width(px(900.0), px(800.0));
+        assert_eq!(panel_width, px(784.0));
+        assert_eq!(
+            popup_position(
+                Some(bounds),
+                panel_width,
+                px(104.0),
+                gpui::size(px(800.0), px(900.0)),
+            ),
+            (px(238.0), px(8.0))
+        );
+    }
+
+    #[test]
+    fn popup_flips_inside_a_short_viewport() {
+        let bounds = Bounds::new(
+            gpui::point(px(700.0), px(50.0)),
+            gpui::size(px(360.0), px(34.0)),
+        );
+        assert_eq!(
+            popup_position(
+                Some(bounds),
+                px(784.0),
+                px(280.0),
+                gpui::size(px(800.0), px(200.0)),
+            ),
+            (px(8.0), px(8.0))
+        );
+    }
+}
+#[cfg(test)]
+mod interaction_tests {
+    use super::*;
+    use std::{cell::Cell, cell::RefCell, rc::Rc};
+
+    struct CascaderSurface {
+        cascader: Entity<Cascader>,
+        after_clicks: Rc<Cell<usize>>,
+        unhandled_keys: Rc<Cell<usize>>,
+    }
+
+    impl Render for CascaderSurface {
+        fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+            let clicks = self.after_clicks.clone();
+            let keys = self.unhandled_keys.clone();
+            let escapes = self.unhandled_keys.clone();
+            div()
+                .relative()
+                .size_full()
+                .on_key_down(move |event, _, _| {
+                    if event.keystroke.key == "f6" {
+                        keys.set(keys.get() + 1);
+                    }
+                })
+                .on_action(move |_: &CascaderClose, _, _| {
+                    escapes.set(escapes.get() + 1);
+                })
+                .child(crate::Button::new("Before").id("cascader-before"))
+                .child(self.cascader.clone())
+                .child(
+                    crate::Button::new("After")
+                        .id("cascader-after")
+                        .on_click(move |_, _, _| clicks.set(clicks.get() + 1)),
+                )
+                .child(crate::PortalLayer)
+        }
+    }
+
+    fn surface(
+        app: &mut gpui::TestAppContext,
+        cascader: &Entity<Cascader>,
+    ) -> (gpui::VisualTestContext, Rc<Cell<usize>>, Rc<Cell<usize>>) {
+        let after_clicks = Rc::new(Cell::new(0));
+        let unhandled_keys = Rc::new(Cell::new(0));
+        let root = cascader.clone();
+        let clicks = after_clicks.clone();
+        let keys = unhandled_keys.clone();
+        let handle = app.add_window(move |_, _| CascaderSurface {
+            cascader: root,
+            after_clicks: clicks,
+            unhandled_keys: keys,
+        });
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), app);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        (window, after_clicks, unhandled_keys)
+    }
+
+    fn press(window: &mut gpui::VisualTestContext, key: &str) {
+        window.simulate_keystrokes(key);
+        window.update(|window, cx| {
+            let Ok(keystroke) = gpui::Keystroke::parse_with_os(key, cx.platform_info().os) else {
+                panic!("invalid test keystroke: {key}");
+            };
+            window.dispatch_event(
+                gpui::PlatformInput::KeyUp(gpui::KeyUpEvent { keystroke }),
+                cx,
+            );
+        });
+    }
+
+    fn open_with_pointer(window: &mut gpui::VisualTestContext, cascader: &Entity<Cascader>) {
+        let Some(bounds) = window.update(|_, cx| cascader.read(cx).last_bounds) else {
+            panic!("Cascader trigger was not painted");
+        };
+        let center = bounds.center();
+        window.simulate_click(center, gpui::Modifiers::none());
+        window.update(|window, cx| window.draw(cx).clear(cx));
+    }
+
+    fn options(disabled: bool, loading: bool) -> Vec<CascaderOption> {
+        vec![
+            CascaderOption::new("parent", "Parent")
+                .disabled(disabled)
+                .loading(loading)
+                .child(CascaderOption::new("leaf", "Needle").leaf(true)),
+            CascaderOption::new("other", "Other").leaf(true),
+        ]
+    }
+
+    #[test]
+    fn tab_reaches_cascader_and_enter_space_open_then_escape_dismisses_after_redraw() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let cascader = app.new(|cx| Cascader::new(options(false, false), cx));
+        let (mut window, after, unhandled) = surface(&mut app, &cascader);
+        window.update(|window, cx| window.focus_next(cx));
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        press(&mut window, "tab");
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert!(window.update(|window, cx| cascader.read(cx).focus_handle.is_focused(window)));
+
+        for key in ["enter", "space"] {
+            press(&mut window, key);
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            assert!(cascader.read_with(&app, |this, _| this.is_open), "{key}");
+            press(&mut window, "escape");
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            assert!(!cascader.read_with(&app, |this, _| this.is_open));
+        }
+        press(&mut window, "ctrl-enter");
+        assert!(!cascader.read_with(&app, |this, _| this.is_open));
+        press(&mut window, "f6");
+        assert_eq!(unhandled.get(), 1, "unhandled input must reach the parent");
+        press(&mut window, "escape");
+        assert_eq!(unhandled.get(), 2, "closed trigger swallowed Escape");
+        press(&mut window, "tab");
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        press(&mut window, "enter");
+        assert_eq!(after.get(), 1);
+        app.quit();
+    }
+
+    #[test]
+    fn pointer_opened_cascader_escape_respects_dismissal_policy_after_redraw() {
+        for close in [true, false] {
+            let mut app = gpui::TestAppContext::single();
+            app.update(crate::init_liora);
+            let cascader = app.new(|cx| {
+                Cascader::new(options(false, false), cx)
+                    .close_on_escape(close)
+                    .close_on_click_outside(close)
+            });
+            let (mut window, _, unhandled) = surface(&mut app, &cascader);
+            open_with_pointer(&mut window, &cascader);
+            assert!(cascader.read_with(&app, |this, _| this.is_open));
+            press(&mut window, "escape");
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            assert_eq!(cascader.read_with(&app, |this, _| this.is_open), !close);
+            assert_eq!(unhandled.get(), usize::from(!close));
+            if close {
+                open_with_pointer(&mut window, &cascader);
+            }
+            let outside = window.update(|window, _| {
+                let size = window.viewport_size();
+                gpui::point(size.width - px(8.0), size.height - px(8.0))
+            });
+            window.simulate_click(outside, gpui::Modifiers::none());
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            assert_eq!(cascader.read_with(&app, |this, _| this.is_open), !close);
+            app.quit();
+        }
+    }
+
+    #[test]
+    fn disabled_cascader_is_skipped_and_ignores_pointer_and_retained_focus_activation() {
+        for initially_disabled in [true, false] {
+            let mut app = gpui::TestAppContext::single();
+            app.update(crate::init_liora);
+            let changes = Rc::new(Cell::new(0));
+            let callbacks = changes.clone();
+            let cascader = app.new(|cx| {
+                Cascader::new(options(false, false), cx)
+                    .disabled(initially_disabled)
+                    .on_change(move |_, _, _| callbacks.set(callbacks.get() + 1))
+            });
+            let (mut window, after, _) = surface(&mut app, &cascader);
+            window.update(|window, cx| window.focus_next(cx));
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            press(&mut window, "tab");
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            if !initially_disabled {
+                assert!(
+                    window.update(|window, cx| cascader.read(cx).focus_handle.is_focused(window))
+                );
+                cascader.update(&mut app, |this, cx| {
+                    this.disabled = true;
+                    cx.notify();
+                });
+                window.update(|window, cx| window.draw(cx).clear(cx));
+                press(&mut window, "enter");
+                press(&mut window, "space");
+                assert!(!cascader.read_with(&app, |this, _| this.is_open));
+                press(&mut window, "tab");
+                window.update(|window, cx| window.draw(cx).clear(cx));
+            }
+            press(&mut window, "enter");
+            assert_eq!(after.get(), 1, "disabled trigger remained in Tab order");
+            open_with_pointer(&mut window, &cascader);
+            assert!(!cascader.read_with(&app, |this, _| this.is_open));
+            assert_eq!(changes.get(), 0);
+            app.quit();
+        }
+    }
+
+    #[test]
+    fn search_and_selectable_paths_exclude_disabled_or_loading_ancestors() {
+        for (disabled, loading) in [(true, false), (false, true)] {
+            let mut app = gpui::TestAppContext::single();
+            app.update(crate::init_liora);
+            let cascader = app.new(|cx| {
+                Cascader::new(options(disabled, loading), cx)
+                    .filterable(true)
+                    .search_query("needle")
+            });
+            let (mut window, _, _) = surface(&mut app, &cascader);
+            open_with_pointer(&mut window, &cascader);
+            cascader.read_with(&app, |this, _| {
+                assert!(this.matching_leaf_paths().is_empty());
+                assert!(!Cascader::is_selectable_path(
+                    &this.options,
+                    &["parent".into(), "leaf".into()],
+                ));
+            });
+            assert!(window.debug_bounds("cascader-search-results").is_none());
+            app.quit();
+        }
+    }
+
+    #[test]
+    fn stale_search_result_rechecks_changed_ancestors_without_notifying_selection() {
+        for loading in [false, true] {
+            let mut app = gpui::TestAppContext::single();
+            app.update(crate::init_liora);
+            let changes = Rc::new(RefCell::new(Vec::new()));
+            let callbacks = changes.clone();
+            let cascader = app.new(|cx| {
+                Cascader::new(options(false, false), cx)
+                    .id("stale-search")
+                    .filterable(true)
+                    .search_query("needle")
+                    .on_change(move |path, _, _| callbacks.borrow_mut().push(path))
+            });
+            let (mut window, _, _) = surface(&mut app, &cascader);
+            open_with_pointer(&mut window, &cascader);
+            assert!(cascader.read_with(&app, |this, _| this.is_open));
+            let Some(bounds) = window.debug_bounds("stale-search-item-parent-leaf") else {
+                panic!("stale search result was not painted");
+            };
+            let position = bounds.center();
+            // Change live data after paint, before the already-rendered listener receives input.
+            window.update(|window, cx| {
+                cascader.update(cx, |this, cx| {
+                    if loading {
+                        assert!(this.set_loading_at_path(&["parent".into()], true, cx));
+                    } else {
+                        this.set_options(options(true, false), cx);
+                    }
+                });
+                window.dispatch_event(
+                    gpui::PlatformInput::MouseDown(gpui::MouseDownEvent {
+                        position,
+                        button: MouseButton::Left,
+                        click_count: 1,
+                        ..Default::default()
+                    }),
+                    cx,
+                );
+            });
+            assert!(
+                changes.borrow().is_empty(),
+                "rejected path emitted on_change"
+            );
+            cascader.read_with(&app, |this, _| {
+                assert!(this.selected_path.is_empty());
+                assert!(this.active_path.is_empty());
+                assert!(this.is_open);
+            });
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            assert!(cascader.read_with(&app, |this, _| this.matching_leaf_paths().is_empty()));
+            assert!(window.debug_bounds("cascader-search-results").is_none());
+            app.quit();
+        }
+    }
+
+    #[test]
+    fn native_column_selection_preserves_enabled_and_synchronous_lazy_paths() {
+        for lazy in [false, true] {
+            let mut app = gpui::TestAppContext::single();
+            app.update(crate::init_liora);
+            let changes = Rc::new(RefCell::new(Vec::new()));
+            let callbacks = changes.clone();
+            let loads = Rc::new(Cell::new(0));
+            let requests = loads.clone();
+            let cascader = app.new(|cx| {
+                Cascader::new(
+                    vec![if lazy {
+                        CascaderOption::new("parent", "Parent")
+                    } else {
+                        options(false, false).remove(0)
+                    }],
+                    cx,
+                )
+                .id("enabled-path")
+                .lazy(lazy)
+                .on_change(move |path, _, _| callbacks.borrow_mut().push(path))
+                .on_lazy_load(move |this, path, _, cx| {
+                    requests.set(requests.get() + 1);
+                    assert!(this.set_children_at_path(
+                        &path,
+                        vec![CascaderOption::new("leaf", "Needle").leaf(true)],
+                        cx,
+                    ));
+                })
+            });
+            let (mut window, _, _) = surface(&mut app, &cascader);
+            open_with_pointer(&mut window, &cascader);
+            for selector in ["enabled-path-item-parent", "enabled-path-item-parent-leaf"] {
+                let Some(bounds) = window.debug_bounds(selector) else {
+                    panic!("Cascader option was not painted: {selector}");
+                };
+                let position = bounds.center();
+                window.simulate_click(position, gpui::Modifiers::none());
+                window.update(|window, cx| window.draw(cx).clear(cx));
+            }
+            assert_eq!(loads.get(), usize::from(lazy));
+            assert_eq!(
+                *changes.borrow(),
+                [vec![SharedString::from("parent"), "leaf".into()]]
+            );
+            cascader.read_with(&app, |this, _| {
+                assert_eq!(this.display_text(), "Parent / Needle");
+                assert!(!this.is_open);
+            });
+            cascader.update(&mut app, |this, cx| {
+                this.set_options(options(true, false), cx)
+            });
+            assert!(cascader.read_with(&app, |this, _| this.selected_path.is_empty()));
+            assert_eq!(
+                changes.borrow().len(),
+                1,
+                "data invalidation is not a user selection"
+            );
+            app.quit();
+        }
     }
 }
