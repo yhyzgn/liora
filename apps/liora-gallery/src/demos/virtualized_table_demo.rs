@@ -10,6 +10,8 @@ pub fn render(cx: &mut App) -> AnyView {
         sort_key: None,
         sort_order: None,
         loaded_rows: 500,
+        #[cfg(test)]
+        basic_state: None,
     })
     .into()
 }
@@ -18,6 +20,8 @@ struct VirtualizedTableDemo {
     sort_key: Option<SharedString>,
     sort_order: Option<TableSortOrder>,
     loaded_rows: usize,
+    #[cfg(test)]
+    basic_state: Option<gpui::ListState>,
 }
 
 impl Render for VirtualizedTableDemo {
@@ -62,14 +66,21 @@ impl Render for VirtualizedTableDemo {
                     showcase_card_wide(
                         "万行固定表头",
                         "10,000 行数据只渲染视口附近行；拖动滚动条时应保持流畅，滚动位置不会因重新渲染丢失。",
-                        VirtualizedTable::new(columns(false), 1_000, move |row, key, _, _| {
-                            virtual_cell(row, key, None, None)
-                        })
-                        .height(300.0)
-                        .row_height(44.0)
-                        .overdraw(gpui::px(80.0))
-                        .stripe(true)
-                        .border(true),
+                        {
+                            let basic = VirtualizedTable::new(
+                                columns(false),
+                                10_000,
+                                move |row, key, _, _| virtual_cell(row, key, None, None),
+                            )
+                            .height(300.0)
+                            .row_height(44.0)
+                            .overdraw(gpui::px(80.0))
+                            .stripe(true)
+                            .border(true);
+                            #[cfg(test)]
+                            self.basic_state.get_or_insert_with(|| basic.list_state());
+                            basic
+                        },
                     )
                     .into_any_element(),
                     showcase_card_wide(
@@ -224,18 +235,41 @@ fn status_tag(status: &'static str) -> Tag {
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn virtualized_table_demo_uses_component_api() {
-        let source = include_str!("virtualized_table_demo.rs");
+    use super::*;
 
-        assert!(source.contains("VirtualizedTable::new"));
-        assert!(source.contains("10_000"));
-        assert!(source.contains("row_height"));
-        assert!(source.contains("on_sort_change"));
-        assert!(source.contains("selected_rows"));
-        assert!(source.contains("load_more"));
-        assert!(source.contains("loaded_rows"));
-        assert!(source.contains("virtual_performance_metrics"));
-        assert!(source.contains("Rendered ratio"));
+    #[gpui::test]
+    fn basic_mounts_ten_thousand_rows_and_terminal_customer(cx: &mut gpui::TestAppContext) {
+        cx.update(liora_components::init_liora);
+        let root = cx.add_window(|_, _| VirtualizedTableDemo {
+            sort_key: None,
+            sort_order: None,
+            loaded_rows: 500,
+            basic_state: None,
+        });
+        let mut window = gpui::VisualTestContext::from_window(root.into(), cx);
+        window.simulate_resize(gpui::size(gpui::px(1568.0), gpui::px(900.0)));
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        let state = root
+            .update(&mut window, |demo, _, _| {
+                demo.basic_state
+                    .clone()
+                    .expect("actual Gallery Basic mounted")
+            })
+            .unwrap();
+        assert_eq!(state.item_count(), 10_000, "advertised Basic row count");
+        state.scroll_to(gpui::ListOffset {
+            item_ix: 9_999,
+            offset_in_item: gpui::px(0.0),
+        });
+        window.update(|window, cx| {
+            window.refresh();
+            window.draw(cx).clear(cx);
+        });
+        let terminal = state
+            .bounds_for_item(9_999)
+            .expect("terminal Basic row rendered");
+        assert!(state.viewport_bounds().intersects(&terminal));
+        // Geometry plus the same row factory; this is not captured rendered text.
+        assert_eq!(record_for_row(9_999, None, None).name, "Bob #10000");
     }
 }
