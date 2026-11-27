@@ -533,7 +533,7 @@ jobs:
                   "Gallery installer" "windows" "Windows MSI installer package. ${variant_note}"
                 ;;
             esac
-          done < <(find dist/liora-release-gallery-packages-* -type f | sort)
+          done < <(find dist/liora-release-gallery-packages-* -type d -iname '*.app' -prune -o -type f -print | sort)
 
           if [[ ! -s "$asset_index" ]]; then
             echo "No distributable release assets were selected from dist/." >&2

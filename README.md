@@ -1937,6 +1937,8 @@ Supported release artifacts include:
 | macOS arm64 | `liora-docs`, `liora-gallery` | `.dmg` |
 | Windows x64 | `liora-docs.exe`, `liora-gallery.exe` | NSIS setup `.exe`, MSI |
 
+GitHub Release asset selection skips `.app` directories case-insensitively, so bundle contents cannot overwrite sibling downloads or duplicate their asset-index entries. Raw executables and supported Gallery package downloads remain included for both font variants; portable staging internals remain excluded.
+
 ### RPM release signing setup
 
 Generate a dedicated publisher key **once on a trusted owner machine**, not on an installer's machine or on every CI run. Install GnuPG 2.4+ and GitHub CLI (`gh`); you need permission to manage the target repository's Actions secrets and variables. Run the following steps in the **same dedicated Bash session** and replace the example email with a release contact you control.

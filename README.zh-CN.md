@@ -1919,6 +1919,8 @@ cargo run -p xtask -- package install-smoke --app gallery --format platform-defa
 | macOS arm64 | `liora-docs`, `liora-gallery` | `.dmg` |
 | Windows x64 | `liora-docs.exe`, `liora-gallery.exe` | NSIS setup `.exe`、MSI |
 
+GitHub Release 产物选择会忽略大小写跳过 `.app` 目录，避免包内文件覆盖同级下载产物或产生重复的产物索引记录。两种字体变体的原始可执行程序和受支持的 Gallery 安装包仍会保留；portable staging 内部文件仍被排除。
+
 ### RPM 正式发布签名配置
 
 由项目所有者在**可信机器上一次性生成**专用发行者密钥，不要在用户安装机器或每次 CI 运行时重新生成。先安装 GnuPG 2.4+ 和 GitHub CLI（`gh`），并确认账号可以管理目标仓库的 Actions secrets/variables。以下步骤在**同一个专用 Bash 会话**中运行，先把示例邮箱替换为自己控制的发布联系地址。

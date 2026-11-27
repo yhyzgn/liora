@@ -276,6 +276,8 @@ When the workflow runs from a `v*` tag, the release job downloads both groups:
 
 It then selects only distributable files into `release-assets/`, gives them compact release names, generates grouped release notes with the asset table, writes one `SHA256SUMS.txt`, and uploads those files to the GitHub Release.
 
+The Gallery package scan prunes `.app` directories case-insensitively before selecting regular files. A recognized package filename inside a bundle therefore cannot overwrite a sibling download or add a duplicate asset-index entry. Raw executables and supported package downloads remain included for both font variants; portable staging internals remain excluded.
+
 The release notes include three sections:
 
 1. grouped changelog by commit type (`feat`, `fix`, `docs`, `ci`, `build`, `refactor`, `perf`, `test`, `style`, `chore`, `revert`, and `Other`),
