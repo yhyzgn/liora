@@ -121,6 +121,17 @@ mod card_footer_example;
 #[path = "../content/snippets/card/layout.rs"]
 mod card_layout_example;
 
+#[path = "../content/snippets/cascader/basic.rs"]
+mod cascader_basic_example;
+#[path = "../content/snippets/cascader/selected.rs"]
+mod cascader_selected_example;
+#[path = "../content/snippets/cascader/disabled.rs"]
+mod cascader_disabled_example;
+#[path = "../content/snippets/cascader/filterable.rs"]
+mod cascader_filterable_example;
+#[path = "../content/snippets/cascader/lazy.rs"]
+mod cascader_lazy_example;
+
 const INTRO_DOC: &str = include_str!("../content/pages/overview.md");
 const QUICK_START_DOC: &str = include_str!("../content/pages/quick_start.md");
 const ARCHITECTURE_DOC: &str = include_str!("../content/pages/architecture.md");
@@ -3266,48 +3277,19 @@ impl LiveDemoContent {
                 }));
             }
             "CascaderBasic" => {
-                cascaders.push(cx.new(|cx| {
-                    liora_components::Cascader::new(docs_region_options(), cx)
-                        .placeholder("请选择地区")
-                        .clearable(true)
-                        .width_md()
-                }));
+                cascaders.push(cx.new(cascader_basic_example::basic_cascader));
             }
             "CascaderSelected" => {
-                cascaders.push(cx.new(|cx| {
-                    liora_components::Cascader::new(docs_product_options(), cx)
-                        .selected_path(["cloud", "compute", "ecs"])
-                        .placeholder("请选择产品")
-                        .width_md()
-                }));
+                cascaders.push(cx.new(cascader_selected_example::selected_cascader));
             }
             "CascaderDisabled" => {
-                cascaders.push(cx.new(|cx| {
-                    liora_components::Cascader::new(docs_region_options(), cx)
-                        .disabled(true)
-                        .selected_path(["zhejiang", "hangzhou", "xihu"])
-                        .width_md()
-                }));
+                cascaders.push(cx.new(cascader_disabled_example::disabled_cascader));
             }
             "CascaderFilterable" => {
-                cascaders.push(cx.new(|cx| {
-                    liora_components::Cascader::new(docs_region_options(), cx)
-                        .filterable(true)
-                        .search_query("hang")
-                        .placeholder("搜索 hang")
-                        .width_md()
-                }));
+                cascaders.push(cx.new(cascader_filterable_example::filterable_cascader));
             }
             "CascaderLazy" => {
-                cascaders.push(cx.new(|cx| {
-                    liora_components::Cascader::new(docs_lazy_options(), cx)
-                        .lazy(true)
-                        .placeholder("请选择远程节点")
-                        .width_md()
-                        .on_lazy_load(|cascader, path, _, cx| {
-                            cascader.set_children_at_path(&path, docs_lazy_children_for(&path), cx);
-                        })
-                }));
+                cascaders.push(cx.new(cascader_lazy_example::lazy_cascader));
             }
             "CollapseBasic" => {
                 collapses.push(cx.new(|_| docs_collapse("docs-collapse-basic", false)));
@@ -6069,17 +6051,17 @@ impl Render for LiveDemoContent {
             | "TimePickerDisabled" => self.time_picker_element(),
             "CascaderBasic" => demo_stack(vec![
                 self.cascader_element(),
-                Text::new("点击含子级的选项会展开下一列，点击叶子节点完成选择。")
+                Text::new("点击分支展开、点击叶子选择；聚焦后 Enter / Space 展开，Escape 关闭。选择后显示实际路径消息，清空显示 Selection cleared。")
                     .into_any_element(),
             ]),
             "CascaderFilterable" => demo_stack(vec![
                 self.cascader_element(),
-                Text::new(r#"示例预置 search_query="hang"，展开后可查看路径匹配结果。"#)
+                Text::new(r#"程序预置 search_query="杭州"，展开后点击匹配路径完成选择；不提供可编辑搜索框。"#)
                     .into_any_element(),
             ]),
             "CascaderLazy" => demo_stack(vec![
                 self.cascader_element(),
-                Text::new("点击空子级分支时触发 on_lazy_load，并通过 set_children_at_path 写回子节点。")
+                Text::new("同步演示数据：on_lazy_load 立即通过 set_children_at_path 写回固定子节点，无网络请求；点击叶子显示实际路径消息。")
                     .into_any_element(),
             ]),
             "CascaderSelected" | "CascaderDisabled" => self.cascader_element(),
@@ -10314,89 +10296,6 @@ fn docs_drawer(
                         .on_click(|_, _, cx| liora_components::Drawer::close(cx)),
                 )
         })
-}
-
-fn docs_region_options() -> Vec<liora_components::CascaderOption> {
-    vec![
-        liora_components::CascaderOption::new("zhejiang", "浙江")
-            .child(
-                liora_components::CascaderOption::new("hangzhou", "杭州")
-                    .child(liora_components::CascaderOption::new("xihu", "西湖区"))
-                    .child(liora_components::CascaderOption::new("yuhang", "余杭区")),
-            )
-            .child(
-                liora_components::CascaderOption::new("ningbo", "宁波")
-                    .child(liora_components::CascaderOption::new("haishu", "海曙区"))
-                    .child(liora_components::CascaderOption::new("jiangbei", "江北区")),
-            ),
-        liora_components::CascaderOption::new("jiangsu", "江苏")
-            .child(
-                liora_components::CascaderOption::new("nanjing", "南京")
-                    .child(liora_components::CascaderOption::new("xuanwu", "玄武区"))
-                    .child(liora_components::CascaderOption::new("gulou", "鼓楼区")),
-            )
-            .child(
-                liora_components::CascaderOption::new("suzhou", "苏州")
-                    .child(liora_components::CascaderOption::new("gusu", "姑苏区"))
-                    .child(
-                        liora_components::CascaderOption::new("wuzhong", "吴中区").disabled(true),
-                    ),
-            ),
-    ]
-}
-
-fn docs_product_options() -> Vec<liora_components::CascaderOption> {
-    vec![
-        liora_components::CascaderOption::new("cloud", "云产品")
-            .child(
-                liora_components::CascaderOption::new("compute", "计算")
-                    .child(liora_components::CascaderOption::new("ecs", "云服务器 ECS"))
-                    .child(liora_components::CascaderOption::new("fc", "函数计算")),
-            )
-            .child(
-                liora_components::CascaderOption::new("storage", "存储")
-                    .child(liora_components::CascaderOption::new("oss", "对象存储 OSS"))
-                    .child(liora_components::CascaderOption::new("nas", "文件存储 NAS")),
-            ),
-        liora_components::CascaderOption::new("data", "数据服务").child(
-            liora_components::CascaderOption::new("database", "数据库")
-                .child(liora_components::CascaderOption::new(
-                    "mysql",
-                    "云数据库 MySQL",
-                ))
-                .child(liora_components::CascaderOption::new("redis", "Redis")),
-        ),
-    ]
-}
-
-fn docs_lazy_options() -> Vec<liora_components::CascaderOption> {
-    vec![
-        liora_components::CascaderOption::new("remote-a", "远程分组 A"),
-        liora_components::CascaderOption::new("remote-b", "远程分组 B"),
-        liora_components::CascaderOption::new("ready", "本地叶子").leaf(true),
-    ]
-}
-
-fn docs_lazy_children_for(path: &[SharedString]) -> Vec<liora_components::CascaderOption> {
-    let key = path
-        .iter()
-        .map(ToString::to_string)
-        .collect::<Vec<_>>()
-        .join("/");
-
-    match key.as_str() {
-        "remote-a" => vec![
-            liora_components::CascaderOption::new("team", "团队")
-                .child(liora_components::CascaderOption::new("design", "设计组").leaf(true)),
-            liora_components::CascaderOption::new("project", "项目")
-                .child(liora_components::CascaderOption::new("liora", "Liora UI").leaf(true)),
-        ],
-        "remote-b" => vec![
-            liora_components::CascaderOption::new("north", "华北").leaf(true),
-            liora_components::CascaderOption::new("south", "华南").leaf(true),
-        ],
-        _ => vec![liora_components::CascaderOption::new("loaded", "加载结果").leaf(true)],
-    }
 }
 
 fn docs_collapse(id: &'static str, accordion: bool) -> liora_components::Collapse {

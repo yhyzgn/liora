@@ -1,7 +1,18 @@
 use gpui::{AnyView, App, Context, Entity, Render, Window, prelude::*};
-use liora_components::{Card, Cascader, CascaderOption, Space, Text};
+use liora_components::{Card, Cascader, Space, Text};
 
 use liora_components::layout_helpers::{page, section};
+
+#[path = "../../../liora-docs/content/snippets/cascader/basic.rs"]
+mod cascader_basic_example;
+#[path = "../../../liora-docs/content/snippets/cascader/disabled.rs"]
+mod cascader_disabled_example;
+#[path = "../../../liora-docs/content/snippets/cascader/filterable.rs"]
+mod cascader_filterable_example;
+#[path = "../../../liora-docs/content/snippets/cascader/lazy.rs"]
+mod cascader_lazy_example;
+#[path = "../../../liora-docs/content/snippets/cascader/selected.rs"]
+mod cascader_selected_example;
 
 pub fn render(cx: &mut App) -> AnyView {
     cx.new(|cx| CascaderDemo::new(cx)).into()
@@ -18,41 +29,11 @@ struct CascaderDemo {
 impl CascaderDemo {
     fn new(cx: &mut Context<Self>) -> Self {
         Self {
-            basic: cx.new(|cx| {
-                Cascader::new(region_options(), cx)
-                    .placeholder("请选择地区")
-                    .clearable(true)
-                    .width_md()
-            }),
-            selected: cx.new(|cx| {
-                Cascader::new(product_options(), cx)
-                    .selected_path(["cloud", "compute", "ecs"])
-                    .placeholder("请选择产品")
-                    .width_md()
-            }),
-            disabled: cx.new(|cx| {
-                Cascader::new(region_options(), cx)
-                    .disabled(true)
-                    .selected_path(["zhejiang", "hangzhou", "xihu"])
-                    .width_md()
-            }),
-            searchable: cx.new(|cx| {
-                Cascader::new(region_options(), cx)
-                    .filterable(true)
-                    .search_query("hang")
-                    .placeholder("搜索 hang")
-                    .width_md()
-            }),
-            lazy: cx.new(|cx| {
-                Cascader::new(lazy_options(), cx)
-                    .lazy(true)
-                    .placeholder("请选择远程节点")
-                    .width_md()
-                    .on_lazy_load(|cascader, path, _, cx| {
-                        let children = lazy_children_for(&path);
-                        cascader.set_children_at_path(&path, children, cx);
-                    })
-            }),
+            basic: cx.new(cascader_basic_example::basic_cascader),
+            selected: cx.new(cascader_selected_example::selected_cascader),
+            disabled: cx.new(cascader_disabled_example::disabled_cascader),
+            searchable: cx.new(cascader_filterable_example::filterable_cascader),
+            lazy: cx.new(cascader_lazy_example::lazy_cascader),
         }
     }
 }
@@ -67,122 +48,39 @@ impl Render for CascaderDemo {
                 .gap_lg()
                 .child(section(
                     "基础用法",
-                    "点击含子级的选项会展开下一列，点击叶子节点完成选择。",
+                    "点击分支展开、点击叶子选择；聚焦后 Enter / Space 展开，Escape 关闭。",
                     Card::new(
                         Space::new()
                             .vertical()
                             .gap_md()
                             .child(self.basic.clone())
-                            .child(Text::new("点击含子级的选项会展开下一列，点击叶子节点完成选择。")),
+                            .child(Text::new("选择后显示实际路径消息；点击清空显示 Selection cleared。")),
                     ),
                 ))
                 .child(section("默认选中", "预置已选择的路径。", Card::new(self.selected.clone())))
                 .child(section("禁用状态", "禁用后不可展开或修改。", Card::new(self.disabled.clone())))
                 .child(section(
                     "可搜索",
-                    "示例预置 search_query=\"hang\" 展示叶子路径匹配结果。",
+                    "程序预置 search_query=\"杭州\" 展示匹配结果，不提供可编辑搜索框。",
                     Card::new(
                         Space::new()
                             .vertical()
                             .gap_md()
                             .child(self.searchable.clone())
-                            .child(Text::new("示例预置 search_query=\"hang\" 展示叶子路径匹配结果。")),
+                            .child(Text::new("展开后点击匹配路径完成选择，并显示实际路径消息。")),
                     ),
                 ))
                 .child(section(
                     "懒加载",
-                    "点击空子级的分支会触发 on_lazy_load，回调内写回远程子节点。",
+                    "同步演示数据：点击空子级分支后，回调立即写回固定子节点，无网络请求。",
                     Card::new(
                         Space::new()
                             .vertical()
                             .gap_md()
                             .child(self.lazy.clone())
-                            .child(Text::new("点击空子级的分支会触发 on_lazy_load，回调内通过 set_children_at_path 写回远程子节点；点击最终 leaf(true) 节点才会选择并关闭。")),
+                            .child(Text::new("on_lazy_load 通过 set_children_at_path 同步写回固定数据；点击 leaf(true) 节点选择并显示实际路径消息。")),
                     ),
                 )),
         )
-    }
-}
-
-fn region_options() -> Vec<CascaderOption> {
-    vec![
-        CascaderOption::new("zhejiang", "浙江")
-            .child(
-                CascaderOption::new("hangzhou", "杭州")
-                    .child(CascaderOption::new("xihu", "西湖区"))
-                    .child(CascaderOption::new("yuhang", "余杭区")),
-            )
-            .child(
-                CascaderOption::new("ningbo", "宁波")
-                    .child(CascaderOption::new("haishu", "海曙区"))
-                    .child(CascaderOption::new("jiangbei", "江北区")),
-            ),
-        CascaderOption::new("jiangsu", "江苏")
-            .child(
-                CascaderOption::new("nanjing", "南京")
-                    .child(CascaderOption::new("xuanwu", "玄武区"))
-                    .child(CascaderOption::new("gulou", "鼓楼区")),
-            )
-            .child(
-                CascaderOption::new("suzhou", "苏州")
-                    .child(CascaderOption::new("gusu", "姑苏区"))
-                    .child(CascaderOption::new("wuzhong", "吴中区").disabled(true)),
-            ),
-        CascaderOption::new("loading", "动态加载中").loading(true),
-    ]
-}
-
-fn product_options() -> Vec<CascaderOption> {
-    vec![
-        CascaderOption::new("cloud", "云产品")
-            .child(
-                CascaderOption::new("compute", "计算")
-                    .child(CascaderOption::new("ecs", "云服务器 ECS"))
-                    .child(CascaderOption::new("fc", "函数计算")),
-            )
-            .child(
-                CascaderOption::new("storage", "存储")
-                    .child(CascaderOption::new("oss", "对象存储 OSS"))
-                    .child(CascaderOption::new("nas", "文件存储 NAS")),
-            ),
-        CascaderOption::new("data", "数据服务").child(
-            CascaderOption::new("database", "数据库")
-                .child(CascaderOption::new("mysql", "云数据库 MySQL"))
-                .child(CascaderOption::new("redis", "Redis")),
-        ),
-    ]
-}
-
-fn lazy_options() -> Vec<CascaderOption> {
-    vec![
-        CascaderOption::new("remote-a", "远程分组 A"),
-        CascaderOption::new("remote-b", "远程分组 B"),
-        CascaderOption::new("ready", "本地叶子").leaf(true),
-    ]
-}
-
-fn lazy_children_for(path: &[gpui::SharedString]) -> Vec<CascaderOption> {
-    let key = path
-        .iter()
-        .map(ToString::to_string)
-        .collect::<Vec<_>>()
-        .join("/");
-
-    match key.as_str() {
-        "remote-a" => vec![
-            CascaderOption::new("team", "团队")
-                .child(CascaderOption::new("design", "设计组").leaf(true)),
-            CascaderOption::new("project", "项目")
-                .child(CascaderOption::new("liora", "Liora UI").leaf(true)),
-        ],
-        "remote-b" => vec![
-            CascaderOption::new("north", "华北").leaf(true),
-            CascaderOption::new("south", "华南").leaf(true),
-        ],
-        "remote-a/team" => vec![
-            CascaderOption::new("frontend", "前端组").leaf(true),
-            CascaderOption::new("native", "Native 组").leaf(true),
-        ],
-        _ => vec![CascaderOption::new("loaded", "加载结果").leaf(true)],
     }
 }
