@@ -29,6 +29,7 @@ use gpui::{
 use liora_core::{Config, stable_unique_id};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
+use std::cell::OnceCell;
 use std::sync::Arc;
 
 type RenderCell = dyn Fn(usize, &SharedString, &mut Window, &mut App) -> AnyElement + 'static;
@@ -45,7 +46,7 @@ pub struct VirtualizedTable {
     id: SharedString,
     columns: Vec<TableColumn>,
     row_count: usize,
-    list_state: ListState,
+    list_state: OnceCell<ListState>,
     render_cell: Arc<RenderCell>,
     height: Pixels,
     overdraw: Pixels,
@@ -75,7 +76,7 @@ impl VirtualizedTable {
             id: "virtualized-table".into(),
             columns,
             row_count,
-            list_state: ListState::new(row_count, ListAlignment::Top, overdraw),
+            list_state: OnceCell::new(),
             render_cell: Arc::new(render_cell),
             height: px(360.0),
             overdraw,
@@ -114,7 +115,9 @@ impl VirtualizedTable {
     /// Sets the fixed row height used by virtualized layout.
     pub fn row_height(mut self, height: impl Into<Pixels>) -> Self {
         self.row_height = height.into();
-        self.list_state.reset(self.row_count);
+        if let Some(list_state) = self.list_state.get_mut() {
+            list_state.reset(self.row_count);
+        }
         self
     }
 
@@ -122,7 +125,7 @@ impl VirtualizedTable {
     pub fn overdraw(mut self, overdraw: impl Into<Pixels>) -> Self {
         let overdraw = overdraw.into();
         self.overdraw = overdraw;
-        self.list_state = ListState::new(self.row_count, ListAlignment::Top, overdraw);
+        self.list_state = OnceCell::new();
         self
     }
 
@@ -222,9 +225,18 @@ impl VirtualizedTable {
         self
     }
 
-    /// Performs the list state operation used by this component.
+    /// Returns the list handle for scrolling and observing this table.
+    ///
+    /// Request it after finishing configuration and retain it before the first
+    /// mount. The host must request a redraw after scrolling; row count and row
+    /// shape are supplied by `VirtualizedTable`, not changed through this handle.
+    /// Setting `row_height` resets an existing handle. Changing `overdraw` replaces
+    /// it and resets same-ID mounted state; same-ID rebuilds without that change
+    /// preserve mounted state rather than rebinding a new builder's handle.
     pub fn list_state(&self) -> ListState {
-        self.list_state.clone()
+        self.list_state
+            .get_or_init(|| ListState::new(self.row_count, ListAlignment::Top, self.overdraw))
+            .clone()
     }
 
     /// Performs the row count operation used by this component.
@@ -241,9 +253,10 @@ struct VirtualizedTableState {
 }
 
 impl VirtualizedTableState {
-    fn new(row_count: usize, overdraw: Pixels, row_height: Pixels) -> Self {
+    fn new(list_state: ListState, overdraw: Pixels, row_height: Pixels) -> Self {
+        let row_count = list_state.item_count();
         Self {
-            list_state: ListState::new(row_count, ListAlignment::Top, overdraw),
+            list_state,
             row_count,
             overdraw,
             row_height,
@@ -252,7 +265,11 @@ impl VirtualizedTableState {
 
     fn sync(&mut self, row_count: usize, overdraw: Pixels, row_height: Pixels) {
         if self.overdraw != overdraw {
-            *self = Self::new(row_count, overdraw, row_height);
+            *self = Self::new(
+                ListState::new(row_count, ListAlignment::Top, overdraw),
+                overdraw,
+                row_height,
+            );
             return;
         }
         if self.row_count != row_count {
@@ -282,18 +299,29 @@ impl RenderOnce for VirtualizedTable {
         let mut columns = self.columns;
         let border = self.border;
         let stripe = self.stripe;
+        let row_count = self.row_count;
+        let overdraw = self.overdraw;
         let row_height = self.row_height;
+        let builder_list_state = self.list_state;
         let render_cell = self.render_cell.clone();
         let state = _window.use_keyed_state(
             ElementId::from(format!("{}-state", state_id)),
             cx,
-            move |_, _| VirtualizedTableState::new(self.row_count, self.overdraw, self.row_height),
+            move |_, _| {
+                VirtualizedTableState::new(
+                    builder_list_state.into_inner().unwrap_or_else(|| {
+                        ListState::new(row_count, ListAlignment::Top, overdraw)
+                    }),
+                    overdraw,
+                    row_height,
+                )
+            },
         );
         state.update(cx, |state, _| {
-            state.sync(self.row_count, self.overdraw, self.row_height);
+            state.sync(row_count, overdraw, row_height);
         });
         let list_state = state.read(cx).list_state.clone();
-        let has_rows = self.row_count > 0;
+        let has_rows = row_count > 0;
         let sort_key = self.sort_key;
         let sort_order = self.sort_order;
         let on_sort_change = self.on_sort_change;
@@ -585,6 +613,91 @@ fn virtual_table_header_cell(
 mod tests {
     use super::*;
 
+    fn test_table(row_count: usize) -> VirtualizedTable {
+        VirtualizedTable::new(
+            vec![TableColumn::new("name", "Name")],
+            row_count,
+            |row, _, _, _| div().child(format!("Row {row}")).into_any_element(),
+        )
+        .id("public-scroll-table")
+        .height(px(176.0))
+        .overdraw(px(0.0))
+    }
+
+    struct TableSurface {
+        first_table: Option<VirtualizedTable>,
+        row_count: usize,
+    }
+
+    impl gpui::Render for TableSurface {
+        fn render(&mut self, _: &mut Window, _: &mut gpui::Context<Self>) -> impl IntoElement {
+            div().w(px(400.0)).child(
+                self.first_table
+                    .take()
+                    .unwrap_or_else(|| test_table(self.row_count)),
+            )
+        }
+    }
+
+    #[gpui::test]
+    fn public_list_state_scrolls_mounted_table_and_survives_inline_row_updates(
+        cx: &mut gpui::TestAppContext,
+    ) {
+        cx.update(crate::init_liora);
+        let table = test_table(1_000);
+        let state = table.list_state();
+        state.scroll_to(gpui::ListOffset {
+            item_ix: 200,
+            offset_in_item: px(7.0),
+        });
+        let root = cx.add_window(move |_, _| TableSurface {
+            first_table: Some(table),
+            row_count: 1_000,
+        });
+        let mut window = gpui::VisualTestContext::from_window(root.into(), cx);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+
+        let assert_visible = |row| {
+            let viewport = state.viewport_bounds();
+            assert_eq!(viewport.size.height, px(176.0));
+            let bounds = state.bounds_for_item(row).expect("target row is measured");
+            assert!(bounds.bottom() > viewport.top() && bounds.top() < viewport.bottom());
+        };
+        assert_visible(200);
+        assert_eq!(state.logical_scroll_top().item_ix, 200);
+        assert_eq!(state.logical_scroll_top().offset_in_item, px(7.0));
+
+        state.scroll_to(gpui::ListOffset {
+            item_ix: 400,
+            offset_in_item: px(11.0),
+        });
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert_visible(400);
+
+        for row_count in [1_200, 600] {
+            root.update(&mut window, |surface, _, cx| {
+                surface.row_count = row_count;
+                cx.notify();
+            })
+            .unwrap();
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            assert_eq!(state.item_count(), row_count);
+            assert_eq!(state.logical_scroll_top().item_ix, 400);
+            assert_eq!(state.logical_scroll_top().offset_in_item, px(11.0));
+            assert_visible(400);
+        }
+
+        root.update(&mut window, |surface, _, cx| {
+            surface.row_count = 40;
+            cx.notify();
+        })
+        .unwrap();
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert_eq!(state.item_count(), 40);
+        assert!(state.logical_scroll_top().item_ix < 40);
+        assert_visible(39);
+    }
+
     #[test]
     fn virtualized_table_uses_list_state_without_row_element_cache() {
         let source = include_str!("virtualized_table.rs");
@@ -666,7 +779,11 @@ mod tests {
 
     #[test]
     fn virtualized_table_state_splices_row_count_without_resetting_scroll() {
-        let mut state = VirtualizedTableState::new(100, px(80.0), px(44.0));
+        let mut state = VirtualizedTableState::new(
+            ListState::new(100, ListAlignment::Top, px(80.0)),
+            px(80.0),
+            px(44.0),
+        );
         state.sync(140, px(80.0), px(44.0));
         assert_eq!(state.row_count, 140);
         assert_eq!(state.list_state.item_count(), 140);

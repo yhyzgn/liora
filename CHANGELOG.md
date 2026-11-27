@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Bind `VirtualizedTable::list_state()` to its first keyed mount and create the builder `ListState` only when requested, avoiding discarded state-tree allocations during inline renders.
 - Return `None` instead of underflowing when querying `Tour::previous_index()` on the first step; keep empty tours without a previous index.
 - Honor absolute `XDG_CONFIG_HOME` for pending Linux/FreeBSD GTK startup theme hints, including without HOME. Empty or relative overrides fall back to an absolute HOME config directory; keep GTK4-before-GTK3 lookup, initialized GPUI appearance precedence, and GTK dark-preference semantics unchanged. Port the existing Core XDG path resolver without changing desktop data-directory handling.
 - Resolve the retained Docs sidebar search placeholder and default accessible name from a typed locale key at render time. Preserve its Input identity and query across English/Chinese language switches.

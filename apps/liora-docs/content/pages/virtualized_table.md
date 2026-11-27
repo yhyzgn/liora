@@ -5,6 +5,7 @@
 ## 虚拟化性能表现
 
 `VirtualizedTable` 的性能收益来自 **持久 `ListState` + 可见区 cell 生成**：10,000 行数据不会一次性构建 10,000 个行元素，滚动时只请求视口附近的 row/cell。行数变化时通过 `splice` 增量同步，避免加载更多时重建滚动状态。
+程序化滚动：完成 builder 配置后、首次挂载前调用 `list_state()` 并保留句柄；调用其 `scroll_to(...)` 后，宿主需请求重绘。该句柄只用于滚动与视口/行位置观察；总行数和单元格由 builder 的 `row_count` 与 `render_cell` 提供。同一 ID 的普通 inline 重建保留已挂载状态，不会绑定新 builder 的句柄；改变 `overdraw` 会重建该 ID 的挂载状态并使旧句柄失效，改变 `row_height` 则重置已请求的句柄。
 
 ## 能力
 
