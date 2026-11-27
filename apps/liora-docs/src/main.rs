@@ -220,6 +220,7 @@ fn apply_docs_locale(
     locale: &str,
 ) -> Result<(), LocalesLoadError> {
     apply_locale(window, cx, locale)?;
+    window.set_window_title(tr(cx, locales::docs::window_title).as_ref());
     register_docs_system_menus(cx);
     Ok(())
 }
@@ -348,7 +349,7 @@ fn docs_window_options(
                 startup_maximized_window_bounds(cx, size(px(1680.0), px(1080.0)))
             })),
             titlebar: Some(gpui::TitlebarOptions {
-                title: Some("Liora Docs — Native Main Window".into()),
+                title: Some(tr(cx, locales::docs::window_title)),
                 ..Default::default()
             }),
             app_id: Some("liora-docs".into()),
@@ -839,6 +840,8 @@ fn main() {
 
 #[cfg(test)]
 mod shell_tests {
+    use gpui::AppContext;
+
     #[test]
     fn help_github_registered_action_opens_canonical_url() -> Result<(), Box<dyn std::error::Error>>
     {
@@ -1140,6 +1143,55 @@ mod shell_tests {
                 }
             }
         });
+        app.quit();
+    }
+
+    #[test]
+    fn docs_locale_title_initial_options_use_current_locale() {
+        let app = gpui::TestAppContext::single();
+        app.update(|cx| {
+            liora_core::init_liora_with_options(
+                cx,
+                liora_core::Options::system()
+                    .with_locales_resources(super::embedded_docs_locales()),
+            );
+            for (locale, expected) in [
+                ("zh-CN", "Liora Docs — 原生主窗口"),
+                ("en-US", "Liora Docs — Native Main Window"),
+            ] {
+                liora_core::set_locale(cx, locale).unwrap();
+                for mode in [super::WindowFrameMode::System, super::WindowFrameMode::Custom] {
+                    let options = super::docs_window_options(cx, mode, None);
+                    assert_eq!(options.titlebar.unwrap().title.unwrap().as_ref(), expected);
+                }
+            }
+        });
+        app.quit();
+    }
+
+    #[test]
+    fn docs_locale_title_switch_updates_retained_window() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(|cx| {
+            liora_core::init_liora_with_options(
+                cx,
+                liora_core::Options::system()
+                    .with_locales_resources(super::embedded_docs_locales()),
+            );
+        });
+        let handle = app.add_window(|_, _| gpui::EmptyView);
+        let mut window_cx = gpui::VisualTestContext::from_window(handle.into(), &app);
+        for (locale, expected) in [
+            ("zh-CN", "Liora Docs — 原生主窗口"),
+            ("en-US", "Liora Docs — Native Main Window"),
+            ("zh-CN", "Liora Docs — 原生主窗口"),
+        ] {
+            app.update_window(handle.into(), |_, window, cx| {
+                super::apply_docs_locale(window, cx, locale).unwrap();
+            })
+            .unwrap();
+            assert_eq!(window_cx.window_title().as_deref(), Some(expected));
+        }
         app.quit();
     }
 
