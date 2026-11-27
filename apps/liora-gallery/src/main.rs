@@ -1247,6 +1247,7 @@ impl Render for Gallery {
         liora_core::render_active_modal_in_window(_window, cx);
         liora_core::render_active_drawer_in_window(_window, cx);
 
+        let gallery = cx.entity();
         let header = div()
             .w_full()
             .min_h(px(112.0))
@@ -1254,7 +1255,7 @@ impl Render for Gallery {
             .flex()
             .flex_col()
             .gap_2()
-            .child(gallery_fallback_menu_bar(cx))
+            .child(gallery_fallback_menu_bar(cx, gallery))
             .child(header_main);
 
         let mut shell = Container::new()
@@ -1939,7 +1940,10 @@ fn gallery_titlebar() -> TitleBar {
 /// is not guaranteed to be visible inside a Linux/Windows application window.
 /// Gallery renders this fallback in the content header so both system-frame and
 /// custom-frame modes demonstrate the same command structure.
-fn gallery_fallback_menu_bar(cx: &impl liora_core::LocalesContext) -> MenuBar {
+fn gallery_fallback_menu_bar(
+    cx: &impl liora_core::LocalesContext,
+    gallery: gpui::Entity<Gallery>,
+) -> MenuBar {
     MenuBar::new([
         Menu::new(locales::menu::file)
             .perform_builtin_actions(false)
@@ -1989,7 +1993,7 @@ fn gallery_fallback_menu_bar(cx: &impl liora_core::LocalesContext) -> MenuBar {
             )),
     ])
     .perform_builtin_actions(false)
-    .on_select(|action, _, window, cx| {
+    .on_select(move |action, _, window, cx| {
         if matches!(
             action,
             liora_components::MenuAction::ZoomIn
@@ -1998,8 +2002,23 @@ fn gallery_fallback_menu_bar(cx: &impl liora_core::LocalesContext) -> MenuBar {
         ) || matches!(&action, liora_components::MenuAction::OpenUrl(url) if url.as_ref() == GITHUB_REPOSITORY_URL)
         {
             action.perform(window, cx);
+        } else if matches!(
+            &action,
+            liora_components::MenuAction::Custom(id) if id.as_ref() == "about-gallery"
+        ) {
+            select_gallery_about(&gallery, cx);
         }
     })
+}
+
+fn select_gallery_about(gallery: &gpui::Entity<Gallery>, cx: &mut App) {
+    gallery.update(cx, |gallery, cx| {
+        let about_index = gallery.entries.len();
+        if gallery.selected != about_index {
+            gallery.selected = about_index;
+            cx.notify();
+        }
+    });
 }
 
 fn default_gallery_selection(entries: &[demos::DemoEntry]) -> usize {
@@ -2148,7 +2167,9 @@ mod shell_regression_tests {
             prelude::*, px,
         };
 
-        struct HelpWindow;
+        struct HelpWindow {
+            gallery: gpui::Entity<super::Gallery>,
+        }
         impl Render for HelpWindow {
             fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
                 liora_core::render_active_popover_in_window(window, cx);
@@ -2161,20 +2182,23 @@ mod shell_regression_tests {
                         div()
                             .flex()
                             .debug_selector(|| "help-bar".into())
-                            .child(super::gallery_fallback_menu_bar(cx)),
+                            .child(super::gallery_fallback_menu_bar(cx, self.gallery.clone())),
                     )
                     .child(liora_components::PortalLayer)
             }
         }
 
         let mut app = TestAppContext::single();
+        let gallery = updater_test_gallery(&mut app);
         app.update(|cx| -> Result<(), Box<dyn std::error::Error>> {
-            super::init_liora_with_options(cx, super::gallery_liora_options());
             liora_core::set_locale(cx, "en-US")?;
             super::register_gallery_system_menus(cx);
             Ok(())
         })?;
-        let handle = app.add_window(|_, _| HelpWindow);
+        let window_gallery = gallery.clone();
+        let handle = app.add_window(move |_, _| HelpWindow {
+            gallery: window_gallery,
+        });
         let mut window = VisualTestContext::from_window(handle.into(), &mut app);
         window.update(|window, cx| {
             window.activate_window();
