@@ -26,6 +26,7 @@ search_placeholder = "Search demos"
 
 [docs]
 theme = "Theme"
+search_placeholder = "Search docs"
 subtitle = "Native Markdown · GPUI elements · Liora components"
 
 title = "Liora Docs"

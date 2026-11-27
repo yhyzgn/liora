@@ -26,6 +26,7 @@ search_placeholder = "搜索组件 / Search demos"
 
 [docs]
 theme = "主题"
+search_placeholder = "搜索文档"
 subtitle = "原生 Markdown · GPUI 元素 · Liora 组件"
 
 title = "Liora Docs"

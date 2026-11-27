@@ -266,6 +266,8 @@ fn switch_to_english(window: &mut gpui::Window, cx: &mut gpui::App) {
 
 Gallery 的侧栏导航会在语言切换后重建已解析的 About 标签、搜索索引和菜单项，立即更新分类标题与无匹配提示；保留当前搜索内容、活动页面和原有菜单实体，不需要重新输入搜索或重开窗口。
 
+Docs 的侧栏搜索框直接保存类型化 `locales::docs::search_placeholder`，在渲染时解析当前语言；切换语言会更新占位提示及默认可访问名称，保留原有 Input 实体和搜索内容，不需要重建输入框。
+
 ## Fallback 行为
 
 查询顺序如下：

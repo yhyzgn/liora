@@ -10704,7 +10704,7 @@ pub fn render_docs_shell(
             selected: 0,
             nav_filter: cx.new(|cx| {
                 Input::new("", cx)
-                    .placeholder("Search docs")
+                    .placeholder(locales::docs::search_placeholder)
                     .filter(|value| !value.contains(['\n', '\r']))
             }),
             nav_menu: None,
@@ -11758,6 +11758,50 @@ impl InlineSegment {
 
 #[cfg(test)]
 mod tests {
+    #[gpui::test]
+    fn docs_locale_switch_updates_retained_search_placeholder(cx: &mut gpui::TestAppContext) {
+        use gpui::{Element, accesskit::Node};
+
+        cx.update(|cx| crate::init_liora_with_options(cx, crate::docs_liora_options()));
+        let (root, input) = cx.update(|cx| {
+            let root = render_docs_shell(
+                WindowFrameMode::System,
+                crate::set_docs_frame_mode,
+                crate::request_docs_window_close,
+                cx,
+            );
+            let input = root.update(cx, |docs, cx| {
+                docs.update_status = UpdatePanelStatus::Checking;
+                docs.nav_query = "input".into();
+                docs.nav_filter
+                    .update(cx, |input, cx| input.set_value("Input", cx));
+                docs.nav_filter.clone()
+            });
+            (root, input)
+        });
+        let input_id = input.entity_id();
+        cx.add_empty_window().update(|window, cx| {
+            for (locale, placeholder) in [
+                ("en-US", "Search docs"),
+                ("zh-CN", "搜索文档"),
+                ("en-US", "Search docs"),
+            ] {
+                crate::apply_docs_locale(window, cx, locale).unwrap();
+                input.update(cx, |input, cx| {
+                    let element = input.render(window, cx).into_element();
+                    let mut node = Node::new(element.a11y_role().unwrap());
+                    element.write_a11y_info(&mut node);
+                    assert_eq!(node.placeholder(), Some(placeholder), "{locale}");
+                    assert_eq!(node.label(), Some(placeholder), "{locale}");
+                    assert_eq!(node.value(), Some("Input"), "{locale}");
+                });
+                let docs = root.read(cx);
+                assert_eq!(docs.nav_filter.entity_id(), input_id, "{locale}");
+                assert_eq!(docs.nav_query, "input", "{locale}");
+            }
+        });
+    }
+
     #[gpui::test]
     fn frame_mode_switch_preserves_root_input_navigation_and_geometry(
         cx: &mut gpui::TestAppContext,
