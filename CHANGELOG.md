@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Scope `Dialog::close` and delegated MessageBox business closes to the active window's topmost modal instead of dismissing another window's newer dialog; preserve ownerless/no-active-window behavior and the no-callback contract.
 - Reuse one available-family snapshot per required-font check without cloning the requirements list; reuse the external result when embedded fallback is skipped and recheck after attempted fallback. Preserve missing-family order, duplicates, exact-name matching and default code-font refresh.
 - Return an InvalidInput bad-icon error instead of overflowing when raw RGBA dimensions require an unrepresentable byte count; preserve exact InvalidRgba counts for representable mismatches.
 - Generate macOS `.app` install-smoke dry-run plans with product-name bundles, regular executable checks, shell-quoted paths, and cleanup scoped to a unique temporary directory; manual `open -W` waits for app exit and `.app` execution remains unsupported.

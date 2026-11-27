@@ -868,6 +868,60 @@ mod runtime_tests {
         );
         app.quit();
     }
+
+    #[test]
+    fn manual_close_targets_the_active_windows_top_modal() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let first_handle = app.open_window(gpui::size(px(640.0), px(480.0)), |_, _| ModalSurface);
+        let second_handle = app.open_window(gpui::size(px(640.0), px(480.0)), |_, _| ModalSurface);
+        let mut first = gpui::VisualTestContext::from_window(first_handle.into(), &app);
+        let mut second = gpui::VisualTestContext::from_window(second_handle.into(), &app);
+        first.update(|window, cx| {
+            Dialog::new()
+                .id("first-parent")
+                .immediate()
+                .show_in_window(window, cx);
+            Dialog::new()
+                .id("first-child")
+                .immediate()
+                .content(|_, _| {
+                    div()
+                        .debug_selector(|| "first-window-close".into())
+                        .child(crate::Button::new("Close").on_click(|_, _, cx| Dialog::close(cx)))
+                })
+                .show_in_window(window, cx);
+            window.draw(cx).clear(cx);
+        });
+        second.update(|window, cx| {
+            Dialog::new()
+                .id("second-dialog")
+                .immediate()
+                .show_in_window(window, cx);
+            window.draw(cx).clear(cx);
+        });
+        first.update(|window, _| window.activate_window());
+        first.run_until_parked();
+        first.update(|window, cx| assert_eq!(cx.active_window(), Some(window.window_handle())));
+        let close = first
+            .debug_bounds("first-window-close")
+            .expect("first window's business Close");
+        first.simulate_click(close.center(), gpui::Modifiers::none());
+        first.update(|_, cx| {
+            let ids: Vec<_> = cx
+                .global::<ActiveModal>()
+                .0
+                .iter()
+                .map(|entry| entry.id.as_ref())
+                .collect();
+            assert_eq!(
+                ids,
+                ["first-parent", "second-dialog"],
+                "business Close in A must not close B's newer modal"
+            );
+        });
+        app.quit();
+    }
 }
 
 impl Dialog {
@@ -1005,11 +1059,21 @@ impl Dialog {
         cx.refresh_windows();
     }
 
-    /// Closes only the topmost active modal without invoking its built-in `on_close` callback.
+    /// Closes the active window's topmost modal without invoking its built-in `on_close` callback.
+    /// Ownerless modals remain eligible; without an active window, closes the app-wide top modal.
     pub fn close(cx: &mut App) {
+        let active_window = cx.active_window();
         if let Some(id) = cx
             .try_global::<ActiveModal>()
-            .and_then(|modal| modal.0.last().map(|entry| entry.id.clone()))
+            .and_then(|modal| {
+                modal.0.iter().rev().find(|entry| {
+                    active_window.is_none_or(|window| {
+                        liora_core::active_modal_owner(&entry.id, cx)
+                            .is_none_or(|owner| owner == window)
+                    })
+                })
+            })
+            .map(|entry| entry.id.clone())
         {
             liora_core::clear_modal(&id, cx);
         }

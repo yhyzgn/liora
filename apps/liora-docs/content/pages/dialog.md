@@ -21,7 +21,7 @@
 
 遮罩总会消费鼠标左键按下事件：禁用遮罩关闭时不会关闭当前对话框，也不会穿透关闭下层对话框；允许遮罩关闭时，同次点击只关闭最上层对话框。
 
-`Dialog::close(cx)`（包括 `MessageBox::close(cx)`）只关闭最上层 modal，保留下层对话框；空栈时无操作。手动关闭不会调用 `on_close`，业务状态清理由调用方负责。需要清空全部 modal 时显式使用 `liora_core::clear_active_modal(cx)`。
+`Dialog::close(cx)`（包括 `MessageBox::close(cx)`）只关闭当前活动窗口最上层 modal，保留下层及其他窗口的对话框；无窗口归属的 modal 仍参与当前窗口的关闭顺序，没有活动窗口时按全局栈顶关闭。当前窗口无可关闭的 modal 或空栈时无操作。手动关闭不会调用 `on_close`，业务状态清理由调用方负责。需要清空全部 modal 时显式使用 `liora_core::clear_active_modal(cx)`。
 
 标题栏关闭按钮的原生名称为 `Dismiss dialog`，可用 Tab/Shift+Tab 聚焦，并用 Enter 或 Space 关闭。标题栏按钮、允许的 Escape 和遮罩关闭属于 built-in close，调用 `on_close`；这与业务调用 `Dialog::close(cx)` 不触发回调的约定不同。
 
