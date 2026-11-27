@@ -156,6 +156,7 @@ Gallery 和 Docs 当前采用同一策略：源码运行时扫描 `apps/<app>/as
 - 原生桌面发布优先使用 `ttf` / `otf` / `ttc` / `otc`；如果使用 `woff` / `woff2`，务必配合 `FontLoadOptions::require_family(...)` 检查目标 family 是否真的可见。
 - 外部目录先完整发现、再注册该根目录下的文件；不可读子目录会让该根目录跳过注册并记入 `failures`，不会冒充目录不存在。发现成功后，单个文件读取或注册失败不会阻止后续文件。
 - `ExternalThenEmbedded` 会在必需 family 仍不可用时尝试嵌入字体，即使外部源已增加 `loaded`。请同时检查 `failures` 与 `missing_required_families`；`loaded` 只表示源被后端接受，不保证解析成功或字形可见。
+- 必需 family 检查在每个加载阶段共用一份可用字体族快照，必需列表为空时不枚举；跳过嵌入 fallback 时复用外部阶段结果，尝试 fallback 后重新检查。缺失项的顺序、重复项和精确名称匹配不变。
 - `with_ui_families([...])` 和 `with_code_families([...])` 都是有序 fallback 列表，不是单个 family；它们不会自动选择 Medium/Bold face。要指定默认字重，请用 `with_ui_weight(FontWeight::MEDIUM)` / `with_code_weight(...)`。建议把品牌字体放前面，把跨平台系统字体放后面。
 - 字体资源属于应用级资产。SDK 只提供加载和配置 API，不会强制把某套字体耦合进所有下游应用。
 

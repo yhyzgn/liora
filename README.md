@@ -1393,6 +1393,8 @@ Supported file extensions are `ttf`, `otf`, `ttc`, `otc`, `woff`, and `woff2`, b
 
 External directory discovery is all-or-error for each root: an unreadable subtree skips registration of that root's files and is reported in `failures`; it is not treated as a missing root. Once discovery succeeds, individual file read/registration failures do not stop later files. `ExternalThenEmbedded` retries embedded sources whenever a required family remains unavailable, even if an external source already incremented `loaded`. Inspect both `failures` and `missing_required_families`; an accepted source is not proof of a parsed face or rendered glyphs.
 
+Required-family checks share one available-family snapshot per loading stage and skip enumeration when no families are required. `ExternalThenEmbedded` reuses the external result when fallback is skipped and checks again after attempted embedded loading; missing-family order, duplicates and exact-name matching are preserved.
+
 #### Use only system-installed fonts
 
 ```rust

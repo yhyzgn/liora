@@ -380,7 +380,7 @@ pub fn load_font_assets(
 
 /// Loads application fonts according to `options`.
 pub fn load_app_fonts(cx: &mut App, options: FontLoadOptions) -> FontLoadReport {
-    let required_families = options.required_families.clone();
+    let required_families = options.required_families;
     let mut report = match options.mode {
         FontLoadMode::Embedded => load_embedded_fonts(cx, options.embedded_fonts),
         FontLoadMode::External => {
@@ -402,6 +402,9 @@ pub fn load_app_fonts(cx: &mut App, options: FontLoadOptions) -> FontLoadReport 
 
             if should_try_embedded {
                 report.extend(load_embedded_fonts(cx, options.embedded_fonts));
+            } else {
+                report.missing_required_families = missing_after_external;
+                return report;
             }
             report
         }
@@ -438,9 +441,18 @@ pub fn is_font_family_available(cx: &App, family: &str) -> bool {
 }
 
 fn missing_required_families(cx: &App, families: &[SharedString]) -> Vec<SharedString> {
+    if families.is_empty() {
+        return Vec::new();
+    }
+
+    let available = cx.text_system().all_font_names();
     families
         .iter()
-        .filter(|family| !is_font_family_available(cx, family.as_ref()))
+        .filter(|family| {
+            available
+                .binary_search_by(|name| name.as_str().cmp(family.as_ref()))
+                .is_err()
+        })
         .cloned()
         .collect()
 }

@@ -1387,6 +1387,8 @@ Gallery Typography 与 Docs Typography 的多语言 Live Demo 共用原生 Parag
 
 外部目录按每个根目录完整发现后再注册：子目录不可读时，整个根目录的字体都跳过注册，错误记入 `failures`，不冒充根目录缺失；发现成功后，单个文件读取或注册失败不会阻止后续文件。`ExternalThenEmbedded` 在必需 family 仍不可用时会尝试嵌入资源，即使外部源已增加 `loaded`。应同时检查 `failures` 与 `missing_required_families`；源字节被后端接受不等于成功解析字体或呈现字形。
 
+必需 family 检查在每个加载阶段共用一份可用字体族快照，必需列表为空时不枚举。`ExternalThenEmbedded` 跳过 fallback 时复用外部阶段结果，尝试嵌入加载后重新检查；缺失 family 的顺序、重复项和精确名称匹配保持不变。
+
 #### 只使用系统已安装字体
 
 ```rust
