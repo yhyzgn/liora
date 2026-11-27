@@ -1,6 +1,9 @@
 //! Private-portal regression: python3 scripts/system_appearance_native.py OUTPUT_DIR NATIVE_BINARY system
 //! Build this example first; requires Python dbus-next, dbus-daemon, KWin Wayland,
 //! Xwayland and software Vulkan. The runner creates its own bus, HOME/XDG and display.
+//! Case xdg-startup holds the private portal Read until Dark startup and initial attach
+//! are asserted against conflicting HOME Light settings. This is a controlled pending
+//! state regression, not a real-world startup timing or performance measurement.
 use gpui::{
     AnyWindowHandle, App, AppContext, AsyncApp, Context, IntoElement, Render, Window,
     WindowAppearance, WindowOptions, div, prelude::*,
@@ -116,10 +119,10 @@ fn main() {
     );
     let case = std::env::args()
         .nth(2)
-        .expect("system, early-light, read-race, fixed-dark, or fixed-light");
+        .expect("system, xdg-startup, early-light, read-race, fixed-dark, or fixed-light");
     gpui_platform::application().with_quit_mode(gpui::QuitMode::Explicit).run(move |cx| {
         let mode = match case.as_str() {
-            "system" | "early-light" | "read-race" => ThemeMode::System,
+            "system" | "xdg-startup" | "early-light" | "read-race" => ThemeMode::System,
             "fixed-dark" => ThemeMode::Dark,
             "fixed-light" => ThemeMode::Light,
             _ => panic!("unknown scenario"),
@@ -135,13 +138,19 @@ fn main() {
             }
             let events = Rc::new(Cell::new(0));
             let first = cx.update(|cx| {
+                let pending_xdg = case == "xdg-startup";
+                if pending_xdg {
+                    assert!(!cx.is_window_appearance_initialized(), "XDG startup proof requires pending GPUI appearance");
+                    assert_eq!(cx.window_appearance(), WindowAppearance::Light, "pending default must differ from XDG Dark");
+                    println!("PASS pending XDG precondition: initialized=false default=Light");
+                }
                 init_liora_with_mode(cx, mode);
                 if case != "read-race" {
-                    assert_theme(cx, if mode == ThemeMode::Dark { "dark" } else { "light" }, "startup");
+                    assert_theme(cx, if mode == ThemeMode::Dark || pending_xdg { "dark" } else { "light" }, "startup");
                 }
                 let first = open(cx, events.clone(), None);
                 if case != "read-race" {
-                    assert_theme(cx, if mode == ThemeMode::Dark { "dark" } else { "light" }, "initial attach");
+                    assert_theme(cx, if mode == ThemeMode::Dark || pending_xdg { "dark" } else { "light" }, "initial attach");
                 }
                 first
             });

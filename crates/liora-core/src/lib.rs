@@ -573,18 +573,40 @@ fn gtk_theme_env_appearance() -> Option<WindowAppearance> {
 
 #[cfg(any(target_os = "linux", target_os = "freebsd"))]
 fn gtk_settings_appearance() -> Option<WindowAppearance> {
+    let config_home = std::env::var_os("XDG_CONFIG_HOME");
+    let home = std::env::var_os("HOME");
+    gtk_settings_appearance_from(config_home.as_deref(), home.as_deref())
+}
+
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
+fn gtk_settings_appearance_from(
+    config_home: Option<&std::ffi::OsStr>,
+    home: Option<&std::ffi::OsStr>,
+) -> Option<WindowAppearance> {
+    let config_home = linux_xdg_home_from(config_home, home, &[".config"])?;
     ["gtk-4.0", "gtk-3.0"]
         .into_iter()
-        .filter_map(|version| {
-            std::env::var_os("HOME").map(|home| {
-                std::path::PathBuf::from(home)
-                    .join(".config")
-                    .join(version)
-                    .join("settings.ini")
-            })
-        })
+        .map(|version| config_home.join(version).join("settings.ini"))
         .filter_map(|path| std::fs::read_to_string(path).ok())
         .find_map(|settings| appearance_from_gtk_settings(&settings))
+}
+
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
+fn linux_xdg_home_from(
+    xdg_home: Option<&std::ffi::OsStr>,
+    home: Option<&std::ffi::OsStr>,
+    fallback: &[&str],
+) -> Option<std::path::PathBuf> {
+    if let Some(xdg_home) = xdg_home.map(Path::new).filter(|path| path.is_absolute()) {
+        return Some(xdg_home.to_path_buf());
+    }
+    home.map(Path::new)
+        .filter(|path| path.is_absolute())
+        .map(|home| {
+            fallback
+                .iter()
+                .fold(home.to_path_buf(), |path, part| path.join(part))
+        })
 }
 
 #[cfg(any(target_os = "linux", target_os = "freebsd"))]
@@ -1024,6 +1046,105 @@ mod theme_mode_tests {
         })
         .unwrap();
         app.quit();
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "freebsd"))]
+    #[test]
+    fn gtk_startup_xdg_paths_require_absolute_override_or_home() {
+        use std::{ffi::OsStr, path::PathBuf};
+
+        for (config_home, home, expected) in [
+            (Some("/custom/xdg"), Some("/home/user"), Some("/custom/xdg")),
+            (Some("/custom/xdg"), None, Some("/custom/xdg")),
+            (None, Some("/home/user"), Some("/home/user/.config")),
+            (Some(""), Some("/home/user"), Some("/home/user/.config")),
+            (
+                Some("relative/config"),
+                Some("/home/user"),
+                Some("/home/user/.config"),
+            ),
+            (None, None, None),
+            (Some(""), None, None),
+            (Some("relative/config"), None, None),
+            (None, Some(""), None),
+            (None, Some("relative/home"), None),
+        ] {
+            assert_eq!(
+                linux_xdg_home_from(config_home.map(OsStr::new), home.map(OsStr::new), &[".config"]),
+                expected.map(PathBuf::from),
+                "config_home={config_home:?}, home={home:?}"
+            );
+        }
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "freebsd"))]
+    #[test]
+    fn gtk_startup_xdg_override_reads_custom_settings_before_conflicting_home() {
+        use std::fs;
+
+        let temp_root = std::env::temp_dir().join(format!(
+            "liora-gtk-startup-xdg-{}-{}",
+            std::process::id(),
+            next_unique_id()
+        ));
+        fs::create_dir_all(&temp_root).expect("test temp root should be creatable");
+        let temp_root = temp_root.canonicalize().expect("test root should be absolute");
+        let home = temp_root.join("home");
+        let config_home = temp_root.join("custom-config");
+        for (root, version, settings) in [
+            (
+                home.join(".config"),
+                "gtk-4.0",
+                "[Settings]\ngtk-theme-name=Adwaita-light\n",
+            ),
+            (
+                config_home.clone(),
+                "gtk-3.0",
+                "[Settings]\ngtk-theme-name=Adwaita-light\n",
+            ),
+            (
+                config_home.clone(),
+                "gtk-4.0",
+                "[Settings]\ngtk-theme-name=Adwaita-dark\ngtk-application-prefer-dark-theme=false\n",
+            ),
+        ] {
+            let directory = root.join(version);
+            fs::create_dir_all(&directory).expect("GTK settings directory should be creatable");
+            fs::write(directory.join("settings.ini"), settings)
+                .expect("GTK settings fixture should be writable");
+        }
+
+        assert_eq!(
+            gtk_settings_appearance_from(Some(config_home.as_os_str()), Some(home.as_os_str())),
+            Some(WindowAppearance::Dark)
+        );
+        assert_eq!(
+            gtk_settings_appearance_from(Some(config_home.as_os_str()), None),
+            Some(WindowAppearance::Dark)
+        );
+        for config_override in [
+            None,
+            Some(std::ffi::OsStr::new("")),
+            Some(std::ffi::OsStr::new("relative/config")),
+        ] {
+            assert_eq!(
+                gtk_settings_appearance_from(config_override, Some(home.as_os_str())),
+                Some(WindowAppearance::Light)
+            );
+            assert_eq!(gtk_settings_appearance_from(config_override, None), None);
+        }
+
+        fs::remove_file(config_home.join("gtk-4.0/settings.ini")).unwrap();
+        assert_eq!(
+            gtk_settings_appearance_from(Some(config_home.as_os_str()), Some(home.as_os_str())),
+            Some(WindowAppearance::Light)
+        );
+        fs::remove_file(config_home.join("gtk-3.0/settings.ini")).unwrap();
+        assert_eq!(
+            gtk_settings_appearance_from(Some(config_home.as_os_str()), Some(home.as_os_str())),
+            None
+        );
+        fs::remove_dir_all(temp_root).expect("test temp root should be removable");
     }
 
     #[cfg(any(target_os = "linux", target_os = "freebsd"))]

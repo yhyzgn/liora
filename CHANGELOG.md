@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Honor absolute `XDG_CONFIG_HOME` for pending Linux/FreeBSD GTK startup theme hints, including without HOME. Empty or relative overrides fall back to an absolute HOME config directory; keep GTK4-before-GTK3 lookup, initialized GPUI appearance precedence, and GTK dark-preference semantics unchanged. Port the existing Core XDG path resolver without changing desktop data-directory handling.
 - Borrow Cascader option columns from the live entity while its one-shot portal builds owned rows, rather than recursively cloning the root tree, descendant columns and portal snapshot. Keep column geometry and selection paths coherent with lazy updates completed before portal rendering; preserve activation-time disabled/loading ancestor checks. This is CPU-side copying reduction, not a GPU/frame-latency claim.
 - Preserve Unicode, punctuation, empty segments, prefix namespaces and path boundaries in Cascader popup item identities. Escape only identity delimiters without changing selected values, and derive interaction-test selectors through the public helper instead of hard-coded strings.
 - Map AccessKit's optional expanded property into Linux AT-SPI `Expandable`/`Expanded` states and their forward/reverse notifications in the application-root leaf patch. Keep the GPUI pin, dependency versions and downstream opt-in boundary unchanged; cover property removal and unchanged updates as well as expansion/collapse.
