@@ -719,6 +719,8 @@ See Docs → `Icon Optimizer` for the full setup, custom scan roots, debug switc
 
 System tray facade. `liora-tray` only provides the generic tray primitives; application behavior such as menu labels, residency toggles, dynamic icon choices, and quit policy must live in the host app, not in the SDK:
 
+`icon_from_rgba` preserves exact `InvalidRgba` counts for representable length mismatches. Unrepresentable RGBA byte counts return `TrayError::BadIcon` wrapping `BadIcon::OsError` with `ErrorKind::InvalidInput`, rather than overflowing; native backend limits still apply.
+
 ```rust
 use liora::tray::{
     Tray, TrayCommand, TrayConfig, TrayMenuItemSpec, icon_from_png_bytes,

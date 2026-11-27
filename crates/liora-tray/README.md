@@ -20,6 +20,7 @@ let _config = TrayConfig::new("my-native-app")
 - Prefer the top-level `liora` crate for ordinary applications.
 - Depend on `liora-tray` directly when you need fine-grained dependency control or are building another Liora crate.
 - Keep application UI pure Rust + native GPUI; Liora crates do not require WebView, Tauri, HTML, CSS, or DOM runtime paths.
+- `icon_from_rgba` reports exact `InvalidRgba` counts for representable length mismatches. Byte counts exceeding `usize` return `TrayError::BadIcon` wrapping `BadIcon::OsError` with `ErrorKind::InvalidInput`; native backend limits still apply.
 
 ## GPUI dependency note
 

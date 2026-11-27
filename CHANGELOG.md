@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Return an InvalidInput bad-icon error instead of overflowing when raw RGBA dimensions require an unrepresentable byte count; preserve exact InvalidRgba counts for representable mismatches.
 - Generate macOS `.app` install-smoke dry-run plans with product-name bundles, regular executable checks, shell-quoted paths, and cleanup scoped to a unique temporary directory; manual `open -W` waits for app exit and `.app` execution remains unsupported.
 - Make Gallery's Basic VirtualizedTable render all 10,000 advertised rows.
 - Cache parsed built-in English translations for terminal fallback and reuse them when constructing independent builtin maps; preserve overrides and fallback precedence without reparsing on repeated misses.

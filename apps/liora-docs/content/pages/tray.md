@@ -2,6 +2,8 @@
 
 `liora-tray` 是 Liora 的系统托盘封装层。它把 `tray-icon` 与 `muda` 收敛为 Liora 自己的 `TrayConfig`、`TrayMenuItemSpec` 和 `TrayCommand`，让 GPUI 主程序只处理窗口生命周期与业务命令。
 
+原始像素 API `icon_from_rgba` 对可表示的长度不匹配保留准确的 `InvalidRgba` 字节数；所需 RGBA 字节数超出 `usize` 时，返回 `TrayError::BadIcon`（内部为错误种类 `InvalidInput` 的 `BadIcon::OsError`），而不是算术溢出。原生后端限制仍然适用。
+
 > 托盘能力属于应用壳层，不是普通视图组件。官方 Zed GPUI 当前不暴露公开退出模式切换 API；应用需要自己在窗口关闭钩子中决定退出进程、隐藏窗口或保持托盘入口。
 
 ## 主窗口控制用例

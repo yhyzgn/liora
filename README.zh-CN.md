@@ -713,6 +713,8 @@ fn main() {
 
 系统托盘 facade。`liora-tray` 只提供通用托盘构件；菜单文案、驻留开关、动态图标选择、退出策略等应用行为必须放在宿主应用层，不放在 SDK 里：
 
+`icon_from_rgba` 对可表示的长度不匹配保留准确的 `InvalidRgba` 字节数；所需 RGBA 字节数超出 `usize` 时，返回 `TrayError::BadIcon`（内部为错误种类 `InvalidInput` 的 `BadIcon::OsError`），而不是算术溢出。原生后端的尺寸限制仍然适用。
+
 ```rust
 use liora::tray::{
     Tray, TrayCommand, TrayConfig, TrayMenuItemSpec, icon_from_png_bytes,

@@ -489,8 +489,20 @@ fn init_platform_tray_runtime() -> Result<()> {
 }
 
 /// Creates a tray icon from raw RGBA pixel data.
+///
+/// Representable length mismatches return [`TrayError::InvalidRgba`] with exact counts.
+/// Byte counts exceeding `usize` return [`TrayError::BadIcon`] wrapping an
+/// [`std::io::ErrorKind::InvalidInput`] error; native backend errors still propagate.
 pub fn icon_from_rgba(rgba: Vec<u8>, width: u32, height: u32) -> Result<TrayIconImage> {
-    let expected = width as usize * height as usize * 4;
+    let expected = (width as usize)
+        .checked_mul(height as usize)
+        .and_then(|pixels| pixels.checked_mul(4))
+        .ok_or_else(|| {
+            tray_icon::BadIcon::OsError(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "RGBA icon byte count overflows usize",
+            ))
+        })?;
     let actual = rgba.len();
     if actual != expected {
         return Err(TrayError::InvalidRgba {
