@@ -19,6 +19,8 @@
 //! the component, and avoid app-specific host-application resources in this SDK
 //! crate.
 
+use std::rc::Rc;
+
 use crate::Input;
 use gpui::{
     App, Bounds, Context, Element, ElementId, Entity, FocusHandle, Focusable, GlobalElementId,
@@ -78,7 +80,7 @@ pub struct Autocomplete {
     trigger_on_focus: bool,
     last_bounds: Option<Bounds<Pixels>>,
     focus_handle: FocusHandle,
-    on_select: Option<Box<dyn Fn(AutocompleteItem, &mut Window, &mut App) + 'static>>,
+    on_select: Option<Rc<dyn Fn(AutocompleteItem, &mut Window, &mut App) + 'static>>,
     close_on_click_outside: bool,
     close_on_escape: bool,
 }
@@ -201,12 +203,12 @@ impl Autocomplete {
         }
     }
 
-    /// Registers a callback that runs when select occurs.
+    /// Runs after filling the input and closing the popup, outside the entity update.
     pub fn on_select(
         mut self,
         cb: impl Fn(AutocompleteItem, &mut Window, &mut App) + 'static,
     ) -> Self {
-        self.on_select = Some(Box::new(cb));
+        self.on_select = Some(Rc::new(cb));
         self
     }
 
@@ -256,10 +258,10 @@ impl Autocomplete {
             input.set_value(item.value.clone(), cx);
         });
         self.is_open = false;
-        if let Some(ref cb) = self.on_select {
-            cb(item, window, cx);
-        }
         cx.notify();
+        if let Some(cb) = self.on_select.clone() {
+            window.defer(cx, move |window, cx| cb(item, window, cx));
+        }
     }
 }
 
@@ -520,6 +522,50 @@ mod tests {
                 )
                 .child(crate::PortalLayer)
         }
+    }
+
+    #[test]
+    fn selection_callback_can_read_and_update_its_autocomplete() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let selections = std::rc::Rc::new(std::cell::Cell::new(0));
+        let selected = selections.clone();
+        let autocomplete = app.new(|cx| {
+            let owner = cx.weak_entity();
+            Autocomplete::from_values(vec!["rust", "gpui"], cx).on_select(move |item, _, cx| {
+                owner
+                    .update(cx, |this, cx| {
+                        assert_eq!(this.value(cx), item.value);
+                        assert!(!this.is_open);
+                        this.set_items(vec![AutocompleteItem::new("replacement")], cx);
+                    })
+                    .unwrap();
+                selected.set(selected.get() + 1);
+            })
+        });
+        let root = autocomplete.clone();
+        let handle = app.add_window(move |_, _| PopupPolicySurface {
+            autocomplete: root,
+            neighbor_clicks: std::rc::Rc::new(std::cell::Cell::new(0)),
+        });
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        window.update(|window, _| window.activate_window());
+        window.run_until_parked();
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        window.simulate_click(gpui::point(px(12.0), px(12.0)), gpui::Modifiers::none());
+        window.simulate_keystrokes("r");
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        let bounds = autocomplete.read_with(&app, |this, _| this.last_bounds.unwrap());
+        window.simulate_click(
+            gpui::point(bounds.left() + px(20.0), bounds.bottom() + px(20.0)),
+            gpui::Modifiers::none(),
+        );
+        assert_eq!(selections.get(), 1);
+        assert_eq!(
+            autocomplete.read_with(&app, |this, _| this.items.clone()),
+            vec![AutocompleteItem::new("replacement")]
+        );
+        app.quit();
     }
 
     #[test]
