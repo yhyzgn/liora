@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Honor Autocomplete's existing `trigger_on_focus` policy through one retained listener on its Input focus handle; open current suggestions on enabled focus entry by default, preserve the opt-out and query-driven opening, and leave disabled controls closed.
 - Defer Autocomplete selection callbacks until after its entity update returns, so callbacks can read the selected value or replace suggestions on the same control without a reentrant entity-borrow panic; preserve fill-before-callback and popup-close ordering.
 - Scope `Dialog::close` and delegated MessageBox business closes to the active window's topmost modal instead of dismissing another window's newer dialog; preserve ownerless/no-active-window behavior and the no-callback contract.
 - Reuse one available-family snapshot per required-font check without cloning the requirements list; reuse the external result when embedded fallback is skipped and recheck after attempted fallback. Preserve missing-family order, duplicates, exact-name matching and default code-font refresh.

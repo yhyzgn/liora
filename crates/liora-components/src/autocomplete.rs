@@ -80,6 +80,7 @@ pub struct Autocomplete {
     trigger_on_focus: bool,
     last_bounds: Option<Bounds<Pixels>>,
     focus_handle: FocusHandle,
+    focus_subscription: Option<gpui::Subscription>,
     on_select: Option<Rc<dyn Fn(AutocompleteItem, &mut Window, &mut App) + 'static>>,
     close_on_click_outside: bool,
     close_on_escape: bool,
@@ -105,6 +106,7 @@ impl Autocomplete {
             trigger_on_focus: true,
             last_bounds: None,
             focus_handle: cx.focus_handle(),
+            focus_subscription: None,
             on_select: None,
             close_on_click_outside: true,
             close_on_escape: true,
@@ -328,13 +330,23 @@ impl Element for BoundsCapturer {
 }
 
 impl Render for Autocomplete {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
         let entity = cx.weak_entity();
         let disabled = self.disabled;
         let placeholder = self.placeholder.clone();
         let clearable = self.clearable;
         let suffix_icon = self.suffix_icon;
+
+        if self.focus_subscription.is_none() {
+            let focus = self.input.read(cx).focus_handle(cx);
+            self.focus_subscription = Some(cx.on_focus(&focus, window, |this, _, cx| {
+                if this.trigger_on_focus && !this.disabled && !this.is_open {
+                    this.is_open = true;
+                    cx.notify();
+                }
+            }));
+        }
 
         self.input.update(cx, |input, _| {
             input.set_on_change({
@@ -521,6 +533,59 @@ mod tests {
                         }),
                 )
                 .child(crate::PortalLayer)
+        }
+    }
+
+    #[test]
+    fn trigger_on_focus_opens_only_enabled_opted_in_inputs() {
+        for (trigger, disabled) in [(None, false), (Some(false), false), (Some(true), true)] {
+            let mut app = gpui::TestAppContext::single();
+            app.update(crate::init_liora);
+            let autocomplete = app.new(|cx| {
+                let autocomplete = Autocomplete::from_values(vec!["rust", "gpui"], cx)
+                    .disabled(disabled);
+                match trigger {
+                    Some(trigger) => autocomplete.trigger_on_focus(trigger),
+                    None => autocomplete,
+                }
+            });
+            let root = autocomplete.clone();
+            let handle = app.add_window(move |_, _| PopupPolicySurface {
+                autocomplete: root,
+                neighbor_clicks: std::rc::Rc::new(std::cell::Cell::new(0)),
+            });
+            let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+            window.update(|window, _| window.activate_window());
+            window.run_until_parked();
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            window.simulate_click(gpui::point(px(12.0), px(12.0)), gpui::Modifiers::none());
+            assert_eq!(
+                autocomplete.read_with(&app, |this, _| this.is_open),
+                trigger.unwrap_or(true) && !disabled,
+                "focus policy mismatch: trigger={trigger:?}, disabled={disabled}"
+            );
+            window.simulate_keystrokes("escape");
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            assert!(!autocomplete.read_with(&app, |this, _| this.is_open));
+            window.update(|window, cx| window.blur(cx));
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            window.simulate_click(gpui::point(px(12.0), px(12.0)), gpui::Modifiers::none());
+            assert_eq!(
+                autocomplete.read_with(&app, |this, _| this.is_open),
+                trigger.unwrap_or(true) && !disabled,
+                "refocusing must preserve the policy"
+            );
+            window.simulate_keystrokes("r");
+            assert_eq!(
+                autocomplete.read_with(&app, |this, _| this.is_open),
+                !disabled,
+                "opting out of focus opening must not disable query opening"
+            );
+            assert_eq!(
+                autocomplete.read_with(&app, |this, cx| this.value(cx)),
+                if disabled { "" } else { "r" }
+            );
+            app.quit();
         }
     }
 

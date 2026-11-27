@@ -4,6 +4,8 @@
 
 选择建议会先回填输入值并关闭弹层，再延后调用 `on_select`。回调可以读取同一 `Autocomplete` 的 `value(cx)`，或通过保留的 Entity 更新其建议列表。
 
+默认 `trigger_on_focus(true)`：启用的输入框获得焦点时立即展示当前匹配建议，包括空查询。设置 `trigger_on_focus(false)` 仅关闭焦点触发，输入非空查询仍会展开建议；禁用状态不会因焦点触发展开。
+
 ## 基础用法
 
 ### 效果
