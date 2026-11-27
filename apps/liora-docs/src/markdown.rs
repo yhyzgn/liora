@@ -6056,7 +6056,7 @@ impl Render for LiveDemoContent {
             ]),
             "CascaderFilterable" => demo_stack(vec![
                 self.cascader_element(),
-                Text::new(r#"程序预置 search_query="杭州"，展开后点击匹配路径完成选择；不提供可编辑搜索框。"#)
+                Text::new("展开后编辑搜索词：预置杭州，可改为宁波；清空恢复逐级选项，无匹配显示 No results。Down / Up 高亮结果且边界不循环，Enter 选择高亮路径；无高亮时不提交，逐级选项仍使用鼠标。")
                     .into_any_element(),
             ]),
             "CascaderLazy" => demo_stack(vec![

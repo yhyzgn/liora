@@ -61,13 +61,13 @@ impl Render for CascaderDemo {
                 .child(section("禁用状态", "禁用后不可展开或修改。", Card::new(self.disabled.clone())))
                 .child(section(
                     "可搜索",
-                    "程序预置 search_query=\"杭州\" 展示匹配结果，不提供可编辑搜索框。",
+                    "展开后编辑搜索词；预置杭州，可改为宁波，清空恢复逐级选项。",
                     Card::new(
                         Space::new()
                             .vertical()
                             .gap_md()
                             .child(self.searchable.clone())
-                            .child(Text::new("展开后点击匹配路径完成选择，并显示实际路径消息。")),
+                            .child(Text::new("无匹配显示 No results；Down / Up 高亮结果且边界不循环，Enter 选择高亮路径。无高亮时 Enter 不提交；逐级选项仍使用鼠标。")),
                     ),
                 ))
                 .child(section(

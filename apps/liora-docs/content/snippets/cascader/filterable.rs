@@ -1,4 +1,4 @@
-//! Programmatically prefill the result panel; this example has no editable search field.
+//! Edit the seeded query; select by pointer or highlight with Down/Up and press Enter.
 
 use gpui::Context;
 use liora_components::{Cascader, CascaderOption, MessageType, show_message};

@@ -19,17 +19,22 @@
 //! the component, and avoid app-specific host-application resources in this SDK
 //! crate.
 
+use crate::Input;
 use crate::gpui_compat::element_id;
 use crate::motion::pop_in;
 use gpui::{
     AnyElement, App, Bounds, Context, Element, ElementId, Entity, FocusHandle, Focusable,
-    IntoElement, KeyBinding, MouseButton, Pixels, Render, SharedString, Window, actions, div,
+    IntoElement, KeyBinding, MouseButton, Pixels, Render, ScrollHandle, SharedString, Window, actions, div,
     prelude::*, px,
 };
 use liora_core::{Config, push_portal};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 use std::sync::Arc;
+
+const SEARCH_INPUT_HEIGHT: f32 = 34.0;
+// Input plus 8px padding on each side and the header's bottom border.
+const SEARCH_HEADER_HEIGHT: f32 = SEARCH_INPUT_HEIGHT + 17.0;
 
 actions!(
     cascader,
@@ -69,6 +74,9 @@ pub struct Cascader {
     clearable: bool,
     filterable: bool,
     search_query: SharedString,
+    search_input: Option<Entity<Input>>,
+    highlighted_result: Option<Vec<SharedString>>,
+    search_scroll: Option<ScrollHandle>,
     width: Option<Pixels>,
     focus_handle: FocusHandle,
     last_bounds: Option<Bounds<Pixels>>,
@@ -146,6 +154,9 @@ impl Cascader {
             clearable: false,
             filterable: false,
             search_query: SharedString::default(),
+            search_input: None,
+            highlighted_result: None,
+            search_scroll: None,
             width: None,
             focus_handle: cx.focus_handle(),
             last_bounds: None,
@@ -258,11 +269,20 @@ impl Cascader {
     fn close_on_escape_action(
         &mut self,
         _: &CascaderClose,
-        _: &mut Window,
+        window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if self
+            .search_input
+            .as_ref()
+            .is_some_and(|input| input.read(cx).is_composing())
+        {
+            cx.propagate();
+            return;
+        }
         if self.close_on_escape && self.is_open {
             self.is_open = false;
+            self.restore_query_focus(window, cx);
             cx.notify();
         } else {
             cx.propagate();
@@ -300,6 +320,7 @@ impl Cascader {
     /// Updates the stored options value and keeps the existing component identity.
     pub fn set_options(&mut self, options: Vec<CascaderOption>, cx: &mut Context<Self>) {
         self.options = options;
+        self.highlighted_result = None;
         if !Self::is_selectable_path(&self.options, &self.selected_path) {
             self.selected_path.clear();
             self.active_path.clear();
@@ -317,6 +338,7 @@ impl Cascader {
         let changed = Self::set_children_in_options(&mut self.options, path, children);
         if changed {
             Self::set_loading_in_options(&mut self.options, path, false);
+            self.highlighted_result = None;
             cx.notify();
         }
         changed
@@ -331,6 +353,7 @@ impl Cascader {
     ) -> bool {
         let changed = Self::set_loading_in_options(&mut self.options, path, loading);
         if changed {
+            self.highlighted_result = None;
             cx.notify();
         }
         changed
@@ -349,7 +372,16 @@ impl Cascader {
 
     /// Updates the stored search query value and keeps the existing component identity.
     pub fn set_search_query(&mut self, query: impl Into<SharedString>, cx: &mut Context<Self>) {
-        self.search_query = query.into();
+        let query = query.into();
+        if self.search_query != query {
+            self.highlighted_result = None;
+            self.search_query = query;
+        }
+        if let Some(input) = &self.search_input {
+            input.update(cx, |input, cx| {
+                input.set_value(self.search_query.clone(), cx)
+            });
+        }
         cx.notify();
     }
 
@@ -487,6 +519,7 @@ impl Cascader {
         collect_leaf_matches(
             &self.options,
             &query,
+            self.lazy,
             &mut vec![],
             &mut vec![],
             &mut matches,
@@ -507,6 +540,142 @@ impl Cascader {
             .into()
     }
 
+    fn search_key_down(
+        &mut self,
+        key: &str,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> bool {
+        if !self.is_open
+            || self.disabled
+            || !self.filterable
+            || !matches!(key, "up" | "down" | "enter")
+        {
+            return false;
+        }
+        let Some(input) = &self.search_input else {
+            return false;
+        };
+        let input = input.read(cx);
+        if !input.focus_handle(cx).is_focused(window) || input.is_composing() {
+            // Input retains Enter's no-op callback, so passthrough cannot select a result.
+            return false;
+        }
+        let query = input.value();
+        if self.search_query != query {
+            // A key can precede the editor's deferred on_change notification.
+            self.search_query = query;
+            self.highlighted_result = None;
+            cx.notify();
+        }
+        if self.search_query.trim().is_empty()
+            || (key == "enter" && self.highlighted_result.is_none())
+        {
+            return false;
+        }
+        let mut matches = self.matching_leaf_paths();
+        if matches.is_empty() {
+            self.highlighted_result = None;
+            return false;
+        }
+        if key == "enter" {
+            if let Some(path) = self.highlighted_result.take() {
+                if matches.iter().any(|(current, _)| current == &path) {
+                    self.choose_path(path, window, cx);
+                }
+            }
+        } else {
+            let current = self.highlighted_result.as_ref().and_then(|path| {
+                matches.iter().position(|(current, _)| current == path)
+            });
+            let index = if key == "down" {
+                current.map_or(0, |index| (index + 1).min(matches.len() - 1))
+            } else {
+                current.map_or(matches.len() - 1, |index| index.saturating_sub(1))
+            };
+            self.highlighted_result = Some(matches.swap_remove(index).0);
+            self.search_scroll
+                .as_ref()
+                .expect("search Input initializes scroll handle")
+                .scroll_to_item(index);
+        }
+        cx.notify();
+        true
+    }
+
+    fn ensure_search_input(&mut self, cx: &mut Context<Self>) {
+        if !self.filterable || self.search_input.is_some() {
+            return;
+        }
+        self.search_scroll = Some(ScrollHandle::new());
+        let owner = cx.entity().downgrade();
+        let query = self.search_query.clone();
+        let id = format!("{}-query", self.id);
+        self.search_input = Some(cx.new(move |cx| {
+            Input::new(query, cx)
+                .id(id)
+                .aria_label("Search options")
+                .placeholder("Search options")
+                .height(px(SEARCH_INPUT_HEIGHT))
+                .clearable(true)
+                .on_enter(|_, _, _, _| {})
+                .on_change(move |query, cx| {
+                    let owner = owner.clone();
+                    let input = cx.entity().downgrade();
+                    let query = SharedString::from(query.to_owned());
+                    cx.defer(move |cx| {
+                        let Some(input) = input.upgrade() else {
+                            return;
+                        };
+                        if input.read(cx).value() != query {
+                            return;
+                        }
+                        let _ = owner.update(cx, |this, cx| {
+                            // User edits already live in Input, including marked text.
+                            if this.search_query != query {
+                                this.search_query = query;
+                                this.highlighted_result = None;
+                            }
+                            cx.notify();
+                        });
+                    });
+                })
+        }));
+    }
+
+    fn restore_query_focus(&self, window: &mut Window, cx: &mut Context<Self>) {
+        if self
+            .search_input
+            .as_ref()
+            .is_some_and(|input| input.focus_handle(cx).is_focused(window))
+        {
+            window.focus(&self.focus_handle, cx);
+        }
+    }
+
+    fn dismiss_and_traverse(&mut self, reverse: bool, window: &mut Window, cx: &mut Context<Self>) {
+        self.is_open = false;
+        window.focus(&self.focus_handle, cx);
+        if reverse {
+            window.focus_prev(cx);
+        } else {
+            window.focus_next(cx);
+        }
+        // Traversal still uses the painted frame; skip its one retiring editor stop.
+        if self
+            .search_input
+            .as_ref()
+            .is_some_and(|input| input.focus_handle(cx).is_focused(window))
+        {
+            if reverse {
+                window.focus_prev(cx);
+            } else {
+                window.focus_next(cx);
+            }
+        }
+        cx.notify();
+    }
+
     fn toggle_open(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if self.disabled {
             return;
@@ -514,7 +683,16 @@ impl Cascader {
         self.is_open = !self.is_open;
         if self.is_open {
             self.active_path = self.selected_path.clone();
-            window.focus(&self.focus_handle, cx);
+            self.highlighted_result = None;
+            self.ensure_search_input(cx);
+            let focus = self
+                .search_input
+                .as_ref()
+                .map(|input| input.focus_handle(cx))
+                .unwrap_or_else(|| self.focus_handle.clone());
+            window.focus(&focus, cx);
+        } else {
+            self.restore_query_focus(window, cx);
         }
         cx.notify();
     }
@@ -555,6 +733,7 @@ impl Cascader {
         if let Some(on_change) = &self.on_change {
             on_change(path, window, cx);
         }
+        self.restore_query_focus(window, cx);
         cx.notify();
     }
 
@@ -610,15 +789,27 @@ impl Render for Cascader {
                     let active_path = &this.active_path;
                     let selected_path = &this.selected_path;
                     let filterable = this.filterable;
+                    let searching = filterable && !this.search_query.trim().is_empty();
                     let matches = this.matching_leaf_paths();
-                    let trigger_width = trigger_bounds.map_or(px(240.0), |bounds| bounds.size.width);
-                    let popup_height = if filterable && !matches.is_empty() {
-                        popup_content_height(matches.len())
+                    let trigger_width =
+                        trigger_bounds.map_or(px(240.0), |bounds| bounds.size.width);
+                    let header_height = if filterable {
+                        px(SEARCH_HEADER_HEIGHT)
                     } else {
-                        popup_content_height(
-                            columns.iter().map(|column| column.len()).max().unwrap_or_default(),
-                        )
+                        px(0.0)
                     };
+                    let popup_height = header_height
+                        + if searching {
+                            popup_content_height(matches.len())
+                        } else {
+                            popup_content_height(
+                                columns
+                                    .iter()
+                                    .map(|column| column.len())
+                                    .max()
+                                    .unwrap_or_default(),
+                            )
+                        };
                     let requested_panel_width =
                         px((columns.len().max(1) as f32 * 180.0).max(f32::from(trigger_width)));
                     let viewport = window.viewport_size();
@@ -626,18 +817,26 @@ impl Render for Cascader {
                     let (top, left) =
                         popup_position(trigger_bounds, panel_width, popup_height, viewport);
                     let panel_height =
-                        popup_height.min((viewport.height - top - px(8.0)).max(px(1.0)));
+                        popup_height.min((viewport.height - top - px(8.0)).max(px(0.0)));
+                    let results_height = (panel_height - px(2.0) - header_height).max(px(0.0));
                     let theme = theme_portal.clone();
                     let entity = entity.clone();
 
                     let close_entity = entity.clone();
-                    let panel = div()
+                    let key_entity = entity.clone();
+                    let escape_entity = entity.clone();
+                    let panel = div();
+                    #[cfg(test)]
+                    let panel = panel.debug_selector(|| "cascader-panel".to_string());
+                    let panel = panel
                         .id(element_id(format!("{}-panel", cascader_id)))
                         .absolute()
                         .top(top)
                         .left(left)
                         .w(panel_width)
-                        .max_h(panel_height)
+                        .h(panel_height)
+                        .flex()
+                        .flex_col()
                         .overflow_hidden()
                         .bg(theme.neutral.card)
                         .rounded(px(theme.radius.md))
@@ -654,25 +853,64 @@ impl Render for Cascader {
                         .on_mouse_down(MouseButton::Left, |_, _, cx| {
                             cx.stop_propagation();
                         })
-                        .when(filterable && !matches.is_empty(), |panel| {
-                            panel.child(render_match_list(
-                                cascader_id.clone(),
-                                matches.clone(),
-                                entity.clone(),
-                                theme.clone(),
-                                (panel_height - px(2.0)).max(px(1.0)),
-                            ))
-                        })
-                        .when(!filterable || matches.is_empty(), |panel| {
-                            panel.child(render_columns(
-                                cascader_id.clone(),
-                                columns,
-                                active_path,
-                                selected_path,
-                                entity.clone(),
-                                theme.clone(),
-                                (panel_height - px(2.0)).max(px(1.0)),
-                            ))
+                        .when_some(
+                            this.search_input.as_ref().filter(|_| filterable),
+                            |panel, input| {
+                                let header = div();
+                                #[cfg(test)]
+                                let header =
+                                    header.debug_selector(|| "cascader-search-header".to_string());
+                                panel.child(
+                                    header
+                                        .h(header_height)
+                                        .flex_shrink_0()
+                                        .p_2()
+                                        .border_b_1()
+                                        .border_color(theme.neutral.divider)
+                                        .child(input.clone()),
+                                )
+                            },
+                        )
+                        .when(results_height > px(0.0), |panel| {
+                            if searching && matches.is_empty() {
+                                let empty = div();
+                                #[cfg(test)]
+                                let empty =
+                                    empty.debug_selector(|| "cascader-no-results".to_string());
+                                panel.child(
+                                    empty
+                                        .h(results_height)
+                                        .flex_shrink_0()
+                                        .px_3()
+                                        .flex()
+                                        .items_center()
+                                        .text_sm()
+                                        .text_color(theme.neutral.text_3)
+                                        .child("No results"),
+                                )
+                            } else if searching {
+                                panel.child(render_match_list(
+                                    cascader_id.clone(),
+                                    matches,
+                                    this.highlighted_result.as_deref(),
+                                    this.search_scroll
+                                        .as_ref()
+                                        .expect("search Input initializes scroll handle"),
+                                    entity.clone(),
+                                    theme.clone(),
+                                    results_height,
+                                ))
+                            } else {
+                                panel.child(render_columns(
+                                    cascader_id.clone(),
+                                    columns,
+                                    active_path,
+                                    selected_path,
+                                    entity.clone(),
+                                    theme.clone(),
+                                    results_height,
+                                ))
+                            }
                         });
 
                     div()
@@ -681,6 +919,60 @@ impl Render for Cascader {
                         .left_0()
                         .size_full()
                         .bg(gpui::transparent_black())
+                        .key_context("Cascader")
+                        .on_action(move |action: &CascaderClose, window, cx| {
+                            escape_entity.update(cx, |this, cx| {
+                                this.close_on_escape_action(action, window, cx)
+                            });
+                        })
+                        // Bound Input actions are dispatched before raw key listeners.
+                        .capture_action({
+                            let entity = entity.clone();
+                            move |_: &crate::input::InputUp, window, cx| {
+                                if entity.update(cx, |this, cx| this.search_key_down("up", window, cx)) {
+                                    cx.stop_propagation();
+                                }
+                            }
+                        })
+                        .capture_action({
+                            let entity = entity.clone();
+                            move |_: &crate::input::InputDown, window, cx| {
+                                if entity.update(cx, |this, cx| this.search_key_down("down", window, cx)) {
+                                    cx.stop_propagation();
+                                }
+                            }
+                        })
+                        .capture_action({
+                            let entity = entity.clone();
+                            move |_: &crate::input::Enter, window, cx| {
+                                if entity.update(cx, |this, cx| this.search_key_down("enter", window, cx)) {
+                                    cx.stop_propagation();
+                                }
+                            }
+                        })
+                        .capture_key_down(move |event, window, cx| {
+                            let modifiers = event.keystroke.modifiers;
+                            if event.keystroke.key == "tab"
+                                && !modifiers.control
+                                && !modifiers.alt
+                                && !modifiers.platform
+                                && !modifiers.function
+                            {
+                                if key_entity
+                                    .read(cx)
+                                    .search_input
+                                    .as_ref()
+                                    .is_some_and(|input| input.read(cx).is_composing())
+                                {
+                                    return;
+                                }
+                                key_entity.update(cx, |this, cx| {
+                                    this.dismiss_and_traverse(modifiers.shift, window, cx)
+                                });
+                                window.prevent_default();
+                                cx.stop_propagation();
+                            }
+                        })
                         .when(close_on_click_outside, |s| {
                             s.on_mouse_down(MouseButton::Left, move |_, _, cx| {
                                 close_entity.update(cx, |this, cx| {
@@ -813,6 +1105,8 @@ impl Render for Cascader {
                 MouseButton::Left,
                 cx.listener(|this, _, window, cx| {
                     this.toggle_open(window, cx);
+                    // Suppress the tracked trigger's later native mouse-focus default.
+                    window.prevent_default();
                 }),
             )
             .on_action(cx.listener(Self::close_on_escape_action))
@@ -959,6 +1253,8 @@ fn render_columns(
 fn render_match_list(
     cascader_id: SharedString,
     matches: Vec<(Vec<SharedString>, Vec<SharedString>)>,
+    highlighted_result: Option<&[SharedString]>,
+    scroll: &ScrollHandle,
     entity: Entity<Cascader>,
     theme: liora_theme::Theme,
     panel_height: Pixels,
@@ -971,6 +1267,7 @@ fn render_match_list(
         .flex_col()
         .max_h(panel_height)
         .overflow_y_scroll()
+        .track_scroll(scroll)
         .children(matches.into_iter().map(move |(path, labels)| {
             let entity = entity.clone();
             let theme = theme.clone();
@@ -980,6 +1277,7 @@ fn render_match_list(
                 .collect::<Vec<_>>()
                 .join(" / ");
             let item_id = Cascader::popup_item_id(cascader_id.as_ref(), &path);
+            let highlighted = highlighted_result == Some(path.as_slice());
 
             let item = div();
             #[cfg(test)]
@@ -991,6 +1289,7 @@ fn render_match_list(
                 .flex()
                 .items_center()
                 .cursor_pointer()
+                .when(highlighted, |s| s.bg(theme.primary.base.opacity(0.1)))
                 .hover(|s| s.bg(theme.neutral.hover).cursor_pointer())
                 .child(div().text_sm().text_color(theme.neutral.text_1).child(text))
                 .on_mouse_down(MouseButton::Left, move |_, window, cx| {
@@ -1016,6 +1315,7 @@ fn append_id_segment(id: &mut String, segment: &str) {
 fn collect_leaf_matches(
     options: &[CascaderOption],
     query: &str,
+    lazy: bool,
     path: &mut Vec<SharedString>,
     labels: &mut Vec<SharedString>,
     matches: &mut Vec<(Vec<SharedString>, Vec<SharedString>)>,
@@ -1027,7 +1327,7 @@ fn collect_leaf_matches(
         path.push(option.value.clone());
         labels.push(option.label.clone());
 
-        if option.children.is_empty() {
+        if option.children.is_empty() && Cascader::is_selectable_option(option, lazy) {
             let haystack = labels
                 .iter()
                 .map(ToString::to_string)
@@ -1038,7 +1338,7 @@ fn collect_leaf_matches(
                 matches.push((path.clone(), labels.clone()));
             }
         } else {
-            collect_leaf_matches(&option.children, query, path, labels, matches);
+            collect_leaf_matches(&option.children, query, lazy, path, labels, matches);
         }
 
         path.pop();
@@ -1229,7 +1529,11 @@ mod interaction_tests {
                 renders: count,
             });
             let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
-            assert_eq!(renders.get(), 1, "test must inspect the first queued portal");
+            assert_eq!(
+                renders.get(),
+                1,
+                "test must inspect the first queued portal"
+            );
             static SELECTOR: std::sync::LazyLock<SharedString> = std::sync::LazyLock::new(|| {
                 Cascader::popup_item_id(
                     "queued-lazy",
@@ -1239,7 +1543,10 @@ mod interaction_tests {
             let bounds = window
                 .debug_bounds(SELECTOR.as_ref())
                 .expect("latest lazy path was not painted");
-            assert!(changes.borrow().is_empty(), "data updates emitted on_change");
+            assert!(
+                changes.borrow().is_empty(),
+                "data updates emitted on_change"
+            );
             window.update(|window, cx| {
                 cascader.update(cx, |this, _| {
                     this.options[0].disabled = blocker == "disabled";
@@ -1607,6 +1914,631 @@ mod interaction_tests {
                 1,
                 "data invalidation is not a user selection"
             );
+            app.quit();
+        }
+    }
+
+    #[test]
+    fn filterable_open_types_query_without_enter_committing_selection() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let changes = Rc::new(Cell::new(0));
+        let callbacks = changes.clone();
+        let cascader = app.new(|cx| {
+            Cascader::new(options(false, false), cx)
+                .filterable(true)
+                .on_change(move |_, _, _| callbacks.set(callbacks.get() + 1))
+        });
+        let (mut window, _, _) = surface(&mut app, &cascader);
+        open_with_pointer(&mut window, &cascader);
+        window.simulate_input("Other");
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert_eq!(
+            cascader.read_with(&app, |this, _| this.search_query.clone()),
+            "Other"
+        );
+        press(&mut window, "enter");
+        assert_eq!(
+            cascader.read_with(&app, |this, _| this.search_query.clone()),
+            "Other"
+        );
+        assert!(cascader.read_with(&app, |this, _| this.is_open
+            && this.selected_path.is_empty()));
+        assert_eq!(changes.get(), 0);
+        app.quit();
+    }
+
+    #[test]
+    fn seeded_builder_orders_setter_before_open_and_closed_updates_retain_editor() {
+        for order in 0..3 {
+            let mut app = gpui::TestAppContext::single();
+            app.update(crate::init_liora);
+            let cascader = app.new(|cx| {
+                let mut this = Cascader::new(options(false, false), cx);
+                assert!(this.search_scroll.is_none());
+                this = match order {
+                    0 => this.filterable(true).search_query("needle"),
+                    1 => this.search_query("needle").filterable(true),
+                    _ => {
+                        this.set_search_query("needle", cx);
+                        this.filterable(true)
+                    }
+                };
+                assert!(this.search_input.is_none());
+                assert!(this.search_scroll.is_none());
+                this
+            });
+            let (mut window, _, _) = surface(&mut app, &cascader);
+            open_with_pointer(&mut window, &cascader);
+            let input = cascader.read_with(&app, |this, _| this.search_input.clone().unwrap());
+            assert!(cascader.read_with(&app, |this, _| this.search_scroll.is_some()));
+            assert_eq!(
+                input.read_with(&app, |input, _| input.value().clone()),
+                "needle"
+            );
+            assert!(window.update(|window, cx| input.focus_handle(cx).is_focused(window)));
+            press(&mut window, "escape");
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            cascader.update(&mut app, |this, cx| this.set_search_query("Other", cx));
+            assert_eq!(
+                input.read_with(&app, |input, _| input.value().clone()),
+                "Other"
+            );
+            open_with_pointer(&mut window, &cascader);
+            assert_eq!(
+                cascader.read_with(&app, |this, _| this
+                    .search_input
+                    .as_ref()
+                    .unwrap()
+                    .entity_id()),
+                input.entity_id()
+            );
+            app.quit();
+        }
+    }
+
+    #[test]
+    fn composition_survives_query_rerender_and_escape_then_stale_edit_loses_to_host_setter() {
+        use gpui::EntityInputHandler;
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let cascader = app.new(|cx| Cascader::new(options(false, false), cx).filterable(true));
+        let (mut window, _, unhandled) = surface(&mut app, &cascader);
+        open_with_pointer(&mut window, &cascader);
+        let input = cascader.read_with(&app, |this, _| this.search_input.clone().unwrap());
+        let selection = window.update(|window, cx| {
+            input.update(cx, |input, cx| {
+                input.replace_and_mark_text_in_range(None, "候補", Some(0..1), window, cx);
+                input.selected_range()
+            })
+        });
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert_eq!(
+            cascader.read_with(&app, |this, _| this.search_query.clone()),
+            "候補"
+        );
+        window.update(|window, cx| {
+            input.update(cx, |input, cx| {
+                assert!(input.is_composing());
+                assert_eq!(input.marked_text_range(window, cx), Some(0..2));
+                assert_eq!(input.selected_range(), selection);
+            })
+        });
+        press(&mut window, "enter");
+        // dispatch_keystroke synthesizes committed text for unconsumed Tab;
+        // dispatch raw platform events to test ownership before the native IME decides.
+        for key in ["tab", "shift-tab"] {
+            window.update(|window, cx| {
+                assert!(input.focus_handle(cx).is_focused(window));
+                let keystroke = gpui::Keystroke::parse_with_os(key, cx.platform_info().os).unwrap();
+                let result = window.dispatch_event(
+                    gpui::PlatformInput::KeyDown(gpui::KeyDownEvent {
+                        keystroke: keystroke.clone(),
+                        is_held: false,
+                        prefer_character_input: false,
+                    }),
+                    cx,
+                );
+                assert!(result.propagate);
+                assert!(!window.default_prevented());
+                window.dispatch_event(
+                    gpui::PlatformInput::KeyUp(gpui::KeyUpEvent { keystroke }),
+                    cx,
+                );
+                assert!(input.focus_handle(cx).is_focused(window));
+                input.update(cx, |input, cx| {
+                    assert_eq!(input.value(), "候補");
+                    assert_eq!(input.marked_text_range(window, cx), Some(0..2));
+                    assert_eq!(input.selected_range(), selection);
+                });
+            });
+        }
+        assert!(cascader.read_with(&app, |this, _| this.is_open));
+        assert!(input.read_with(&app, |input, _| input.is_composing()));
+        press(&mut window, "escape");
+        assert!(cascader.read_with(&app, |this, _| this.is_open));
+        assert!(input.read_with(&app, |input, _| input.is_composing()));
+        assert_eq!(
+            unhandled.get(),
+            1,
+            "IME Escape must propagate rather than be consumed"
+        );
+        window.update(|window, cx| {
+            input.update(cx, |input, cx| {
+                input.unmark_text(window, cx);
+                input.replace_text_in_range(None, "stale", window, cx);
+            });
+            cascader.update(cx, |this, cx| this.set_search_query("Other", cx));
+        });
+        assert_eq!(
+            cascader.read_with(&app, |this, _| this.search_query.clone()),
+            "Other"
+        );
+        assert_eq!(
+            input.read_with(&app, |input, _| input.value().clone()),
+            "Other"
+        );
+        press(&mut window, "escape");
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert!(!cascader.read_with(&app, |this, _| this.is_open));
+        assert!(window.update(|window, cx| cascader.focus_handle(cx).is_focused(window)));
+        app.quit();
+    }
+
+    #[test]
+    fn query_tab_dismisses_to_trigger_neighbors_in_both_directions() {
+        for reverse in [false, true] {
+            let mut app = gpui::TestAppContext::single();
+            app.update(crate::init_liora);
+            let cascader = app.new(|cx| Cascader::new(options(false, false), cx).filterable(true));
+            let (mut window, _, _) = surface(&mut app, &cascader);
+            let expected = window.update(|window, cx| {
+                window.focus(&cascader.focus_handle(cx), cx);
+                if reverse {
+                    window.focus_prev(cx);
+                } else {
+                    window.focus_next(cx);
+                }
+                window.focused(cx).unwrap()
+            });
+            open_with_pointer(&mut window, &cascader);
+            press(&mut window, if reverse { "shift-tab" } else { "tab" });
+            assert!(window.update(|window, _| expected.is_focused(window)));
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            assert!(window.update(|window, _| expected.is_focused(window)));
+            assert!(window.debug_bounds("cascader-search-header").is_none());
+            assert!(!cascader.read_with(&app, |this, _| this.is_open));
+            app.quit();
+        }
+    }
+
+    #[test]
+    fn query_tab_skips_retiring_editor_when_trigger_is_the_only_host_stop() {
+        struct Only(Entity<Cascader>);
+        impl Render for Only {
+            fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+                div()
+                    .size_full()
+                    .child(self.0.clone())
+                    .child(crate::PortalLayer)
+            }
+        }
+        for key in ["tab", "shift-tab"] {
+            let mut app = gpui::TestAppContext::single();
+            app.update(crate::init_liora);
+            let cascader = app.new(|cx| Cascader::new(options(false, false), cx).filterable(true));
+            let handle = app.add_window(|_, _| Only(cascader.clone()));
+            let mut window = gpui::VisualTestContext::from_window(handle.into(), &mut app);
+            open_with_pointer(&mut window, &cascader);
+            press(&mut window, key);
+            assert!(window.update(|window, cx| cascader.focus_handle(cx).is_focused(window)));
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            assert!(window.update(|window, cx| cascader.focus_handle(cx).is_focused(window)));
+            assert!(window.debug_bounds("cascader-search-header").is_none());
+            app.quit();
+        }
+    }
+
+    #[test]
+    fn no_matches_are_inert_whitespace_restores_columns_and_header_budget_clips_tiny_viewports() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let cascader = app.new(|cx| {
+            Cascader::new(options(false, false), cx)
+                .filterable(true)
+                .search_query("absent")
+        });
+        let (mut window, _, _) = surface(&mut app, &cascader);
+        open_with_pointer(&mut window, &cascader);
+        assert!(window.debug_bounds("cascader-no-results").is_some());
+        assert!(window.debug_bounds("cascader-search-results").is_none());
+        cascader.update(&mut app, |this, cx| this.set_search_query("  ", cx));
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert!(window.debug_bounds("cascader-no-results").is_none());
+        static ROOT: std::sync::LazyLock<SharedString> = std::sync::LazyLock::new(|| {
+            Cascader::popup_item_id("short-search", &["parent".into()])
+        });
+        cascader.update(&mut app, |this, cx| {
+            this.id = "short-search".into();
+            cx.notify();
+        });
+        for height in [120.0, 40.0] {
+            window.simulate_resize(gpui::size(px(400.0), px(height)));
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            let panel = window.debug_bounds("cascader-panel").unwrap();
+            let header = window.debug_bounds("cascader-search-header").unwrap();
+            assert!(panel.top() >= px(0.0) && panel.bottom() <= px(height));
+            assert_eq!(header.size.height, px(SEARCH_HEADER_HEIGHT));
+            if height == 40.0 {
+                assert!(window.debug_bounds(ROOT.as_ref()).is_none());
+            } else {
+                let row = window.debug_bounds(ROOT.as_ref()).unwrap();
+                assert!(row.top() >= header.bottom());
+            }
+        }
+        press(&mut window, "escape");
+        assert!(!cascader.read_with(&app, |this, _| this.is_open));
+        app.quit();
+    }
+
+    #[test]
+    fn pointer_selection_restores_editor_focus_unless_callback_moves_it_and_outside_preserves_destination()
+     {
+        for move_focus in [false, true] {
+            let mut app = gpui::TestAppContext::single();
+            app.update(crate::init_liora);
+            let destination = Rc::new(RefCell::new(None::<FocusHandle>));
+            let target = destination.clone();
+            let cascader = app.new(|cx| {
+                Cascader::new(options(false, false), cx)
+                    .id("focus-search")
+                    .filterable(true)
+                    .search_query("Other")
+                    .on_change(move |_, window, cx| {
+                        if move_focus {
+                            window.focus(target.borrow().as_ref().unwrap(), cx);
+                        }
+                    })
+            });
+            let (mut window, _, _) = surface(&mut app, &cascader);
+            let after = window.update(|window, cx| {
+                window.focus(&cascader.focus_handle(cx), cx);
+                window.focus_next(cx);
+                window.focused(cx).unwrap()
+            });
+            *destination.borrow_mut() = Some(after.clone());
+            open_with_pointer(&mut window, &cascader);
+            static OTHER: std::sync::LazyLock<SharedString> = std::sync::LazyLock::new(|| {
+                Cascader::popup_item_id("focus-search", &["other".into()])
+            });
+            let row = window.debug_bounds(OTHER.as_ref()).unwrap();
+            window.simulate_click(row.center(), gpui::Modifiers::none());
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            assert!(!cascader.read_with(&app, |this, _| this.is_open));
+            assert!(window.update(|window, cx| {
+                if move_focus {
+                    after.is_focused(window)
+                } else {
+                    cascader.focus_handle(cx).is_focused(window)
+                }
+            }));
+            let before = window.update(|window, cx| {
+                window.focus(&cascader.focus_handle(cx), cx);
+                window.focus_prev(cx);
+                window.focused(cx).unwrap()
+            });
+            open_with_pointer(&mut window, &cascader);
+            // The active PortalLayer occludes underlying controls; preserve a host's
+            // deliberate focus destination rather than assuming outside click-through.
+            window.update(|window, cx| window.focus(&before, cx));
+            let outside = window.debug_bounds("cascader-before").unwrap();
+            window.simulate_click(outside.center(), gpui::Modifiers::none());
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            assert!(!cascader.read_with(&app, |this, _| this.is_open));
+            assert!(window.update(|window, _| before.is_focused(window)));
+            app.quit();
+        }
+    }
+
+    #[test]
+    fn latest_deferred_user_edit_wins_and_native_clear_restores_columns_without_selection() {
+        use gpui::EntityInputHandler;
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let cascader = app.new(|cx| Cascader::new(options(false, false), cx).filterable(true));
+        let (mut window, _, _) = surface(&mut app, &cascader);
+        open_with_pointer(&mut window, &cascader);
+        let input = cascader.read_with(&app, |this, _| this.search_input.clone().unwrap());
+        window.update(|window, cx| {
+            input.update(cx, |input, cx| {
+                input.replace_text_in_range(None, "First", window, cx);
+                input.replace_text_in_range(Some(0..5), "Other", window, cx);
+            })
+        });
+        assert_eq!(
+            cascader.read_with(&app, |this, _| this.search_query.clone()),
+            "Other"
+        );
+        press(&mut window, "ctrl-a");
+        press(&mut window, "backspace");
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert!(
+            cascader.read_with(&app, |this, _| this.search_query.is_empty()
+                && this.selected_path.is_empty()
+                && this.is_open)
+        );
+        assert!(input.read_with(&app, |input, _| input.value().is_empty()));
+        assert!(window.debug_bounds("cascader-search-results").is_none());
+        assert!(window.debug_bounds("cascader-no-results").is_none());
+        app.quit();
+    }
+
+    #[test]
+    fn result_navigation_clamps_and_commits_only_after_an_explicit_arrow() {
+        for (keys, expected) in [
+            (vec!["down"], "a"),
+            (vec!["up"], "c"),
+            (vec!["down", "up", "up"], "a"),
+            (vec!["up", "down", "down"], "c"),
+            (vec!["down", "down", "up"], "a"),
+        ] {
+            let mut app = gpui::TestAppContext::single();
+            app.update(crate::init_liora);
+            let changes = Rc::new(RefCell::new(Vec::new()));
+            let callbacks = changes.clone();
+            let cascader = app.new(|cx| {
+                Cascader::new(
+                    vec![
+                        CascaderOption::new("blocked", "Needle blocked")
+                            .disabled(true)
+                            .child(CascaderOption::new("leaf", "Needle")),
+                        CascaderOption::new("a", "Needle A"),
+                        CascaderOption::new("pending", "Needle pending").loading(true),
+                        CascaderOption::new("b", "Needle B"),
+                        CascaderOption::new("c", "Needle C"),
+                    ],
+                    cx,
+                )
+                .filterable(true)
+                .search_query("Needle")
+                .on_change(move |path, _, _| callbacks.borrow_mut().push(path))
+            });
+            let (mut window, _, _) = surface(&mut app, &cascader);
+            open_with_pointer(&mut window, &cascader);
+            let input = cascader.read_with(&app, |this, _| this.search_input.clone().unwrap());
+            input.update(&mut app, |input, cx| input.set_selection(1..3, cx));
+            press(&mut window, "enter");
+            assert!(changes.borrow().is_empty());
+            for key in keys {
+                press(&mut window, key);
+            }
+            assert!(changes.borrow().is_empty(), "navigation selected a value");
+            assert_eq!(input.read_with(&app, |input, _| input.value().clone()), "Needle");
+            assert_eq!(input.read_with(&app, |input, _| input.selected_range()), 1..3);
+            assert!(window.update(|window, cx| input.focus_handle(cx).is_focused(window)));
+            press(&mut window, "enter");
+            assert_eq!(*changes.borrow(), vec![vec![SharedString::from(expected)]]);
+            assert!(!cascader.read_with(&app, |this, _| this.is_open));
+            assert!(window.update(|window, cx| cascader.focus_handle(cx).is_focused(window)));
+            app.quit();
+        }
+    }
+
+    #[test]
+    fn result_navigation_does_not_retarget_after_query_or_option_changes() {
+        for change in ["query", "typed", "blank", "no-match", "options", "children", "loading", "blocked", "reopen", "clear"] {
+            let mut app = gpui::TestAppContext::single();
+            app.update(crate::init_liora);
+            let changes = Rc::new(Cell::new(0));
+            let callbacks = changes.clone();
+            let cascader = app.new(|cx| {
+                Cascader::new(options(false, false), cx)
+                    .filterable(true)
+                    .search_query("Needle")
+                    .on_change(move |_, _, _| callbacks.set(callbacks.get() + 1))
+            });
+            let (mut window, _, _) = surface(&mut app, &cascader);
+            open_with_pointer(&mut window, &cascader);
+            press(&mut window, "down");
+            match change {
+                "query" => cascader.update(&mut app, |this, cx| this.set_search_query("Other", cx)),
+                "typed" => {
+                    press(&mut window, "ctrl-a");
+                    window.simulate_input("Other");
+                }
+                "blank" => cascader.update(&mut app, |this, cx| this.set_search_query("   ", cx)),
+                "no-match" => cascader.update(&mut app, |this, cx| this.set_search_query("missing", cx)),
+                "options" => cascader.update(&mut app, |this, cx| {
+                    this.set_options(vec![CascaderOption::new("replacement", "Needle")], cx)
+                }),
+                "children" => cascader.update(&mut app, |this, cx| {
+                    assert!(this.set_children_at_path(
+                        &["parent".into()],
+                        vec![CascaderOption::new("replacement", "Needle")],
+                        cx,
+                    ));
+                }),
+                "loading" => cascader.update(&mut app, |this, cx| {
+                    assert!(this.set_loading_at_path(&["parent".into()], true, cx));
+                }),
+                "blocked" => cascader.update(&mut app, |this, cx| {
+                    this.options[0].disabled = true;
+                    cx.notify();
+                }),
+                "reopen" => {
+                    press(&mut window, "escape");
+                    window.update(|window, cx| window.draw(cx).clear(cx));
+                    open_with_pointer(&mut window, &cascader);
+                }
+                "clear" => {
+                    press(&mut window, "ctrl-a");
+                    press(&mut window, "backspace");
+                }
+                _ => unreachable!(),
+            }
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            press(&mut window, "enter");
+            assert_eq!(changes.get(), 0, "stale highlight committed after {change}");
+            assert!(cascader.read_with(&app, |this, _| this.is_open && this.selected_path.is_empty()));
+            app.quit();
+        }
+    }
+
+    #[test]
+    fn result_navigation_keeps_modified_keys_and_marked_text_owned_by_input() {
+        use gpui::EntityInputHandler;
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let changes = Rc::new(Cell::new(0));
+        let callbacks = changes.clone();
+        let cascader = app.new(|cx| {
+            Cascader::new(options(false, false), cx)
+                .filterable(true)
+                .search_query("Needle")
+                .on_change(move |_, _, _| callbacks.set(callbacks.get() + 1))
+        });
+        let (mut window, _, _) = surface(&mut app, &cascader);
+        open_with_pointer(&mut window, &cascader);
+        let input = cascader.read_with(&app, |this, _| this.search_input.clone().unwrap());
+        for key in ["shift-down", "ctrl-up", "enter"] {
+            press(&mut window, key);
+        }
+        assert_eq!(changes.get(), 0);
+        for key in ["shift-enter", "ctrl-enter"] {
+            cascader.update(&mut app, |this, cx| this.set_search_query("Needle", cx));
+            press(&mut window, "down");
+            assert!(cascader.read_with(&app, |this, _| this.highlighted_result.is_some()));
+            press(&mut window, key);
+            assert_eq!(changes.get(), 0, "modified Enter selected a result");
+            assert!(cascader.read_with(&app, |this, _| this.is_open));
+            assert!(window.update(|window, cx| input.focus_handle(cx).is_focused(window)));
+        }
+        // Unbound modified Enter may edit text through GPUI's native Input fallback.
+        cascader.update(&mut app, |this, cx| this.set_search_query("Needle", cx));
+        press(&mut window, "down");
+        let highlight = cascader.read_with(&app, |this, _| this.highlighted_result.clone());
+        assert!(highlight.is_some());
+        input.update(&mut app, |input, cx| input.set_selection(1..3, cx));
+        for (key, expected) in [("shift-down", 1..3), ("shift-up", 1..3), ("shift-left", 1..2)] {
+            press(&mut window, key);
+            assert_eq!(input.read_with(&app, |input, _| input.selected_range()), expected);
+            assert_eq!(cascader.read_with(&app, |this, _| this.highlighted_result.clone()), highlight);
+            assert_eq!(changes.get(), 0, "modified arrow selected a result");
+        }
+        window.update(|window, cx| {
+            input.update(cx, |input, cx| {
+                input.replace_and_mark_text_in_range(Some(0..6), "Needle", Some(0..6), window, cx);
+            });
+        });
+        for key in ["down", "up", "enter"] {
+            press(&mut window, key);
+        }
+        assert_eq!(changes.get(), 0, "Cascader selected while marked text was active");
+        assert!(input.read_with(&app, |input, _| input.is_composing()));
+        assert!(cascader.read_with(&app, |this, _| this.is_open && this.selected_path.is_empty()));
+        assert!(window.update(|window, cx| input.focus_handle(cx).is_focused(window)));
+        app.quit();
+    }
+
+    #[test]
+    fn result_navigation_scrolls_the_highlight_into_the_results_viewport() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let cascader = app.new(|cx| {
+            Cascader::new(
+                (0..30).map(|index| CascaderOption::new(format!("{index}"), "Needle")).collect(),
+                cx,
+            )
+            .id("result-scroll")
+            .filterable(true)
+            .search_query("Needle")
+        });
+        let (mut window, _, _) = surface(&mut app, &cascader);
+        open_with_pointer(&mut window, &cascader);
+        press(&mut window, "up");
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        static LAST: std::sync::LazyLock<SharedString> = std::sync::LazyLock::new(|| {
+            Cascader::popup_item_id("result-scroll", &["29".into()])
+        });
+        let row = window.debug_bounds(LAST.as_ref()).expect("last result was not laid out");
+        let list = window.debug_bounds("cascader-search-results").unwrap();
+        assert!(row.top() >= list.top() && row.bottom() <= list.bottom(), "highlight stayed outside results viewport: {row:?} vs {list:?}");
+        app.quit();
+    }
+
+    #[test]
+    fn result_navigation_reads_editor_changes_before_the_deferred_query_notification() {
+        use gpui::EntityInputHandler;
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let changes = Rc::new(RefCell::new(Vec::new()));
+        let callbacks = changes.clone();
+        let cascader = app.new(|cx| {
+            Cascader::new(options(false, false), cx)
+                .filterable(true)
+                .search_query("Needle")
+                .on_change(move |path, _, _| callbacks.borrow_mut().push(path))
+        });
+        let (mut window, _, _) = surface(&mut app, &cascader);
+        open_with_pointer(&mut window, &cascader);
+        let input = cascader.read_with(&app, |this, _| this.search_input.clone().unwrap());
+        window.update(|window, cx| {
+            input.update(cx, |input, cx| {
+                input.replace_text_in_range(Some(0..6), "Other", window, cx);
+            });
+            assert_eq!(cascader.read(cx).search_query, "Needle");
+            let keystroke = gpui::Keystroke::parse_with_os("down", cx.platform_info().os).unwrap();
+            window.dispatch_event(
+                gpui::PlatformInput::KeyDown(gpui::KeyDownEvent {
+                    keystroke: keystroke.clone(),
+                    is_held: false,
+                    prefer_character_input: false,
+                }),
+                cx,
+            );
+            window.dispatch_event(gpui::PlatformInput::KeyUp(gpui::KeyUpEvent { keystroke }), cx);
+        });
+        // The deferred same-query notification must retain the new highlight.
+        press(&mut window, "enter");
+        assert_eq!(*changes.borrow(), vec![vec![SharedString::from("other")]]);
+        assert_eq!(cascader.read_with(&app, |this, _| this.search_query.clone()), "Other");
+        app.quit();
+    }
+
+    #[test]
+    fn result_navigation_preserves_callback_focus_and_rejects_disabled_retained_input() {
+        for disabled in [false, true] {
+            let mut app = gpui::TestAppContext::single();
+            app.update(crate::init_liora);
+            let changes = Rc::new(Cell::new(0));
+            let callbacks = changes.clone();
+            let destination = Rc::new(RefCell::new(None::<FocusHandle>));
+            let target = destination.clone();
+            let cascader = app.new(|cx| {
+                Cascader::new(options(false, false), cx)
+                    .filterable(true)
+                    .search_query("Needle")
+                    .on_change(move |_, window, cx| {
+                        callbacks.set(callbacks.get() + 1);
+                        window.focus(target.borrow().as_ref().unwrap(), cx);
+                    })
+            });
+            let (mut window, _, _) = surface(&mut app, &cascader);
+            let after = window.update(|window, cx| {
+                window.focus(&cascader.focus_handle(cx), cx);
+                window.focus_next(cx);
+                window.focused(cx).unwrap()
+            });
+            *destination.borrow_mut() = Some(after.clone());
+            open_with_pointer(&mut window, &cascader);
+            press(&mut window, "down");
+            cascader.update(&mut app, |this, _| this.disabled = disabled);
+            press(&mut window, "enter");
+            assert_eq!(changes.get(), usize::from(!disabled));
+            assert_eq!(cascader.read_with(&app, |this, _| this.is_open), disabled);
+            if !disabled {
+                assert!(window.update(|window, _| after.is_focused(window)));
+            }
             app.quit();
         }
     }
