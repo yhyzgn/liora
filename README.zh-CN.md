@@ -1911,6 +1911,8 @@ cargo run -p xtask -- package smoke --app gallery --format platform-defaults --f
 cargo run -p xtask -- package install-smoke --app gallery --format platform-defaults --dry-run --font-variant without-fonts
 ```
 
+在 macOS 使用 `--format app` 时，`install-smoke --dry-run` 仅写入并打印手动 `.app` 计划，不会执行命令、进行系统级安装或签名。计划使用 product-name bundle，先将其复制到唯一临时目录，再在该副本中将 `Contents/MacOS/<binary>` 检查为普通可执行文件，然后用 `open -W -n` 打开准确的 bundle（`open -W` 会等待用户关闭应用），最后只清理该临时副本。`.app` 不支持 `--execute-install`。
+
 每种字体变体应紧接着构建、打包：`--skip-build` 复用当前 release 可执行文件，不会从独立变体缓存选择或校验嵌入字体特性。`target/packages/` 根目录的 manifest、checksums 和 release notes 会替换所选 app/platform/font-variant 目录的记录，保留其他仍存在且 SHA-256 匹配的产物。保留记录维持原有版本、目标、源码提交和预期签名状态；元数据损坏或保留产物字节变化会使打包失败，不会静默接受。这是本地产物清单，不代表已独立验签或所有条目属于同一发行版本。
 
 当前发布产物覆盖：

@@ -499,7 +499,7 @@ fn install_smoke(
             for format in &formats {
                 let path = expected_artifact_path(
                     &out_dir,
-                    &metadata.package,
+                    &metadata,
                     platform,
                     *format,
                     font_variant,
@@ -569,11 +569,13 @@ fn install_smoke(
 
 fn expected_artifact_path(
     out_dir: &Path,
-    package: &str,
+    app: &AppMetadata,
     platform: Platform,
     format: PackageFormat,
     font_variant: FontVariant,
 ) -> PathBuf {
+    let package = app.package.as_str();
+
     match (platform, format) {
         (_, PackageFormat::TarGz) => portable_tar_gz_path(
             out_dir,
@@ -592,7 +594,7 @@ fn expected_artifact_path(
         (Platform::Linux, PackageFormat::AppImage) => {
             out_dir.join(format!("{package}-{}.AppImage", app_version()))
         }
-        (Platform::Macos, PackageFormat::App) => out_dir.join(format!("{package}.app")),
+        (Platform::Macos, PackageFormat::App) => out_dir.join(format!("{}.app", app.name)),
         (Platform::Macos, PackageFormat::Dmg) => {
             out_dir.join(format!("{package}_{}.dmg", app_version()))
         }
@@ -630,10 +632,15 @@ fn install_smoke_plan(
             "install-smoke plan: app={} format=tar.gz\n  install: mkdir -p target/install-smoke && tar -xzf {path} -C target/install-smoke\n  smoke: verify launcher, bin/{}, icons and README exist\n  uninstall: rm -rf target/install-smoke/{}-*",
             app.package, app.binary, app.package
         ),
-        (Platform::Macos, PackageFormat::App) => format!(
-            "install-smoke plan: app={} format=app\n  install: cp -R {path} /tmp/liora-install-smoke/\n  smoke: open -W -n /tmp/liora-install-smoke/*.app --args --smoke if supported\n  uninstall: rm -rf /tmp/liora-install-smoke",
-            app.package
-        ),
+        (Platform::Macos, PackageFormat::App) => {
+            let bundle_name = shell_quote(&format!("{}.app", app.name));
+            let executable_name = shell_quote(&app.binary);
+            let source_path = shell_quote(&path.to_string());
+            format!(
+                "install-smoke plan: app={} format=app\n  run:\n    (\n      set -eu\n      if ! install_dir=\"$(mktemp -d \"${{TMPDIR:-/tmp}}/liora-install-smoke.XXXXXX\")\"; then\n        printf '%s\\n' 'failed to create temporary install-smoke directory' >&2\n        exit 1\n      fi\n      if [ -z \"$install_dir\" ] || [ ! -d \"$install_dir\" ]; then\n        printf '%s\\n' 'mktemp did not create an install-smoke directory' >&2\n        exit 1\n      fi\n      trap 'rm -rf -- \"$install_dir\"' EXIT\n      bundle_path=\"$install_dir\"/{bundle_name}\n      executable_path=\"$bundle_path/Contents/MacOS\"/{executable_name}\n      cp -R -- {source_path} \"$bundle_path\"\n      test -f \"$executable_path\"\n      test -x \"$executable_path\"\n      open -W -n \"$bundle_path\"\n    )",
+                app.package
+            )
+        }
         (Platform::Macos, PackageFormat::Dmg) => format!(
             "install-smoke plan: app={} format=dmg\n  install: hdiutil attach {path}; copy .app to /tmp/liora-install-smoke\n  smoke: open copied .app if runner policy allows\n  uninstall: hdiutil detach <mount>; rm -rf /tmp/liora-install-smoke",
             app.package
@@ -652,6 +659,10 @@ fn install_smoke_plan(
             other.as_str()
         ),
     }
+}
+
+fn shell_quote(value: &str) -> String {
+    format!("'{}'", value.replace('\'', "'\\''"))
 }
 
 fn execute_install_smoke(
@@ -1032,7 +1043,7 @@ fn package_formats(command: PackageCommand) -> Result<(), String> {
                 .map_err(|error| format!("failed to write {}: {error}", config_path.display()))?;
                 let rpm_path = expected_artifact_path(
                     &out_dir,
-                    &metadata.package,
+                    &metadata,
                     platform,
                     PackageFormat::Rpm,
                     command.font_variant,
@@ -2341,9 +2352,10 @@ mod tests {
 
     #[test]
     fn expected_tar_gz_path_matches_portable_backend_name() {
+        let app = PackageApp::Gallery.metadata();
         let path = expected_artifact_path(
             Path::new("target/packages/liora-gallery/linux"),
-            "liora-gallery",
+            &app,
             Platform::Linux,
             PackageFormat::TarGz,
             FontVariant::WithoutFonts,
@@ -2351,6 +2363,69 @@ mod tests {
 
         assert!(path.to_string_lossy().contains("liora-gallery-"));
         assert!(path.to_string_lossy().ends_with(".tar.gz"));
+    }
+
+    #[test]
+    fn macos_app_install_smoke_plan_uses_exact_product_bundles_safely() {
+        let out_dir = Path::new("/tmp/liora output/O'Brien");
+        for (package_app, bundle_name, binary) in [
+            (PackageApp::Gallery, "Liora Gallery.app", "liora-gallery"),
+            (PackageApp::Docs, "Liora Docs.app", "liora-docs"),
+        ] {
+            let metadata = package_app.metadata();
+            let path = expected_artifact_path(
+                out_dir,
+                &metadata,
+                Platform::Macos,
+                PackageFormat::App,
+                FontVariant::WithoutFonts,
+            );
+            assert_eq!(path, out_dir.join(bundle_name));
+
+            let source_path = format!(
+                "'/tmp/liora output/O'\\''Brien{}{bundle_name}'",
+                std::path::MAIN_SEPARATOR
+            );
+            let plan = install_smoke_plan(&metadata, Platform::Macos, PackageFormat::App, &path);
+            assert!(plan.contains("set -eu"));
+            assert!(plan.contains(
+                r#"if ! install_dir="$(mktemp -d "${TMPDIR:-/tmp}/liora-install-smoke.XXXXXX")"; then"#,
+            ));
+            assert!(plan.contains(r#"if [ -z "$install_dir" ] || [ ! -d "$install_dir" ]; then"#));
+            assert!(plan.contains(r#"trap 'rm -rf -- "$install_dir"' EXIT"#));
+            let mktemp_guard = plan.find("if ! install_dir=").unwrap();
+            let mktemp_exit = mktemp_guard + plan[mktemp_guard..].find("exit 1").unwrap();
+            let invalid_dir_guard = plan.find("if [ -z \"$install_dir\"").unwrap();
+            let invalid_dir_exit =
+                invalid_dir_guard + plan[invalid_dir_guard..].find("exit 1").unwrap();
+            let cleanup = plan.find("trap 'rm -rf -- \"$install_dir\"' EXIT").unwrap();
+            assert!(mktemp_guard < mktemp_exit);
+            assert!(mktemp_exit < invalid_dir_guard);
+            assert!(invalid_dir_guard < invalid_dir_exit);
+            assert!(invalid_dir_exit < cleanup);
+            assert!(plan.contains(&format!(
+                r#"bundle_path="$install_dir"/'{bundle_name}'"#
+            )));
+            assert!(plan.contains(&format!(
+                r#"executable_path="$bundle_path/Contents/MacOS"/'{binary}'"#
+            )));
+            assert!(plan.contains("test -f \"$executable_path\"\n      test -x \"$executable_path\""));
+            assert!(plan.contains(&format!(
+                "cp -R -- {source_path} \"$bundle_path\""
+            )));
+            assert!(plan.contains(r#"open -W -n "$bundle_path""#));
+            assert!(!plan.contains("*.app"));
+            assert!(!plan.contains("--smoke"));
+            let error = execute_install_smoke(
+                Path::new("unused-root"),
+                &metadata,
+                Platform::Macos,
+                PackageFormat::App,
+                &path,
+            )
+            .unwrap_err();
+            assert!(error.starts_with("refusing to execute install-smoke for format=app"));
+        }
     }
 
     #[test]

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Generate macOS `.app` install-smoke dry-run plans with product-name bundles, regular executable checks, shell-quoted paths, and cleanup scoped to a unique temporary directory; manual `open -W` waits for app exit and `.app` execution remains unsupported.
 - Make Gallery's Basic VirtualizedTable render all 10,000 advertised rows.
 - Cache parsed built-in English translations for terminal fallback and reuse them when constructing independent builtin maps; preserve overrides and fallback precedence without reparsing on repeated misses.
 - Clamp the shared base used by public z-index helpers so category offsets remain ordered through `u32::MAX`, without changing the configured value or existing built-in overlay ordering.

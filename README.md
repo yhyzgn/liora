@@ -1929,6 +1929,8 @@ Font variants:
 
 `--font-variant` defaults to `without-fonts`. CI publishes both variants and names release assets with `-without-fonts` or `-with-fonts` suffixes.
 
+On macOS with `--format app`, `install-smoke --dry-run` only writes and prints the manual `.app` plan; it does not run the commands, install the app system-wide, or sign it. The plan uses the product-name bundle, copies it to a unique temporary directory, checks `Contents/MacOS/<binary>` there as a regular executable file, then opens that exact bundle with `open -W -n` (which waits until the user closes the app) before cleaning up only the temporary copy. `.app` is not supported by `--execute-install`.
+
 Build and package each font variant together: `--skip-build` reuses the current release executable, not a variant-specific binary cache. Root `target/packages/` manifest/checksum/release-note summaries retain matching, existing sibling app/platform/font-variant artifacts and replace only selected directories. Retained records keep their original build provenance and expected signing state; corrupt metadata or changed retained bytes fail packaging rather than being silently accepted. These summaries are a local inventory, not independent signature verification or a single-release certification.
 
 Supported release artifacts include:
