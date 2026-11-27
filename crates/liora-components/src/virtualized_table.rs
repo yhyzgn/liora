@@ -36,6 +36,11 @@ type RenderCell = dyn Fn(usize, &SharedString, &mut Window, &mut App) -> AnyElem
 type SortCallback = dyn Fn(TableSortState, &mut Window, &mut App) + 'static;
 type RowSelectCallback = dyn Fn(usize, &mut Window, &mut App) + 'static;
 
+enum VirtualizedTableFooter {
+    Custom(AnyElement),
+    LoadMore(crate::Button),
+}
+
 /// Virtualized table for large structured datasets.
 ///
 /// `VirtualizedTable` keeps the table header native and fixed while GPUI's
@@ -61,7 +66,7 @@ pub struct VirtualizedTable {
     selected_rows: Vec<usize>,
     active_row: Option<usize>,
     on_row_select: Option<Arc<RowSelectCallback>>,
-    footer: Option<AnyElement>,
+    footer: Option<VirtualizedTableFooter>,
 }
 
 impl VirtualizedTable {
@@ -195,7 +200,7 @@ impl VirtualizedTable {
 
     /// Adds a footer or load-more slot below the virtualized body.
     pub fn footer(mut self, footer: impl IntoElement) -> Self {
-        self.footer = Some(footer.into_any_element());
+        self.footer = Some(VirtualizedTableFooter::Custom(footer.into_any_element()));
         self
     }
 
@@ -205,23 +210,15 @@ impl VirtualizedTable {
         label: impl Into<SharedString>,
         callback: impl Fn(&mut Window, &mut App) + 'static,
     ) -> Self {
-        let callback = Arc::new(callback);
-        let label = label.into();
-        self.footer = Some(
-            div()
-                .w_full()
-                .py_3()
-                .flex()
-                .items_center()
-                .justify_center()
-                .text_sm()
-                .cursor_pointer()
-                .child(label)
-                .on_mouse_up(gpui::MouseButton::Left, move |_, window, cx| {
-                    callback(window, cx)
-                })
-                .into_any_element(),
-        );
+        self.footer = Some(VirtualizedTableFooter::LoadMore(
+            crate::Button::new(label.into())
+                .id("load-more")
+                .large()
+                .text()
+                .background(false)
+                .border(false)
+                .on_click(move |_, window, cx| callback(window, cx)),
+        ));
         self
     }
 
@@ -300,6 +297,7 @@ impl RenderOnce for VirtualizedTable {
         let border = self.border;
         let stripe = self.stripe;
         let row_count = self.row_count;
+        let loading = self.loading;
         let overdraw = self.overdraw;
         let row_height = self.row_height;
         let builder_list_state = self.list_state;
@@ -460,13 +458,24 @@ impl RenderOnce for VirtualizedTable {
             .child(header)
             .child(body)
             .when_some(footer, |s, footer| {
-                s.child(
-                    div()
-                        .border_t_1()
-                        .border_color(theme.neutral.border)
-                        .bg(theme.neutral.card)
-                        .child(footer),
-                )
+                let footer = match footer {
+                    VirtualizedTableFooter::Custom(footer) => footer,
+                    VirtualizedTableFooter::LoadMore(button) => div()
+                        .w_full()
+                        .flex()
+                        .flex_col()
+                        .items_stretch()
+                        .child(button.disabled(loading))
+                        .into_any_element(),
+                };
+                let footer = div()
+                    .border_t_1()
+                    .border_color(theme.neutral.border)
+                    .bg(theme.neutral.card)
+                    .child(footer);
+                #[cfg(test)]
+                let footer = footer.debug_selector(|| "virtualized-table-footer-test".to_string());
+                s.child(footer)
             })
             .when(self.loading, |s| {
                 s.child(
@@ -697,6 +706,174 @@ mod tests {
         assert!(state.logical_scroll_top().item_ix < 40);
         assert_visible(39);
     }
+
+    struct LoadMoreSurface {
+        rows: usize,
+        loading: bool,
+        state: std::rc::Rc<std::cell::RefCell<Option<ListState>>>,
+        calls: std::rc::Rc<std::cell::RefCell<Vec<usize>>>,
+        after_calls: std::rc::Rc<std::cell::Cell<usize>>,
+    }
+    impl gpui::Render for LoadMoreSurface {
+        fn render(&mut self, _: &mut Window, cx: &mut gpui::Context<Self>) -> impl IntoElement {
+            let rows = self.rows;
+            let view = cx.entity();
+            let table = test_table(rows)
+                .loading(self.loading)
+                .load_more(format!("Load more ({rows} rows)"), move |_, cx| {
+                    view.update(cx, |this, cx| {
+                        this.calls.borrow_mut().push(rows);
+                        this.rows += 500;
+                        cx.notify();
+                    });
+                });
+            if self.state.borrow().is_none() {
+                let state = table.list_state();
+                state.scroll_to(gpui::ListOffset {
+                    item_ix: 200,
+                    offset_in_item: px(7.0),
+                });
+                *self.state.borrow_mut() = Some(state);
+            }
+            div()
+                .w(px(400.0))
+                .child(crate::Button::new("Before").id("footer-before"))
+                .child(table)
+                .child(
+                    crate::Button::new("After")
+                        .id("footer-after")
+                        .on_click({
+                            let calls = self.after_calls.clone();
+                            move |_, _, _| calls.set(calls.get() + 1)
+                        }),
+                )
+        }
+    }
+
+    fn footer_key_down(window: &mut gpui::VisualTestContext, key: &str) {
+        window.simulate_keystrokes(key);
+    }
+
+    fn footer_key_up(window: &mut gpui::VisualTestContext, key: &str) {
+        window.update(|window, cx| {
+            let keystroke = gpui::Keystroke::parse_with_os(key, cx.platform_info().os).unwrap();
+            window.dispatch_event(
+                gpui::PlatformInput::KeyUp(gpui::KeyUpEvent { keystroke }),
+                cx,
+            );
+        });
+    }
+
+    fn footer_key(window: &mut gpui::VisualTestContext, key: &str) {
+        footer_key_down(window, key);
+        footer_key_up(window, key);
+    }
+
+    fn assert_footer_scroll(state: &ListState, rows: usize) {
+        assert_eq!(state.item_count(), rows);
+        assert_eq!(state.logical_scroll_top().item_ix, 200);
+        assert_eq!(state.logical_scroll_top().offset_in_item, px(7.0));
+        let viewport = state.viewport_bounds();
+        let row = state.bounds_for_item(200).expect("mounted row remains measured");
+        assert!(row.bottom() > viewport.top() && row.top() < viewport.bottom());
+    }
+
+    #[gpui::test]
+    fn load_more_footer_dispatch_preserves_focus_and_scroll(
+        cx: &mut gpui::TestAppContext,
+    ) {
+        cx.update(crate::init_liora);
+        let state = std::rc::Rc::new(std::cell::RefCell::new(None));
+        let calls = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        let after_calls = std::rc::Rc::new(std::cell::Cell::new(0));
+        let root = cx.add_window({
+            let state = state.clone();
+            let calls = calls.clone();
+            let after_calls = after_calls.clone();
+            move |_, _| LoadMoreSurface { rows: 500, loading: false, state, calls, after_calls }
+        });
+        let mut window = gpui::VisualTestContext::from_window(root.into(), cx);
+        window.update(|window, cx| {
+            window.draw(cx).clear(cx);
+            window.focus_next(cx);
+        });
+        footer_key(&mut window, "tab");
+        let focus = window.update(|window, cx| window.focused(cx).expect("Tab reaches a focus stop"));
+
+        footer_key(&mut window, "enter");
+        assert_eq!(*calls.borrow(), [500], "Enter activates the Tab-reached footer once");
+        window.update(|window, cx| {
+            window.draw(cx).clear(cx);
+            assert!(focus.is_focused(window), "label update must retain footer focus");
+        });
+        assert_footer_scroll(state.borrow().as_ref().unwrap(), 1_000);
+
+        footer_key_down(&mut window, "space");
+        assert_eq!(*calls.borrow(), [500], "Space key-down must not activate before key-up");
+        footer_key_up(&mut window, "space");
+        assert_eq!(*calls.borrow(), [500, 1_000], "Space activates the footer once on key-up");
+        window.update(|window, cx| {
+            window.draw(cx).clear(cx);
+            assert!(focus.is_focused(window), "label update must retain footer focus");
+        });
+        assert_footer_scroll(state.borrow().as_ref().unwrap(), 1_500);
+
+        footer_key(&mut window, "enter");
+        assert_eq!(*calls.borrow(), [500, 1_000, 1_500], "Enter activates only once after label refresh");
+        window.update(|window, cx| {
+            window.draw(cx).clear(cx);
+            assert!(focus.is_focused(window), "label update must retain footer focus");
+        });
+        assert_footer_scroll(state.borrow().as_ref().unwrap(), 2_000);
+
+        footer_key(&mut window, "tab");
+        window.update(|window, cx| {
+            window.draw(cx).clear(cx);
+            assert!(!focus.is_focused(window), "Tab must leave the footer");
+        });
+        footer_key(&mut window, "enter");
+        assert_eq!(after_calls.get(), 1, "Enter after Tab must activate the real next focus stop");
+        assert_eq!(*calls.borrow(), [500, 1_000, 1_500], "Tab moved focus off the footer");
+        footer_key(&mut window, "shift-tab");
+        window.update(|window, cx| {
+            window.draw(cx).clear(cx);
+            assert!(focus.is_focused(window), "reverse Tab must return to the footer");
+        });
+        let bounds = window.debug_bounds("virtualized-table-footer-test").unwrap();
+        let off_center = gpui::point(bounds.left() + px(8.0), bounds.center().y);
+        window.simulate_mouse_down(off_center, gpui::MouseButton::Left, gpui::Modifiers::none());
+        assert_eq!(*calls.borrow(), [500, 1_000, 1_500], "mouse-down must not load rows");
+        root.update(&mut window, |_, _, cx| cx.notify()).unwrap();
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        window.simulate_mouse_up(off_center, gpui::MouseButton::Left, gpui::Modifiers::none());
+        window.update(|window, cx| {
+            window.draw(cx).clear(cx);
+            assert!(focus.is_focused(window), "pointer-triggered label update retains focus");
+        });
+        assert_eq!(*calls.borrow(), [500, 1_000, 1_500, 2_000], "off-center release activates exactly once");
+        assert_footer_scroll(state.borrow().as_ref().unwrap(), 2_500);
+        root.update(&mut window, |surface, _, cx| {
+            surface.loading = true;
+            cx.notify();
+        })
+        .unwrap();
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        footer_key(&mut window, "enter");
+        assert_eq!(*calls.borrow(), [500, 1_000, 1_500, 2_000], "loading blocks Enter activation");
+        footer_key_down(&mut window, "space");
+        assert_eq!(*calls.borrow(), [500, 1_000, 1_500, 2_000], "loading blocks Space key-down activation");
+        footer_key_up(&mut window, "space");
+        assert_eq!(*calls.borrow(), [500, 1_000, 1_500, 2_000], "loading blocks Space key-up activation");
+        window.simulate_mouse_down(off_center, gpui::MouseButton::Left, gpui::Modifiers::none());
+        root.update(&mut window, |_, _, cx| cx.notify()).unwrap();
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        window.simulate_mouse_up(off_center, gpui::MouseButton::Left, gpui::Modifiers::none());
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert_eq!(*calls.borrow(), [500, 1_000, 1_500, 2_000], "loading blocks pointer activation");
+        assert_footer_scroll(state.borrow().as_ref().unwrap(), 2_500);
+    }
+
+
 
     #[test]
     fn virtualized_table_uses_list_state_without_row_element_cache() {
