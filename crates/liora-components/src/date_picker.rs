@@ -21,6 +21,7 @@
 
 use crate::gpui_compat::element_id;
 use crate::motion::pop_in;
+use chrono::Datelike;
 use gpui::{
     App, Bounds, Context, Element, ElementId, Entity, GlobalElementId, Hsla, InspectorElementId,
     IntoElement, LayoutId, MouseButton, Pixels, Render, SharedString, Window, actions, div,
@@ -121,16 +122,17 @@ impl DateValue {
 }
 
 impl DatePicker {
-    /// Creates `DatePicker` with default theme-driven styling and no optional callbacks attached.
+    /// Creates an empty picker displaying the current local month, with no callbacks attached.
     pub fn new() -> Self {
+        let today = chrono::Local::now();
         Self {
             id: liora_core::unique_id("date-picker"),
             picker_type: DatePickerType::Date,
             value: None,
             range_start: None,
             range_end: None,
-            view_year: 2026,
-            view_month: 5,
+            view_year: today.year(),
+            view_month: today.month(),
             is_open: false,
             placeholder: "请选择日期".into(),
             display_format: None,
@@ -1280,6 +1282,34 @@ fn weekday_monday_based(year: i32, month: u32, day: u32) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn new_opens_on_the_current_month() {
+        let before = chrono::Local::now();
+        let picker = DatePicker::new();
+        let after = chrono::Local::now();
+
+        assert!(
+            [(before.year(), before.month()), (after.year(), after.month())]
+                .contains(&(picker.view_year, picker.view_month)),
+            "default view must use the local current month, got {}-{}",
+            picker.view_year,
+            picker.view_month,
+        );
+    }
+
+    #[test]
+    fn explicit_value_and_range_override_the_default_month() {
+        let value = DateValue::new(2040, 2, 29).expect("valid date");
+        let picker = DatePicker::new().value(value);
+        assert_eq!((picker.view_year, picker.view_month), (2040, 2));
+        assert_eq!(picker.value_ref(), Some(value));
+
+        let start = DateValue::new(2039, 12, 31).expect("valid start");
+        let picker = DatePicker::new().date_range().range(value, start);
+        assert_eq!((picker.view_year, picker.view_month), (2039, 12));
+        assert_eq!(picker.range_ref(), (Some(start), Some(value)));
+    }
 
     #[test]
     fn date_picker_width_helpers_set_demo_widths() {

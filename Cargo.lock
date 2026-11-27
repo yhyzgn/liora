@@ -3721,6 +3721,7 @@ dependencies = [
 name = "liora-components"
 version = "0.6.1"
 dependencies = [
+ "chrono",
  "gpui",
  "hayro",
  "image",
