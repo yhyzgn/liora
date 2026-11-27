@@ -2408,6 +2408,9 @@ struct LiveDemoContent {
     accordions: Vec<Entity<liora_components::Accordion>>,
     table_sort_key: Option<SharedString>,
     table_sort_order: Option<liora_components::TableSortOrder>,
+    virtualized_table_loaded_rows: usize,
+    #[cfg(test)]
+    virtualized_table_state: Option<gpui::ListState>,
     color_pickers: Vec<Entity<liora_components::ColorPicker>>,
     time_pickers: Vec<Entity<liora_components::TimePicker>>,
     cascaders: Vec<Entity<liora_components::Cascader>>,
@@ -3552,6 +3555,9 @@ impl LiveDemoContent {
             accordions,
             table_sort_key: None,
             table_sort_order: None,
+            virtualized_table_loaded_rows: 500,
+            #[cfg(test)]
+            virtualized_table_state: None,
             color_pickers,
             time_pickers,
             cascaders,
@@ -4147,13 +4153,31 @@ impl Render for LiveDemoContent {
                     .map(Entity::into_any_element)
                     .collect(),
             ),
-            "VirtualizedTableBasic" => virtualized_table_demo(false, None, None).into_any_element(),
+            "VirtualizedTableBasic" => virtualized_table_demo(10_000, false, None, None).into_any_element(),
             "VirtualizedTableSortable" => self.virtualized_table_sortable_demo(_cx),
-            "VirtualizedTableDataTable" => virtualized_table_demo(false, None, None)
-                .selected_rows([1, 3, 5])
-                .active_row(Some(8))
-                .load_more("加载更多数据", |_, _| {})
-                .into_any_element(),
+            "VirtualizedTableDataTable" => {
+                let view = _cx.entity().clone();
+                let loaded_rows = self.virtualized_table_loaded_rows;
+                let table = virtualized_table_demo(loaded_rows, false, None, None)
+                    .selected_rows([1, 3, 5])
+                    .active_row(Some(8))
+                    .load_more(
+                        format!("加载更多数据（当前 {loaded_rows} 行）"),
+                        move |_, cx| {
+                            view.update(cx, |this, cx| {
+                                if this.virtualized_table_loaded_rows < 10_000 {
+                                    this.virtualized_table_loaded_rows =
+                                        (this.virtualized_table_loaded_rows + 500).min(10_000);
+                                    cx.notify();
+                                }
+                            });
+                        },
+                    );
+                #[cfg(test)]
+                self.virtualized_table_state
+                    .get_or_insert_with(|| table.list_state());
+                table.into_any_element()
+            }
             "VirtualizedTreeBasic" | "VirtualizedTreeCheckable" => demo_stack(
                 self.virtualized_trees
                     .iter()
@@ -7335,7 +7359,7 @@ impl LiveDemoContent {
         let view = cx.entity().clone();
         let sort_key = self.table_sort_key.clone();
         let sort_order = self.table_sort_order;
-        let mut table = virtualized_table_demo(true, sort_key.clone(), sort_order).on_sort_change(
+        let mut table = virtualized_table_demo(10_000, true, sort_key.clone(), sort_order).on_sort_change(
             move |state, _, cx| {
                 view.update(cx, |this, cx| {
                     this.table_sort_key = state.order.map(|_| state.key.clone());
@@ -8052,6 +8076,7 @@ fn table_status_tag(status: &'static str) -> liora_components::Tag {
 }
 
 fn virtualized_table_demo(
+    row_count: usize,
     sortable: bool,
     sort_key: Option<SharedString>,
     sort_order: Option<liora_components::TableSortOrder>,
@@ -8059,7 +8084,7 @@ fn virtualized_table_demo(
     let reverse = sort_order == Some(liora_components::TableSortOrder::Descending);
     let mut table = VirtualizedTable::new(
         virtualized_table_columns(sortable),
-        10_000,
+        row_count,
         move |row, key, _window, _cx| virtualized_table_cell(row, key, reverse),
     )
     .height(px(360.0))
@@ -12237,6 +12262,116 @@ mod tests {
             .debug_bounds("alert-close")
             .expect("the first sibling Alert must remain visible");
         assert!(remaining_close.top() < close.top());
+        window.read(|cx| assert_eq!(handle.read(cx).unwrap().0.entity_id(), page_id));
+        assert_eq!(
+            retained_page.read_with(cx, |page, _| page.virtual_list.entity_id()),
+            list_id
+        );
+    }
+
+    #[gpui::test]
+    fn virtualized_table_load_more_preserves_table_and_docs_scroll(
+        cx: &mut gpui::TestAppContext,
+    ) {
+        struct PageWindow(Entity<DocsPageView>);
+        impl Render for PageWindow {
+            fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+                div().size_full().child(self.0.clone())
+            }
+        }
+        cx.update(liora_components::init_liora);
+        const MARKDOWN: &str = "# VirtualizedTable\n\nRetained data-table demo.\n\n::Demo{component=\"VirtualizedTableDataTable\"}::\n\nAfter the table.\n";
+        let document = MarkdownDocument::parse(MARKDOWN);
+        let demo_row = document
+            .blocks
+            .iter()
+            .position(|block| {
+                matches!(block, Block::LiveDemo { component } if component.as_ref() == "VirtualizedTableDataTable")
+            })
+            .expect("data-table live row");
+        let page = cx.new(|cx| DocsPageView::new(MARKDOWN, cx));
+        let list = page.read_with(cx, |page, _| page.virtual_list.clone());
+        let outer = list.read_with(cx, |list, _| list.list_state());
+        let demo = page.read_with(cx, |page, cx| {
+            page.live_demos
+                .iter()
+                .find(|host| host.read(cx).component.as_ref() == "VirtualizedTableDataTable")
+                .expect("retained data-table host")
+                .read(cx)
+                .demo
+                .clone()
+        });
+        let page_id = page.entity_id();
+        let list_id = list.entity_id();
+        let retained_page = page.clone();
+        let handle = cx.add_window(move |_, _| PageWindow(page));
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), cx);
+        window.simulate_resize(gpui::size(px(1200.0), px(900.0)));
+        window.update(|window, cx| {
+            window.draw(cx).clear(cx);
+            outer.scroll_to(gpui::ListOffset {
+                item_ix: demo_row,
+                offset_in_item: px(0.0),
+            });
+            window.refresh();
+        });
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        let table = demo.read_with(cx, |demo, _| {
+            demo.virtualized_table_state
+                .clone()
+                .expect("mounted table handle")
+        });
+        assert_eq!(table.item_count(), 500);
+        window.update(|window, _| {
+            table.scroll_to(gpui::ListOffset {
+                item_ix: 200,
+                offset_in_item: px(7.0),
+            });
+            window.refresh();
+        });
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        let table_before = table.logical_scroll_top();
+        let outer_before = outer.logical_scroll_top();
+        let row_before = outer.bounds_for_item(demo_row).expect("live row bounds");
+        let table_row_before = table.bounds_for_item(200).expect("visible table row bounds");
+        let viewport_before = table.viewport_bounds();
+        let footer = gpui::point(viewport_before.center().x, viewport_before.bottom() + px(24.0));
+        assert!(row_before.contains(&footer), "actual footer must be inside the live row");
+        window.simulate_click(footer, gpui::Modifiers::none());
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert_eq!(table.item_count(), 1_000, "existing footer must append one page");
+        assert_eq!(table.logical_scroll_top().item_ix, table_before.item_ix);
+        assert_eq!(table.logical_scroll_top().offset_in_item, table_before.offset_in_item);
+        assert_eq!(outer.logical_scroll_top().item_ix, outer_before.item_ix);
+        assert_eq!(outer.logical_scroll_top().offset_in_item, outer_before.offset_in_item);
+        assert_eq!(outer.bounds_for_item(demo_row).unwrap(), row_before);
+        assert_eq!(table.viewport_bounds(), viewport_before);
+        assert_eq!(table.bounds_for_item(200).unwrap(), table_row_before);
+
+        table.scroll_to(gpui::ListOffset {
+            item_ix: 750,
+            offset_in_item: px(0.0),
+        });
+        window.update(|window, cx| {
+            window.refresh();
+            window.draw(cx).clear(cx);
+        });
+        let appended = table.bounds_for_item(750).expect("appended row is rendered");
+        assert!(table.viewport_bounds().intersects(&appended));
+        assert_eq!(outer.logical_scroll_top().item_ix, outer_before.item_ix);
+        assert_eq!(outer.logical_scroll_top().offset_in_item, outer_before.offset_in_item);
+
+        let footer = gpui::point(viewport_before.center().x, viewport_before.bottom() + px(24.0));
+        for expected in (1_500..=10_000).step_by(500).chain([10_000]) {
+            window.simulate_click(footer, gpui::Modifiers::none());
+            window.update(|window, cx| window.draw(cx).clear(cx));
+            assert_eq!(table.item_count(), expected);
+            assert_eq!(table.logical_scroll_top().item_ix, 750);
+            assert_eq!(table.logical_scroll_top().offset_in_item, px(0.0));
+            assert_eq!(outer.logical_scroll_top().item_ix, outer_before.item_ix);
+            assert_eq!(outer.logical_scroll_top().offset_in_item, outer_before.offset_in_item);
+            assert_eq!(outer.bounds_for_item(demo_row).unwrap(), row_before);
+        }
         window.read(|cx| assert_eq!(handle.read(cx).unwrap().0.entity_id(), page_id));
         assert_eq!(
             retained_page.read_with(cx, |page, _| page.virtual_list.entity_id()),
