@@ -459,8 +459,8 @@ impl Cascader {
         Self::option_for_path_mut_from_option(child, rest)
     }
 
-    fn columns_for_active_path(&self) -> Vec<Vec<CascaderOption>> {
-        let mut columns = vec![self.options.clone()];
+    fn columns_for_active_path(&self) -> Vec<&[CascaderOption]> {
+        let mut columns = vec![self.options.as_slice()];
         let mut siblings = self.options.as_slice();
 
         for value in &self.active_path {
@@ -470,7 +470,7 @@ impl Cascader {
             if option.disabled || option.loading || option.children.is_empty() {
                 break;
             }
-            columns.push(option.children.clone());
+            columns.push(option.children.as_slice());
             siblings = &option.children;
         }
 
@@ -600,24 +600,27 @@ impl Render for Cascader {
             let theme_portal = theme.clone();
             let trigger_bounds = self.last_bounds;
             let cascader_id = self.id.clone();
-            let columns = self.columns_for_active_path();
-            let active_path = self.active_path.clone();
-            let selected_path = self.selected_path.clone();
-            let filterable = self.filterable;
-            let matches = self.matching_leaf_paths();
             let close_on_click_outside = self.close_on_click_outside;
 
-            let trigger_width = trigger_bounds.map_or(px(240.0), |bounds| bounds.size.width);
-            let popup_height = if filterable && !matches.is_empty() {
-                popup_content_height(matches.len())
-            } else {
-                popup_content_height(columns.iter().map(Vec::len).max().unwrap_or_default())
-            };
-            let requested_panel_width =
-                px((columns.len().max(1) as f32 * 180.0).max(f32::from(trigger_width)));
-
             push_portal(
-                move |window, _cx| {
+                move |window, cx| {
+                    // The one-shot portal builds owned elements before this entity borrow ends.
+                    let this = entity.read(cx);
+                    let columns = this.columns_for_active_path();
+                    let active_path = &this.active_path;
+                    let selected_path = &this.selected_path;
+                    let filterable = this.filterable;
+                    let matches = this.matching_leaf_paths();
+                    let trigger_width = trigger_bounds.map_or(px(240.0), |bounds| bounds.size.width);
+                    let popup_height = if filterable && !matches.is_empty() {
+                        popup_content_height(matches.len())
+                    } else {
+                        popup_content_height(
+                            columns.iter().map(|column| column.len()).max().unwrap_or_default(),
+                        )
+                    };
+                    let requested_panel_width =
+                        px((columns.len().max(1) as f32 * 180.0).max(f32::from(trigger_width)));
                     let viewport = window.viewport_size();
                     let panel_width = popup_panel_width(requested_panel_width, viewport.width);
                     let (top, left) =
@@ -663,9 +666,9 @@ impl Render for Cascader {
                         .when(!filterable || matches.is_empty(), |panel| {
                             panel.child(render_columns(
                                 cascader_id.clone(),
-                                columns.clone(),
-                                active_path.clone(),
-                                selected_path.clone(),
+                                columns,
+                                active_path,
+                                selected_path,
                                 entity.clone(),
                                 theme.clone(),
                                 (panel_height - px(2.0)).max(px(1.0)),
@@ -853,9 +856,9 @@ fn popup_position(
 
 fn render_columns(
     cascader_id: SharedString,
-    columns: Vec<Vec<CascaderOption>>,
-    active_path: Vec<SharedString>,
-    selected_path: Vec<SharedString>,
+    columns: Vec<&[CascaderOption]>,
+    active_path: &[SharedString],
+    selected_path: &[SharedString],
     entity: Entity<Cascader>,
     theme: liora_theme::Theme,
     panel_height: Pixels,
@@ -867,8 +870,8 @@ fn render_columns(
         .flex_row()
         .overflow_x_scroll()
         .children(columns.into_iter().enumerate().map(|(depth, column)| {
-            let active_value = active_path.get(depth).cloned();
-            let selected_value = selected_path.get(depth).cloned();
+            let active_value = active_path.get(depth);
+            let selected_value = selected_path.get(depth);
             let path_prefix = active_path.iter().take(depth).cloned().collect::<Vec<_>>();
             let column_id = format!("{}-column-{depth}", cascader_id);
             let item_id_prefix = cascader_id.clone();
@@ -880,15 +883,15 @@ fn render_columns(
                 .overflow_y_scroll()
                 .border_r_1()
                 .border_color(theme.neutral.divider)
-                .children(column.into_iter().map({
+                .children(column.iter().map({
                     let entity = entity.clone();
                     let theme = theme.clone();
                     let item_id_prefix = item_id_prefix.clone();
                     move |option| {
                         let mut path = path_prefix.clone();
                         path.push(option.value.clone());
-                        let is_active = Some(option.value.clone()) == active_value;
-                        let is_selected = Some(option.value.clone()) == selected_value;
+                        let is_active = Some(&option.value) == active_value;
+                        let is_selected = Some(&option.value) == selected_value;
                         let has_children = !option.children.is_empty();
                         let disabled = option.disabled || option.loading;
                         let entity = entity.clone();
@@ -1167,6 +1170,105 @@ mod popup_layout_tests {
 mod interaction_tests {
     use super::*;
     use std::{cell::Cell, cell::RefCell, rc::Rc};
+
+    #[test]
+    fn queued_portal_reads_latest_lazy_columns_and_rechecks_blocked_ancestors() {
+        struct UpdatingSurface {
+            cascader: Entity<Cascader>,
+            renders: Rc<Cell<usize>>,
+        }
+
+        impl Render for UpdatingSurface {
+            fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+                let trigger = self
+                    .cascader
+                    .update(cx, |this, cx| this.render(window, cx).into_any_element());
+                if self.renders.get() == 0 {
+                    // Update after queuing the portal, before PortalLayer consumes it.
+                    self.cascader.update(cx, |this, cx| {
+                        assert!(this.set_children_at_path(
+                            &["parent".into()],
+                            vec![CascaderOption::new("branch", "Loaded branch")
+                                .child(CascaderOption::new("leaf", "Loaded leaf").leaf(true))],
+                            cx,
+                        ));
+                        this.set_selected_path(["parent", "branch", "leaf"], cx);
+                    });
+                }
+                self.renders.set(self.renders.get() + 1);
+                div()
+                    .relative()
+                    .size_full()
+                    .child(trigger)
+                    .child(crate::PortalLayer)
+            }
+        }
+
+        for blocker in ["enabled", "disabled", "loading"] {
+            let mut app = gpui::TestAppContext::single();
+            app.update(crate::init_liora);
+            let changes = Rc::new(RefCell::new(Vec::new()));
+            let callbacks = changes.clone();
+            let cascader = app.new(|cx| {
+                let mut this = Cascader::new(
+                    vec![CascaderOption::new("parent", "Parent").loading(true)],
+                    cx,
+                )
+                .id("queued-lazy")
+                .lazy(true)
+                .on_change(move |path, _, _| callbacks.borrow_mut().push(path));
+                this.is_open = true;
+                this.active_path = vec!["parent".into()];
+                this
+            });
+            let renders = Rc::new(Cell::new(0));
+            let root = cascader.clone();
+            let count = renders.clone();
+            let handle = app.add_window(move |_, _| UpdatingSurface {
+                cascader: root,
+                renders: count,
+            });
+            let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+            assert_eq!(renders.get(), 1, "test must inspect the first queued portal");
+            static SELECTOR: std::sync::LazyLock<SharedString> = std::sync::LazyLock::new(|| {
+                Cascader::popup_item_id(
+                    "queued-lazy",
+                    &["parent".into(), "branch".into(), "leaf".into()],
+                )
+            });
+            let bounds = window
+                .debug_bounds(SELECTOR.as_ref())
+                .expect("latest lazy path was not painted");
+            assert!(changes.borrow().is_empty(), "data updates emitted on_change");
+            window.update(|window, cx| {
+                cascader.update(cx, |this, _| {
+                    this.options[0].disabled = blocker == "disabled";
+                    this.options[0].loading = blocker == "loading";
+                });
+                window.dispatch_event(
+                    gpui::PlatformInput::MouseDown(gpui::MouseDownEvent {
+                        position: bounds.center(),
+                        button: MouseButton::Left,
+                        click_count: 1,
+                        ..Default::default()
+                    }),
+                    cx,
+                );
+            });
+            assert_eq!(changes.borrow().len(), usize::from(blocker == "enabled"));
+            if blocker == "enabled" {
+                assert_eq!(
+                    changes.borrow()[0],
+                    ["parent", "branch", "leaf"].map(SharedString::from),
+                );
+            }
+            assert_eq!(
+                cascader.read_with(&app, |this, _| this.is_open),
+                blocker != "enabled",
+            );
+            app.quit();
+        }
+    }
 
     struct CascaderSurface {
         cascader: Entity<Cascader>,

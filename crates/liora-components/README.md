@@ -42,6 +42,8 @@ Disabled or loading nodes block selection through their descendants, including p
 
 Option values retain Unicode, punctuation and path boundaries in popup identities. Treat `Cascader::popup_item_id` results as opaque and derive them through the helper rather than concatenating a string; callbacks still receive the original values unchanged.
 
+Open popups borrow the current option columns during one-shot portal rendering instead of recursively copying their subtrees. Rows retain owned labels and click paths; host updates completed before the portal runs are reflected together in its columns, selection and geometry. This reduces CPU-side data copying, not a measured GPU or frame-latency guarantee.
+
 Gallery and Docs execute the same five authored constructors with actual selection/clear feedback. The searchable example preloads `search_query("杭州")` to match option labels; no editable search field is provided. The lazy example synchronously attaches fixed data without network I/O. The host owns persistence and asynchronous data loading.
 
 ## Calendar
