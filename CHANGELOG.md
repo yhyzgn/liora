@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Show all twelve Popover placements in the Docs live demo and snippet, matching Gallery.
 - Initialize DatePicker's empty view from the current local month at construction instead of May 2026; preserve empty selection and explicit value/range overrides without automatically advancing retained views across month boundaries.
 - Honor Autocomplete's existing `trigger_on_focus` policy through one retained listener on its Input focus handle; open current suggestions on enabled focus entry by default, preserve the opt-out and query-driven opening, and leave disabled controls closed.
 - Defer Autocomplete selection callbacks until after its entity update returns, so callbacks can read the selected value or replace suggestions on the same control without a reentrant entity-borrow panic; preserve fill-before-callback and popup-close ordering.
