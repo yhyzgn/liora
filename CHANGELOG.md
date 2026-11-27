@@ -6,6 +6,7 @@
 - Return an InvalidInput bad-icon error instead of overflowing when raw RGBA dimensions require an unrepresentable byte count; preserve exact InvalidRgba counts for representable mismatches.
 - Generate macOS `.app` install-smoke dry-run plans with product-name bundles, regular executable checks, shell-quoted paths, and cleanup scoped to a unique temporary directory; manual `open -W` waits for app exit and `.app` execution remains unsupported.
 - Make Gallery's Basic VirtualizedTable render all 10,000 advertised rows.
+- Sort Gallery's existing 1,000-row VirtualizedTable by displayed date, natural customer name, amount and status using one retained in-place source-index permutation; preserve original-ID ties and reset order, avoid formatting unrelated fields, and leave Basic and load-more behavior unchanged.
 - Cache parsed built-in English translations for terminal fallback and reuse them when constructing independent builtin maps; preserve overrides and fallback precedence without reparsing on repeated misses.
 - Clamp the shared base used by public z-index helpers so category offsets remain ordered through `u32::MAX`, without changing the configured value or existing built-in overlay ordering.
 - Prune `.app` directories case-insensitively when selecting GitHub Release assets, preventing bundle-internal package files from overwriting sibling downloads or duplicating asset-index entries; preserve raw executables, both font variants, supported package downloads, and portable-staging exclusions.
