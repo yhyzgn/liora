@@ -17,6 +17,8 @@
 
 `active_index` 设置初始步骤，后续前进/后退由 Tour 浮层自身推进，同时触发 `on_change`。
 
+如果宿主需要查询后退目标，`previous_index()` 在第一步或没有步骤时返回 `None`。
+
 ### 效果
 
 ::Demo{component="TourMiddle"}::

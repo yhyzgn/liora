@@ -259,10 +259,10 @@ impl Tour {
             .and_then(|idx| (idx + 1 < self.steps.len()).then_some(idx + 1))
     }
 
-    /// Returns the carousel index reached by moving one item backward.
+    /// Returns the previous step index, or `None` at the first step or for an empty tour.
     pub fn previous_index(&self) -> Option<usize> {
         self.resolved_active_index()
-            .and_then(|idx| (idx > 0).then_some(idx - 1))
+            .and_then(|idx| idx.checked_sub(1))
     }
 
     /// Show the tour as a top-level modal overlay.
@@ -529,6 +529,16 @@ mod tests {
         let tour = tour().active_index(1);
         assert_eq!(tour.previous_index(), Some(0));
         assert_eq!(tour.next_index(), Some(2));
+    }
+
+    #[test]
+    fn tour_first_step_has_no_previous_index() {
+        assert_eq!(tour().previous_index(), None);
+    }
+
+    #[test]
+    fn empty_tour_has_no_previous_index() {
+        assert_eq!(Tour::new(Vec::new()).previous_index(), None);
     }
 
     #[test]

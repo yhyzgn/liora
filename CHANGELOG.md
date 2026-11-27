@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Return `None` instead of underflowing when querying `Tour::previous_index()` on the first step; keep empty tours without a previous index.
 - Honor absolute `XDG_CONFIG_HOME` for pending Linux/FreeBSD GTK startup theme hints, including without HOME. Empty or relative overrides fall back to an absolute HOME config directory; keep GTK4-before-GTK3 lookup, initialized GPUI appearance precedence, and GTK dark-preference semantics unchanged. Port the existing Core XDG path resolver without changing desktop data-directory handling.
 - Resolve the retained Docs sidebar search placeholder and default accessible name from a typed locale key at render time. Preserve its Input identity and query across English/Chinese language switches.
 - Add clamped Up/Down navigation and scroll-into-view for filtered Cascader results while keeping focus and caret in the search Input. Enter selects only an explicitly highlighted, currently valid path through the existing guarded callback/focus lifecycle; query/data changes and reopening clear the highlight. Preserve modified-key editing, composition ownership, trigger activation and pointer-only hierarchical columns. This does not complete hierarchical keyboard navigation or certify native IME behavior.
