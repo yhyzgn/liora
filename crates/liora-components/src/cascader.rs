@@ -163,13 +163,14 @@ impl Cascader {
         self
     }
 
-    /// Performs the popup item id operation used by this component.
+    /// Derives an opaque, stable item identity from the complete prefix and value path.
     pub fn popup_item_id(prefix: impl AsRef<str>, path: &[SharedString]) -> SharedString {
-        let mut id = prefix.as_ref().to_string();
+        let mut id = String::new();
+        append_id_segment(&mut id, prefix.as_ref());
         id.push_str("-item");
         for value in path {
             id.push('-');
-            id.push_str(&sanitize_id_segment(value.as_ref()));
+            append_id_segment(&mut id, value.as_ref());
         }
         id.into()
     }
@@ -999,17 +1000,14 @@ fn render_match_list(
         .into_any_element()
 }
 
-fn sanitize_id_segment(segment: &str) -> String {
-    segment
-        .chars()
-        .map(|ch| {
-            if ch.is_ascii_alphanumeric() || ch == '_' || ch == '-' {
-                ch
-            } else {
-                '-'
-            }
-        })
-        .collect()
+fn append_id_segment(id: &mut String, segment: &str) {
+    for ch in segment.chars() {
+        match ch {
+            '%' => id.push_str("%25"),
+            '-' => id.push_str("%2D"),
+            _ => id.push(ch),
+        }
+    }
 }
 
 fn collect_leaf_matches(
@@ -1400,7 +1398,10 @@ mod interaction_tests {
             let (mut window, _, _) = surface(&mut app, &cascader);
             open_with_pointer(&mut window, &cascader);
             assert!(cascader.read_with(&app, |this, _| this.is_open));
-            let Some(bounds) = window.debug_bounds("stale-search-item-parent-leaf") else {
+            static SELECTOR: std::sync::LazyLock<SharedString> = std::sync::LazyLock::new(|| {
+                Cascader::popup_item_id("stale-search", &["parent".into(), "leaf".into()])
+            });
+            let Some(bounds) = window.debug_bounds(SELECTOR.as_ref()) else {
                 panic!("stale search result was not painted");
             };
             let position = bounds.center();
@@ -1471,8 +1472,15 @@ mod interaction_tests {
             });
             let (mut window, _, _) = surface(&mut app, &cascader);
             open_with_pointer(&mut window, &cascader);
-            for selector in ["enabled-path-item-parent", "enabled-path-item-parent-leaf"] {
-                let Some(bounds) = window.debug_bounds(selector) else {
+            static SELECTORS: std::sync::LazyLock<[SharedString; 2]> =
+                std::sync::LazyLock::new(|| {
+                    [
+                        Cascader::popup_item_id("enabled-path", &["parent".into()]),
+                        Cascader::popup_item_id("enabled-path", &["parent".into(), "leaf".into()]),
+                    ]
+                });
+            for selector in SELECTORS.iter() {
+                let Some(bounds) = window.debug_bounds(selector.as_ref()) else {
                     panic!("Cascader option was not painted: {selector}");
                 };
                 let position = bounds.center();

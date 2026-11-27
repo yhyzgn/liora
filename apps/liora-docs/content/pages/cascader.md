@@ -8,6 +8,8 @@
 
 示例通过 `on_change` 显示真实路径值，例如 `Selected zhejiang / hangzhou / xihu`；点击清空显示 `Selection cleared`。这些消息只反馈当前操作，不会持久化数据。
 
+选项值可以包含中文、标点或连字符，回调保留原值。自动化需要定位选项时，使用 `Cascader::popup_item_id` 根据控件前缀及完整值路径生成不透明标识，不要手动拼接内部 ID。
+
 ### 效果
 
 ::Demo{component="CascaderBasic"}::

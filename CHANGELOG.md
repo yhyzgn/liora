@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Preserve Unicode, punctuation, empty segments, prefix namespaces and path boundaries in Cascader popup item identities. Escape only identity delimiters without changing selected values, and derive interaction-test selectors through the public helper instead of hard-coded strings.
 - Map AccessKit's optional expanded property into Linux AT-SPI `Expandable`/`Expanded` states and their forward/reverse notifications in the application-root leaf patch. Keep the GPUI pin, dependency versions and downstream opt-in boundary unchanged; cover property removal and unchanged updates as well as expansion/collapse.
 - Make enabled Cascader triggers keyboard reachable with retained focus, native Enter/Space release activation, scoped Escape handling and Button label/expanded/disabled metadata. Reject disabled/loading ancestors during selection and stale search activation, and prune those subtrees from search. Preserve mutable lazy-loading updates. Execute the same five authored constructors in Gallery and Docs with exact selection/clear feedback; document that search is programmatically prefilled and lazy demo data is synchronous.
 - Preserve scoped whole-word selections on mouse release instead of replacing their endpoint with a character hit test. Resolve document/group selection once at its native owner and pass that entity through nested Card/container namespaces; keep equally named independent document owners isolated for dragging, Select All and Copy. Keep editable styled-text pointer handlers on their existing input path.

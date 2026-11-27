@@ -38,10 +38,30 @@ fn rejects_unknown_or_disabled_value_paths() {
 }
 
 #[test]
-fn derives_stable_interactive_ids_from_value_paths() {
-    let id = Cascader::popup_item_id("region", &["zhejiang".into(), "hangzhou".into()]);
-
-    assert_eq!(id.as_ref(), "region-item-zhejiang-hangzhou");
+fn popup_item_ids_preserve_unicode_punctuation_and_path_boundaries() {
+    let cases: Vec<(&str, Vec<gpui::SharedString>)> = vec![
+        ("region", vec!["中国".into()]),
+        ("region", vec!["日本".into()]),
+        ("region", vec!["a/b".into()]),
+        ("region", vec!["a?b".into()]),
+        ("region", vec!["a-b".into()]),
+        ("region", vec!["a".into(), "b".into()]),
+        ("region", vec!["a%2Db".into()]),
+        ("region", vec!["a-item".into()]),
+        ("region-item-a", vec![]),
+        ("region", vec![]),
+        ("region", vec!["".into()]),
+        ("region", vec!["".into(), "".into()]),
+    ];
+    let mut ids = std::collections::BTreeMap::new();
+    for (prefix, path) in &cases {
+        let id = Cascader::popup_item_id(prefix, path);
+        assert_eq!(id, Cascader::popup_item_id(prefix, path));
+        assert!(
+            ids.insert(id.clone(), (prefix, path)).is_none(),
+            "distinct option addresses share {id:?}: {ids:?}"
+        );
+    }
 }
 
 #[test]

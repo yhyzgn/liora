@@ -40,6 +40,8 @@ Enabled Cascader triggers participate in Tab/Shift+Tab traversal. Enter/Space re
 
 Disabled or loading nodes block selection through their descendants, including precomputed search results whose ancestors change before activation. Search excludes those subtrees; `is_selectable_path` also checks every ancestor. Lazy-data callbacks can still update loading branches through the mutable data APIs.
 
+Option values retain Unicode, punctuation and path boundaries in popup identities. Treat `Cascader::popup_item_id` results as opaque and derive them through the helper rather than concatenating a string; callbacks still receive the original values unchanged.
+
 Gallery and Docs execute the same five authored constructors with actual selection/clear feedback. The searchable example preloads `search_query("杭州")` to match option labels; no editable search field is provided. The lazy example synchronously attaches fixed data without network I/O. The host owns persistence and asynchronous data loading.
 
 ## Calendar
