@@ -110,6 +110,7 @@
 - Restore unhandled Tab/Shift+Tab traversal through system/custom window frames and enabled Input controls; reserve the Docs virtual scrollbar hit area so it cannot intercept live Alert close clicks.
 - Fix Affix content alignment in nested layouts before pinning and after scrolling back.
 - Release Autocomplete after its window closes by avoiding a strong reference cycle in the Input change callback.
+- Release TreeSelect after its final owner is removed, even if its search Input is retained.
 - Display Avatar alt text when its image fails to load, with matching Gallery and Docs examples.
 - Keep Autocomplete suggestions from blocking neighboring controls when outside-click dismissal is disabled.
 - Clear Anchor target measurements and active highlighting when a target is removed.

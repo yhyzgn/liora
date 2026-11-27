@@ -26,6 +26,8 @@
 
 ## 搜索过滤
 
+移除 `TreeSelect` 的最后一个持有者后，内部搜索框的回调不会继续持有该选择器。
+
 ### 效果
 
 ::Demo{component="TreeSelectFilterable"}::

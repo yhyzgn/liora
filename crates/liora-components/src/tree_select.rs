@@ -73,13 +73,22 @@ impl TreeSelectNode {
 impl TreeSelect {
     /// Creates `TreeSelect` that renders the supplied nodes collection.
     pub fn new(nodes: Vec<TreeSelectNode>, cx: &mut Context<Self>) -> Self {
+        let view = cx.weak_entity();
         Self {
             nodes,
             selected_keys: HashSet::new(),
             disabled_keys: HashSet::new(),
             multiple: false,
             filterable: false,
-            filter_input: cx.new(|cx| Input::new("", cx).placeholder("Search tree...")),
+            filter_input: cx.new(move |cx| {
+                Input::new("", cx)
+                    .placeholder("Search tree...")
+                    .on_change(move |value, cx| {
+                        let _ = view.update(cx, |view, cx| {
+                            view.set_filter_query(value.to_string(), cx)
+                        });
+                    })
+            }),
             filter_query: SharedString::default(),
             placeholder: "Select node".into(),
             is_open: false,
@@ -297,15 +306,6 @@ impl Render for TreeSelect {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
         let filter_input = self.filter_input.clone();
-        let view = cx.entity().clone();
-        cx.update_entity(&filter_input, |input, cx| {
-            input.set_placeholder("Search tree...", cx);
-            input.set_on_change(move |value, cx| {
-                view.update(cx, |view: &mut TreeSelect, cx| {
-                    view.set_filter_query(value.to_string(), cx)
-                });
-            });
-        });
 
         let label = self.selected_label();
         div()
@@ -422,6 +422,47 @@ mod tests {
         assert!(node_matches_filter(&nodes()[0], "quick"));
         assert!(!node_matches_filter(&nodes()[1], "quick"));
     }
+
+    #[test]
+    fn tree_select_releases_with_retained_filter_input() {
+        use gpui::EntityInputHandler;
+
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let handle = app.add_window(|_, cx| {
+            let mut tree = TreeSelect::new(nodes(), cx).filterable(true);
+            tree.is_open = true;
+            tree
+        });
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        let (tree, input) = handle
+            .update(&mut app, |tree, _, cx| (cx.weak_entity(), tree.filter_input.clone()))
+            .unwrap();
+        window.update(|window, cx| {
+            input.update(cx, |input, cx| {
+                input.replace_text_in_range(None, "quick", window, cx);
+            });
+        });
+        assert_eq!(
+            tree.read_with(&app, |tree, _| tree.filter_query.clone())
+                .unwrap(),
+            "quick"
+        );
+
+        window.update(|window, _| window.remove_window());
+        drop(window);
+        app.run_until_parked();
+
+        assert!(
+            tree.upgrade().is_none(),
+            "filter Input must not retain TreeSelect"
+        );
+        input.update(&mut app, |input, cx| input.clear(cx));
+        drop(input);
+        app.quit();
+    }
+
     #[test]
     fn tree_select_uses_mouse_down_for_nested_card_interactions() {
         let source = include_str!("tree_select.rs");
