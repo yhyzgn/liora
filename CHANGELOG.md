@@ -4,6 +4,7 @@
 
 - Bind `VirtualizedTable::list_state()` to its first keyed mount and create the builder `ListState` only when requested, avoiding discarded state-tree allocations during inline renders.
 - Make the existing Docs VirtualizedTable load-more footer append 500-row pages up to 10,000 rows through retained parent state, preserving the table viewport and Docs page anchor; replace the companion snippet's no-op with a working retained-view example and avoid notifying again at the cap.
+- Expose retained Segmented options as a native radio group with localized choice names, checked/disabled state and roving keyboard focus. Keep serialized-value callbacks deduplicated for equal-valued choices, and preserve value-plus-occurrence focus/selection when `set_options` reorders options without render-time identity allocations.
 - Return `None` instead of underflowing when querying `Tour::previous_index()` on the first step; keep empty tours without a previous index.
 - Honor absolute `XDG_CONFIG_HOME` for pending Linux/FreeBSD GTK startup theme hints, including without HOME. Empty or relative overrides fall back to an absolute HOME config directory; keep GTK4-before-GTK3 lookup, initialized GPUI appearance precedence, and GTK dark-preference semantics unchanged. Port the existing Core XDG path resolver without changing desktop data-directory handling.
 - Resolve the retained Docs sidebar search placeholder and default accessible name from a typed locale key at render time. Preserve its Input identity and query across English/Chinese language switches.
