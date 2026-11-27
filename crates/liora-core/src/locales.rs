@@ -11,7 +11,7 @@ use std::{
     error::Error,
     fmt, fs,
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{Arc, LazyLock},
 };
 
 /// Typed translation key used by [`tr`].
@@ -281,7 +281,7 @@ impl LocalesMap {
     /// Creates a map containing Liora's small built-in safety fallback.
     pub fn builtin() -> Self {
         let mut map = Self::new();
-        map = map.with_locale("en-US", builtin_locale_entries(BUILTIN_EN_US_TOML));
+        map.locales.insert("en-US".into(), BUILTIN_EN_US.clone());
         map = map.with_locale("zh-CN", builtin_locale_entries(BUILTIN_ZH_CN_TOML));
         map
     }
@@ -530,7 +530,7 @@ impl LocalesConfig {
             })
             .or_else(|| self.resources.translate(&self.locale, key))
             .or_else(|| self.resources.translate(&self.fallback_locale, key))
-            .or_else(|| builtin_locale_value(BUILTIN_EN_US_TOML, key))
+            .or_else(|| BUILTIN_EN_US.get(key).cloned())
             .unwrap_or_else(|| key.into())
     }
 
@@ -642,11 +642,8 @@ fn builtin_locale_entries(source: &'static str) -> Vec<(SharedString, SharedStri
     parse_toml_translations(source).expect("built-in locale resources must be valid TOML")
 }
 
-fn builtin_locale_value(source: &'static str, key: &str) -> Option<SharedString> {
-    builtin_locale_entries(source)
-        .into_iter()
-        .find_map(|(entry_key, value)| (entry_key.as_ref() == key).then_some(value))
-}
+static BUILTIN_EN_US: LazyLock<HashMap<SharedString, SharedString>> =
+    LazyLock::new(|| builtin_locale_entries(BUILTIN_EN_US_TOML).into_iter().collect());
 
 /// Minimal context abstraction used by translation helpers.
 pub trait LocalesContext {
@@ -889,6 +886,33 @@ no_data = "No data"
         assert_eq!(config.translate("demo.hello").as_ref(), "Hello");
         assert_eq!(config.translate("common.cancel").as_ref(), "取消");
         assert_eq!(config.translate("missing.key").as_ref(), "missing.key");
+
+        let terminal = config.with_resources(LocalesMap::new());
+        assert_eq!(terminal.translate("common.cancel").as_ref(), "Cancel");
+        for key in ["missing.key", "Common.cancel", ""] {
+            assert_eq!(terminal.translate(key).as_ref(), key);
+        }
+        let empty =
+            terminal.with_resources(LocalesMap::new().with_locale("zh-CN", [("common.cancel", "")]));
+        assert_eq!(empty.translate("common.cancel").as_ref(), "");
+    }
+
+    #[test]
+    fn builtin_map_mutation_preserves_other_maps_and_terminal_fallback() {
+        let original = LocalesMap::builtin();
+        let overridden = LocalesConfig::system().with_resources(
+            original
+                .clone()
+                .override_locale("en-US", [("common.cancel", "Custom")]),
+        );
+        assert_eq!(overridden.translate("common.cancel").as_ref(), "Custom");
+        assert_eq!(original, LocalesMap::builtin());
+        assert_eq!(
+            LocalesConfig::system().translate("common.cancel").as_ref(),
+            "Cancel"
+        );
+        let terminal = overridden.with_resources(LocalesMap::new());
+        assert_eq!(terminal.translate("common.cancel").as_ref(), "Cancel");
     }
 
     #[test]

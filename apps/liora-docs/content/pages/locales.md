@@ -280,6 +280,8 @@ Docs 的侧栏搜索框直接保存类型化 `locales::docs::search_placeholder`
 
 这意味着缺失 key 不会 panic，但会显示类似 `docs.subtitle` 的路径，方便你发现漏翻译。
 
+内置核心兜底使用英文资源，首次使用时解析一次，后续直接查询缓存。`LocalesMap::builtin()` 返回独立可修改的资源表；覆盖其中一份不会改变其他资源表或最终内置兜底。此优化减少 CPU 侧重复解析，不代表界面帧延迟改善。
+
 ## 自定义 Translator
 
 应用可以完全替换翻译系统：

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Cache parsed built-in English translations for terminal fallback and reuse them when constructing independent builtin maps; preserve overrides and fallback precedence without reparsing on repeated misses.
 - Clamp the shared base used by public z-index helpers so category offsets remain ordered through `u32::MAX`, without changing the configured value or existing built-in overlay ordering.
 - Prune `.app` directories case-insensitively when selecting GitHub Release assets, preventing bundle-internal package files from overwriting sibling downloads or duplicating asset-index entries; preserve raw executables, both font variants, supported package downloads, and portable-staging exclusions.
 - Bind `VirtualizedTable::list_state()` to its first keyed mount and create the builder `ListState` only when requested, avoiding discarded state-tree allocations during inline renders.
