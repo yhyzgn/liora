@@ -173,12 +173,7 @@ impl SegmentRatioBar {
 impl RenderOnce for SegmentRatioBar {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
-        let total: f64 = self
-            .items
-            .iter()
-            .map(|i| i.value.max(0.0))
-            .sum::<f64>()
-            .max(1.0);
+        let (scale, scaled_total) = weight_scale(&self.items);
         let legend_top = matches!(
             self.legend_position,
             SegmentLegendPosition::Top | SegmentLegendPosition::Both
@@ -198,7 +193,8 @@ impl RenderOnce for SegmentRatioBar {
             .when(legend_top, |s| {
                 s.child(render_segment_legend(
                     items_for_top,
-                    total,
+                    scale,
+                    scaled_total,
                     self.percentage_decimals,
                     self.split_legend,
                     self.legend_inset_x,
@@ -213,19 +209,20 @@ impl RenderOnce for SegmentRatioBar {
                     .overflow_hidden()
                     .bg(theme.neutral.body)
                     .children(self.items.into_iter().map(|item| {
-                        let percent = (item.value.max(0.0) / total * 100.0).max(0.0) as f32;
+                        let ratio = normalized_weight(item.value, scale, scaled_total);
                         div()
                             .h_full()
                             .bg(item.color)
                             .rounded(segment_radius)
                             .overflow_hidden()
-                            .w(gpui::relative(percent / 100.0))
+                            .w(gpui::relative(ratio as f32))
                     })),
             )
             .when(legend_bottom, |s| {
                 s.child(render_segment_legend(
                     items_for_bottom,
-                    total,
+                    scale,
+                    scaled_total,
                     self.percentage_decimals,
                     self.split_legend,
                     self.legend_inset_x,
@@ -234,9 +231,41 @@ impl RenderOnce for SegmentRatioBar {
     }
 }
 
+fn weight_scale(items: &[SegmentRatioItem]) -> (f64, f64) {
+    let scale = items
+        .iter()
+        .map(|item| item.value)
+        .filter(|value| value.is_finite() && *value > 0.0)
+        .fold(0.0, f64::max);
+    if scale == 0.0 {
+        return (0.0, 0.0);
+    }
+
+    let scaled_total = items
+        .iter()
+        .map(|item| {
+            if item.value.is_finite() && item.value > 0.0 {
+                item.value / scale
+            } else {
+                0.0
+            }
+        })
+        .sum::<f64>();
+    (scale, scaled_total)
+}
+
+fn normalized_weight(value: f64, scale: f64, scaled_total: f64) -> f64 {
+    if value.is_finite() && value > 0.0 && scale > 0.0 && scaled_total > 0.0 {
+        (value / scale) / scaled_total
+    } else {
+        0.0
+    }
+}
+
 fn render_segment_legend(
     items: Vec<SegmentRatioItem>,
-    total: f64,
+    scale: f64,
+    scaled_total: f64,
     decimals: usize,
     split: bool,
     inset_x: Pixels,
@@ -247,7 +276,8 @@ fn render_segment_legend(
         .items_center()
         .w_full()
         .children(items.into_iter().map(move |item| {
-            let pct = item.value.max(0.0) / total * 100.0;
+            let ratio = normalized_weight(item.value, scale, scaled_total);
+            let pct = ratio * 100.0;
             let label = item
                 .label_pattern
                 .as_ref()
@@ -268,7 +298,7 @@ fn render_segment_legend(
                         .replace("{percent}", &format!("{:.*}%", decimals, pct))
                 })
                 .unwrap_or_else(|| format!("{:.*}%", decimals, pct));
-            let segment_width = gpui::relative((item.value.max(0.0) / total).max(0.0) as f32);
+            let segment_width = gpui::relative(ratio as f32);
             div()
                 .flex()
                 .items_center()
@@ -345,5 +375,47 @@ mod tests {
         assert!(source.contains(".px(inset_x)"));
         assert!(source.contains("segment_radius"));
         assert!(source.contains(".rounded(segment_radius)"));
+    }
+    fn normalized_ratios(values: &[f64]) -> Vec<f64> {
+        let items = values
+            .iter()
+            .map(|value| SegmentRatioItem::new("test", *value, gpui::blue()))
+            .collect::<Vec<_>>();
+        let (scale, scaled_total) = weight_scale(&items);
+        items
+            .iter()
+            .map(|item| normalized_weight(item.value, scale, scaled_total))
+            .collect()
+    }
+
+    fn assert_ratios(actual: &[f64], expected: &[f64]) {
+        assert_eq!(actual.len(), expected.len());
+        for (actual, expected) in actual.iter().zip(expected) {
+            assert!((actual - expected).abs() < 1e-12, "{actual} != {expected}");
+        }
+    }
+
+    #[test]
+    fn segment_ratio_bar_normalizes_fractional_weights() {
+        assert_ratios(&normalized_ratios(&[0.2, 0.3]), &[0.4, 0.6]);
+    }
+
+    #[test]
+    fn segment_ratio_bar_normalizes_large_weights_without_overflow() {
+        assert_ratios(&normalized_ratios(&[1.0e308, 1.0e308]), &[0.5, 0.5]);
+    }
+
+    #[test]
+    fn segment_ratio_bar_ignores_non_finite_weights() {
+        assert_ratios(
+            &normalized_ratios(&[f64::NAN, 0.25, f64::INFINITY, 0.75, f64::NEG_INFINITY, -1.0]),
+            &[0.0, 0.25, 0.0, 0.75, 0.0, 0.0],
+        );
+    }
+
+    #[test]
+    fn segment_ratio_bar_keeps_zero_and_negative_weights_empty() {
+        assert_ratios(&normalized_ratios(&[0.0, 0.0]), &[0.0, 0.0]);
+        assert_ratios(&normalized_ratios(&[-1.0, -2.0]), &[0.0, 0.0]);
     }
 }
