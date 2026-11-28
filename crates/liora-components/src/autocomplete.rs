@@ -24,8 +24,8 @@ use std::rc::Rc;
 use crate::Input;
 use gpui::{
     App, Bounds, Context, Element, ElementId, Entity, FocusHandle, Focusable, GlobalElementId,
-    InspectorElementId, IntoElement, LayoutId, MouseButton, Pixels, Render, SharedString, Style,
-    Window, actions, prelude::*, px, relative,
+    InspectorElementId, InteractiveElement, IntoElement, KeyBinding, LayoutId, MouseButton, Pixels,
+    Render, ScrollHandle, SharedString, Style, Window, actions, prelude::*, px, relative,
 };
 use liora_core::{Config, push_passive_portal};
 use liora_icons_lucide::IconName;
@@ -34,7 +34,15 @@ actions!(
     autocomplete,
     [
         #[doc = "Keyboard action that closes the active autocomplete popup."]
-        AutocompleteClose
+        AutocompleteClose,
+        #[doc = "Keyboard action that moves to the previous autocomplete suggestion."]
+        AutocompleteUp,
+        #[doc = "Keyboard action that moves to the next autocomplete suggestion."]
+        AutocompleteDown,
+        #[doc = "Keyboard action that selects the active autocomplete suggestion."]
+        AutocompleteSelect,
+        #[doc = "Keyboard action that leaves autocomplete without selecting a suggestion."]
+        AutocompleteTab
     ]
 );
 
@@ -84,6 +92,8 @@ pub struct Autocomplete {
     on_select: Option<Rc<dyn Fn(AutocompleteItem, &mut Window, &mut App) + 'static>>,
     close_on_click_outside: bool,
     close_on_escape: bool,
+    active_index: Option<usize>,
+    suggestion_scroll: ScrollHandle,
 }
 
 impl Autocomplete {
@@ -110,6 +120,8 @@ impl Autocomplete {
             on_select: None,
             close_on_click_outside: true,
             close_on_escape: true,
+            active_index: None,
+            suggestion_scroll: ScrollHandle::new(),
         }
     }
 
@@ -190,7 +202,14 @@ impl Autocomplete {
 
     /// Registers GPUI key bindings required for keyboard interaction.
     pub fn register_key_bindings(cx: &mut App) {
-        cx.bind_keys([gpui::KeyBinding::new("escape", AutocompleteClose, None)]);
+        cx.bind_keys([
+            KeyBinding::new("escape", AutocompleteClose, None),
+            KeyBinding::new("up", AutocompleteUp, Some("AutocompleteSuggestions")),
+            KeyBinding::new("down", AutocompleteDown, Some("AutocompleteSuggestions")),
+            KeyBinding::new("enter", AutocompleteSelect, Some("AutocompleteSuggestions")),
+            KeyBinding::new("tab", AutocompleteTab, Some("Autocomplete")),
+            KeyBinding::new("shift-tab", AutocompleteTab, Some("Autocomplete")),
+        ]);
     }
 
     fn close_on_escape_action(
@@ -201,7 +220,75 @@ impl Autocomplete {
     ) {
         if self.close_on_escape && self.is_open {
             self.is_open = false;
+            self.active_index = None;
             cx.notify();
+        }
+    }
+
+    fn move_active_suggestion(&mut self, direction: isize, cx: &mut Context<Self>) {
+        if !self.is_open || self.disabled {
+            return;
+        }
+        let count = self.matching_items(cx).len();
+        if count == 0 {
+            self.active_index = None;
+            return;
+        }
+        let index = match (self.active_index, direction < 0) {
+            (Some(index), true) => index.saturating_sub(1),
+            (Some(index), false) => (index + 1).min(count - 1),
+            (None, true) => count - 1,
+            (None, false) => 0,
+        };
+        self.active_index = Some(index);
+        self.suggestion_scroll.scroll_to_item(index);
+        cx.notify();
+    }
+
+    fn move_suggestion_up(&mut self, _: &AutocompleteUp, _: &mut Window, cx: &mut Context<Self>) {
+        self.move_active_suggestion(-1, cx);
+    }
+
+    fn move_suggestion_down(
+        &mut self,
+        _: &AutocompleteDown,
+        _: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.move_active_suggestion(1, cx);
+    }
+
+    fn select_active_suggestion(
+        &mut self,
+        _: &AutocompleteSelect,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if !self.is_open || self.disabled {
+            return;
+        }
+        let Some(item) = self
+            .active_index
+            .and_then(|index| self.matching_items(cx).get(index).cloned())
+        else {
+            return;
+        };
+        self.select_item(item, window, cx);
+    }
+
+    fn leave_without_selecting(
+        &mut self,
+        _: &AutocompleteTab,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.is_open = false;
+        self.active_index = None;
+        cx.notify();
+        if window.modifiers().shift {
+            window.focus_prev(cx);
+        } else {
+            window.focus_next(cx);
         }
     }
 
@@ -225,6 +312,7 @@ impl Autocomplete {
             return;
         }
         self.items = items;
+        self.active_index = None;
         cx.notify();
     }
 
@@ -260,6 +348,7 @@ impl Autocomplete {
             input.set_value(item.value.clone(), cx);
         });
         self.is_open = false;
+        self.active_index = None;
         cx.notify();
         if let Some(cb) = self.on_select.clone() {
             window.defer(cx, move |window, cx| cb(item, window, cx));
@@ -343,6 +432,7 @@ impl Render for Autocomplete {
             self.focus_subscription = Some(cx.on_focus(&focus, window, |this, _, cx| {
                 if this.trigger_on_focus && !this.disabled && !this.is_open {
                     this.is_open = true;
+                    this.active_index = None;
                     cx.notify();
                 }
             }));
@@ -354,6 +444,7 @@ impl Render for Autocomplete {
                 move |value, cx| {
                     let _ = entity.update(cx, |this, cx| {
                         this.is_open = !value.is_empty();
+                        this.active_index = None;
                         cx.notify();
                     });
                 }
@@ -367,11 +458,15 @@ impl Render for Autocomplete {
         });
 
         let matches = self.matching_items(cx);
+        let composing = self.input.read(cx).is_composing();
+        let suggestions_open = self.is_open && !disabled && !matches.is_empty() && !composing;
         if self.is_open && !disabled {
             let trigger_bounds = self.last_bounds;
             let entity = cx.entity().clone();
             let theme_portal = theme.clone();
             let close_on_click_outside = self.close_on_click_outside;
+            let active_index = self.active_index;
+            let suggestion_scroll = self.suggestion_scroll.clone();
             push_passive_portal(
                 move |_window, _cx| {
                     let (top, left, width) = trigger_bounds
@@ -380,11 +475,14 @@ impl Render for Autocomplete {
                     let entity = entity.clone();
                     let theme = theme_portal.clone();
                     let mut panel = gpui::div()
+                        .id(("autocomplete-suggestions", entity.entity_id()))
                         .absolute()
                         .top(top)
                         .left(left)
                         .w(width)
                         .max_h(px(240.0))
+                        .overflow_y_scroll()
+                        .track_scroll(&suggestion_scroll)
                         .bg(theme.neutral.card)
                         .rounded(px(theme.radius.md))
                         .border_1()
@@ -396,6 +494,7 @@ impl Render for Autocomplete {
                             move |_, _, cx| {
                                 entity.update(cx, |this, cx| {
                                     this.is_open = false;
+                                    this.active_index = None;
                                     cx.notify();
                                 });
                             }
@@ -412,11 +511,16 @@ impl Render for Autocomplete {
                                 .child("No matching suggestions"),
                         );
                     } else {
-                        panel = panel.children(matches.iter().map(|item| {
+                        panel = panel.children(matches.iter().enumerate().map(|(index, item)| {
                             let item = item.clone();
                             let entity = entity.clone();
                             let theme = theme.clone();
-                            gpui::div()
+                            let item_row = gpui::div();
+                            let active = active_index == Some(index);
+                            #[cfg(test)]
+                            let item_row = item_row
+                                .debug_selector(move || format!("autocomplete-option-{index}"));
+                            item_row
                                 .flex()
                                 .items_center()
                                 .justify_between()
@@ -424,6 +528,7 @@ impl Render for Autocomplete {
                                 .px(px(12.0))
                                 .py(px(8.0))
                                 .cursor_pointer()
+                                .when(active, |row| row.bg(theme.primary.base.opacity(0.1)))
                                 .hover(|s| s.cursor_pointer().bg(theme.neutral.hover))
                                 .child(
                                     gpui::div()
@@ -446,6 +551,8 @@ impl Render for Autocomplete {
                                 })
                         }));
                     }
+                    #[cfg(test)]
+                    let panel = panel.debug_selector(|| "autocomplete-suggestions".to_string());
                     panel.into_any_element()
                 },
                 cx,
@@ -454,6 +561,7 @@ impl Render for Autocomplete {
 
         let frame = gpui::div()
             .relative()
+            .when(!composing, |frame| frame.key_context("Autocomplete"))
             .when_some(self.width, |s, width| s.w(width))
             .when(self.width.is_none(), |s| s.w_full())
             .child(
@@ -466,9 +574,20 @@ impl Render for Autocomplete {
                         autocomplete: cx.entity().clone(),
                     }),
             )
-            .child(self.input.clone());
+            .child(
+                gpui::div()
+                    .when(suggestions_open, |input| {
+                        input.key_context("AutocompleteSuggestions")
+                    })
+                    .child(self.input.clone()),
+            );
 
-        frame.on_action(cx.listener(Self::close_on_escape_action))
+        frame
+            .on_action(cx.listener(Self::close_on_escape_action))
+            .on_action(cx.listener(Self::move_suggestion_up))
+            .on_action(cx.listener(Self::move_suggestion_down))
+            .on_action(cx.listener(Self::select_active_suggestion))
+            .on_action(cx.listener(Self::leave_without_selecting))
     }
 }
 
@@ -536,14 +655,46 @@ mod tests {
         }
     }
 
+    struct AutocompleteKeyboardSurface {
+        controls: Vec<Entity<Autocomplete>>,
+        after: Option<FocusHandle>,
+    }
+
+    impl Render for AutocompleteKeyboardSurface {
+        fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+            let mut surface = gpui::div().relative().size_full();
+            for (index, autocomplete) in self.controls.iter().enumerate() {
+                surface = surface.child(
+                    gpui::div()
+                        .absolute()
+                        .left(px(index as f32 * 320.0))
+                        .top_0()
+                        .child(autocomplete.clone()),
+                );
+            }
+            if let Some(after) = &self.after {
+                surface = surface.child(
+                    gpui::div()
+                        .absolute()
+                        .left(px(self.controls.len() as f32 * 320.0))
+                        .top_0()
+                        .w(px(80.0))
+                        .h(px(34.0))
+                        .track_focus(after),
+                );
+            }
+            surface.child(crate::PortalLayer)
+        }
+    }
+
     #[test]
     fn trigger_on_focus_opens_only_enabled_opted_in_inputs() {
         for (trigger, disabled) in [(None, false), (Some(false), false), (Some(true), true)] {
             let mut app = gpui::TestAppContext::single();
             app.update(crate::init_liora);
             let autocomplete = app.new(|cx| {
-                let autocomplete = Autocomplete::from_values(vec!["rust", "gpui"], cx)
-                    .disabled(disabled);
+                let autocomplete =
+                    Autocomplete::from_values(vec!["rust", "gpui"], cx).disabled(disabled);
                 match trigger {
                     Some(trigger) => autocomplete.trigger_on_focus(trigger),
                     None => autocomplete,
@@ -633,6 +784,222 @@ mod tests {
         app.quit();
     }
 
+    #[test]
+    fn dispatched_keys_select_and_scroll_the_active_suggestion_into_view() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let selections = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        let selected = selections.clone();
+        let autocomplete = app.new(|cx| {
+            Autocomplete::new(
+                (0..12)
+                    .map(|index| AutocompleteItem::new(format!("item-{index}")))
+                    .collect(),
+                cx,
+            )
+            .max_suggestions(12)
+            .on_select(move |item, _, _| selected.borrow_mut().push(item.value.to_string()))
+        });
+        let root = autocomplete.clone();
+        let handle = app.add_window(move |_, _| PopupPolicySurface {
+            autocomplete: root,
+            neighbor_clicks: std::rc::Rc::new(std::cell::Cell::new(0)),
+        });
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        window.update(|window, _| window.activate_window());
+        window.run_until_parked();
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        window.simulate_click(gpui::point(px(12.0), px(12.0)), gpui::Modifiers::none());
+        window.update(|window, cx| window.draw(cx).clear(cx));
+
+        for _ in 0..9 {
+            window.simulate_keystrokes("down");
+            window.update(|window, cx| window.draw(cx).clear(cx));
+        }
+
+        assert_eq!(
+            autocomplete.read_with(&app, |this, _| this.active_index),
+            Some(8)
+        );
+        for key in ["ctrl-down", "shift-down"] {
+            window.simulate_keystrokes(key);
+            window.update(|window, cx| window.draw(cx).clear(cx));
+        }
+        assert_eq!(
+            autocomplete.read_with(&app, |this, _| this.active_index),
+            Some(8),
+            "modified arrows must not change the active suggestion"
+        );
+        let input_focus =
+            autocomplete.read_with(&app, |this, cx| this.input.read(cx).focus_handle(cx));
+        assert_eq!(
+            window.update(|window, cx| window.focused(cx)),
+            Some(input_focus)
+        );
+
+        let viewport = window.debug_bounds("autocomplete-suggestions").unwrap();
+        let active_row = window.debug_bounds("autocomplete-option-8").unwrap();
+        assert!(
+            active_row.top() >= viewport.top() && active_row.bottom() <= viewport.bottom(),
+            "active suggestion must remain visible in the bounded popup: {active_row:?} outside {viewport:?}"
+        );
+
+        window.simulate_keystrokes("enter");
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert_eq!(
+            autocomplete.read_with(&app, |this, cx| this.value(cx)),
+            "item-8"
+        );
+        assert_eq!(*selections.borrow(), ["item-8"]);
+        assert!(!autocomplete.read_with(&app, |this, _| this.is_open));
+        app.quit();
+    }
+
+    #[test]
+    fn escape_and_tab_clear_highlight_without_committing() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let selections = std::rc::Rc::new(std::cell::Cell::new(0));
+        let selected = selections.clone();
+        let autocomplete = app.new(|cx| {
+            Autocomplete::from_values(vec!["rust", "go"], cx)
+                .on_select(move |_, _, _| selected.set(selected.get() + 1))
+        });
+        let after = app.update(|cx| cx.focus_handle().tab_stop(true));
+        let after_for_window = after.clone();
+        let root = autocomplete.clone();
+        let handle = app.add_window(move |_, _| AutocompleteKeyboardSurface {
+            controls: vec![root],
+            after: Some(after_for_window.clone()),
+        });
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        window.update(|window, _| window.activate_window());
+        window.run_until_parked();
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        window.simulate_click(gpui::point(px(12.0), px(12.0)), gpui::Modifiers::none());
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        let input_focus =
+            autocomplete.read_with(&app, |this, cx| this.input.read(cx).focus_handle(cx));
+
+        window.simulate_keystrokes("down");
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert_eq!(
+            autocomplete.read_with(&app, |this, _| this.active_index),
+            Some(0)
+        );
+        window.simulate_keystrokes("escape");
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert!(!autocomplete.read_with(&app, |this, _| this.is_open));
+        assert_eq!(
+            autocomplete.read_with(&app, |this, _| this.active_index),
+            None
+        );
+        assert_eq!(
+            window.update(|window, cx| window.focused(cx)),
+            Some(input_focus)
+        );
+        assert_eq!(selections.get(), 0);
+
+        window.simulate_keystrokes("g");
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert!(autocomplete.read_with(&app, |this, _| this.is_open));
+        assert_eq!(
+            autocomplete.read_with(&app, |this, _| this.active_index),
+            None
+        );
+        window.simulate_keystrokes("down");
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert_eq!(
+            autocomplete.read_with(&app, |this, _| this.active_index),
+            Some(0)
+        );
+
+        app.update(|cx| {
+            autocomplete.update(cx, |this, cx| {
+                this.set_items(vec![AutocompleteItem::new("gamma")], cx);
+            });
+        });
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert_eq!(
+            autocomplete.read_with(&app, |this, _| this.active_index),
+            None
+        );
+        window.simulate_keystrokes("down");
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert_eq!(
+            autocomplete.read_with(&app, |this, _| this.active_index),
+            Some(0)
+        );
+        window.simulate_keystrokes("tab");
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert!(!autocomplete.read_with(&app, |this, _| this.is_open));
+        assert_eq!(
+            autocomplete.read_with(&app, |this, _| this.active_index),
+            None
+        );
+        assert_eq!(autocomplete.read_with(&app, |this, cx| this.value(cx)), "g");
+        assert_eq!(selections.get(), 0);
+        assert_eq!(window.update(|window, cx| window.focused(cx)), Some(after));
+        app.quit();
+    }
+
+    #[test]
+    fn composing_input_and_sibling_autocompletes_keep_navigation_isolated() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let first = app.new(|cx| {
+            Autocomplete::from_values(vec!["rust", "go"], cx).close_on_click_outside(false)
+        });
+        let second = app.new(|cx| {
+            Autocomplete::from_values(vec!["rust", "go"], cx).close_on_click_outside(false)
+        });
+        let root_first = first.clone();
+        let root_second = second.clone();
+        let handle = app.add_window(move |_, _| AutocompleteKeyboardSurface {
+            controls: vec![root_first, root_second],
+            after: None,
+        });
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        window.update(|window, _| window.activate_window());
+        window.run_until_parked();
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        window.simulate_click(gpui::point(px(12.0), px(12.0)), gpui::Modifiers::none());
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        for _ in 0..2 {
+            window.simulate_keystrokes("down");
+            window.update(|window, cx| window.draw(cx).clear(cx));
+        }
+        assert_eq!(first.read_with(&app, |this, _| this.active_index), Some(1));
+
+        window.simulate_click(gpui::point(px(332.0), px(12.0)), gpui::Modifiers::none());
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        window.simulate_keystrokes("down");
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert_eq!(first.read_with(&app, |this, _| this.active_index), Some(1));
+        assert_eq!(second.read_with(&app, |this, _| this.active_index), Some(0));
+
+        let input = second.read_with(&app, |this, _| this.input.clone());
+        window.update(|window, cx| {
+            input.update(cx, |input, cx| {
+                gpui::EntityInputHandler::replace_and_mark_text_in_range(
+                    input,
+                    None,
+                    "r",
+                    Some(1..1),
+                    window,
+                    cx,
+                );
+            });
+        });
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert!(input.read_with(&app, |input, _| input.is_composing()));
+        assert_eq!(second.read_with(&app, |this, _| this.active_index), None);
+        window.simulate_keystrokes("down");
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        assert_eq!(second.read_with(&app, |this, _| this.active_index), None);
+        assert_eq!(first.read_with(&app, |this, _| this.active_index), Some(1));
+        app.quit();
+    }
     #[test]
     fn popup_policy_keeps_neighbors_clickable_and_suggestions_selectable() {
         for close_outside in [false, true] {
