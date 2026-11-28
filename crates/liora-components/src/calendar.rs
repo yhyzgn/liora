@@ -24,7 +24,7 @@ use gpui::{
     App, ElementId, Hsla, IntoElement, RenderOnce, SharedString, ViewElement as Component, Window,
     div, prelude::*, px,
 };
-use liora_core::Config;
+use liora_core::{Config, LocalesContext, locales, tr};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 use std::{
@@ -32,6 +32,18 @@ use std::{
     panic::Location,
     sync::Arc,
 };
+
+pub(crate) fn weekday_labels(cx: &impl LocalesContext) -> [SharedString; 7] {
+    use locales::calendar::*;
+    [monday(), tuesday(), wednesday(), thursday(), friday(), saturday(), sunday()]
+        .map(|key| tr(cx, key))
+}
+
+pub(crate) fn month_heading(year: i32, month: u32, cx: &impl LocalesContext) -> String {
+    tr(cx, locales::calendar::month_heading)
+        .replace("{year}", &year.to_string())
+        .replace("{month}", &format!("{month:02}"))
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 /// Fluent native GPUI component for rendering Liora calendar date.
@@ -175,9 +187,9 @@ impl RenderOnce for Calendar {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
         let events = group_events(&self.events);
-        let weekdays = ["一", "二", "三", "四", "五", "六", "日"];
+        let weekdays = weekday_labels(cx);
         let cells = self.cells();
-        let month_title = format!("{}年 {:02}月", self.year, self.month);
+        let month_title = month_heading(self.year, self.month, cx);
         let on_select = self.on_select.clone();
 
         div()
@@ -212,7 +224,7 @@ impl RenderOnce for Calendar {
                         div()
                             .text_xs()
                             .text_color(theme.neutral.text_3)
-                            .child("month view"),
+                            .child(tr(cx, locales::calendar::month_view)),
                     ),
             )
             .child(
@@ -398,6 +410,25 @@ fn weekday_monday_based(year: i32, month: u32, day: u32) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn calendar_labels_follow_locale_without_changing_monday_grid() {
+        for (locale, monday, sunday, heading, view) in [
+            ("en-US", "Mon", "Sun", "2040-02", "Month view"),
+            ("zh-CN", "一", "日", "2040年 02月", "月视图"),
+            ("en-US", "Mon", "Sun", "2040-02", "Month view"),
+        ] {
+            let cx = liora_core::LocalesConfig::system().with_locale(locale);
+            let labels = weekday_labels(&cx);
+            assert_eq!(labels[0].as_ref(), monday);
+            assert_eq!(labels[6].as_ref(), sunday);
+            assert_eq!(month_heading(2040, 2, &cx), heading);
+            assert_eq!(tr(&cx, locales::calendar::month_view).as_ref(), view);
+            let cells = Calendar::new(2040, 2).cells();
+            assert_eq!(cells.len(), 42);
+            assert_eq!(weekday_monday_based(cells[0].year, cells[0].month, cells[0].day), 0);
+        }
+    }
     #[test]
     fn calendar_month_grid_is_always_six_weeks() {
         let cells = Calendar::new(2026, 6).cells();

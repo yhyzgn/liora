@@ -21,13 +21,14 @@
 
 use crate::gpui_compat::element_id;
 use crate::motion::pop_in;
+use crate::calendar::{month_heading, weekday_labels};
 use chrono::Datelike;
 use gpui::{
     App, Bounds, Context, Element, ElementId, Entity, GlobalElementId, Hsla, InspectorElementId,
     IntoElement, LayoutId, MouseButton, Pixels, Render, SharedString, Window, actions, div,
     prelude::*, px,
 };
-use liora_core::{Config, push_portal};
+use liora_core::{Config, LocalesContext, locales, push_portal, tr};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
@@ -92,9 +93,9 @@ pub struct DatePicker {
     view_year: i32,
     view_month: u32,
     is_open: bool,
-    placeholder: SharedString,
+    placeholder: Option<SharedString>,
     display_format: Option<SharedString>,
-    range_separator: SharedString,
+    range_separator: Option<SharedString>,
     width: Option<Pixels>,
     disabled: bool,
     last_bounds: Option<Bounds<Pixels>>,
@@ -123,6 +124,7 @@ impl DateValue {
 
 impl DatePicker {
     /// Creates an empty picker displaying the current local month, with no callbacks attached.
+    /// Built-in labels follow the active locale at render time; dates and Monday-first layout do not change.
     pub fn new() -> Self {
         let today = chrono::Local::now();
         Self {
@@ -134,9 +136,9 @@ impl DatePicker {
             view_year: today.year(),
             view_month: today.month(),
             is_open: false,
-            placeholder: "请选择日期".into(),
+            placeholder: None,
             display_format: None,
-            range_separator: " 至 ".into(),
+            range_separator: None,
             width: None,
             disabled: false,
             last_bounds: None,
@@ -157,9 +159,6 @@ impl DatePicker {
     /// Selects single-date or range picking behavior.
     pub fn picker_type(mut self, picker_type: DatePickerType) -> Self {
         self.picker_type = picker_type;
-        if self.placeholder == SharedString::from("请选择日期") {
-            self.placeholder = default_placeholder(picker_type).into();
-        }
         self
     }
 
@@ -214,9 +213,9 @@ impl DatePicker {
         self
     }
 
-    /// Uses the supplied placeholder text when the value is empty.
+    /// Uses literal placeholder text, unchanged by locale or picker-type changes.
     pub fn placeholder(mut self, placeholder: impl Into<SharedString>) -> Self {
-        self.placeholder = placeholder.into();
+        self.placeholder = Some(placeholder.into());
         self
     }
 
@@ -226,9 +225,9 @@ impl DatePicker {
         self
     }
 
-    /// Sets the text displayed between range endpoints.
+    /// Uses a literal range separator, unchanged by locale changes.
     pub fn range_separator(mut self, separator: impl Into<SharedString>) -> Self {
-        self.range_separator = separator.into();
+        self.range_separator = Some(separator.into());
         self
     }
 
@@ -382,25 +381,33 @@ impl DatePicker {
         (self.range_start, self.range_end)
     }
 
-    fn display_text(&self) -> String {
+    fn display_text(&self, cx: &impl LocalesContext) -> String {
         if self.picker_type.is_range() {
             match (self.range_start, self.range_end) {
                 (Some(start), Some(end)) => format!(
                     "{}{}{}",
                     self.format_value(start),
-                    self.range_separator,
+                    self.resolved_separator(cx),
                     self.format_value(end)
                 ),
                 (Some(start), None) => {
-                    format!("{}{}", self.format_value(start), self.range_separator)
+                    format!("{}{}", self.format_value(start), self.resolved_separator(cx))
                 }
-                _ => self.placeholder.to_string(),
+                _ => self.resolved_placeholder(cx).to_string(),
             }
         } else {
             self.value
                 .map(|value| self.format_value(value))
-                .unwrap_or_else(|| self.placeholder.to_string())
+                .unwrap_or_else(|| self.resolved_placeholder(cx).to_string())
         }
+    }
+
+    fn resolved_placeholder(&self, cx: &impl LocalesContext) -> SharedString {
+        self.placeholder.clone().unwrap_or_else(|| tr(cx, default_placeholder(self.picker_type)))
+    }
+
+    fn resolved_separator(&self, cx: &impl LocalesContext) -> SharedString {
+        self.range_separator.clone().unwrap_or_else(|| tr(cx, locales::date_picker::range_separator))
     }
 
     fn format_value(&self, value: DateValue) -> String {
@@ -512,10 +519,10 @@ impl Render for DatePicker {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
         let entity = cx.entity().clone();
-        let display = self.display_text();
+        let display = self.display_text(cx);
         let range_start_text = self.range_start.map(|value| self.format_value(value));
         let range_end_text = self.range_end.map(|value| self.format_value(value));
-        let range_separator = self.range_separator.clone();
+        let range_separator = self.resolved_separator(cx);
         let is_range = self.picker_type.is_range();
         let has_value = self.has_display_value();
         let border_color = if self.is_open {
@@ -589,9 +596,10 @@ impl Render for DatePicker {
                     range_start_text,
                     range_end_text,
                     range_separator,
-                    self.placeholder.clone(),
+                    self.resolved_placeholder(cx),
                     has_value,
                     &theme,
+                    tr(cx, locales::date_picker::select_end),
                 )
             } else {
                 div()
@@ -634,6 +642,7 @@ fn render_range_trigger_text(
     placeholder: SharedString,
     has_value: bool,
     theme: &liora_theme::Theme,
+    pending_end: SharedString,
 ) -> gpui::AnyElement {
     if !has_value {
         return div()
@@ -644,7 +653,7 @@ fn render_range_trigger_text(
     }
 
     let start = start.unwrap_or_default();
-    let end = end.unwrap_or_else(|| "请选择结束".to_string());
+    let end = end.map(SharedString::from).unwrap_or(pending_end);
 
     div()
         .flex()
@@ -738,7 +747,7 @@ fn render_date_panel(
     let picker_prev_month = picker.clone();
     let picker_next_month = picker.clone();
     let picker_next_year = picker.clone();
-    let weekdays = ["一", "二", "三", "四", "五", "六", "日"];
+    let weekdays = weekday_labels(cx);
 
     panel_shell(&id, &theme)
         .child(
@@ -773,7 +782,7 @@ fn render_date_panel(
                         .text_sm()
                         .font_weight(gpui::FontWeight::BOLD)
                         .text_color(theme.neutral.text_1)
-                        .child(format!("{} 年 {:02} 月", view_year, view_month)),
+                        .child(month_heading(view_year, view_month, cx)),
                 )
                 .child(
                     div()
@@ -865,20 +874,7 @@ fn render_month_panel(
     });
     let picker_prev_year = picker.clone();
     let picker_next_year = picker.clone();
-    let labels = [
-        "一月",
-        "二月",
-        "三月",
-        "四月",
-        "五月",
-        "六月",
-        "七月",
-        "八月",
-        "九月",
-        "十月",
-        "十一月",
-        "十二月",
-    ];
+    let labels = month_labels(cx);
 
     panel_shell(&id, &theme)
         .child(
@@ -899,7 +895,7 @@ fn render_month_panel(
                         .text_sm()
                         .font_weight(gpui::FontWeight::BOLD)
                         .text_color(theme.neutral.text_1)
-                        .child(format!("{} 年", view_year)),
+                        .child(tr(cx, locales::calendar::year_heading).replace("{year}", &view_year.to_string())),
                 )
                 .child(nav_button(
                     format!("{}-next-year", id),
@@ -937,7 +933,7 @@ fn render_month_panel(
                             let picker = row_picker.clone();
                             selectable_cell(
                                 format!("{}-month-{}", id, month),
-                                *label,
+                                label.clone(),
                                 is_selected,
                                 in_range,
                                 true,
@@ -1162,15 +1158,22 @@ impl Element for DatePickerBoundsCapturer {
     }
 }
 
-fn default_placeholder(picker_type: DatePickerType) -> &'static str {
+fn default_placeholder(picker_type: DatePickerType) -> liora_core::Locales {
+    use locales::date_picker::*;
     match picker_type {
-        DatePickerType::Date => "请选择日期",
-        DatePickerType::DateRange => "请选择日期范围",
-        DatePickerType::Month => "请选择月份",
-        DatePickerType::MonthRange => "请选择月份范围",
-        DatePickerType::Year => "请选择年份",
-        DatePickerType::YearRange => "请选择年份范围",
+        DatePickerType::Date => select_date(),
+        DatePickerType::DateRange => select_date_range(),
+        DatePickerType::Month => select_month(),
+        DatePickerType::MonthRange => select_month_range(),
+        DatePickerType::Year => select_year(),
+        DatePickerType::YearRange => select_year_range(),
     }
+}
+
+fn month_labels(cx: &impl LocalesContext) -> [SharedString; 12] {
+    use locales::calendar::*;
+    [january(), february(), march(), april(), may(), june(), july(), august(), september(), october(), november(), december()]
+        .map(|key| tr(cx, key))
 }
 
 fn default_format(picker_type: DatePickerType) -> &'static str {
@@ -1282,6 +1285,69 @@ fn weekday_monday_based(year: i32, month: u32, day: u32) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn locale_defaults_and_literal_overrides_survive_switching() {
+        let value = DateValue::new(2040, 2, 29).expect("valid fixture");
+        let picker = DatePicker::new().date_range().range(value, value);
+        let literal = DatePicker::new().placeholder("请选择日期").month().year()
+            .range_separator(" / ").format("YYYY年M月D日");
+        for (locale, placeholder, separator, pending) in [
+            ("en-US", "Select date range", " to ", "Select end"),
+            ("zh-CN", "请选择日期范围", " 至 ", "请选择结束"),
+            ("en-US", "Select date range", " to ", "Select end"),
+        ] {
+            let cx = liora_core::LocalesConfig::system().with_locale(locale);
+            assert_eq!(picker.resolved_placeholder(&cx).as_ref(), placeholder);
+            assert_eq!(picker.resolved_separator(&cx).as_ref(), separator);
+            assert_eq!(tr(&cx, locales::date_picker::select_end).as_ref(), pending);
+            assert_eq!(literal.resolved_placeholder(&cx).as_ref(), "请选择日期");
+            assert_eq!(literal.resolved_separator(&cx).as_ref(), " / ");
+            assert_eq!(literal.format_value(value), "2040年2月29日");
+            assert_eq!(picker.display_text(&cx), format!("2040-02-29{separator}2040-02-29"));
+            assert_eq!(picker.range_ref(), (Some(value), Some(value)));
+            assert_eq!((picker.view_year, picker.view_month), (2040, 2));
+        }
+    }
+
+    #[test]
+    fn retained_open_picker_renders_after_locale_switch_without_mutating_selection() {
+        struct Surface(Entity<DatePicker>);
+        impl Render for Surface {
+            fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+                div().size_full().child(crate::Calendar::new(2040, 2))
+                    .child(self.0.clone()).child(crate::PortalLayer)
+            }
+        }
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let calls = std::rc::Rc::new(std::cell::Cell::new(0));
+        let value = DateValue::new(2040, 2, 29).expect("valid fixture");
+        let picker = app.update(|cx| cx.new(|_| {
+            let calls = calls.clone();
+            let mut picker = DatePicker::new().date_range().range(value, value)
+                .on_selection_change(move |_, _, _| calls.set(calls.get() + 1));
+            picker.range_end = None;
+            picker.is_open = true;
+            picker
+        }));
+        let handle = app.add_window({ let picker = picker.clone(); move |_, _| Surface(picker) });
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        for (locale, placeholder) in [("en-US", "Select date range"), ("zh-CN", "请选择日期范围"), ("en-US", "Select date range")] {
+            window.update(|window, cx| {
+                liora_core::apply_locale(window, cx, locale).expect("locale switch");
+                window.draw(cx).clear(cx);
+                let picker = picker.read(cx);
+                assert_eq!(picker.resolved_placeholder(cx).as_ref(), placeholder);
+                assert!(picker.is_open);
+                assert_eq!(picker.range_ref(), (Some(value), None));
+                assert_eq!((picker.view_year, picker.view_month), (2040, 2));
+                assert!(cx.global::<liora_core::Portal>().entries.is_empty());
+            });
+            assert_eq!(calls.get(), 0);
+        }
+        app.quit();
+    }
 
     #[test]
     fn new_opens_on_the_current_month() {
