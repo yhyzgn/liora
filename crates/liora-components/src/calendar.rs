@@ -35,8 +35,16 @@ use std::{
 
 pub(crate) fn weekday_labels(cx: &impl LocalesContext) -> [SharedString; 7] {
     use locales::calendar::*;
-    [monday(), tuesday(), wednesday(), thursday(), friday(), saturday(), sunday()]
-        .map(|key| tr(cx, key))
+    [
+        monday(),
+        tuesday(),
+        wednesday(),
+        thursday(),
+        friday(),
+        saturday(),
+        sunday(),
+    ]
+    .map(|key| tr(cx, key))
 }
 
 pub(crate) fn month_heading(year: i32, month: u32, cx: &impl LocalesContext) -> String {
@@ -183,17 +191,155 @@ impl Calendar {
     }
 }
 
+struct CalendarFocus {
+    handle: gpui::FocusHandle,
+    active: CalendarDate,
+}
+
+fn date_name(date: CalendarDate, cx: &impl LocalesContext) -> SharedString {
+    use locales::calendar::*;
+    let months = [
+        january(),
+        february(),
+        march(),
+        april(),
+        may(),
+        june(),
+        july(),
+        august(),
+        september(),
+        october(),
+        november(),
+        december(),
+    ];
+    let days = [
+        monday_full(),
+        tuesday_full(),
+        wednesday_full(),
+        thursday_full(),
+        friday_full(),
+        saturday_full(),
+        sunday_full(),
+    ];
+    tr(cx, full_date)
+        .replace("{year}", &date.year.to_string())
+        .replace(
+            "{month}",
+            tr(cx, months[(date.month - 1) as usize]).as_ref(),
+        )
+        .replace("{day}", &date.day.to_string())
+        .replace(
+            "{weekday}",
+            tr(
+                cx,
+                days[weekday_monday_based(date.year, date.month, date.day) as usize],
+            )
+            .as_ref(),
+        )
+        .into()
+}
+
 impl RenderOnce for Calendar {
-    fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
         let events = group_events(&self.events);
         let weekdays = weekday_labels(cx);
-        let cells = self.cells();
+        let cells: [CalendarDate; 42] = self.cells().try_into().expect("six calendar weeks");
+        let visible = |date: &CalendarDate| self.show_adjacent_months || date.month == self.month;
+        let initial =
+            self.selected
+                .filter(visible)
+                .filter(|date| cells.contains(date))
+                .or_else(|| {
+                    cells.iter().copied().find(|date| {
+                        date.month == self.month && !self.disabled_dates.contains(date)
+                    })
+                })
+                .unwrap_or(CalendarDate {
+                    year: self.year,
+                    month: self.month,
+                    day: 1,
+                });
+        let state = window.use_keyed_state(self.id.clone(), cx, |_, cx| CalendarFocus {
+            handle: cx.focus_handle().tab_stop(true),
+            active: initial,
+        });
+        state.update(cx, |state, _| {
+            if !cells.contains(&state.active) || !visible(&state.active) {
+                state.active = initial;
+            }
+        });
+        let focus = state.read(cx).handle.clone();
+        let active = state.read(cx).active;
+        let focused = focus.is_focused(window);
         let month_title = month_heading(self.year, self.month, cx);
         let on_select = self.on_select.clone();
 
         div()
             .id(self.id)
+            .role(gpui::Role::Grid)
+            .aria_label(month_title.clone())
+            .aria_row_count(6)
+            .aria_column_count(7)
+            .track_focus(&focus)
+            .on_mouse_down(gpui::MouseButton::Left, move |_, window, cx| {
+                focus.focus(window, cx)
+            })
+            .on_key_down({
+                let state = state.clone();
+                let on_select = on_select.clone();
+                let disabled = cells.map(|date| self.disabled_dates.contains(&date));
+                let show_adjacent = self.show_adjacent_months;
+                let month = self.month;
+                move |event, window, cx| {
+                    let key = &event.keystroke;
+                    if key.modifiers != gpui::Modifiers::none() {
+                        return;
+                    }
+                    let current = state.read(cx).active;
+                    let index = cells
+                        .iter()
+                        .position(|date| *date == current)
+                        .expect("visible active date");
+                    let target = match key.key.as_str() {
+                        "left" => index.checked_sub(1),
+                        "right" => (index + 1 < cells.len()).then_some(index + 1),
+                        "up" => index.checked_sub(7),
+                        "down" => (index + 7 < cells.len()).then_some(index + 7),
+                        "home" => Some(index / 7 * 7),
+                        "end" => Some(index / 7 * 7 + 6),
+                        "enter" | "space" => {
+                            if !event.is_held && !disabled[index] {
+                                if let Some(callback) = &on_select {
+                                    callback(current, window, cx);
+                                }
+                            }
+                            window.prevent_default();
+                            cx.stop_propagation();
+                            return;
+                        }
+                        _ => return,
+                    };
+                    let target = target.and_then(|mut target| {
+                        if !show_adjacent && matches!(key.key.as_str(), "home" | "end") {
+                            while cells[target].month != month && target != index {
+                                if target < index {
+                                    target += 1;
+                                } else {
+                                    target -= 1;
+                                }
+                            }
+                        }
+                        (show_adjacent || cells[target].month == month).then_some(cells[target])
+                    });
+                    if let Some(target) = target {
+                        state.update(cx, |state, _| state.active = target);
+                        window.refresh();
+                    }
+                    window.prevent_default();
+                    cx.stop_propagation();
+                }
+            })
             .w_full()
             .rounded_lg()
             .border_1()
@@ -243,83 +389,117 @@ impl RenderOnce for Calendar {
             )
             .child(
                 div()
-                    .grid()
-                    .grid_cols(7)
+                    .flex()
+                    .flex_col()
                     .gap_2()
-                    .children(cells.into_iter().map(|date| {
-                        let in_month = date.month == self.month;
-                        if !self.show_adjacent_months && !in_month {
-                            return div().min_h(px(70.0)).into_any_element();
-                        }
-                        let selected = self.selected == Some(date);
-                        let disabled = self.disabled_dates.contains(&date);
-                        let in_range = is_between_or_edge(date, self.range_start, self.range_end);
-                        let day_events = events.get(&date).cloned().unwrap_or_default();
-                        let mut cell = div()
-                            .id(element_id(format!("calendar-cell-{}", date.format())))
-                            .debug_selector(move || format!("calendar-cell-{}", date.format()))
-                            .min_h(px(70.0))
-                            .rounded_md()
-                            .border_1()
-                            .border_color(if selected {
-                                theme.primary.base
-                            } else {
-                                theme.neutral.border.opacity(0.5)
-                            })
-                            .bg(if selected {
-                                theme.primary.base.opacity(0.14)
-                            } else if in_range {
-                                theme.primary.base.opacity(0.08)
-                            } else {
-                                gpui::transparent_black()
-                            })
-                            .p_2()
-                            .flex()
-                            .flex_col()
-                            .gap_1()
-                            .text_color(if disabled {
-                                theme.neutral.text_disabled
-                            } else if in_month {
-                                theme.neutral.text_1
-                            } else {
-                                theme.neutral.text_3.opacity(0.55)
-                            })
-                            .child(
-                                div()
-                                    .text_sm()
-                                    .font_weight(if selected {
-                                        gpui::FontWeight::BOLD
-                                    } else {
-                                        gpui::FontWeight::NORMAL
-                                    })
+                    .children(cells.chunks_exact(7).enumerate().map(|(row_index, week)| {
+                        div()
+                            .id(("calendar-week", row_index))
+                            .role(gpui::Role::Row)
+                            .aria_row_index(row_index)
+                            .grid()
+                            .grid_cols(7)
+                            .gap_2()
+                            .children(week.iter().copied().enumerate().map(|(column, date)| {
+                                let in_month = date.month == self.month;
+                                if !self.show_adjacent_months && !in_month {
+                                    return div().min_h(px(70.0)).into_any_element();
+                                }
+                                let selected = self.selected == Some(date);
+                                let disabled = self.disabled_dates.contains(&date);
+                                let in_range =
+                                    is_between_or_edge(date, self.range_start, self.range_end);
+                                let day_events = events.get(&date).cloned().unwrap_or_default();
+                                let mut cell = div()
+                                    .id(element_id(format!("calendar-cell-{}", date.format())))
                                     .debug_selector(move || {
-                                        format!("calendar-day-{}", date.format())
+                                        format!("calendar-cell-{}", date.format())
                                     })
-                                    .child(date.day.to_string()),
-                            )
-                            .children(day_events.into_iter().take(2).map(|event| {
-                                let color = event.color.unwrap_or(theme.primary.base);
-                                div()
-                                    .truncate()
-                                    .text_xs()
-                                    .text_color(color)
-                                    .child(format!("• {}", event.label))
-                                    .into_any_element()
-                            }));
-                        if disabled {
-                            cell = cell.cursor_not_allowed().opacity(0.55);
-                        } else {
-                            let select_handler = on_select.clone();
-                            cell = cell
-                                .cursor_pointer()
-                                .hover(|s| s.bg(theme.neutral.hover))
-                                .on_click(move |_, window, cx| {
-                                    if let Some(cb) = select_handler.clone() {
-                                        cb(date, window, cx);
-                                    }
-                                });
-                        }
-                        cell.into_any_element()
+                                    .role(gpui::Role::Cell)
+                                    .aria_label(date_name(date, cx))
+                                    .aria_selected(selected)
+                                    .aria_row_index(row_index)
+                                    .aria_column_index(column)
+                                    .when(active == date, |cell| cell.aria_active_descendant())
+                                    .when(disabled, |cell| {
+                                        cell.a11y_synthetic_children(|builder| {
+                                            builder.parent_node().set_disabled()
+                                        })
+                                    })
+                                    .min_h(px(70.0))
+                                    .rounded_md()
+                                    .border_1()
+                                    .border_color(if selected {
+                                        theme.primary.base
+                                    } else {
+                                        theme.neutral.border.opacity(0.5)
+                                    })
+                                    .when(focused && active == date, |cell| {
+                                        cell.border_2().border_color(theme.primary.base)
+                                    })
+                                    .bg(if selected {
+                                        theme.primary.base.opacity(0.14)
+                                    } else if in_range {
+                                        theme.primary.base.opacity(0.08)
+                                    } else {
+                                        gpui::transparent_black()
+                                    })
+                                    .p_2()
+                                    .flex()
+                                    .flex_col()
+                                    .gap_1()
+                                    .text_color(if disabled {
+                                        theme.neutral.text_disabled
+                                    } else if in_month {
+                                        theme.neutral.text_1
+                                    } else {
+                                        theme.neutral.text_3.opacity(0.55)
+                                    })
+                                    .child(
+                                        div()
+                                            .text_sm()
+                                            .font_weight(if selected {
+                                                gpui::FontWeight::BOLD
+                                            } else {
+                                                gpui::FontWeight::NORMAL
+                                            })
+                                            .debug_selector(move || {
+                                                format!("calendar-day-{}", date.format())
+                                            })
+                                            .child(date.day.to_string()),
+                                    )
+                                    .children(day_events.into_iter().take(2).map(|event| {
+                                        let color = event.color.unwrap_or(theme.primary.base);
+                                        div()
+                                            .truncate()
+                                            .text_xs()
+                                            .text_color(color)
+                                            .child(format!("• {}", event.label))
+                                            .into_any_element()
+                                    }));
+                                let pointer_state = state.clone();
+                                cell = cell.on_mouse_down(
+                                    gpui::MouseButton::Left,
+                                    move |_, window, cx| {
+                                        pointer_state.update(cx, |state, _| state.active = date);
+                                        window.refresh();
+                                    },
+                                );
+                                if disabled {
+                                    cell = cell.cursor_not_allowed().opacity(0.55);
+                                } else {
+                                    let select_handler = on_select.clone();
+                                    cell = cell
+                                        .cursor_pointer()
+                                        .hover(|s| s.bg(theme.neutral.hover))
+                                        .on_click(move |_, window, cx| {
+                                            if let Some(cb) = select_handler.clone() {
+                                                cb(date, window, cx);
+                                            }
+                                        });
+                                }
+                                cell.into_any_element()
+                            }))
                     })),
             )
     }
@@ -426,7 +606,10 @@ mod tests {
             assert_eq!(tr(&cx, locales::calendar::month_view).as_ref(), view);
             let cells = Calendar::new(2040, 2).cells();
             assert_eq!(cells.len(), 42);
-            assert_eq!(weekday_monday_based(cells[0].year, cells[0].month, cells[0].day), 0);
+            assert_eq!(
+                weekday_monday_based(cells[0].year, cells[0].month, cells[0].day),
+                0
+            );
         }
     }
     #[test]
@@ -657,3 +840,7 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "calendar_keyboard_tests.rs"]
+mod keyboard_tests;

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Give fixed-month Calendar one retained composite Tab stop, visible active-date focus, arrow/week navigation and exactly-once Enter/Space selection through the existing host callback. Keep navigation separate from host-owned selection, disabled dates focusable but unselectable, hidden adjacent dates inert and sibling identities independent. Expose GPUI grid/row/cell structure with localized full-date names and selected/disabled metadata; native assistive-technology exposure remains unverified.
 - Apply Python's tarfile data filter when smoke-verifying portable archives, rejecting path traversal and unsafe links.
 - Enable bounded vertical scrolling in SearchableList and searchable Select so overflow rows remain reachable; keep `max_items` as the matching-result cap.
 - Recognize Pashto (`ps`, including `ps-AF`) as right-to-left locale metadata during configuration and runtime locale changes; rendered RTL layout support is unchanged.
