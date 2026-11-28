@@ -20,6 +20,8 @@
 
 `Select::searchable(...)` 覆盖原先 Combobox 的基础搜索能力：输入过滤和空态都收敛在同一个 `Select` 控件里。固定少量选项继续使用 `Select::new(...)`。
 
+可搜索选项列表超过限定高度时会在列表内纵向滚动；`max_items` 仍限制匹配结果总数，而不是滚动视口内的行数。
+
 ### 效果
 
 ::Demo{component="SelectSearchable"}::

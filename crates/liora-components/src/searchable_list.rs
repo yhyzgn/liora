@@ -396,6 +396,7 @@ impl RenderOnce for SearchableList {
             .flex()
             .flex_col()
             .overflow_hidden()
+            .overflow_y_scroll()
             .max_h(self.max_height)
             .rounded(px(theme.radius.md))
             .bg(self.background.unwrap_or(theme.neutral.card))
@@ -537,6 +538,76 @@ impl IntoElement for SearchableList {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn wheel_scroll_reaches_capped_rows_and_preserves_offset_on_redraw() {
+        use gpui::{ScrollDelta, ScrollEvent, TouchPhase, point};
+        use std::{cell::RefCell, rc::Rc};
+
+        struct Page(Rc<RefCell<Option<SharedString>>>);
+
+        impl Render for Page {
+            fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+                let selected = self.0.clone();
+                div().size_full().child(
+                    SearchableList::new(
+                        (0..14)
+                            .map(|index| {
+                                SearchableListItem::new(format!("row-{index}"))
+                                    .group(if index < 6 { "First" } else { "Second" })
+                                    .disabled(index == 10)
+                            })
+                            .collect(),
+                    )
+                    .id("wheel-searchable-list")
+                    .width(px(240.0))
+                    .max_items(12)
+                    .on_select(move |item, _, _| *selected.borrow_mut() = Some(item.value)),
+                )
+            }
+        }
+
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        let selected = Rc::new(RefCell::new(None));
+        let handle = app.add_window(|_, _| Page(selected.clone()));
+        let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+        window.update(|window, cx| window.draw(cx).clear(cx));
+
+        let wheel = |x, delta| ScrollEvent {
+            position: point(px(x), px(130.0)),
+            delta: ScrollDelta::Pixels(point(px(0.0), px(delta))),
+            modifiers: Default::default(),
+            touch_phase: TouchPhase::Moved,
+            source: gpui::ScrollSource::Pointer,
+        };
+        window.simulate_event(wheel(120.0, -2000.0));
+        window.update(|window, cx| {
+            window.refresh();
+            window.draw(cx).clear(cx);
+        });
+        window.simulate_click(point(px(120.0), px(237.0)), Default::default());
+        assert_eq!(selected.borrow().as_deref(), Some("row-11"));
+
+        // The disabled penultimate row must stay inert after scrolling.
+        window.simulate_click(point(px(120.0), px(193.0)), Default::default());
+        assert_eq!(selected.borrow().as_deref(), Some("row-11"));
+
+        window.simulate_event(wheel(300.0, 2000.0));
+        window.update(|window, cx| {
+            window.refresh();
+            window.draw(cx).clear(cx);
+        });
+        *selected.borrow_mut() = None;
+        window.simulate_click(point(px(120.0), px(237.0)), Default::default());
+        assert_eq!(selected.borrow().as_deref(), Some("row-11"));
+
+        window.simulate_event(wheel(120.0, 2000.0));
+        window.update(|window, cx| window.draw(cx).clear(cx));
+        window.simulate_click(point(px(120.0), px(50.0)), Default::default());
+        assert_eq!(selected.borrow().as_deref(), Some("row-0"));
+        app.quit();
+    }
 
     fn sample_items() -> Vec<SearchableListItem> {
         vec![
