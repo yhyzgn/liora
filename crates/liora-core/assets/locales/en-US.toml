@@ -9,6 +9,9 @@ clear = "Clear"
 loading = "Loading"
 empty = "No data"
 
+[dialog]
+title = "Dialog"
+
 [message_box]
 ok = "OK"
 cancel = "Cancel"

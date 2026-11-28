@@ -9,6 +9,9 @@ clear = "清空"
 loading = "加载中"
 empty = "暂无数据"
 
+[dialog]
+title = "对话框"
+
 [message_box]
 ok = "确定"
 cancel = "取消"

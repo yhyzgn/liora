@@ -167,6 +167,11 @@ impl Render for DialogView {
         let id = self.id.clone();
         let title = self.title.clone();
         let content_fn = self.content.clone();
+        let accessible_name = if title.is_empty() {
+            liora_core::tr(cx, liora_core::locales::dialog::title())
+        } else {
+            title.clone()
+        };
         let on_close_for_close_button = self.on_close.clone();
         let on_close_for_outside_click = self.on_close.clone();
         let close_on_click_outside = self.close_on_click_outside;
@@ -270,6 +275,8 @@ impl Render for DialogView {
             .id(id.clone())
             .track_focus(&focus_handle)
             .key_context("Dialog")
+            .role(gpui::Role::Dialog)
+            .aria_label(accessible_name)
             .absolute()
             .size_full()
             .cursor_default()
@@ -398,6 +405,22 @@ mod runtime_tests {
             );
             down.propagate
         })
+    }
+
+    #[test]
+    fn untitled_dialog_fallback_uses_the_current_locale() {
+        let mut app = gpui::TestAppContext::single();
+        app.update(crate::init_liora);
+        for (locale, expected) in [("en-US", "Dialog"), ("zh-CN", "对话框")] {
+            app.update(|cx| {
+                liora_core::locales::set_locale(cx, locale).unwrap();
+                assert_eq!(
+                    liora_core::tr(cx, liora_core::locales::dialog::title()),
+                    expected
+                );
+            });
+        }
+        app.quit();
     }
 
     #[test]
