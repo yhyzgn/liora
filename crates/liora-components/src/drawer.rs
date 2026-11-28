@@ -151,13 +151,14 @@ impl Render for DrawerView {
             .on_mouse_move(|_, _, cx| {
                 cx.stop_propagation();
             })
-            .when(close_on_click_outside, |s| {
-                s.on_mouse_down(MouseButton::Left, {
-                    let on_close = on_close.clone();
-                    move |_, _, cx| {
+            .on_mouse_down(MouseButton::Left, {
+                let on_close = on_close.clone();
+                move |_, _, cx| {
+                    cx.stop_propagation();
+                    if close_on_click_outside {
                         on_close(cx);
                     }
-                })
+                }
             });
 
         let mut panel = div()
@@ -596,6 +597,133 @@ mod tests {
             );
             result.propagate
         })
+    }
+
+    fn click_at(window: &mut gpui::VisualTestContext, position: gpui::Point<gpui::Pixels>) {
+        window.update(|window, cx| {
+            window.dispatch_event(
+                gpui::PlatformInput::MouseDown(gpui::MouseDownEvent {
+                    position,
+                    button: MouseButton::Left,
+                    modifiers: gpui::Modifiers::none(),
+                    click_count: 1,
+                    first_mouse: false,
+                }),
+                cx,
+            );
+            window.draw(cx).clear(cx);
+            window.dispatch_event(
+                gpui::PlatformInput::MouseUp(gpui::MouseUpEvent {
+                    position,
+                    button: MouseButton::Left,
+                    modifiers: gpui::Modifiers::none(),
+                    click_count: 1,
+                }),
+                cx,
+            );
+        });
+    }
+
+    #[test]
+    fn top_drawer_outside_policy_preserves_parent_and_retires_child_hitbox() {
+        use std::{cell::Cell, rc::Rc};
+
+        for close_child_on_outside in [false, true] {
+            let mut app = gpui::TestAppContext::single();
+            app.update(|cx| {
+                crate::init_liora(cx);
+                cx.set_reduce_motion(true);
+            });
+            let trigger = app.update(|cx| cx.focus_handle());
+            let child_focus = app.update(|cx| cx.focus_handle());
+            let root = app.add_window(|_, _| KeyboardRoot(trigger.clone()));
+            let mut window = gpui::VisualTestContext::from_window(root.into(), &app);
+            let parent_clicks = Rc::new(Cell::new(0));
+            window.update(|window, cx| {
+                window.activate_window();
+                Drawer::new()
+                    .id("parent")
+                    .content({
+                        let parent_clicks = parent_clicks.clone();
+                        move |_, _| {
+                            let parent_clicks = parent_clicks.clone();
+                            div()
+                                .debug_selector(|| "parent-action".to_string())
+                                .on_mouse_down(MouseButton::Left, move |_, _, _| {
+                                    parent_clicks.set(parent_clicks.get() + 1)
+                                })
+                                .child("Parent action")
+                        }
+                    })
+                    .show(cx);
+                Drawer::new()
+                    .id("child")
+                    .close_on_click_outside(close_child_on_outside)
+                    .close_on_escape(false)
+                    .content({
+                        let child_focus = child_focus.clone();
+                        move |_, _| {
+                            div().id("child-content").track_focus(&child_focus).child(
+                                div()
+                                    .debug_selector(|| "child-business-close".to_string())
+                                    .on_mouse_down(MouseButton::Left, |_, _, cx| Drawer::close(cx))
+                                    .child("Close child"),
+                            )
+                        }
+                    })
+                    .show(cx);
+                window.focus(&child_focus, cx);
+            });
+            app.run_until_parked();
+            assert!(window.update(|window, _| child_focus.is_focused(window)));
+            assert!(window.debug_bounds("child-business-close").is_some());
+
+            assert!(!dispatch_escape(&mut window));
+            window.update(|_, cx| {
+                let drawers = &cx.global::<liora_core::ActiveDrawer>().0;
+                assert_eq!(drawers.len(), 2);
+                assert_eq!(drawers[0].id.as_ref(), "parent");
+                assert_eq!(drawers[1].id.as_ref(), "child");
+            });
+
+            click_at(&mut window, gpui::point(px(1.0), px(1.0)));
+            app.run_until_parked();
+            window.update(|_, cx| {
+                let drawers = &cx.global::<liora_core::ActiveDrawer>().0;
+                assert_eq!(drawers.len(), if close_child_on_outside { 1 } else { 2 });
+                assert_eq!(drawers[0].id.as_ref(), "parent");
+                if !close_child_on_outside {
+                    assert_eq!(drawers[1].id.as_ref(), "child");
+                }
+            });
+
+            if !close_child_on_outside {
+                window.update(|window, cx| window.focus(&child_focus, cx));
+                assert!(window.update(|window, _| child_focus.is_focused(window)));
+                let child_close = window
+                    .debug_bounds("child-business-close")
+                    .unwrap()
+                    .center();
+                click_at(&mut window, child_close);
+                app.run_until_parked();
+                window.update(|_, cx| {
+                    let drawers = &cx.global::<liora_core::ActiveDrawer>().0;
+                    assert_eq!(drawers.len(), 1);
+                    assert_eq!(drawers[0].id.as_ref(), "parent");
+                });
+            }
+            assert!(window.debug_bounds("child-business-close").is_none());
+
+            let parent_action = window.debug_bounds("parent-action").unwrap().center();
+            click_at(&mut window, parent_action);
+            app.run_until_parked();
+            assert_eq!(parent_clicks.get(), 1);
+            assert!(!dispatch_escape(&mut window));
+            app.run_until_parked();
+            window.update(|_, cx| assert!(cx.global::<liora_core::ActiveDrawer>().0.is_empty()));
+            assert!(window.debug_bounds("parent-action").is_none());
+            app.quit();
+        }
     }
 
     #[test]

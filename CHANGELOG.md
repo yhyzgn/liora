@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Consume Drawer backdrop clicks at the top overlay: an opted-out top Drawer no longer leaks the click to close a lower Drawer, while an opted-in top Drawer closes alone.
 - Defer Select selection callbacks until its entity update returns so callbacks can read or update the same control without a reentrant borrow panic; preserve selection, popup-close ordering and exactly-once delivery.
 - Show all twelve Popover placements in the Docs live demo and snippet, matching Gallery.
 - Initialize DatePicker's empty view from the current local month at construction instead of May 2026; preserve empty selection and explicit value/range overrides without automatically advancing retained views across month boundaries.
