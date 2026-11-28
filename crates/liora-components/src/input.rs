@@ -41,6 +41,19 @@ fn clamp_to_char_boundary(text: &str, mut offset: usize) -> usize {
     offset
 }
 
+fn utf8_offset_from_utf16(text: &str, target: usize) -> usize {
+    let mut utf8 = 0;
+    let mut utf16 = 0;
+    for c in text.chars() {
+        if utf16 >= target {
+            break;
+        }
+        utf16 += c.len_utf16();
+        utf8 += c.len_utf8();
+    }
+    utf8
+}
+
 fn normalize_replace_range(text: &str, range: Range<usize>) -> Range<usize> {
     let start = clamp_to_char_boundary(text, range.start);
     let end = clamp_to_char_boundary(text, range.end);
@@ -1212,10 +1225,9 @@ impl EntityInputHandler for Input {
             self.marked_range = None;
         }
         if let Some(sel) = new_selected {
-            self.selected_range = normalize_replace_range(
-                self.value.as_ref(),
-                range.start + sel.start..range.start + sel.end,
-            );
+            let start = range.start + utf8_offset_from_utf16(new_text, sel.start);
+            let end = range.start + utf8_offset_from_utf16(new_text, sel.end);
+            self.selected_range = normalize_replace_range(self.value.as_ref(), start..end);
         } else {
             self.selected_range = range.start + new_text.len()..range.start + new_text.len();
         }
@@ -1285,16 +1297,7 @@ impl Input {
             .sum()
     }
     fn offset_from_utf16(&self, target: usize) -> usize {
-        let mut utf8 = 0;
-        let mut utf16 = 0;
-        for c in self.value.chars() {
-            if utf16 >= target {
-                break;
-            }
-            utf16 += c.len_utf16();
-            utf8 += c.len_utf8();
-        }
-        utf8
+        utf8_offset_from_utf16(self.value.as_ref(), target)
     }
     fn text_for_display(&self, cx: &impl liora_core::LocalesContext) -> SharedString {
         if self.value.is_empty() {
@@ -2374,6 +2377,38 @@ mod tests {
                         .map(|selection| selection.reversed),
                     Some(false)
                 );
+            });
+        });
+        app.quit();
+    }
+
+    #[test]
+    fn marked_selection_offsets_use_utf16_relative_to_nonzero_preedit_base() {
+        let mut app = TestAppContext::single();
+        let input = app.new(|cx| Input::new("A猫Z", cx));
+        app.add_empty_window().update(|window, cx| {
+            input.update(cx, |input, cx| {
+                let preedit = "é🙂e\u{301}";
+                input.replace_and_mark_text_in_range(Some(1..2), preedit, Some(1..5), window, cx);
+
+                assert_eq!(input.value().as_ref(), "Aé🙂e\u{301}Z");
+                assert_eq!(input.selected_range(), 3..10);
+                assert_eq!(input.marked_text_range(window, cx), Some(1..6));
+                assert_eq!(
+                    input
+                        .selected_text_range(false, window, cx)
+                        .map(|selection| selection.range),
+                    Some(2..6)
+                );
+                input.replace_and_mark_text_in_range(None, "漢", None, window, cx);
+                assert_eq!(input.value().as_ref(), "A漢Z");
+                assert_eq!(input.selected_range(), 4..4);
+                assert_eq!(input.marked_text_range(window, cx), Some(1..2));
+
+                input.replace_and_mark_text_in_range(None, "", None, window, cx);
+                assert_eq!(input.value().as_ref(), "AZ");
+                assert_eq!(input.marked_text_range(window, cx), None);
+                assert_eq!(input.selected_range(), 1..1);
             });
         });
         app.quit();

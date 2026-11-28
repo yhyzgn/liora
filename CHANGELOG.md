@@ -88,6 +88,7 @@
 - Keep `Config::set_locales_config` version updates consistent with the free setter: advance the stored counter with saturation instead of adopting the replacement config's version.
 
 - Expose Input's existing native root as a stable named text/password/multiline input, with localized `aria_label` naming and readable non-password text runs. Preserve focus, disabled state and native editing; omit password values and text runs even when revealed. This adds text-reading metadata, not synchronized AT caret/selection, text geometry or AT editing actions.
+- Convert marked-text selection offsets from GPUI's UTF-16 units into UTF-8 byte ranges relative to the inserted preedit, preserving Unicode IME selection.
 - Route Gallery/Docs system-menu Help → GitHub to the platform URL opener; allow only the canonical repository URL in Gallery's existing fallback while keeping documentation previews and shell layouts unchanged.
 - Expose one localized Help → GitHub fallback in the Docs header on Linux/FreeBSD, where GPUI cannot activate system menus; dispatch the existing URL command without duplicating menus on macOS/Windows or enabling tutorial side effects.
 - Preserve retained Timer start times on first render, take one elapsed snapshot, and skip unrepresentable refresh deadlines without displacing sibling wakes. Share retained Start / Pause / Resume / Reset examples and their actual host source in Gallery and Docs; add cached-root scheduling, teardown, delayed-countdown and extreme-interval regressions.
