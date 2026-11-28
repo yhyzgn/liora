@@ -56,7 +56,12 @@ impl Col {
 
 impl RenderOnce for Col {
     fn render(self, _window: &mut Window, _cx: &mut App) -> impl IntoElement {
-        let span = self.span as f32 / 24.0;
+        // Budget one f32 epsilon per grid column for percentage resolution and up to 24 summed widths.
+        let span = match self.span {
+            0 => 0.0,
+            24 => 1.0,
+            span => (span as f32 / 24.0) * (1.0 - 24.0 * f32::EPSILON),
+        };
         gpui::div()
             .flex_none()
             .w(gpui::relative(span))
