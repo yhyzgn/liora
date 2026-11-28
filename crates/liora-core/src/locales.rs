@@ -642,8 +642,11 @@ fn builtin_locale_entries(source: &'static str) -> Vec<(SharedString, SharedStri
     parse_toml_translations(source).expect("built-in locale resources must be valid TOML")
 }
 
-static BUILTIN_EN_US: LazyLock<HashMap<SharedString, SharedString>> =
-    LazyLock::new(|| builtin_locale_entries(BUILTIN_EN_US_TOML).into_iter().collect());
+static BUILTIN_EN_US: LazyLock<HashMap<SharedString, SharedString>> = LazyLock::new(|| {
+    builtin_locale_entries(BUILTIN_EN_US_TOML)
+        .into_iter()
+        .collect()
+});
 
 /// Minimal context abstraction used by translation helpers.
 pub trait LocalesContext {
@@ -794,7 +797,7 @@ pub fn direction_for_locale(locale: &LocaleId) -> TextDirection {
         .unwrap_or_default()
         .to_ascii_lowercase();
     match language.as_str() {
-        "ar" | "fa" | "he" | "ur" => TextDirection::Rtl,
+        "ar" | "fa" | "he" | "ps" | "ur" => TextDirection::Rtl,
         _ => TextDirection::Ltr,
     }
 }
@@ -892,8 +895,8 @@ no_data = "No data"
         for key in ["missing.key", "Common.cancel", ""] {
             assert_eq!(terminal.translate(key).as_ref(), key);
         }
-        let empty =
-            terminal.with_resources(LocalesMap::new().with_locale("zh-CN", [("common.cancel", "")]));
+        let empty = terminal
+            .with_resources(LocalesMap::new().with_locale("zh-CN", [("common.cancel", "")]));
         assert_eq!(empty.translate("common.cancel").as_ref(), "");
     }
 
@@ -1022,10 +1025,39 @@ no_data = "No data"
             direction_for_locale(&LocaleId::from("ar-SA")),
             TextDirection::Rtl
         );
+        for locale in ["ps", "ps-AF", "ps_PK", "PS-af"] {
+            assert_eq!(
+                direction_for_locale(&LocaleId::from(locale)),
+                TextDirection::Rtl,
+                "{locale}"
+            );
+        }
         assert_eq!(
             direction_for_locale(&LocaleId::from("zh-CN")),
             TextDirection::Ltr
         );
+    }
+
+    #[test]
+    fn pashto_locale_updates_config_and_runtime_direction() {
+        let locales = LocalesConfig::system().with_locale("ps-AF");
+        assert_eq!(locales.direction, TextDirection::Rtl);
+
+        let app = gpui::TestAppContext::single();
+        app.update(|cx| {
+            crate::init_liora_with_mode(cx, crate::ThemeMode::Light);
+            set_locale(cx, "ps-AF").unwrap();
+            assert_eq!(
+                cx.global::<crate::Config>().locales.direction,
+                TextDirection::Rtl
+            );
+            set_locale(cx, "en-US").unwrap();
+            assert_eq!(
+                cx.global::<crate::Config>().locales.direction,
+                TextDirection::Ltr
+            );
+        });
+        app.quit();
     }
 
     fn temp_dir(label: &str) -> PathBuf {
