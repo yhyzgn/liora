@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Clamp oversized Descriptions item spans consistently during row packing and rendering; preserve in-range widths and last-cell expansion.
 - Expose Dialog root role and title-derived accessible name, with a localized fallback for untitled dialogs; GPUI's pinned accessibility API has no modal-state setter.
 - Keep Gallery and Docs shared tray visibility synchronized with their host state when residency is disabled and re-enabled with a window open; preserve existing hide-to-tray and quit behavior.
 - Repair the existing Gallery zoom-menu test fixture to supply its Gallery entity to the current fallback-menu builder signature; this test-only baseline compile repair enables the tray host regression to run.

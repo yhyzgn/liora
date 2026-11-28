@@ -123,8 +123,9 @@ impl RenderOnce for Descriptions {
         let mut current_row: Vec<DescriptionItem> = vec![];
         let mut current_span = 0;
 
-        for item in self.items {
+        for mut item in self.items {
             let item_span = item.span.min(column);
+            item.span = item_span;
             if current_span + item_span > column {
                 if let Some(last) = current_row.last_mut() {
                     last.span += column - current_span;
@@ -298,5 +299,82 @@ impl IntoElement for Descriptions {
     type Element = gpui::ViewElement<Self>;
     fn into_element(self) -> Self::Element {
         gpui::ViewElement::new(self)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[gpui::test]
+    fn descriptions_oversized_span_matches_full_row_width(cx: &mut gpui::TestAppContext) {
+        cx.update(|cx| liora_core::init_liora(cx, liora_theme::Theme::light()));
+        let widths = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        let observed = widths.clone();
+        cx.add_empty_window().draw(
+            gpui::point(px(0.0), px(0.0)),
+            gpui::size(px(300.0), px(300.0)),
+            move |_, _| {
+                let mut descriptions = Descriptions::new()
+                    .column(1)
+                    .direction(DescriptionsDirection::Vertical);
+                for span in [1, 2, u32::MAX] {
+                    let observed = observed.clone();
+                    descriptions = descriptions.item(
+                        "",
+                        gpui::canvas(
+                            move |bounds, _, _| observed.borrow_mut().push(bounds.size.width),
+                            |_, _, _, _| {},
+                        )
+                        .w_full()
+                        .h(px(1.0)),
+                        span,
+                    );
+                }
+                div().w(px(300.0)).child(descriptions)
+            },
+        );
+        let widths = widths.borrow();
+        assert_eq!(widths.len(), 3);
+        assert!(widths[0] > px(0.0));
+        assert_eq!(widths[1], widths[0]);
+        assert_eq!(widths[2], widths[0]);
+    }
+
+    #[gpui::test]
+    fn descriptions_in_range_spans_keep_widths_and_last_cell_expansion(
+        cx: &mut gpui::TestAppContext,
+    ) {
+        cx.update(|cx| liora_core::init_liora(cx, liora_theme::Theme::light()));
+        let widths = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        let observed = widths.clone();
+        cx.add_empty_window().draw(
+            gpui::point(px(0.0), px(0.0)),
+            gpui::size(px(300.0), px(300.0)),
+            move |_, _| {
+                let mut descriptions = Descriptions::new()
+                    .column(3)
+                    .direction(DescriptionsDirection::Vertical);
+                for span in [1, 2, 1, 1, 1, 2] {
+                    let observed = observed.clone();
+                    descriptions = descriptions.item(
+                        "",
+                        gpui::canvas(
+                            move |bounds, _, _| observed.borrow_mut().push(bounds.size.width),
+                            |_, _, _, _| {},
+                        )
+                        .w_full()
+                        .h(px(1.0)),
+                        span,
+                    );
+                }
+                div().w(px(300.0)).child(descriptions)
+            },
+        );
+        let widths = widths.borrow();
+        assert_eq!(widths.len(), 6);
+        assert_eq!(widths[1] - widths[0], px(100.0));
+        assert_eq!(widths[2..5], [widths[0]; 3]);
+        assert_eq!(widths[5] - widths[0], px(200.0));
     }
 }
