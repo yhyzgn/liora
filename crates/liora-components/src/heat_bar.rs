@@ -169,6 +169,17 @@ impl HeatBar {
         self.x_labels = labels.into_iter().map(Into::into).collect();
         self
     }
+
+    fn resolved_max_value(&self) -> f64 {
+        self.max_value.unwrap_or_else(|| {
+            self.items
+                .iter()
+                .map(|item| item.value)
+                .filter(|value| value.is_finite())
+                .fold(0.0_f64, f64::max)
+                .max(1.0)
+        })
+    }
 }
 
 impl RenderOnce for HeatBar {
@@ -177,14 +188,8 @@ impl RenderOnce for HeatBar {
         let chart_width = self.bar_width * self.items.len() as f32
             + self.gap * self.items.len().saturating_sub(1) as f32
             + if self.show_axis { px(36.0) } else { px(0.0) };
+        let max = self.resolved_max_value();
         let items = self.items.clone();
-        let max = self.max_value.unwrap_or_else(|| {
-            items
-                .iter()
-                .map(|i| i.value)
-                .fold(0.0_f64, f64::max)
-                .max(1.0)
-        });
         let bar_width = self.bar_width;
         let gap = self.gap;
         let color_ranges = self.color_ranges.clone();
@@ -300,6 +305,46 @@ mod tests {
         assert_eq!(heat.gap, px(2.0));
         assert!(!heat.show_axis);
         assert_eq!(heat.color_ranges.len(), 1);
+    }
+
+    #[test]
+    fn heat_bar_auto_domain_ignores_non_finite_items() {
+        let finite =
+            HeatBar::new([5.0, 10.0].map(|value| HeatBarItem::new("finite", value, gpui::red())));
+        let mixed = HeatBar::new(
+            [5.0, 10.0, f64::INFINITY, f64::NAN]
+                .map(|value| HeatBarItem::new("mixed", value, gpui::red())),
+        );
+
+        assert_eq!(finite.resolved_max_value(), 10.0);
+        assert_eq!(mixed.resolved_max_value(), finite.resolved_max_value());
+    }
+
+    #[test]
+    fn heat_bar_domain_preserves_floor_and_explicit_limits() {
+        for values in [
+            vec![],
+            vec![f64::NAN, f64::INFINITY, f64::NEG_INFINITY],
+            vec![-5.0, 0.0, 0.5],
+        ] {
+            let heat = HeatBar::new(
+                values
+                    .into_iter()
+                    .map(|value| HeatBarItem::new("floor", value, gpui::red())),
+            );
+            assert_eq!(heat.resolved_max_value(), 1.0);
+        }
+
+        let heat = HeatBar::new(
+            [5.0, 10.0, f64::INFINITY, f64::NAN]
+                .map(|value| HeatBarItem::new("explicit", value, gpui::red())),
+        );
+        assert_eq!(heat.clone().max_value(20.0).resolved_max_value(), 20.0);
+        assert_eq!(heat.clone().max_value(0.5).resolved_max_value(), 1.0);
+        assert_eq!(heat.clone().max_value(-5.0).resolved_max_value(), 1.0);
+        for invalid in [f64::INFINITY, f64::NEG_INFINITY, f64::NAN] {
+            assert_eq!(heat.clone().max_value(invalid).max_value, None);
+        }
     }
 
     #[test]

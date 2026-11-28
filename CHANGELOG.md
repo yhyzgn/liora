@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Ignore non-finite HeatBar values when calculating the automatic height scale, matching painting so invalid items no longer flatten finite bars; preserve explicit maximum semantics.
 - Normalize SegmentRatioBar's finite positive weights consistently for bars and legend; ignore non-finite, zero and negative weights, leaving all segments at zero when no positive finite weights remain.
 - Remove Row's implicit gap and round fractional Col widths downward so spans totaling 24 share one line, including thirds; rows exceeding 24 still wrap. Row has no explicit gutter option; use child padding for visual gutters or Space for spaced non-grid content.
 - Clamp oversized Descriptions item spans consistently during row packing and rendering; preserve in-range widths and last-cell expansion.
