@@ -243,6 +243,8 @@ When package files exist, CI runs a runner-safe smoke gate before upload:
 cargo run -p xtask -- package smoke --app gallery --format platform-defaults
 ```
 
+The verifier extracts portable archives with Python's `tarfile.data_filter`, which rejects traversal, unsafe links, and special files before checking their contents.
+
 The smoke command validates package headers for distro/installer formats where possible and fully inspects portable `.tar.gz` archives for the expected binary, launcher, icons, README, and Linux desktop metadata.
 
 CI then generates a runner-safe install/uninstall smoke plan:

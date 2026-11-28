@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Apply Python's tarfile data filter when smoke-verifying portable archives, rejecting path traversal and unsafe links.
 - Enable bounded vertical scrolling in SearchableList and searchable Select so overflow rows remain reachable; keep `max_items` as the matching-result cap.
 - Recognize Pashto (`ps`, including `ps-AF`) as right-to-left locale metadata during configuration and runtime locale changes; rendered RTL layout support is unchanged.
 - Consume Drawer backdrop clicks at the top overlay: an opted-out top Drawer no longer leaks the click to close a lower Drawer, while an opted-in top Drawer closes alone.

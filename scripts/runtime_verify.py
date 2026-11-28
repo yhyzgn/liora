@@ -135,7 +135,7 @@ def verify_tar_gz(path: Path, platform: str, root: Path) -> CheckResult:
         tmp_path = Path(tmp)
         try:
             with tarfile.open(path, "r:gz") as archive:
-                archive.extractall(tmp_path)
+                archive.extractall(tmp_path, filter=tarfile.data_filter)
             executables = [p for p in tmp_path.rglob("liora-gallery") if p.is_file()]
             launchers = [p for p in tmp_path.rglob("liora-gallery") if p.is_file()]
             readmes = list(tmp_path.rglob("README.md"))

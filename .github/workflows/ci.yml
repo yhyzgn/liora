@@ -24,6 +24,8 @@ jobs:
         run: |
           python scripts/audit_sdk_policy.py
           python scripts/test_audit_sdk_policy.py -v
+      - name: Runtime archive verification security tests
+        run: python -m unittest scripts.test_runtime_verify -v
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
