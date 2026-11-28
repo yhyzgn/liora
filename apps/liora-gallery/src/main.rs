@@ -723,8 +723,9 @@ fn handle_gallery_tray_command(command: TrayCommand, cx: &mut App) {
                     gpui::QuitMode::LastWindowClosed
                 });
                 if cx.has_global::<TrayControlCenter>() {
-                    cx.global_mut::<TrayControlCenter>()
-                        .set_resident_enabled(resident_enabled);
+                    let control = cx.global_mut::<TrayControlCenter>();
+                    control.set_resident_enabled(resident_enabled);
+                    control.set_tray_visible(resident_enabled);
                 }
                 // GPUI checks LastWindowClosed on removal, not on mode changes.
                 if !resident_enabled && cx.windows().is_empty() {
@@ -2238,6 +2239,7 @@ mod shell_regression_tests {
 
         struct MenuWindow {
             input: gpui::Entity<liora_components::Input>,
+            gallery: gpui::Entity<super::Gallery>,
         }
         impl Render for MenuWindow {
             fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
@@ -2251,7 +2253,7 @@ mod shell_regression_tests {
                         div()
                             .flex()
                             .debug_selector(|| "zoom-menu-bar".into())
-                            .child(super::gallery_fallback_menu_bar(cx)),
+                            .child(super::gallery_fallback_menu_bar(cx, self.gallery.clone())),
                     )
                     .child(self.input.clone())
                     .child(liora_components::PortalLayer)
@@ -2268,7 +2270,11 @@ mod shell_regression_tests {
             gallery.nav_filter.clone()
         });
         cx.update(|cx| liora_core::set_locale(cx, "en-US").unwrap());
-        let target = cx.add_window(move |_, _| MenuWindow { input });
+        let menu_gallery = gallery.clone();
+        let target = cx.add_window(move |_, _| MenuWindow {
+            input,
+            gallery: menu_gallery,
+        });
         let mut target_window = VisualTestContext::from_window(target.into(), cx);
         target_window.update(|window, cx| {
             window.set_rem_size(px(16.0));
@@ -3005,6 +3011,21 @@ mod shell_regression_tests {
                 let state = cx.global_mut::<GalleryTrayState>();
                 state.window = Some(window.into());
                 state.window_visible = true;
+                if !disable_residency {
+                    for expected in [false, true] {
+                        handle_gallery_tray_command(
+                            TrayCommand::Custom("resident-enabled".into()),
+                            cx,
+                        );
+                        assert_eq!(cx.windows().len(), 1);
+                        let state = cx.global::<GalleryTrayState>();
+                        let shared = &cx.global::<TrayControlCenter>().state;
+                        assert_eq!(state.resident_enabled, expected);
+                        assert_eq!(state.tray_visible, expected);
+                        assert_eq!(shared.resident_enabled, expected);
+                        assert_eq!(shared.tray_visible, expected);
+                    }
+                }
                 if disable_residency {
                     handle_gallery_tray_command(TrayCommand::Custom("resident-enabled".into()), cx);
                 }

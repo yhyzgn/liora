@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- Keep Gallery and Docs shared tray visibility synchronized with their host state when residency is disabled and re-enabled with a window open; preserve existing hide-to-tray and quit behavior.
+- Repair the existing Gallery zoom-menu test fixture to supply its Gallery entity to the current fallback-menu builder signature; this test-only baseline compile repair enables the tray host regression to run.
 - Make enabled Pagination previous/next, numbered and five-page ellipsis controls native keyboard Tab stops with visible focus. Preserve mouse and callback semantics; Enter/Space activate once on release, disabled boundaries stay inert, and modified Tab shortcuts propagate to ancestors.
 - Make enabled Rate controls one keyboard-reachable Tab stop; arrows and Home/End preview whole-star ratings, Enter/Space commit, and disabled controls stay out of focus traversal. Preserve pointer selection and show keyboard focus.
 
