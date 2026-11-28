@@ -268,7 +268,8 @@ impl Render for Pagination {
             let hover_group = SharedString::from(format!("{}-hover", id));
 
             div()
-                .id(id)
+                .id(id.clone())
+                .debug_selector(move || id.to_string())
                 .group(hover_group.clone())
                 .flex()
                 .items_center()
@@ -280,9 +281,41 @@ impl Render for Pagination {
                 .rounded(px(theme.radius.sm))
                 .text_color(text_color)
                 .when(action.is_some() && !disabled, |s| {
-                    s.cursor_pointer().hover(move |s| {
-                        s.cursor_pointer().bg(hover_bg).text_color(hover_text_color)
-                    })
+                    s.tab_index(0)
+                        .focus_visible(|style| {
+                            style.shadow(vec![
+                                gpui::BoxShadow::new(px(0.0), px(0.0), theme.primary.base)
+                                    .spread_radius(px(2.0)),
+                            ])
+                        })
+                        .on_key_down(|event, window, cx| {
+                            let modifiers = event.keystroke.modifiers;
+                            if modifiers.control
+                                || modifiers.alt
+                                || modifiers.platform
+                                || modifiers.function
+                            {
+                                return;
+                            }
+                            if event.keystroke.key == "tab" {
+                                if modifiers.shift {
+                                    window.focus_prev(cx);
+                                } else {
+                                    window.focus_next(cx);
+                                }
+                                window.prevent_default();
+                                cx.stop_propagation();
+                            } else if !modifiers.shift
+                                && matches!(event.keystroke.key.as_str(), "enter" | "space")
+                            {
+                                // GPUI emits the existing native click once on key-up.
+                                cx.stop_propagation();
+                            }
+                        })
+                        .cursor_pointer()
+                        .hover(move |s| {
+                            s.cursor_pointer().bg(hover_bg).text_color(hover_text_color)
+                        })
                 })
                 .when_some(action.filter(|_| !disabled), |s, action| {
                     s.on_click(cx.listener(move |this, _, window, cx| match action {
@@ -502,6 +535,382 @@ impl Render for Pagination {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::{
+        cell::{Cell, RefCell},
+        rc::Rc,
+    };
+
+    struct KeyboardPage {
+        before: gpui::FocusHandle,
+        after: gpui::FocusHandle,
+        pagination: gpui::Entity<Pagination>,
+        modified_tabs: Rc<Cell<usize>>,
+    }
+
+    impl Render for KeyboardPage {
+        fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+            let modified_tabs = self.modified_tabs.clone();
+            div()
+                .flex()
+                .flex_col()
+                .on_key_down(move |event, window, cx| {
+                    if event.keystroke.key != "tab" {
+                        return;
+                    }
+                    let modifiers = event.keystroke.modifiers;
+                    if modifiers.control
+                        || modifiers.alt
+                        || modifiers.platform
+                        || modifiers.function
+                    {
+                        modified_tabs.set(modified_tabs.get() + 1);
+                    } else if modifiers.shift {
+                        window.focus_prev(cx);
+                    } else {
+                        window.focus_next(cx);
+                    }
+                })
+                .child(div().id("before").size(px(20.0)).track_focus(&self.before))
+                .child(self.pagination.clone())
+                .child(div().id("after").size(px(20.0)).track_focus(&self.after))
+        }
+    }
+
+    struct KeyboardFixture {
+        app: gpui::TestAppContext,
+        window: gpui::VisualTestContext,
+        pagination: gpui::Entity<Pagination>,
+        before: gpui::FocusHandle,
+        after: gpui::FocusHandle,
+        changes: Rc<RefCell<Vec<usize>>>,
+        modified_tabs: Rc<Cell<usize>>,
+    }
+
+    impl KeyboardFixture {
+        fn new(total: usize, page: usize) -> Self {
+            let mut app = gpui::TestAppContext::single();
+            app.update(crate::init_liora);
+            let before = app.update(|cx| cx.focus_handle().tab_stop(true));
+            let after = app.update(|cx| cx.focus_handle().tab_stop(true));
+            let changes = Rc::new(RefCell::new(Vec::new()));
+            let modified_tabs = Rc::new(Cell::new(0));
+            let pagination = app.new({
+                let changes = changes.clone();
+                move |_| {
+                    Pagination::new(total)
+                        .id("keyboard-pagination")
+                        .current_page(page)
+                        .on_change(move |page, _, _| changes.borrow_mut().push(page))
+                }
+            });
+            let handle = app.add_window(|_, _| KeyboardPage {
+                before: before.clone(),
+                after: after.clone(),
+                pagination: pagination.clone(),
+                modified_tabs: modified_tabs.clone(),
+            });
+            let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
+            window.update(|window, cx| {
+                window.draw(cx).clear(cx);
+                before.focus(window, cx);
+                window.draw(cx).clear(cx);
+            });
+            Self {
+                app,
+                window,
+                pagination,
+                before,
+                after,
+                changes,
+                modified_tabs,
+            }
+        }
+
+        fn draw(&mut self) {
+            self.window.update(|window, cx| window.draw(cx).clear(cx));
+        }
+
+        fn press(&mut self, key: &str) {
+            self.window.simulate_keystrokes(key);
+            self.release(key);
+        }
+
+        fn release(&mut self, key: &str) {
+            self.window.update(|window, cx| {
+                let keystroke = gpui::Keystroke::parse_with_os(key, cx.platform_info().os).unwrap();
+                window.dispatch_event(
+                    gpui::PlatformInput::KeyUp(gpui::KeyUpEvent { keystroke }),
+                    cx,
+                );
+                window.draw(cx).clear(cx);
+            });
+        }
+
+        fn focus(&mut self) -> gpui::FocusHandle {
+            self.window
+                .update(|window, cx| window.focused(cx).expect("focused tab stop"))
+        }
+
+        fn tabs(&mut self, count: usize) {
+            for _ in 0..count {
+                self.press("tab");
+            }
+        }
+    }
+
+    #[test]
+    fn keyboard_traverses_all_actions_in_both_directions_and_retains_focus() {
+        let mut fixture = KeyboardFixture::new(100, 6);
+        let mut stops = vec![fixture.before.clone()];
+        for _ in 0..9 {
+            fixture.press("tab");
+            let focus = fixture.focus();
+            assert_ne!(
+                focus, fixture.after,
+                "enabled action must precede following stop"
+            );
+            assert!(
+                !stops.contains(&focus),
+                "each action owns one native focus identity"
+            );
+            stops.push(focus);
+        }
+        fixture.press("tab");
+        assert_eq!(fixture.focus(), fixture.after);
+        for expected in stops.iter().rev() {
+            fixture.press("shift-tab");
+            assert_eq!(&fixture.focus(), expected);
+        }
+        assert!(fixture.changes.borrow().is_empty());
+
+        fixture.tabs(5); // Current page 6, between both ellipsis controls.
+        let focused = fixture.focus();
+        fixture
+            .pagination
+            .update(&mut fixture.app, |_, cx| cx.notify());
+        fixture.draw();
+        assert_eq!(
+            fixture.focus(),
+            focused,
+            "same action retains focus across render"
+        );
+        for (index, key) in [
+            "ctrl-tab",
+            "alt-tab",
+            "cmd-tab",
+            "fn-tab",
+            "ctrl-shift-tab",
+            "alt-shift-tab",
+            "cmd-shift-tab",
+            "fn-shift-tab",
+        ]
+        .iter()
+        .enumerate()
+        {
+            fixture.press(key);
+            assert_eq!(fixture.focus(), focused, "{key} must not move focus");
+            assert_eq!(
+                fixture.modified_tabs.get(),
+                index + 1,
+                "{key} reaches parent"
+            );
+        }
+        for key in ["enter", "space", "ctrl-enter", "shift-space"] {
+            fixture.press(key);
+        }
+        let current = fixture
+            .window
+            .debug_bounds("keyboard-pagination-pager-6")
+            .unwrap();
+        fixture
+            .window
+            .simulate_click(current.center(), gpui::Modifiers::none());
+        fixture.draw();
+        assert!(
+            fixture.changes.borrow().is_empty(),
+            "current page never emits a callback"
+        );
+        fixture.app.quit();
+    }
+
+    #[test]
+    fn enter_and_space_activate_every_action_once_on_release_with_mouse_parity() {
+        // Previous, first page, -5 ellipsis, numbered pages, +5 ellipsis, last page, next.
+        for (tabs, suffix, expected) in [
+            (1, "prev-btn", 5),
+            (2, "pager-1", 1),
+            (3, "prev-more", 1),
+            (4, "pager-5", 5),
+            (6, "pager-7", 7),
+            (7, "next-more", 10),
+            (8, "pager-10", 10),
+            (9, "next-btn", 7),
+        ] {
+            for key in ["enter", "space"] {
+                let mut fixture = KeyboardFixture::new(100, 6);
+                fixture.tabs(tabs);
+                let focused = fixture.focus();
+                fixture.window.simulate_keystrokes(key);
+                assert!(
+                    fixture.changes.borrow().is_empty(),
+                    "{suffix} {key} down must not activate"
+                );
+                fixture.draw();
+                fixture.release(key);
+                assert_eq!(
+                    *fixture.changes.borrow(),
+                    [expected],
+                    "{suffix} {key} activates once"
+                );
+                assert_eq!(
+                    fixture
+                        .pagination
+                        .read_with(&fixture.app, |pagination, _| pagination.current_page),
+                    expected
+                );
+                if matches!(suffix, "prev-btn" | "next-btn" | "pager-5" | "pager-7") {
+                    assert_eq!(
+                        fixture.focus(),
+                        focused,
+                        "same action keeps focus after page rerender"
+                    );
+                }
+                fixture.release(key);
+                assert_eq!(
+                    *fixture.changes.borrow(),
+                    [expected],
+                    "unpaired key-up must not repeat"
+                );
+                fixture.app.quit();
+            }
+            let mut fixture = KeyboardFixture::new(100, 6);
+            let selector = match suffix {
+                "prev-btn" => "keyboard-pagination-prev-btn",
+                "pager-1" => "keyboard-pagination-pager-1",
+                "prev-more" => "keyboard-pagination-prev-more",
+                "pager-5" => "keyboard-pagination-pager-5",
+                "pager-7" => "keyboard-pagination-pager-7",
+                "next-more" => "keyboard-pagination-next-more",
+                "pager-10" => "keyboard-pagination-pager-10",
+                "next-btn" => "keyboard-pagination-next-btn",
+                _ => unreachable!(),
+            };
+            let bounds = fixture.window.debug_bounds(selector).unwrap();
+            fixture
+                .window
+                .simulate_click(bounds.center(), gpui::Modifiers::none());
+            fixture.draw();
+            assert_eq!(
+                *fixture.changes.borrow(),
+                [expected],
+                "{suffix} mouse parity"
+            );
+            fixture.app.quit();
+        }
+    }
+
+    #[test]
+    fn ellipsis_moves_exactly_five_pages_in_each_direction() {
+        for (tabs, expected) in [(3, 5), (7, 15)] {
+            for key in ["enter", "space"] {
+                let mut fixture = KeyboardFixture::new(200, 10);
+                fixture.tabs(tabs);
+                let focused = fixture.focus();
+                fixture.press(key);
+                assert_eq!(*fixture.changes.borrow(), [expected]);
+                assert_eq!(
+                    fixture.focus(),
+                    focused,
+                    "rendered ellipsis retains its native focus"
+                );
+                fixture.app.quit();
+            }
+        }
+    }
+
+    #[test]
+    fn modified_activation_strokes_leave_actionable_page_unchanged() {
+        let mut fixture = KeyboardFixture::new(200, 10);
+        fixture.tabs(1); // Enabled previous action would change page if activated.
+        let focused = fixture.focus();
+        for key in [
+            "shift-enter",
+            "ctrl-enter",
+            "alt-enter",
+            "cmd-enter",
+            "fn-enter",
+            "shift-space",
+            "ctrl-space",
+            "alt-space",
+            "cmd-space",
+            "fn-space",
+        ] {
+            fixture.press(key);
+            assert!(
+                fixture.changes.borrow().is_empty(),
+                "{key} must not activate"
+            );
+            assert_eq!(
+                fixture
+                    .pagination
+                    .read_with(&fixture.app, |pagination, _| pagination.current_page),
+                10
+            );
+            assert_eq!(fixture.focus(), focused);
+        }
+        fixture.app.quit();
+    }
+
+    #[test]
+    fn disabled_boundaries_and_empty_totals_are_unreachable_and_inert() {
+        for (total, page, enabled, disabled) in [
+            (30, 1, 4, "prev-btn"),
+            (30, 3, 4, "next-btn"),
+            (0, 1, 0, "prev-btn"),
+        ] {
+            let mut fixture = KeyboardFixture::new(total, page);
+            fixture.tabs(enabled + 1);
+            assert_eq!(
+                fixture.focus(),
+                fixture.after,
+                "forward traversal skips disabled boundaries"
+            );
+            for _ in 0..enabled {
+                fixture.press("shift-tab");
+            }
+            fixture.press("shift-tab");
+            assert_eq!(
+                fixture.focus(),
+                fixture.before,
+                "reverse traversal skips disabled boundaries"
+            );
+            for suffix in [disabled, if total == 0 { "next-btn" } else { disabled }] {
+                let selector = if suffix == "prev-btn" {
+                    "keyboard-pagination-prev-btn"
+                } else {
+                    "keyboard-pagination-next-btn"
+                };
+                let bounds = fixture.window.debug_bounds(selector).unwrap();
+                fixture
+                    .window
+                    .simulate_click(bounds.center(), gpui::Modifiers::none());
+                fixture.draw();
+                fixture.press("enter");
+                fixture.press("space");
+                assert!(
+                    fixture.changes.borrow().is_empty(),
+                    "disabled {suffix} must be inert"
+                );
+            }
+            assert_eq!(
+                fixture
+                    .pagination
+                    .read_with(&fixture.app, |pagination, _| pagination.current_page),
+                page
+            );
+            fixture.app.quit();
+        }
+    }
 
     #[test]
     fn render_clamps_current_page_using_final_page_size() {

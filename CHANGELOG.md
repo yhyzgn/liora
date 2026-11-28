@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Make enabled Pagination previous/next, numbered and five-page ellipsis controls native keyboard Tab stops with visible focus. Preserve mouse and callback semantics; Enter/Space activate once on release, disabled boundaries stay inert, and modified Tab shortcuts propagate to ancestors.
 - Make enabled Rate controls one keyboard-reachable Tab stop; arrows and Home/End preview whole-star ratings, Enter/Space commit, and disabled controls stay out of focus traversal. Preserve pointer selection and show keyboard focus.
 
 - Keep single-date DatePicker grid focus after pointer opening and restore trigger focus after pointer selection, preventing GPUI's default mouse-down focus transfer from overriding either transition. Render the nonmodal panel in the passive portal layer and dismiss with its outside listener so the clicked destination receives natural pointer focus; preserve dismissal opt-outs and trigger toggling.
