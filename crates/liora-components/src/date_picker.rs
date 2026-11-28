@@ -19,9 +19,9 @@
 //! the component, and avoid app-specific host-application resources in this SDK
 //! crate.
 
+use crate::calendar::{month_heading, weekday_labels};
 use crate::gpui_compat::element_id;
 use crate::motion::pop_in;
-use crate::calendar::{month_heading, weekday_labels};
 use chrono::Datelike;
 use gpui::{
     App, Bounds, Context, Element, ElementId, Entity, GlobalElementId, Hsla, InspectorElementId,
@@ -93,6 +93,7 @@ pub struct DatePicker {
     view_year: i32,
     view_month: u32,
     is_open: bool,
+    keyboard: Option<DateKeyboard>,
     placeholder: Option<SharedString>,
     display_format: Option<SharedString>,
     range_separator: Option<SharedString>,
@@ -105,6 +106,13 @@ pub struct DatePicker {
     on_range_change:
         Option<Box<dyn Fn(Option<DateValue>, Option<DateValue>, &mut Window, &mut App) + 'static>>,
     on_selection_change: Option<Box<dyn Fn(DatePickerSelection, &mut Window, &mut App) + 'static>>,
+}
+
+struct DateKeyboard {
+    trigger: gpui::FocusHandle,
+    grid: gpui::FocusHandle,
+    headers: [gpui::FocusHandle; 4],
+    active: DateValue,
 }
 
 impl DateValue {
@@ -136,6 +144,7 @@ impl DatePicker {
             view_year: today.year(),
             view_month: today.month(),
             is_open: false,
+            keyboard: None,
             placeholder: None,
             display_format: None,
             range_separator: None,
@@ -273,11 +282,18 @@ impl DatePicker {
     fn close_on_escape_action(
         &mut self,
         _: &DatePickerClose,
-        _: &mut Window,
+        window: &mut Window,
         cx: &mut Context<Self>,
     ) {
         if self.close_on_escape && self.is_open {
             self.close(cx);
+            if self.picker_type == DatePickerType::Date && !self.disabled {
+                if let Some(keyboard) = &self.keyboard {
+                    keyboard.trigger.focus(window, cx);
+                }
+            }
+        } else {
+            cx.propagate();
         }
     }
 
@@ -391,7 +407,11 @@ impl DatePicker {
                     self.format_value(end)
                 ),
                 (Some(start), None) => {
-                    format!("{}{}", self.format_value(start), self.resolved_separator(cx))
+                    format!(
+                        "{}{}",
+                        self.format_value(start),
+                        self.resolved_separator(cx)
+                    )
                 }
                 _ => self.resolved_placeholder(cx).to_string(),
             }
@@ -403,11 +423,15 @@ impl DatePicker {
     }
 
     fn resolved_placeholder(&self, cx: &impl LocalesContext) -> SharedString {
-        self.placeholder.clone().unwrap_or_else(|| tr(cx, default_placeholder(self.picker_type)))
+        self.placeholder
+            .clone()
+            .unwrap_or_else(|| tr(cx, default_placeholder(self.picker_type)))
     }
 
     fn resolved_separator(&self, cx: &impl LocalesContext) -> SharedString {
-        self.range_separator.clone().unwrap_or_else(|| tr(cx, locales::date_picker::range_separator))
+        self.range_separator
+            .clone()
+            .unwrap_or_else(|| tr(cx, locales::date_picker::range_separator))
     }
 
     fn format_value(&self, value: DateValue) -> String {
@@ -425,6 +449,95 @@ impl DatePicker {
         } else {
             self.value.is_some()
         }
+    }
+
+    fn anchor_active(&mut self) {
+        let active = self
+            .value
+            .filter(|date| date.year == self.view_year && date.month == self.view_month)
+            .unwrap_or(DateValue {
+                year: self.view_year,
+                month: self.view_month,
+                day: 1,
+            });
+        if let Some(keyboard) = &mut self.keyboard {
+            keyboard.active = active;
+        }
+    }
+
+    fn date_key(
+        &mut self,
+        event: &gpui::KeyDownEvent,
+        origin: usize,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.disabled || self.picker_type != DatePickerType::Date {
+            return;
+        }
+        let key = &event.keystroke;
+        let m = key.modifiers;
+        if m.control || m.alt || m.platform || m.function {
+            return;
+        }
+        if key.key == "tab" && self.is_open {
+            let keyboard = self.keyboard.as_ref().unwrap();
+            match (origin, m.shift) {
+                (4, false) | (0, true) => {
+                    keyboard.trigger.focus(window, cx);
+                    if m.shift {
+                        window.focus_prev(cx);
+                    } else {
+                        window.focus_next(cx);
+                    }
+                    self.close(cx);
+                }
+                (4, true) => keyboard.headers[3].focus(window, cx),
+                (3, false) => keyboard.grid.focus(window, cx),
+                (i @ 0..=2, false) => keyboard.headers[i + 1].focus(window, cx),
+                (i @ 1..=3, true) => keyboard.headers[i - 1].focus(window, cx),
+                _ => return,
+            }
+        } else if m.shift {
+            return;
+        } else if origin == 5 && matches!(key.key.as_str(), "enter" | "space") {
+            if !event.is_held && !self.is_open {
+                self.toggle_open(cx);
+                self.anchor_active();
+                self.keyboard.as_ref().unwrap().grid.focus(window, cx);
+            }
+        } else if origin == 4 && self.is_open {
+            let current = self.keyboard.as_ref().unwrap().active;
+            if matches!(key.key.as_str(), "enter" | "space") {
+                if !event.is_held {
+                    self.select_value(current, window, cx);
+                }
+            } else {
+                let weekday = weekday_monday_based(current.year, current.month, current.day);
+                let day = match key.key.as_str() {
+                    "left" => current.day as i32 - 1,
+                    "right" => current.day as i32 + 1,
+                    "up" => current.day as i32 - 7,
+                    "down" => current.day as i32 + 7,
+                    "home" => (current.day as i32 - weekday as i32).max(1),
+                    "end" => (current.day + 6 - weekday)
+                        .min(days_in_month(self.view_year, self.view_month))
+                        as i32,
+                    _ => return,
+                };
+                if day > 0 && day as u32 <= days_in_month(self.view_year, self.view_month) {
+                    self.keyboard.as_mut().unwrap().active = DateValue {
+                        day: day as u32,
+                        ..current
+                    };
+                    cx.notify();
+                }
+            }
+        } else {
+            return;
+        }
+        window.prevent_default();
+        cx.stop_propagation();
     }
 
     fn toggle_open(&mut self, cx: &mut Context<Self>) {
@@ -464,6 +577,11 @@ impl DatePicker {
 
         self.view_year = value.year;
         self.view_month = value.month;
+        if self.picker_type == DatePickerType::Date && !self.disabled {
+            if let Some(keyboard) = &self.keyboard {
+                keyboard.trigger.focus(window, cx);
+            }
+        }
         self.emit_change(window, cx);
         cx.notify();
     }
@@ -497,11 +615,17 @@ impl DatePicker {
         let month_index = self.view_year * 12 + self.view_month as i32 - 1 + delta;
         self.view_year = month_index.div_euclid(12);
         self.view_month = month_index.rem_euclid(12) as u32 + 1;
+        if self.picker_type == DatePickerType::Date {
+            self.anchor_active();
+        }
         cx.notify();
     }
 
     fn shift_year(&mut self, delta: i32, cx: &mut Context<Self>) {
         self.view_year += delta;
+        if self.picker_type == DatePickerType::Date {
+            self.anchor_active();
+        }
         cx.notify();
     }
 }
@@ -518,6 +642,38 @@ impl DatePickerType {
 impl Render for DatePicker {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.global::<Config>().theme.clone();
+        let single = self.picker_type == DatePickerType::Date;
+        if single && self.keyboard.is_none() {
+            self.keyboard = Some(DateKeyboard {
+                trigger: cx.focus_handle().tab_stop(true),
+                grid: cx.focus_handle().tab_stop(true),
+                headers: std::array::from_fn(|_| cx.focus_handle().tab_stop(true)),
+                active: DateValue {
+                    year: self.view_year,
+                    month: self.view_month,
+                    day: 1,
+                },
+            });
+        }
+        if single
+            && self.keyboard.as_ref().is_some_and(|keyboard| {
+                keyboard.active.year != self.view_year || keyboard.active.month != self.view_month
+            })
+        {
+            self.anchor_active();
+        }
+        if single && self.disabled && self.is_open {
+            self.close(cx);
+            let keyboard = self.keyboard.as_ref().unwrap();
+            if keyboard.grid.is_focused(_window)
+                || keyboard
+                    .headers
+                    .iter()
+                    .any(|handle| handle.is_focused(_window))
+            {
+                _window.blur(cx);
+            }
+        }
         let entity = cx.entity().clone();
         let display = self.display_text(cx);
         let range_start_text = self.range_start.map(|value| self.format_value(value));
@@ -563,7 +719,7 @@ impl Render for DatePicker {
                                 .top(top)
                                 .left(left)
                                 .w(width.max(px(300.0)))
-                                .child(render_picker_panel(picker_id, entity, _cx)),
+                                .child(render_picker_panel(picker_id, entity, _window, _cx)),
                         ))
                         .into_any_element()
                 },
@@ -577,6 +733,21 @@ impl Render for DatePicker {
             .when(self.width.is_none(), |s| s.w(px(220.0)))
             .h(px(34.0))
             .id(element_id(format!("{}-trigger", self.id)))
+            .debug_selector({
+                let id = self.id.clone();
+                move || format!("{id}-trigger")
+            })
+            .when(single && !self.disabled, |trigger| {
+                trigger
+                    .track_focus(&self.keyboard.as_ref().unwrap().trigger)
+                    .role(gpui::Role::Button)
+                    .aria_label(self.display_text(cx))
+                    .aria_expanded(self.is_open)
+                    .focus_visible(|style| style.border_color(theme.primary.base).border_2())
+                    .on_key_down(
+                        cx.listener(|this, event, window, cx| this.date_key(event, 5, window, cx)),
+                    )
+            })
             .flex()
             .items_center()
             .gap_2()
@@ -627,8 +798,12 @@ impl Render for DatePicker {
             )
             .on_mouse_down(
                 MouseButton::Left,
-                cx.listener(|this, _, _, cx| {
+                cx.listener(|this, _, window, cx| {
                     this.toggle_open(cx);
+                    if this.picker_type == DatePickerType::Date && this.is_open {
+                        this.anchor_active();
+                        this.keyboard.as_ref().unwrap().grid.focus(window, cx);
+                    }
                 }),
             )
             .on_action(cx.listener(Self::close_on_escape_action))
@@ -697,11 +872,14 @@ fn range_value_text(
 fn render_picker_panel(
     id: SharedString,
     picker: Entity<DatePicker>,
+    window: &Window,
     cx: &mut App,
 ) -> gpui::AnyElement {
     let picker_type = picker.update(cx, |picker, _| picker.picker_type);
     match picker_type {
-        DatePickerType::Date | DatePickerType::DateRange => render_date_panel(id, picker, cx),
+        DatePickerType::Date | DatePickerType::DateRange => {
+            render_date_panel(id, picker, window, cx)
+        }
         DatePickerType::Month | DatePickerType::MonthRange => render_month_panel(id, picker, cx),
         DatePickerType::Year | DatePickerType::YearRange => render_year_panel(id, picker, cx),
     }
@@ -729,6 +907,7 @@ fn panel_shell(id: &SharedString, theme: &liora_theme::Theme) -> gpui::Stateful<
 fn render_date_panel(
     id: SharedString,
     picker: Entity<DatePicker>,
+    window: &Window,
     cx: &mut App,
 ) -> gpui::AnyElement {
     let theme = cx.global::<Config>().theme.clone();
@@ -748,8 +927,32 @@ fn render_date_panel(
     let picker_next_month = picker.clone();
     let picker_next_year = picker.clone();
     let weekdays = weekday_labels(cx);
+    let single = picker.read(cx).picker_type == DatePickerType::Date;
+    let grid_focus = picker
+        .read(cx)
+        .keyboard
+        .as_ref()
+        .map(|keyboard| keyboard.grid.clone());
+    let active = picker
+        .read(cx)
+        .keyboard
+        .as_ref()
+        .map(|keyboard| keyboard.active);
+    let focused = grid_focus
+        .as_ref()
+        .is_some_and(|focus| focus.is_focused(window));
 
     panel_shell(&id, &theme)
+        .when(single, |panel| {
+            panel.on_action({
+                let picker = picker.clone();
+                move |action: &DatePickerClose, window, cx| {
+                    picker.update(cx, |picker, cx| {
+                        picker.close_on_escape_action(action, window, cx)
+                    });
+                }
+            })
+        })
         .child(
             div()
                 .flex()
@@ -761,6 +964,7 @@ fn render_date_panel(
                         .items_center()
                         .gap_1()
                         .child(nav_button(
+                            cx,
                             format!("{}-prev-year", id),
                             IconName::ChevronsLeft,
                             theme.neutral.icon,
@@ -769,6 +973,7 @@ fn render_date_panel(
                             |picker, cx| picker.shift_year(-1, cx),
                         ))
                         .child(nav_button(
+                            cx,
                             format!("{}-prev-month", id),
                             IconName::ChevronLeft,
                             theme.neutral.icon,
@@ -790,6 +995,7 @@ fn render_date_panel(
                         .items_center()
                         .gap_1()
                         .child(nav_button(
+                            cx,
                             format!("{}-next-month", id),
                             IconName::ChevronRight,
                             theme.neutral.icon,
@@ -798,6 +1004,7 @@ fn render_date_panel(
                             |picker, cx| picker.shift_month(1, cx),
                         ))
                         .child(nav_button(
+                            cx,
                             format!("{}-next-year", id),
                             IconName::ChevronsRight,
                             theme.neutral.icon,
@@ -825,6 +1032,19 @@ fn render_date_panel(
         )
         .child(
             div()
+                .id(format!("{id}-grid"))
+                .when(single, |grid| {
+                    grid.track_focus(grid_focus.as_ref().unwrap())
+                        .role(gpui::Role::Grid)
+                        .aria_label(month_heading(view_year, view_month, cx))
+                        .on_key_down({
+                            let picker = picker.clone();
+                            move |event, window, cx| {
+                                picker
+                                    .update(cx, |picker, cx| picker.date_key(event, 4, window, cx));
+                            }
+                        })
+                })
                 .flex()
                 .flex_col()
                 .children(days.chunks(7).enumerate().map(|(week_idx, week)| {
@@ -852,6 +1072,9 @@ fn render_date_panel(
                                 picker,
                                 move |picker, window, cx| picker.select_value(date, window, cx),
                             )
+                            .when(single && focused && active == Some(*cell), |cell| {
+                                cell.border_2().border_color(week_theme.primary.base)
+                            })
                         }))
                 })),
         )
@@ -883,6 +1106,7 @@ fn render_month_panel(
                 .items_center()
                 .justify_between()
                 .child(nav_button(
+                    cx,
                     format!("{}-prev-year", id),
                     IconName::ChevronsLeft,
                     theme.neutral.icon,
@@ -895,9 +1119,13 @@ fn render_month_panel(
                         .text_sm()
                         .font_weight(gpui::FontWeight::BOLD)
                         .text_color(theme.neutral.text_1)
-                        .child(tr(cx, locales::calendar::year_heading).replace("{year}", &view_year.to_string())),
+                        .child(
+                            tr(cx, locales::calendar::year_heading)
+                                .replace("{year}", &view_year.to_string()),
+                        ),
                 )
                 .child(nav_button(
+                    cx,
                     format!("{}-next-year", id),
                     IconName::ChevronsRight,
                     theme.neutral.icon,
@@ -973,6 +1201,7 @@ fn render_year_panel(
                 .items_center()
                 .justify_between()
                 .child(nav_button(
+                    cx,
                     format!("{}-prev-years", id),
                     IconName::ChevronsLeft,
                     theme.neutral.icon,
@@ -988,6 +1217,7 @@ fn render_year_panel(
                         .child(format!("{} - {}", start_year, start_year + 11)),
                 )
                 .child(nav_button(
+                    cx,
                     format!("{}-next-years", id),
                     IconName::ChevronsRight,
                     theme.neutral.icon,
@@ -1045,9 +1275,11 @@ fn selectable_cell(
     theme: liora_theme::Theme,
     picker: Entity<DatePicker>,
     action: impl Fn(&mut DatePicker, &mut Window, &mut Context<DatePicker>) + 'static,
-) -> impl IntoElement {
+) -> gpui::Stateful<gpui::Div> {
+    let id = id.into();
     div()
-        .id(id.into())
+        .id(id.clone())
+        .debug_selector(move || id.to_string())
         .flex_1()
         .h(px(34.0))
         .flex()
@@ -1083,15 +1315,60 @@ fn selectable_cell(
 }
 
 fn nav_button(
+    cx: &App,
     id: impl Into<SharedString>,
     icon: IconName,
     icon_color: Hsla,
     hover_bg: Hsla,
     picker: Entity<DatePicker>,
-    action: impl Fn(&mut DatePicker, &mut Context<DatePicker>) + 'static,
+    action: impl Fn(&mut DatePicker, &mut Context<DatePicker>) + Clone + 'static,
 ) -> impl IntoElement {
+    let keyboard = (picker.read(cx).picker_type == DatePickerType::Date).then(|| {
+        let origin = match icon {
+            IconName::ChevronsLeft => 0,
+            IconName::ChevronLeft => 1,
+            IconName::ChevronRight => 2,
+            _ => 3,
+        };
+        (
+            picker.read(cx).keyboard.as_ref().unwrap().headers[origin].clone(),
+            origin,
+        )
+    });
+    let key_picker = picker.clone();
+    let key_action = action.clone();
     div()
         .id(id.into())
+        .when_some(keyboard, |button, (focus, origin)| {
+            button
+                .track_focus(&focus)
+                .role(gpui::Role::Button)
+                .aria_label(match origin {
+                    0 => "Previous year",
+                    1 => "Previous month",
+                    2 => "Next month",
+                    _ => "Next year",
+                })
+                .focus_visible(move |style| style.border_2().border_color(icon_color))
+                .on_key_down(move |event, window, cx| {
+                    if event.keystroke.modifiers == gpui::Modifiers::none()
+                        && matches!(event.keystroke.key.as_str(), "enter" | "space")
+                    {
+                        if !event.is_held {
+                            key_picker.update(cx, |picker, cx| {
+                                if !picker.disabled && picker.is_open {
+                                    key_action(picker, cx);
+                                }
+                            });
+                        }
+                        window.prevent_default();
+                        cx.stop_propagation();
+                    } else {
+                        key_picker
+                            .update(cx, |picker, cx| picker.date_key(event, origin, window, cx));
+                    }
+                })
+        })
         .cursor_pointer()
         .p_1()
         .rounded(px(4.0))
@@ -1172,8 +1449,21 @@ fn default_placeholder(picker_type: DatePickerType) -> liora_core::Locales {
 
 fn month_labels(cx: &impl LocalesContext) -> [SharedString; 12] {
     use locales::calendar::*;
-    [january(), february(), march(), april(), may(), june(), july(), august(), september(), october(), november(), december()]
-        .map(|key| tr(cx, key))
+    [
+        january(),
+        february(),
+        march(),
+        april(),
+        may(),
+        june(),
+        july(),
+        august(),
+        september(),
+        october(),
+        november(),
+        december(),
+    ]
+    .map(|key| tr(cx, key))
 }
 
 fn default_format(picker_type: DatePickerType) -> &'static str {
@@ -1290,8 +1580,12 @@ mod tests {
     fn locale_defaults_and_literal_overrides_survive_switching() {
         let value = DateValue::new(2040, 2, 29).expect("valid fixture");
         let picker = DatePicker::new().date_range().range(value, value);
-        let literal = DatePicker::new().placeholder("请选择日期").month().year()
-            .range_separator(" / ").format("YYYY年M月D日");
+        let literal = DatePicker::new()
+            .placeholder("请选择日期")
+            .month()
+            .year()
+            .range_separator(" / ")
+            .format("YYYY年M月D日");
         for (locale, placeholder, separator, pending) in [
             ("en-US", "Select date range", " to ", "Select end"),
             ("zh-CN", "请选择日期范围", " 至 ", "请选择结束"),
@@ -1304,7 +1598,10 @@ mod tests {
             assert_eq!(literal.resolved_placeholder(&cx).as_ref(), "请选择日期");
             assert_eq!(literal.resolved_separator(&cx).as_ref(), " / ");
             assert_eq!(literal.format_value(value), "2040年2月29日");
-            assert_eq!(picker.display_text(&cx), format!("2040-02-29{separator}2040-02-29"));
+            assert_eq!(
+                picker.display_text(&cx),
+                format!("2040-02-29{separator}2040-02-29")
+            );
             assert_eq!(picker.range_ref(), (Some(value), Some(value)));
             assert_eq!((picker.view_year, picker.view_month), (2040, 2));
         }
@@ -1315,25 +1612,39 @@ mod tests {
         struct Surface(Entity<DatePicker>);
         impl Render for Surface {
             fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
-                div().size_full().child(crate::Calendar::new(2040, 2))
-                    .child(self.0.clone()).child(crate::PortalLayer)
+                div()
+                    .size_full()
+                    .child(crate::Calendar::new(2040, 2))
+                    .child(self.0.clone())
+                    .child(crate::PortalLayer)
             }
         }
         let mut app = gpui::TestAppContext::single();
         app.update(crate::init_liora);
         let calls = std::rc::Rc::new(std::cell::Cell::new(0));
         let value = DateValue::new(2040, 2, 29).expect("valid fixture");
-        let picker = app.update(|cx| cx.new(|_| {
-            let calls = calls.clone();
-            let mut picker = DatePicker::new().date_range().range(value, value)
-                .on_selection_change(move |_, _, _| calls.set(calls.get() + 1));
-            picker.range_end = None;
-            picker.is_open = true;
-            picker
-        }));
-        let handle = app.add_window({ let picker = picker.clone(); move |_, _| Surface(picker) });
+        let picker = app.update(|cx| {
+            cx.new(|_| {
+                let calls = calls.clone();
+                let mut picker = DatePicker::new()
+                    .date_range()
+                    .range(value, value)
+                    .on_selection_change(move |_, _, _| calls.set(calls.get() + 1));
+                picker.range_end = None;
+                picker.is_open = true;
+                picker
+            })
+        });
+        let handle = app.add_window({
+            let picker = picker.clone();
+            move |_, _| Surface(picker)
+        });
         let mut window = gpui::VisualTestContext::from_window(handle.into(), &app);
-        for (locale, placeholder) in [("en-US", "Select date range"), ("zh-CN", "请选择日期范围"), ("en-US", "Select date range")] {
+        for (locale, placeholder) in [
+            ("en-US", "Select date range"),
+            ("zh-CN", "请选择日期范围"),
+            ("en-US", "Select date range"),
+        ] {
             window.update(|window, cx| {
                 liora_core::apply_locale(window, cx, locale).expect("locale switch");
                 window.draw(cx).clear(cx);
@@ -1356,8 +1667,11 @@ mod tests {
         let after = chrono::Local::now();
 
         assert!(
-            [(before.year(), before.month()), (after.year(), after.month())]
-                .contains(&(picker.view_year, picker.view_month)),
+            [
+                (before.year(), before.month()),
+                (after.year(), after.month())
+            ]
+            .contains(&(picker.view_year, picker.view_month)),
             "default view must use the local current month, got {}-{}",
             picker.view_year,
             picker.view_month,
@@ -1383,3 +1697,7 @@ mod tests {
         assert_eq!(DatePicker::new().width_lg().width, Some(px(320.0)));
     }
 }
+
+#[cfg(test)]
+#[path = "date_picker_keyboard_tests.rs"]
+mod keyboard_tests;
