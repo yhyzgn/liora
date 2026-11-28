@@ -28,7 +28,7 @@ use gpui::{
     IntoElement, LayoutId, MouseButton, Pixels, Render, SharedString, Window, actions, div,
     prelude::*, px,
 };
-use liora_core::{Config, LocalesContext, locales, push_portal, tr};
+use liora_core::{Config, LocalesContext, locales, push_passive_portal, tr};
 use liora_icons::Icon;
 use liora_icons_lucide::IconName;
 
@@ -580,6 +580,8 @@ impl DatePicker {
         if self.picker_type == DatePickerType::Date && !self.disabled {
             if let Some(keyboard) = &self.keyboard {
                 keyboard.trigger.focus(window, cx);
+                // Keep the closing grid's default mouse-down focus from undoing restoration.
+                window.prevent_default();
             }
         }
         self.emit_change(window, cx);
@@ -692,7 +694,7 @@ impl Render for DatePicker {
             let picker_id = self.id.clone();
             let bounds = self.last_bounds;
             let close_on_click_outside = self.close_on_click_outside;
-            push_portal(
+            push_passive_portal(
                 move |_window, _cx| {
                     let (top, left, width) = if let Some(bounds) = bounds {
                         (bounds.bottom() + px(4.0), bounds.left(), bounds.size.width)
@@ -701,27 +703,26 @@ impl Render for DatePicker {
                     };
                     let close_entity = entity.clone();
 
-                    div()
-                        .absolute()
-                        .top_0()
-                        .left_0()
-                        .size_full()
-                        .bg(gpui::transparent_black())
-                        .when(close_on_click_outside, |s| {
-                            s.on_mouse_down(MouseButton::Left, move |_, _, cx| {
-                                close_entity.update(cx, |picker, cx| picker.close(cx));
+                    pop_in(
+                        element_id(format!("{}-panel-motion", picker_id)),
+                        div()
+                            .absolute()
+                            .top(top)
+                            .left(left)
+                            .w(width.max(px(300.0)))
+                            .when(close_on_click_outside, |panel| {
+                                panel.on_mouse_down_out(move |event, _, cx| {
+                                    if event.button == MouseButton::Left
+                                        && !bounds
+                                            .is_some_and(|bounds| bounds.contains(&event.position))
+                                    {
+                                        close_entity.update(cx, |picker, cx| picker.close(cx));
+                                    }
+                                })
                             })
-                        })
-                        .child(pop_in(
-                            element_id(format!("{}-panel-motion", picker_id)),
-                            div()
-                                .absolute()
-                                .top(top)
-                                .left(left)
-                                .w(width.max(px(300.0)))
-                                .child(render_picker_panel(picker_id, entity, _window, _cx)),
-                        ))
-                        .into_any_element()
+                            .child(render_picker_panel(picker_id, entity, _window, _cx)),
+                    )
+                    .into_any_element()
                 },
                 cx,
             );
@@ -803,6 +804,8 @@ impl Render for DatePicker {
                     if this.picker_type == DatePickerType::Date && this.is_open {
                         this.anchor_active();
                         this.keyboard.as_ref().unwrap().grid.focus(window, cx);
+                        // Suppress GPUI's later mouse-down focus transfer back to the trigger.
+                        window.prevent_default();
                     }
                 }),
             )
@@ -1653,7 +1656,7 @@ mod tests {
                 assert!(picker.is_open);
                 assert_eq!(picker.range_ref(), (Some(value), None));
                 assert_eq!((picker.view_year, picker.view_month), (2040, 2));
-                assert!(cx.global::<liora_core::Portal>().entries.is_empty());
+                assert!(cx.global::<liora_core::PassivePortal>().entries.is_empty());
             });
             assert_eq!(calls.get(), 0);
         }

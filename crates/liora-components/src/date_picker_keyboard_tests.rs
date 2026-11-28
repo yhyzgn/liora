@@ -40,12 +40,11 @@ impl Render for Page {
                 div()
                     .id("after")
                     .debug_selector(|| "after".into())
+                    .absolute()
+                    .top_0()
+                    .left(px(400.0))
                     .size(px(30.0))
-                    .track_focus(&self.after)
-                    .on_mouse_down(MouseButton::Left, {
-                        let focus = self.after.clone();
-                        move |_, window, cx| focus.focus(window, cx)
-                    }),
+                    .track_focus(&self.after),
             )
             .child(crate::PortalLayer)
     }
@@ -212,13 +211,66 @@ fn mouse_down(w: &mut VisualTestContext, position: gpui::Point<Pixels>) {
 }
 
 #[test]
+fn dispatched_pointer_open_focuses_grid_and_restores_trigger() {
+    let (app, mut w, p, calls, _, _, _) = fixture();
+    let position = w.debug_bounds("picker-0-trigger").unwrap().center();
+    mouse_down(&mut w, position);
+    w.update(|w, cx| {
+        let picker = p[0].read(cx);
+        assert!(picker.is_open);
+        assert!(picker.keyboard.as_ref().unwrap().grid.is_focused(w));
+    });
+    key(&mut w, "right");
+    key(&mut w, "enter");
+    assert_eq!(*calls.borrow(), [date(16)]);
+    w.update(|w, cx| {
+        let picker = p[0].read(cx);
+        assert!(!picker.is_open);
+        assert!(picker.keyboard.as_ref().unwrap().trigger.is_focused(w));
+    });
+    mouse_down(&mut w, position);
+    key(&mut w, "escape");
+    w.update(|w, cx| {
+        let picker = p[0].read(cx);
+        assert!(!picker.is_open);
+        assert!(picker.keyboard.as_ref().unwrap().trigger.is_focused(w));
+    });
+    assert_eq!(*calls.borrow(), [date(16)]);
+    mouse_down(&mut w, position);
+    let day = w.debug_bounds("picker-0-day-2-2").unwrap().center();
+    mouse_down(&mut w, day);
+    w.simulate_mouse_up(day, MouseButton::Left, gpui::Modifiers::none());
+    draw(&mut w);
+    assert_eq!(*calls.borrow(), [date(16), date(17)]);
+    w.update(|w, cx| {
+        let picker = p[0].read(cx);
+        assert!(!picker.is_open);
+        assert!(picker.keyboard.as_ref().unwrap().trigger.is_focused(w));
+    });
+    mouse_down(&mut w, position);
+    mouse_down(&mut w, position);
+    w.update(|w, cx| {
+        let picker = p[0].read(cx);
+        assert!(!picker.is_open);
+        assert!(picker.keyboard.as_ref().unwrap().trigger.is_focused(w));
+    });
+    assert_eq!(*calls.borrow(), [date(16), date(17)]);
+    app.quit();
+}
+
+#[test]
 fn outside_dismissal_optout_and_pointer_adjacent_semantics() {
     let (app, mut w, p, calls, _, _, after) = fixture();
     key(&mut w, "tab");
     key(&mut w, "enter");
-    // A real destination already holding focus must not be replaced by trigger restoration.
-    w.update(|w, cx| after.focus(w, cx));
-    mouse_down(&mut w, gpui::point(px(700.0), px(500.0)));
+    w.update(|w, cx| {
+        assert!(p[0].read(cx).keyboard.as_ref().unwrap().grid.is_focused(w));
+        assert!(!after.is_focused(w));
+    });
+    let destination = w.debug_bounds("after").unwrap().center();
+    mouse_down(&mut w, destination);
+    w.simulate_mouse_up(destination, MouseButton::Left, gpui::Modifiers::none());
+    draw(&mut w);
     w.update(|w, cx| {
         assert!(!p[0].read(cx).is_open);
         assert!(after.is_focused(w));
@@ -228,8 +280,13 @@ fn outside_dismissal_optout_and_pointer_adjacent_semantics() {
     key(&mut w, "shift-tab");
     key(&mut w, "shift-tab");
     key(&mut w, "space");
-    mouse_down(&mut w, gpui::point(px(700.0), px(500.0)));
-    w.update(|_, cx| assert!(p[0].read(cx).is_open));
+    mouse_down(&mut w, destination);
+    w.simulate_mouse_up(destination, MouseButton::Left, gpui::Modifiers::none());
+    draw(&mut w);
+    w.update(|w, cx| {
+        assert!(p[0].read(cx).is_open);
+        assert!(after.is_focused(w));
+    });
     // June 2026's fifth week, third cell is adjacent July 1: pointer selection remains legal.
     let position = w
         .debug_bounds("picker-0-day-4-2")
