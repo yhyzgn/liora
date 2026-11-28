@@ -215,6 +215,9 @@ pub fn normalize_tags(
     allow_duplicates: bool,
     max_tags: Option<usize>,
 ) -> Vec<SharedString> {
+    if max_tags == Some(0) {
+        return Vec::new();
+    }
     let mut seen = HashSet::new();
     let mut out = Vec::new();
     for tag in tags {
@@ -244,5 +247,11 @@ mod tests {
             tags.iter().map(|s| s.as_ref()).collect::<Vec<_>>(),
             vec!["rust", "gpui"]
         );
+    }
+    #[test]
+    fn normalize_tags_with_zero_cap_returns_no_tags() {
+        let tags = normalize_tags(["rust", "gpui"], false, Some(0));
+
+        assert!(tags.is_empty());
     }
 }
