@@ -31,6 +31,7 @@ pub struct Rate {
     value: f32,
     max: usize,
     hover_value: Option<f32>,
+    keyboard_value: Option<f32>,
     disabled: bool,
     focus_handle: FocusHandle,
     on_change: Option<Box<dyn Fn(f32, &mut Window, &mut App) + 'static>>,
@@ -43,8 +44,9 @@ impl Rate {
             value,
             max: 5,
             hover_value: None,
+            keyboard_value: None,
             disabled: false,
-            focus_handle: cx.focus_handle(),
+            focus_handle: cx.focus_handle().tab_stop(true).tab_index(0),
             on_change: None,
         }
     }
@@ -57,6 +59,7 @@ impl Rate {
     /// Toggles the disabled state and suppresses user interaction when enabled.
     pub fn disabled(mut self, d: bool) -> Self {
         self.disabled = d;
+        self.focus_handle = self.focus_handle.clone().tab_stop(!d);
         self
     }
 
@@ -75,6 +78,79 @@ impl Rate {
             cx.notify();
         }
     }
+    fn set_keyboard_value(&mut self, value: f32, cx: &mut Context<Self>) {
+        if self.keyboard_value != Some(value) {
+            self.keyboard_value = Some(value);
+            cx.notify();
+        }
+    }
+    fn active_value(&self, window: &Window) -> f32 {
+        let keyboard_value = self.keyboard_value.unwrap_or(self.value);
+        if self.focus_handle.is_focused(window) && window.last_input_was_keyboard() {
+            keyboard_value
+        } else {
+            self.hover_value.unwrap_or(self.value)
+        }
+    }
+
+    fn handle_key_down(
+        &mut self,
+        event: &gpui::KeyDownEvent,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.disabled {
+            return;
+        }
+
+        let key = event.keystroke.key.as_str();
+        let modifiers = event.keystroke.modifiers;
+        if key == "tab" {
+            if !modifiers.control && !modifiers.alt && !modifiers.platform && !modifiers.function {
+                if self.keyboard_value.take().is_some() {
+                    cx.notify();
+                }
+                if modifiers.shift {
+                    window.focus_prev(cx);
+                } else {
+                    window.focus_next(cx);
+                }
+                cx.stop_propagation();
+            }
+            return;
+        }
+        if modifiers.modified() {
+            return;
+        }
+
+        match key {
+            "left" | "down" | "right" | "up" | "home" | "end" if self.max > 0 => {
+                let max = self.max as f32;
+                let current = self.keyboard_value.unwrap_or(self.value);
+                let active = if current.is_nan() {
+                    0.0
+                } else {
+                    current.floor().clamp(0.0, max)
+                };
+                let next = match key {
+                    "left" | "down" if active == 0.0 => 0.0,
+                    "left" | "down" => (active - 1.0).max(1.0),
+                    "right" | "up" if active == 0.0 => 1.0,
+                    "right" | "up" => (active + 1.0).min(max),
+                    "home" => 1.0,
+                    "end" => max,
+                    _ => unreachable!(),
+                };
+                self.set_keyboard_value(next, cx);
+                cx.stop_propagation();
+            }
+            "enter" | "space" => {
+                self.set_value(self.keyboard_value.unwrap_or(self.value), window, cx);
+                cx.stop_propagation();
+            }
+            _ => {}
+        }
+    }
 }
 
 impl Focusable for Rate {
@@ -84,7 +160,10 @@ impl Focusable for Rate {
 }
 
 impl Render for Rate {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        if !self.focus_handle.is_focused(window) {
+            self.keyboard_value = None;
+        }
         let theme = &cx.global::<Config>().theme;
         let icon_sz = 20.0;
 
@@ -97,20 +176,42 @@ impl Render for Rate {
             .flex_row()
             .items_center()
             .gap_1();
+        let focus_handle = self.focus_handle.clone();
+        let focus_color = theme.primary.base;
+        let focus_ring = gpui::canvas(
+            |_, _, _| (),
+            move |bounds, (), window, _| {
+                if focus_handle.is_focused(window) && window.last_input_was_keyboard() {
+                    window.paint_quad(
+                        gpui::outline(
+                            bounds.dilate(px(2.0)),
+                            focus_color,
+                            gpui::BorderStyle::default(),
+                        )
+                        .border_widths(px(2.0))
+                        .corner_radii(px(2.0)),
+                    );
+                }
+            },
+        )
+        .absolute()
+        .inset(-px(2.0));
 
         if !self.disabled {
-            row = row.track_focus(&self.focus_handle).on_hover(cx.listener(
-                |this, hovered, _, cx| {
+            row = row
+                .track_focus(&self.focus_handle)
+                .tab_index(0)
+                .on_key_down(cx.listener(Self::handle_key_down))
+                .on_hover(cx.listener(|this, hovered, _, cx| {
                     if !hovered && this.hover_value.is_some() {
                         this.hover_value = None;
                         cx.notify();
                     }
-                },
-            ));
+                }));
         }
 
         for i in 1..=self.max {
-            let active_val = self.hover_value.unwrap_or(self.value);
+            let active_val = self.active_value(window);
             let is_active = i as f32 <= active_val;
 
             let color = if is_active {
@@ -162,6 +263,7 @@ impl Render for Rate {
                     .on_mouse_down(
                         MouseButton::Left,
                         cx.listener(move |this, _, window, cx| {
+                            this.keyboard_value = None;
                             this.set_value(i as f32, window, cx);
                         }),
                     );
@@ -172,6 +274,9 @@ impl Render for Rate {
             row = row.child(star);
         }
 
-        row
+        row.child(focus_ring)
     }
 }
+#[cfg(test)]
+#[path = "rate_keyboard_tests.rs"]
+mod keyboard_tests;

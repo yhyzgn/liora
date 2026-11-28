@@ -524,6 +524,8 @@ struct RateUsage {
 impl Render for RateUsage {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         control_stack(vec![
+            Text::new("Keyboard: Tab to a rating, preview with arrows or Home/End, then commit with Enter/Space.")
+                .into_any_element(),
             self.basic.clone().into_any_element(),
             self.custom.clone().into_any_element(),
         ])
